@@ -27,6 +27,20 @@ const VmReco = props => {
   const toggle = tab => {
     if (activeTab !== tab) setActiveTab(tab)
   }
+
+
+  const curl = () => {
+    const file = "http://167.99.36.48:3003/VM_image/1672831041292.jpeg";
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      console.log(reader)
+    };
+    reader.readAsDataURL(file)
+  }
+  // curl("http://167.99.36.48:3003/VM_image/1672831041292.jpeg")
+  const thi = curl();
+  console.log(thi)
+  
   return (
     <React.Fragment>
       <Col xl={8} lg={6}>
@@ -66,7 +80,7 @@ const VmReco = props => {
           </CardHeader>
 
           <CardBody>
-            <SimpleBar style={{ maxHeight: "295px" }}>
+            <SimpleBar style={{ maxHeight: "300px" }}>
               <div>
                 <TabContent activeTab={activeTab}>
                   <TabPane className="show" tabId="1">

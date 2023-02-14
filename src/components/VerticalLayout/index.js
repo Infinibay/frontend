@@ -16,7 +16,7 @@ import {
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import Footer from "./Footer";
-import RightSidebar from "../CommonForBoth/RightSidebar";
+// import RightSidebar from "../CommonForBoth/RightSidebar";
 
 //redux
 import { useSelector, useDispatch } from "react-redux";
@@ -115,18 +115,6 @@ const Layout = props => {
 
   return (
     <React.Fragment>
-      {/* <div id="preloader">
-        <div id="status">
-          <div className="spinner-chase">
-            <div className="chase-dot" />
-            <div className="chase-dot" />
-            <div className="chase-dot" />
-            <div className="chase-dot" />
-            <div className="chase-dot" />
-            <div className="chase-dot" />
-          </div>
-        </div>
-      </div> */}
 
       <div id="layout-wrapper">
         <Header toggleMenuCallback={toggleMenuCallback} />
@@ -136,9 +124,7 @@ const Layout = props => {
           isMobile={isMobile}
         />
         <div className="main-content">{props.children}</div>
-        {/* <Footer /> */}
       </div>
-      {showRightSidebar ? <RightSidebar /> : null}
     </React.Fragment>
   );
 };

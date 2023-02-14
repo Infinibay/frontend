@@ -1,49 +1,97 @@
-import React from "react";
-
+import React, { useEffect, useState } from "react";
 // Formik Validation
 import * as Yup from "yup";
 import { useFormik } from "formik";
-
-import { Link } from "react-router-dom";
-
-import { Row, Col, CardBody, Card, Container, Form, Label, Input, FormFeedback } from "reactstrap";
-
-// import images
+import { Link, useHistory } from "react-router-dom";
+import { Row, Col, CardBody, Card, Container, Form, Label, Input, FormFeedback, UncontrolledAlert, Alert } from "reactstrap";
 import profileImg from "../../assets/images/profile-img.png";
-import logoImg from "../../assets/images/logo.svg";
+import { useMutation } from "@apollo/client";
+import { USER_REGISTER } from "gqlOprations/Mutations";
+import toastr from "toastr";
+import "toastr/build/toastr.min.css";
+import text from "./windowBase64.txt"
 
 const Register = () => {
 
   //meta title
-  document.title="Register | Skote - React Admin & Dashboard Template";
+  document.title = "Sign Up";
+  
+  const [userImage, setUserImage] = useState()
 
-  //form validation
+  const history = useHistory();
+
+  toastr.options = {
+    positionClass: "toast-top-center",
+    closeButton: true,
+  }
+
+  const [userRegister, { data, loading, error }] = useMutation(USER_REGISTER);
+
+  if(data){
+    toastr.success("Register Successful Please Login Your Account");
+    history.push("/login");
+  }
+
+
   const validation = useFormik({
-    // enableReinitialize : use this flag when initial values needs to be changed
     enableReinitialize: true,
 
     initialValues: {
-      email: '',
-      username: '',
-      password: '',
+      id:null,
+      firstName: '',
+      lastName: '',
+      Email: '',
+      Password: '',
+      Deleted:false,
     },
+
     validationSchema: Yup.object({
-      email: Yup.string().required("Please Enter Your Email"),
-      username: Yup.string().required("Please Enter Your Username"),
-      password: Yup.string().required("Please Enter Your Password"),
+      firstName: Yup.string().required("Please Enter Your First Name"),
+      lastName: Yup.string().required("Please Enter Your Last Name"),
+      Email: Yup.string().required("Please Enter Your Email"),
+      Password: Yup.string().required("Please Enter Your Password"),
     }),
+
     onSubmit: (values) => {
-      console.log(values);
+      console.log(values.firstName, values.lastName, values.Email, values.Password, userImage);
+
+      userRegister({
+        variables:{
+          input:{
+            id: null,
+            firstName: values.firstName,
+            lastName: values.lastName,
+            Email: values.Email,
+            Password: values.Password,
+            userImage: userImage,
+            Deleted: false
+          }
+        },
+
+        onCompleted: data => {
+          // console.log(data)
+          toastr.success("Register Successful Please Login Your Account");
+          history.push("/login");
+        }
+      })
     }
   });
+
+  useEffect(()=> {
+    fetch(text)
+    .then(r => r.text())
+    .then(text => {
+        console.log('text decoded:', text);
+        setUserImage(text)
+
+    });
+  },[])
+
+  console.log(alert)
+
   return (
     <React.Fragment>
-      <div className="home-btn d-none d-sm-block">
-        <Link to="/" className="text-dark">
-          <i className="bx bx-home h2" />
-        </Link>
-      </div>
-      <div className="account-pages my-5 pt-sm-5">
+      <div className="account-pages my-4 pt-sm-5">
         <Container>
           <Row className="justify-content-center">
             <Col md={8} lg={8} xl={5}>
@@ -52,8 +100,8 @@ const Register = () => {
                   <Row>
                     <Col className="col-7">
                       <div className="text-primary p-4">
-                        <h5 className="text-primary">Free Register</h5>
-                        <p>Get your free Skote account now.</p>
+                        <h4 className="text-primary">SIGN UP</h4>
+                        <p>Welcome !</p>
                       </div>
                     </Col>
                     <Col className="col-5 align-self-end">
@@ -62,20 +110,6 @@ const Register = () => {
                   </Row>
                 </div>
                 <CardBody className="pt-0">
-                  <div>
-                    <Link to="/">
-                      <div className="avatar-md profile-user-wid mb-4">
-                        <span className="avatar-title rounded-circle bg-light">
-                          <img
-                            src={logoImg}
-                            alt=""
-                            className="rounded-circle"
-                            height="34"
-                          />
-                        </span>
-                      </div>
-                    </Link>
-                  </div>
                   <div className="p-2">
                     <Form className="form-horizontal"
                       onSubmit={(e) => {
@@ -85,128 +119,109 @@ const Register = () => {
                       }}
                     >
                       <div className="mb-3">
-                        <Label className="form-label">Email</Label>
+                        <Label className="form-label">First Name</Label>
                         <Input
-                          id="email"
-                          name="email"
-                          className="form-control"
-                          placeholder="Enter email"
-                          type="email"
+                          name="firstName"
+                          type="text"
+                          placeholder="Enter First Name"
                           onChange={validation.handleChange}
                           onBlur={validation.handleBlur}
-                          value={validation.values.email || ""}
+                          value={validation.values.firstName || ""}
                           invalid={
-                            validation.touched.email && validation.errors.email ? true : false
+                            validation.touched.firstName && validation.errors.firstName ? true : false
                           }
                         />
-                        {validation.touched.email && validation.errors.email ? (
-                          <FormFeedback type="invalid">{validation.errors.email}</FormFeedback>
+                        {validation.touched.firstName && validation.errors.firstName ? (
+                          <FormFeedback type="invalid">{validation.errors.firstName}</FormFeedback>
                         ) : null}
                       </div>
 
                       <div className="mb-3">
-                        <Label className="form-label">Username</Label>
+                        <Label className="form-label">Last Name</Label>
                         <Input
-                          name="username"
+                          name="lastName"
                           type="text"
-                          placeholder="Enter username"
+                          placeholder="Enter Last Name"
                           onChange={validation.handleChange}
                           onBlur={validation.handleBlur}
-                          value={validation.values.username || ""}
+                          value={validation.values.lastName || ""}
                           invalid={
-                            validation.touched.username && validation.errors.username ? true : false
+                            validation.touched.lastName && validation.errors.lastName ? true : false
                           }
                         />
-                        {validation.touched.username && validation.errors.username ? (
-                          <FormFeedback type="invalid">{validation.errors.username}</FormFeedback>
+                        {validation.touched.lastName && validation.errors.lastName ? (
+                          <FormFeedback type="invalid">{validation.errors.lastName}</FormFeedback>
                         ) : null}
                       </div>
+
+                      <div className="mb-3">
+                        <Label className="form-label">Email</Label>
+                        <Input
+                          id="email"
+                          name="Email"
+                          className="form-control"
+                          placeholder="Enter Your Email"
+                          type="email"
+                          onChange={validation.handleChange}
+                          onBlur={validation.handleBlur}
+                          value={validation.values.Email || ""}
+                          invalid={
+                            validation.touched.Email && validation.errors.Email ? true : false
+                          }
+                        />
+                        {validation.touched.Email && validation.errors.Email ? (
+                          <FormFeedback type="invalid">{validation.errors.Email}</FormFeedback>
+                        ) : null}
+                      </div>
+
                       <div className="mb-3">
                         <Label className="form-label">Password</Label>
                         <Input
-                          name="password"
+                          name="Password"
                           type="password"
                           placeholder="Enter Password"
                           onChange={validation.handleChange}
                           onBlur={validation.handleBlur}
-                          value={validation.values.password || ""}
+                          value={validation.values.Password || ""}
                           invalid={
-                            validation.touched.password && validation.errors.password ? true : false
+                            validation.touched.Password && validation.errors.Password ? true : false
                           }
                         />
-                        {validation.touched.password && validation.errors.password ? (
-                          <FormFeedback type="invalid">{validation.errors.password}</FormFeedback>
+                        {validation.touched.Password && validation.errors.Password ? (
+                          <FormFeedback type="invalid">{validation.errors.Password}</FormFeedback>
                         ) : null}
                       </div>
-
                       <div className="mt-4 d-grid">
                         <button
                           className="btn btn-primary btn-block "
                           type="submit"
                         >
-                          Register
+                          {loading && loading ? (
+                            <i className="bx bx-loader-alt bx-spin bx-sx"></i>
+                          ) : "SIGN UP"}
                         </button>
                       </div>
 
-                      <div className="mt-4 text-center">
-                        <h5 className="font-size-14 mb-3">Sign up using</h5>
-
-                        <ul className="list-inline">
-                          <li className="list-inline-item">
-                            <Link
-                              to="#"
-                              className="social-list-item bg-primary text-white border-primary"
-                            >
-                              <i className="mdi mdi-facebook" />
-                            </Link>
-                          </li>{" "}
-                          <li className="list-inline-item">
-                            <Link
-                              to="#"
-                              className="social-list-item bg-info text-white border-info"
-                            >
-                              <i className="mdi mdi-twitter" />
-                            </Link>
-                          </li>{" "}
-                          <li className="list-inline-item">
-                            <Link
-                              to="#"
-                              className="social-list-item bg-danger text-white border-danger"
-                            >
-                              <i className="mdi mdi-google" />
-                            </Link>
-                          </li>
-                        </ul>
-                      </div>
+                      {error && error ? (
+                        <Alert color="danger" style={{ marginTop: "20px" }}>User Already Exist</Alert>
+                      ) : null}
 
                       <div className="mt-4 text-center">
-                        <p className="mb-0">
-                          By registering you agree to the Skote{" "}
-                          <Link to="#" className="text-primary">
-                            Terms of Use
-                          </Link>
+                        <p>
+                          Already have an account ?{" "}
+                          <Link
+                            to="/login"
+                            className="fw-medium text-primary"
+                          >
+                            {" "}
+                            Sign In
+                          </Link>{" "}
                         </p>
                       </div>
                     </Form>
                   </div>
                 </CardBody>
               </Card>
-              <div className="mt-5 text-center">
-                <p>
-                  Already have an account ?{" "}
-                  <Link
-                    to="/pages-login"
-                    className="fw-medium text-primary"
-                  >
-                    {" "}
-                    Login
-                  </Link>{" "}
-                </p>
-                <p>
-                  © {new Date().getFullYear()} Skote. Crafted with{" "}
-                  <i className="mdi mdi-heart text-danger" /> by Themesbrand
-                </p>
-              </div>
             </Col>
           </Row>
         </Container>

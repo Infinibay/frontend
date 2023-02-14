@@ -1,11 +1,49 @@
-import React, { useMemo } from 'react';
-
+import React, { useState, useMemo } from 'react';
 import Breadcrumbs from '../../components/Common/Breadcrumb';
 import TableContainer from '../../components/Common/TableContainer';
+import { GET_IOS_BY_ID } from 'gqlOprations/Queries';
+import { useQuery, useLazyQuery, useMutation } from '@apollo/client';
+import { useEffect } from 'react';
+import { DELETE_ISO } from 'gqlOprations/Mutations';
+// import { Type } from 'pages/Crypto/CryptoWallet/CryptoWalCol';
+// import { map } from 'lodash';
 
 const IsoFileList = () => {
 
-    const cellFunction = ({ value, column: { getProps } }) => {
+    const [isoData, setIsoData] = useState([])
+
+    const getCookies = (cname) => {
+        const cArray = document.cookie.split("; ")
+        let result = null
+        cArray.forEach(element => {
+            if (element.indexOf(cname) == 0) {
+                result = element.substring(cname.length + 1)
+            }
+        })
+        return result;
+    }
+
+    const mvToken = getCookies("MvUserToken");
+    const mvid = getCookies("MvUserID");
+    // console.log(mvToken)
+
+    const [getIos, { loading, data, error }] = useLazyQuery(GET_IOS_BY_ID, {
+        variables: {
+            input: {
+                token: mvToken
+            }
+        },
+        onCompleted: data => {
+            // console.log(data);
+            setIsoData(data.getIOSById);
+        },
+        fetchPolicy: "cache-and-network"
+    });
+
+    const [deleteIso, { data:dataD, loading:loadingD, error:errorD }] = useMutation(DELETE_ISO)
+
+    const cellFunction = (row) => {
+        const { value, column: { getProps } } = row;
         return <i
             className="mdi mdi-cloud-download label-icon"
             style={{ fontSize: '17px', color: 'white', cursor: 'pointer' }}
@@ -13,142 +51,71 @@ const IsoFileList = () => {
         />
     }
 
+    const cellFunctionD = (row) => {
+        const { value, column: { getProps } } = row;
+        return <i
+            className="mdi mdi-delete label-icon"
+            style={{ fontSize: '17px', color: 'white', cursor: 'pointer' }}
+            onClick={() => {
+                console.log(row.cell.row.original.id)
+                console.log(mvToken)
+                deleteIso({
+                    variables:{
+                        input:{
+                            id: row.cell.row.original.id,
+                            token: mvToken
+                        }
+                    },
+                    onCompleted: () => getIos()
+                })
+            }}
+        />
+    }
+
     const columns = useMemo(
         () => [
             {
                 Header: 'File Name',
-                accessor: 'filename',
+                accessor: 'Name',
             },
             {
                 Header: 'File Type',
-                id: 'filetype',
-                accessor: d => d.filetype,
+                // id: 'Type',
+                accessor: 'Type',
             },
             {
                 Header: 'File Size',
-                accessor: 'progress',
+                accessor: 'Size',
             },
             {
                 Header: 'Download',
-                accessor: 'age',
+                accessor: 'download',
                 Cell: cellFunction,
+                getProps: () => ({ name: 'table' })
+            },
+            {
+                Header: 'Delete',
+                accessor: 'delete',
+                Cell: cellFunctionD,
                 getProps: () => ({ name: 'table' })
             },
         ],
         []
     );
 
-    const data = [
-        {
-            "filename": "horn-od926",
-            "filetype": "selection-gsykp",
-            "age": 22,
-            "visits": 20,
-            "progress": 39,
-            "status": "single"
-        },
-        {
-            "filename": "heart-nff6w",
-            "filetype": "information-nyp92",
-            "age": 16,
-            "visits": 98,
-            "progress": 40,
-            "status": "complicated"
-        },
-        {
-            "filename": "minute-yri12",
-            "filetype": "fairies-iutct",
-            "age": 7,
-            "visits": 77,
-            "progress": 39,
-            "status": "single"
-        },
-        {
-            "filename": "degree-jx4h0",
-            "filetype": "man-u2y40",
-            "age": 27,
-            "visits": 54,
-            "progress": 92,
-            "status": "relationship"
-        },
-        {
-            "filename": "horn-od926",
-            "filetype": "selection-gsykp",
-            "age": 22,
-            "visits": 20,
-            "progress": 39,
-            "status": "single"
-        },
-        {
-            "filename": "heart-nff6w",
-            "filetype": "information-nyp92",
-            "age": 16,
-            "visits": 98,
-            "progress": 40,
-            "status": "complicated"
-        },
-        {
-            "filename": "minute-yri12",
-            "filetype": "fairies-iutct",
-            "age": 7,
-            "visits": 77,
-            "progress": 39,
-            "status": "single"
-        },
-        {
-            "filename": "degree-jx4h0",
-            "filetype": "man-u2y40",
-            "age": 27,
-            "visits": 54,
-            "progress": 92,
-            "status": "relationship"
-        },
-        {
-            "filename": "horn-od926",
-            "filetype": "selection-gsykp",
-            "age": 22,
-            "visits": 20,
-            "progress": 39,
-            "status": "single"
-        },
-        {
-            "filename": "heart-nff6w",
-            "filetype": "information-nyp92",
-            "age": 16,
-            "visits": 98,
-            "progress": 40,
-            "status": "complicated"
-        },
-        {
-            "filename": "minute-yri12",
-            "filetype": "fairies-iutct",
-            "age": 7,
-            "visits": 77,
-            "progress": 39,
-            "status": "single"
-        },
-        {
-            "filename": "degree-jx4h0",
-            "filetype": "man-u2y40",
-            "age": 27,
-            "visits": 54,
-            "progress": 92,
-            "status": "relationship"
-        }
-    ];
-
-
     document.title = "Iso File List";
+
+    useEffect(() => { getIos() }, [])
 
     return (
         <div className="page-content">
             <div className="container-fluid">
 
-                <Breadcrumbs title="ISO File" breadcrumbItem="File List" />
+                <Breadcrumbs title="Dashboard" breadcrumbItem="ISO Files List" />
 
                 <TableContainer
                     columns={columns}
-                    data={data}
+                    data={isoData}
                     isGlobalFilter={true}
                     // isAddOptions={true}
                     customPageSize={10}
