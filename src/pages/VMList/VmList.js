@@ -31,6 +31,7 @@ const VmList = () => {
         return result;
     }
 
+
     const mvToken = getCookies("MvUserToken");
 
     toastr.options = {
@@ -40,19 +41,30 @@ const VmList = () => {
 
     const [changeVmStatus, { loading: loadingA, data: dataA, error: errorA }] = useMutation(VM_ACTION)
     const [deleteVms, { loading: loadingB, data: dataB, error: errorB }] = useMutation(DELETE_VM)
-    const [getUserVms, { loading, data, error }] = useLazyQuery(GET_USER_VMS, {
+    const [getUserVms, { loading: loadingC, data: dataC, error: errorC }] = useLazyQuery(GET_USER_VMS, {
         variables: {
             input: {
                 token: mvToken
             },
 
         },
-        onCompleted: data => {
-            console.log(data);
-            setVmsList(data.getUserAllVM);
+        onCompleted: (DataD) => {
+            console.log(DataD);
+            // resetData(DataD)
+            setVmsList(DataD.getUserAllVM);
         },
+
         fetchPolicy: "cache-and-network"
     });
+
+    const resetData = () => {
+        console.log("this is reset data")
+        // setTimeout(getUserVms(),3000)
+        setTimeout(() => {
+            console.log("Delayed for 1 second.");
+            getUserVms()
+          }, "2000")
+    }
 
     const toggleTrue = (id) => {
         // console.log(id)
@@ -64,7 +76,12 @@ const VmList = () => {
                     token: mvToken
                 }
             },
-            onCompleted: () => getUserVms()
+            onCompleted: (dataO) => {
+                console.log(dataO);
+                // setTimeout(resetData(), 5000)
+                resetData()
+                // getUserVms()
+            }
         })
     }
 
@@ -78,7 +95,13 @@ const VmList = () => {
                     token: mvToken
                 }
             },
-            onCompleted: () => getUserVms()
+            onCompleted: (dataI) => {
+                console.log(dataI)
+                let timeout;
+                // timeout = setTimeout(resetData(),3000)
+                resetData()
+                // getUserVms()
+            }
         })
     }
 

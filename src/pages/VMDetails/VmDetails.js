@@ -37,13 +37,14 @@ const VmDetails = () => {
                 id: vmId
             }
         },
-        onCompleted: data => {
-            console.log(data);
-            setSvmData(data);
+        onCompleted: (data) => {
+            setSvmData({ ...data })
+            console.log(data, 'vvvvvvvvvvvvvvvvvvvvv');
+            // setSvmData()
         },
         fetchPolicy: "cache-and-network"
     });
-
+    console.log(svmData?.getSpecificVM, '...........')
     const [deleteVm, { loading: loadingA, data: dataA, error: errorA }] = useMutation(DELETE_VM)
 
     const [changeVmStatus, { loading: loadingB, data: dataB, error: errorB }] = useMutation(VM_ACTION)
@@ -78,7 +79,15 @@ const VmDetails = () => {
                     "token": mvToken
                 }
             },
-            onCompleted: () => {getSpecificVm()}
+            onCompleted: () => {
+
+                setSvmData(prev => {
+                    const newData = { getSpecificVM: { ...prev.getSpecificVM, Status: false } }
+                    return newData
+                })
+
+                // getSpecificVm()
+            }
         })
     }
 
@@ -91,7 +100,13 @@ const VmDetails = () => {
                     "token": mvToken
                 }
             },
-            onCompleted: () => {getSpecificVm()}
+            // onCompleted: () => getSpecificVm()
+            onCompleted: () => {
+                setSvmData(prev => {
+                    const newData = { getSpecificVM: { ...prev.getSpecificVM, Status: true } }
+                    return newData
+                })
+            }
         })
     }
 

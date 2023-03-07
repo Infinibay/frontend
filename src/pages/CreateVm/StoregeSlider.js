@@ -15,8 +15,8 @@ const StoregeSlider = (props) => {
 
   const ManageValue = (value) => {
     let currantValue = value;
-    if (currantValue >= 1020) {
-      currantValue /= 1024;
+    if (currantValue >= 1000) {
+      currantValue /= 1000;
       let ToFix = currantValue.toFixed(2);
       let Float = parseFloat(ToFix);
       // console.log(Float)
@@ -29,6 +29,7 @@ const StoregeSlider = (props) => {
       setCon("MB")
       props.sValue(currantValue)
     }
+    return currantValue
   }
 
 
@@ -39,7 +40,7 @@ const StoregeSlider = (props) => {
         <h5 className="font-size-14 mb-3 mt-0">Storage :</h5>
         <Slider
           min={0}
-          max={16825}
+          max={100000}
           value={prefix}
           onChange={value => {
             setprefix(value);

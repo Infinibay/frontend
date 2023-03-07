@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import { Link } from "react-router-dom"
-import {Card, CardBody,CardHeader,Col,TabContent,TabPane,DropdownMenu,DropdownToggle,UncontrolledDropdown,} from "reactstrap"
+import { Card, CardBody, CardHeader, Col, TabContent, TabPane, DropdownMenu, DropdownToggle, UncontrolledDropdown, Row, } from "reactstrap"
 import classnames from "classnames"
 import img1 from "../../assets/images/small/img-6.jpg"
 import img2 from "../../assets/images/small/img-2.jpg"
@@ -28,8 +28,16 @@ const VmNotification = props => {
                             </div>
                         </CardHeader>
 
-                        <CardBody>
-                            <SimpleBar style={{ maxHeight: "380px" }}>
+                        <CardBody className="d-flex justify-content-center align-items-center">
+                            <div className="justify-content-center" style={{ marginTop: "120px" }}>
+                                <Row className="justify-content-center">
+                                    <i className="bx bx-bell-off bx-lg d-flex justify-content-center"></i>
+                                </Row>
+                                <Row className="justify-content-center">
+                                    No Notifications yet
+                                </Row>
+                            </div>
+                            {/* <SimpleBar style={{ maxHeight: "380px" }}>
                                 <div>
                                     <ul className="list-group list-group-flush">
                                         <li className="list-group-item py-3">
@@ -231,7 +239,7 @@ const VmNotification = props => {
                                         </li>
                                     </ul>
                                 </div>
-                            </SimpleBar>
+                            </SimpleBar> */}
                         </CardBody>
                     </div>
                 </Card>

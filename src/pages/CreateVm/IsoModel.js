@@ -75,34 +75,7 @@ const IsoModel = (props) => {
                 setAlert("false")
             }
         }
-
-        // console.log(vmPassData)
     }
-
-    // const handleSingin = async (e) => {
-    //     e.preventDefault();
-    //     const response = await fetch('http://127.0.0.1:8000/singin', {
-    //         method: 'post',
-    //         headers: {
-    //             "Content-Type": "application/json"
-    //         },
-    //         body: JSON.stringify({
-    //           firstname : firstname,
-    //           lastname : lastname, 
-    //           email: email, 
-    //           password: password, })
-    //     })
-    //     const res = await response.json();
-    //     if (res) {
-    //       if(res.msg==="Data Send Successfully"){
-    //         navigate('/login')
-    //       }
-    //       else{
-    //       navigate('/')}
-
-    //         console.log(res.msg)
-    //     }
-    // }
 
 
     return (
