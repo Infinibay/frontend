@@ -28,7 +28,6 @@
     "draft-js": "^0.11.7",
     "echarts": "^4.9.0",
     "echarts-for-react": "^3.0.1",
-    "eslint": "^7.29.0",
     "firebase": "^9.6.10",
     "formik": "^2.2.9",
     "google-maps-react": "^2.0.6",
@@ -161,6 +160,7 @@
     "autoprefix": "10.4.5"
   },
   "devDependencies": {
+    "eslint": "^8.36.0",
     "eslint-config-standard-react": "^9.2.0",
     "eslint-plugin-react": "^7.20.6",
     "prettier": "^2.1.1"
