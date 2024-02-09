@@ -1,0 +1,156 @@
+@import url(./custom.css);
+@import url(./auth.css);
+@import url(./dashboard.css);
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* live done*/
+@layer components {
+  html {
+    @apply bg-[#FAFAFA];
+  }
+  .transitioncustom {
+    @apply transition-all ease-in-out !duration-300;
+  }
+  .container {
+    @apply lg:w-[85%] w-[92%] max-w-[3700px] lg:px-16 mx-auto;
+  }
+  /* Text */
+  p {
+    @apply sm:text-[17px] text-sm font-medium;
+  }
+
+  .mainheading {
+    @apply lg:text-5xl sm:text-4xl text-4xl font-bold 4xl:text-[100px] 4xl:font-extrabold;
+  }
+  .subheading {
+    @apply 5xl:text-5xl lg:text-2xl sm:text-xl text-lg font-bold;
+  }
+  .heading2 {
+    @apply 2xl:text-3xl 4xl:text-[70px] lg:text-2xl text-xl font-bold !leading-10;
+  }
+
+  /* colors */
+  .GradientBlue {
+    @apply bg-gradient-to-br from-web_lightBlue to-web_darkBlue;
+  }
+  .Gradientbtnblue {
+    @apply bg-gradient-to-br from-web_lightBlue to-web_aquablue;
+  }
+  /* form */
+  .form_container {
+    @apply mx-auto w-[90%];
+  }
+  .formbarGradient {
+    @apply bg-gradient-to-t from-web_lightBlue to-web_aquablue;
+  }
+
+  /* font */
+  /* styles/fonts.css */
+
+  .font {
+    font-family: "Oleo Script Swash Caps", system-ui;
+  }
+  .para {
+    @apply text-base lg:!text-lg  2xl:!text-lg 4xl:!text-3xl;
+  }
+
+  /* button colors */
+  .btnGradientLightBlue {
+    @apply transitioncustom hover:!border-web_lightBlue hover:!text-white hover:!bg-transparent Gradientbtnblue py-3 px-2 !text-white rounded-2xl w-full uppercase text-lg font-semibold !border;
+  }
+  .btnGradientOrange {
+    @apply transitioncustom hover:!border-web_lightBlue hover:!text-white hover:!bg-transparent  bg-[#EC9430]  py-3 px-2 !text-white rounded-2xl w-full uppercase text-lg font-semibold !border;
+  }
+  .btnGradientDarkBlue {
+    @apply transitioncustom hover:!border-web_lightBlue hover:text-web_lightBlue hover:!bg-transparent GradientBlue py-3  px-2 !text-white rounded-2xl w-full uppercase text-lg font-semibold !border;
+  }
+  .btnTransparent {
+    @apply transitioncustom !bg-transparent border border-web_lightBlue hover:!bg-web_lightBlue hover:text-white py-3  px-2 text-web_lightBlue rounded-2xl w-full uppercase text-lg font-semibold;
+  }
+  .btnlightBlue {
+    @apply bg-blue-500;
+  }
+  /* Flex Box */
+  .flexbox {
+    @apply flex sm:justify-between justify-center items-center gap-5 lg:flex-nowrap flex-wrap;
+  }
+  .flexboxReverse {
+    @apply flex sm:justify-between justify-center items-center gap-5 lg:flex-row flex-col-reverse;
+  }
+
+  /* background settings */
+  .bgCover {
+    @apply bg-cover bg-center bg-no-repeat;
+  }
+  .bgContain {
+    @apply bg-contain bg-center bg-no-repeat;
+  }
+
+  /* button colors */
+  /* .btnGradientLightBlue {
+    @apply transitioncustom Gradientbtnblue py-3 px-2 !text-white rounded-2xl w-full uppercase text-lg font-semibold !border hover:!border-web_lightBlue hover:!text-web_lightBlue hover:!bg-transparent;
+  } */
+  /* .btnGradientDarkBlue {
+    @apply transitioncustom GradientBlue py-3  px-2 !text-white rounded-2xl w-full uppercase text-lg font-semibold !border hover:!border-web_lightBlue hover:!text-web_lightBlue hover:!bg-none;
+  } */
+  /* .btnTransparent {
+    @apply transitioncustom border border-web_lightBlue hover:bg-web_lightBlue hover:text-white py-3  px-2 text-web_lightBlue rounded-2xl w-full uppercase text-lg font-semibold;
+  } */
+
+  /* Flex Box */
+  .flexbox {
+    @apply flex sm:justify-between justify-center items-center gap-5 lg:flex-nowrap flex-wrap;
+  }
+  .flexboxReverse {
+    @apply flex sm:justify-between justify-center items-center gap-5 lg:flex-row flex-col-reverse;
+  }
+
+  /* background settings */
+  .bgCover {
+    @apply bg-cover bg-center bg-no-repeat;
+  }
+  .bgContain {
+    @apply bg-contain bg-center bg-no-repeat;
+  }
+  .bg-custom-blue {
+    background: rgba(36, 132, 198, 0.1);
+  }
+
+  /* logo */
+  .logo {
+    @apply w-[80%] md:w-[100%] xl:w-[400px] 3xl:w-[600px] mx-auto;
+  }
+}
+.root_bg {
+  background-image: url("/images/rootBg.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.auth_bg {
+  background-image: url("/images/auth/authBg.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.custom_shadow {
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+/* .frombarBg {
+  background-image: url("/images/form/formBg.png");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  width: 100%;
+  height: 100vh;
+} */
+.formbarGradient {
+  background: linear-gradient(180deg, #115184 0%, #389ec6 100%);
+}
+input[type="text"]#email.peer {
+  background: none !important;
+}
