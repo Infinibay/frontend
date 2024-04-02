@@ -2,6 +2,9 @@
 import { Montserrat } from "next/font/google";
 import "../styles/globals.css";
 import { NextUIProvider } from "@nextui-org/react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { StateContext } from "@/context/userContext";
 // import { Oleo_Script_Swash_Caps } from "next/font/google";
 
 const monst = Montserrat({ subsets: ["latin"] });
@@ -17,9 +20,23 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={monst.className}>
-        <NextUIProvider>
-          <div>{children}</div>
-        </NextUIProvider>
+        <StateContext>
+          <NextUIProvider>
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
+            <div>{children}</div>
+          </NextUIProvider>
+        </StateContext>
       </body>
     </html>
   );

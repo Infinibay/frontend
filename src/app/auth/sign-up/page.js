@@ -1,21 +1,33 @@
 "use client";
 import React, { useState } from "react";
-import { Button, Checkbox, Image } from "@nextui-org/react";
+import Cookies from "js-cookie";
 import Link from "next/link";
+import { Button, Checkbox, Image } from "@nextui-org/react";
 import { FaRegEyeSlash } from "react-icons/fa";
 import { IoEye } from "react-icons/io5";
 import { Controller, useForm } from "react-hook-form";
 import AuthHeader from "@/components/auth/AuthHeader";
+import { API } from "@/api";
+import { notify } from "@/utils/notify";
+import { useStateContext } from "@/context/userContext";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
+  const router = useRouter();
+  const { SaveUser } = useStateContext();
+
+  const [loadingApiResponse, setLoadingApiResponse] = useState(false);
   const [hidePass, setHidePass] = useState(false);
   const [hidePass1, setHidePass1] = useState(false);
+
   const handleeyeIcon = () => {
     setHidePass(!hidePass);
   };
+
   const handleeyeIcon1 = () => {
     setHidePass1(!hidePass1);
   };
+
   const {
     register,
     handleSubmit,
@@ -26,9 +38,27 @@ const Page = () => {
     control,
     setValue,
   } = useForm();
+
   const onSubmit = async (data, event) => {
     event.preventDefault();
-    console.log(data);
+    setLoadingApiResponse(true);
+
+    delete data.confirmpass;
+    delete data.checkbox;
+
+    try {
+      const res = await API.signUp(data);
+      if (!res.data?.accessToken || !res.data?.user) throw new Error("something went wrong");
+      Cookies.set("token", res.data.accessToken);
+      SaveUser(res.data.user);
+      notify("success", res?.message || "Signed up successfully");
+      router.push("/user");
+    } catch (error) {
+      console.error("signUp error", error);
+      notify("error", error?.error ?? error?.message);
+    } finally {
+      setLoadingApiResponse(false);
+    }
   };
 
   return (
@@ -53,11 +83,7 @@ const Page = () => {
             <div className="w-full flex flex-col justify-center h-full ">
               {/* form */}
               <div className="w-full 4xl:max-w-[1000px] max-w-[600px] sm:p-6 4xl:p-10 p-4 rounded-3xl my-auto custom_shadow bg-white/30  mx-auto">
-                <Image
-                  className="w-full pt-10"
-                  alt=""
-                  src="/images/logo_1.png "
-                />
+                <Image className="w-full pt-10" alt="" src="/images/logo_1.png " />
                 <div className="py-4 ">
                   <div className="flex gap-2 justify-between mb-2 4xl:mt-12">
                     <h2 className="lg:text-4xl 4xl:text-6xl text-4xl 4xl:mb-5 font-bold ">
@@ -67,32 +93,27 @@ const Page = () => {
                   <p className="4xl:text-3xl 4xl:mb-5 4xl:mt-6">
                     Create your account to continue Installation{" "}
                   </p>
-                  <form
-                    className="mt-10 space-y-7 4xl:my-6"
-                    onSubmit={handleSubmit(onSubmit)}
-                  >
+                  <form className="mt-10 space-y-7 4xl:my-6" onSubmit={handleSubmit(onSubmit)}>
                     <div className="w-full 4xl:pb-12 4xl:pt-12">
                       <label
                         htmlFor="name"
-                        class="relative block rounded-3xl 4xl:text-3xl border shadow-sm peer-placeholder-shown"
+                        className="relative block rounded-3xl 4xl:text-3xl border shadow-sm peer-placeholder-shown"
                       >
                         <input
                           htmlFor="text"
                           id="name"
                           {...register("name", { required: true })}
                           aria-invalid={errors.name ? "true" : "false"}
-                          class="peer 4xl:text-3xl 4xl:p-6 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
+                          className="peer 4xl:text-3xl 4xl:p-6 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                           placeholder=""
+                          autoComplete="name"
                         />
-                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
+                        <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
                           Name
                         </span>
                       </label>
                       {errors.name?.type === "required" && (
-                        <p
-                          role="alert"
-                          className="text-red-600 text-[13px] font-bold 4xl:text-xl"
-                        >
+                        <p role="alert" className="text-red-600 text-[13px] font-bold 4xl:text-xl">
                           Your name is required
                         </p>
                       )}
@@ -100,8 +121,8 @@ const Page = () => {
 
                     <div className="w-full">
                       <label
-                        for="Email"
-                        class="relative 4xl:text-3xl block rounded-3xl border shadow-sm peer-placeholder-shown "
+                        htmlFor="Email"
+                        className="relative 4xl:text-3xl block rounded-3xl border shadow-sm peer-placeholder-shown "
                       >
                         <input
                           htmlFor="text"
@@ -109,15 +130,15 @@ const Page = () => {
                           {...register("email", {
                             required: "Email is required",
                             pattern: {
-                              value:
-                                /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
+                              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
                               message: "Enter a valid email address",
                             },
                           })}
-                          class="peer 4xl:text-3xl 4xl:p-6 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
+                          className="peer 4xl:text-3xl 4xl:p-6 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                           placeholder=""
+                          autoComplete="email"
                         />
-                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
+                        <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
                           Email Address
                         </span>
                       </label>
@@ -143,8 +164,8 @@ const Page = () => {
 
                     <div className="w-full 4xl:pt-12">
                       <label
-                        for="phone"
-                        class="relative block rounded-3xl border shadow-sm peer-placeholder-shown "
+                        htmlFor="phone"
+                        className="relative block rounded-3xl border shadow-sm peer-placeholder-shown "
                       >
                         <input
                           htmlFor="text"
@@ -159,10 +180,11 @@ const Page = () => {
                               e.preventDefault();
                             }
                           }}
-                          class="peer 4xl:p-6 border-none 4xl:text-3xl rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
+                          className="peer 4xl:p-6 border-none 4xl:text-3xl rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                           placeholder=""
+                          autoComplete="tel"
                         />
-                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
+                        <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
                           Phone No
                         </span>
                       </label>
@@ -196,10 +218,7 @@ const Page = () => {
                         <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
                           Password
                         </span>
-                        <span
-                          className="absolute right-3 top-5"
-                          onClick={handleeyeIcon}
-                        >
+                        <span className="absolute right-3 top-5" onClick={handleeyeIcon}>
                           {hidePass ? <IoEye /> : <FaRegEyeSlash />}
                         </span>
                       </label>
@@ -233,19 +252,12 @@ const Page = () => {
                         <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
                           Confirm Password!
                         </span>
-                        <span
-                          className="absolute right-3 top-5"
-                          onClick={handleeyeIcon1}
-                        >
+                        <span className="absolute right-3 top-5" onClick={handleeyeIcon1}>
                           {hidePass1 ? <IoEye /> : <FaRegEyeSlash />}
                         </span>
                       </label>
-                      {watch("confirmpass") !== watch("password") &&
-                      getValues("confirmpass") ? (
-                        <p
-                          role="alert"
-                          className="text-red-600 text-[13px] font-bold 4xl:text-xl"
-                        >
+                      {watch("confirmpass") !== watch("password") && getValues("confirmpass") ? (
+                        <p role="alert" className="text-red-600 text-[13px] font-bold 4xl:text-xl">
                           password not match
                         </p>
                       ) : null}
@@ -260,9 +272,9 @@ const Page = () => {
                           render={({ field }) => <Checkbox {...field} />}
                           style="4xl:h-10 4xl:w-10"
                         />
-                        <lable className="sm:text-base text-sm 4xl:text-3xl ">
+                        <p className="sm:text-base text-sm 4xl:text-3xl ">
                           I accept all terms & Conditions
-                        </lable>
+                        </p>
                       </div>
 
                       <Link
@@ -277,13 +289,12 @@ const Page = () => {
                       // href="/auth/sign-in"
                       type="submit"
                       className="sm:mt-4 GradientBlue text-white w-full p-3 rounded-2xl 4xl:text-3xl 4xl:p-10 4xl:pt-12"
+                      isLoading={loadingApiResponse}
                     >
                       Register
                     </Button>
                     <div className="sm:mt-6 -mb-3 flex sm:gap-3 gap-2 justify-center 4xl:mt-12">
-                      <p className="text-sm text-center 4xl:text-3xl">
-                        Already have an account?
-                      </p>
+                      <p className="text-sm text-center 4xl:text-3xl">Already have an account?</p>
                       <Link
                         href="/auth/sign-in"
                         className="text-web_lightbrown underline font-medium text-sm 4xl:text-2xl"

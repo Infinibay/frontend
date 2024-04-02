@@ -1,7 +1,7 @@
 import { useSearchParams } from "next/navigation";
 
 export function Searchparams(string) {
-  const searchparam = useSearchParams();
-  const id = searchparam.get(string);
+  const searchParam = useSearchParams();
+  const id = searchParam.get(string);
   return id;
 }

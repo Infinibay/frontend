@@ -6,8 +6,25 @@ import Link from "next/link";
 import { FaRegEyeSlash } from "react-icons/fa";
 import { IoEye } from "react-icons/io5";
 import { Controller, useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { useStateContext } from "@/context/userContext";
+import { notify } from "@/utils/notify";
+import { API } from "@/api";
+import Cookies from "js-cookie";
 
 const Page = () => {
+  const router = useRouter();
+  const { SaveUser } = useStateContext();
+
+  const [loadingApiResponse, setLoadingApiResponse] = useState(false);
+
+  const [hidePass, setHidePass] = useState(false);
+  const [role, setRole] = useState("user");
+
+  const handleeyeIcon = () => {
+    setHidePass(!hidePass);
+  };
+
   const {
     register,
     handleSubmit,
@@ -17,14 +34,28 @@ const Page = () => {
     control,
     setValue,
   } = useForm();
-  const [hidePass, setHidePass] = useState(false);
-  const handleeyeIcon = () => {
-    setHidePass(!hidePass);
-  };
-  const [role, setRole] = useState("user");
+ 
+  
   // handle form submit
-  const onSubmit = (data) => {
-    console.log(data);
+  const onSubmit = async (data, event) => {
+    event.preventDefault();
+    setLoadingApiResponse(true);
+
+    delete data.checkbox;
+
+    try {
+      const res = await API.signIn(data);
+      if(!res.data?.accessToken || !res.data?.user) throw new Error("something went wrong")
+      Cookies.set("token", res.data.accessToken);
+      SaveUser(res.data.user);
+      notify("success", res?.message || "Signed in successfully");
+      router.push("/user");
+    } catch (error) {
+      console.error("signIn error", error);
+      notify("error", error?.error ?? error?.message);
+    } finally {
+      setLoadingApiResponse(false);
+    }
   };
   return (
     <div className="auth_bg">
@@ -88,7 +119,7 @@ const Page = () => {
                 </div>
               </div>
               <p className="text-sm 4xl:text-2xl 4xl:mb-12">
-                Create your account to continue Installation{" "}
+                Log in to your account to continue Installation{" "}
               </p>
               <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="w-full 4xl:mb-12 ">
@@ -100,7 +131,7 @@ const Page = () => {
                       type="text"
                       id="Email"
                       {...register("email", {
-                        required: "Email is required",
+                        required: true,
                         pattern: {
                           value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
                           message: "Enter a valid email address",
@@ -109,6 +140,7 @@ const Page = () => {
                       aria-invalid={errors.email ? "true" : "false"}
                       className="peer 4xl:p-7 4xl:text-3xl border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                       placeholder="Infinibayuzzi@gmail.com"
+                      autoComplete="email"
                     />
                     <span className="pointer-events-none absolute 4xl:text-3xl start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
                       Email
@@ -135,7 +167,7 @@ const Page = () => {
                 </div>
                 <div className="w-full">
                   <label
-                    htmlFor="Pass"
+                    htmlFor="pass"
                     className="relative block rounded-3xl border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite"
                   >
                     <input
@@ -199,10 +231,11 @@ const Page = () => {
                   </Link>
                 </div>
                 <Button
-                  as={Link}
-                  href={`${role === "user" ? "/user" : "/manual-install"}`}
-                  // type="submit"
+                  // as={Link}
+                  // href={`${role === "user" ? "/user" : "/manual-install"}`}
+                  type="submit"
                   className="mt-4 GradientBlue text-white w-full p-3 4xl:p-10 rounded-2xl 4xl:text-3xl 4xl:mb-8 4xl:mt-12"
+                  isLoading={loadingApiResponse}
                 >
                   Login
                 </Button>

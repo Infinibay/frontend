@@ -12,6 +12,7 @@ export default function Sidebar() {
           height={1000}
           src={"/images/form/formBg.png"}
           className="h-[100vh] w-full"
+          alt="background image"
         />
       </div>
       {/* <div className="max-w-[200px] 4xl:max-w-[400px] border 4xl:max-h-full max-h-[200px] pt-[80px]">
