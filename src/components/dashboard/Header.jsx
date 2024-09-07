@@ -11,12 +11,18 @@ import { MdKeyboardArrowRight } from "react-icons/md";
 import { VscBellDot } from "react-icons/vsc";
 import TooltipComponent from "../tooltip/TooltipComponent";
 import { HiMenu } from "react-icons/hi";
+import { useQuery } from '@apollo/client';
+import { CURRENT_USER_QUERY } from '@/graphql/queries';
 
 const Header = ({ setUserSidebar }) => {
   const type = Searchparams("type");
   const pathname = usePathname();
-  // console.log(pathname, "type...");
+  const { loading, error, data } = useQuery(CURRENT_USER_QUERY);
 
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error.message}</p>;
+
+  const user = data.currentUser;
   return (
     <div className="bg-white relative shadow-md">
       <div
@@ -26,25 +32,24 @@ const Header = ({ setUserSidebar }) => {
         <HiMenu className="w-7 h-7" />
       </div>
       <div
-        className={`container px-[22px]  4xl:px-0 flex justify-between items-center gap-5 4xl:py-10 2xl:py-8 ${
-          pathname === "/dashboard/settings"
+        className={`container px-[22px]  4xl:px-0 flex justify-between items-center gap-5 4xl:py-10 2xl:py-8 ${pathname === "/dashboard/settings"
             ? " max-w-[95%]"
             : pathname === "/user/dashboard"
-            ? " max-w-[94%]  !px-0"
-            : pathname === "/dashboard/notification"
-            ? " max-w-[100%] 4xl:max-w-[98%]"
-            : pathname === "/dashboard/users"
-            ? " max-w-[95%] 4xl:max-w-[96%]"
-            : pathname === "/dashboard/select-vm"
-            ? " max-w-[95%] !px-0"
-            : pathname === "/dashboard/create-pc"
-            ? " max-w-[95%] !px-0"
-            : pathname.includes("/dashboard/departments")
-            ? " max-w-[94%] !px-0"
-            : pathname === "/dashboard/select-vm"
-            ? " max-w-[95%] !px-0 border-2"
-            : "max-w-[95%]"
-        } mx-auto py-2 w-full `}
+              ? " max-w-[94%]  !px-0"
+              : pathname === "/dashboard/notification"
+                ? " max-w-[100%] 4xl:max-w-[98%]"
+                : pathname === "/dashboard/users"
+                  ? " max-w-[95%] 4xl:max-w-[96%]"
+                  : pathname === "/dashboard/select-vm"
+                    ? " max-w-[95%] !px-0"
+                    : pathname === "/dashboard/create-pc"
+                      ? " max-w-[95%] !px-0"
+                      : pathname.includes("/dashboard/departments")
+                        ? " max-w-[94%] !px-0"
+                        : pathname === "/dashboard/select-vm"
+                          ? " max-w-[95%] !px-0 border-2"
+                          : "max-w-[95%]"
+          } mx-auto py-2 w-full `}
       >
         {type ? (
           <h2 className="font-bold text-xl translate-x-10 lg:translate-x-0 4xl:text-4xl">
@@ -76,9 +81,8 @@ const Header = ({ setUserSidebar }) => {
         )}
         <div className="flex gap-3 w-full  4xl:max-w-[1000px] 2xl:max-w-[800px] max-w-[600px] items-center">
           <div
-            className={` opacity-0 lg:opacity-100 flex-1 flex w-full border 4xl:p-4  p-2 rounded-2xl ${
-              pathname == "/dashboard/settings" ? "opacity-0" : ""
-            }`}
+            className={` opacity-0 lg:opacity-100 flex-1 flex w-full border 4xl:p-4  p-2 rounded-2xl ${pathname == "/dashboard/settings" ? "opacity-0" : ""
+              }`}
           >
             <IoSearch className="!text-black  pointer-events-none flex-shrink-0  4xl:w-12 4xl:h-12  2xl:w-10 w-8 h-8 px-2" />
             <input
@@ -130,7 +134,7 @@ const Header = ({ setUserSidebar }) => {
             ></Image>
 
             <p className="4xl:text-2xl 2xl:text-lg px-2 md:text-lg font-medium text-sm text-black">
-              John Doe**
+              {user.firstName} {user.lastName}
             </p>
             <MdKeyboardArrowRight className="4xl:w-10 4xl:h-10 w-5 text-green-500 h-5 mr-2 rotate-90" />
           </Link>
