@@ -1,21 +1,35 @@
 "use client";
-import { Image } from "@nextui-org/react";
+
 import React, { useState } from "react";
-import { FaLaptop, FaRegRegistered } from "react-icons/fa6";
-import { LuUsers2 } from "react-icons/lu";
-import { IoSettingsOutline } from "react-icons/io5";
-import { MdGridOn } from "react-icons/md";
-import { CgAddR } from "react-icons/cg";
 import Link from "next/link";
-import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { Image } from "@nextui-org/react";
+
+// Icons
+import { CgAddR } from "react-icons/cg";
+import { FaRegRegistered } from "react-icons/fa6";
+import { IoSettingsOutline } from "react-icons/io5";
+import { LuUsers2 } from "react-icons/lu";
+import { MdGridOn } from "react-icons/md";
 import { RxCrossCircled } from "react-icons/rx";
+
+// Utils
+import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
+import auth from '@/utils/auth';
 
 const Sidebar = ({ userSideBar, setUserSidebar }) => {
   const [addNewDepart, setAddNewDepart] = useState(false);
   const [inputVal, setInputVal] = useState("");
 
   const [departs, setDeparts] = useState([]);
+
+  const router = useRouter();
+
+  const handleLogout = () => {
+    auth.logout();
+    router.push('/auth/sign-in');
+  };
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -32,7 +46,7 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
   console.log(pathname);
   return (
     <div
-      className={`sidebarGradient flex flex-col relative  h-full w-full pt-20    
+      className={`sidebarGradient flex flex-col relative  h-full w-full pt-20
     `}
     >
       <div className="flex-1 ">
@@ -88,11 +102,9 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
               <span>Departments</span>
             </Link>
             <ul
-              className={`${
-                isHover && !isLinkOpen && "group-hover:block hidden"
-              } ${
-                isLinkOpen && "group-hover:block"
-              }  border-r 4xl:space-y-8 space-y-3 border-white/20 border-b rounded-br-2xl p-2 w-full h-full py-5 pl-12 `}
+              className={`${isHover && !isLinkOpen && "group-hover:block hidden"
+                } ${isLinkOpen && "group-hover:block"
+                }  border-r 4xl:space-y-8 space-y-3 border-white/20 border-b rounded-br-2xl p-2 w-full h-full py-5 pl-12 `}
             >
               <Link
                 href={"/dashboard/departments"}
@@ -168,9 +180,8 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
           </li>
           <li className="group">
             <Link
-              className={`group w-full h-full sidebarList 4xl:py-3.5 ${
-                pathname === "/dashboard/users" && "bg-web_lightbrown"
-              }`}
+              className={`group w-full h-full sidebarList 4xl:py-3.5 ${pathname === "/dashboard/users" && "bg-web_lightbrown"
+                }`}
               href={"/dashboard/users"}
             >
               <span>
@@ -188,9 +199,8 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
 
           <li className="group">
             <Link
-              className={`group w-full h-full sidebarList 4xl:py-3.5 ${
-                pathname === "/dashboard/settings" && "bg-web_lightbrown"
-              }`}
+              className={`group w-full h-full sidebarList 4xl:py-3.5 ${pathname === "/dashboard/settings" && "bg-web_lightbrown"
+                }`}
               href={"/dashboard/settings"}
             >
               <span>
@@ -202,13 +212,16 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
         </ul>
       </div>
       {/* mt-[85px] 4xl:mt-[405px] */}
-      <div className="text-white cursor-pointer p-4 pb-6 flex items-center gap-3 ">
+      <div
+        onClick={handleLogout}
+        className="text-white cursor-pointer p-4 pb-6 flex items-center gap-3"
+      >
         <Image
           src="/images/signout.svg"
-          alt="Windows 10"
-          className="4xl:w-14 4xl:h-14 2xl:w-10 2xl:h-10 xl:h-9 xl:w-9 h-6 w-6  rounded-none  text-white"
+          alt="Sign Out"
+          className="4xl:w-14 4xl:h-14 2xl:w-10 2xl:h-10 xl:h-9 xl:w-9 h-6 w-6 rounded-none text-white"
         />
-        <p className="4xl:text-3xl 2xl:text-2xl xl:text-xl md:text-lg text-base  ">
+        <p className="4xl:text-3xl 2xl:text-2xl xl:text-xl md:text-lg text-base">
           Sign Out
         </p>
       </div>
