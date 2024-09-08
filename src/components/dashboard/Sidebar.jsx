@@ -12,6 +12,7 @@ import { IoSettingsOutline } from "react-icons/io5";
 import { LuUsers2 } from "react-icons/lu";
 import { MdGridOn } from "react-icons/md";
 import { RxCrossCircled } from "react-icons/rx";
+import { FaLaptop } from "react-icons/fa";
 
 // Utils
 import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
@@ -64,14 +65,25 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
           />
         </Link>
         <ul className="pt-20   flex flex-col 4xl:gap-y-10  2xl:gap-y-8 xl:gap-y-6 md:gap-y-4 gap-y-3 text-white font-medium 4xl:text-4xl 2xl:text-2xl xl:text-xl md:text-base text-sm pr-10">
-          {/* <li className="">
-          <Link href={"/dashboard "} className="sidebarList 4xl:py-5">
-            <span>
-              <FaLaptop className="4xl:text-3xl text-white" />
-            </span>
-            <span>Computers</span>
-          </Link>
-        </li> */}
+          <li className="">
+            <Link
+              href={"/dashboard"}
+              className={`group w-full h-full sidebarList 4xl:py-3.5
+                ${pathname === "/dashboard" && "bg-web_lightbrown"}
+              `}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 30 17"
+                fill="none"
+                className="4xl:w-[36px] 2xl:w-[26px] w-[26px] "
+              >
+                <path d="M1 18V16.8667H24V18H1ZM4.19819 15.7333C3.68108 15.7333 3.24941 15.5584 2.90318 15.2086C2.55619 14.8595 2.3827 14.424 2.3827 13.9019V2.8292C2.3827 2.30787 2.55619 1.87267 2.90318 1.5236C3.25016 1.17453 3.68183 1 4.19819 1H20.8018C21.3189 1 21.7506 1.17453 22.0968 1.5236C22.4438 1.87342 22.6173 2.309 22.6173 2.83033V13.903C22.6173 14.4243 22.4442 14.8595 22.0979 15.2086C21.7517 15.5577 21.3197 15.7326 20.8018 15.7333H4.19819ZM4.19819 14.6H20.8018C20.9742 14.6 21.1327 14.5271 21.2773 14.3813C21.4212 14.2362 21.4932 14.0764 21.4932 13.9019V2.8292C21.4932 2.65542 21.4212 2.496 21.2773 2.35093C21.1327 2.20587 20.9742 2.13333 20.8018 2.13333H4.19819C4.02582 2.13333 3.86732 2.20587 3.72268 2.35093C3.57879 2.496 3.50684 2.6558 3.50684 2.83033V13.903C3.50684 14.0768 3.57879 14.2362 3.72268 14.3813C3.86732 14.5271 4.02582 14.6 4.19819 14.6Z" fill="white" />
+                <path d="M3.50684 14.6V2.13333M1 18V16.8667H24V18H1ZM4.19819 15.7333C3.68108 15.7333 3.24941 15.5584 2.90318 15.2086C2.55619 14.8595 2.3827 14.424 2.3827 13.9019V2.8292C2.3827 2.30787 2.55619 1.87267 2.90318 1.5236C3.25016 1.17453 3.68183 1 4.19819 1H20.8018C21.3189 1 21.7506 1.17453 22.0968 1.5236C22.4438 1.87342 22.6173 2.309 22.6173 2.83033V13.903C22.6173 14.4243 22.4442 14.8595 22.0979 15.2086C21.7517 15.5577 21.3197 15.7326 20.8018 15.7333H4.19819ZM4.19819 14.6H20.8018C20.9742 14.6 21.1327 14.5271 21.2773 14.3813C21.4212 14.2362 21.4932 14.0764 21.4932 13.9019V2.8292C21.4932 2.65542 21.4212 2.496 21.2773 2.35093C21.1327 2.20587 20.9742 2.13333 20.8018 2.13333H4.19819C4.02582 2.13333 3.86732 2.20587 3.72268 2.35093C3.57879 2.496 3.50684 2.6558 3.50684 2.83033V13.903C3.50684 14.0768 3.57879 14.2362 3.72268 14.3813C3.86732 14.5271 4.02582 14.6 4.19819 14.6Z" stroke="white" stroke-width="0.5" />
+              </svg>
+              <span>Computers</span>
+            </Link>
+          </li>
           <li
             onMouseOver={() => {
               setIsLinkOpen(true);

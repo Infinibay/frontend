@@ -12,6 +12,7 @@
     "@apollo/client": "^3.11.8",
     "@nextui-org/react": "^2.2.9",
     "apexcharts": "^3.45.1",
+    "apollo3-cache-persist": "^0.15.0",
     "framer-motion": "^10.17.4",
     "graphql": "^16.9.0",
     "next": "14.0.4",
