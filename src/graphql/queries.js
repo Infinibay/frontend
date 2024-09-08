@@ -15,7 +15,7 @@ export const CURRENT_USER_QUERY = gql`
 
 export const USERS_QUERY = gql`
   query {
-    users {
+    users(pagination: {}, orderBy: {}) {
       id
       firstName
       lastName
@@ -36,24 +36,8 @@ export const MACHINE_TEMPLATES_QUERY = gql`
     ram
     storage
     createdAt
-    template {
-      id
-      name
-      description
-      cores
-      ram
-      storage
-      createdAt
-    }
-    user {
-      id
-      firstName
-      lastName
-      role
-      createdAt
     }
   }
-}
 `;
 
 export const MACHINES_QUERY = gql`
@@ -66,11 +50,11 @@ export const MACHINES_QUERY = gql`
     userId
     templateId
     createdAt
-      template {
+    template {
       id
       name
     }
-      user {
+    user {
       id
       firstName
       lastName
