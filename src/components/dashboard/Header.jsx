@@ -1,7 +1,7 @@
 "use client";
-import { Button, Input, Link, User } from "@nextui-org/react";
+import { Button, Input, Link, User, Switch } from "@nextui-org/react";
 import Image from "next/image";
-import React from "react";
+import React, { useState } from "react";
 import { IoMdAdd } from "react-icons/io";
 import { IoSearch } from "react-icons/io5";
 import { Searchparams } from "@/utils/search-params";
@@ -14,7 +14,7 @@ import { HiMenu } from "react-icons/hi";
 import { useQuery } from '@apollo/client';
 import { CURRENT_USER_QUERY } from '@/graphql/queries';
 
-const Header = ({ setUserSidebar }) => {
+const Header = ({ setUserSidebar, byDepartment, setByDepartment }) => {
   const type = Searchparams("type");
   const pathname = usePathname();
   const { loading, error, data } = useQuery(CURRENT_USER_QUERY);
@@ -33,22 +33,22 @@ const Header = ({ setUserSidebar }) => {
       </div>
       <div
         className={`container px-[22px]  4xl:px-0 flex justify-between items-center gap-5 4xl:py-10 2xl:py-8 ${pathname === "/dashboard/settings"
-            ? " max-w-[95%]"
-            : pathname === "/user/dashboard"
-              ? " max-w-[94%]  !px-0"
-              : pathname === "/dashboard/notification"
-                ? " max-w-[100%] 4xl:max-w-[98%]"
-                : pathname === "/dashboard/users"
-                  ? " max-w-[95%] 4xl:max-w-[96%]"
-                  : pathname === "/dashboard/select-vm"
+          ? " max-w-[95%]"
+          : pathname === "/user/dashboard"
+            ? " max-w-[94%]  !px-0"
+            : pathname === "/dashboard/notification"
+              ? " max-w-[100%] 4xl:max-w-[98%]"
+              : pathname === "/dashboard/users"
+                ? " max-w-[95%] 4xl:max-w-[96%]"
+                : pathname === "/dashboard/select-vm"
+                  ? " max-w-[95%] !px-0"
+                  : pathname === "/dashboard/create-pc"
                     ? " max-w-[95%] !px-0"
-                    : pathname === "/dashboard/create-pc"
-                      ? " max-w-[95%] !px-0"
-                      : pathname.includes("/dashboard/departments")
-                        ? " max-w-[94%] !px-0"
-                        : pathname === "/dashboard/select-vm"
-                          ? " max-w-[95%] !px-0 border-2"
-                          : "max-w-[95%]"
+                    : pathname.includes("/dashboard/departments")
+                      ? " max-w-[94%] !px-0"
+                      : pathname === "/dashboard/select-vm"
+                        ? " max-w-[95%] !px-0 border-2"
+                        : "max-w-[95%]"
           } mx-auto py-2 w-full `}
       >
         {type ? (
@@ -90,6 +90,16 @@ const Header = ({ setUserSidebar }) => {
               className="!w-full 4xl:text-2xl 2xl:text-xl focus:outline-none "
               placeholder="Search an application"
             />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={byDepartment}
+              onChange={() => setByDepartment(!byDepartment)}
+            />
+            <span className="4xl:text-xl 2xl:text-lg text-sm">
+              {byDepartment ? "By Department" : "All"}
+            </span>
           </div>
 
           <Link
