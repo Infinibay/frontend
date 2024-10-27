@@ -2,14 +2,85 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { Button, Checkbox } from "@nextui-org/react";
 import { BsFillPauseFill, BsFillPlayFill } from "react-icons/bs";
-import { IoPlay } from "react-icons/io5";
 import { TiMediaStop } from "react-icons/ti";
 import { FiEdit, FiSearch } from "react-icons/fi";
-import { RiDeleteBin5Line, RiDeleteBinLine } from "react-icons/ri";
+import { RiDeleteBin5Line } from "react-icons/ri";
 import TooltipComponent from "../tooltip/TooltipComponent";
+import { gql, useMutation } from "@apollo/client";
 
-const PcDetails = ({ onOpen, pc, play, setPlay, addNew, setAddNew }) => {
-  const [onn, setOnn] = useState(true);
+const POWER_ON_MUTATION = gql`
+  mutation PowerOn($id: String!) {
+    powerOn(id: $id) {
+      success
+      message
+    }
+  }
+`;
+
+const POWER_OFF_MUTATION = gql`
+  mutation PowerOff($id: String!) {
+    powerOff(id: $id) {
+      success
+      message
+    }
+  }
+`;
+
+const SUSPEND_MUTATION = gql`
+  mutation Suspend($id: String!) {
+    suspend(id: $id) {
+      success
+      message
+    }
+  }
+`;
+
+const PcDetails = ({ onOpen, pc, addNew }) => {
+  const [onn, setOnn] = useState(pc.status === "running");
+  const [status, setStatus] = useState(pc.status);
+
+  const [powerOn] = useMutation(POWER_ON_MUTATION);
+  const [powerOff] = useMutation(POWER_OFF_MUTATION);
+  const [suspend] = useMutation(SUSPEND_MUTATION);
+
+  const play = async () => {
+    try {
+      const { data } = await powerOn({ variables: { id: pc.id } });
+      if (data.powerOn.success) {
+        setOnn(true);
+        setStatus("running");
+      }
+    } catch (error) {
+      console.error("Error powering on:", error);
+    }
+  };
+
+  const pause = async () => {
+    try {
+      const { data } = await suspend({ variables: { id: pc.id } });
+      if (data.suspend.success) {
+        setStatus("suspended");
+      }
+    } catch (error) {
+      console.error("Error suspending:", error);
+    }
+  };
+
+  const stop = async () => {
+    try {
+      const { data } = await powerOff({ variables: { id: pc.id } });
+      if (data.powerOff.success) {
+        setOnn(false);
+        setStatus("stopped");
+      }
+    } catch (error) {
+      console.error("Error powering off:", error);
+    }
+  };
+
+  const dummyApplicationMethod = () => {
+    // This method does nothing
+  };
 
   return (
     <div className="2xl:max-w-[800px] xl:max-w-[400px] 4xl:max-w-[1000px] max-w-[400px] p-6 mx-auto flex-[.33]  transitioncustom">
@@ -18,7 +89,7 @@ const PcDetails = ({ onOpen, pc, play, setPlay, addNew, setAddNew }) => {
           {pc?.name}
           {`'s`} <span className="font-bold">PC</span>{" "}
         </p>
-        {pc?.online && onn ? (
+        {pc?.status == "running" && onn ? (
           <Button
             startContent={
               <div className=" w-2 h-2 bg-web_green rounded-full"></div>
@@ -56,25 +127,24 @@ const PcDetails = ({ onOpen, pc, play, setPlay, addNew, setAddNew }) => {
         <div className="p-3 flex justify-between gap-2">
           <div className="flex gap-2 4xl:gap-5">
             <div
-              onClick={() => setPlay(!play)}
-              className={`rounded-xl border  max-w-fit p-2.5 4xl:p-3  cursor-pointer ${"bg-white border-web_borderGray"}`}
+              onClick={play}
+              className={`rounded-xl border  max-w-fit p-2.5 4xl:p-3  cursor-pointer ${
+                status !== "running" ? "bg-white border-web_borderGray" : "bg-web_green/10 border-transparent"
+              }`}
             >
               <TooltipComponent
                 htmlTag={
                   <BsFillPlayFill
-                    color="red"
                     className="w-5 min-h-5 4xl:w-10 4xl:h-10 text-web_green"
                   />
                 }
                 param={"Play"}
-              />{" "}
+              />
             </div>
             <div
-              // onClick={() => setPlay(!play)}
+              onClick={pause}
               className={`rounded-xl border  max-w-fit p-2.5 4xl:p-3  cursor-pointer ${
-                !play
-                  ? "bg-white border-web_borderGray"
-                  : "bg-web_green/10 border-transparent"
+                status === "suspended" ? "bg-web_green/10 border-transparent" : "bg-white border-web_borderGray"
               }`}
             >
               <TooltipComponent
@@ -84,28 +154,21 @@ const PcDetails = ({ onOpen, pc, play, setPlay, addNew, setAddNew }) => {
                 param={"Pause"}
               />
             </div>
-
             <div
-              onClick={() => setOnn(!onn)}
-              className={`rounded-xl border  max-w-fit p-2.5 4xl:p-3  cursor-pointer  border-transparent
-           ${
-             pc?.online && onn
-               ? "bg-red-50 "
-               : "bg-white  border-web_borderGray"
-           }
-           `}
+              onClick={stop}
+              className={`rounded-xl border  max-w-fit p-2.5 4xl:p-3  cursor-pointer ${
+                status === "stopped" ? "bg-red-50 border-transparent" : "bg-white border-web_borderGray"
+              }`}
             >
               <TooltipComponent
                 htmlTag={
                   <TiMediaStop
                     className={`w-5 min-h-5 4xl:w-10 4xl:h-10 ${
-                      pc?.online && onn
-                        ? "text-red-500"
-                        : "text-web_placeHolder"
+                      status === "stopped" ? "text-red-500" : "text-web_placeHolder"
                     }`}
                   />
                 }
-                param={"Recording"} // Replace with your tooltip content logic
+                param={"Stop"}
               />
             </div>
             <div

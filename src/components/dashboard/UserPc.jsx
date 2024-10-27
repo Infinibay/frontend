@@ -5,11 +5,10 @@ import React, { useState } from "react";
 const UserPc = ({ pc, selectedPc }) => {
   return (
     <div
-      className={`flex 2xl:max-w-[280px] lg:max-w-[200px] sm:max-w-[150px] cursor-pointer  flex-col transitioncustom justify-center items-center w-full relative  rounded-2xl ${
-        selectedPc === pc?.id
-          ? "border border-dashed border-web_aquablue bg-web_lightBlue/20"
-          : "bg-white border border-dashed border-transparent"
-      }`}
+      className={`flex 2xl:max-w-[280px] lg:max-w-[200px] sm:max-w-[150px] cursor-pointer  flex-col transitioncustom justify-center items-center w-full relative  rounded-2xl ${selectedPc === pc?.id
+        ? "border border-dashed border-web_aquablue bg-web_lightBlue/20"
+        : "bg-white border border-dashed border-transparent"
+        }`}
     >
       <div className="px-10 py-6 4xl:p-14 4xl:px-16 relative">
         {selectedPc === pc?.id && (
@@ -33,8 +32,11 @@ const UserPc = ({ pc, selectedPc }) => {
         alt="images"
         className="shadow-xl  4xl:h-20 4xl:w-20  h-12 w-12  absolute -bottom-1.5 -right-2 rounded-full"
       />
-      {pc?.online && (
+      {pc?.status == "running" && (
         <div className=" w-5 h-5 bg-web_green rounded-full absolute -top-2 -right-2"></div>
+      )}
+      {pc?.status == "building" && (
+        <div className=" w-5 h-5 bg-warning rounded-full absolute -top-2 -right-2">dddd</div>
       )}
     </div>
   );
