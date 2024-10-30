@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "next/navigation";
-import { Switch, useDisclosure } from "@nextui-org/react";
+import { useDisclosure } from "@nextui-org/react";
 import { BsGrid } from "react-icons/bs";
 
 // Components
@@ -12,28 +12,31 @@ import PcModal from "@/components/modal/PcModal";
 import PcDetails from "@/components/dashboard/PcDetails";
 
 // Redux actions
-import { fetchVms, selectMachine } from "@/state/slices/vms";
+import { fetchVms, selectMachine, deselectMachine } from "@/state/slices/vms";
 import { fetchDepartmentByName } from "@/state/slices/departments";
 
 const DepartmentPage = () => {
-  // Hooks and state
   const params = useParams();
   const dispatch = useDispatch();
   const [grid, setGrid] = useState(false);
-  const { onOpen, isOpen, onOpenChange } = useDisclosure();
+  const { onOpen, isOpen, onOpenChange, onClose } = useDisclosure();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Redux selectors
-  const department = useSelector((state) => {
-    return state.departments.items.find(d => d.name.toLowerCase() === params.name.toLowerCase());
-  });
-  const machines = useSelector((state) => {
-    return state.vms.items.filter(vm => vm.department.name === params.name);
-	});
+  // Separate selectors to avoid unnecessary re-renders
+  const department = useSelector((state) =>
+    state.departments.items.find(d => d.name.toLowerCase() === params.name.toLowerCase())
+  );
+  const machines = useSelector((state) =>
+    state.vms.items.filter(vm => vm.department?.name?.toLowerCase() === params.name.toLowerCase())
+  );
   const selectedPc = useSelector((state) => state.vms.selectedMachine);
 
-  // Fetch data
+  // Handle machine selection
+  const handleMachineSelect = (machine) => {
+    dispatch(selectMachine(machine));
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -44,7 +47,6 @@ const DepartmentPage = () => {
         ]);
         setIsLoading(false);
       } catch (err) {
-				console.error(err);
         setError("Department not found");
         setIsLoading(false);
       }
@@ -52,6 +54,27 @@ const DepartmentPage = () => {
     
     loadData();
   }, [dispatch, params.name]);
+
+  // Handle keyboard events
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        if (isOpen) {
+          onClose();
+        } else if (selectedPc) {
+          dispatch(deselectMachine());
+        }
+      }
+    };
+
+    // Add event listener
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [dispatch, isOpen, selectedPc, onClose]);
 
   if (isLoading) {
     return (
@@ -94,23 +117,20 @@ const DepartmentPage = () => {
           </div>
         </div>
 
-        {/* Department Info */}
-        <div className="dashboard_container mt-4">
-          <div className="text-sm text-gray-600">
-            <p>Internet Speed: {department.internetSpeed}</p>
-            <p>IP Subnet: {department.ipSubnet}</p>
-          </div>
-        </div>
-
         {/* Machine Grid */}
         <div className="dashboard_container flex-1">
           <div className="flex gap-10 flex-wrap mt-8 w-full">
             {machines.map((machine) => (
               <div
                 key={machine.id}
-                onClick={() => dispatch(selectMachine(machine))}
+                onClick={() => handleMachineSelect(machine)}
+                className="cursor-pointer"
               >
-                <UserPc selectedPc={selectedPc} pc={machine} />
+                <UserPc 
+                  key={`${machine.id}-${selectedPc?.id === machine.id}`}
+                  selectedPc={selectedPc} 
+                  pc={machine} 
+                />
               </div>
             ))}
           </div>
@@ -118,9 +138,7 @@ const DepartmentPage = () => {
       </div>
 
       {/* Details Panel */}
-      {selectedPc && (
-        <PcDetails onOpen={onOpen} />
-      )}
+      {selectedPc && <PcDetails onOpen={onOpen} />}
       
       {/* Modal */}
       <PcModal isOpen={isOpen} onOpenChange={onOpenChange} />
@@ -128,4 +146,4 @@ const DepartmentPage = () => {
   );
 };
 
-export default DepartmentPage; 
+export default DepartmentPage;

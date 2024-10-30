@@ -3,6 +3,7 @@ import Image from "next/image";
 import React, { useState } from "react";
 
 const UserPc = ({ pc, selectedPc }) => {
+  const cssClass = "rounded-t-xl px-10 py-6 4xl:p-14 4xl:px-16 relative" + (selectedPc?.id === pc?.id ? " bg-web_aquablue/20" : " text-black");
   return (
     <div
       className={`flex 2xl:max-w-[280px] lg:max-w-[200px] sm:max-w-[150px] cursor-pointer  flex-col transitioncustom justify-center items-center w-full relative  rounded-2xl ${selectedPc === pc?.id
@@ -10,10 +11,7 @@ const UserPc = ({ pc, selectedPc }) => {
         : "bg-white border border-dashed border-transparent"
         }`}
     >
-      <div className="px-10 py-6 4xl:p-14 4xl:px-16 relative">
-        {selectedPc === pc?.id && (
-          <div className="w-full h-full text-web_aquablue/20 absolute z-10"></div>
-        )}
+      <div className={cssClass}>
         <Image
           src="/images/smallScreenmointer.png"
           width={1000}
@@ -36,7 +34,7 @@ const UserPc = ({ pc, selectedPc }) => {
         <div className=" w-5 h-5 bg-web_green rounded-full absolute -top-2 -right-2"></div>
       )}
       {pc?.status == "building" && (
-        <div className=" w-5 h-5 bg-warning rounded-full absolute -top-2 -right-2">dddd</div>
+        <div className=" w-5 h-5 bg-warning rounded-full absolute -top-2 -right-2"></div>
       )}
     </div>
   );

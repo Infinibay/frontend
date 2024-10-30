@@ -1,7 +1,7 @@
 "use client";
 
 // React and hooks
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 // UI Components
@@ -14,7 +14,7 @@ import PcDetails from "@/components/dashboard/PcDetails";
 import { BsGrid } from "react-icons/bs";
 
 // Redux actions
-import { fetchVms, selectMachine } from "@/state/slices/vms";
+import { fetchVms, selectMachine, deselectMachine } from "@/state/slices/vms";
 
 // Helper functions
 const generateGroupedMachines = (byDepartment, machines) => {
@@ -47,6 +47,18 @@ const Page = () => {
   React.useEffect(() => {
     dispatch(fetchVms());
   }, [dispatch]);
+
+  // Handle Escape key
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && selectedPc) {
+        dispatch(deselectMachine());
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [dispatch, selectedPc]);
 
   return (
     <div className="flex flex-1 justify-between overflow-hidden w-full">
