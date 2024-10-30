@@ -71,3 +71,50 @@ export const GET_VNC_QUERY = gql`
     }
   }
 `;
+// DEPARTEMENTS
+/*
+
+{
+  departments {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+  }
+}
+
+{
+  department(id: "string") {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+  }
+}
+*/
+
+const DEPARTMENTS_QUERY = gql`
+  query {
+    departments {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+    }
+  }
+`;
+
+const DEPARTMENT_QUERY = gql`
+  query department($id: String!) {
+    department(id: $id) {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+    }
+  }
+`;

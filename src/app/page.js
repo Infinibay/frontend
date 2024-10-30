@@ -10,7 +10,7 @@ export default function Home() {
     const checkAuth = async () => {
       const isValid = await auth.validateToken();
       if (isValid) {
-        router.push('/dashboard');
+        router.push('/computers');
       } else {
         router.push('/auth/sign-in');
       }

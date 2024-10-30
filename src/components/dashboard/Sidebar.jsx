@@ -97,9 +97,9 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
             className="group 4xl:text-4xl max-h-[320px] 4xl:max-h-[820px] overflow-y-auto "
           >
             <Link
-              href={"/dashboard/departments"}
+              href={"/departments"}
               className={`group w-full h-full sidebarList 4xl:py-3.5
-              ${pathname === "/dashboard/departments" && "bg-web_lightbrown"}
+              ${pathname === "/departments" && "bg-web_lightbrown"}
               ${console.log(pathname, "pathname....")}
               `}
             >

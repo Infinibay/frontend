@@ -66,3 +66,52 @@ export const SUSPEND_MUTATION = gql`
     }
   }
 `;
+//DEPARTMENTS
+/*
+
+mutation {
+  createDepartment(name: "string") {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+  }
+}
+
+
+mutation {
+  destroyDepartment(id: "string") {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+  }
+}
+
+*/
+
+const DELETE_DEPARMENT_MUTATION = gql`
+  mutation DeleteDepartment($id: String!) {
+    destroyDepartment(id: $id) {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+    }
+  }
+`;
+
+const CREATE_DEPARMENT_MUTATION = gql`
+  mutation CreateDepartment($name: String!) {
+    createDepartment(name: $name) {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+    }
+  }
+`;
