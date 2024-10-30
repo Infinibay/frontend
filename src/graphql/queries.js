@@ -62,3 +62,12 @@ export const MACHINES_QUERY = gql`
   }
 }
 `;
+
+export const GET_VNC_QUERY = gql`
+  query getVnc($machineId: String!) {
+    vncConnection(id: $machineId) {
+      link
+      password
+    }
+  }
+`;

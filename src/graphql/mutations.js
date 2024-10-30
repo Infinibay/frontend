@@ -25,9 +25,44 @@ export const CREATE_MACHINE_MUTATION = gql`
         storage
       }
       config {
-        port
-        address
+        vnc
       }
+    }
+  }
+`;
+
+export const DELETE_MACHINE_MUTATION = gql`
+  mutation DeleteMachine($id: String!) {
+    destroyMachine(id: ID) {
+      success
+      message
+    }
+  }
+`;
+
+export const POWER_ON_MUTATION = gql`
+  mutation PowerOn($id: String!) {
+    powerOn(id: $id) {
+      success
+      message
+    }
+  }
+`;
+
+export const POWER_OFF_MUTATION = gql`
+  mutation PowerOff($id: String!) {
+    powerOff(id: $id) {
+      success
+      message
+    }
+  }
+`;
+
+export const SUSPEND_MUTATION = gql`
+  mutation Suspend($id: String!) {
+    suspend(id: $id) {
+      success
+      message
     }
   }
 `;

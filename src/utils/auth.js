@@ -1,5 +1,8 @@
+import { fetchCurrentUser } from '@/state/slices/auth';
 import { ApolloClient, InMemoryCache, createHttpLink, gql } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
+
+import { CURRENT_USER_QUERY } from '@/graphql/queries';
 
 // GraphQL API endpoint (use environment variable)
 const API_URL = process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:4000/graphql';
@@ -44,7 +47,7 @@ export const auth = {
 
       if (data.login && data.login.token) {
         localStorage.setItem('token', data.login.token);
-        return true;
+        return data.login.token;
       }
       throw new Error('401'); // Unauthorized
     } catch (error) {
@@ -54,6 +57,12 @@ export const auth = {
       }
       throw new Error('An unexpected error occurred');
     }
+  },
+  fetchCurrentUser: async () => {
+    const { data } = await client.query({
+      query: CURRENT_USER_QUERY,
+    });
+    return data.currentUser;
   },
 
   logout: () => {

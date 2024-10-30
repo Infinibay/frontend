@@ -1,29 +1,17 @@
 "use client";
 import React, { useState } from 'react';
-import { useMutation, gql } from '@apollo/client';
 import { useRouter } from "next/navigation";
-import OsSelector from './OSSelector'; // replace with your actual OsSelector path
-import TemplateSelector from './TemplateSelector'; // replace with your actual TemplateSelector path
+import OsSelector from './OSSelector';
+import TemplateSelector from './TemplateSelector';
 
-const CREATE_MACHINE = gql`
-    mutation CreateMachine($input: CreateMachineInputType!) {
-        createMachine(input: $input) {
-            id
-            name
-            config
-            status
-            userId
-            templateId
-            createdAt
-        }
-    }
-`;
+import { useDispatch } from "react-redux";
+import { createVm } from "@/state/slices/vms";
 
 const CreatePCWizard = () => {
     const [step, setStep] = useState(1);
-    const [createMachine, { loading, error }] = useMutation(CREATE_MACHINE);
     const [data, setData] = useState({})
     const router = useRouter();
+    const dispatch = useDispatch();
 
     const handleOsSelected = (osId) => {
         setMachineInput((prevInput) => ({
@@ -35,25 +23,20 @@ const CreatePCWizard = () => {
 
     const handleCreate = async () => {
         try {
-            if (loading) return;
-            console.log("Running with", data)
-            await createMachine({ variables: { input: data } });
-            // router.push('/dashboard');
+            dispatch(createVm(data));
+            router.push('/dashboard');
         } catch (err) {
             console.error(err);
         }
     };
 
     const handleOsChange = (values) => {
-        console.log("Setting", values);
         setData(values)
     };
 
     const handleTemplateChanged = (id) => {
-        console.log("Id is", id);
         let dataValue = {...data};
-        dataValue.templateId = id;
-        console.log("data is", dataValue);
+        dataValue.templateId = id; 
         setData(dataValue);
     }
 
@@ -72,9 +55,6 @@ const CreatePCWizard = () => {
                     Create
                 </button>
             }
-
-            {loading && <p>Loading...</p>}
-            {error && <p>An error occurred.</p>}
         </div>
     );
 };

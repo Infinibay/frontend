@@ -1,47 +1,59 @@
 "use client";
-import UserPc from "@/components/dashboard/UserPc";
-import { Button, useDisclosure, Switch } from "@nextui-org/react";
+
+// React and hooks
 import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+
+// UI Components
+import { Switch, useDisclosure } from "@nextui-org/react";
+import UserPc from "@/components/dashboard/UserPc";
 import PcModal from "@/components/modal/PcModal";
 import PcDetails from "@/components/dashboard/PcDetails";
+
+// Icons
 import { BsGrid } from "react-icons/bs";
-import { useQuery } from "@apollo/client";
-import { MACHINES_QUERY } from "@/graphql/queries";
+
+// Redux actions
+import { fetchVms, selectMachine } from "@/state/slices/vms";
+
+// Helper functions
+const generateGroupedMachines = (byDepartment, machines) => {
+  if (!byDepartment) return { All: machines };
+  
+  return machines.reduce((acc, machine) => {
+    const department = machine.department || "Uncategorized";
+    if (!acc[department]) {
+      acc[department] = [];
+    }
+    acc[department].push(machine);
+    return acc;
+  }, {});
+};
 
 const Page = () => {
+  // UI State
   const [grid, setGrid] = useState(false);
-  const [pcDetails, setPcDetails] = useState(false);
-  const [selectedPc, setSelectedPc] = useState(null);
-  const [pc, setPc] = useState(null);
   const [byDepartment, setByDepartment] = useState(false);
-
-  const { data, loading, error } = useQuery(MACHINES_QUERY);
-
-  const [play, setPlay] = useState(false);
-  const [addNew, setAddNew] = useState(false);
   const { onOpen, isOpen, onOpenChange } = useDisclosure();
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error.message}</p>;
+  // Redux
+  const dispatch = useDispatch();
+  const groupedMachines = useSelector((state) => 
+    generateGroupedMachines(byDepartment, state.vms.items)
+  );
+  const selectedPc = useSelector((state) => state.vms.selectedMachine);
 
-  const machines = data?.machines || [];
-
-  const groupedMachines = byDepartment
-    ? machines.reduce((acc, machine) => {
-      const department = machine.department || "Uncategorized";
-      if (!acc[department]) {
-        acc[department] = [];
-      }
-      acc[department].push(machine);
-      return acc;
-    }, {})
-    : { All: machines };
+  // Fetch VMs on component mount
+  React.useEffect(() => {
+    dispatch(fetchVms());
+  }, [dispatch]);
 
   return (
     <div className="flex flex-1 justify-between overflow-hidden w-full">
       <div className="flex pb-10 border border-b-0 flex-col justify-between flex-1">
-        <div className={`border-b ${pcDetails && "border-r"} py-6`}>
-          <div className="dashboard_container flex items-center justify-between w-full ">
+        {/* Header */}
+        <div className="border-b py-6">
+          <div className="dashboard_container flex items-center justify-between w-full">
             <h1 className="5xl:text-3xl text-lg sm:text-2xl flex-1 font-medium text-gray-800">
               Computer <span className="font-bold text-web_dark">Names</span>
             </h1>
@@ -53,26 +65,31 @@ const Page = () => {
               <span>{byDepartment ? "By Department" : "All"}</span>
               <BsGrid
                 onClick={() => setGrid(!grid)}
-                className={`2xl:w-12 cursor-pointer border 2xl:h-12 h-10 w-10 p-[7px] rounded-xl border-web_aquablue/20 transitioncustom ${grid
+                className={`
+                  2xl:w-12 cursor-pointer border 2xl:h-12 h-10 w-10 p-[7px] 
+                  rounded-xl border-web_aquablue/20 transitioncustom
+                  ${grid
                     ? "bg-web_aquablue/20 text-web_aquablue"
                     : "text-web_placeHolder bg-white"
-                  } `}
+                  }
+                `}
               />
             </div>
           </div>
         </div>
-        <div className="dashboard_container flex-1 ">
+
+        {/* Machine Grid */}
+        <div className="dashboard_container flex-1">
           {Object.entries(groupedMachines).map(([department, departmentMachines]) => (
             <div key={department}>
-              <h2 className="font-bold mt-8 text-xl 4xl:text-3xl">{department}</h2>
+              <h2 className="font-bold mt-8 text-xl 4xl:text-3xl">
+                {department}
+              </h2>
               <div className="flex gap-10 flex-wrap mt-8 w-full">
                 {departmentMachines.map((machine) => (
                   <div
                     key={machine.id}
-                    onClick={() => {
-                      setPc(machine);
-                      setSelectedPc(selectedPc === machine.id ? null : machine.id);
-                    }}
+                    onClick={() => dispatch(selectMachine(machine))}
                   >
                     <UserPc selectedPc={selectedPc} pc={machine} />
                   </div>
@@ -82,16 +99,13 @@ const Page = () => {
           ))}
         </div>
       </div>
-      {selectedPc === pc?.id && (
-        <PcDetails
-          onOpen={onOpen}
-          pc={pc}
-          play={play}
-          setPlay={setPlay}
-          addNew={addNew}
-          setAddNew={setAddNew}
-        />
+
+      {/* Details Panel */}
+      {selectedPc && (
+        <PcDetails onOpen={onOpen} />
       )}
+      
+      {/* Modal */}
       <PcModal isOpen={isOpen} onOpenChange={onOpenChange} />
     </div>
   );

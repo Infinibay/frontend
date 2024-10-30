@@ -9,7 +9,10 @@ import { Controller, useForm } from "react-hook-form";
 import { useRouter } from 'next/navigation';
 import auth from '@/utils/auth';
 
-const Page = () => {
+import { useDispatch } from "react-redux";
+import { fetchVms } from "@/state/slices/vms";
+
+const Page = () => { 
   const {
     register,
     handleSubmit,
@@ -28,15 +31,18 @@ const Page = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const dispatch = useDispatch();
 
   // handle form submit
-  const onSubmit = async (data) => {
+  const onSubmit = async (data) => {  
     setError('');
 
     try {
-      const success = await auth.login(data.email, data.password);
+      dispatch(loginUser({ email, password }));
+      dispatch(fetchCurrentUser());
+      const success = auth.isLoggedIn();
       if (success) {
-        router.push('/dashboard');
+        router.push('/computers');
       } else {
         setError('Invalid email or password. Please check your credentials and try again.');
       }

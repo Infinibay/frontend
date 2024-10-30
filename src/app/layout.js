@@ -7,6 +7,10 @@ import { ApolloProvider } from '@apollo/client';
 import client from '../apollo-client';
 import { usePrefetchData } from '../hooks/usePrefetchData';
 
+import { store, persistor } from "@/state/store";
+import { Provider } from 'react-redux'
+import { PersistGate } from 'redux-persist/integration/react'
+
 const monst = Montserrat({ subsets: ["latin"] });
 
 function AppContent({ children }) {
@@ -28,11 +32,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={monst.className}>
-        <NextUIProvider>
-          <ApolloProvider client={client}>
-            <AppContent>{children}</AppContent>
-          </ApolloProvider>
-        </NextUIProvider>
+        <Provider store={store}>
+            <NextUIProvider>
+              <ApolloProvider client={client}>
+                <AppContent>{children}</AppContent>
+              </ApolloProvider>
+            </NextUIProvider>
+        </Provider> 
       </body>
     </html>
   );

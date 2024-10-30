@@ -14,15 +14,17 @@ import { HiMenu } from "react-icons/hi";
 import { useQuery } from '@apollo/client';
 import { CURRENT_USER_QUERY } from '@/graphql/queries';
 
+import { useDispatch, useSelector } from "react-redux";
+import authSlices from "@/state/slices/auth";
+
 const Header = ({ setUserSidebar, byDepartment, setByDepartment }) => {
   const type = Searchparams("type");
   const pathname = usePathname();
-  const { loading, error, data } = useQuery(CURRENT_USER_QUERY);
+  // const { loading, error, data } = useQuery(CURRENT_USER_QUERY);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error.message}</p>;
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user );
 
-  const user = data.currentUser;
   return (
     <div className="bg-white relative shadow-md">
       <div
@@ -66,7 +68,7 @@ const Header = ({ setUserSidebar, byDepartment, setByDepartment }) => {
           </h2>
         ) : (
           <Link
-            href="/dashboard/create-pc"
+            href="/dashboard/newPC"
             className="border translate-x-10 lg:translate-x-0 4xl:p-4 2xl:p-2 p-1  rounded-xl "
           >
             <Button

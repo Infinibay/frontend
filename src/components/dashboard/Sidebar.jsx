@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Image } from "@nextui-org/react";
 
+import { useDispatch } from "react-redux";
+import { logout } from "@/state/slices/auth";
+
 // Icons
 import { CgAddR } from "react-icons/cg";
 import { FaRegRegistered } from "react-icons/fa6";
@@ -26,8 +29,10 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
 
   const router = useRouter();
 
+  const dispatch = useDispatch();
+
   const handleLogout = () => {
-    auth.logout();
+    dispatch(logout());
     router.push('/auth/sign-in');
   };
 
@@ -67,9 +72,9 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
         <ul className="pt-20   flex flex-col 4xl:gap-y-10  2xl:gap-y-8 xl:gap-y-6 md:gap-y-4 gap-y-3 text-white font-medium 4xl:text-4xl 2xl:text-2xl xl:text-xl md:text-base text-sm pr-10">
           <li className="">
             <Link
-              href={"/dashboard"}
+              href={"/computers"}
               className={`group w-full h-full sidebarList 4xl:py-3.5
-                ${pathname === "/dashboard" && "bg-web_lightbrown"}
+                ${pathname === "/computers" && "bg-web_lightbrown"}
               `}
             >
               <svg
