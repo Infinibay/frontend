@@ -17,7 +17,7 @@ const Page = () => {
   } = useForm();
   // handle form submit
   const onSubmit = (data) => {
-    console.log(data);
+    // Nothing
   };
   return (
     <>

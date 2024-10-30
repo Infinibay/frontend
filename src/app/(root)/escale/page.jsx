@@ -28,7 +28,6 @@ const Page = () => {
     return () => clearInterval(showNumbersSequentially);
   }, []); // Make sure to pass an empty dependency array to run this effect only once
 
-  console.log(visibleNumbers);
   return (
     <div className="container mx-auto flex flex-col justify-center items-center mt-6 h-[100vh]">
       <div className="w-full  flex justify-center items-center mx-auto mt-12">

@@ -13,7 +13,7 @@ const Checklist = () => {
 
   const handleUpdate = () => {
     // Add your update logic here
-    console.log('Handling update...');
+    // Nothing
   };
 
   return (

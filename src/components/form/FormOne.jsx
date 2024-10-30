@@ -53,7 +53,6 @@ export default function FormOne() {
           },
         },
       });
-      console.log("Machine created:", data.createMachine);
       router.push("/dashboard"); // Redirect to dashboard after successful creation
     } catch (err) {
       console.error("Error creating machine:", err);

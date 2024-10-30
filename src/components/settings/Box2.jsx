@@ -24,10 +24,7 @@ const Box2 = () => {
   const [size, setSize] = React.useState("4xl");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedNode, setSelectedNode] = useState(true);
-  const [isSelected, setIsSelected] = React.useState(false);
-  const [pause, setPause] = useState(null);
   const [heading, setheading] = useState(false);
-  // console.log(selectedNode, "selected....");
   const [slectBox, setSelectBox] = useState(null);
   const [slectBox2, setSelectBox2] = useState(null);
 
@@ -128,11 +125,9 @@ const Box2 = () => {
 
   const handleSwitchChange = (index) => {
     onOpen();
-    // console.log("switch chnage", index);
     const updatedStates = [...selectedStates];
     updatedStates[index] = !updatedStates[index];
     setSelectedStates(updatedStates);
-    console.log(selectedStates, "test");
   };
   const [pauseStates, setPauseStates] = useState([1, 2, 3].fill(false));
 

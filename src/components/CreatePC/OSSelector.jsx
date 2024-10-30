@@ -41,7 +41,6 @@ const OSSelector = ({ onChange }) => {
 
     // Log the output every time it changes
     useEffect(() => {
-        console.log(`Option: ${osOption}, OS: ${selectedOS}, License Included: ${licenseIncluded}`);
         let response = {
             os: selectedOS,
             productKey:  licenseIncluded,

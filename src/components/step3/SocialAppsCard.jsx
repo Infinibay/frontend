@@ -54,12 +54,9 @@ const SocialAppsCard = () => {
   const pathname = usePathname();
   const [switchStates, setSwitchStates] = useState(data.map(() => false));
   const [card, setCard] = useState("");
-  // console.log(switchStates);
 
   // const toggleSwitch = (index) => {
-  //   console.log(switchStates)
   //   const newSwitchStates = [...switchStates];
-  //   console.log(newSwitchStates)
   //   newSwitchStates[index] = !newSwitchStates[index];
   //   setSwitchStates(newSwitchStates);
   // };
@@ -69,7 +66,6 @@ const SocialAppsCard = () => {
     setSwitchStates(newSwitchStates);
     setCard(cardData);
     // Access cardData here
-    // console.log("Clicked Card Data:", cardData);
   };
 
   return (

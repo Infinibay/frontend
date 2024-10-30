@@ -66,33 +66,8 @@ export const SUSPEND_MUTATION = gql`
     }
   }
 `;
-//DEPARTMENTS
-/*
-
-mutation {
-  createDepartment(name: "string") {
-    id
-    name
-    createdAt
-    internetSpeed
-    ipSubnet
-  }
-}
-
-
-mutation {
-  destroyDepartment(id: "string") {
-    id
-    name
-    createdAt
-    internetSpeed
-    ipSubnet
-  }
-}
-
-*/
-
-const DELETE_DEPARMENT_MUTATION = gql`
+// DEPARTMENTS
+export const DELETE_DEPARMENT_MUTATION = gql`
   mutation DeleteDepartment($id: String!) {
     destroyDepartment(id: $id) {
       id
@@ -104,7 +79,7 @@ const DELETE_DEPARMENT_MUTATION = gql`
   }
 `;
 
-const CREATE_DEPARMENT_MUTATION = gql`
+export const CREATE_DEPARMENT_MUTATION = gql`
   mutation CreateDepartment($name: String!) {
     createDepartment(name: $name) {
       id

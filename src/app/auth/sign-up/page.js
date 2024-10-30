@@ -28,7 +28,6 @@ const Page = () => {
   } = useForm();
   const onSubmit = async (data, event) => {
     event.preventDefault();
-    console.log(data);
   };
 
   return (

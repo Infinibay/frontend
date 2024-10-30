@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { DEPARTMENTS_QUERY, DEPARTMENT_QUERY } from '@/graphql/queries';
+import { DEPARTMENTS_QUERY, DEPARTMENT_QUERY, FIND_DEPARTMENT_BY_NAME_QUERY } from '@/graphql/queries';
 import { 
     CREATE_DEPARMENT_MUTATION,
     DELETE_DEPARMENT_MUTATION,
@@ -42,6 +42,14 @@ export const fetchDepartment = createAsyncThunk(
     }
 );
 
+export const fetchDepartmentByName = createAsyncThunk(
+	'departments/fetchDepartmentByName',
+	async (name) => {
+		const data = await executeGraphQLQuery(FIND_DEPARTMENT_BY_NAME_QUERY, { name });
+		return data.findDepartmentByName;
+	}
+);
+
 export const createDepartment = createAsyncThunk(
     'departments/createDepartment',
     async (name) => {
@@ -78,6 +86,14 @@ const departmentsSlice = createSlice({
                     state.items.push(action.payload);
                 }
             })
+						.addCase(fetchDepartmentByName.fulfilled, (state, action) => {
+							const index = state.items.findIndex((dept) => dept.id === action.payload.id);
+							if (index !== -1) {
+								state.items[index] = action.payload;
+							} else {
+								state.items.push(action.payload);
+							}
+						})
             .addCase(createDepartment.fulfilled, (state, action) => {
                 state.items.push(action.payload);
             })

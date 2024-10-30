@@ -101,7 +101,6 @@ const vmsSlice = createSlice({
 	},
 	reducers: {
 		selectMachine: (state, action) => {
-			console.log("Selecting", action.payload);
 			state.selectedMachine = action.payload;
 		},
 		deselectMachine: (state) => {

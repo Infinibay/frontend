@@ -24,10 +24,9 @@ const Page = () => {
   } = useForm();
   // handle form submit
   const onSubmit = (data) => {
-    console.log(data);
+    // Nothing
   };
   const pathname =usePathname();
-  // console.log(pathname)
   return (
     <div className="auth_bg min-h-screen">
       {/* header */}

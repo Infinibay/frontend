@@ -189,12 +189,10 @@ const NotificationCard = () => {
   const [sidecard, setSideCard] = useState(null);
 
   const handleCardClick = (id, item) => {
-    // console.log(item);
     setSideCard(item);
     setSelectedCard(id);
   };
 
-  // console.log(selectedCard, "");
   useEffect(() => {
     const disableScroll = () => {
       document.body.style.overflow = "hidden";

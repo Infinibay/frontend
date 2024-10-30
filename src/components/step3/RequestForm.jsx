@@ -16,7 +16,6 @@ const RequestForm = ({ card, switchStates, setSwitchStates }) => {
   const pathname = usePathname();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [showCredentialCard, setShowCredentialCard] = useState(false);
-  console.log("request form", switchStates);
 
   const handleAccept = () => {
     setShowCredentialCard(true);

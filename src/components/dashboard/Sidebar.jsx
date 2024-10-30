@@ -49,7 +49,6 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
   const [isLinkOpen, setIsLinkOpen] = useState(true);
   const [isHover, setHoverr] = useState(true);
   const pathname = usePathname();
-  console.log(pathname);
   return (
     <div
       className={`sidebarGradient flex flex-col relative  h-full w-full pt-20
@@ -97,10 +96,9 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
             className="group 4xl:text-4xl max-h-[320px] 4xl:max-h-[820px] overflow-y-auto "
           >
             <Link
-              href={"/departments"}
+              href={"/departments/Default"}
               className={`group w-full h-full sidebarList 4xl:py-3.5
               ${pathname === "/departments" && "bg-web_lightbrown"}
-              ${console.log(pathname, "pathname....")}
               `}
             >
               <div className="">

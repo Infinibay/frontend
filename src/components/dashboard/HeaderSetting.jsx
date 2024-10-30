@@ -1,19 +1,16 @@
 "use client";
 import { Button, Input, Link, User } from "@nextui-org/react";
-import Image from "next/image";
 import React from "react";
 import { IoMdAdd } from "react-icons/io";
-import { IoSearch } from "react-icons/io5";
 import { Searchparams } from "@/utils/search-params";
 import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
 import { usePathname } from "next/navigation";
 import { MdKeyboardArrowRight } from "react-icons/md";
-import { AiFillBell, AiOutlineAim, AiOutlineBell } from "react-icons/ai";
+import { AiFillBell } from "react-icons/ai";
 
 const HeaderSetting = () => {
   const type = Searchparams("type");
   const pathname = usePathname();
-  // console.log(type, "type...");
 
   return (
     <div className="bg-white shadow-md">

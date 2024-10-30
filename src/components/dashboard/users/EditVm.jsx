@@ -47,7 +47,6 @@ const EditVm = () => {
     // Assuming you have state to hold the file name, update it here
     // setFileName(fileName);
     setFileName(fileName);
-    // console.log(fileName); // You can replace this with your state update logic
   };
 
   return (

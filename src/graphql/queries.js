@@ -43,24 +43,28 @@ export const MACHINE_TEMPLATES_QUERY = gql`
 export const MACHINES_QUERY = gql`
   query {
     machines {
-    id
-    name
-    config
-    status
-    userId
-    templateId
-    createdAt
-    template {
       id
       name
-    }
-    user {
-      id
-      firstName
-      lastName
+      config
+      status
+      userId
+      templateId
+      createdAt
+      template {
+        id
+        name
+      }
+      user {
+        id
+        firstName
+        lastName
+      }
+      department {
+       id
+       name
+      }
     }
   }
-}
 `;
 
 export const GET_VNC_QUERY = gql`
@@ -72,30 +76,8 @@ export const GET_VNC_QUERY = gql`
   }
 `;
 // DEPARTEMENTS
-/*
 
-{
-  departments {
-    id
-    name
-    createdAt
-    internetSpeed
-    ipSubnet
-  }
-}
-
-{
-  department(id: "string") {
-    id
-    name
-    createdAt
-    internetSpeed
-    ipSubnet
-  }
-}
-*/
-
-const DEPARTMENTS_QUERY = gql`
+export const DEPARTMENTS_QUERY = gql`
   query {
     departments {
       id
@@ -107,9 +89,21 @@ const DEPARTMENTS_QUERY = gql`
   }
 `;
 
-const DEPARTMENT_QUERY = gql`
+export const DEPARTMENT_QUERY = gql`
   query department($id: String!) {
     department(id: $id) {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+    }
+  }
+`;
+
+export const FIND_DEPARTMENT_BY_NAME_QUERY = gql`
+  query findDepartmentByName($name: String!) {
+    findDepartmentByName(name: $name) {
       id
       name
       createdAt
