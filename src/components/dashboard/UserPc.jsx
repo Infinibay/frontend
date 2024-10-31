@@ -21,7 +21,7 @@ const UserPc = ({ pc, selectedPc }) => {
         />
       </div>
       <div className="rounded-b-xl  text-white 4xl:text-2xl  xl:text-base text-sm px-5 line-clamp-1 py-1.5 4xl:py-2 bg-web_dark w-full">
-        {pc?.name}&apos;s PC
+        {pc?.name}
       </div>
       <Image
         src="/images/avatar.png"

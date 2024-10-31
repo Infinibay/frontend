@@ -20,9 +20,6 @@ import { RiDeleteBin5Line } from "react-icons/ri";
 // Toast imports
 import { toast } from "react-hot-toast";
 
-// Redux imports
-import { getVnc } from "@/state/slices/vms";
-
 const PcDetails = ({ onOpen, addNew }) => {
   // State and hooks
   const dispatch = useDispatch();
@@ -264,7 +261,6 @@ const PcDetails = ({ onOpen, addNew }) => {
           </p>
           <p className="font-medium 4xl:text-3xl md:text-lg text-sm">
             {vm?.name}
-            {`'s PC`}
           </p>
         </div>
         <div className="flex justify-between">
@@ -283,7 +279,7 @@ const PcDetails = ({ onOpen, addNew }) => {
       <hr />
       <div className="flex 2xl:flex-row flex-col gap-2 2xl:items-center justify-between 4xl:py-6 py-3">
         <p className="font-semibold 4xl:text-3xl md:text-lg  text-sm ">
-          Applications{" "}
+          Applications
         </p>
         <div className="flex item-center bg-white 4xl:rounded-3xl rounded-xl border border-web_borderGray px-3 py-2 4xl:px-4 4xl:py-4 gap-2">
           <FiSearch className="w-4 h-4 4xl:w-7 4xl:h-7 " />
