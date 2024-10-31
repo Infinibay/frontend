@@ -1,3 +1,4 @@
+"use client";
 // React and Next.js imports
 import React, { useState } from "react";
 import Image from "next/image";
@@ -15,6 +16,12 @@ import { BsFillPauseFill, BsFillPlayFill } from "react-icons/bs";
 import { TiMediaStop } from "react-icons/ti";
 import { FiEdit, FiSearch } from "react-icons/fi";
 import { RiDeleteBin5Line } from "react-icons/ri";
+
+// Toast imports
+import { toast } from "react-hot-toast";
+
+// Redux imports
+import { getVnc } from "@/state/slices/vms";
 
 const PcDetails = ({ onOpen, addNew }) => {
   // State and hooks
@@ -136,6 +143,27 @@ const PcDetails = ({ onOpen, addNew }) => {
     </Button>
   );
 
+  // Full screen handler
+  const handleFullScreen = async () => {
+    if (vm.status !== "running") return;
+    
+    if (!vm.config?.vnc) {
+      return;
+    }
+
+    const vncInfo = vm.config?.vnc;
+    if (vncInfo) {
+      window.open(vncInfo, '_blank');
+      toast.success("Opening VNC connection...", {
+        duration: 2000,
+        style: {
+          background: '#48BB78',
+          color: '#fff',
+        }
+      });
+    }
+  };
+
   return (
     <div className="2xl:max-w-[800px] xl:max-w-[400px] 4xl:max-w-[1000px] max-w-[400px] p-6 mx-auto flex-[.33]  transitioncustom">
       <div className="flex items-center justify-between">
@@ -167,8 +195,12 @@ const PcDetails = ({ onOpen, addNew }) => {
               {ControlButtons.Pause}
               {ControlButtons.Stop}
             <div
-              onClick={() => (status == "running" ? onOpen() : "")}
-              className={`rounded-xl border  max-w-fit p-2.5 4xl:p-3  cursor-pointer bg-web_lightBlue/10 border-transparent`}
+              onClick={handleFullScreen}
+              className={`rounded-xl border max-w-fit p-2.5 4xl:p-3 cursor-pointer ${
+                vm.status === "running" 
+                  ? "bg-web_lightBlue/10 border-transparent" 
+                  : "bg-web_lightBlue/5 border-transparent opacity-50 cursor-not-allowed"
+              }`}
             >
               <TooltipComponent
                 htmlTag={
@@ -180,7 +212,7 @@ const PcDetails = ({ onOpen, addNew }) => {
                     height={1000}
                   />
                 }
-                param="Full screen" // Replace with your tooltip content
+                param="Full screen"
               />
             </div>
           </div>
@@ -219,7 +251,15 @@ const PcDetails = ({ onOpen, addNew }) => {
       </div>
       <div className="my-4 4xl:space-y-8 space-y-4">
         <div className="flex justify-between">
-          <p className="font-semibold 4xl:text-3xl md:text-lg  text-sm">
+          <p className="font-semibold 4xl:text-3xl md:text-lg text-sm">
+            VNC
+          </p>
+          <p className="font-medium 4xl:text-3xl md:text-lg text-sm">
+            {vm?.status === "running" ? vm.config?.vnc : "Not available"}
+          </p>
+        </div>
+        <div className="flex justify-between">
+          <p className="font-semibold 4xl:text-3xl md:text-lg text-sm">
             Computer Name
           </p>
           <p className="font-medium 4xl:text-3xl md:text-lg text-sm">

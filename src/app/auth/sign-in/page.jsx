@@ -4,11 +4,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+import { useDispatch } from "react-redux";
 
 // Third-party libraries
 import { Button, Image } from "@nextui-org/react";
 import { Controller, useForm } from "react-hook-form";
-import { useDispatch } from "react-redux";
 import { FaRegEyeSlash } from "react-icons/fa";
 import { IoEye } from "react-icons/io5";
 

@@ -47,24 +47,27 @@ export const createVm = createAsyncThunk(
 
 export const playVm = createAsyncThunk(
 	'vms/playVm',
-	async (payload) => {
+	async (payload, { dispatch }) => {
 		await executeGraphQLMutation(POWER_ON_MUTATION, { id: payload.id });
+		await dispatch(fetchVms());
 		return payload;
 	}
 );
 
 export const pauseVm = createAsyncThunk(
 	'vms/pauseVm',
-	async (payload) => {
+	async (payload, { dispatch }) => {
 		await executeGraphQLMutation(SUSPEND_MUTATION, { id: payload.id });
+		await dispatch(fetchVms());
 		return payload;
 	}
 );
 
 export const stopVm = createAsyncThunk(
 	'vms/stopVm',
-	async (payload) => {
+	async (payload, { dispatch }) => {
 		await executeGraphQLMutation(POWER_OFF_MUTATION, { id: payload.id });
+		await dispatch(fetchVms());
 		return payload;
 	}
 );

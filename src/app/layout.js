@@ -12,6 +12,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import auth from '@/utils/auth';
+import { Toaster } from 'react-hot-toast';
 
 const monst = Montserrat({ subsets: ["latin"] });
 
@@ -69,6 +70,7 @@ export default function RootLayout({ children }) {
               </NextUIProvider>
             </ApolloProvider>
           </PersistGate>
+          <Toaster position="top-right" />
         </Provider>
       </body>
     </html>
