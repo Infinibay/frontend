@@ -166,7 +166,6 @@ const PcDetails = ({ onOpen, addNew }) => {
       <div className="flex items-center justify-between">
         <p className="font-semibold 4xl:text-3xl lg:text-lg text-base">
           {vm?.name}
-          {`'s`} <span className="font-bold">PC</span>{" "}
         </p>
         {StatusButton}
       </div>
