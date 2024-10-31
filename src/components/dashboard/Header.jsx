@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 // Redux imports
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 
 // UI Component libraries
 import { Button, Link, Switch } from "@nextui-org/react";

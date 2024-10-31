@@ -227,9 +227,9 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
           </li>
           <li className="group">
             <Link
-              className={`group w-full h-full sidebarList 4xl:py-3.5 ${pathname === "/dashboard/users" && "bg-web_lightbrown"
+              className={`group w-full h-full sidebarList 4xl:py-3.5 ${pathname === "/users" && "bg-web_lightbrown"
                 }`}
-              href={"/dashboard/users"}
+              href={"/users"}
             >
               <span>
                 <LuUsers2 className="4xl:text-4xl 2xl:text-2xl text-white" />

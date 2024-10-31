@@ -1,26 +1,27 @@
 "use client";
+
+// React & Next.js
 import React, { useState } from "react";
-import AuthHeader from "@/components/auth/AuthHeader";
-import { Button, Image, Input } from "@nextui-org/react";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
+
+// Third-party libraries
+import { Button, Image } from "@nextui-org/react";
+import { Controller, useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
 import { FaRegEyeSlash } from "react-icons/fa";
 import { IoEye } from "react-icons/io5";
-import { Controller, useForm } from "react-hook-form";
-import { useRouter } from 'next/navigation';
-import auth from '@/utils/auth';
 
-import { useDispatch } from "react-redux";
-import { fetchVms } from "@/state/slices/vms";
+// Internal imports (absolute imports)
+import auth from '@/utils/auth';
+import { loginUser, fetchCurrentUser } from "@/state/slices/auth";
 
 const Page = () => { 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    getValues,
-    reset,
     control,
-    setValue,
   } = useForm();
   const [hidePass, setHidePass] = useState(false);
   const handleeyeIcon = () => {
@@ -38,6 +39,7 @@ const Page = () => {
     setError('');
 
     try {
+      console.log(email, password);
       dispatch(loginUser({ email, password }));
       dispatch(fetchCurrentUser());
       const success = auth.isLoggedIn();
