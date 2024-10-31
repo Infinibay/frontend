@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Image } from "@nextui-org/react";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/state/slices/auth";
+import { fetchDepartments, createDepartment, deleteDepartment } from "@/state/slices/departments";
 
 // Icons
 import { CgAddR } from "react-icons/cg";
@@ -15,40 +16,73 @@ import { IoSettingsOutline } from "react-icons/io5";
 import { LuUsers2 } from "react-icons/lu";
 import { MdGridOn } from "react-icons/md";
 import { RxCrossCircled } from "react-icons/rx";
-import { FaLaptop } from "react-icons/fa";
+import { FaTrashAlt } from "react-icons/fa";
 
 // Utils
 import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
-import auth from '@/utils/auth';
 
 const Sidebar = ({ userSideBar, setUserSidebar }) => {
   const [addNewDepart, setAddNewDepart] = useState(false);
   const [inputVal, setInputVal] = useState("");
 
-  const [departs, setDeparts] = useState([]);
+  const dispatch = useDispatch();
+
+  // Get departments from Redux
+  const departments = useSelector((state) => state.departments.items);
 
   const router = useRouter();
-
-  const dispatch = useDispatch();
 
   const handleLogout = () => {
     dispatch(logout());
     router.push('/auth/sign-in');
   };
 
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (inputVal) {
-      setDeparts((prev) => [...prev, inputVal]);
-      setAddNewDepart(false);
-      setInputVal("");
+    if (inputVal.trim()) {
+      try {
+        await dispatch(createDepartment(inputVal.trim())).unwrap();
+        setAddNewDepart(false);
+        setInputVal("");
+      } catch (error) {
+        console.error("Failed to create department:", error);
+        // Optionally add error handling UI here
+      }
     }
   };
 
   const [isLinkOpen, setIsLinkOpen] = useState(true);
   const [isHover, setHoverr] = useState(true);
   const pathname = usePathname();
+
+  // Get current department from URL
+  const currentDepartment = pathname.split('/')[2];
+
+  const handleDeleteDepartment = async (dept) => {
+    if (dept.totalMachines > 0) {
+      alert("You can't delete this department, it's still in use. Please move all the machines before proceeding.");
+      return;
+    }
+
+    try {
+      await dispatch(deleteDepartment(dept.id)).unwrap();
+      // If we just deleted the current department, redirect to another one
+      if (currentDepartment === dept.name) {
+        // Find the first available department that's not the one we just deleted
+        const nextDepartment = departments.find(d => d.id !== dept.id);
+        if (nextDepartment) {
+          router.push(`/departments/${nextDepartment.name}`);
+        } else {
+          // If no departments left, go to Default
+          router.push('/departments/Default');
+        }
+      }
+    } catch (error) {
+      console.error("Failed to delete department:", error);
+      alert("Failed to delete department. Please try again.");
+    }
+  };
+
   return (
     <div
       className={`sidebarGradient flex flex-col relative  h-full w-full pt-20
@@ -98,7 +132,7 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
             <Link
               href={"/departments/Default"}
               className={`group w-full h-full sidebarList 4xl:py-3.5
-              ${pathname === "/departments" && "bg-web_lightbrown"}
+                ${pathname === "/departments/Default" && "bg-web_lightbrown"}
               `}
             >
               <div className="">
@@ -117,80 +151,78 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
               <span>Departments</span>
             </Link>
             <ul
-              className={`${isHover && !isLinkOpen && "group-hover:block hidden"
-                } ${isLinkOpen && "group-hover:block"
-                }  border-r 4xl:space-y-8 space-y-3 border-white/20 border-b rounded-br-2xl p-2 w-full h-full py-5 pl-12 `}
+              className={`${isHover && !isLinkOpen && "group-hover:block hidden"} 
+                ${isLinkOpen && "group-hover:block"}  
+                border-r 4xl:space-y-8 space-y-3 border-white/20 border-b rounded-br-2xl p-2 w-full h-full py-5 pl-12`}
             >
-              <Link
-                href={"/dashboard/departments"}
-                className="sidebarListDropdown group/dropdown"
-              >
-                <span>
-                  <MdGridOn className="4xl:text-4xl 2xl:text-2xl text-white group-hover/dropdown:text-web_lightbrown" />
-                </span>
-                <span className="group-hover/dropdown:text-web_lightbrown">
-                  Default
-                </span>
-              </Link>
+              {departments.map((dept) => (
+                <li key={dept.id} className="sidebarListDropdown group/dropdown relative">
+                  <span>
+                    <MdGridOn className={`4xl:text-4xl 2xl:text-2xl text-white
+                      ${currentDepartment === dept.name ? "text-web_lightbrown" : ""}`}
+                    />
+                  </span>
+                  <Link
+                    href={`/departments/${dept.name}`}
+                    className={currentDepartment === dept.name ? "text-web_lightbrown" : ""}
+                  >
+                    {capitalizeFirstLetter(dept.name)}
+                  </Link>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteDepartment(dept);
+                    }}
+                    className={`
+                      absolute right-2 top-1/2 -translate-y-1/2
+                      opacity-0 group-hover/dropdown:opacity-100
+                      transition-opacity duration-200
+                      hover:text-red-500
+                      ${dept.totalMachines > 0 ? 'cursor-not-allowed' : 'cursor-pointer'}
+                    `}
+                    title={
+                      dept.totalMachines > 0
+                        ? `Cannot delete: ${dept.totalMachines} machines are using this department`
+                        : 'Delete department'
+                    }
+                  >
+                    <FaTrashAlt className="w-4 h-4" />
+                  </button>
+                </li>
+              ))}
 
-              {addNewDepart && (
+              {addNewDepart ? (
                 <li className="sidebarListDropdown group/dropdown">
                   <span>
-                    <CgAddR className="4xl:text-4xl 2xl:text-2xl text-white " />
+                    <CgAddR className="4xl:text-4xl 2xl:text-2xl text-white" />
                   </span>
                   <form onSubmit={handleSubmit} className="">
                     <input
                       onChange={(e) => setInputVal(e.target.value)}
                       type="text"
                       autoFocus
-                      className="border-none outline-none bg-transparent max-w-[140px] "
+                      className="border-none outline-none bg-transparent max-w-[140px]"
                     />
                   </form>
                 </li>
-              )}
-
-              {departs?.map((item, index) => (
-                <li key={index} className="sidebarListDropdown group/dropdown">
+              ) : (
+                <li
+                  onClick={() => {
+                    setInputVal("");
+                    setAddNewDepart(true);
+                  }}
+                  className="sidebarListDropdown group/dropdown"
+                >
                   <span>
-                    <MdGridOn className="4xl:text-4xl 2xl:text-2xl text-white group-hover/dropdown:text-web_lightbrown" />
+                    <CgAddR className="4xl:text-4xl 2xl:text-2xl text-white group-hover/dropdown:text-web_lightbrown" />
                   </span>
-                  <Link
-                    href={`/dashboard/departments?type=${item}`}
-                    className="group-hover/dropdown:text-web_lightbrown"
-                  >
-                    {capitalizeFirstLetter(item)}
-                  </Link>
+                  <span className="group-hover/dropdown:text-web_lightbrown">
+                    Add
+                  </span>
                 </li>
-              ))}
-
-              <li
-                onClick={() => {
-                  setInputVal("");
-                  setAddNewDepart(true);
-                }}
-                className="sidebarListDropdown group/dropdown"
-              >
-                <span>
-                  <CgAddR className="4xl:text-4xl 2xl:text-2xl text-white group-hover/dropdown:text-web_lightbrown" />
-                </span>
-                <span className="group-hover/dropdown:text-web_lightbrown">
-                  Add
-                </span>
-              </li>
-
-              {/* <li className="sidebarListDropdown group/dropdown">
-                <span>
-                  <CgAddR className="4xl:text-4xl 2xl:text-2xl text-white " />
-                </span>
-                <form onSubmit={handleSubmit} className="">
-                  <input
-                    onChange={(e) => setInputVal(e.target.value)}
-                    type="text"
-                    autoFocus
-                    className="border-none outline-none bg-transparent"
-                  />
-                </form>
-              </li> */}
+              )}
             </ul>
           </li>
           <li className="group">

@@ -1,28 +1,31 @@
 "use client";
-import { Button, Input, Link, User, Switch } from "@nextui-org/react";
+// React and Next.js imports
+import React from "react";
 import Image from "next/image";
-import React, { useState } from "react";
+import { usePathname } from "next/navigation";
+
+// Redux imports
+import { useDispatch, useSelector } from "react-redux";
+
+// UI Component libraries
+import { Button, Link, Switch } from "@nextui-org/react";
+import TooltipComponent from "../tooltip/TooltipComponent";
+
+// Icons
 import { IoMdAdd } from "react-icons/io";
 import { IoSearch } from "react-icons/io5";
-import { Searchparams } from "@/utils/search-params";
-import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
-import { usePathname } from "next/navigation";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { VscBellDot } from "react-icons/vsc";
-import TooltipComponent from "../tooltip/TooltipComponent";
 import { HiMenu } from "react-icons/hi";
-import { useQuery } from '@apollo/client';
-import { CURRENT_USER_QUERY } from '@/graphql/queries';
 
-import { useDispatch, useSelector } from "react-redux";
-import authSlices from "@/state/slices/auth";
+// Utilities
+import { Searchparams } from "@/utils/search-params";
+import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
 
 const Header = ({ setUserSidebar, byDepartment, setByDepartment }) => {
   const type = Searchparams("type");
   const pathname = usePathname();
-  // const { loading, error, data } = useQuery(CURRENT_USER_QUERY);
 
-  const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user );
 
   return (
@@ -68,7 +71,7 @@ const Header = ({ setUserSidebar, byDepartment, setByDepartment }) => {
           </h2>
         ) : (
           <Link
-            href="/dashboard/newPC"
+            href="/computers/newPC"
             className="border translate-x-10 lg:translate-x-0 4xl:p-4 2xl:p-2 p-1  rounded-xl "
           >
             <Button

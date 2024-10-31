@@ -43,11 +43,6 @@ const Page = () => {
   );
   const selectedPc = useSelector((state) => state.vms.selectedMachine);
 
-  // Fetch VMs on component mount
-  React.useEffect(() => {
-    dispatch(fetchVms());
-  }, [dispatch]);
-
   // Handle Escape key
   useEffect(() => {
     const handleKeyDown = (event) => {

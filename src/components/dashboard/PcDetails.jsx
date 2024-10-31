@@ -4,7 +4,7 @@ import Image from "next/image";
 
 // Redux imports
 import { useDispatch, useSelector } from "react-redux";
-import { playVm, stopVm, suspendVm } from "@/state/slices/vms";
+import { playVm, stopVm, pauseVm } from "@/state/slices/vms";
 
 // UI Component imports
 import { Button, Checkbox } from "@nextui-org/react";
@@ -34,7 +34,7 @@ const PcDetails = ({ onOpen, addNew }) => {
 
     pause: async () => {
       try {
-        dispatch(suspendVm({ id: vm.id }));
+        dispatch(pauseVm({ id: vm.id }));
       } catch (error) {
         console.error("Error suspending:", error);
       }

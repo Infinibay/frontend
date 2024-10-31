@@ -37,24 +37,6 @@ const DepartmentPage = () => {
     dispatch(selectMachine(machine));
   };
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        await Promise.all([
-          dispatch(fetchVms()),
-          dispatch(fetchDepartmentByName(params.name))
-        ]);
-        setIsLoading(false);
-      } catch (err) {
-        setError("Department not found");
-        setIsLoading(false);
-      }
-    };
-    
-    loadData();
-  }, [dispatch, params.name]);
-
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -75,22 +57,6 @@ const DepartmentPage = () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [dispatch, isOpen, selectedPc, onClose]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error || !department) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-xl text-red-500">Department not found</div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-1 justify-between overflow-hidden w-full">

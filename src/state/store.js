@@ -5,18 +5,24 @@ import authReducer from './slices/auth'
 import vmsReducer from './slices/vms'
 import departments from './slices/departments'
 
-const persistConfig = {
+const persistAuthConfig = {
   key: 'auth',
   storage,
 };
 
-const persistedReducer = persistReducer(persistConfig, authReducer)
+const persistConfigDepartments = {
+	key: 'departments',
+	storage,
+};
+
+const persistedAuth = persistReducer(persistAuthConfig, authReducer)
+const persistedDeparments = persistReducer(persistConfigDepartments, departments)
 
 export const store = configureStore({
   reducer: {
-		auth: persistedReducer,
+		auth: persistedAuth,
 		vms: vmsReducer,
-		departments: departments,
+		departments: persistedDeparments,
 	},
 });
 export const persistor = persistStore(store)

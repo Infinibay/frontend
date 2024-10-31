@@ -97,6 +97,7 @@ export const DEPARTMENT_QUERY = gql`
       createdAt
       internetSpeed
       ipSubnet
+      totalMachines
     }
   }
 `;
@@ -109,6 +110,7 @@ export const FIND_DEPARTMENT_BY_NAME_QUERY = gql`
       createdAt
       internetSpeed
       ipSubnet
+      totalMachines
     }
   }
 `;

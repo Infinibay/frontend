@@ -75,6 +75,7 @@ export const DELETE_DEPARMENT_MUTATION = gql`
       createdAt
       internetSpeed
       ipSubnet
+      totalMachines
     }
   }
 `;
@@ -87,6 +88,7 @@ export const CREATE_DEPARMENT_MUTATION = gql`
       createdAt
       internetSpeed
       ipSubnet
+      totalMachines
     }
   }
 `;
