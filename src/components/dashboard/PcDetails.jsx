@@ -270,14 +270,14 @@ const PcDetails = ({ onOpen, addNew }) => {
         <div className="flex justify-between">
           <p className="font-semibold 4xl:text-3xl md:text-lg  text-sm">User</p>
           <p className="font-medium 4xl:text-3xl md:text-lg text-sm">
-            Alfred Johnson
+            {vm?.user?.firstName} {vm?.user?.lastName}
           </p>
         </div>
         <div className="flex justify-between">
           <p className="font-semibold 4xl:text-3xl md:text-lg  text-sm">
-            Template Office{" "}
+            Machine Template
           </p>
-          <p className="font-medium 4xl:text-3xl md:text-lg text-sm">Medium</p>
+          <p className="font-medium 4xl:text-3xl md:text-lg text-sm">{vm?.template?.name}</p>
         </div>
       </div>
       <hr />
