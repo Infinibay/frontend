@@ -24,7 +24,7 @@ const CreatePCWizard = () => {
     const handleCreate = async () => {
         try {
             dispatch(createVm(data));
-            router.push('/dashboard');
+            router.push('/computers');
         } catch (err) {
             console.error(err);
         }

@@ -2,10 +2,11 @@
 // React and Next.js imports
 import React, { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 // Redux imports
 import { useDispatch, useSelector } from "react-redux";
-import { playVm, stopVm, pauseVm } from "@/state/slices/vms";
+import { playVm, stopVm, pauseVm, deleteVm, selectMachine } from "@/state/slices/vms";
 
 // UI Component imports
 import { Button, Checkbox } from "@nextui-org/react";
@@ -25,6 +26,7 @@ const PcDetails = ({ onOpen, addNew }) => {
   const dispatch = useDispatch();
   const vm = useSelector((state) => state.vms.items.find((v) => v.id === state.vms.selectedMachine.id));
   const [status, _] = useState(vm.status);
+  const router = useRouter();
 
   // VM Control handlers
   const handleVmControl = {
@@ -161,6 +163,24 @@ const PcDetails = ({ onOpen, addNew }) => {
     }
   };
 
+  // Add delete handler
+  const handleDelete = async () => {
+    try {
+      await dispatch(deleteVm({ id: vm.id }));
+      toast.success("VM deleted successfully", {
+        duration: 2000,
+        style: {
+          background: '#48BB78',
+          color: '#fff',
+        }
+      });
+      await dispatch(selectMachine(null));
+    } catch (error) {
+      console.error("Error deleting VM:", error);
+      toast.error("Failed to delete VM");
+    }
+  };
+
   return (
     <div className="2xl:max-w-[800px] xl:max-w-[400px] 4xl:max-w-[1000px] max-w-[400px] p-6 mx-auto flex-[.33]  transitioncustom">
       <div className="flex items-center justify-between">
@@ -226,14 +246,14 @@ const PcDetails = ({ onOpen, addNew }) => {
               />
             </div>
             <div
-              className={`rounded-xl border  max-w-fit p-2.5 4xl:p-3  cursor-pointer bg-red-50 border-transparent`}
+              className={`rounded-xl border max-w-fit p-2.5 4xl:p-3 cursor-pointer bg-red-50 border-transparent`}
             >
               <TooltipComponent
                 color="danger"
-                content="ali Delete user"
+                content="Delete VM"
                 htmlTag={
                   <span
-                    onClick={() => handleDeleteSelected(datas.id)}
+                    onClick={handleDelete}
                     className="4xl:text-3xl text-lg text-danger cursor-pointer -left-2 active:opacity-50"
                   >
                     <RiDeleteBin5Line className="w-5 min-h-5 4xl:w-10 4xl:h-10 " />

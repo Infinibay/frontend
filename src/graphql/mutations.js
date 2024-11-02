@@ -24,16 +24,14 @@ export const CREATE_MACHINE_MUTATION = gql`
         ram
         storage
       }
-      config {
-        vnc
-      }
+      config
     }
   }
 `;
 
 export const DELETE_MACHINE_MUTATION = gql`
   mutation DeleteMachine($id: String!) {
-    destroyMachine(id: ID) {
+    destroyMachine(id: $id) {
       success
       message
     }
