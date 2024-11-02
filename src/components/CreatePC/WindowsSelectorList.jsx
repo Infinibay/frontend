@@ -8,8 +8,16 @@ const WindowsSelectorList = ({ onOsChange, onLicenseChange, defaultSelected }) =
     const [licenseNumber, setLicenseNumber] = useState('');
 
     const osItems = [
-        { id: 'WINDOWS10', displayName: 'Windows 10' },
-        { id: 'WINDOWS11', displayName: 'Windows 11' }
+        {
+            id: 'WINDOWS10',
+            imageSrc: '/images/windows10.png',
+            altText: 'Windows 10',
+        },
+        {
+            id: 'WINDOWS11',
+            imageSrc: '/images/windows11.png',
+            altText: 'Windows 11',
+        },
     ];
 
     useEffect(() => {
@@ -19,18 +27,19 @@ const WindowsSelectorList = ({ onOsChange, onLicenseChange, defaultSelected }) =
     }, [selectedOS, licenseIncluded, licenseNumber]);
 
     return (
-        <div>
-            {
-                osItems.map(os =>
+        <div className="p-4 shadow rounded">
+            <div className="flex">
+                {osItems.map(os => (
                     <OSItem
                         key={os.id}
                         id={os.id}
-                        displayName={os.displayName}
+                        imageSrc={os.imageSrc}
+                        altText={os.altText}
                         isSelected={os.id === selectedOS}
                         onClick={setSelectedOS}
                     />
-                )
-            }
+                ))}
+            </div>
             <div>
                 <label>
                     <input type="checkbox" checked={licenseIncluded} onChange={(e) => setLicenseIncluded(e.target.checked)} />
@@ -42,9 +51,9 @@ const WindowsSelectorList = ({ onOsChange, onLicenseChange, defaultSelected }) =
                     <label>
                         License Number:<br />
                         <input type="text"
-                               value={licenseNumber}
-                               onChange={(e) => setLicenseNumber(e.target.value)}
-                               placeholder="Enter license number" />
+                            value={licenseNumber}
+                            onChange={(e) => setLicenseNumber(e.target.value)}
+                            placeholder="Enter license number" />
                     </label>
                 </div>
             )}

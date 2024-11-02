@@ -6,8 +6,16 @@ const LinuxSelectorList = ({ onOsChange }) => {
     const [selectedOS, setSelectedOS] = useState(null);
 
     const osItems = [
-        { id: 'UBUNTU', displayName: 'Ubuntu' },
-        { id: 'FEDORA', displayName: 'Fedora' }
+        {
+            id: 'UBUNTU',
+            imageSrc: '/images/ubuntu.png',
+            altText: 'Ubuntu',
+        },
+        {
+            id: 'FEDORA',
+            imageSrc: '/images/fedora.png',
+            altText: 'Fedora',
+        },
     ];
 
     useEffect(() => {
@@ -15,18 +23,19 @@ const LinuxSelectorList = ({ onOsChange }) => {
     }, [selectedOS]);
 
     return (
-        <div>
-            {
-                osItems.map(os =>
+        <div className="p-4 shadow rounded">
+            <div className="flex">
+                {osItems.map(os => (
                     <OSItem
                         key={os.id}
                         id={os.id}
-                        displayName={os.displayName}
+                        imageSrc={os.imageSrc}
+                        altText={os.altText}
                         isSelected={os.id === selectedOS}
                         onClick={setSelectedOS}
                     />
-                )
-            }
+                ))}
+            </div>
         </div>
     );
 };
