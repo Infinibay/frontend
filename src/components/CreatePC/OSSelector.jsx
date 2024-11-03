@@ -8,7 +8,7 @@ import OSSwitch from "@/components/CreatePC/OSSwitch";
 
 const OSSelector = ({ onChange }) => {
     const [osOption, setOsOption] = useState('windows');
-    const [selectedOS, setSelectedOS] = useState('win11'); // Set Windows 11 as default
+    const [selectedOS, setSelectedOS] = useState('WINDOWS11'); // Set Windows 11 as default
     const [licenseIncluded, setLicenseIncluded] = useState(false);
     const [vmName, setVmName] = useState("");
     const [username, sertUsername] = useState("");
@@ -51,9 +51,33 @@ const OSSelector = ({ onChange }) => {
         );
     };
 
+    const evaluatePasswordStrength = (password) => {
+        let score = 0;
+        if (password.length >= 9) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+        switch (score) {
+            case 5:
+                return "Very Strong";
+            case 4:
+                return "Strong";
+            case 3:
+                return "Medium";
+            case 2:
+                return "Weak";
+            default:
+                return "Very Weak";
+        }
+    };
+
+    const passwordStrength = evaluatePasswordStrength(password);
+
     // Clear the licensing field and selected OS when the OS option (Windows/Linux) changes
     useEffect(() => {
-        setSelectedOS(osOption === 'windows' ? 'win11' : null);
+        setSelectedOS(osOption === 'windows' ? 'WINDOWS11' : "UBUNTU");
         setLicenseIncluded(false);
     }, [osOption]);
 
@@ -61,7 +85,7 @@ const OSSelector = ({ onChange }) => {
     useEffect(() => {
         let response = {
             os: selectedOS,
-            productKey: licenseIncluded,
+            productKey: licenseIncluded ? licenseIncluded : '',
             name: vmName,
             username: username,
             password: password
@@ -114,7 +138,7 @@ const OSSelector = ({ onChange }) => {
                             type="button"
                             onClick={toggleShowPassword}
                             className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
-                            style={{ top: '50%', transform: 'translateY(-10%)' }}
+                            style={{ top: '0%', transform: 'translateY(0%)' }}
                         >
                             {showPassword ? (
                                 <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -128,6 +152,9 @@ const OSSelector = ({ onChange }) => {
                                 </svg>
                             )}
                         </button>
+                        <p className={`mt-2 text-sm ${passwordStrength === 'Very Weak' || passwordStrength === 'Weak' ? 'text-red-500' : passwordStrength === 'Medium' ? 'text-yellow-500' : 'text-green-500'}`}>
+                            Password Strength: {passwordStrength}
+                        </p>
                     </div>
 
                     {osOption === 'windows' && (

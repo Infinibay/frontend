@@ -25,7 +25,11 @@ const CreatePCWizard = () => {
 
     const handleCreate = async () => {
         try {
-            dispatch(createVm(data));
+            const requestData = {
+                ...data,
+                productKey: data.productKey ? data.productKey : '',
+            };
+            dispatch(createVm(requestData));
             router.push('/computers');
         } catch (err) {
             console.error(err);
