@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, gql } from '@apollo/client';
 
 const GET_MACHINE_TEMPLATES = gql`
@@ -18,6 +18,7 @@ const GET_MACHINE_TEMPLATES = gql`
 
 const TemplateSelector = ({ onTemplateSelected }) => {
     const { loading, error, data } = useQuery(GET_MACHINE_TEMPLATES);
+    const [selectedTemplateId, setSelectedTemplateId] = useState(null);
 
     if (loading) return 'Loading...';
     if (error) return `Error! ${error.message}`;
@@ -31,7 +32,10 @@ const TemplateSelector = ({ onTemplateSelected }) => {
                         id={template.id}
                         name="template"
                         value={template.id}
-                        onChange={(e) => onTemplateSelected(e.target.value)}
+                        onChange={(e) => {
+                            setSelectedTemplateId(e.target.value);
+                            onTemplateSelected(e.target.value);
+                        }}
                         title={`Description: ${template.description}\nCores: ${template.cores}\nRAM: ${template.ram}\nStorage: ${template.storage}`}
                     />
                     <label htmlFor={template.id}>{template.name}</label>

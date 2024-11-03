@@ -14,6 +14,7 @@ const OSSelector = ({ onChange }) => {
     const [username, sertUsername] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [errors, setErrors] = useState({});
 
     const handleOsChange = (os) => {
         setSelectedOS(os);
@@ -39,6 +40,17 @@ const OSSelector = ({ onChange }) => {
         setShowPassword(!showPassword);
     };
 
+    const validateName = (name) => /^[a-zA-Z][a-zA-Z0-9_\-\s]*$/.test(name);
+    const validateUsername = (username) => /^[a-zA-Z][a-zA-Z0-9_\-\s]*$/.test(username);
+
+    const isFormValid = () => {
+        return (
+            vmName && validateName(vmName) &&
+            username && validateUsername(username) &&
+            password && selectedOS
+        );
+    };
+
     // Clear the licensing field and selected OS when the OS option (Windows/Linux) changes
     useEffect(() => {
         setSelectedOS(osOption === 'windows' ? 'win11' : null);
@@ -54,7 +66,7 @@ const OSSelector = ({ onChange }) => {
             username: username,
             password: password
         };
-        onChange(response);
+        onChange(response, isFormValid());
     }, [osOption, selectedOS, licenseIncluded, vmName, username, password]);
 
     return (
@@ -70,6 +82,9 @@ const OSSelector = ({ onChange }) => {
                             placeholder="Machine Name"
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {!validateName(vmName) && vmName && (
+                            <p className="text-red-500 text-sm">Name must start with a letter and contain only alphanumeric characters, -, _, or spaces.</p>
+                        )}
                     </div>
                     <div className="mt-4 max-w-lg">
                         <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
@@ -81,6 +96,9 @@ const OSSelector = ({ onChange }) => {
                             maxLength="30"
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {!validateUsername(username) && username && (
+                            <p className="text-red-500 text-sm">Username must start with a letter and contain only alphanumeric characters, -, _, or spaces.</p>
+                        )}
                     </div>
                     <div className="mt-4 max-w-lg relative">
                         <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
@@ -116,7 +134,7 @@ const OSSelector = ({ onChange }) => {
                         <WindowsSelectorList
                             onOsChange={handleOsChange}
                             onLicenseChange={handleLicenseChange}
-                            defaultSelected='win11'
+                            defaultSelected='WINDOWS11'
                         />
                     )}
 
@@ -133,7 +151,7 @@ const OSSelector = ({ onChange }) => {
 };
 
 OSSelector.propTypes = {
-    onChange: PropTypes.func,
+    onChange: PropTypes.func.isRequired,
 };
 
 // Default prop values

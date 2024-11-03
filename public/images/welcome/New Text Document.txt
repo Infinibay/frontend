@@ -24,7 +24,6 @@ const Box2 = () => {
   const [isSelected, setIsSelected] = React.useState(false);
   const [pause, setPause] = useState(null);
   const [heading, setheading] = useState(false);
-  // console.log(selectedNode, "selected....");
   const [slectBox, setSelectBox] = useState(null);
   const handleLeftNodeClick = (node, index) => {
     // Toggle the selectedNode state
@@ -111,11 +110,9 @@ const Box2 = () => {
 
   const handleSwitchChange = (index) => {
     onOpen();
-    // console.log("switch chnage", index);
     const updatedStates = [...selectedStates];
     updatedStates[index] = !updatedStates[index];
     setSelectedStates(updatedStates);
-    console.log(selectedStates, "testtttttttttt");
   };
   const [pauseStates, setPauseStates] = useState([1,2,3].fill(false));
 

@@ -3,7 +3,7 @@ import OSItem from './OSItem';
 import PropTypes from 'prop-types';
 
 const WindowsSelectorList = ({ onOsChange, onLicenseChange, defaultSelected }) => {
-    const [selectedOS, setSelectedOS] = useState(defaultSelected);
+    const [selectedOS, setSelectedOS] = useState(defaultSelected || 'WINDOWS11');
     const [licenseIncluded, setLicenseIncluded] = useState(false);
     const [licenseNumber, setLicenseNumber] = useState('');
 
@@ -68,7 +68,7 @@ WindowsSelectorList.propTypes = {
 };
 
 WindowsSelectorList.defaultProps = {
-    defaultSelected: 'WINDOWS11 ',
+    defaultSelected: 'WINDOWS11',
 };
 
 export default WindowsSelectorList;
