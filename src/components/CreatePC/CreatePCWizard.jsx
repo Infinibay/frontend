@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from "next/navigation";
 import OsSelector from './OSSelector';
 import TemplateSelector from './TemplateSelector';
+import SelectApplications from './SelectApplications';
 
 import { useDispatch } from "react-redux";
 import { createVm } from "@/state/slices/vms";
@@ -12,6 +13,7 @@ const CreatePCWizard = () => {
     const [data, setData] = useState({})
     const [isStepOneValid, setIsStepOneValid] = useState(false);
     const [isTemplateSelected, setIsTemplateSelected] = useState(false);
+    const [isApplicationsSelected, setIsApplicationsSelected] = useState(false);
     const router = useRouter();
     const dispatch = useDispatch();
 
@@ -28,6 +30,11 @@ const CreatePCWizard = () => {
             const requestData = {
                 ...data,
                 productKey: data.productKey ? data.productKey : '',
+                applications: data.applications.map(appId => ({
+                    machineId: '', // This should be set appropriately
+                    applicationId: appId,
+                    parameters: {}, // Add any necessary parameters here
+                })),
             };
             dispatch(createVm(requestData));
             router.push('/computers');
@@ -46,10 +53,16 @@ const CreatePCWizard = () => {
         setIsTemplateSelected(Boolean(id));
     };
 
+    const handleApplicationsSelected = (selectedApplications) => {
+        setData(prevData => ({ ...prevData, applications: selectedApplications }));
+        setIsApplicationsSelected(selectedApplications.length > 0);
+    };
+
     return (
         <div className="max-w-4xl mx-auto p-4">
             {step === 1 && <OsSelector onOsSelected={handleOsSelected} onChange={handleOsChange} />}
             {step === 2 && <TemplateSelector onTemplateSelected={handleTemplateChanged} />}
+            {step === 3 && <SelectApplications onApplicationsSelected={handleApplicationsSelected} />}
 
             <div className="flex justify-end mt-4">
                 {step === 1 && (
@@ -63,9 +76,18 @@ const CreatePCWizard = () => {
                 )}
                 {step === 2 && (
                     <button
-                        onClick={handleCreate}
+                        onClick={() => setStep(3)}
                         disabled={!isTemplateSelected}
                         className={`px-4 py-2 rounded ${isTemplateSelected ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-700 cursor-not-allowed'}`}
+                    >
+                        Next Step
+                    </button>
+                )}
+                {step === 3 && (
+                    <button
+                        onClick={handleCreate}
+                        disabled={!isApplicationsSelected}
+                        className={`px-4 py-2 rounded ${isApplicationsSelected ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-700 cursor-not-allowed'}`}
                     >
                         Create
                     </button>
