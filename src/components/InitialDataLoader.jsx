@@ -7,10 +7,11 @@ export const InitialDataLoader = ({ children }) => {
   const dispatch = useDispatch();
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const authLoading = useSelector(state => state.auth.loading);
   const vmsLoading = useSelector(state => state.vms.loading);
   const departmentsLoading = useSelector(state => state.departments.loading);
+  const applications = useSelector(state => state.applications.applications);
 
   useEffect(() => {
     const initialize = async () => {

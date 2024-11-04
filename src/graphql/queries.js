@@ -114,3 +114,33 @@ export const FIND_DEPARTMENT_BY_NAME_QUERY = gql`
     }
   }
 `;
+
+// APPLICATIONS
+
+export const APPLICATIONS_QUERY = gql`
+  query {
+    applications {
+      id
+      name
+      description
+      os
+      installCommand
+      parameters
+      createdAt
+    }
+  }
+`;
+
+export const APPLICATION_QUERY = gql`
+  query application($id: String!) {
+    application(id: $id) {
+      id
+      name
+      description
+      os
+      installCommand
+      parameters
+      createdAt
+    }
+  }
+`;

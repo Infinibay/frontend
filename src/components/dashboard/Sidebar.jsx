@@ -17,6 +17,7 @@ import { LuUsers2 } from "react-icons/lu";
 import { MdGridOn } from "react-icons/md";
 import { RxCrossCircled } from "react-icons/rx";
 import { FaTrashAlt } from "react-icons/fa";
+import { FaAppStore } from "react-icons/fa"; // Add this import for the applications icon
 
 // Utils
 import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
@@ -168,7 +169,7 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
                   >
                     {capitalizeFirstLetter(dept.name)}
                   </Link>
-                  
+
                   <button
                     onClick={(e) => {
                       e.preventDefault();
@@ -243,7 +244,18 @@ const Sidebar = ({ userSideBar, setUserSidebar }) => {
             </span>
             <span>Registers</span>
           </li>
-
+          <li className="group">
+            <Link
+              className={`group w-full h-full sidebarList 4xl:py-3.5 ${pathname === "/applications" && "bg-web_lightbrown"
+                }`}
+              href={"/applications"}
+            >
+              <span>
+                <FaAppStore className="4xl:text-4xl 2xl:text-2xl text-white" />
+              </span>
+              <span>Applications</span>
+            </Link>
+          </li>
           <li className="group">
             <Link
               className={`group w-full h-full sidebarList 4xl:py-3.5 ${pathname === "/dashboard/settings" && "bg-web_lightbrown"

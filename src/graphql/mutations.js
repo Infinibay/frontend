@@ -90,3 +90,39 @@ export const CREATE_DEPARMENT_MUTATION = gql`
     }
   }
 `;
+
+// APPLICATIONS
+
+export const CREATE_APPLICATION_MUTATION = gql`
+  mutation CreateApplication($input: CreateApplicationInputType!) {
+    createApplication(input: $input) {
+      id
+      name
+      description
+      os
+      installCommand
+      parameters
+      createdAt
+    }
+  }
+`;
+
+export const UPDATE_APPLICATION_MUTATION = gql`
+  mutation UpdateApplication($input: CreateApplicationInputType!, $id: String!) {
+    updateApplication(input: $input, id: $id) {
+      id
+      name
+      description
+      os
+      installCommand
+      parameters
+      createdAt
+    }
+  }
+`;
+
+export const DELETE_APPLICATION_MUTATION = gql`
+  mutation DeleteApplication($id: String!) {
+    destroyApplication(id: $id)
+  }
+`;
