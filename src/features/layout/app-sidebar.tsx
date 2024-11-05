@@ -17,11 +17,11 @@ import {
   Users,
 } from 'lucide-react'
 import * as React from 'react'
-import { NavMain } from '@/components/nav-main'
-import { NavProjects } from '@/components/nav-projects'
-import { NavUser } from '@/components/nav-user'
-import { TeamSwitcher } from '@/components/team-switcher'
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from '@/components/ui/sidebar'
+import { NavMain } from '@/features/layout/nav-main'
+import { NavProjects } from '@/features/layout/nav-projects'
+import { NavUser } from '@/features/layout/nav-user'
+import { TeamSwitcher } from '@/features/layout/team-switcher'
 
 // This is sample data.
 const data = {
