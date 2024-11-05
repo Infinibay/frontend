@@ -22,6 +22,7 @@ import { NavMain } from '@/features/layout/nav-main'
 import { NavProjects } from '@/features/layout/nav-projects'
 import { NavUser } from '@/features/layout/nav-user'
 import { TeamSwitcher } from '@/features/layout/team-switcher'
+import { ModeToggle } from './mode-toggle'
 
 // This is sample data.
 const data = {
