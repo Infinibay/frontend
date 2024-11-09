@@ -2,14 +2,13 @@ import { ClassValue } from 'clsx'
 import { cn } from '@/lib/utils'
 import AllInOneSvg from '/images/all-in-one.svg'
 
-interface ComputerCardProps {
-  className?: ClassValue
+interface ComputerCardProps extends React.ComponentPropsWithoutRef<'div'> {
   active?: boolean
   name: string
-  avatarUrl: string
+  avatarUrl?: string
 }
 
-export function ComputerCard({ className, name, avatarUrl, active = false }: ComputerCardProps) {
+export function ComputerCard({ className, name, avatarUrl, active = false, ...props }: ComputerCardProps) {
   return (
     <div
       className={cn(
@@ -18,6 +17,7 @@ export function ComputerCard({ className, name, avatarUrl, active = false }: Com
         active && 'before:border-primary dark:before:border-primary',
         className,
       )}
+      {...props}
     >
       <div className="center flex justify-center p-4">
         <img src={AllInOneSvg} />
