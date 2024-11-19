@@ -64,9 +64,8 @@ const PcDetails = ({ onOpen, addNew }) => {
           <TooltipComponent
             htmlTag={
               <BsFillPlayFill
-                className={`w-5 min-h-5 4xl:w-10 4xl:h-10 ${
-                  vm.status !== "running" ? "text-web_green" : "text-web_placeHolder"
-                }`}
+                className={`w-5 min-h-5 4xl:w-10 4xl:h-10 ${vm.status !== "running" ? "text-web_green" : "text-web_placeHolder"
+                  }`}
               />
             }
             param="Play"
@@ -80,16 +79,14 @@ const PcDetails = ({ onOpen, addNew }) => {
       return (
         <div
           onClick={handleVmControl.pause}
-          className={`rounded-xl border max-w-fit p-2.5 4xl:p-3 cursor-pointer ${
-            vm.status === "suspended" ? "bg-web_green/10 border-transparent" : "bg-white border-web_borderGray"
-          }`}
+          className={`rounded-xl border max-w-fit p-2.5 4xl:p-3 cursor-pointer ${vm.status === "suspended" ? "bg-web_green/10 border-transparent" : "bg-white border-web_borderGray"
+            }`}
         >
           <TooltipComponent
             htmlTag={
               <BsFillPauseFill
-                className={`w-5 min-h-5 4xl:w-10 4xl:h-10 ${
-                  vm.status === "running" ? "text-web_green" : "text-web_placeHolder"
-                }`}
+                className={`w-5 min-h-5 4xl:w-10 4xl:h-10 ${vm.status === "running" ? "text-web_green" : "text-web_placeHolder"
+                  }`}
               />
             }
             param="Pause"
@@ -103,18 +100,16 @@ const PcDetails = ({ onOpen, addNew }) => {
       return (
         <div
           onClick={handleVmControl.stop}
-          className={`rounded-xl border max-w-fit p-2.5 4xl:p-3 cursor-pointer ${
-            vm.status === "running"
-              ? "bg-white border-web_borderGray"
-              : "bg-red-50 border-transparent opacity-50 cursor-not-allowed"
-          }`}
+          className={`rounded-xl border max-w-fit p-2.5 4xl:p-3 cursor-pointer ${vm.status === "running"
+            ? "bg-white border-web_borderGray"
+            : "bg-red-50 border-transparent opacity-50 cursor-not-allowed"
+            }`}
         >
           <TooltipComponent
             htmlTag={
               <TiMediaStop
-                className={`w-5 min-h-5 4xl:w-10 4xl:h-10 ${
-                  vm.status === "running" ? "text-red-500" : "text-web_placeHolder"
-                }`}
+                className={`w-5 min-h-5 4xl:w-10 4xl:h-10 ${vm.status === "running" ? "text-red-500" : "text-web_placeHolder"
+                  }`}
               />
             }
             param="Stop"
@@ -145,15 +140,15 @@ const PcDetails = ({ onOpen, addNew }) => {
   // Full screen handler
   const handleFullScreen = async () => {
     if (vm.status !== "running") return;
-    
+
     if (!vm.config?.vnc) {
       return;
     }
 
-    const vncInfo = vm.config?.vnc;
-    if (vncInfo) {
-      window.open(vncInfo, '_blank');
-      toast.success("Opening VNC connection...", {
+    const graphicInfo = vm.config?.graphic;
+    if (graphicInfo) {
+      window.open(graphicInfo, '_blank');
+      toast.success("Opening Graphic connection...", {
         duration: 2000,
         style: {
           background: '#48BB78',
@@ -194,7 +189,7 @@ const PcDetails = ({ onOpen, addNew }) => {
           <Image
             width={1000}
             height={1000}
-            alt="remote-pc" 
+            alt="remote-pc"
             src="/images/remotePc.png"
           />
         ) : (
@@ -207,16 +202,15 @@ const PcDetails = ({ onOpen, addNew }) => {
         )}
         <div className="p-3 flex justify-between gap-2">
           <div className="flex gap-2 4xl:gap-5">
-              {ControlButtons.Play}
-              {ControlButtons.Pause}
-              {ControlButtons.Stop}
+            {ControlButtons.Play}
+            {ControlButtons.Pause}
+            {ControlButtons.Stop}
             <div
               onClick={handleFullScreen}
-              className={`rounded-xl border max-w-fit p-2.5 4xl:p-3 cursor-pointer ${
-                vm.status === "running" 
-                  ? "bg-web_lightBlue/10 border-transparent" 
-                  : "bg-web_lightBlue/5 border-transparent opacity-50 cursor-not-allowed"
-              }`}
+              className={`rounded-xl border max-w-fit p-2.5 4xl:p-3 cursor-pointer ${vm.status === "running"
+                ? "bg-web_lightBlue/10 border-transparent"
+                : "bg-web_lightBlue/5 border-transparent opacity-50 cursor-not-allowed"
+                }`}
             >
               <TooltipComponent
                 htmlTag={
@@ -268,10 +262,10 @@ const PcDetails = ({ onOpen, addNew }) => {
       <div className="my-4 4xl:space-y-8 space-y-4">
         <div className="flex justify-between">
           <p className="font-semibold 4xl:text-3xl md:text-lg text-sm">
-            VNC
+            Graphic
           </p>
           <p className="font-medium 4xl:text-3xl md:text-lg text-sm">
-            {vm?.status === "running" ? vm.config?.vnc : "Not available"}
+            {vm?.status === "running" ? vm.config?.graphic : "Not available"}
           </p>
         </div>
         <div className="flex justify-between">
