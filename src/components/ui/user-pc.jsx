@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 const UserPc = React.forwardRef(({ 
   className,
   name,
-  status = "idle", // idle, running, building
+  status = "idle", // idle, running, paused, stopped, building
   selected = false,
   avatar = "/images/avatar.png",
   onClick,
@@ -57,7 +57,9 @@ const UserPc = React.forwardRef(({
             className={cn(
               "absolute -top-2 -right-2 w-5 h-5 rounded-full",
               status === "running" && "bg-green-500",
-              status === "building" && "bg-yellow-500"
+              status === "paused" && "bg-yellow-500",
+              status === "building" && "bg-yellow-500",
+              status === "stopped" && "bg-red-500"
             )} 
           />
         )}

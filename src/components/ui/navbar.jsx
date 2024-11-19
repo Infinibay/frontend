@@ -60,7 +60,7 @@ const sizeStyles = {
   }
 };
 
-const AppSidebar = ({ user, size = "lg" }) => {
+const AppSidebar = ({ user, size = "lg", children }) => {
   const pathname = usePathname();
   const isActive = (path) => pathname === path;
   const styles = sizeStyles[size];
@@ -72,128 +72,134 @@ const AppSidebar = ({ user, size = "lg" }) => {
   ];
 
   return (
-    <SidebarProvider defaultOpen>
-      <Sidebar className="bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] z-50">
-        {/* Decorative waves */}
-        <div className="absolute inset-x-0 bottom-0 pointer-events-none opacity-20" style={{ height: '100%' }}>
-          <svg
-            className="absolute bottom-0 h-full"
-            preserveAspectRatio="none"
-            viewBox="0 0 1000 1000"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* First wave - slowest, biggest */}
-            <path
-              d="M0,350 
-                 C200,300 300,400 500,350 
-                 C700,300 800,400 1000,350 
-                 C1200,300 1300,400 1500,350 
-                 L1500,1000 L0,1000 Z"
-              fill="rgb(30 64 175)"
-              className="animate-[wave1_25s_linear_infinite]"
-            />
-            {/* Second wave - medium speed, different pattern */}
-            <path
-              d="M0,400 
-                 C150,350 250,450 400,400 
-                 C550,350 650,450 800,400 
-                 C950,350 1050,450 1200,400 
-                 L1200,1000 L0,1000 Z"
-              fill="rgb(37 99 235)"
-              className="animate-[wave2_18s_linear_infinite]"
-            />
-            {/* Third wave - fastest, most detailed */}
-            <path
-              d="M0,450 
-                 C100,400 200,500 300,450 
-                 C400,400 500,500 600,450 
-                 C700,400 800,500 900,450 
-                 C1000,400 1100,500 1200,450 
-                 L1200,1000 L0,1000 Z"
-              fill="rgb(59 130 246)"
-              className="animate-[wave3_12s_linear_infinite]"
-            />
-          </svg>
-        </div>
-
-        <style jsx>{`
-          @keyframes wave1 {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-500px); }
-          }
-          @keyframes wave2 {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-400px); }
-          }
-          @keyframes wave3 {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-300px); }
-          }
-        `}</style>
-
-        <SidebarHeader className={cn("border-b border-blue-700 relative", styles.spacing.container)}>
-          <Link href="/">
-            <Image
-              src="/images/sidebarLogo.png"
-              alt="Logo"
-              className={cn("w-auto rounded-none", styles.logo)}
-              radius="none"
-            />
-          </Link>
-        </SidebarHeader>
-        <SidebarContent className="relative">
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem 
-                key={item.href} 
-                asChild
-                className={cn(
-                  "text-gray-300 hover:text-white hover:bg-blue-600",
-                  styles.text,
-                  isActive(item.href) && "bg-blue-600 text-white"
-                )}
-              >
-                <Link href={item.href} className={cn("flex items-center", styles.spacing.item, styles.spacing.gap)}>
-                  <item.icon className={styles.icon} />
-                  {item.label}
-                </Link>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter className={cn("border-t border-blue-700 relative", styles.spacing.container)}>
-          {user && (
-            <div className={cn("flex items-center px-2 mb-4", styles.spacing.gap)}>
-              <img
-                src={user.avatar}
-                alt={`${user.firstName} ${user.lastName}'s avatar`}
-                className={cn("rounded-full bg-blue-800 p-1", styles.avatar)}
+    <div className="flex h-screen">
+      <SidebarProvider defaultOpen>
+        <Sidebar className="bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] z-50">
+          {/* Decorative waves */}
+          <div className="absolute inset-x-0 bottom-0 pointer-events-none opacity-20" style={{ height: '100%' }}>
+            <svg
+              className="absolute bottom-0 h-full"
+              preserveAspectRatio="none"
+              viewBox="0 0 1000 1000"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* First wave - slowest, biggest */}
+              <path
+                d="M0,350 
+                   C200,300 300,400 500,350 
+                   C700,300 800,400 1000,350 
+                   C1200,300 1300,400 1500,350 
+                   L1500,1000 L0,1000 Z"
+                fill="rgb(30 64 175)"
+                className="animate-[wave1_25s_linear_infinite]"
               />
-              <div className="flex-1 min-w-0">
-                <h3 className={cn("text-white font-medium truncate", styles.text)}>
-                  {user.firstName} {user.lastName}
-                </h3>
-                <p className={cn("text-blue-200 truncate", styles.text)}>
-                  {user.role}
-                </p>
+              {/* Second wave - medium speed, different pattern */}
+              <path
+                d="M0,400 
+                   C150,350 250,450 400,400 
+                   C550,350 650,450 800,400 
+                   C950,350 1050,450 1200,400 
+                   L1200,1000 L0,1000 Z"
+                fill="rgb(37 99 235)"
+                className="animate-[wave2_18s_linear_infinite]"
+              />
+              {/* Third wave - fastest, most detailed */}
+              <path
+                d="M0,450 
+                   C100,400 200,500 300,450 
+                   C400,400 500,500 600,450 
+                   C700,400 800,500 900,450 
+                   C1000,400 1100,500 1200,450 
+                   L1200,1000 L0,1000 Z"
+                fill="rgb(59 130 246)"
+                className="animate-[wave3_12s_linear_infinite]"
+              />
+            </svg>
+          </div>
+
+          <style jsx>{`
+            @keyframes wave1 {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-500px); }
+            }
+            @keyframes wave2 {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-400px); }
+            }
+            @keyframes wave3 {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-300px); }
+            }
+          `}</style>
+
+          <SidebarHeader className={cn("border-b border-blue-700 relative", styles.spacing.container)}>
+            <Link href="/">
+              <Image
+                src="/images/sidebarLogo.png"
+                alt="Logo"
+                className={cn("w-auto rounded-none", styles.logo)}
+                radius="none"
+              />
+            </Link>
+          </SidebarHeader>
+          <SidebarContent className="relative">
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem 
+                  key={item.href} 
+                  asChild
+                  className={cn(
+                    "text-gray-300 hover:text-white hover:bg-blue-600",
+                    styles.text,
+                    isActive(item.href) && "bg-blue-600 text-white"
+                  )}
+                >
+                  <Link href={item.href} className={cn("flex items-center", styles.spacing.item, styles.spacing.gap)}>
+                    <item.icon className={styles.icon} />
+                    {item.label}
+                  </Link>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarFooter className={cn("border-t border-blue-700 relative", styles.spacing.container)}>
+            {user && (
+              <div className={cn("flex items-center px-2 mb-4", styles.spacing.gap)}>
+                <img
+                  src={user.avatar}
+                  alt={`${user.firstName} ${user.lastName}'s avatar`}
+                  className={cn("rounded-full bg-blue-800 p-1", styles.avatar)}
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className={cn("text-white font-medium truncate", styles.text)}>
+                    {user.firstName} {user.lastName}
+                  </h3>
+                  <p className={cn("text-blue-200 truncate", styles.text)}>
+                    {user.role}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-          <Button 
-            variant="ghost" 
-            className={cn(
-              "w-full justify-start text-gray-300 hover:text-white hover:bg-blue-600",
-              styles.text,
-              styles.spacing.item,
-              styles.spacing.gap
             )}
-          >
-            <BiLogOut className={styles.icon} />
-            Logout
-          </Button>
-        </SidebarFooter>
-      </Sidebar>
-    </SidebarProvider>
+            <Button 
+              variant="ghost" 
+              className={cn(
+                "w-full justify-start text-gray-300 hover:text-white hover:bg-blue-600",
+                styles.text,
+                styles.spacing.item,
+                styles.spacing.gap
+              )}
+            >
+              <BiLogOut className={styles.icon} />
+              Logout
+            </Button>
+          </SidebarFooter>
+        </Sidebar>
+        <div className="flex-1 min-w-0 bg-gray-50 p-8 h-full">
+          {children}
+        </div>
+      </SidebarProvider>
+      
+    </div>
   );
 };
 

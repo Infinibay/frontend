@@ -1,4 +1,5 @@
 import AppSidebar from "../components/ui/navbar";
+import { UserPc } from "../components/ui/user-pc";
 
 export default {
   title: "Navigation/AppSidebar",
@@ -6,13 +7,6 @@ export default {
   parameters: {
     layout: "fullscreen",
   },
-  decorators: [
-    (Story) => (
-      <div style={{ height: "100vh", width: "280px" }}>
-        <Story />
-      </div>
-    ),
-  ],
   tags: ['autodocs'],
   argTypes: {
     user: {
@@ -34,6 +28,14 @@ export const Default = {
     user: null,
     size: 'md'
   },
+  render: (args) => (
+    <AppSidebar {...args}>
+      <div className="bg-gray-50 p-8 h-full">
+        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
+        <p>This is the main content area.</p>
+      </div>
+    </AppSidebar>
+  )
 };
 
 // Story with user information
@@ -47,6 +49,14 @@ export const WithUser = {
     },
     size: 'md'
   },
+  render: (args) => (
+    <AppSidebar {...args}>
+      <div className="bg-gray-50 p-8 h-full">
+        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
+        <p>This is the main content area with user information.</p>
+      </div>
+    </AppSidebar>
+  )
 };
 
 // Size Variants
@@ -60,6 +70,14 @@ export const Small = {
       role: "Administrator"
     }
   },
+  render: (args) => (
+    <AppSidebar {...args}>
+      <div className="bg-gray-50 p-8 h-full">
+        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
+        <p>This is the main content area.</p>
+      </div>
+    </AppSidebar>
+  )
 };
 
 export const Medium = {
@@ -72,6 +90,14 @@ export const Medium = {
       role: "Administrator"
     }
   },
+  render: (args) => (
+    <AppSidebar {...args}>
+      <div className="bg-gray-50 p-8 h-full">
+        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
+        <p>This is the main content area.</p>
+      </div>
+    </AppSidebar>
+  )
 };
 
 export const Large = {
@@ -84,4 +110,71 @@ export const Large = {
       role: "Administrator"
     }
   },
+  render: (args) => (
+    <AppSidebar {...args}>
+      <div className="bg-gray-50 p-8 h-full">
+        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
+        <p>This is the main content area.</p>
+      </div>
+    </AppSidebar>
+  )
+};
+
+// Story with user PCs list
+export const WithUserPCs = {
+  args: {
+    user: {
+      firstName: "John",
+      lastName: "Doe",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+      role: "Administrator"
+    },
+    size: 'md'
+  },
+  render: (args) => (
+    <AppSidebar {...args}>
+      <div>
+        <h1 className="text-2xl font-bold mb-6">User PCs</h1>
+        <div className="flex gap-4 flex-wrap">
+          <UserPc
+            name="Development PC"
+            status="running"
+            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Alice"
+            selected={true}
+            onClick={() => console.log('Development PC clicked')}
+          />
+          <UserPc
+            name="Testing Environment"
+            status="building"
+            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Bob"
+            onClick={() => console.log('Testing Environment clicked')}
+          />
+          <UserPc
+            name="Production Server"
+            status="idle"
+            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie"
+            onClick={() => console.log('Production Server clicked')}
+          />
+          <UserPc
+            name="Backup Server"
+            status="idle"
+            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=David"
+            onClick={() => console.log('Backup Server clicked')}
+          />
+          <UserPc
+            name="Database Server"
+            status="running"
+            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Eve"
+            onClick={() => console.log('Database Server clicked')}
+          />
+          <UserPc
+            name="Load Balancer"
+            status="idle"
+            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Frank"
+            onClick={() => console.log('Load Balancer clicked')}
+          />
+        </div>
+      </div>
+    </AppSidebar>
+  )
 };
