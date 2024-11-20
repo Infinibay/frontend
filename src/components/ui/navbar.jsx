@@ -57,6 +57,17 @@ const sizeStyles = {
       gap: "gap-3"
     },
     avatar: "w-12 h-12"
+  },
+  xl: {
+    logo: "h-12",
+    text: "text-xl",
+    icon: "h-6 w-6",
+    spacing: {
+      container: "p-8",
+      item: "px-8 py-4",
+      gap: "gap-4"
+    },
+    avatar: "w-14 h-14"
   }
 };
 

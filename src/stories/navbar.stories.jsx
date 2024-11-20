@@ -57,7 +57,7 @@ export default function Layout() {
     },
     size: {
       control: 'select',
-      options: ['sm', 'md', 'lg'],
+      options: ['sm', 'md', 'lg', 'xl'],
       description: 'Size variant of the sidebar',
       defaultValue: 'lg'
     }
