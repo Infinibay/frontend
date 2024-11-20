@@ -14,7 +14,8 @@ const DragAndDrop = ({
   containerClassName,
   acceptFrom,
   listId,
-  dropPosition = 'anywhere' // 'start', 'end', 'anywhere'
+  dropPosition = 'anywhere',
+  animationSpeed = 'normal' // 'slow', 'normal', 'fast'
 }) => {
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -22,6 +23,39 @@ const DragAndDrop = ({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const itemRefs = useRef(new Map());
   const containerRef = useRef(null);
+
+  // Animation duration mappings
+  const animationDurations = {
+    slow: {
+      placeholder: 0.4,
+      drag: {
+        type: "spring",
+        stiffness: 200,
+        damping: 25
+      },
+      exit: 0.5
+    },
+    normal: {
+      placeholder: 0.2,
+      drag: {
+        type: "spring",
+        stiffness: 300,
+        damping: 25
+      },
+      exit: 0.3
+    },
+    fast: {
+      placeholder: 0.1,
+      drag: {
+        type: "spring",
+        stiffness: 400,
+        damping: 25
+      },
+      exit: 0.2
+    }
+  };
+
+  const currentAnimation = animationDurations[animationSpeed];
 
   const handleDragStart = (e, item) => {
     setDraggedItem(item);
@@ -161,12 +195,12 @@ const DragAndDrop = ({
                   animate={{ 
                     opacity: 1, 
                     height: 'auto',
-                    transition: { duration: 0.2 }
+                    transition: { duration: currentAnimation.placeholder }
                   }}
                   exit={{ 
                     opacity: 0, 
                     height: 0,
-                    transition: { duration: 0.2 }
+                    transition: { duration: currentAnimation.placeholder }
                   }}
                   className="bg-primary/10 rounded-md border-2 border-dashed border-primary/30 h-16"
                 />
@@ -186,11 +220,7 @@ const DragAndDrop = ({
                 animate={{ 
                   opacity: 1, 
                   y: 0,
-                  transition: { 
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 25
-                  }
+                  transition: currentAnimation.drag
                 }}
                 exit={{ 
                   opacity: 0,
@@ -198,7 +228,7 @@ const DragAndDrop = ({
                   y: mousePosition.y,
                   scale: 0.5,
                   transition: { 
-                    duration: 0.3,
+                    duration: currentAnimation.exit,
                     ease: "easeInOut"
                   }
                 }}
@@ -215,12 +245,12 @@ const DragAndDrop = ({
               animate={{ 
                 opacity: 1, 
                 height: 'auto',
-                transition: { duration: 0.2 }
+                transition: { duration: currentAnimation.placeholder }
               }}
               exit={{ 
                 opacity: 0, 
                 height: 0,
-                transition: { duration: 0.2 }
+                transition: { duration: currentAnimation.placeholder }
               }}
               className="bg-primary/10 rounded-md border-2 border-dashed border-primary/30 h-16"
             />
@@ -246,7 +276,8 @@ DragAndDrop.propTypes = {
   containerClassName: PropTypes.string,
   acceptFrom: PropTypes.arrayOf(PropTypes.string),
   listId: PropTypes.string,
-  dropPosition: PropTypes.oneOf(['start', 'end', 'anywhere'])
+  dropPosition: PropTypes.oneOf(['start', 'end', 'anywhere']),
+  animationSpeed: PropTypes.oneOf(['slow', 'normal', 'fast'])
 };
 
 export default DragAndDrop;

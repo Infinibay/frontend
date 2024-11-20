@@ -1,10 +1,149 @@
 import React, { useState } from 'react';
 import DragAndDrop from '../components/ui/drag-and-drop';
 
+/**
+ * A flexible drag and drop component that supports both single-list reordering and cross-list item transfers.
+ * Features smooth animations, customizable drop positions, and support for custom item rendering.
+ */
 export default {
   title: 'UI/DragAndDrop',
   component: DragAndDrop,
   tags: ['autodocs'],
+  argTypes: {
+    items: {
+      description: 'Array of items to be rendered in the list. Each item must have a unique "id" property.',
+      control: 'object',
+      table: {
+        type: { summary: 'Array<{ id: string | number, ... }>' }
+      }
+    },
+    onDrop: {
+      description: 'Callback fired when an item is dropped from another list. Receives (id, sourceListId, targetIndex, item).',
+      control: false,
+      table: {
+        type: { summary: '(id: string | number, sourceListId: string, targetIndex: number, item: any) => void' }
+      }
+    },
+    onOrderChange: {
+      description: 'Callback fired when the order of items changes. Receives the new array of items.',
+      control: false,
+      table: {
+        type: { summary: '(items: Array<any>) => void' }
+      }
+    },
+    className: {
+      description: 'Additional CSS class for the items container.',
+      control: 'text',
+      table: {
+        type: { summary: 'string' }
+      }
+    },
+    itemClassName: {
+      description: 'CSS class applied to each draggable item.',
+      control: 'text',
+      table: {
+        type: { summary: 'string' }
+      }
+    },
+    renderItem: {
+      description: 'Custom render function for list items. If not provided, renders item.id.',
+      control: false,
+      table: {
+        type: { summary: '(item: any) => ReactNode' }
+      }
+    },
+    dragOverClassName: {
+      description: 'CSS class applied when dragging over the container.',
+      control: 'text',
+      defaultValue: 'bg-secondary/50',
+      table: {
+        type: { summary: 'string' },
+        defaultValue: { summary: 'bg-secondary/50' }
+      }
+    },
+    containerClassName: {
+      description: 'Additional CSS class for the outer container.',
+      control: 'text',
+      table: {
+        type: { summary: 'string' }
+      }
+    },
+    acceptFrom: {
+      description: 'Array of listIds from which this list accepts items. If not provided, accepts from any list.',
+      control: 'object',
+      table: {
+        type: { summary: 'Array<string>' }
+      }
+    },
+    listId: {
+      description: 'Unique identifier for the list. Required for cross-list operations.',
+      control: 'text',
+      table: {
+        type: { summary: 'string' }
+      }
+    },
+    dropPosition: {
+      description: 'Controls where items can be dropped.',
+      control: { type: 'select' },
+      options: ['start', 'end', 'anywhere'],
+      defaultValue: 'anywhere',
+      table: {
+        type: { summary: 'string' },
+        defaultValue: { summary: 'anywhere' }
+      }
+    },
+    animationSpeed: {
+      description: 'Controls the speed of all animations in the component.',
+      control: { type: 'select' },
+      options: ['slow', 'normal', 'fast'],
+      defaultValue: 'normal',
+      table: {
+        type: { summary: 'string' },
+        defaultValue: { summary: 'normal' }
+      }
+    }
+  },
+  parameters: {
+    docs: {
+      description: {
+        component: `
+A highly customizable drag and drop component built with Framer Motion.
+
+### Features
+- Smooth animations for drag and drop operations with customizable speeds
+- Support for both single-list reordering and cross-list transfers
+- Customizable drop positions (start, end, or anywhere)
+- Custom item rendering
+- Tailwind CSS integration
+- Accessible drag and drop interface
+
+### Basic Usage
+
+\`\`\`jsx
+const [items, setItems] = useState([
+  { id: 1, title: 'Item 1' },
+  { id: 2, title: 'Item 2' }
+]);
+
+return (
+  <DragAndDrop
+    items={items}
+    onOrderChange={setItems}
+    listId="my-list"
+    renderItem={(item) => <div>{item.title}</div>}
+    animationSpeed="normal"
+  />
+);
+\`\`\`
+
+### Animation Speeds
+- slow: Gentle, smooth animations (0.4s-0.5s)
+- normal: Balanced animations (0.2s-0.3s)
+- fast: Quick, snappy animations (0.1s-0.2s)
+        `
+      }
+    }
+  }
 };
 
 const items = [
@@ -22,6 +161,10 @@ const renderItem = (item) => (
   </div>
 );
 
+/**
+ * Basic example showing drag and drop within a single list.
+ * Items can be reordered by dragging them to any position.
+ */
 export const Default = () => {
   const [currentItems, setCurrentItems] = useState(items.slice(0, 3));
 
@@ -44,6 +187,10 @@ export const Default = () => {
   );
 };
 
+/**
+ * Example showing drag and drop between two lists.
+ * Items can be moved within each list and transferred between lists.
+ */
 export const TwoLists = () => {
   const [list1Items, setList1Items] = useState(items.slice(0, 3));
   const [list2Items, setList2Items] = useState(items.slice(3));
@@ -88,6 +235,7 @@ export const TwoLists = () => {
             containerClassName="bg-primary/5"
             renderItem={renderItem}
             dropPosition="anywhere"
+            animationSpeed="slow"
           />
         </div>
         <div>
@@ -101,6 +249,7 @@ export const TwoLists = () => {
             containerClassName="bg-secondary/5"
             renderItem={renderItem}
             dropPosition="anywhere"
+            animationSpeed="slow"
           />
         </div>
       </div>
@@ -122,6 +271,12 @@ export const TwoLists = () => {
   );
 };
 
+/**
+ * Example demonstrating different drop position modes:
+ * - start: Only allows dropping at the beginning of the list
+ * - end: Only allows dropping at the end of the list
+ * - anywhere: Allows dropping between any items
+ */
 export const DropPositionExamples = () => {
   const [startItems, setStartItems] = useState(items.slice(0, 2));
   const [endItems, setEndItems] = useState(items.slice(2, 4));
@@ -215,6 +370,34 @@ export const DropPositionExamples = () => {
             {JSON.stringify(anywhereItems, null, 2)}
           </pre>
         </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Example demonstrating different animation speeds.
+ * Try changing the animation speed using the controls panel.
+ */
+export const AnimationSpeedExample = () => {
+  const [currentItems, setCurrentItems] = useState(items.slice(0, 3));
+
+  return (
+    <div className="space-y-4">
+      <DragAndDrop 
+        items={currentItems} 
+        onOrderChange={setCurrentItems}
+        listId="animation-speed-example"
+        dropPosition="anywhere"
+        renderItem={renderItem}
+        animationSpeed="normal"
+      />
+      <div className="p-4 bg-muted/50 rounded-lg">
+        <h3 className="font-semibold mb-2">Try different speeds:</h3>
+        <p className="text-sm text-muted-foreground">
+          Change the animation speed using the controls panel above.
+          The speed affects all animations including drag, drop, and placeholder transitions.
+        </p>
       </div>
     </div>
   );
