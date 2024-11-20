@@ -1,10 +1,52 @@
 import AppSidebar from "../components/ui/navbar";
 import { UserPc } from "../components/ui/user-pc";
 
+/**
+ * Navigation bar component that provides consistent header styling and navigation functionality.
+ * 
+ * @component
+ * @example
+ * // How to import the component:
+ * import { AppSidebar } from '../components/ui/navbar'
+ * 
+ * // Basic usage:
+ * export default function Layout() {
+ *   return (
+ *     <div>
+ *       <AppSidebar />
+ *       {/* Your page content \*\/}
+ *     </div>
+ *   )
+ * }
+ */
 export default {
   title: "Navigation/AppSidebar",
   component: AppSidebar,
   parameters: {
+    componentSubtitle: 'Main navigation component for the application',
+    docs: {
+      description: {
+        component: `
+### Import
+\`\`\`jsx
+import { AppSidebar } from '../components/ui/navbar'
+\`\`\`
+
+### Usage
+\`\`\`jsx
+// Basic usage in layout
+export default function Layout() {
+  return (
+    <div>
+      <AppSidebar />
+      <main>{/* Your page content */}</main>
+    </div>
+  )
+}
+\`\`\`
+        `,
+      },
+    },
     layout: "fullscreen",
   },
   tags: ['autodocs'],

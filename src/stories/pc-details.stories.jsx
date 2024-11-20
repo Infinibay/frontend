@@ -4,39 +4,120 @@ import { UserPc } from "@/components/ui/user-pc";
 import { Button } from "@/components/ui/button";
 import { fn } from '@storybook/test';
 
+/**
+ * A detailed view component for displaying and editing PC specifications.
+ * 
+ * @component
+ * @example
+ * // How to import the component:
+ * import { PcDetails } from '@/components/ui/pc-details'
+ * 
+ * // Basic usage:
+ * export default function PCView({ pc }) {
+ *   return (
+ *     <PcDetails
+ *       pc={pc}
+ *       onSave={(updatedPc) => console.log('PC Updated:', updatedPc)}
+ *     />
+ *   )
+ * }
+ * 
+ * // With all props:
+ * export default function PCView({ pc }) {
+ *   return (
+ *     <PcDetails
+ *       pc={pc}
+ *       onSave={handleSave}
+ *       onDelete={handleDelete}
+ *       isEditing={true}
+ *       className="max-w-2xl mx-auto"
+ *     />
+ *   )
+ * }
+ */
 export default {
   title: 'Components/PcDetails',
   component: PcDetails,
   tags: ['autodocs'],
   parameters: {
+    componentSubtitle: 'Detailed PC specifications viewer and editor',
+    docs: {
+      description: {
+        component: `
+### Import
+\`\`\`jsx
+import { PcDetails } from '@/components/ui/pc-details'
+\`\`\`
+
+### Usage
+\`\`\`jsx
+// Basic view mode
+<PcDetails pc={pcData} />
+
+// Edit mode with save handler
+<PcDetails
+  pc={pcData}
+  isEditing={true}
+  onSave={handleSave}
+/>
+
+// With delete functionality
+<PcDetails
+  pc={pcData}
+  onDelete={handleDelete}
+  isEditing={true}
+  onSave={handleSave}
+/>
+\`\`\`
+        `,
+      },
+    },
     layout: 'centered',
   },
   argTypes: {
     pc: {
       control: 'object',
       description: 'VM information object containing name, userName, os, ram, cpu, storage, vmId, status, screenshot, and avatar',
+      table: {
+        type: { summary: 'PCData' },
+      },
     },
     onPlay: {
       action: 'played',
       description: 'Callback when play button is clicked',
+      table: {
+        type: { summary: '() => void' },
+      },
     },
     onPause: {
       action: 'paused',
       description: 'Callback when pause button is clicked',
+      table: {
+        type: { summary: '() => void' },
+      },
     },
     onStop: {
       action: 'stopped',
       description: 'Callback when stop button is clicked',
+      table: {
+        type: { summary: '() => void' },
+      },
     },
     onFullScreen: {
       action: 'fullscreen',
       description: 'Callback when fullscreen button is clicked',
+      table: {
+        type: { summary: '() => void' },
+      },
     },
     size: {
       control: 'select',
       options: ['sm', 'md', 'lg'],
       description: 'Controls the size of text and icons throughout the component',
-      defaultValue: 'md',
+      table: {
+        type: { summary: 'string' },
+        defaultValue: { summary: 'md' },
+      },
     },
   },
 };

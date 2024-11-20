@@ -1,18 +1,83 @@
-import { fn } from '@storybook/test';
+import { Button } from "@/components/ui/button";
 
-import { Button } from '@/components/ui/button';
-
+/**
+ * A customizable button component with various styles and variants.
+ * 
+ * @component
+ * @example
+ * // How to import the component:
+ * import { Button } from '@/components/ui/button'
+ * 
+ * // Basic usage:
+ * export default function MyComponent() {
+ *   return (
+ *     <Button onClick={() => console.log('Clicked!')}>
+ *       Click me
+ *     </Button>
+ *   )
+ * }
+ * 
+ * // With variants and sizes:
+ * export default function MyComponent() {
+ *   return (
+ *     <>
+ *       <Button variant="default" size="default">
+ *         Default Button
+ *       </Button>
+ *       <Button variant="destructive" size="lg">
+ *         Delete
+ *       </Button>
+ *       <Button variant="outline" size="sm">
+ *         Small Outline
+ *       </Button>
+ *     </>
+ *   )
+ * }
+ */
 export default {
-  component: Button,
   title: 'Components/Button',
+  component: Button,
   tags: ['autodocs'],
-  args: {
-    // All existing styles with names. Valid values are default, destructive, secondary, outline, ghost, ghost-invert
-    variant: 'default',
-    // Size of the button. Valid values are default, sm, lg, icon
-    size: 'default',
-    // Button content
-    children: 'Button',
+  parameters: {
+    componentSubtitle: 'Interactive button component with multiple variants and sizes',
+    docs: {
+      description: {
+        component: `
+### Import
+\`\`\`jsx
+import { Button } from '@/components/ui/button'
+\`\`\`
+
+### Usage
+\`\`\`jsx
+// Basic button
+<Button>Click me</Button>
+
+// With variants
+<Button variant="default">Default</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="secondary">Secondary</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="link">Link</Button>
+
+// With sizes
+<Button size="default">Default Size</Button>
+<Button size="sm">Small</Button>
+<Button size="lg">Large</Button>
+
+// With icon
+<Button>
+  <IconComponent className="mr-2 h-4 w-4" />
+  With Icon
+</Button>
+
+// Disabled state
+<Button disabled>Disabled</Button>
+\`\`\`
+        `,
+      },
+    },
   },
   argTypes: {
     children: {
@@ -22,23 +87,55 @@ export default {
     variant: {
       control: 'select',
       options: ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link'],
-      description: 'The visual style of the button',
+      description: 'The visual style variant of the button',
+      defaultValue: 'default',
+      table: {
+        type: { summary: "'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'" },
+        defaultValue: { summary: 'default' },
+      },
     },
     size: {
       control: 'select',
       options: ['default', 'sm', 'lg', 'icon'],
       description: 'The size of the button',
+      defaultValue: 'default',
+      table: {
+        type: { summary: "'default' | 'sm' | 'lg' | 'icon'" },
+        defaultValue: { summary: 'default' },
+      },
+    },
+    disabled: {
+      control: 'boolean',
+      description: 'Whether the button is disabled',
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: false },
+      },
+    },
+    className: {
+      control: 'text',
+      description: 'Additional CSS classes to apply',
+      table: {
+        type: { summary: 'string' },
+      },
+    },
+    asChild: {
+      control: 'boolean',
+      description: 'Whether to render the button as a child component',
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: false },
+      },
     },
     onClick: { action: 'clicked' }
   }
 };
 
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
 export const Default = {
   args: {
+    children: 'Button',
     variant: 'default',
     size: 'default',
-    children: 'Default Button',
   },
 };
 
