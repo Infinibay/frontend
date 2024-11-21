@@ -9,6 +9,13 @@ import {
 import { arrayMove } from '@dnd-kit/sortable';
 import { cn } from "../../lib/utils";
 import DragAndDrop from './drag-and-drop';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "./context-menu";
+import { DownloadIcon, TrashIcon } from "@radix-ui/react-icons";
 
 const DropZone = ({ id, children, isEmpty, className, emptyClassName }) => {
   const { setNodeRef } = useDroppable({ id });
@@ -147,11 +154,32 @@ const DualList = ({
     onChange?.({ leftItems: newLeftItems, rightItems: newRightItems });
   };
 
-  const renderWithDoubleClick = (item, props) => {
+  const renderWithContextMenu = (item, props) => {
+    const isInLeftList = leftItems.find(i => i.id === item.id);
+    
     return (
-      <div onDoubleClick={() => handleDoubleClick(item)}>
-        {renderItem(item, props)}
-      </div>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div onDoubleClick={() => handleDoubleClick(item)}>
+            {renderItem(item, props)}
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onClick={() => handleDoubleClick(item)}>
+            {isInLeftList ? (
+              <>
+                <DownloadIcon className="mr-2 h-4 w-4" />
+                Install
+              </>
+            ) : (
+              <>
+                <TrashIcon className="mr-2 h-4 w-4" />
+                Uninstall
+              </>
+            )}
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
     );
   };
 
@@ -186,7 +214,7 @@ const DualList = ({
             <DragAndDrop
               items={leftItems}
               listId="left"
-              renderItem={renderWithDoubleClick}
+              renderItem={renderWithContextMenu}
               containerClassName={cn(
                 "bg-transparent border-none p-0",
                 getLayoutClassName(),
@@ -207,7 +235,7 @@ const DualList = ({
             <DragAndDrop
               items={rightItems}
               listId="right"
-              renderItem={renderWithDoubleClick}
+              renderItem={renderWithContextMenu}
               containerClassName={cn(
                 "bg-transparent border-none p-0",
                 getLayoutClassName(),
