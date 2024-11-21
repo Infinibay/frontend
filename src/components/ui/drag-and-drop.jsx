@@ -21,6 +21,7 @@ const DragAndDrop = ({
   containerClassName,
   layout = 'vertical', // 'vertical', 'horizontal', or 'grid'
 }) => {
+
   const getSortingStrategy = () => {
     switch (layout) {
       case 'horizontal':

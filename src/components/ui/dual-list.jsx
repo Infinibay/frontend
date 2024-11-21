@@ -40,6 +40,7 @@ const DualList = ({
   layout = "vertical", // 'vertical', 'horizontal', or 'grid'
   containerClassName,
   listClassName,
+  sensors,
   canDrag = () => true // Add canDrag prop with default function
 }) => {
   const [leftItems, setLeftItems] = useState(initialLeftItems);
@@ -128,6 +129,32 @@ const DualList = ({
     return [...leftItems, ...rightItems].find(item => item.id === id);
   };
 
+  const handleDoubleClick = (item) => {
+    if (!canDrag(item)) return;
+
+    let newLeftItems, newRightItems;
+
+    if (leftItems.find(i => i.id === item.id)) {
+      newLeftItems = leftItems.filter(i => i.id !== item.id);
+      newRightItems = [...rightItems, item];
+    } else {
+      newLeftItems = [...leftItems, item];
+      newRightItems = rightItems.filter(i => i.id !== item.id);
+    }
+
+    setLeftItems(newLeftItems);
+    setRightItems(newRightItems);
+    onChange?.({ leftItems: newLeftItems, rightItems: newRightItems });
+  };
+
+  const renderWithDoubleClick = (item, props) => {
+    return (
+      <div onDoubleClick={() => handleDoubleClick(item)}>
+        {renderItem(item, props)}
+      </div>
+    );
+  };
+
   const getLayoutClassName = () => {
     switch (layout) {
       case 'horizontal':
@@ -145,6 +172,7 @@ const DualList = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       collisionDetection={closestCenter}
+      sensors={sensors}
     >
       <div className={cn("flex gap-4", containerClassName)}>
         <div className="flex-1">
@@ -158,14 +186,13 @@ const DualList = ({
             <DragAndDrop
               items={leftItems}
               listId="left"
-              renderItem={renderItem}
+              renderItem={renderWithDoubleClick}
               containerClassName={cn(
                 "bg-transparent border-none p-0",
                 getLayoutClassName(),
                 listClassName
               )}
               layout={layout}
-              canDrag={canDrag}
             />
           </DropZone>
         </div>
@@ -180,14 +207,13 @@ const DualList = ({
             <DragAndDrop
               items={rightItems}
               listId="right"
-              renderItem={renderItem}
+              renderItem={renderWithDoubleClick}
               containerClassName={cn(
                 "bg-transparent border-none p-0",
                 getLayoutClassName(),
                 listClassName
               )}
               layout={layout}
-              canDrag={canDrag}
             />
           </DropZone>
         </div>
@@ -219,6 +245,7 @@ DualList.propTypes = {
   layout: PropTypes.oneOf(['vertical', 'horizontal', 'grid']),
   containerClassName: PropTypes.string,
   listClassName: PropTypes.string,
+  sensors: PropTypes.func,
   canDrag: PropTypes.func
 };
 

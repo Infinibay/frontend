@@ -8,6 +8,8 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -36,9 +38,23 @@ const AppInstaller = ({
   const [processingApps, setProcessingApps] = useState(new Set());
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 16,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
+    }),
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 16,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        distance: 16,
+      },
     })
   );
 
@@ -59,17 +75,14 @@ const AppInstaller = ({
   const renderApp = useCallback((app, { isDragging, overlay } = {}) => {
     const isProcessing = processingApps.has(app.id);
 
-    console.log('Rendering app:', app.name, 'isDragging:', isDragging); // Debug log
+    // console.log('Rendering app:', app.name, 'isDragging:', isDragging); // Debug log
 
-    if (isDragging) {
-      return null;
-    }
 
     return (
       <div
         className={cn(
           "relative p-4 bg-white rounded-lg border transition-all",
-          "hover:shadow-lg hover:border-primary/20",
+          // "hover:shadow-lg hover:border-primary/20",
           overlay && "shadow-xl shadow-gray-400/20 dark:shadow-black/50 scale-105",
           isProcessing ? "opacity-75" : "hover:scale-[1.02]",
         )}
@@ -172,7 +185,6 @@ const AppInstaller = ({
 
   return (
     <DndContext
-      sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
@@ -185,6 +197,7 @@ const AppInstaller = ({
           renderItem={renderApp}
           onChange={handleChange}
           canDrag={canDrag}
+          sensors={sensors}
         />
       </div>
     </DndContext>
