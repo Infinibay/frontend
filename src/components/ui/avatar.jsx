@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
  * Avatar Component
  * A simple avatar component that displays an image or fallback initials
  */
-const Avatar = ({ src, alt, className }) => {
+export const Avatar = ({ src, alt, className }) => {
   return (
     <div className={cn(
       "relative inline-block h-8 w-8 rounded-full overflow-hidden bg-secondary",
@@ -36,4 +36,4 @@ Avatar.propTypes = {
   className: PropTypes.string
 };
 
-export default Avatar;
+

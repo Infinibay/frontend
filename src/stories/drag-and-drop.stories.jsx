@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card } from '../components/ui/card';
-import Avatar from '../components/ui/avatar';
+import { Avatar } from '../components/ui/avatar';
 import DragAndDrop from '../components/ui/drag-and-drop';
 import { cn } from "../lib/utils";
 import { 
@@ -25,8 +25,8 @@ import {
  * - Custom item rendering with task cards
  * - File list example
  */
-export default {
-  title: 'UI/DragAndDrop',
+const meta = {
+  title: 'components/DragAndDrop',
   component: DragAndDrop,
   tags: ['autodocs'],
   parameters: {
@@ -73,6 +73,8 @@ For the best experience, please view the examples in isolation mode by clicking 
     }
   }
 };
+
+export default meta;
 
 // Sample data for stories
 const tasks = [

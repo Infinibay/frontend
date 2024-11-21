@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../lib/utils';
 import DualList from '../components/ui/dual-list';
 import { Card } from '../components/ui/card';
-import Avatar from '../components/ui/avatar';
+import { Avatar } from '../components/ui/avatar';
 
 const meta = {
   title: 'Components/DualList',

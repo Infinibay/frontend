@@ -40,12 +40,18 @@ const DualList = ({
   layout = "vertical", // 'vertical', 'horizontal', or 'grid'
   containerClassName,
   listClassName,
+  canDrag = () => true // Add canDrag prop with default function
 }) => {
   const [leftItems, setLeftItems] = useState(initialLeftItems);
   const [rightItems, setRightItems] = useState(initialRightItems);
   const [activeId, setActiveId] = useState(null);
 
   const handleDragStart = (event) => {
+    const item = findItemById(event.active.id);
+    if (!item || !canDrag(item)) {
+      event.preventDefault();
+      return;
+    }
     setActiveId(event.active.id);
   };
 
@@ -103,25 +109,18 @@ const DualList = ({
       const newSourceItems = sourceItems.filter(item => item.id !== active.id);
       const newTargetItems = [...targetItems, itemToMove];
 
-      // Call onChange and check if we should update the state
-      const result = onChange?.({ 
-        leftItems: sourceContainer === 'left' ? newSourceItems : newTargetItems,
-        rightItems: sourceContainer === 'left' ? newTargetItems : newSourceItems 
-      });
-
-      // If onChange returns a result with new items, use those instead
-      if (result?.forceUpdate) {
-        setLeftItems(result.leftItems);
-        setRightItems(result.rightItems);
+      if (sourceContainer === 'left') {
+        setLeftItems(newSourceItems);
+        setRightItems(newTargetItems);
       } else {
-        if (sourceContainer === 'left') {
-          setLeftItems(newSourceItems);
-          setRightItems(newTargetItems);
-        } else {
-          setLeftItems(newTargetItems);
-          setRightItems(newSourceItems);
-        }
+        setLeftItems(newTargetItems);
+        setRightItems(newSourceItems);
       }
+
+      onChange?.({
+        leftItems: sourceContainer === 'left' ? newSourceItems : newTargetItems,
+        rightItems: sourceContainer === 'left' ? newTargetItems : newSourceItems
+      });
     }
   };
 
@@ -218,6 +217,7 @@ DualList.propTypes = {
   layout: PropTypes.oneOf(['vertical', 'horizontal', 'grid']),
   containerClassName: PropTypes.string,
   listClassName: PropTypes.string,
+  canDrag: PropTypes.func
 };
 
 export default DualList;
