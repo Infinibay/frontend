@@ -10,7 +10,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { cn } from "../../lib/utils";
 import DragAndDrop from './drag-and-drop';
 
-const DropZone = ({ id, children, isEmpty }) => {
+const DropZone = ({ id, children, isEmpty, className, emptyClassName }) => {
   const { setNodeRef } = useDroppable({ id });
   
   return (
@@ -18,7 +18,9 @@ const DropZone = ({ id, children, isEmpty }) => {
       ref={setNodeRef}
       className={cn(
         "min-h-[120px] transition-colors rounded-lg",
-        isEmpty && "border-2 border-dashed"
+        isEmpty && "border-2 border-dashed",
+        isEmpty && emptyClassName,
+        className
       )}
     >
       {children}
@@ -33,6 +35,11 @@ const DualList = ({
   renderItem,
   leftTitle = "Left List",
   rightTitle = "Right List",
+  dropZoneClassName,
+  emptyDropZoneClassName,
+  layout = "vertical", // 'vertical', 'horizontal', or 'grid'
+  containerClassName,
+  listClassName,
 }) => {
   const [leftItems, setLeftItems] = useState(initialLeftItems);
   const [rightItems, setRightItems] = useState(initialRightItems);
@@ -96,23 +103,42 @@ const DualList = ({
       const newSourceItems = sourceItems.filter(item => item.id !== active.id);
       const newTargetItems = [...targetItems, itemToMove];
 
-      if (sourceContainer === 'left') {
-        setLeftItems(newSourceItems);
-        setRightItems(newTargetItems);
-      } else {
-        setLeftItems(newTargetItems);
-        setRightItems(newSourceItems);
-      }
-
-      onChange?.({
+      // Call onChange and check if we should update the state
+      const result = onChange?.({ 
         leftItems: sourceContainer === 'left' ? newSourceItems : newTargetItems,
-        rightItems: sourceContainer === 'left' ? newTargetItems : newSourceItems
+        rightItems: sourceContainer === 'left' ? newTargetItems : newSourceItems 
       });
+
+      // If onChange returns a result with new items, use those instead
+      if (result?.forceUpdate) {
+        setLeftItems(result.leftItems);
+        setRightItems(result.rightItems);
+      } else {
+        if (sourceContainer === 'left') {
+          setLeftItems(newSourceItems);
+          setRightItems(newTargetItems);
+        } else {
+          setLeftItems(newTargetItems);
+          setRightItems(newSourceItems);
+        }
+      }
     }
   };
 
   const findItemById = (id) => {
     return [...leftItems, ...rightItems].find(item => item.id === id);
+  };
+
+  const getLayoutClassName = () => {
+    switch (layout) {
+      case 'horizontal':
+        return 'flex flex-row flex-wrap gap-2';
+      case 'grid':
+        return 'grid grid-cols-2 sm:grid-cols-3 gap-2';
+      case 'vertical':
+      default:
+        return 'flex flex-col gap-2';
+    }
   };
 
   return (
@@ -121,26 +147,46 @@ const DualList = ({
       onDragEnd={handleDragEnd}
       collisionDetection={closestCenter}
     >
-      <div className="flex gap-4">
+      <div className={cn("flex gap-4", containerClassName)}>
         <div className="flex-1">
           <h3 className="text-lg font-medium mb-4">{leftTitle}</h3>
-          <DropZone id="left" isEmpty={leftItems.length === 0}>
+          <DropZone 
+            id="left" 
+            isEmpty={leftItems.length === 0}
+            className={dropZoneClassName}
+            emptyClassName={emptyDropZoneClassName}
+          >
             <DragAndDrop
               items={leftItems}
               listId="left"
               renderItem={renderItem}
-              containerClassName="bg-transparent border-none p-0"
+              containerClassName={cn(
+                "bg-transparent border-none p-0",
+                getLayoutClassName(),
+                listClassName
+              )}
+              layout={layout}
             />
           </DropZone>
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-medium mb-4">{rightTitle}</h3>
-          <DropZone id="right" isEmpty={rightItems.length === 0}>
+          <DropZone 
+            id="right" 
+            isEmpty={rightItems.length === 0}
+            className={dropZoneClassName}
+            emptyClassName={emptyDropZoneClassName}
+          >
             <DragAndDrop
               items={rightItems}
               listId="right"
               renderItem={renderItem}
-              containerClassName="bg-transparent border-none p-0"
+              containerClassName={cn(
+                "bg-transparent border-none p-0",
+                getLayoutClassName(),
+                listClassName
+              )}
+              layout={layout}
             />
           </DropZone>
         </div>
@@ -167,6 +213,11 @@ DualList.propTypes = {
   renderItem: PropTypes.func.isRequired,
   leftTitle: PropTypes.string,
   rightTitle: PropTypes.string,
+  dropZoneClassName: PropTypes.string,
+  emptyDropZoneClassName: PropTypes.string,
+  layout: PropTypes.oneOf(['vertical', 'horizontal', 'grid']),
+  containerClassName: PropTypes.string,
+  listClassName: PropTypes.string,
 };
 
 export default DualList;

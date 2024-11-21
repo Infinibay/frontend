@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Card } from '../components/ui/card';
 import Avatar from '../components/ui/avatar';
 import DragAndDrop from '../components/ui/drag-and-drop';
-import DualList from '../components/ui/dual-list';
 import { cn } from "../lib/utils";
 import { 
   DndContext, 
@@ -25,7 +24,6 @@ import {
  * - Basic reordering
  * - Custom item rendering with task cards
  * - File list example
- * - Dual list example with team member assignment
  */
 export default {
   title: 'UI/DragAndDrop',
@@ -67,6 +65,9 @@ return (
   />
 );
 \`\`\`
+
+**Note:** Drag and drop animations may not work properly in the documentation view. 
+For the best experience, please view the examples in isolation mode by clicking the example you want to see at the left panel.
         `
       }
     }
@@ -174,14 +175,17 @@ export const TaskBoard = () => {
           <h3 className="font-semibold">{task.title}</h3>
           <span className={cn(
             "px-2 py-1 rounded-full text-xs font-medium",
-            task.priority === 'high' 
+            task.priority === 'High' 
               ? "bg-red-100 text-red-800" 
               : "bg-slate-100 text-slate-800"
           )}>
             {task.priority}
           </span>
         </div>
-        <p className="text-sm text-muted-foreground">{task.description}</p>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Avatar name={task.assignee} size="sm" />
+          <span>{task.assignee}</span>
+        </div>
       </div>
     </Card>
   );
@@ -199,37 +203,5 @@ export const TaskBoard = () => {
         renderItem={renderTask}
       />
     </DndContext>
-  );
-};
-
-/**
- * Example demonstrating drag and drop between two lists
- */
-export const Dual = () => {
-  const [items, setItems] = useState({
-    leftItems: files.slice(0, 3),
-    rightItems: files.slice(3)
-  });
-
-  const renderItem = (item) => (
-    <Card className="p-4">
-      <div className="flex items-center justify-between">
-        <span className="font-medium">{item.name}</span>
-        <span className="text-sm text-muted-foreground">{item.size}</span>
-      </div>
-    </Card>
-  );
-
-  return (
-    <div className="w-[800px]">
-      <DualList
-        leftItems={items.leftItems}
-        rightItems={items.rightItems}
-        onChange={setItems}
-        renderItem={renderItem}
-        leftTitle="Files"
-        rightTitle="Selected Files"
-      />
-    </div>
   );
 };
