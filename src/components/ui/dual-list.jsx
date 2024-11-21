@@ -165,6 +165,7 @@ const DualList = ({
                 listClassName
               )}
               layout={layout}
+              canDrag={canDrag}
             />
           </DropZone>
         </div>
@@ -186,12 +187,13 @@ const DualList = ({
                 listClassName
               )}
               layout={layout}
+              canDrag={canDrag}
             />
           </DropZone>
         </div>
       </div>
-      <DragOverlay>
-        {activeId ? renderItem(findItemById(activeId)) : null}
+      <DragOverlay className="shadow-xl shadow-gray-400/50 dark:shadow-black/50 scale-105">
+        {activeId ? renderItem(findItemById(activeId), { overlay: true }) : null}
       </DragOverlay>
     </DndContext>
   );
@@ -208,7 +210,7 @@ DualList.propTypes = {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
     })
   ).isRequired,
-  onChange: PropTypes.func,
+  onChange: PropTypes.func.isRequired,
   renderItem: PropTypes.func.isRequired,
   leftTitle: PropTypes.string,
   rightTitle: PropTypes.string,

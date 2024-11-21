@@ -56,14 +56,21 @@ const AppInstaller = ({
     }
   }, []);
 
-  const renderApp = (app) => {
+  const renderApp = useCallback((app, { isDragging, overlay } = {}) => {
     const isProcessing = processingApps.has(app.id);
+
+    console.log('Rendering app:', app.name, 'isDragging:', isDragging); // Debug log
+
+    if (isDragging) {
+      return null;
+    }
 
     return (
       <div
         className={cn(
           "relative p-4 bg-white rounded-lg border transition-all",
           "hover:shadow-lg hover:border-primary/20",
+          overlay && "shadow-xl shadow-gray-400/20 dark:shadow-black/50 scale-105",
           isProcessing ? "opacity-75" : "hover:scale-[1.02]",
         )}
       >
@@ -93,7 +100,11 @@ const AppInstaller = ({
         </div>
       </div>
     );
-  };
+  }, [processingApps]);
+
+  const canDrag = useCallback((item) => {
+    return !['installing', 'uninstalling'].includes(item.status);
+  }, []);
 
   const handleChange = async ({ leftItems, rightItems }) => {
     // Find which app was moved by comparing the previous state
@@ -173,6 +184,7 @@ const AppInstaller = ({
           rightItems={apps.installed}
           renderItem={renderApp}
           onChange={handleChange}
+          canDrag={canDrag}
         />
       </div>
     </DndContext>

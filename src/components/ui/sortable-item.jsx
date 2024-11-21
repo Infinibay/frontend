@@ -26,6 +26,13 @@ export function SortableItem({ id, containerId, disabled = false, children }) {
     opacity: isDragging ? 0.5 : undefined,
   };
 
+  const sortableProps = {
+    isDragging,
+    attributes,
+    listeners,
+    style
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -37,7 +44,7 @@ export function SortableItem({ id, containerId, disabled = false, children }) {
         disabled && "cursor-not-allowed"
       )}
     >
-      {children}
+      {typeof children === 'function' ? children(sortableProps) : children}
     </div>
   );
 }
@@ -46,7 +53,7 @@ SortableItem.propTypes = {
   id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   containerId: PropTypes.string.isRequired,
   disabled: PropTypes.bool,
-  children: PropTypes.node
+  children: PropTypes.oneOfType([PropTypes.node, PropTypes.func])
 };
 
 export default SortableItem;

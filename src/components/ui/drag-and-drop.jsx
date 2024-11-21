@@ -58,10 +58,8 @@ const DragAndDrop = ({
               id={item.id}
               containerId={listId}
             >
-              {renderItem ? renderItem(item) : (
-                <div className="p-4 bg-background border rounded-lg">
-                  {JSON.stringify(item)}
-                </div>
+              {(sortableProps) => renderItem ? renderItem(item, sortableProps) : (
+                <div>{item.id}</div>
               )}
             </SortableItem>
           ))}
