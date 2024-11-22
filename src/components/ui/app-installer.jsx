@@ -14,6 +14,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { DownloadIcon, TrashIcon } from "@radix-ui/react-icons";
 
 // App status constants
 export const APP_STATUS = {
@@ -83,7 +84,7 @@ const AppInstaller = ({
     return (
       <div
         className={cn(
-          "relative rounded-lg border p-4 transition-colors hover:bg-accent",
+          "relative rounded-lg border p-4 transition-colors hover:bg-accent bg-white",
           {
             "cursor-grab": !isProcessing,
             "cursor-not-allowed": isProcessing,
@@ -221,6 +222,20 @@ const AppInstaller = ({
     }
   };
 
+  let moveRight = (
+    <>
+      <DownloadIcon className="mr-2 h-4 w-4" />
+      Install
+    </>
+  );
+
+  let moveLeft = (
+    <>
+      <TrashIcon className="mr-2 h-4 w-4" />
+      Uninstall
+    </>
+  );
+
   return (
     <DndContext
       collisionDetection={closestCenter}
@@ -236,6 +251,8 @@ const AppInstaller = ({
           onChange={handleChange}
           canDrag={canDrag}
           sensors={sensors}
+          moveRight={moveRight}
+          moveLeft={moveLeft}
         />
       </div>
     </DndContext>

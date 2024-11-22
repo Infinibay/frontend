@@ -4,7 +4,12 @@ import {
   DndContext, 
   closestCenter, 
   DragOverlay,
-  useDroppable 
+  useDroppable,
+  PointerSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { cn } from "../../lib/utils";
@@ -15,7 +20,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "./context-menu";
-import { DownloadIcon, TrashIcon } from "@radix-ui/react-icons";
+import { ArrowLeftIcon, ArrowRightIcon } from "@radix-ui/react-icons";
 
 const DropZone = ({ id, children, isEmpty, className, emptyClassName }) => {
   const { setNodeRef } = useDroppable({ id });
@@ -48,6 +53,8 @@ const DualList = ({
   containerClassName,
   listClassName,
   sensors,
+  moveRight,
+  moveLeft,
   canDrag = () => true // Add canDrag prop with default function
 }) => {
   const [leftItems, setLeftItems] = useState(initialLeftItems);
@@ -156,6 +163,20 @@ const DualList = ({
 
   const renderWithContextMenu = (item, props) => {
     const isInLeftList = leftItems.find(i => i.id === item.id);
+
+    let _moveRight = moveRight || (
+      <>
+        <ArrowRightIcon className="mr-2 h-4 w-4" />
+        Move to Right
+      </>
+    )
+
+    let _moveLeft = moveLeft || (
+      <>
+        <ArrowLeftIcon className="mr-2 h-4 w-4" />
+        Move to left
+      </>
+    )
     
     return (
       <ContextMenu>
@@ -167,15 +188,9 @@ const DualList = ({
         <ContextMenuContent>
           <ContextMenuItem onClick={() => handleDoubleClick(item)}>
             {isInLeftList ? (
-              <>
-                <DownloadIcon className="mr-2 h-4 w-4" />
-                Install
-              </>
+              _moveRight
             ) : (
-              <>
-                <TrashIcon className="mr-2 h-4 w-4" />
-                Uninstall
-              </>
+              _moveLeft
             )}
           </ContextMenuItem>
         </ContextMenuContent>
@@ -195,12 +210,30 @@ const DualList = ({
     }
   };
 
+  const defaultSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 16,
+      },
+    }),
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 16,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        distance: 16,
+      },
+    })
+  );
+
   return (
     <DndContext
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       collisionDetection={closestCenter}
-      sensors={sensors}
+      sensors={sensors || defaultSensors}
     >
       <div className={cn("flex gap-4", containerClassName)}>
         <div className="flex-1">
@@ -274,6 +307,8 @@ DualList.propTypes = {
   containerClassName: PropTypes.string,
   listClassName: PropTypes.string,
   sensors: PropTypes.func,
+  moveRight: PropTypes.any,
+  moveLeft: PropTypes.any,
   canDrag: PropTypes.func
 };
 
