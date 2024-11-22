@@ -19,6 +19,7 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarGroup,
+  SidebarInset,
 } from "./sidebar";
 
 // Icons
@@ -172,7 +173,10 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
   return (
     <div className="flex h-screen">
       <SidebarProvider defaultOpen>
-        <Sidebar className="bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50">
+        <Sidebar 
+          className="bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50" 
+          data-collapsible="sidebar"
+        >
           {/* Decorative waves */}
           <div className="absolute inset-x-0 bottom-0 pointer-events-none opacity-20" style={{ height: '100%' }}>
             <svg
@@ -277,9 +281,9 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
             </Button>
           </SidebarFooter>
         </Sidebar>
-        <div className="flex-1 min-w-0 bg-gray-50 p-8 h-full">
+        <SidebarInset className="AAAAAAAAAA">
           {children}
-        </div>
+        </SidebarInset>
       </SidebarProvider>
     </div>
   );

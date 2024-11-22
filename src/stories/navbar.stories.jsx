@@ -1,5 +1,20 @@
-import AppSidebar from "../components/ui/navbar";
+import AppSidebar from "@/components/ui/navbar";
 import { UserPc } from "../components/ui/user-pc";
+
+const fakeDepartments = [
+  { name: "Engineering", totalMachines: 25 },
+  { name: "Marketing", totalMachines: 15 },
+  { name: "Sales", totalMachines: 20 },
+  { name: "HR", totalMachines: 10 },
+  { name: "Finance", totalMachines: 12 }
+];
+
+const fakeUser = {
+  firstName: "John",
+  lastName: "Doe",
+  role: "Administrator",
+  avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
+};
 
 /**
  * Navigation bar component that provides consistent header styling and navigation functionality.
@@ -20,56 +35,49 @@ import { UserPc } from "../components/ui/user-pc";
  * }
  */
 export default {
-  title: "Navigation/AppSidebar",
+  title: "Components/AppSidebar",
   component: AppSidebar,
   parameters: {
-    componentSubtitle: 'Main navigation component for the application',
+    layout: "fullscreen",
     docs: {
       description: {
         component: `
-### Import
-\`\`\`jsx
-import { AppSidebar } from '../components/ui/navbar'
-\`\`\`
+AppSidebar is the main navigation component of the application. It provides:
+- Navigation links to main sections (Computers, Users, Settings)
+- Department navigation with machine counts
+- User profile information
+- Logout functionality
 
-### Usage
-\`\`\`jsx
-// Basic usage in layout
-export default function Layout() {
-  return (
-    <div>
-      <AppSidebar />
-      <main>{/* Your page content */}</main>
-    </div>
-  )
-}
-\`\`\`
+The sidebar supports different sizes (sm, md, lg) and can be collapsed/expanded.
         `,
       },
     },
-    layout: "fullscreen",
   },
-  tags: ['autodocs'],
+  args: {
+    size: "lg",
+    user: fakeUser,
+    departments: fakeDepartments,
+  },
   argTypes: {
-    user: {
-      control: 'object',
-      description: 'User information to display in the sidebar. It must contain the the following properties: firstName, lastName, avatar, role',
-    },
     size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg', 'xl'],
-      description: 'Size variant of the sidebar',
-      defaultValue: 'lg'
-    }
-  }
+      control: "select",
+      options: ["sm", "md", "lg"],
+      description: "Controls the size of the sidebar elements",
+    },
+    user: {
+      control: "object",
+      description: "User object containing profile information",
+    },
+    departments: {
+      control: "object",
+      description: "Array of department objects with name and machine count",
+    },
+  },
 };
 
 // Default story with no user
 export const Default = {
-  args: {
-    user: null,
-    size: 'md'
-  },
+  args: {},
   render: (args) => (
     <AppSidebar {...args}>
       <div className="bg-gray-50 p-8 h-full">
@@ -83,13 +91,7 @@ export const Default = {
 // Story with user information
 export const WithUser = {
   args: {
-    user: {
-      firstName: "John",
-      lastName: "Doe",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-      role: "Administrator"
-    },
-    size: 'md'
+    user: fakeUser,
   },
   render: (args) => (
     <AppSidebar {...args}>
@@ -104,13 +106,7 @@ export const WithUser = {
 // Size Variants
 export const Small = {
   args: {
-    size: 'sm',
-    user: {
-      firstName: "John",
-      lastName: "Doe",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-      role: "Administrator"
-    }
+    size: "sm",
   },
   render: (args) => (
     <AppSidebar {...args}>
@@ -124,13 +120,7 @@ export const Small = {
 
 export const Medium = {
   args: {
-    size: 'md',
-    user: {
-      firstName: "John",
-      lastName: "Doe",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-      role: "Administrator"
-    }
+    size: "md",
   },
   render: (args) => (
     <AppSidebar {...args}>
@@ -144,13 +134,7 @@ export const Medium = {
 
 export const Large = {
   args: {
-    size: 'lg',
-    user: {
-      firstName: "John",
-      lastName: "Doe",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-      role: "Administrator"
-    }
+    size: "lg",
   },
   render: (args) => (
     <AppSidebar {...args}>
@@ -165,13 +149,7 @@ export const Large = {
 // Story with user PCs list
 export const WithUserPCs = {
   args: {
-    user: {
-      firstName: "John",
-      lastName: "Doe",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-      role: "Administrator"
-    },
-    size: 'md'
+    user: fakeUser,
   },
   render: (args) => (
     <AppSidebar {...args}>
@@ -216,6 +194,55 @@ export const WithUserPCs = {
             onClick={() => console.log('Load Balancer clicked')}
           />
         </div>
+      </div>
+    </AppSidebar>
+  )
+};
+
+export const WithoutUser = {
+  args: {
+    user: null,
+  },
+  render: (args) => (
+    <AppSidebar {...args}>
+      <div className="bg-gray-50 p-8 h-full">
+        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
+        <p>This is the main content area.</p>
+      </div>
+    </AppSidebar>
+  )
+};
+
+export const WithoutDepartments = {
+  args: {
+    departments: [],
+  },
+  render: (args) => (
+    <AppSidebar {...args}>
+      <div className="bg-gray-50 p-8 h-full">
+        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
+        <p>This is the main content area.</p>
+      </div>
+    </AppSidebar>
+  )
+};
+
+export const WithManyDepartments = {
+  args: {
+    departments: [
+      ...fakeDepartments,
+      { name: "Research", totalMachines: 30 },
+      { name: "Development", totalMachines: 45 },
+      { name: "QA", totalMachines: 15 },
+      { name: "Support", totalMachines: 25 },
+      { name: "Operations", totalMachines: 20 },
+    ],
+  },
+  render: (args) => (
+    <AppSidebar {...args}>
+      <div className="bg-gray-50 p-8 h-full">
+        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
+        <p>This is the main content area.</p>
       </div>
     </AppSidebar>
   )
