@@ -167,30 +167,40 @@ const AppInstaller = ({
   }, []);
 
   const handleChange = async ({ leftItems, rightItems }) => {
-    // Find which app was moved by comparing the previous state
-    const newlyInstalled = rightItems.find(
+    // Find all apps that were moved by comparing with the previous state
+    const newlyInstalled = rightItems.filter(
       app => !apps.installed.find(a => a.id === app.id)
     );
-    const newlyUninstalled = leftItems.find(
+    const newlyUninstalled = leftItems.filter(
       app => !apps.available.find(a => a.id === app.id)
     );
 
-    if (newlyInstalled) {
-      handleStatusChange(newlyInstalled.id, APP_STATUS.INSTALLING, async () => {
-        if (onInstall) {
-          await onInstall(newlyInstalled);
-        }
-        apps.installed.push(newlyInstalled);
-        apps.available = apps.available.filter(a => a.id !== newlyInstalled.id);
-      });
-    } else if (newlyUninstalled) {
-      handleStatusChange(newlyUninstalled.id, APP_STATUS.UNINSTALLING, async () => {
-        if (onUninstall) {
-          await onUninstall(newlyUninstalled);
-        }
-        apps.available.push(newlyUninstalled);
-        apps.installed = apps.installed.filter(a => a.id !== newlyUninstalled.id);
-      });
+    // Process installations in parallel
+    if (newlyInstalled.length > 0) {
+      const installPromises = newlyInstalled.map(app => 
+        handleStatusChange(app.id, APP_STATUS.INSTALLING, async () => {
+          if (onInstall) {
+            await onInstall(app);
+          }
+          apps.installed.push(app);
+          apps.available = apps.available.filter(a => a.id !== app.id);
+        })
+      );
+      await Promise.all(installPromises);
+    }
+
+    // Process uninstallations in parallel
+    if (newlyUninstalled.length > 0) {
+      const uninstallPromises = newlyUninstalled.map(app =>
+        handleStatusChange(app.id, APP_STATUS.UNINSTALLING, async () => {
+          if (onUninstall) {
+            await onUninstall(app);
+          }
+          apps.available.push(app);
+          apps.installed = apps.installed.filter(a => a.id !== app.id);
+        })
+      );
+      await Promise.all(uninstallPromises);
     }
   };
 
