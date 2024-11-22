@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button'
 // Variants
 <Button variant="default">Default</Button>
 <Button variant="primary">Primary</Button>
-<Button variant="destructive">Delete</Button>
+<Button variant="error">Error</Button>
 <Button variant="outline">Outline</Button>
 <Button variant="secondary">Secondary</Button>
 <Button variant="ghost">Ghost</Button>
@@ -62,11 +62,11 @@ import { Button } from '@/components/ui/button'
     },
     variant: {
       control: 'select',
-      options: ['default', 'primary', 'destructive', 'outline', 'secondary', 'ghost', 'link', 'success', 'info', 'warning'],
+      options: ['default', 'primary', 'error', 'outline', 'secondary', 'ghost', 'link', 'success', 'info', 'warning'],
       description: 'The visual style variant of the button',
       defaultValue: 'default',
       table: {
-        type: { summary: "'default' | 'primary' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'success' | 'info' | 'warning'" },
+        type: { summary: "'default' | 'primary' | 'error' | 'outline' | 'secondary' | 'ghost' | 'link' | 'success' | 'info' | 'warning'" },
         defaultValue: { summary: 'default' },
       },
     },
@@ -118,7 +118,7 @@ export const Variants = {
     <div className="flex flex-wrap items-center gap-4">
       <Button variant="default">Default</Button>
       <Button variant="primary">Primary</Button>
-      <Button variant="destructive">Destructive</Button>
+      <Button variant="error">Error</Button>
       <Button variant="outline">Outline</Button>
       <Button variant="secondary">Secondary</Button>
       <Button variant="ghost">Ghost</Button>
@@ -161,6 +161,12 @@ export const StatusVariants = {
         </svg>
         Success
       </Button>
+      <Button variant="error">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+        </svg>
+        Error
+      </Button>
       <Button variant="info">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
@@ -183,7 +189,7 @@ export const States = {
     <div className="flex flex-wrap items-center gap-4">
       <Button disabled>Disabled</Button>
       <Button variant="primary" disabled>Disabled Primary</Button>
-      <Button variant="outline" disabled>Disabled Outline</Button>
+      <Button variant="error" disabled>Disabled Error</Button>
     </div>
   ),
 };

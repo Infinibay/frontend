@@ -13,8 +13,6 @@ const buttonVariants = cva(
           "border border-gray-200 bg-white text-gray-900 shadow-sm hover:border-gray-300 hover:bg-gray-100 hover:shadow-md active:bg-gray-200 active:shadow-inner",
         primary:
           "bg-primary text-primary-foreground shadow hover:bg-primary-hover hover:shadow-md active:bg-primary/80 active:shadow-inner",
-        destructive:
-          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive-hover hover:shadow-md active:bg-destructive/80 active:shadow-inner",
         outline:
           "border-2 border-gray-200 bg-transparent shadow-sm hover:bg-gray-100/80 hover:border-gray-400 hover:shadow-md active:bg-gray-200/90 active:shadow-inner",
         secondary:
@@ -23,6 +21,8 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline hover:text-primary-hover active:text-primary/70",
         success:
           "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 hover:shadow-md active:bg-emerald-700 active:shadow-inner",
+        error:
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive-hover hover:shadow-md active:bg-destructive/80 active:shadow-inner",
         info:
           "bg-blue-500 text-white shadow-sm hover:bg-blue-600 hover:shadow-md active:bg-blue-700 active:shadow-inner",
         warning:
