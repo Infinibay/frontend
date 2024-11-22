@@ -1,187 +1,189 @@
 import React from 'react';
-import AppInstaller, { APP_STATUS } from '../components/ui/app-installer';
+import AppInstaller from "../components/ui/app-installer";
+import { DndContext } from '@dnd-kit/core';
+
+// Helper function to simulate async operations
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const meta = {
   title: 'Components/AppInstaller',
   component: AppInstaller,
+  tags: ['autodocs'],
+  decorators: [
+    (Story) => (
+      <div className="min-h-[600px] min-w-[800px]">
+        <Story />
+      </div>
+    ),
+  ],
   parameters: {
     layout: 'centered',
-    docs: {
-      description: {
-        component: `
-A drag-and-drop interface for installing and uninstalling applications. Features smooth animations,
-status indicators, and intuitive interactions.
-
-\`\`\`jsx
-import AppInstaller from '@/components/ui/app-installer';
-
-export function Example() {
-  return (
-    <AppInstaller
-      availableApps={[
-        {
-          id: 'app1',
-          name: 'My App',
-          icon: '/path/to/icon.png',
-          description: 'A cool app',
-          status: 'not-installed'
-        }
-      ]}
-      installedApps={[]}
-      onInstall={(app) => console.log('Installing', app)}
-      onUninstall={(app) => console.log('Uninstalling', app)}
-    />
-  );
-}
-\`\`\`
-
-**Note:** Drag and drop animations may not work properly in the documentation view. 
-For the best experience, please view the examples in isolation mode by clicking the example you want to see at the left panel.
-`
-      }
-    }
   },
-  tags: ['autodocs']
+  argTypes: {
+    size: {
+      control: 'select',
+      options: ['sm', 'md', 'lg', 'xl'],
+      defaultValue: 'md',
+    },
+  },
 };
 
 export default meta;
 
-// Sample apps data with image URLs
-const availableApps = [
-  {
-    id: 'browser',
-    name: 'Web Browser',
-    icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/googlechrome.svg',
-    description: 'A fast and secure web browser with built-in privacy features.',
-    status: APP_STATUS.NOT_INSTALLED
-  },
-  {
-    id: 'mail',
-    name: 'Mail Client',
-    icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/gmail.svg',
-    description: 'Powerful email client with support for multiple accounts and offline access.',
-    status: APP_STATUS.NOT_INSTALLED
-  },
-  {
-    id: 'calendar',
-    name: 'Calendar',
-    icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/googlecalendar.svg',
-    description: 'Keep track of your schedule with this intuitive calendar application.',
-    status: APP_STATUS.NOT_INSTALLED
-  },
-  {
-    id: 'music',
-    name: 'Music Player',
-    icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/spotify.svg',
-    description: 'Stream and manage your music library with this feature-rich player.',
-    status: APP_STATUS.NOT_INSTALLED
-  }
-];
-
-const installedApps = [
-  {
-    id: 'notes',
-    name: 'Notes',
-    icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/evernote.svg',
-    description: 'Simple yet powerful note-taking app with cloud sync.',
-    status: APP_STATUS.INSTALLED
-  },
-  {
-    id: 'photos',
-    name: 'Photo Editor',
-    icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/adobephotoshop.svg',
-    description: 'Edit and organize your photos with professional-grade tools.',
-    status: APP_STATUS.INSTALLED
-  }
-];
-
-// Simulate async installation/uninstallation
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-export const Basic = {
-  args: {
-    availableApps,
-    installedApps,
-    async onInstall(app) {
-      // Simulate installation delay
-      await delay(2000);
-      return { ...app, status: APP_STATUS.INSTALLED };
+const mockApps = {
+  available: [
+    {
+      id: 'app1',
+      name: '3D Modeler',
+      description: 'Create and edit 3D models',
+      icon: 'https://cdn.simpleicons.org/blender',
     },
-    async onUninstall(app) {
-      // Simulate uninstallation delay
-      await delay(2000);
-      return { ...app, status: APP_STATUS.NOT_INSTALLED };
-    }
-  }
+    {
+      id: 'app2',
+      name: 'File Manager',
+      description: 'Manage your files and folders with ease',
+      icon: 'https://cdn.simpleicons.org/files',
+    },
+    {
+      id: 'app3',
+      name: 'Terminal',
+      description: 'Command-line interface for power users',
+      icon: 'https://cdn.simpleicons.org/gnometerminal',
+    },
+  ],
+  installed: [
+    {
+      id: 'app4',
+      name: 'Git Client',
+      description: 'Version control made simple',
+      icon: 'https://cdn.simpleicons.org/git',
+    },
+    {
+      id: 'app5',
+      name: 'Package Manager',
+      description: 'Manage your project dependencies',
+      icon: 'https://cdn.simpleicons.org/npm',
+    },
+  ],
 };
 
-// Example with empty states
-export const EmptyStates = {
+const Template = (args) => <AppInstaller {...args} />;
+
+export const Default = {
+  render: (args) => <Template {...args} />,
   args: {
-    availableApps: [],
-    installedApps: [],
+    apps: mockApps,
+    size: 'md',
     async onInstall(app) {
-      await delay(2000);
-      return { ...app, status: APP_STATUS.INSTALLED };
+      await delay(2000); // 2 second delay
+      return app;
     },
     async onUninstall(app) {
-      await delay(2000);
-      return { ...app, status: APP_STATUS.NOT_INSTALLED };
+      await delay(2000); // 2 second delay
+      return app;
     }
-  }
+  },
 };
 
-// Example with many apps
+export const Small = {
+  render: (args) => <Template {...args} />,
+  args: {
+    ...Default.args,
+    size: 'sm',
+  },
+};
+
+export const Large = {
+  render: (args) => <Template {...args} />,
+  args: {
+    ...Default.args,
+    size: 'lg',
+  },
+};
+
+export const ExtraLarge = {
+  render: (args) => <Template {...args} />,
+  args: {
+    ...Default.args,
+    size: 'xl',
+  },
+};
+
+export const Empty = {
+  render: (args) => <Template {...args} />,
+  args: {
+    ...Default.args,
+    apps: {
+      available: [],
+      installed: [],
+    },
+  },
+};
+
+export const OnlyAvailable = {
+  render: (args) => <Template {...args} />,
+  args: {
+    ...Default.args,
+    apps: {
+      available: mockApps.available,
+      installed: [],
+    },
+  },
+};
+
+export const OnlyInstalled = {
+  render: (args) => <Template {...args} />,
+  args: {
+    ...Default.args,
+    apps: {
+      available: [],
+      installed: mockApps.installed,
+    },
+  },
+};
+
+export const Processing = {
+  render: (args) => <Template {...args} />,
+  args: {
+    ...Default.args,
+    apps: {
+      available: [
+        ...mockApps.available,
+        {
+          id: 'app6',
+          name: 'Processing App',
+          description: 'This app is currently being processed',
+          status: 'installing',
+        },
+      ],
+      installed: mockApps.installed,
+    },
+  },
+};
+
+export const CustomStyle = {
+  render: (args) => <Template {...args} />,
+  args: {
+    ...Default.args,
+    className: 'bg-slate-100 p-8 rounded-xl shadow-lg',
+  },
+};
+
 export const ManyApps = {
+  render: (args) => <Template {...args} />,
   args: {
-    availableApps: [
-      ...availableApps,
-      {
-        id: 'chat',
-        name: 'Chat App',
-        icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/discord.svg',
-        description: 'Stay connected with friends and colleagues.',
-        status: APP_STATUS.NOT_INSTALLED
-      },
-      {
-        id: 'video',
-        name: 'Video Editor',
-        icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/adobepremierepro.svg',
-        description: 'Professional video editing suite.',
-        status: APP_STATUS.NOT_INSTALLED
-      },
-      {
-        id: 'tasks',
-        name: 'Task Manager',
-        icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/todoist.svg',
-        description: 'Organize and track your tasks efficiently.',
-        status: APP_STATUS.NOT_INSTALLED
-      }
-    ],
-    installedApps: [
-      ...installedApps,
-      {
-        id: 'calculator',
-        name: 'Calculator',
-        icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/wolframmathematica.svg',
-        description: 'Scientific calculator with advanced functions.',
-        status: APP_STATUS.INSTALLED
-      },
-      {
-        id: 'weather',
-        name: 'Weather',
-        icon: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/googleearth.svg',
-        description: 'Real-time weather updates and forecasts.',
-        status: APP_STATUS.INSTALLED
-      }
-    ],
-    async onInstall(app) {
-      await delay(2000);
-      return { ...app, status: APP_STATUS.INSTALLED };
+    ...Default.args,
+    apps: {
+      available: Array.from({ length: 10 }, (_, i) => ({
+        id: `available-${i}`,
+        name: `Available App ${i + 1}`,
+        description: `Description for available app ${i + 1}`,
+      })),
+      installed: Array.from({ length: 10 }, (_, i) => ({
+        id: `installed-${i}`,
+        name: `Installed App ${i + 1}`,
+        description: `Description for installed app ${i + 1}`,
+      })),
     },
-    async onUninstall(app) {
-      await delay(2000);
-      return { ...app, status: APP_STATUS.NOT_INSTALLED };
-    }
-  }
+  },
 };

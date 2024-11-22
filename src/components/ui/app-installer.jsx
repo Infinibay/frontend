@@ -24,17 +24,15 @@ export const APP_STATUS = {
 };
 
 const AppInstaller = ({
-  availableApps = [],
-  installedApps = [],
+  className,
   onInstall,
   onUninstall,
-  className
+  apps = {
+    available: [],
+    installed: []
+  },
+  size = "md"
 }) => {
-  const [apps, setApps] = useState({
-    available: availableApps,
-    installed: installedApps
-  });
-
   const [processingApps, setProcessingApps] = useState(new Set());
 
   const sensors = useSensors(
@@ -75,45 +73,93 @@ const AppInstaller = ({
   const renderApp = useCallback((app, { isDragging, overlay } = {}) => {
     const isProcessing = processingApps.has(app.id);
 
-    // console.log('Rendering app:', app.name, 'isDragging:', isDragging); // Debug log
-
+    const sizeClasses = {
+      sm: "p-2 text-sm",
+      md: "p-4 text-base",
+      lg: "p-6 text-lg",
+      xl: "p-8 text-xl"
+    };
 
     return (
       <div
         className={cn(
-          "relative p-4 bg-white rounded-lg border transition-all",
-          // "hover:shadow-lg hover:border-primary/20",
-          overlay && "shadow-xl shadow-gray-400/20 dark:shadow-black/50 scale-105",
-          isProcessing ? "opacity-75" : "hover:scale-[1.02]",
+          "relative rounded-lg border p-4 transition-colors hover:bg-accent",
+          {
+            "cursor-grab": !isProcessing,
+            "cursor-not-allowed": isProcessing,
+          }
         )}
       >
-        <div className="flex items-start gap-3">
-          {app.icon && (
-            <img 
-              src={app.icon} 
-              alt={`${app.name} icon`}
-              className="w-12 h-12 object-contain"
+        {isProcessing && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-black/20 backdrop-blur-[1px]">
+            <Spinner 
+              speed="medium"
+              className={cn({
+                "w-6 h-6": size === "sm",
+                "w-8 h-8": size === "md",
+                "w-10 h-10": size === "lg",
+                "w-12 h-12": size === "xl",
+              })} 
             />
-          )}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm text-foreground/90 truncate">
+          </div>
+        )}
+        <div className={cn(
+          "flex gap-4",
+          { "blur-[0.5px]": isProcessing }
+        )}>
+          <div className={cn(
+            "relative flex items-center justify-center rounded-md border bg-background",
+            {
+              "w-8 h-8": size === "sm",
+              "w-10 h-10": size === "md",
+              "w-12 h-12": size === "lg",
+              "w-14 h-14": size === "xl",
+            }
+          )}>
+            <div className="flex items-center justify-center">
+              <img 
+                src={app.icon} 
+                alt={`${app.name} icon`}
+                className={cn(
+                  "object-contain",
+                  {
+                    "w-6 h-6": size === "sm",
+                    "w-8 h-8": size === "md",
+                    "w-10 h-10": size === "lg",
+                    "w-12 h-12": size === "xl",
+                  }
+                )}
+              />
+            </div>
+          </div>
+          <div>
+            <h3 className={cn(
+              "font-semibold",
+              {
+                "text-sm": size === "sm",
+                "text-base": size === "md",
+                "text-lg": size === "lg",
+                "text-xl": size === "xl",
+              }
+            )}>
               {app.name}
             </h3>
-            {app.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {app.description}
-              </p>
-            )}
+            <p className={cn(
+              "text-muted-foreground",
+              {
+                "text-xs": size === "sm",
+                "text-sm": size === "md",
+                "text-base": size === "lg",
+                "text-lg": size === "xl",
+              }
+            )}>
+              {app.description}
+            </p>
           </div>
-          {isProcessing && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-lg">
-              <Spinner className="w-6 h-6" />
-            </div>
-          )}
         </div>
       </div>
     );
-  }, [processingApps]);
+  }, [processingApps, size]);
 
   const canDrag = useCallback((item) => {
     return !['installing', 'uninstalling'].includes(item.status);
@@ -133,20 +179,16 @@ const AppInstaller = ({
         if (onInstall) {
           await onInstall(newlyInstalled);
         }
-        setApps({
-          available: leftItems,
-          installed: rightItems
-        });
+        apps.installed.push(newlyInstalled);
+        apps.available = apps.available.filter(a => a.id !== newlyInstalled.id);
       });
     } else if (newlyUninstalled) {
       handleStatusChange(newlyUninstalled.id, APP_STATUS.UNINSTALLING, async () => {
         if (onUninstall) {
           await onUninstall(newlyUninstalled);
         }
-        setApps({
-          available: leftItems,
-          installed: rightItems
-        });
+        apps.available.push(newlyUninstalled);
+        apps.installed = apps.installed.filter(a => a.id !== newlyUninstalled.id);
       });
     }
   };
@@ -165,20 +207,16 @@ const AppInstaller = ({
         if (onInstall) {
           await onInstall(activeApp);
         }
-        setApps(prev => ({
-          available: prev.available.filter(a => a.id !== activeApp.id),
-          installed: [...prev.installed, activeApp]
-        }));
+        apps.installed.push(activeApp);
+        apps.available = apps.available.filter(a => a.id !== activeApp.id);
       });
     } else {
       handleStatusChange(activeApp.id, APP_STATUS.UNINSTALLING, async () => {
         if (onUninstall) {
           await onUninstall(activeApp);
         }
-        setApps(prev => ({
-          installed: prev.installed.filter(a => a.id !== activeApp.id),
-          available: [...prev.available, activeApp]
-        }));
+        apps.available.push(activeApp);
+        apps.installed = apps.installed.filter(a => a.id !== activeApp.id);
       });
     }
   };
@@ -205,25 +243,28 @@ const AppInstaller = ({
 };
 
 AppInstaller.propTypes = {
-  availableApps: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      description: PropTypes.string,
-      icon: PropTypes.string
-    })
-  ),
-  installedApps: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      description: PropTypes.string,
-      icon: PropTypes.string
-    })
-  ),
+  apps: PropTypes.shape({
+    available: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired,
+        description: PropTypes.string,
+        icon: PropTypes.string
+      })
+    ),
+    installed: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired,
+        description: PropTypes.string,
+        icon: PropTypes.string
+      })
+    )
+  }),
   onInstall: PropTypes.func,
   onUninstall: PropTypes.func,
-  className: PropTypes.string
+  className: PropTypes.string,
+  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl'])
 };
 
 export default AppInstaller;
