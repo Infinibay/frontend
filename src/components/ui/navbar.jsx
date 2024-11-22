@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 
 // UI Components
 import { Button } from "./button";
-import { Separator } from "./separator";
 import {
   Sidebar,
   SidebarContent,
@@ -18,7 +17,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarProvider,
-  SidebarGroup,
   SidebarInset,
 } from "./sidebar";
 
