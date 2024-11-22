@@ -16,13 +16,16 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarMenuButton,
   SidebarProvider,
+  SidebarGroup,
 } from "./sidebar";
 
 // Icons
 import { RiDashboardLine, RiSettings4Line } from "react-icons/ri";
 import { FiUsers } from "react-icons/fi";
-import { BiLogOut } from "react-icons/bi";
+import { BiLogOut, BiBuildings } from "react-icons/bi";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const sizeStyles = {
   sm: {
@@ -71,21 +74,105 @@ const sizeStyles = {
   }
 };
 
-const AppSidebar = ({ user, size = "lg", children }) => {
+const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
   const pathname = usePathname();
   const isActive = (path) => pathname === path;
   const styles = sizeStyles[size];
+  const [isDeptsOpen, setIsDeptsOpen] = React.useState(true);
 
   const navItems = [
-    { href: "/dashboard", icon: RiDashboardLine, label: "Dashboard" },
+    { href: "/computers", icon: RiDashboardLine, label: "Computers" },
+    { 
+      label: "Departments", 
+      icon: BiBuildings,
+      children: departments.map(dept => ({
+        href: `/departments/${dept.name}`,
+        label: dept.name,
+        badge: dept.totalMachines
+      }))
+    },
     { href: "/users", icon: FiUsers, label: "Users" },
     { href: "/settings", icon: RiSettings4Line, label: "Settings" },
   ];
 
+  const renderMenuItems = () => {
+    return navItems.map((item) => {
+      if (item.href) {
+        // Regular menu item with link
+        return (
+          <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              asChild
+              isActive={isActive(item.href)}
+              className={cn(
+                "text-gray-300 hover:text-white w-full",
+                styles.text
+              )}
+            >
+              <Link href={item.href} className="flex items-center gap-2">
+                {item.icon && <item.icon className={styles.icon} />}
+                <span>{item.label}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      }
+      
+      if (item.children) {
+        // Collapsible menu item
+        return (
+          <div key={item.label}>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setIsDeptsOpen(!isDeptsOpen)}
+                className={cn(
+                  "text-gray-300 hover:text-white justify-between w-full",
+                  styles.text
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  {item.icon && <item.icon className={styles.icon} />}
+                  <span>{item.label}</span>
+                </div>
+                {isDeptsOpen ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {isDeptsOpen && item.children.map((child) => (
+              <SidebarMenuItem key={child.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive(child.href)}
+                  className={cn(
+                    "text-gray-300 hover:text-white justify-between w-full pl-8",
+                    styles.text
+                  )}
+                >
+                  <Link href={child.href} className="flex items-center justify-between w-full">
+                    <span>{child.label}</span>
+                    {child.badge > 0 && (
+                      <span className="text-xs opacity-75">({child.badge})</span>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </div>
+        );
+      }
+
+      return null;
+    });
+  };
+
   return (
     <div className="flex h-screen">
       <SidebarProvider defaultOpen>
-        <Sidebar className="bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] z-50">
+        <Sidebar className="bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50">
           {/* Decorative waves */}
           <div className="absolute inset-x-0 bottom-0 pointer-events-none opacity-20" style={{ height: '100%' }}>
             <svg
@@ -155,22 +242,7 @@ const AppSidebar = ({ user, size = "lg", children }) => {
           </SidebarHeader>
           <SidebarContent className="relative">
             <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem 
-                  key={item.href} 
-                  asChild
-                  className={cn(
-                    "text-gray-300 hover:text-white hover:bg-blue-600",
-                    styles.text,
-                    isActive(item.href) && "bg-blue-600 text-white"
-                  )}
-                >
-                  <Link href={item.href} className={cn("flex items-center", styles.spacing.item, styles.spacing.gap)}>
-                    <item.icon className={styles.icon} />
-                    {item.label}
-                  </Link>
-                </SidebarMenuItem>
-              ))}
+              {renderMenuItems()}
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className={cn("border-t border-blue-700 relative", styles.spacing.container)}>
@@ -209,7 +281,6 @@ const AppSidebar = ({ user, size = "lg", children }) => {
           {children}
         </div>
       </SidebarProvider>
-      
     </div>
   );
 };
