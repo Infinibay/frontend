@@ -21,6 +21,12 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary-hover hover:shadow-md active:bg-secondary/70 active:shadow-inner",
         ghost: "hover:bg-gray-200/80 hover:text-gray-900 active:bg-gray-300/90",
         link: "text-primary underline-offset-4 hover:underline hover:text-primary-hover active:text-primary/70",
+        success:
+          "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 hover:shadow-md active:bg-emerald-700 active:shadow-inner",
+        info:
+          "bg-blue-500 text-white shadow-sm hover:bg-blue-600 hover:shadow-md active:bg-blue-700 active:shadow-inner",
+        warning:
+          "bg-amber-500 text-white shadow-sm hover:bg-amber-600 hover:shadow-md active:bg-amber-700 active:shadow-inner",
       },
       size: {
         sm: "h-8 px-3 py-1.5 text-xs [&_svg]:size-3.5",
