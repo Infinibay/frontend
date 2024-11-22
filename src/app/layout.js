@@ -36,7 +36,7 @@ function AppContent({ children, isAuthenticated }) {
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`,
       } : null}
       departments={departments || []}
-      size="lg"
+      size="xl"
     >
       {children}
     </AppSidebar>

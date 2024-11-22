@@ -146,6 +146,20 @@ export const Large = {
   )
 };
 
+export const ExtraLarge = {
+  args: {
+    size: "xl",
+  },
+  render: (args) => (
+    <AppSidebar {...args}>
+      <div className="bg-gray-50 p-8 h-full">
+        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
+        <p>This is the main content area.</p>
+      </div>
+    </AppSidebar>
+  )
+};
+
 // Story with user PCs list
 export const WithUserPCs = {
   args: {

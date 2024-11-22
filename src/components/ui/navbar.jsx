@@ -36,6 +36,7 @@ const sizeStyles = {
     spacing: {
       container: "p-3",
       item: "px-4 py-2",
+      subItem: "pl-10 pr-4 py-2", // 10 = icon(16) + gap(8) + padding(16)
       gap: "gap-2"
     },
     avatar: "w-8 h-8"
@@ -46,7 +47,8 @@ const sizeStyles = {
     icon: "h-4.5 w-4.5",
     spacing: {
       container: "p-4",
-      item: "px-5 py-2.5",
+      item: "px-5 py-3.5",
+      subItem: "pl-12 pr-5 py-3", // 12 = icon(18) + gap(10) + padding(20)
       gap: "gap-2.5"
     },
     avatar: "w-10 h-10"
@@ -57,7 +59,8 @@ const sizeStyles = {
     icon: "h-5 w-5",
     spacing: {
       container: "p-6",
-      item: "px-6 py-3",
+      item: "px-6 py-5",
+      subItem: "pl-14 pr-6 py-4", // 14 = icon(20) + gap(12) + padding(24)
       gap: "gap-3"
     },
     avatar: "w-12 h-12"
@@ -68,7 +71,8 @@ const sizeStyles = {
     icon: "h-6 w-6",
     spacing: {
       container: "p-8",
-      item: "px-8 py-4",
+      item: "px-8 py-6",
+      subItem: "pl-16 pr-8 py-5", // Using pl-16 (64px) which is a valid Tailwind class
       gap: "gap-4"
     },
     avatar: "w-14 h-14"
@@ -98,8 +102,7 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
 
   const renderMenuItems = () => {
     return navItems.map((item) => {
-      if (item.href) {
-        // Regular menu item with link
+      if (!item.children) {
         return (
           <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
@@ -107,10 +110,11 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
               isActive={isActive(item.href)}
               className={cn(
                 "text-gray-300 hover:text-white w-full",
-                styles.text
+                styles.text,
+                styles.spacing.item
               )}
             >
-              <Link href={item.href} className="flex items-center gap-2">
+              <Link href={item.href} className={cn("flex items-center", styles.spacing.gap)}>
                 {item.icon && <item.icon className={styles.icon} />}
                 <span>{item.label}</span>
               </Link>
@@ -118,55 +122,53 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
           </SidebarMenuItem>
         );
       }
-      
-      if (item.children) {
-        // Collapsible menu item
-        return (
-          <div key={item.label}>
-            <SidebarMenuItem>
+
+      return (
+        <React.Fragment key={item.label}>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => setIsDeptsOpen(!isDeptsOpen)}
+              className={cn(
+                "text-gray-300 hover:text-white justify-between w-full",
+                styles.text,
+                styles.spacing.item
+              )}
+            >
+              <div className={cn("flex items-center", styles.spacing.gap)}>
+                {item.icon && <item.icon className={styles.icon} />}
+                <span>{item.label}</span>
+              </div>
+              {isDeptsOpen ? (
+                <ChevronDown className={styles.icon} />
+              ) : (
+                <ChevronRight className={styles.icon} />
+              )}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          {isDeptsOpen && item.children.map((child) => (
+            <SidebarMenuItem key={child.href}>
               <SidebarMenuButton
-                onClick={() => setIsDeptsOpen(!isDeptsOpen)}
+                asChild
+                isActive={isActive(child.href)}
                 className={cn(
                   "text-gray-300 hover:text-white justify-between w-full",
-                  styles.text
+                  styles.text,
+                  styles.spacing.subItem
                 )}
               >
-                <div className="flex items-center gap-2">
-                  {item.icon && <item.icon className={styles.icon} />}
-                  <span>{item.label}</span>
-                </div>
-                {isDeptsOpen ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
+                <Link href={child.href} className={cn("flex items-center justify-between w-full", styles.spacing.gap)}>
+                  <span>{child.label}</span>
+                  {child.badge > 0 && (
+                    <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs">
+                      {child.badge}
+                    </span>
+                  )}
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-
-            {isDeptsOpen && item.children.map((child) => (
-              <SidebarMenuItem key={child.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive(child.href)}
-                  className={cn(
-                    "text-gray-300 hover:text-white justify-between w-full pl-8",
-                    styles.text
-                  )}
-                >
-                  <Link href={child.href} className="flex items-center justify-between w-full">
-                    <span>{child.label}</span>
-                    {child.badge > 0 && (
-                      <span className="text-xs opacity-75">({child.badge})</span>
-                    )}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </div>
-        );
-      }
-
-      return null;
+          ))}
+        </React.Fragment>
+      );
     });
   };
 
