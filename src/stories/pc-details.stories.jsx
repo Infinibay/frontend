@@ -36,7 +36,7 @@ import { fn } from '@storybook/test';
  * }
  */
 export default {
-  title: 'Components/PcDetails',
+  title: 'Complex/PcDetails',
   component: PcDetails,
   tags: ['autodocs'],
   parameters: {

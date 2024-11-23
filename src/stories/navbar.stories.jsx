@@ -29,7 +29,7 @@ const decorators = [
  * Navigation bar component that provides consistent header styling and navigation functionality.
  */
 export default {
-  title: "Components/AppSidebar",
+  title: "Complex/AppSidebar",
   component: AppSidebar,
   decorators,
   parameters: {

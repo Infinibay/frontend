@@ -6,7 +6,7 @@ import { DndContext } from '@dnd-kit/core';
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const meta = {
-  title: 'Components/AppInstaller',
+  title: 'Complex/AppInstaller',
   component: AppInstaller,
   tags: ['autodocs'],
   decorators: [

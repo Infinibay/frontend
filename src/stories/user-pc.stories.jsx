@@ -36,7 +36,7 @@ import { UserPc } from "@/components/ui/user-pc";
  * }
  */
 export default {
-  title: 'Components/UserPc',
+  title: 'Complex/UserPc',
   component: UserPc,
   tags: ['autodocs'],
   parameters: {

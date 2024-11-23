@@ -7,7 +7,7 @@ import { Mail, Search, Bell } from "lucide-react"
 import { AppSidebar } from "@/components/ui/navbar"
 
 export default {
-  title: "Components/SizeProvider",
+  title: "Providers/SizeProvider",
   component: SizeProvider,
   tags: ['autodocs'],
   argTypes: {
