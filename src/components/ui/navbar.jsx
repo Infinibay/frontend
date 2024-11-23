@@ -19,6 +19,7 @@ import {
   SidebarProvider,
   SidebarInset,
 } from "./sidebar";
+import { useSizeContext, sizeVariants } from "./size-provider";
 
 // Icons
 import { RiDashboardLine, RiSettings4Line } from "react-icons/ri";
@@ -77,10 +78,9 @@ const sizeStyles = {
   }
 };
 
-const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
+const AppSidebar = React.forwardRef(({ user, departments=[], children }, ref) => {
   const pathname = usePathname();
   const isActive = (path) => pathname === path;
-  const styles = sizeStyles[size];
   const [isDeptsOpen, setIsDeptsOpen] = React.useState(true);
 
   const navItems = [
@@ -108,12 +108,12 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
               isActive={isActive(item.href)}
               className={cn(
                 "text-gray-300 hover:text-white w-full",
-                styles.text,
-                styles.spacing.item
+                sizeStyles.lg.text,
+                sizeStyles.lg.spacing.item
               )}
             >
-              <Link href={item.href} className={cn("flex items-center", styles.spacing.gap)}>
-                {item.icon && <item.icon className={styles.icon} />}
+              <Link href={item.href} className={cn("flex items-center", sizeStyles.lg.spacing.gap)}>
+                {item.icon && <item.icon className={sizeStyles.lg.icon} />}
                 <span>{item.label}</span>
               </Link>
             </SidebarMenuButton>
@@ -128,18 +128,18 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
               onClick={() => setIsDeptsOpen(!isDeptsOpen)}
               className={cn(
                 "text-gray-300 hover:text-white justify-between w-full",
-                styles.text,
-                styles.spacing.item
+                sizeStyles.lg.text,
+                sizeStyles.lg.spacing.item
               )}
             >
-              <div className={cn("flex items-center", styles.spacing.gap)}>
-                {item.icon && <item.icon className={styles.icon} />}
+              <div className={cn("flex items-center", sizeStyles.lg.spacing.gap)}>
+                {item.icon && <item.icon className={sizeStyles.lg.icon} />}
                 <span>{item.label}</span>
               </div>
               {isDeptsOpen ? (
-                <ChevronDown className={styles.icon} />
+                <ChevronDown className={sizeStyles.lg.icon} />
               ) : (
-                <ChevronRight className={styles.icon} />
+                <ChevronRight className={sizeStyles.lg.icon} />
               )}
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -150,11 +150,11 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
                 isActive={isActive(child.href)}
                 className={cn(
                   "text-gray-300 hover:text-white justify-between w-full",
-                  styles.text,
-                  styles.spacing.subItem
+                  sizeStyles.lg.text,
+                  sizeStyles.lg.spacing.subItem
                 )}
               >
-                <Link href={child.href} className={cn("flex items-center justify-between w-full", styles.spacing.gap)}>
+                <Link href={child.href} className={cn("flex items-center justify-between w-full", sizeStyles.lg.spacing.gap)}>
                   <span>{child.label}</span>
                   {child.badge > 0 && (
                     <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs">
@@ -170,9 +170,21 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
     });
   };
 
+  // get sidebar widht, mobile widht and icon from size provider
+  const { size: contextSize } = useSizeContext()
+  const sizes = sizeVariants[contextSize]
+  const sidebarWidth = sizes.navbar.width
+  const sidebarWidthMobile = sizes.navbar.mobileWidth
+  const sidebarWidthIcon = sizes.icon.button.replace('w-', '') + 'rem'
+
   return (
     <div className="flex h-screen">
-      <SidebarProvider defaultOpen>
+      <SidebarProvider 
+        defaultOpen 
+        sidebarWidth={sidebarWidth}
+        sidebarWidthMobile={sidebarWidthMobile}
+        sidebarWidthIcon={sidebarWidthIcon}
+      >
         <Sidebar 
           className="bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50" 
           data-collapsible="sidebar"
@@ -234,12 +246,12 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
             }
           `}</style>
 
-          <SidebarHeader className={cn("border-b border-blue-700 relative", styles.spacing.container)}>
+          <SidebarHeader className={cn("border-b border-blue-700 relative", sizeStyles.lg.spacing.container)}>
             <Link href="/">
               <Image
                 src="/images/sidebarLogo.png"
                 alt="Logo"
-                className={cn("w-auto rounded-none", styles.logo)}
+                className={cn("w-auto rounded-none", sizeStyles.lg.logo)}
                 radius="none"
               />
             </Link>
@@ -249,19 +261,19 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
               {renderMenuItems()}
             </SidebarMenu>
           </SidebarContent>
-          <SidebarFooter className={cn("border-t border-blue-700 relative", styles.spacing.container)}>
+          <SidebarFooter className={cn("border-t border-blue-700 relative", sizeStyles.lg.spacing.container)}>
             {user && (
-              <div className={cn("flex items-center px-2 mb-4", styles.spacing.gap)}>
+              <div className={cn("flex items-center px-2 mb-4", sizeStyles.lg.spacing.gap)}>
                 <img
                   src={user.avatar}
                   alt={`${user.firstName} ${user.lastName}'s avatar`}
-                  className={cn("rounded-full bg-blue-800 p-1", styles.avatar)}
+                  className={cn("rounded-full bg-blue-800 p-1", sizeStyles.lg.avatar)}
                 />
                 <div className="flex-1 min-w-0">
-                  <h3 className={cn("text-white font-medium truncate", styles.text)}>
+                  <h3 className={cn("text-white font-medium truncate", sizeStyles.lg.text)}>
                     {user.firstName} {user.lastName}
                   </h3>
-                  <p className={cn("text-blue-200 truncate", styles.text)}>
+                  <p className={cn("text-blue-200 truncate", sizeStyles.lg.text)}>
                     {user.role}
                   </p>
                 </div>
@@ -271,22 +283,24 @@ const AppSidebar = ({ user, size = "lg", departments=[], children }) => {
               variant="ghost" 
               className={cn(
                 "w-full justify-start text-gray-300 hover:text-white hover:bg-blue-600",
-                styles.text,
-                styles.spacing.item,
-                styles.spacing.gap
+                sizeStyles.lg.text,
+                sizeStyles.lg.spacing.item,
+                sizeStyles.lg.spacing.gap
               )}
             >
-              <BiLogOut className={styles.icon} />
+              <BiLogOut className={sizeStyles.lg.icon} />
               Logout
             </Button>
           </SidebarFooter>
         </Sidebar>
-        <SidebarInset className="AAAAAAAAAA">
+        <SidebarInset>
           {children}
         </SidebarInset>
       </SidebarProvider>
     </div>
   );
-};
+});
 
-export default AppSidebar;
+AppSidebar.displayName = "AppSidebar";
+
+export { AppSidebar };

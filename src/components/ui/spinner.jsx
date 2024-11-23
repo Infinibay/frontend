@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useSizeContext, sizeVariants } from "./size-provider";
 
 const speedVariants = {
   slow: "animate-[spin_3s_linear_infinite]",
@@ -9,26 +10,32 @@ const speedVariants = {
   fast: "animate-[spin_0.75s_linear_infinite]",
 };
 
-const sizeVariants = {
-  sm: "w-4 h-4",
-  md: "w-8 h-8",
-  lg: "w-12 h-12",
-  xl: "w-16 h-16",
+const spinnerSizeVariants = {
+  sm: "w-4 h-4 border",
+  md: "w-6 h-6 border-2",
+  lg: "w-8 h-8 border-2",
+  xl: "w-10 h-10 border-3",
 };
 
 const Spinner = React.forwardRef(({ 
   className,
   speed = "medium",
   style = "circular",
-  size = "md",
+  size: sizeProp,
   ...props 
 }, ref) => {
+  const { size: contextSize } = useSizeContext();
+  const size = sizeProp || contextSize || "md";
+  
   // Common classes for all spinners
   const baseClasses = cn(
-    sizeVariants[size],
+    spinnerSizeVariants[size],
     speedVariants[speed],
     className
   );
+
+  // Get icon size from sizeVariants for consistent sizing
+  const iconSize = sizeVariants[size]?.icon?.size;
 
   // Circular Spinner (Default)
   if (style === "circular") {
@@ -36,7 +43,7 @@ const Spinner = React.forwardRef(({
       <div
         ref={ref}
         className={cn(
-          "inline-block border-2 rounded-full border-current",
+          "inline-block rounded-full border-current",
           "border-r-transparent border-b-transparent",
           baseClasses
         )}
@@ -48,7 +55,15 @@ const Spinner = React.forwardRef(({
   // Windows Spinner
   if (style === "windows") {
     return (
-      <div ref={ref} className={cn("relative flex items-center justify-center", sizeVariants[size], className)} {...props}>
+      <div 
+        ref={ref} 
+        className={cn(
+          "relative flex items-center justify-center", 
+          iconSize,
+          className
+        )} 
+        {...props}
+      >
         {[...Array(8)].map((_, i) => (
           <div
             key={i}
@@ -73,7 +88,11 @@ const Spinner = React.forwardRef(({
     return (
       <div
         ref={ref}
-        className={cn("flex items-center gap-1", sizeVariants[size], className)}
+        className={cn(
+          "flex items-center gap-1", 
+          iconSize,
+          className
+        )}
         {...props}
       >
         {[...Array(3)].map((_, i) => (
@@ -99,36 +118,25 @@ const Spinner = React.forwardRef(({
       <div
         ref={ref}
         className={cn(
-          "relative rounded-full",
-          baseClasses,
+          "relative flex items-center justify-center",
+          iconSize,
           className
         )}
         {...props}
       >
-        <div 
-          className="absolute inset-0 rounded-full animate-[pulse_1.5s_ease-in-out_infinite]"
-          style={{ backgroundColor: 'currentColor' }}
-        />
-        <div 
-          className="absolute inset-0 rounded-full animate-[pulse_1.5s_ease-in-out_infinite] delay-500"
-          style={{ backgroundColor: 'currentColor', opacity: 0.7 }}
-        />
+        <div className={cn(
+          "absolute rounded-full bg-current animate-[pulse_1.5s_ease-in-out_infinite]",
+          "w-full h-full opacity-75"
+        )} />
+        <div className={cn(
+          "absolute rounded-full bg-current animate-[pulse_1.5s_ease-in-out_infinite_0.4s]",
+          "w-2/3 h-2/3 opacity-50"
+        )} />
       </div>
     );
   }
 
-  // Default to circular if invalid style
-  return (
-    <div
-      ref={ref}
-      className={cn(
-        "inline-block border-2 rounded-full border-current",
-        "border-r-transparent border-b-transparent",
-        baseClasses
-      )}
-      {...props}
-    />
-  );
+  return null;
 });
 
 Spinner.displayName = "Spinner";

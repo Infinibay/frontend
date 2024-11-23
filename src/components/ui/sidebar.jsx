@@ -44,6 +44,9 @@ const SidebarProvider = React.forwardRef((
     className,
     style,
     children,
+    sidebarWidth = SIDEBAR_WIDTH,
+    sidebarWidthMobile = SIDEBAR_WIDTH_MOBILE,
+    sidebarWidthIcon = SIDEBAR_WIDTH_ICON,
     ...props
   },
   ref
@@ -102,7 +105,9 @@ const SidebarProvider = React.forwardRef((
     openMobile,
     setOpenMobile,
     toggleSidebar,
-  }), [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar])
+    sidebarWidth,
+    sidebarWidthIcon
+  }), [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, sidebarWidth, sidebarWidthIcon])
 
   return (
     (<SidebarContext.Provider value={contextValue}>
@@ -110,8 +115,8 @@ const SidebarProvider = React.forwardRef((
         <div
           style={
             {
-              "--sidebar-width": SIDEBAR_WIDTH,
-              "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+              "--sidebar-width": sidebarWidth,
+              "--sidebar-width-icon": sidebarWidthIcon,
               ...style
             }
           }

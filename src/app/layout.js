@@ -8,12 +8,13 @@ import { store, persistor } from "@/state/store";
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { InitialDataLoader } from '@/components/InitialDataLoader';
-import AppSidebar from "@/components/ui/navbar";
+import { AppSidebar } from "@/components/ui/navbar";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import auth from '@/utils/auth';
 import { Toaster } from 'react-hot-toast';
 import { useSelector } from 'react-redux';
+import { SizeProvider } from "@/components/ui/size-provider";
 
 const monst = Montserrat({ subsets: ["latin"] });
 
@@ -28,18 +29,17 @@ function AppContent({ children, isAuthenticated }) {
   }
 
   return (
-    <AppSidebar 
-      user={user?.firstName ? {
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`,
-      } : null}
-      departments={departments || []}
-      size="xl"
-    >
-      {children}
-    </AppSidebar>
+      <AppSidebar 
+        user={user?.firstName ? {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`,
+        } : null}
+        departments={departments || []}
+      >
+        {children}
+      </AppSidebar>
   );
 }
 
@@ -62,9 +62,11 @@ export default function RootLayout({ children }) {
             <ApolloProvider client={client}>
               <NextUIProvider>
                 <InitialDataLoader>
-                  <AppContent isAuthenticated={isAuthenticated}>
-                    {children}
-                  </AppContent>
+                  <SizeProvider size="xl">
+                    <AppContent isAuthenticated={isAuthenticated}>
+                      {children}
+                    </AppContent>
+                  </SizeProvider>
                 </InitialDataLoader>
                 <Toaster position="top-right" />
               </NextUIProvider>

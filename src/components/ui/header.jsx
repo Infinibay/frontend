@@ -1,16 +1,17 @@
 import * as React from "react"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
+import { useSizeContext, sizeVariants } from "./size-provider"
 
 const headerVariants = cva(
   "w-full flex items-center justify-between border-b transition-all duration-200",
   {
     variants: {
       size: {
-        sm: "h-12 px-4 gap-4",
-        md: "h-16 px-6 gap-6",
-        lg: "h-20 px-8 gap-8",
-        xl: "h-24 px-10 gap-10",
+        sm: cn("h-12", sizeVariants.sm.padding, sizeVariants.sm.gap, sizeVariants.sm.text),
+        md: cn("h-16", sizeVariants.md.padding, sizeVariants.md.gap, sizeVariants.md.text),
+        lg: cn("h-20", sizeVariants.lg.padding, sizeVariants.lg.gap, sizeVariants.lg.text),
+        xl: cn("h-24", sizeVariants.xl.padding, sizeVariants.xl.gap, sizeVariants.xl.text),
       },
       variant: {
         default: "bg-white border-gray-200",
@@ -56,13 +57,16 @@ const headerVariants = cva(
 
 const Header = React.forwardRef(({ 
   className, 
-  size, 
+  size: sizeProp, 
   variant, 
   sticky,
   elevated,
   bordered,
   ...props 
 }, ref) => {
+  const { size: contextSize } = useSizeContext()
+  const size = sizeProp || contextSize
+
   return (
     <header
       ref={ref}
@@ -84,7 +88,7 @@ const HeaderLeft = React.forwardRef(({ className, ...props }, ref) => {
   return (
     <div
       ref={ref}
-      className={cn("flex items-center gap-4 min-w-fit", className)}
+      className={cn("flex items-center gap-inherit min-w-fit [&>*]:flex [&>*]:items-center", className)}
       {...props}
     />
   )
@@ -95,7 +99,7 @@ const HeaderCenter = React.forwardRef(({ className, ...props }, ref) => {
   return (
     <div
       ref={ref}
-      className={cn("flex items-center justify-center flex-grow", className)}
+      className={cn("flex items-center justify-center flex-grow gap-inherit [&>*]:flex [&>*]:items-center", className)}
       {...props}
     />
   )
@@ -106,7 +110,7 @@ const HeaderRight = React.forwardRef(({ className, ...props }, ref) => {
   return (
     <div
       ref={ref}
-      className={cn("flex items-center justify-end gap-4 min-w-fit", className)}
+      className={cn("flex items-center justify-end gap-inherit min-w-fit [&>*]:flex [&>*]:items-center", className)}
       {...props}
     />
   )

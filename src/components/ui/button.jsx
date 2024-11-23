@@ -1,11 +1,11 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva } from "class-variance-authority";
-
 import { cn } from "@/lib/utils"
+import { useSizeContext, sizeVariants } from "./size-provider"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 hover:scale-[1.02] hover:-translate-y-[1px] active:scale-[0.98] active:translate-y-[1px] active:transition-none",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
@@ -29,11 +29,11 @@ const buttonVariants = cva(
           "bg-amber-500 text-white shadow-sm hover:bg-amber-600 hover:shadow-md active:bg-amber-700 active:shadow-inner",
       },
       size: {
-        sm: "h-8 px-3 py-1.5 text-xs [&_svg]:size-3.5",
-        md: "h-10 px-4 py-2 [&_svg]:size-4",
-        lg: "h-12 px-6 py-2.5 text-base [&_svg]:size-5",
-        xl: "h-14 px-8 py-3 text-lg [&_svg]:size-6",
-        icon: "h-10 w-10 p-2",
+        sm: cn(sizeVariants.sm.padding, sizeVariants.sm.text, sizeVariants.sm.height, "[&>svg]:h-4 [&>svg]:w-4"),
+        md: cn(sizeVariants.md.padding, sizeVariants.md.text, sizeVariants.md.height, "[&>svg]:h-5 [&>svg]:w-5"),
+        lg: cn(sizeVariants.lg.padding, sizeVariants.lg.text, sizeVariants.lg.height, "[&>svg]:h-6 [&>svg]:w-6"),
+        xl: cn(sizeVariants.xl.padding, sizeVariants.xl.text, sizeVariants.xl.height, "[&>svg]:h-7 [&>svg]:w-7"),
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: {
@@ -43,14 +43,24 @@ const buttonVariants = cva(
   }
 )
 
-const Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
+const Button = React.forwardRef(({ 
+  className, 
+  size: sizeProp,
+  variant, 
+  asChild = false, 
+  ...props 
+}, ref) => {
+  const { size: contextSize } = useSizeContext()
+  const size = sizeProp || contextSize
   const Comp = asChild ? Slot : "button"
+  
   return (
-    (<Comp
-      className={cn(buttonVariants({ variant, size, className }))}
+    <Comp
+      className={cn(buttonVariants({ size, variant, className }))}
       ref={ref}
-      {...props} />)
-  );
+      {...props}
+    />
+  )
 })
 Button.displayName = "Button"
 
