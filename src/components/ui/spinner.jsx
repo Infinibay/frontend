@@ -17,6 +17,13 @@ const spinnerSizeVariants = {
   xl: "w-10 h-10 border-3",
 };
 
+const windowsSizeVariants = {
+  sm: "w-4 h-4",
+  md: "w-6 h-6",
+  lg: "w-8 h-8",
+  xl: "w-10 h-10"
+};
+
 const Spinner = React.forwardRef(({ 
   className,
   speed = "medium",
@@ -54,12 +61,19 @@ const Spinner = React.forwardRef(({
 
   // Windows Spinner
   if (style === "windows") {
+    const dotSizeClasses = {
+      sm: "w-1 h-1",
+      md: "w-1.5 h-1.5",
+      lg: "w-2 h-2",
+      xl: "w-2.5 h-2.5"
+    };
+
     return (
       <div 
         ref={ref} 
         className={cn(
           "relative flex items-center justify-center", 
-          iconSize,
+          windowsSizeVariants[size],
           className
         )} 
         {...props}
@@ -68,7 +82,8 @@ const Spinner = React.forwardRef(({
           <div
             key={i}
             className={cn(
-              "absolute w-[15%] h-[15%] rounded-full",
+              "absolute rounded-full",
+              dotSizeClasses[size],
               "animate-[fade_1.5s_linear_infinite]"
             )}
             style={{

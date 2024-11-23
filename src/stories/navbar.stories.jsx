@@ -1,5 +1,6 @@
-import AppSidebar from "@/components/ui/navbar";
+import { AppSidebar } from "@/components/ui/navbar";
 import { UserPc } from "../components/ui/user-pc";
+import { SizeProvider } from "../components/ui/size-provider";
 
 const fakeDepartments = [
   { name: "Engineering", totalMachines: 25 },
@@ -16,52 +17,33 @@ const fakeUser = {
   avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
 };
 
+const decorators = [
+  (Story, context) => (
+    <SizeProvider size={context.args.size}>
+      <Story {...context.args} />
+    </SizeProvider>
+  ),
+];
+
 /**
  * Navigation bar component that provides consistent header styling and navigation functionality.
- * 
- * @component
- * @example
- * // How to import the component:
- * import { AppSidebar } from '../components/ui/navbar'
- * 
- * // Basic usage:
- * export default function Layout() {
- *   return (
- *     <div>
- *       <AppSidebar />
- *       {/* Your page content \*\/}
- *     </div>
- *   )
- * }
  */
 export default {
   title: "Components/AppSidebar",
   component: AppSidebar,
+  decorators,
   parameters: {
     layout: "fullscreen",
-    docs: {
-      description: {
-        component: `
-AppSidebar is the main navigation component of the application. It provides:
-- Navigation links to main sections (Computers, Users, Settings)
-- Department navigation with machine counts
-- User profile information
-- Logout functionality
-
-The sidebar supports different sizes (sm, md, lg) and can be collapsed/expanded.
-        `,
-      },
-    },
   },
   args: {
-    size: "lg",
+    size: "md",
     user: fakeUser,
     departments: fakeDepartments,
   },
   argTypes: {
     size: {
       control: "select",
-      options: ["sm", "md", "lg"],
+      options: ["sm", "md", "lg", "xl"],
       description: "Controls the size of the sidebar elements",
     },
     user: {
@@ -107,12 +89,14 @@ export const WithUser = {
 export const Small = {
   args: {
     size: "sm",
+    user: fakeUser,
+    departments: fakeDepartments,
   },
   render: (args) => (
     <AppSidebar {...args}>
       <div className="bg-gray-50 p-8 h-full">
-        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
-        <p>This is the main content area.</p>
+        <h1 className="text-2xl font-bold mb-6">Small Sidebar</h1>
+        <p>This is the main content area with a small sidebar.</p>
       </div>
     </AppSidebar>
   )
@@ -121,12 +105,14 @@ export const Small = {
 export const Medium = {
   args: {
     size: "md",
+    user: fakeUser,
+    departments: fakeDepartments,
   },
   render: (args) => (
     <AppSidebar {...args}>
       <div className="bg-gray-50 p-8 h-full">
-        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
-        <p>This is the main content area.</p>
+        <h1 className="text-2xl font-bold mb-6">Medium Sidebar</h1>
+        <p>This is the main content area with a medium sidebar.</p>
       </div>
     </AppSidebar>
   )
@@ -135,12 +121,14 @@ export const Medium = {
 export const Large = {
   args: {
     size: "lg",
+    user: fakeUser,
+    departments: fakeDepartments,
   },
   render: (args) => (
     <AppSidebar {...args}>
       <div className="bg-gray-50 p-8 h-full">
-        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
-        <p>This is the main content area.</p>
+        <h1 className="text-2xl font-bold mb-6">Large Sidebar</h1>
+        <p>This is the main content area with a large sidebar.</p>
       </div>
     </AppSidebar>
   )
@@ -149,12 +137,14 @@ export const Large = {
 export const ExtraLarge = {
   args: {
     size: "xl",
+    user: fakeUser,
+    departments: fakeDepartments,
   },
   render: (args) => (
     <AppSidebar {...args}>
       <div className="bg-gray-50 p-8 h-full">
-        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
-        <p>This is the main content area.</p>
+        <h1 className="text-2xl font-bold mb-6">Extra Large Sidebar</h1>
+        <p>This is the main content area with an extra large sidebar.</p>
       </div>
     </AppSidebar>
   )
@@ -164,48 +154,30 @@ export const ExtraLarge = {
 export const WithUserPCs = {
   args: {
     user: fakeUser,
+    departments: fakeDepartments,
   },
   render: (args) => (
     <AppSidebar {...args}>
-      <div>
+      <div className="bg-gray-50 p-8 h-full">
         <h1 className="text-2xl font-bold mb-6">User PCs</h1>
-        <div className="flex gap-4 flex-wrap">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <UserPc
-            name="Development PC"
-            status="running"
-            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Alice"
-            selected={true}
-            onClick={() => console.log('Development PC clicked')}
+            name="Main Workstation"
+            os="Windows 11"
+            lastSeen="2 hours ago"
+            status="online"
           />
           <UserPc
-            name="Testing Environment"
-            status="building"
-            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Bob"
-            onClick={() => console.log('Testing Environment clicked')}
+            name="Development Laptop"
+            os="macOS Sonoma"
+            lastSeen="5 minutes ago"
+            status="online"
           />
           <UserPc
-            name="Production Server"
-            status="idle"
-            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie"
-            onClick={() => console.log('Production Server clicked')}
-          />
-          <UserPc
-            name="Backup Server"
-            status="idle"
-            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=David"
-            onClick={() => console.log('Backup Server clicked')}
-          />
-          <UserPc
-            name="Database Server"
-            status="running"
-            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Eve"
-            onClick={() => console.log('Database Server clicked')}
-          />
-          <UserPc
-            name="Load Balancer"
-            status="idle"
-            avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Frank"
-            onClick={() => console.log('Load Balancer clicked')}
+            name="Test Machine"
+            os="Ubuntu 22.04"
+            lastSeen="3 days ago"
+            status="offline"
           />
         </div>
       </div>
@@ -216,12 +188,13 @@ export const WithUserPCs = {
 export const WithoutUser = {
   args: {
     user: null,
+    departments: fakeDepartments,
   },
   render: (args) => (
     <AppSidebar {...args}>
       <div className="bg-gray-50 p-8 h-full">
-        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
-        <p>This is the main content area.</p>
+        <h1 className="text-2xl font-bold mb-6">Without User</h1>
+        <p>This is the main content area without user information.</p>
       </div>
     </AppSidebar>
   )
@@ -230,12 +203,13 @@ export const WithoutUser = {
 export const WithoutDepartments = {
   args: {
     departments: [],
+    user: fakeUser,
   },
   render: (args) => (
     <AppSidebar {...args}>
       <div className="bg-gray-50 p-8 h-full">
-        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
-        <p>This is the main content area.</p>
+        <h1 className="text-2xl font-bold mb-6">Without Departments</h1>
+        <p>This is the main content area without any departments.</p>
       </div>
     </AppSidebar>
   )
@@ -245,18 +219,19 @@ export const WithManyDepartments = {
   args: {
     departments: [
       ...fakeDepartments,
-      { name: "Research", totalMachines: 30 },
-      { name: "Development", totalMachines: 45 },
-      { name: "QA", totalMachines: 15 },
-      { name: "Support", totalMachines: 25 },
-      { name: "Operations", totalMachines: 20 },
+      { name: "Research", totalMachines: 8 },
+      { name: "Support", totalMachines: 30 },
+      { name: "Legal", totalMachines: 5 },
+      { name: "Operations", totalMachines: 18 },
+      { name: "Design", totalMachines: 22 },
     ],
+    user: fakeUser,
   },
   render: (args) => (
     <AppSidebar {...args}>
       <div className="bg-gray-50 p-8 h-full">
-        <h1 className="text-2xl font-bold mb-6">Main Content</h1>
-        <p>This is the main content area.</p>
+        <h1 className="text-2xl font-bold mb-6">Many Departments</h1>
+        <p>This is the main content area with many departments.</p>
       </div>
     </AppSidebar>
   )

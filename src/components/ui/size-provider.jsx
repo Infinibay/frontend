@@ -26,6 +26,7 @@ export function SizeProvider({
 export const sizeVariants = {
   sm: {
     text: "text-sm",
+    heading: "text-lg font-semibold",
     padding: "px-3 py-2",
     height: "h-8",
     width: "w-8",
@@ -61,6 +62,7 @@ export const sizeVariants = {
   },
   md: {
     text: "text-base",
+    heading: "text-xl font-semibold",
     padding: "px-4 py-2",
     height: "h-10",
     width: "w-10",
@@ -96,6 +98,7 @@ export const sizeVariants = {
   },
   lg: {
     text: "text-lg",
+    heading: "text-2xl font-semibold",
     padding: "px-6 py-3",
     height: "h-12",
     width: "w-12",
@@ -131,6 +134,7 @@ export const sizeVariants = {
   },
   xl: {
     text: "text-xl",
+    heading: "text-3xl font-semibold",
     padding: "px-8 py-4",
     height: "h-14",
     width: "w-14",

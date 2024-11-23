@@ -62,7 +62,7 @@ export default function RootLayout({ children }) {
             <ApolloProvider client={client}>
               <NextUIProvider>
                 <InitialDataLoader>
-                  <SizeProvider size="xl">
+                  <SizeProvider size="md">
                     <AppContent isAuthenticated={isAuthenticated}>
                       {children}
                     </AppContent>
