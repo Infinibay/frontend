@@ -112,6 +112,18 @@ export const Small = {
   }
 }
 
+export const Medium = {
+  render: (args) => (
+    content(args)
+  ),
+  args: {
+    size: 'md'
+  },
+  parameters: {
+    layout: 'fullscreen'
+  }
+}
+
 export const Large = {
   render: (args) => (
     content(args)
