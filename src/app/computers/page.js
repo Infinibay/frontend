@@ -137,7 +137,7 @@ const Page = () => {
           </h1>
         </HeaderCenter>
         <HeaderRight>
-          <Link href="/computers/new">
+          <Link href="/computers/create">
             <Button variant="success" className="gap-2">
               <BsPlusLg />
               New Computer

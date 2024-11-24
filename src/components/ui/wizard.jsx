@@ -32,33 +32,26 @@ function WizardContent({
 
   const next = async () => {
     const stepId = currentStepElement.props.id
-    console.log('Current step:', stepId, 'Current values:', values[stepId])
     
     // Clear all errors before starting validation
     clearAllErrors()
     
     if (currentStepElement.props.validate) {
-      console.log('Starting validation for step:', stepId)
       setIsValidating(true)
       
       try {
         // Ensure we always pass an object to validate
         const stepValues = values[stepId] || {}
         await currentStepElement.props.validate(stepValues)
-        console.log('Validation passed for step:', stepId)
         if (isLastStep) {
-          console.log('Last step - completing wizard with values:', values)
           onComplete?.(values)
         } else {
-          console.log('Moving to next step')
           setCurrentStep(prev => prev + 1)
         }
       } catch (error) {
-        console.log('Validation failed:', error)
         // Handle validation errors
         if (error && typeof error === 'object') {
           Object.entries(error).forEach(([field, message]) => {
-            console.log('Setting error for field:', field, 'message:', message)
             setFieldError(field, message)
           })
         }
@@ -66,7 +59,6 @@ function WizardContent({
         setIsValidating(false)
       }
     } else {
-      console.log('No validation for step:', stepId)
       if (isLastStep) {
         onComplete?.(values)
       } else {
@@ -103,7 +95,6 @@ function WizardContent({
         [fieldName]: value
       }
     }))
-    console.log('Setting value:', name, value)
   }, [clearFieldError])
 
   const contextValue = React.useMemo(() => ({
