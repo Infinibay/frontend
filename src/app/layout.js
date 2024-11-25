@@ -12,7 +12,7 @@ import { AppSidebar } from "@/components/ui/navbar";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import auth from '@/utils/auth';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from '@/components/ui/toaster';
 import { useSelector } from 'react-redux';
 import { SizeProvider } from "@/components/ui/size-provider";
 
@@ -57,22 +57,22 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={monst.className}>
-        <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-            <ApolloProvider client={client}>
-              <NextUIProvider>
-                <InitialDataLoader>
-                  <SizeProvider size="xl">
-                    <AppContent isAuthenticated={isAuthenticated}>
-                      {children}
-                    </AppContent>
-                  </SizeProvider>
-                </InitialDataLoader>
-                <Toaster position="top-right" />
-              </NextUIProvider>
-            </ApolloProvider>
-          </PersistGate>
-        </Provider>
+          <SizeProvider defaultSize="xl">
+            <Provider store={store}>
+              <PersistGate loading={null} persistor={persistor}>
+                <ApolloProvider client={client}>
+                  <NextUIProvider>
+                    <InitialDataLoader>
+                      <AppContent isAuthenticated={isAuthenticated}>
+                        {children}
+                      </AppContent>
+                    </InitialDataLoader>
+                  </NextUIProvider>
+                </ApolloProvider>
+              </PersistGate>
+            </Provider>
+            <Toaster />
+          </SizeProvider>
       </body>
     </html>
   );

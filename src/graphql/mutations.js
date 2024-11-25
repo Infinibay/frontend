@@ -24,7 +24,6 @@ export const CREATE_MACHINE_MUTATION = gql`
         ram
         storage
       }
-      config
     }
   }
 `;

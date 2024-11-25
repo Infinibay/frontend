@@ -1,28 +1,22 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React from 'react';
+import { useSelector } from 'react-redux';
 import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
-import { fetchApplications } from '@/state/slices/applications';
 import AppInstaller from '@/components/ui/app-installer';
 import { Label } from '@/components/ui/label';
 
 const APP_ICON = 'https://cdn.simpleicons.org/2k';
 
 export function ApplicationsStep({ id }) {
-  const dispatch = useDispatch();
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
   const stepValues = values[id] || {};
   
   const applications = useSelector((state) => state.applications.items);
-  const loading = useSelector((state) => state.applications.loading);
-  const error = useSelector((state) => state.applications.error);
-
-  useEffect(() => {
-    dispatch(fetchApplications());
-  }, [dispatch]);
+  const loading = useSelector((state) => state.applications.loading.fetch);
+  const error = useSelector((state) => state.applications.error.fetch);
 
   const availableApps = applications.map(app => ({
     id: app.id,
@@ -43,9 +37,6 @@ export function ApplicationsStep({ id }) {
     setValue(`${id}.applications`, currentApps.filter(id => id !== app.id));
   };
 
-  if (loading) return <div>Loading applications...</div>;
-  if (error) return <div>Error loading applications: {error.message}</div>;
-
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -61,16 +52,26 @@ export function ApplicationsStep({ id }) {
         >
           Applications to Install
         </Label>
-        <AppInstaller
-          apps={{
-            available: availableApps,
-            installed: installedApps
-          }}
-          onInstall={handleInstall}
-          onUninstall={handleUninstall}
-          size="md"
-          className="min-h-[400px]"
-        />
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-muted-foreground">Loading applications...</div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-red-500">Error loading applications: {error.message}</div>
+          </div>
+        ) : (
+          <AppInstaller
+            apps={{
+              available: availableApps,
+              installed: installedApps
+            }}
+            onInstall={handleInstall}
+            onUninstall={handleUninstall}
+            size="md"
+            className="min-h-[400px]"
+          />
+        )}
       </div>
 
       {getError('applications') && (

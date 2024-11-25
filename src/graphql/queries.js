@@ -45,7 +45,6 @@ export const MACHINES_QUERY = gql`
     machines {
       id
       name
-      config
       status
       userId
       templateId
@@ -62,6 +61,12 @@ export const MACHINES_QUERY = gql`
       department {
        id
        name
+      }
+       configuration {
+         graphicHost
+         graphicPort
+         graphicProtocol
+         graphicPassword
       }
     }
   }

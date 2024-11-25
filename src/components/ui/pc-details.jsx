@@ -45,6 +45,7 @@ const PcDetails = React.forwardRef(({
   onOpenChange,
   size = "md",
   pc: {
+    id,
     name,
     userName,
     os,
@@ -60,6 +61,7 @@ const PcDetails = React.forwardRef(({
   onPause,
   onStop,
   onFullScreen,
+  onDelete,
   ...props
 }, ref) => {
   const isRunning = status === "running";
@@ -68,6 +70,13 @@ const PcDetails = React.forwardRef(({
   
   const sizes = sizeVariants[size];
 
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this VM?")) {
+      onDelete(id);
+      onOpenChange(false);
+    }
+  };
+  
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent ref={ref} className="w-[400px] sm:w-[540px] overflow-y-auto bg-[#fafafa] dark:bg-[#1a1a1a] pt-16" {...props}>
@@ -107,43 +116,53 @@ const PcDetails = React.forwardRef(({
           </div>
         </div>
 
-        <div className="flex justify-between pt-4 pb-2 border-t mt-6">
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={isRunning ? onPause : onPlay}
-              className={cn(
-                "transition-colors",
-                isRunning && "text-yellow-500 border-yellow-500",
-                (isPaused || isStopped) && "text-green-500 border-green-500"
-              )}
-            >
-              {isRunning ? 
-                <BsFillPauseFill className={sizes.controlIcon} /> : 
-                <BsFillPlayFill className={sizes.controlIcon} />
-              }
-            </Button>
-            {!isStopped && (
+        <div className="flex items-center justify-between gap-2 mt-4">
+          <div className="flex items-center gap-2">
+            {isStopped ? (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                onClick={onStop}
-                className={cn(
-                  "transition-colors",
-                  isStopped && "text-red-500 border-red-500"
-                )}
+                onClick={onPlay}
+                className="text-green-600 hover:text-green-700 hover:bg-green-50"
               >
-                <TiMediaStop className={sizes.controlIcon} />
+                <BsFillPlayFill className={sizes.controlIcon} />
               </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onPause}
+                  className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                >
+                  <BsFillPauseFill className={sizes.controlIcon} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onStop}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <TiMediaStop className={sizes.controlIcon} />
+                </Button>
+              </>
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onFullScreen}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <BiFullscreen className={sizes.controlIcon} />
+            </Button>
           </div>
           <Button
-            variant="outline"
-            size="icon"
-            onClick={onFullScreen}
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
-            <BiFullscreen className={sizes.controlIcon} />
+            Delete VM
           </Button>
         </div>
 

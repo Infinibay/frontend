@@ -25,6 +25,14 @@ const authSlice = createSlice({
 			email: null,
 			role: null,
 		},
+		loading: {
+			login: false,
+			fetchUser: false
+		},
+		error: {
+			login: null,
+			fetchUser: null
+		}
 	},
 	reducers: {
 		logout: (state) => {
@@ -37,31 +45,48 @@ const authSlice = createSlice({
 				role: null,
 			};
 			state.isLoggedIn = false;
+			state.error.login = null;
+			state.error.fetchUser = null;
 		},
 	},
 	extraReducers: (builder) => {
-		builder.addCase(fetchCurrentUser.fulfilled, (state, action) => {
-			state.user = action.payload;
-			state.isLoggedIn = true;
-		});
-		builder.addCase(fetchCurrentUser.rejected, (state) => {
-			state.user = {
-				id: null,
-				firstName: null,
-				lastName: null,
-				email: null,
-				role: null,
-			};
-			state.isLoggedIn = false;
-		});
-		builder.addCase(loginUser.fulfilled, (state, action) => {
-			state.token = action.payload;
-			state.isLoggedIn = true;
-		});
-		builder.addCase(loginUser.rejected, (state) => {
-			state.token = null;
-			state.isLoggedIn = false;
-		});
+		builder
+			.addCase(fetchCurrentUser.pending, (state) => {
+				state.loading.fetchUser = true;
+				state.error.fetchUser = null;
+			})
+			.addCase(fetchCurrentUser.fulfilled, (state, action) => {
+				state.loading.fetchUser = false;
+				state.user = action.payload;
+				state.isLoggedIn = true;
+			})
+			.addCase(fetchCurrentUser.rejected, (state, action) => {
+				state.loading.fetchUser = false;
+				state.error.fetchUser = action.error.message;
+				state.user = {
+					id: null,
+					firstName: null,
+					lastName: null,
+					email: null,
+					role: null,
+				};
+				state.isLoggedIn = false;
+			})
+			.addCase(loginUser.pending, (state) => {
+				state.loading.login = true;
+				state.error.login = null;
+			})
+			.addCase(loginUser.fulfilled, (state, action) => {
+				state.loading.login = false;
+				state.token = action.payload;
+				state.isLoggedIn = true;
+			})
+			.addCase(loginUser.rejected, (state, action) => {
+				state.loading.login = false;
+				state.error.login = action.error.message;
+				state.token = null;
+				state.isLoggedIn = false;
+			});
 	}
 });
 

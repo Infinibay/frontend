@@ -11,14 +11,14 @@ import { SiFedora } from 'react-icons/si';
 
 const osOptions = [
   {
-    id: 'WINDOWS_10',
+    id: 'WINDOWS10',
     name: 'Windows 10',
     icon: FaWindows,
     color: '#00A4EF',
     description: 'Microsoft Windows 10 operating system',
   },
   {
-    id: 'WINDOWS_11',
+    id: 'WINDOWS11',
     name: 'Windows 11',
     icon: FaWindows,
     color: '#00A4EF',

@@ -1,24 +1,27 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@apollo/client';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
-import { MACHINE_TEMPLATES_QUERY } from '@/graphql/queries';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { fetchTemplates, selectTemplatesState } from '@/state/slices/templates';
 
 export function ResourcesStep({ id }) {
+  const dispatch = useDispatch();
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
+  const { items: templates, loading, error } = useSelector(selectTemplatesState);
   const stepValues = values[id] || {};
 
-  const { data, loading, error } = useQuery(MACHINE_TEMPLATES_QUERY);
-  const templates = data?.machineTemplates || [];
+  useEffect(() => {
+    dispatch(fetchTemplates());
+  }, [dispatch]);
 
-  if (loading) return <div>Loading templates...</div>;
-  if (error) return <div>Error loading templates</div>;
+  if (loading.fetch) return <div>Loading templates...</div>;
+  if (error.fetch) return <div>Error loading templates</div>;
 
   return (
     <div className="space-y-6">

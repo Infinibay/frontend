@@ -4,6 +4,13 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { cn } from "@/lib/utils";
+import { 
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastProvider,
+  ToastViewport,
+} from "@/components/ui/toast";
 
 // UI Components
 import { UserPc } from "@/components/ui/user-pc";
@@ -31,7 +38,8 @@ import {
   deselectMachine,
   playVm,
   pauseVm,
-  stopVm
+  stopVm,
+  deleteVm
 } from "@/state/slices/vms";
 
 // Helper functions
@@ -51,6 +59,8 @@ const generateGroupedMachines = (byDepartment, machines) => {
 const Page = () => {
   // Get current size context
   const { size } = useSizeContext();
+  const [showToast, setShowToast] = useState(false);
+  const [toastProps, setToastProps] = useState({});
 
   // UI State
   const [grid, setGrid] = useState(false);
@@ -99,24 +109,57 @@ const Page = () => {
   // Handle machine control actions
   const handlePlay = async () => {
     if (selectedPc) {
-      await dispatch(playVm({ id: selectedPc.id }));
+      await dispatch(playVm({ id: selectedPc.vmId }));
+      dispatch(fetchVms());
     }
   };
 
   const handlePause = async () => {
     if (selectedPc) {
-      await dispatch(pauseVm({ id: selectedPc.id }));
+      await dispatch(pauseVm({ id: selectedPc.vmId }));
+      dispatch(fetchVms());
     }
   };
 
   const handleStop = async () => {
     if (selectedPc) {
-      await dispatch(stopVm({ id: selectedPc.id }));
+      await dispatch(stopVm({ id: selectedPc.vmId }));
+      dispatch(fetchVms());
+    }
+  };
+
+  const handleDelete = async (vmId) => {
+    try {
+      await dispatch(deleteVm({ id: vmId })).unwrap();
+      dispatch(fetchVms());
+      dispatch(deselectMachine());
+      setDetailsOpen(false);
+      setToastProps({
+        variant: "success",
+        title: "VM Deleted",
+        description: "The virtual machine has been successfully deleted."
+      });
+      setShowToast(true);
+    } catch (error) {
+      console.error("Failed to delete VM:", error);
+      setToastProps({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete the virtual machine. Please try again."
+      });
+      setShowToast(true);
     }
   };
 
   return (
-    <>
+    <ToastProvider>
+      {showToast && (
+        <Toast variant={toastProps.variant} onOpenChange={setShowToast}>
+          <ToastTitle>{toastProps.title}</ToastTitle>
+          <ToastDescription>{toastProps.description}</ToastDescription>
+        </Toast>
+      )}
+      <ToastViewport />
       <Header variant="glass" elevated>
         <HeaderLeft>
           <Breadcrumb>
@@ -162,19 +205,17 @@ const Page = () => {
       {/* PC Details Sheet */}
       {selectedPc && (
         <PcDetails 
+          pc={selectedPc}
           open={detailsOpen} 
           onOpenChange={handleDetailsClose}
-          machine={selectedPc}
           onPlay={handlePlay}
           onPause={handlePause}
           onStop={handleStop}
-          pc={{
-            name: selectedPc.name,
-            status: selectedPc.status,
-          }}
+          onDelete={handleDelete}
+          size={size}
         />
       )}
-    </>
+    </ToastProvider>
   );
 };
 
