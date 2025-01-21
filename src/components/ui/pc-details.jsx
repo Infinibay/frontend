@@ -47,11 +47,8 @@ const PcDetails = React.forwardRef(({
   pc: {
     id,
     name,
-    userName,
-    os,
-    ram,
-    cpu,
-    storage,
+    user,
+    template,
     vmId,
     status,
     screenshot = "/images/default-screenshot.png",
@@ -186,37 +183,48 @@ const PcDetails = React.forwardRef(({
             </span>
             <span className={cn("flex items-center gap-2", sizes.subtitle)}>
               <FaUser className={sizes.icon} />
-              {userName}
+              {user?.firstName || 'N/A'}
             </span>
           </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className={cn("text-muted-foreground", sizes.text)}>Operating System</p>
-              <p className={cn("font-medium", sizes.text)}>{os}</p>
+          {/* Specs Grid */}
+          <div className="grid grid-cols-2 gap-4 mt-6">
+            {/* CPU */}
+            <div className="flex items-center gap-2">
+              <FiCpu className={sizes.icon} />
+              <div>
+                <div className={cn("font-medium", sizes.subtitle)}>CPU</div>
+                <div className={cn("text-muted-foreground", sizes.text)}>{template?.cores || 'N/A'} Cores</div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className={cn("text-muted-foreground flex items-center gap-2", sizes.text)}>
-                <BsMemory className={sizes.icon} />
-                RAM
-              </p>
-              <p className={cn("font-medium", sizes.text)}>{ram}</p>
+
+            {/* RAM */}
+            <div className="flex items-center gap-2">
+              <BsMemory className={sizes.icon} />
+              <div>
+                <div className={cn("font-medium", sizes.subtitle)}>RAM</div>
+                <div className={cn("text-muted-foreground", sizes.text)}>{template?.ram || 'N/A'} GB</div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className={cn("text-muted-foreground flex items-center gap-2", sizes.text)}>
-                <FiCpu className={sizes.icon} />
-                CPU
-              </p>
-              <p className={cn("font-medium", sizes.text)}>{cpu}</p>
+
+            {/* Storage */}
+            <div className="flex items-center gap-2">
+              <FiHardDrive className={sizes.icon} />
+              <div>
+                <div className={cn("font-medium", sizes.subtitle)}>Storage</div>
+                <div className={cn("text-muted-foreground", sizes.text)}>{template?.storage || 'N/A'} GB</div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className={cn("text-muted-foreground flex items-center gap-2", sizes.text)}>
-                <FiHardDrive className={sizes.icon} />
-                Storage
-              </p>
-              <p className={cn("font-medium", sizes.text)}>{storage}</p>
+
+            {/* User */}
+            <div className="flex items-center gap-2">
+              <FaUser className={sizes.icon} />
+              <div>
+                <div className={cn("font-medium", sizes.subtitle)}>User</div>
+                <div className={cn("text-muted-foreground", sizes.text)}>{user?.firstName || 'N/A'}</div>
+              </div>
             </div>
           </div>
         </div>

@@ -93,7 +93,6 @@ const Page = () => {
 
   // Handle PC selection
   const handlePcSelect = (machine) => {
-    console.log("Selected machine:", machine);
     dispatch(selectMachine(machine));
     setDetailsOpen(true);
   };

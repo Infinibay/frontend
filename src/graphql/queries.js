@@ -52,6 +52,11 @@ export const MACHINES_QUERY = gql`
       template {
         id
         name
+        description
+        cores
+        ram
+        storage
+        createdAt
       }
       user {
         id
