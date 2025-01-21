@@ -98,6 +98,11 @@ module.exports = {
           "50%": { opacity: 1 },
           "100%": { opacity: 0.3 },
         },
+        "shimmer": {
+          "100%": {
+            transform: "translateX(100%)",
+          },
+        },
         "spin": {
           from: { transform: 'translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(0deg)' },
           to: { transform: 'translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(360deg)' }
