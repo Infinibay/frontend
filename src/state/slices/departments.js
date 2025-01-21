@@ -2,8 +2,8 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
 import { DEPARTMENTS_QUERY, DEPARTMENT_QUERY, FIND_DEPARTMENT_BY_NAME_QUERY } from '@/graphql/queries';
 import { 
-    CREATE_DEPARMENT_MUTATION,
-    DELETE_DEPARMENT_MUTATION,
+    CREATE_DEPARTMENT_MUTATION,
+    DELETE_DEPARTMENT_MUTATION,
 } from '@/graphql/mutations';
 
 const executeGraphQLMutation = async (mutation, variables) => {
@@ -52,8 +52,9 @@ export const fetchDepartmentByName = createAsyncThunk(
 
 export const createDepartment = createAsyncThunk(
     'departments/createDepartment',
-    async (name) => {
-        const data = await executeGraphQLMutation(CREATE_DEPARMENT_MUTATION, { name });
+    async (input) => {
+        console.log(name);
+        const data = await executeGraphQLMutation(CREATE_DEPARTMENT_MUTATION, { name: input.name });
         return data.createDepartment;
     }
 );
@@ -61,7 +62,7 @@ export const createDepartment = createAsyncThunk(
 export const deleteDepartment = createAsyncThunk(
     'departments/deleteDepartment',
     async (id) => {
-        const data = await executeGraphQLMutation(DELETE_DEPARMENT_MUTATION, { id });
+        const data = await executeGraphQLMutation(DELETE_DEPARTMENT_MUTATION, { id });
         return data.destroyDepartment;
     }
 );

@@ -15,7 +15,7 @@ export const CREATE_MACHINE_MUTATION = gql`
         lastName
         email
         role
-      }
+      }s
       template {
         id
         name
@@ -64,7 +64,7 @@ export const SUSPEND_MUTATION = gql`
   }
 `;
 // DEPARTMENTS
-export const DELETE_DEPARMENT_MUTATION = gql`
+export const DELETE_DEPARTMENT_MUTATION = gql`
   mutation DeleteDepartment($id: String!) {
     destroyDepartment(id: $id) {
       id
@@ -77,7 +77,7 @@ export const DELETE_DEPARMENT_MUTATION = gql`
   }
 `;
 
-export const CREATE_DEPARMENT_MUTATION = gql`
+export const CREATE_DEPARTMENT_MUTATION = gql`
   mutation CreateDepartment($name: String!) {
     createDepartment(name: $name) {
       id

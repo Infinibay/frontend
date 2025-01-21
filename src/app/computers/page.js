@@ -189,15 +189,16 @@ const Page = () => {
         </HeaderRight>
       </Header>
       <section id="computers" className={cn(sizeVariants[size].spacing.container)}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+        <div className="flex flex-wrap gap-6">
           {machines?.map((machine) => (
-            <UserPc
-              key={machine.id}
-              name={machine.name}
-              status={machine.status?.toLowerCase()}
-              selected={selectedPc?.id === machine.id}
-              onClick={() => handlePcSelect(machine)}
-            />
+            <div className="w-min" key={machine.id}>
+              <UserPc
+                name={machine.name}
+                status={machine.status?.toLowerCase()}
+                selected={selectedPc?.id === machine.id}
+                onClick={() => handlePcSelect(machine)}
+              />
+            </div>
           ))}
         </div>
       </section>

@@ -12,23 +12,49 @@ import { AppSidebar } from "@/components/ui/navbar";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import auth from '@/utils/auth';
-import { Toaster } from '@/components/ui/toaster';
+import { Toast, ToastTitle, ToastDescription, ToastProvider, ToastViewport } from '@/components/ui/toast';
 import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import { createDepartment as createDepartmentAction } from '@/state/slices/departments';
 import { SizeProvider } from "@/components/ui/size-provider";
 
 const monst = Montserrat({ subsets: ["latin"] });
 
 // Separate component to use Redux hooks after Provider is initialized
 function AppContent({ children, isAuthenticated }) {
+  const dispatch = useDispatch();
   const pathname = usePathname();
   const user = useSelector((state) => state.auth.user);
   const departments = useSelector((state) => state.departments.items);
+  const [open, setOpen] = useState(false);
+  const [toastData, setToastData] = useState({ title: '', description: '', variant: 'default' });
+
+  const handleCreateDepartment = async (name) => {
+    try {
+      console.log("Sending ", name);
+      await dispatch(createDepartmentAction({ name })).unwrap();
+      setToastData({
+        title: "Success",
+        description: "Department created successfully",
+        variant: "success"
+      });
+      setOpen(true);
+    } catch (error) {
+      setToastData({
+        title: "Error",
+        description: error.message || "Failed to create department",
+        variant: "destructive"
+      });
+      setOpen(true);
+    }
+  };
 
   if (!isAuthenticated || pathname === '/auth/sign-in' || pathname === '/auth/sign-up') {
     return <div className="flex-1">{children}</div>;
   }
 
   return (
+    <>
       <AppSidebar 
         user={user?.firstName ? {
           firstName: user.firstName,
@@ -37,9 +63,18 @@ function AppContent({ children, isAuthenticated }) {
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`,
         } : null}
         departments={departments || []}
+        onCreateDepartment={handleCreateDepartment}
       >
         {children}
       </AppSidebar>
+      <ToastProvider>
+        <Toast open={open} onOpenChange={setOpen} variant={toastData.variant}>
+          <ToastTitle>{toastData.title}</ToastTitle>
+          <ToastDescription>{toastData.description}</ToastDescription>
+        </Toast>
+        <ToastViewport />
+      </ToastProvider>
+    </>
   );
 }
 
@@ -71,7 +106,6 @@ export default function RootLayout({ children }) {
                 </ApolloProvider>
               </PersistGate>
             </Provider>
-            <Toaster />
           </SizeProvider>
       </body>
     </html>

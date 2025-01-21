@@ -102,7 +102,7 @@ const AppSidebar = React.forwardRef(({
       icon: BiBuildings,
       children: [
         ...departments.map((dept) => ({
-          href: `/departments/${dept.id}`,
+          href: `/departments/${dept.name}`,
           label: dept.name,
           badge: dept.computersCount || 0,
         })),
