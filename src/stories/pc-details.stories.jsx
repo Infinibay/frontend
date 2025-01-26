@@ -131,6 +131,12 @@ const defaultPc = {
     cores: "4",
     storage: "256",
   },
+  configuration: {
+    graphicProtocol: "spice",
+    graphicHost: "127.0.0.1",
+    graphicPort: "5900",
+    graphicPassword: "123456"
+  },
   vmId: "vm-001",
   status: "running",
   screenshot: "https://www.debian.org/Pics/debian-logo-1024x576.png", // Example screenshot

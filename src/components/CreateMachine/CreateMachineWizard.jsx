@@ -13,6 +13,7 @@ import { ResourcesStep } from './steps/ResourcesStep';
 import { ConfigurationStep } from './steps/ConfigurationStep';
 import { ApplicationsStep } from './steps/ApplicationsStep';
 import { ReviewStep } from './steps/ReviewStep';
+import { GpuSelectionStep } from './steps/GpuSelectionStep';
 
 export default function CreateMachineWizard() {
   const dispatch = useDispatch();
@@ -31,6 +32,7 @@ export default function CreateMachineWizard() {
         templateId: values.resources.templateId,
         os: values.configuration.os,
         productKey: values.configuration.productKey || '',
+        pciBus: values.gpu.pciBus,
         applications: (values.applications?.applications || []).map(appId => ({
           applicationId: appId,
           parameters: {} // Add any necessary parameters here
@@ -100,6 +102,16 @@ export default function CreateMachineWizard() {
             const errors = {};
             if (!values.templateId) {
               errors.templateId = 'Template is required';
+            }
+            if (Object.keys(errors).length > 0) throw errors;
+          }}
+        />
+        <GpuSelectionStep
+          id="gpu"
+          validate={async (values) => {
+            const errors = {};
+            if (!values.gpuId) {
+              errors.gpuId = 'GPU selection is required';
             }
             if (Object.keys(errors).length > 0) throw errors;
           }}

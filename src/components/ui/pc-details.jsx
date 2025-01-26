@@ -12,6 +12,7 @@ import { BiFullscreen } from "react-icons/bi";
 import { FiCpu, FiHardDrive } from "react-icons/fi";
 import { BsMemory } from "react-icons/bs";
 import { FaUser } from "react-icons/fa";
+import { MdOutlineScreenshotMonitor } from "react-icons/md";
 
 const sizeVariants = {
   sm: {
@@ -53,6 +54,7 @@ const PcDetails = React.forwardRef(({
     status,
     screenshot = "/images/default-screenshot.png",
     avatar,
+    configuration
   },
   onPlay,
   onPause,
@@ -217,6 +219,17 @@ const PcDetails = React.forwardRef(({
                 <div className={cn("text-muted-foreground", sizes.text)}>{template?.storage || 'N/A'} GB</div>
               </div>
             </div>
+            {/* Configuration */}
+            {configuration && (
+              <div className="flex items-center gap-2">
+                <MdOutlineScreenshotMonitor className={sizeVariants[size].icon} />
+                <div>
+                  <div className={cn("font-medium", sizes.subtitle)}>Configuration</div>
+                  <div className={cn("text-muted-foreground", sizes.text)}>{configuration.graphicProtocol}://{configuration.graphicHost}:{configuration.graphicPort}</div>
+                  <div className={cn("text-muted-foreground", sizes.text)}>{configuration.graphicPassword}</div>
+                </div>
+              </div>
+            )}
 
             {/* User */}
             <div className="flex items-center gap-2">

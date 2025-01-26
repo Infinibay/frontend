@@ -149,3 +149,14 @@ export const APPLICATION_QUERY = gql`
     }
   }
 `;
+
+export const GPUS_QUERY = gql`
+  query {
+    getGraphics {
+      pciBus
+      vendor
+      model
+      memory
+    }
+  }
+`;

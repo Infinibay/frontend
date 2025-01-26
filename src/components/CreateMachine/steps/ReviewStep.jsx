@@ -16,6 +16,15 @@ const operatingSystems = {
   windows11: 'Windows 11 Pro',
 };
 
+const formatMemory = (memory) => {
+  if (!memory) return '';
+  if (memory < 1) {
+    const mbValue = Math.round(memory * 1024);
+    return `${mbValue}MB VRAM`;
+  }
+  return `${Math.round(memory)}GB VRAM`;
+};
+
 export function ReviewStep({ id }) {
   const { values } = useWizardContext();
   const { data } = useQuery(MACHINE_TEMPLATES_QUERY);
@@ -87,6 +96,26 @@ export function ReviewStep({ id }) {
                         Memory
                       </dt>
                       <dd className="text-sm font-medium">{selectedTemplate.ram} GB RAM</dd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <dt className="text-sm text-muted-foreground flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 19h12V5H6v14zm5-8h4m4-5h3v4h-3m-7 5h4"/>
+                        </svg>
+                        Graphics Card
+                      </dt>
+                      <dd className="text-sm font-medium">
+                        {values.gpu?.gpuInfo ? (
+                          <div className="text-right">
+                            <div>{values.gpu.gpuInfo.model}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {values.gpu.gpuInfo.vendor} - {formatMemory(values.gpu.gpuInfo.memory)}
+                            </div>
+                          </div>
+                        ) : (
+                          "No GPU"
+                        )}
+                      </dd>
                     </div>
                     <div className="flex items-center justify-between">
                       <dt className="text-sm text-muted-foreground flex items-center gap-2">

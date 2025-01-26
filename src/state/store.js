@@ -6,6 +6,7 @@ import vmsReducer from './slices/vms'
 import departments from './slices/departments'
 import persistedApplicaitonReducer from './slices/applications'
 import templatesReducer from './slices/templates'
+import systemReducer from './slices/system'
 
 const persistConfig = {
   key: 'root',
@@ -26,8 +27,15 @@ const persistConfigDepartments = {
   whitelist: ['items'] // Only persist the items array
 };
 
+const persistSystemConfig = {
+  key: 'system',
+  storage,
+  whitelist: ['graphics'] // Only persist the graphics array
+};
+
 const persistedAuth = persistReducer(persistAuthConfig, authReducer)
 const persistedDeparments = persistReducer(persistConfigDepartments, departments)
+const persistedSystem = persistReducer(persistSystemConfig, systemReducer)
 
 export const store = configureStore({
   reducer: {
@@ -36,6 +44,7 @@ export const store = configureStore({
     departments: persistedDeparments,
     applications: persistedApplicaitonReducer,
     templates: templatesReducer,
+    system: persistedSystem,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
