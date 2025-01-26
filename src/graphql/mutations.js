@@ -15,7 +15,7 @@ export const CREATE_MACHINE_MUTATION = gql`
         lastName
         email
         role
-      }s
+      }
       template {
         id
         name
