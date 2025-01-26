@@ -67,12 +67,7 @@ export const MACHINES_QUERY = gql`
        id
        name
       }
-       configuration {
-         graphicHost
-         graphicPort
-         graphicProtocol
-         graphicPassword
-      }
+      configuration
     }
   }
 `;
