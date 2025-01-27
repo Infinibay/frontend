@@ -1,10 +1,9 @@
-import Main from "@/components/notification/Main";
 import React from "react";
 
 const page = () => {
   return (
     <div className="">
-      <Main />
+      Notifications
     </div>
   );
 };

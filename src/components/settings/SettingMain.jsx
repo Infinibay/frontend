@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Box2 from "./Box2";
-import Box1 from "./Box1";
 
 import { Card } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";

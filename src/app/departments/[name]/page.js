@@ -3,27 +3,52 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "next/navigation";
-import { useDisclosure } from "@nextui-org/react";
-import { BsGrid } from "react-icons/bs";
+import { cn } from "@/lib/utils";
+import { 
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastProvider,
+  ToastViewport,
+} from "@/components/ui/toast";
 
-// Components
-import UserPc from "@/components/dashboard/UserPc";
-import PcModal from "@/components/modal/PcModal";
-import PcDetails from "@/components/dashboard/PcDetails";
+// UI Components
+import { UserPc } from "@/components/ui/user-pc";
+import { Header, HeaderLeft, HeaderCenter, HeaderRight } from "@/components/ui/header";
+import { PcDetails } from "@/components/ui/pc-details";
+import { 
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
 
 // Redux actions
-import { fetchVms, selectMachine, deselectMachine } from "@/state/slices/vms";
+import { 
+  fetchVms, 
+  selectMachine, 
+  deselectMachine,
+  playVm,
+  pauseVm,
+  stopVm,
+  deleteVm
+} from "@/state/slices/vms";
 import { fetchDepartmentByName } from "@/state/slices/departments";
 
 const DepartmentPage = () => {
   const params = useParams();
+  const { size } = useSizeContext();
   const dispatch = useDispatch();
-  const [grid, setGrid] = useState(false);
-  const { onOpen, isOpen, onOpenChange, onClose } = useDisclosure();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  
+  // UI State
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastProps, setToastProps] = useState({});
 
-  // Separate selectors to avoid unnecessary re-renders
+  // Redux selectors
   const department = useSelector((state) =>
     state.departments.items.find(d => d.name.toLowerCase() === params.name.toLowerCase())
   );
@@ -31,84 +56,149 @@ const DepartmentPage = () => {
     state.vms.items.filter(vm => vm.department?.name?.toLowerCase() === params.name.toLowerCase())
   );
   const selectedPc = useSelector((state) => state.vms.selectedMachine);
+  const loading = useSelector((state) => state.vms.loading);
 
-  // Handle machine selection
-  const handleMachineSelect = (machine) => {
-    dispatch(selectMachine(machine));
-  };
+  // Fetch data on mount
+  useEffect(() => {
+    dispatch(fetchVms());
+    dispatch(fetchDepartmentByName(params.name));
+  }, [dispatch, params.name]);
 
-  // Handle keyboard events
+  // Handle Escape key
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        if (isOpen) {
-          onClose();
-        } else if (selectedPc) {
-          dispatch(deselectMachine());
-        }
+      if (event.key === "Escape" && selectedPc) {
+        dispatch(deselectMachine());
+        setDetailsOpen(false);
       }
     };
 
-    // Add event listener
     window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [dispatch, selectedPc]);
 
-    // Cleanup
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [dispatch, isOpen, selectedPc, onClose]);
+  // Handle PC selection
+  const handlePcSelect = (machine) => {
+    dispatch(selectMachine(machine));
+    setDetailsOpen(true);
+  };
+
+  // Handle details sheet close
+  const handleDetailsClose = (open) => {
+    setDetailsOpen(open);
+    if (!open) {
+      dispatch(deselectMachine());
+    }
+  };
+
+  // Handle machine control actions
+  const handlePlay = async () => {
+    if (selectedPc) {
+      await dispatch(playVm({ id: selectedPc.vmId }));
+      dispatch(fetchVms());
+    }
+  };
+
+  const handlePause = async () => {
+    if (selectedPc) {
+      await dispatch(pauseVm({ id: selectedPc.vmId }));
+      dispatch(fetchVms());
+    }
+  };
+
+  const handleStop = async () => {
+    if (selectedPc) {
+      await dispatch(stopVm({ id: selectedPc.vmId }));
+      dispatch(fetchVms());
+    }
+  };
+
+  const handleDelete = async (vmId) => {
+    try {
+      await dispatch(deleteVm({ id: vmId })).unwrap();
+      dispatch(fetchVms());
+      dispatch(deselectMachine());
+      setDetailsOpen(false);
+      setToastProps({
+        variant: "success",
+        title: "VM Deleted",
+        description: "The virtual machine has been successfully deleted."
+      });
+      setShowToast(true);
+    } catch (error) {
+      console.error("Failed to delete VM:", error);
+      setToastProps({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete the virtual machine. Please try again."
+      });
+      setShowToast(true);
+    }
+  };
 
   return (
-    <div className="flex flex-1 justify-between overflow-hidden w-full">
-      <div className="flex pb-10 border border-b-0 flex-col justify-between flex-1">
-        {/* Header */}
-        <div className="border-b py-6">
-          <div className="dashboard_container flex items-center justify-between w-full">
-            <h1 className="5xl:text-3xl text-lg sm:text-2xl flex-1 font-medium text-gray-800">
-              Department: <span className="font-bold text-web_dark">{department.name}</span>
-            </h1>
-            <div className="flex items-center space-x-4">
-              <BsGrid
-                onClick={() => setGrid(!grid)}
-                className={`
-                  2xl:w-12 cursor-pointer border 2xl:h-12 h-10 w-10 p-[7px] 
-                  rounded-xl border-web_aquablue/20 transitioncustom
-                  ${grid
-                    ? "bg-web_aquablue/20 text-web_aquablue"
-                    : "text-web_placeHolder bg-white"
-                  }
-                `}
+    <ToastProvider>
+      {showToast && (
+        <Toast variant={toastProps.variant} onOpenChange={setShowToast}>
+          <ToastTitle>{toastProps.title}</ToastTitle>
+          <ToastDescription>{toastProps.description}</ToastDescription>
+        </Toast>
+      )}
+      <ToastViewport />
+      <Header variant="glass" elevated>
+        <HeaderLeft>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/departments">Departments</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{department?.name || params.name}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </HeaderLeft>
+        <HeaderCenter>
+          <h1 className="text-lg sm:text-2xl font-medium text-gray-800">
+            {department?.name || params.name}
+          </h1>
+        </HeaderCenter>
+      </Header>
+
+      <section id="department-computers" className={cn(sizeVariants[size].spacing.container)}>
+        <div className="flex flex-wrap gap-6">
+          {machines?.map((machine) => (
+            <div className="w-min" key={machine.id}>
+              <UserPc
+                name={machine.name}
+                status={machine.status?.toLowerCase()}
+                selected={selectedPc?.id === machine.id}
+                onClick={() => handlePcSelect(machine)}
               />
             </div>
-          </div>
+          ))}
         </div>
+      </section>
 
-        {/* Machine Grid */}
-        <div className="dashboard_container flex-1">
-          <div className="flex gap-10 flex-wrap mt-8 w-full">
-            {machines.map((machine) => (
-              <div
-                key={machine.id}
-                onClick={() => handleMachineSelect(machine)}
-                className="cursor-pointer"
-              >
-                <UserPc 
-                  key={`${machine.id}-${selectedPc?.id === machine.id}`}
-                  selectedPc={selectedPc} 
-                  pc={machine} 
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Details Panel */}
-      {selectedPc && <PcDetails onOpen={onOpen} />}
-      
-      {/* Modal */}
-      <PcModal isOpen={isOpen} onOpenChange={onOpenChange} />
-    </div>
+      {/* PC Details Sheet */}
+      {selectedPc && (
+        <PcDetails 
+          pc={selectedPc}
+          open={detailsOpen} 
+          onOpenChange={handleDetailsClose}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onStop={handleStop}
+          onDelete={handleDelete}
+          size={size}
+        />
+      )}
+    </ToastProvider>
   );
 };
 
