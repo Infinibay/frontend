@@ -11,8 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { UploadProgress } from "@/components/ui/upload-progress";
 import axios from "axios";
 
 const SettingMain = () => {
@@ -24,6 +23,7 @@ const SettingMain = () => {
   const [uploadSpeed, setUploadSpeed] = useState(0);
   const [lastLoaded, setLastLoaded] = useState(0);
   const [lastTime, setLastTime] = useState(Date.now());
+  const [uploadController, setUploadController] = useState(null);
 
   const osOptions = [
     { 
@@ -96,6 +96,9 @@ const SettingMain = () => {
     setUploadProgress(0);
 
     try {
+      const controller = new AbortController();
+      setUploadController(controller);
+      
       const formData = new FormData();
       formData.append('file', isoFile);
       formData.append('os', selectedOS);
@@ -105,6 +108,7 @@ const SettingMain = () => {
           'Authorization': localStorage.getItem('token') || '',
           'Content-Type': 'multipart/form-data',
         },
+        signal: controller.signal,
         onUploadProgress: (progressEvent) => {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(progress);
@@ -226,24 +230,32 @@ const SettingMain = () => {
           </Form>
         </Card>
       </div>
-      {/* Add Progress Dialog */}
-      <Dialog open={isUploading} onOpenChange={(open) => !open && setIsUploading(false)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Uploading ISO File</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 py-4">
-            <Progress value={uploadProgress} className="w-full" />
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <div className="flex justify-between items-center font-mono">
-                <span>{formatSize(lastLoaded)}/{formatSize(isoFile?.size || 0)}</span>
-                <span>{uploadSpeed > 0 ? `${formatSize(uploadSpeed)}/s` : 'Calculating...'}</span>
-              </div>
-              <p className="text-center text-xs">{uploadProgress}% Complete</p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Replace the old progress dialog with the new component */}
+      <UploadProgress
+        isOpen={isUploading}
+        onOpenChange={setIsUploading}
+        title="Uploading ISO File"
+        uploadedSize={lastLoaded}
+        totalSize={isoFile?.size || 0}
+        uploadSpeed={uploadSpeed}
+        progress={uploadProgress}
+        showCancelButton={true}
+        onCancel={() => {
+          if (uploadController) {
+            uploadController.abort();
+            setUploadController(null);
+            setIsUploading(false);
+            setUploadProgress(0);
+            setUploadSpeed(0);
+            setLastLoaded(0);
+            toast({
+              title: "Upload Cancelled",
+              description: "The file upload was cancelled",
+              variant: "default",
+            });
+          }
+        }}
+      />
     </div>
   );
 };

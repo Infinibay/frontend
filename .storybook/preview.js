@@ -12,6 +12,30 @@ const preview = {
       },
     },
     layout: 'centered',
+    docs: {
+      // Show code by default
+      source: {
+        state: 'open',
+      },
+      // Better handling of props tables
+      story: {
+        inline: true,
+        height: '500px',
+      },
+      // Canvas settings
+      canvas: {
+        sourceState: 'shown',
+      },
+      // Disable the "Show code" button by default in docs
+      source: {
+        type: 'code',
+      },
+    },
+    // Ensure modals don't interfere with docs
+    layout: 'padded',
+    backgrounds: {
+      default: 'light',
+    },
   },
   decorators: [
     (Story) => (
