@@ -125,3 +125,67 @@ export const DELETE_APPLICATION_MUTATION = gql`
     destroyApplication(id: $id)
   }
 `;
+
+export const CREATE_MACHINE_TEMPLATE_MUTATION = gql`
+  mutation CreateMachineTemplate($input: MachineTemplateInputType!) {
+    createMachineTemplate(input: $input) {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+    }
+  }
+`;
+
+export const UPDATE_MACHINE_TEMPLATE_MUTATION = gql`
+  mutation UpdateMachineTemplate($input: MachineTemplateInputType!, $id: String!) {
+    updateMachineTemplate(input: $input, id: $id) {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+    }
+  }
+`;
+
+export const CREATE_MACHINE_TEMPLATE_CATEGORY_MUTATION = gql`
+  mutation CreateMachineTemplateCategory($input: MachineTemplateCategoryInputType!) {
+    createMachineTemplateCategory(input: $input) {
+      id
+      name
+      description
+      createdAt
+    }
+  }
+`;
+
+export const UPDATE_MACHINE_TEMPLATE_CATEGORY_MUTATION = gql`
+  mutation UpdateMachineTemplateCategory($input: MachineTemplateCategoryInputType!, $id: String!) {
+    updateMachineTemplateCategory(input: $input, id: $id) {
+      id
+      name
+      description
+      createdAt
+    }
+  }
+`;
+
+export const DESTROY_MACHINE_TEMPLATE_MUTATION = gql`
+  mutation DestroyMachineTemplate($id: String!) {
+    destroyMachineTemplate(id: $id)
+  }
+`;
+
+export const DESTROY_MACHINE_TEMPLATE_CATEGORY_MUTATION = gql`
+  mutation DestroyMachineTemplateCategory($id: String!) {
+    destroyMachineTemplateCategory(id: $id)
+  }
+`;

@@ -34,6 +34,7 @@ import {
 import { RiDashboardLine, RiSettings4Line } from "react-icons/ri";
 import { FiUsers } from "react-icons/fi";
 import { BiLogOut, BiBuildings } from "react-icons/bi";
+import { ImInsertTemplate } from "react-icons/im";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { HiPlus } from "react-icons/hi";
 
@@ -115,6 +116,7 @@ const AppSidebar = React.forwardRef(({
     },
     { href: "/users", icon: FiUsers, label: "Users" },
     { href: "/settings", icon: RiSettings4Line, label: "Settings" },
+    { href: "/templates", icon: ImInsertTemplate, label: "Templates" }
   ];
 
   const renderMenuItems = () => {

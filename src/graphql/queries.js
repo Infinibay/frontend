@@ -29,13 +29,31 @@ export const USERS_QUERY = gql`
 export const MACHINE_TEMPLATES_QUERY = gql`
   query {
     machineTemplates {
-    id
-    name
-    description
-    cores
-    ram
-    storage
-    createdAt
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
+  }
+`;
+
+export const MACHINE_TEMPLATE_QUERY = gql`
+  query MachineTemplate($id: String!) {
+    machineTemplate(id: $id) {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
     }
   }
 `;
@@ -157,6 +175,30 @@ export const GPUS_QUERY = gql`
       vendor
       model
       memory
+    }
+  }
+`;
+
+export const MACHINE_TEMPLATE_CATEGORIES_QUERY = gql`
+  query {
+    machineTemplateCategories {
+      id
+      name
+      description
+      createdAt
+      totalTemplates
+    }
+  }
+`;
+
+export const MACHINE_TEMPLATE_CATEGORY_QUERY = gql`
+  query MachineTemplateCategory($id: String!) {
+    machineTemplateCategory(id: $id) {
+      id
+      name
+      description
+      createdAt
+      totalTemplates
     }
   }
 `;
