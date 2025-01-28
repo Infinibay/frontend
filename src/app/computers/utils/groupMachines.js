@@ -4,8 +4,13 @@
  * @param {Array} machines - Array of machine objects
  * @returns {Object} Grouped machines object
  */
-export function groupMachinesByDepartment(byDepartment, machines) {
+export function groupMachinesByDepartment(byDepartment, machines, departments) {
   if (!byDepartment) return { All: machines };
+  let groupedByDepartment = {};
+
+  departments.forEach((department) => {
+    groupedByDepartment[department.id] = { name: department.name, machines: [] };
+  });
   
   return machines.reduce((acc, machine) => {
     const department = machine.department || { id: "uncategorized", name: "Uncategorized" };
@@ -17,5 +22,5 @@ export function groupMachinesByDepartment(byDepartment, machines) {
     }
     acc[department.id].machines.push(machine);
     return acc;
-  }, {});
+  }, groupedByDepartment);
 }

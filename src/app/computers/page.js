@@ -36,6 +36,7 @@ export default function ComputersPage() {
   // Redux state
   const dispatch = useDispatch();
   const machines = useSelector((state) => state.vms.items);
+  const departments = useSelector((state) => state.departments.items);
   const selectedPc = useSelector((state) => state.vms.selectedMachine);
   const loading = useSelector((state) => state.vms.loading?.fetch);
   const error = useSelector((state) => state.vms.error?.fetch);
@@ -55,7 +56,7 @@ export default function ComputersPage() {
   } = useComputerActions();
 
   // Group machines by department
-  const groupedMachines = groupMachinesByDepartment(byDepartment, machines || []);
+  const groupedMachines = groupMachinesByDepartment(byDepartment, machines || [], departments);
 
   // Fetch machines on mount
   useEffect(() => {
@@ -84,12 +85,7 @@ export default function ComputersPage() {
       )}
       <ToastViewport />
 
-      <ComputersHeader
-        grid={grid}
-        setGrid={setGrid}
-        byDepartment={byDepartment}
-        setByDepartment={setByDepartment}
-      />
+      <ComputersHeader />
 
       <section className="flex-1 p-4 md:p-8">
         <div className="space-y-4">

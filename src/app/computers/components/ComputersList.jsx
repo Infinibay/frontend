@@ -1,7 +1,65 @@
 "use client";
 
+import { useState } from "react";
+import { useDispatch } from "react-redux";
 import { cn } from "@/lib/utils";
 import { UserPc } from "@/components/ui/user-pc";
+import { 
+  DndContext, 
+  DragOverlay,
+  useSensor, 
+  useSensors, 
+  PointerSensor,
+  useDroppable,
+  useDraggable
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableItem } from "@/components/ui/sortable-item";
+import { moveMachine, fetchVms } from "@/state/slices/vms";
+
+function DraggableUserPc({ machine, selected, onSelect, size }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: machine.id,
+  });
+
+  return (
+    <div ref={setNodeRef} {...listeners} {...attributes}>
+      <UserPc
+        pc={machine}
+        name={machine.name}
+        status={machine.status?.toLowerCase()}
+        selected={selected}
+        onClick={onSelect}
+        size={size}
+        className={cn(isDragging && "opacity-50")}
+      />
+    </div>
+  );
+}
+
+function DroppableDepartment({ departmentId, departmentName, children, isOver }) {
+  const { setNodeRef } = useDroppable({
+    id: departmentId,
+  });
+
+  return (
+    <div ref={setNodeRef} className="space-y-4">
+      {departmentName && (
+        <h2 className="text-2xl font-semibold tracking-tight">
+          {departmentName}
+        </h2>
+      )}
+      <div
+        className={cn(
+          "min-h-[100px] p-4 rounded-lg border border-dashed transition-colors",
+          isOver ? "border-primary bg-primary/5" : "border-border"
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export function ComputersList({
   loading,
@@ -13,6 +71,54 @@ export function ComputersList({
   onSelectMachine,
   size,
 }) {
+  const dispatch = useDispatch();
+  const [activeId, setActiveId] = useState(null);
+  const [activeMachine, setActiveMachine] = useState(null);
+  const [overDepartmentId, setOverDepartmentId] = useState(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleDragStart = (event) => {
+    const { active } = event;
+    setActiveId(active.id);
+    
+    // Find the machine being dragged
+    for (const [, departmentData] of Object.entries(groupedMachines)) {
+      const machine = (departmentData.machines || []).find(m => m.id === active.id);
+      if (machine) {
+        setActiveMachine(machine);
+        break;
+      }
+    }
+  };
+
+  const handleDragOver = (event) => {
+    const { over } = event;
+    setOverDepartmentId(over?.id || null);
+  };
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    console.log('Drag end:', { active, over });
+
+    setActiveId(null);
+    setActiveMachine(null);
+    setOverDepartmentId(null);
+
+    if (over) {
+      const destinationId = over.id;
+      console.log('Moving machine:', { machineId: active.id, departmentId: destinationId });
+      await dispatch(moveMachine({ id: active.id, departmentId: destinationId }));
+      await dispatch(fetchVms());
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -46,36 +152,54 @@ export function ComputersList({
   }
 
   return (
-    <>
-      {Object.entries(groupedMachines).map(([departmentId, departmentData]) => (
-        <div key={departmentId} className="space-y-4">
-          {byDepartment && (
-            <h2 className="text-2xl font-semibold tracking-tight">
-              {departmentData.name || "Uncategorized"}
-            </h2>
-          )}
-          <div
-            className={cn(
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="space-y-8">
+        {Object.entries(groupedMachines).map(([departmentId, departmentData]) => (
+          <DroppableDepartment
+            key={departmentId}
+            departmentId={departmentId}
+            departmentName={byDepartment ? departmentData.name : null}
+            isOver={overDepartmentId === departmentId}
+          >
+            <div className={cn(
               "grid gap-4",
               grid
-                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
                 : "grid-cols-1"
-            )}
-          >
-            {(departmentData.machines || departmentData).map((machine) => (
-              <UserPc
-                key={machine.id}
-                pc={machine}
-                name={machine.name}
-                status={machine.status?.toLowerCase()}
-                selected={selectedPc?.id === machine.id}
-                onClick={() => onSelectMachine(machine)}
-                size={size}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-    </>
+            )}>
+              {(departmentData.machines || []).map((machine) => (
+                <DraggableUserPc
+                  key={machine.id}
+                  machine={machine}
+                  selected={selectedPc?.id === machine.id}
+                  onSelect={() => onSelectMachine(machine)}
+                  size={size}
+                />
+              ))}
+              {byDepartment && (!departmentData.machines || departmentData.machines.length === 0) && (
+                <div className="text-center p-8 text-muted-foreground col-span-full">
+                  No machines found
+                </div>
+              )}
+            </div>
+          </DroppableDepartment>
+        ))}
+      </div>
+      <DragOverlay>
+        {activeMachine && (
+          <UserPc
+            pc={activeMachine}
+            name={activeMachine.name}
+            status={activeMachine.status?.toLowerCase()}
+            className="opacity-50"
+          />
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }

@@ -189,3 +189,17 @@ export const DESTROY_MACHINE_TEMPLATE_CATEGORY_MUTATION = gql`
     destroyMachineTemplateCategory(id: $id)
   }
 `;
+
+export const MOVE_MACHINE_MUTATION = gql`
+  mutation MoveMachine($departmentId: String!, $id: String!) {
+    moveMachine(departmentId: $departmentId, id: $id) {
+      id
+      name
+      status
+      department {
+        id
+        name
+      }
+    }
+  }
+`;

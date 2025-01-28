@@ -19,7 +19,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-export function ComputersHeader({ grid, setGrid, byDepartment, setByDepartment }) {
+export function ComputersHeader() {
   return (
     <Header variant="glass" elevated>
       <HeaderLeft className="w-[200px]">
@@ -42,28 +42,6 @@ export function ComputersHeader({ grid, setGrid, byDepartment, setByDepartment }
       </HeaderCenter>
       <HeaderRight className="w-[200px] flex items-center justify-end space-x-2">
         <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setGrid(!grid)}
-            className={cn(
-              "hover:bg-accent hover:text-accent-foreground w-10",
-              grid && "bg-accent text-accent-foreground"
-            )}
-          >
-            <BsGrid className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setByDepartment(!byDepartment)}
-            className={cn(
-              "hover:bg-accent hover:text-accent-foreground w-[120px]",
-              byDepartment && "bg-accent text-accent-foreground"
-            )}
-          >
-            {byDepartment ? "Ungrouped" : "By Department"}
-          </Button>
           <Link href="/computers/create">
             <Button className="whitespace-nowrap">
               <BsPlusLg className="mr-2 h-4 w-4" />

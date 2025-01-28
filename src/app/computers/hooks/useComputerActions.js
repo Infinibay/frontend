@@ -9,6 +9,7 @@ import {
   deleteVm,
   selectMachine,
   deselectMachine,
+  fetchVms,
 } from "@/state/slices/vms";
 
 export function useComputerActions() {
@@ -31,7 +32,8 @@ export function useComputerActions() {
 
   const handlePlay = async (machine) => {
     try {
-      await dispatch(playVm(machine.id)).unwrap();
+      await dispatch(playVm({ id: machine.id })).unwrap();
+      await dispatch(fetchVms());
       setToastProps({
         title: "Success",
         description: "Machine started successfully",
@@ -49,7 +51,8 @@ export function useComputerActions() {
 
   const handlePause = async (machine) => {
     try {
-      await dispatch(pauseVm(machine.id)).unwrap();
+      await dispatch(pauseVm({ id: machine.id })).unwrap();
+      await dispatch(fetchVms());
       setToastProps({
         title: "Success",
         description: "Machine paused successfully",
@@ -67,7 +70,9 @@ export function useComputerActions() {
 
   const handleStop = async (machine) => {
     try {
-      await dispatch(stopVm(machine.id)).unwrap();
+      console.log("Stopping machine:", machine);
+      await dispatch(stopVm({ id: machine.id })).unwrap();
+      await dispatch(fetchVms());
       setToastProps({
         title: "Success",
         description: "Machine stopped successfully",
@@ -85,13 +90,14 @@ export function useComputerActions() {
 
   const handleDelete = async (machine) => {
     try {
-      await dispatch(deleteVm(machine.id)).unwrap();
+      await dispatch(deleteVm({ id: machine.id })).unwrap();
+      await dispatch(fetchVms());
+      handleDetailsClose(false);
       setToastProps({
         title: "Success",
         description: "Machine deleted successfully",
         variant: "success",
       });
-      handleDetailsClose(false);
     } catch (error) {
       setToastProps({
         title: "Error",

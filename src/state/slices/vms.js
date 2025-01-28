@@ -6,7 +6,8 @@ import {
   DELETE_MACHINE_MUTATION,
   POWER_OFF_MUTATION,
   POWER_ON_MUTATION,
-  SUSPEND_MUTATION
+  SUSPEND_MUTATION,
+  MOVE_MACHINE_MUTATION
 } from '@/graphql/mutations';
 
 const executeGraphQLMutation = async (mutation, variables) => {
@@ -147,6 +148,21 @@ export const stopVm = createAsyncThunk(
   }
 );
 
+export const moveMachine = createAsyncThunk(
+  'vms/moveMachine',
+  async ({ id, departmentId }, { rejectWithValue }) => {
+    try {
+      const response = await executeGraphQLMutation(MOVE_MACHINE_MUTATION, {
+        id,
+        departmentId,
+      });
+      return response.moveMachine;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const initialState = {
   items: [],
   selectedMachine: null,
@@ -156,7 +172,8 @@ const initialState = {
     delete: false,
     play: false,
     pause: false,
-    stop: false
+    stop: false,
+    move: false
   },
   error: {
     fetch: null,
@@ -164,7 +181,8 @@ const initialState = {
     delete: null,
     play: null,
     pause: null,
-    stop: null
+    stop: null,
+    move: null
   }
 };
 
@@ -278,6 +296,23 @@ const vmsSlice = createSlice({
       .addCase(stopVm.rejected, (state, action) => {
         state.loading.stop = false;
         state.error.stop = action.payload || 'Failed to stop VM';
+      })
+
+      // Move Machine
+      .addCase(moveMachine.pending, (state, action) => {
+        state.loading.move = true;
+        state.error.move = null;
+      })
+      .addCase(moveMachine.fulfilled, (state, action) => {
+        state.loading.move = false;
+        const index = state.items.findIndex((vm) => vm.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+      })
+      .addCase(moveMachine.rejected, (state, action) => {
+        state.loading.move = false;
+        state.error.move = action.payload;
       });
   },
 });

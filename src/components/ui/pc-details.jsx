@@ -71,11 +71,23 @@ const PcDetails = React.forwardRef(({
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this VM?")) {
-      onDelete(id);
+      onDelete({ id, vmId });
       onOpenChange(false);
     }
   };
-  
+
+  const handlePlay = () => {
+    onPlay({ id, vmId });
+  };
+
+  const handlePause = () => {
+    onPause({ id, vmId });
+  };
+
+  const handleStop = () => {
+    onStop({ id, vmId });
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent ref={ref} className="w-[400px] sm:w-[540px] overflow-y-auto bg-[#fafafa] dark:bg-[#1a1a1a] pt-16" {...props}>
@@ -100,10 +112,6 @@ const PcDetails = React.forwardRef(({
                   alt={`${name} screenshot`}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-black/20" />
-                
-                {/* Screen Glare Effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
               </div>
             </div>
           </div>
@@ -117,11 +125,11 @@ const PcDetails = React.forwardRef(({
 
         <div className="flex items-center justify-between gap-2 mt-4">
           <div className="flex items-center gap-2">
-            {isStopped ? (
+            {!isRunning ? (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={onPlay}
+                onClick={handlePlay}
                 className="text-green-600 hover:text-green-700 hover:bg-green-50"
               >
                 <BsFillPlayFill className={sizes.controlIcon} />
@@ -131,7 +139,7 @@ const PcDetails = React.forwardRef(({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={onPause}
+                  onClick={handlePause}
                   className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
                 >
                   <BsFillPauseFill className={sizes.controlIcon} />
@@ -139,21 +147,23 @@ const PcDetails = React.forwardRef(({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={onStop}
+                  onClick={handleStop}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <TiMediaStop className={sizes.controlIcon} />
                 </Button>
               </>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onFullScreen}
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            >
-              <BiFullscreen className={sizes.controlIcon} />
-            </Button>
+            {onFullScreen && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onFullScreen}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              >
+                <BiFullscreen className={sizes.controlIcon} />
+              </Button>
+            )}
           </div>
           <Button
             variant="ghost"
