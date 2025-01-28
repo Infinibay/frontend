@@ -15,12 +15,13 @@ import { ApplicationsStep } from './steps/ApplicationsStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { GpuSelectionStep } from './steps/GpuSelectionStep';
 
-export default function CreateMachineWizard() {
+export default function CreateMachineWizard({ departmentId }) {
   const dispatch = useDispatch();
   const router = useRouter();
   const { toast } = useToast();
   const { create: isCreating } = useSelector(selectVmsLoading);
   const { create: createError } = useSelector(selectVmsError);
+  console.log("Department id is", departmentId);
 
   const handleComplete = async (values) => {
     try {
@@ -33,6 +34,7 @@ export default function CreateMachineWizard() {
         os: values.configuration.os,
         productKey: values.configuration.productKey || '',
         pciBus: values.gpu.pciBus,
+        departmentId: (departmentId || values.basicInfo.departmentId),
         applications: (values.applications?.applications || []).map(appId => ({
           applicationId: appId,
           parameters: {} // Add any necessary parameters here
@@ -83,8 +85,12 @@ export default function CreateMachineWizard() {
             if (!values.password) {
               errors.password = 'Password is required';
             }
+            if (departmentId == null && !values.departmentId) {
+              errors.departmentId = 'Department is required';
+            }
             if (Object.keys(errors).length > 0) throw errors;
           }}
+          departmentId={departmentId}
         />
         <ConfigurationStep 
           id="configuration"

@@ -173,3 +173,8 @@ const departmentsSlice = createSlice({
 });
 
 export default departmentsSlice.reducer;
+
+// Selectors
+export const selectDepartments = (state) => state.departments.items;
+export const selectDepartmentsLoading = (state) => state.departments.loading.fetch;
+export const selectDepartmentError = (state) => state.departments.error.fetch;

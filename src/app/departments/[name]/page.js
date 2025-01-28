@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import Link from 'next/link';
 import { 
   Toast,
   ToastTitle,
@@ -15,6 +16,7 @@ import {
 // UI Components
 import { UserPc } from "@/components/ui/user-pc";
 import { Header, HeaderLeft, HeaderCenter, HeaderRight } from "@/components/ui/header";
+import { Button } from '@/components/ui/button';
 import { PcDetails } from "@/components/ui/pc-details";
 import { 
   Breadcrumb,
@@ -25,6 +27,9 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
+
+// Icons
+import { BsPlusLg } from 'react-icons/bs';
 
 // Redux actions
 import { 
@@ -168,6 +173,14 @@ const DepartmentPage = () => {
             {department?.name || params.name}
           </h1>
         </HeaderCenter>
+        <HeaderRight>
+          <Link href={`/departments/${params.name}/computers/create`}>
+            <Button variant="success" className="gap-2">
+              <BsPlusLg />
+              New Computer
+            </Button>
+          </Link>
+        </HeaderRight>
       </Header>
 
       <section id="department-computers" className={cn(sizeVariants[size].spacing.container)}>

@@ -1,16 +1,37 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
+import { fetchDepartments, selectDepartments, selectDepartmentsLoading } from '@/state/slices/departments';
 
-export function BasicInfoStep({ id }) {
+export function BasicInfoStep({ id, departmentId=null }) {
+  const dispatch = useDispatch();
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
   const stepValues = values[id] || {};
+  const departments = useSelector(selectDepartments);
+  const isLoading = useSelector(selectDepartmentsLoading);
+  console.log("first step, department id is", departmentId);
+
+  // useEffect(() => {
+  //   if (!values.basicInfo?.departmentId) {
+  //     dispatch(fetchDepartments());
+  //   }
+  // }, [dispatch]);
+
+  // If departmentId is provided in the URL, set it once when the component mounts
+  // useEffect(() => {
+  //   const urlDepartmentId = values.departmentId;
+  //   if (urlDepartmentId && !stepValues.departmentId) {
+  //     setValue(`${id}.departmentId`, urlDepartmentId);
+  //   }
+  // }, [values.departmentId, stepValues.departmentId, setValue, id]);
 
   return (
     <div className="space-y-6">
@@ -23,6 +44,35 @@ export function BasicInfoStep({ id }) {
 
       <Card className="p-6 border-primary/10 bg-primary/5">
         <div className="space-y-4">
+          {departmentId == null && (
+            <div className="space-y-2">
+              <Label 
+                htmlFor="departmentId"
+                moreInformation="Select the department this machine will belong to"
+              >
+                Department
+              </Label>
+              <Select
+                value={stepValues.departmentId || ''}
+                onValueChange={(value) => setValue(`${id}.departmentId`, value)}
+                disabled={isLoading}
+              >
+                <SelectTrigger id="departmentId" className={`bg-background ${getError('departmentId') ? 'border-red-500' : ''}`}>
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {getError('departmentId') && (
+                <p className="text-sm text-red-500">{getError('departmentId')}</p>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             <Label 
               htmlFor="name"
