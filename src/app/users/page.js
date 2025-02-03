@@ -1,9 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { cn } from "@/lib/utils";
 import { RiDeleteBin5Line } from "react-icons/ri";
 import { BiSortAlt2 } from "react-icons/bi";
+import { 
+  fetchUsers, 
+  createUser, 
+  updateUser, 
+  deleteUser, 
+  selectUsers, 
+  selectUsersLoading, 
+  selectUsersError 
+} from "@/state/slices/users";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -59,11 +69,18 @@ import {
 } from "@/components/ui/breadcrumb";
 import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
 import { Toast, ToastProvider, ToastTitle, ToastDescription, ToastViewport } from "@/components/ui/toast";
+import { Form } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 
 const UsersPage = () => {
+  const dispatch = useDispatch();
   const { size } = useSizeContext();
   const [selectedUsers, setSelectedUsers] = useState(new Set());
-  const [users, setUsers] = useState(initialUsers);
+  const users = useSelector(selectUsers);
+  const loading = useSelector((state) => state.users.loading?.fetch);
+  const error = useSelector(selectUsersError);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [showToast, setShowToast] = useState(false);
@@ -71,39 +88,122 @@ const UsersPage = () => {
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [newUser, setNewUser] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    passwordConfirmation: '',
+    role: 'USER'
+  });
 
-  const handleDeleteUser = (userId) => {
-    const updatedUsers = users.filter(user => user.id !== userId);
-    setUsers(updatedUsers);
-    setIsDeleteDialogOpen(false);
-    setToastProps({
-      variant: "success",
-      title: "User Deleted",
-      description: "The user has been successfully deleted."
-    });
-    setShowToast(true);
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, [dispatch]);
+
+  const handleCreateUser = async (userData) => {
+    try {
+      await dispatch(createUser(userData)).unwrap();
+      setIsCreateUserOpen(false);
+      setToastProps({
+        variant: "success",
+        title: "User Created",
+        description: "The user has been successfully created."
+      });
+      setShowToast(true);
+      dispatch(fetchUsers());
+    } catch (error) {
+      setToastProps({
+        variant: "error",
+        title: "Error",
+        description: error.message || "Failed to create user."
+      });
+      setShowToast(true);
+    }
   };
 
-  const handleDeleteSelected = () => {
-    const updatedUsers = users.filter(user => !selectedUsers.has(user.id.toString()));
-    setUsers(updatedUsers);
-    setSelectedUsers(new Set());
-    setToastProps({
-      variant: "success",
-      title: "Users Deleted",
-      description: "Selected users have been successfully deleted."
-    });
-    setShowToast(true);
+  const handleUpdateUser = async (userData) => {
+    try {
+      await dispatch(updateUser({ id: editingUser.id, input: userData })).unwrap();
+      setIsEditUserOpen(false);
+      setToastProps({
+        variant: "success",
+        title: "User Updated",
+        description: "The user has been successfully updated."
+      });
+      setShowToast(true);
+      dispatch(fetchUsers());
+    } catch (error) {
+      setToastProps({
+        variant: "error",
+        title: "Error",
+        description: error.message || "Failed to update user."
+      });
+      setShowToast(true);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    try {
+      await dispatch(deleteUser(userId)).unwrap();
+      setIsDeleteDialogOpen(false);
+      setToastProps({
+        variant: "success",
+        title: "User Deleted",
+        description: "The user has been successfully deleted."
+      });
+      setShowToast(true);
+    } catch (error) {
+      setToastProps({
+        variant: "error",
+        title: "Error",
+        description: error.message || "Failed to delete user."
+      });
+      setShowToast(true);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    try {
+      const deletePromises = Array.from(selectedUsers).map(userId =>
+        dispatch(deleteUser(userId)).unwrap()
+      );
+      await Promise.all(deletePromises);
+      setSelectedUsers(new Set());
+      setToastProps({
+        variant: "success",
+        title: "Users Deleted",
+        description: "Selected users have been successfully deleted."
+      });
+      setShowToast(true);
+    } catch (error) {
+      setToastProps({
+        variant: "error",
+        title: "Error",
+        description: error.message || "Failed to delete users."
+      });
+      setShowToast(true);
+    }
   };
 
   const columns = [
     { key: "username", label: "Username" },
-    { key: "name", label: "Name" },
+    { key: "firstName", label: "First Name" },
+    { key: "lastName", label: "Last Name" },
     { key: "email", label: "Email" },
-    { key: "department", label: "Department" },
     { key: "role", label: "Role" },
     { key: "actions", label: "Actions" }
   ];
+
+  if (error.fetch) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-xl text-red-500">
+          {error.fetch}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ToastProvider>
@@ -153,7 +253,6 @@ const UsersPage = () => {
               <DropdownMenuContent>
                 <DropdownMenuItem>Name (A-Z)</DropdownMenuItem>
                 <DropdownMenuItem>Name (Z-A)</DropdownMenuItem>
-                <DropdownMenuItem>Department</DropdownMenuItem>
                 <DropdownMenuItem>Role</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -163,74 +262,79 @@ const UsersPage = () => {
 
       <div className={cn("p-6", sizeVariants[size].spacing.container)}>
         <ScrollArea className="h-[calc(100vh-12rem)] w-full rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {columns.map((column) => (
-                  <TableHead key={column.key}>{column.label}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar
-                        src={user.avatar || "/images/profileIcon.png"}
-                        fallback={user.username[0]}
-                      />
-                      <span>{user.username}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.department}</TableCell>
-                  <TableCell>{user.role}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setEditingUser(user);
-                                setIsEditUserOpen(true);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit User</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600"
-                              onClick={() => {
-                                setUserToDelete(user);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                            >
-                              <RiDeleteBin5Line className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Delete User</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </TableCell>
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <Spinner size="lg" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {columns.map((column) => (
+                    <TableHead key={column.key}>{column.label}</TableHead>
+                  ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar
+                          fallback={`${user.firstName[0]}${user.lastName[0]}`}
+                        />
+                        <span>{user.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{user.firstName}</TableCell>
+                    <TableCell>{user.lastName}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.role}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingUser(user);
+                                  setIsEditUserOpen(true);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit User</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600"
+                                onClick={() => {
+                                  setUserToDelete(user);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                              >
+                                <RiDeleteBin5Line className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete User</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </ScrollArea>
 
         {selectedUsers.size > 0 && (
@@ -245,6 +349,271 @@ const UsersPage = () => {
         )}
       </div>
 
+      {/* Create User Sheet */}
+      <Sheet open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Create User</SheetTitle>
+            <SheetDescription>
+              Add a new user to the system
+            </SheetDescription>
+          </SheetHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="firstName" className="text-right">
+                First Name
+              </Label>
+              <Input
+                id="firstName"
+                className="col-span-3"
+                value={newUser.firstName}
+                onChange={(e) => setNewUser(prev => ({
+                  ...prev,
+                  firstName: e.target.value
+                }))}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="lastName" className="text-right">
+                Last Name
+              </Label>
+              <Input
+                id="lastName"
+                className="col-span-3"
+                value={newUser.lastName}
+                onChange={(e) => setNewUser(prev => ({
+                  ...prev,
+                  lastName: e.target.value
+                }))}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                className="col-span-3"
+                value={newUser.email}
+                onChange={(e) => setNewUser(prev => ({
+                  ...prev,
+                  email: e.target.value
+                }))}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                className="col-span-3"
+                value={newUser.password}
+                onChange={(e) => setNewUser(prev => ({
+                  ...prev,
+                  password: e.target.value
+                }))}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="passwordConfirmation" className="text-right">
+                Confirm Password
+              </Label>
+              <Input
+                id="passwordConfirmation"
+                type="password"
+                className="col-span-3"
+                value={newUser.passwordConfirmation}
+                onChange={(e) => setNewUser(prev => ({
+                  ...prev,
+                  passwordConfirmation: e.target.value
+                }))}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                Role
+              </Label>
+              <Select
+                value={newUser.role}
+                onValueChange={(value) => setNewUser(prev => ({
+                  ...prev,
+                  role: value
+                }))}
+                className="col-span-3"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="USER">User</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <SheetFooter>
+            <Button onClick={() => {
+              if (!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.password || !newUser.passwordConfirmation) {
+                setToastProps({
+                  variant: "error",
+                  title: "Validation Error",
+                  description: "Please fill in all required fields."
+                });
+                setShowToast(true);
+                return;
+              }
+
+              if (newUser.password !== newUser.passwordConfirmation) {
+                setToastProps({
+                  variant: "error",
+                  title: "Validation Error",
+                  description: "Passwords do not match."
+                });
+                setShowToast(true);
+                return;
+              }
+
+              handleCreateUser(newUser);
+              setNewUser({
+                firstName: '',
+                lastName: '',
+                email: '',
+                password: '',
+                passwordConfirmation: '',
+                role: 'USER'
+              });
+            }}>
+              Create User
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit User Sheet */}
+      <Sheet open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Edit User</SheetTitle>
+            <SheetDescription>
+              Make changes to the user's information
+            </SheetDescription>
+          </SheetHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="firstName" className="text-right">
+                First Name
+              </Label>
+              <Input
+                id="firstName"
+                defaultValue={editingUser?.firstName}
+                className="col-span-3"
+                onChange={(e) => {
+                  setEditingUser(prev => ({
+                    ...prev,
+                    firstName: e.target.value
+                  }));
+                }}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="lastName" className="text-right">
+                Last Name
+              </Label>
+              <Input
+                id="lastName"
+                defaultValue={editingUser?.lastName}
+                className="col-span-3"
+                onChange={(e) => {
+                  setEditingUser(prev => ({
+                    ...prev,
+                    lastName: e.target.value
+                  }));
+                }}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                New Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                className="col-span-3"
+                onChange={(e) => {
+                  setEditingUser(prev => ({
+                    ...prev,
+                    password: e.target.value
+                  }));
+                }}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="passwordConfirmation" className="text-right">
+                Confirm Password
+              </Label>
+              <Input
+                id="passwordConfirmation"
+                type="password"
+                className="col-span-3"
+                onChange={(e) => {
+                  setEditingUser(prev => ({
+                    ...prev,
+                    passwordConfirmation: e.target.value
+                  }));
+                }}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                Role
+              </Label>
+              <Select 
+                defaultValue={editingUser?.role}
+                className="col-span-3"
+                onValueChange={(value) => {
+                  setEditingUser(prev => ({
+                    ...prev,
+                    role: value
+                  }));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="USER">User</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <SheetFooter>
+            <Button onClick={() => {
+              const userData = {
+                firstName: editingUser.firstName,
+                lastName: editingUser.lastName,
+                role: editingUser.role,
+                ...(editingUser.password && editingUser.passwordConfirmation && {
+                  password: editingUser.password,
+                  passwordConfirmation: editingUser.passwordConfirmation
+                })
+              };
+              handleUpdateUser(userData);
+            }}>
+              Update User
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
@@ -252,7 +621,7 @@ const UsersPage = () => {
             <DialogTitle>Delete Confirmation</DialogTitle>
             <DialogDescription>
               {userToDelete
-                ? `Are you sure you want to delete ${userToDelete.username}?`
+                ? `Are you sure you want to delete ${userToDelete.firstName} ${userToDelete.lastName}?`
                 : `Are you sure you want to delete ${selectedUsers.size} selected users?`}
             </DialogDescription>
           </DialogHeader>
@@ -265,101 +634,19 @@ const UsersPage = () => {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                if (userToDelete) {
-                  handleDeleteUser(userToDelete.id);
-                } else {
-                  handleDeleteSelected();
-                }
-              }}
+              onClick={() =>
+                userToDelete
+                  ? handleDeleteUser(userToDelete.id)
+                  : handleDeleteSelected()
+              }
             >
               Delete
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Create User Sheet */}
-      <Sheet open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Create New User</SheetTitle>
-            <SheetDescription>Add a new user to the system.</SheetDescription>
-          </SheetHeader>
-          <div className="grid gap-4 py-4">
-            <Input
-              label="Username"
-              placeholder="Enter username"
-            />
-            <Input
-              label="Full Name"
-              placeholder="Enter full name"
-            />
-            <Input
-              label="Email"
-              type="email"
-              placeholder="Enter email"
-            />
-            {/* Add more fields as needed */}
-          </div>
-          <SheetFooter>
-            <Button type="submit">Create User</Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
-
-      {/* Edit User Sheet */}
-      <Sheet open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Edit User</SheetTitle>
-            <SheetDescription>Modify user information.</SheetDescription>
-          </SheetHeader>
-          <div className="grid gap-4 py-4">
-            <Input
-              label="Username"
-              defaultValue={editingUser?.username}
-            />
-            <Input
-              label="Full Name"
-              defaultValue={editingUser?.name}
-            />
-            <Input
-              label="Email"
-              type="email"
-              defaultValue={editingUser?.email}
-            />
-            {/* Add more fields as needed */}
-          </div>
-          <SheetFooter>
-            <Button type="submit">Save Changes</Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
     </ToastProvider>
   );
 };
-
-const initialUsers = [
-  {
-    id: 1,
-    username: "john.doe",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    department: "Engineering",
-    role: "Developer",
-    avatar: "/images/profileIcon.png"
-  },
-  {
-    id: 2,
-    username: "jane.smith",
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    department: "Design",
-    role: "Designer",
-    avatar: "/images/profileIcon.png"
-  },
-  // Add more users as needed
-];
 
 export default UsersPage;

@@ -4,6 +4,7 @@ import { fetchVms } from '@/state/slices/vms';
 import { fetchDepartments } from '@/state/slices/departments';
 import { fetchApplications } from './state/slices/applications';
 import { fetchGraphics } from './state/slices/system';
+import { fetchUsers } from './state/slices/users';
 
 export const fetchInitialData = createAsyncThunk(
 	'app/fetchInitialData',
@@ -18,6 +19,7 @@ export const fetchInitialData = createAsyncThunk(
 				dispatch(fetchDepartments()),
 				dispatch(fetchApplications()),
 				dispatch(fetchGraphics()),
+				dispatch(fetchUsers()),
 			]);
 
 			return true;

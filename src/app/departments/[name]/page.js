@@ -12,6 +12,8 @@ import {
   ToastProvider,
   ToastViewport,
 } from "@/components/ui/toast";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import SecuritySection from './components/SecuritySection';
 
 // UI Components
 import { UserPc } from "@/components/ui/user-pc";
@@ -52,6 +54,7 @@ const DepartmentPage = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastProps, setToastProps] = useState({});
+  const [activeTab, setActiveTab] = useState("computers");
 
   // Redux selectors
   const department = useSelector((state) =>
@@ -142,15 +145,18 @@ const DepartmentPage = () => {
   };
 
   return (
-    <ToastProvider>
-      {showToast && (
-        <Toast variant={toastProps.variant} onOpenChange={setShowToast}>
-          <ToastTitle>{toastProps.title}</ToastTitle>
-          <ToastDescription>{toastProps.description}</ToastDescription>
-        </Toast>
-      )}
-      <ToastViewport />
-      <Header variant="glass" elevated>
+    <div className="flex flex-col h-full">
+      <ToastProvider>
+        {showToast && (
+          <Toast variant={toastProps.variant} onOpenChange={setShowToast}>
+            <ToastTitle>{toastProps.title}</ToastTitle>
+            <ToastDescription>{toastProps.description}</ToastDescription>
+          </Toast>
+        )}
+        <ToastViewport />
+      </ToastProvider>
+
+      <Header className="border-b">
         <HeaderLeft>
           <Breadcrumb>
             <BreadcrumbList>
@@ -163,7 +169,7 @@ const DepartmentPage = () => {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{department?.name || params.name}</BreadcrumbPage>
+                <BreadcrumbPage>{params.name}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -183,20 +189,39 @@ const DepartmentPage = () => {
         </HeaderRight>
       </Header>
 
-      <section id="department-computers" className={cn(sizeVariants[size].spacing.container)}>
-        <div className="flex flex-wrap gap-6">
-          {machines?.map((machine) => (
-            <div className="w-min" key={machine.id}>
-              <UserPc
-                name={machine.name}
-                status={machine.status?.toLowerCase()}
-                selected={selectedPc?.id === machine.id}
-                onClick={() => handlePcSelect(machine)}
-              />
-            </div>
-          ))}
-        </div>
-      </section>
+      <div className="flex-1">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+          <div className="border-b px-6">
+            <TabsList>
+              <TabsTrigger value="computers">Computers</TabsTrigger>
+              <TabsTrigger value="security">Security</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <div className="flex-1 p-6 overflow-auto">
+            <TabsContent value="computers" className="m-0 h-full">
+              <section id="department-computers" className={cn(sizeVariants[size].spacing.container)}>
+                <div className="flex flex-wrap gap-6">
+                  {machines?.map((machine) => (
+                    <div className="w-min" key={machine.id}>
+                      <UserPc
+                        name={machine.name}
+                        status={machine.status?.toLowerCase()}
+                        selected={selectedPc?.id === machine.id}
+                        onClick={() => handlePcSelect(machine)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </TabsContent>
+
+            <TabsContent value="security" className="m-0 h-full">
+              <SecuritySection />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
 
       {/* PC Details Sheet */}
       {selectedPc && (
@@ -211,7 +236,7 @@ const DepartmentPage = () => {
           size={size}
         />
       )}
-    </ToastProvider>
+    </div>
   );
 };
 

@@ -203,3 +203,35 @@ export const MOVE_MACHINE_MUTATION = gql`
     }
   }
 `;
+
+export const CREATE_USER_MUTATION = gql`
+  mutation CreateUser($input: CreateUserInputType!) {
+    createUser(input: $input) {
+      id
+      firstName
+      lastName
+      email
+      role
+      createdAt
+    }
+  }
+`;
+
+export const UPDATE_USER_MUTATION = gql`
+  mutation UpdateUser($input: UpdateUserInputType!, $id: String!) {
+    updateUser(input: $input, id: $id) {
+      id
+      firstName
+      lastName
+      email
+      role
+      createdAt
+    }
+  }
+`;
+
+export const DELETE_USER_MUTATION = gql`
+  mutation DeleteUser($id: String!) {
+    destroyUser(id: $id)
+  }
+`;

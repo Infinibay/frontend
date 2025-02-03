@@ -8,12 +8,13 @@ import persistedApplicaitonReducer from './slices/applications'
 import templatesReducer from './slices/templates'
 import templateCategoriesReducer from './slices/templateCategories'
 import systemReducer from './slices/system'
+import usersReducer from './slices/users'
 
 const persistConfig = {
   key: 'root',
   version: 1,
   storage,
-  blacklist: ['vms', 'templates', 'templateCategories'] // Don't persist these reducers
+  blacklist: ['vms', 'templates', 'templateCategories', 'users'] // Don't persist these reducers
 };
 
 const persistAuthConfig = {
@@ -47,6 +48,7 @@ export const store = configureStore({
     templates: templatesReducer,
     templateCategories: templateCategoriesReducer,
     system: persistedSystem,
+    users: usersReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
