@@ -1,0 +1,311 @@
+query currentUser {
+  currentUser {
+    id
+    firstName
+    lastName
+    role
+    email
+    createdAt
+  }
+}
+
+query user($id: String!) {
+  user(id: $id) {
+    id
+    firstName
+    lastName
+    role
+    email
+    createdAt
+  }
+}
+
+query users($pagination: PaginationInputType, $orderBy: UserOrderByInputType) {
+  users(pagination: $pagination, orderBy: $orderBy) {
+    id
+    firstName
+    lastName
+    role
+    email
+    createdAt
+  }
+}
+
+query login($password: String!, $email: String!) {
+  login(password: $password, email: $email) {
+    token
+  }
+}
+
+query machineTemplate($id: String!) {
+  machineTemplate(id: $id) {
+    id
+    name
+    description
+    cores
+    ram
+    storage
+    createdAt
+    categoryId
+    totalMachines
+  }
+}
+
+query machineTemplates($orderBy: MachineTemplateOrderBy, $pagination: PaginationInputType) {
+  machineTemplates(orderBy: $orderBy, pagination: $pagination) {
+    id
+    name
+    description
+    cores
+    ram
+    storage
+    createdAt
+    categoryId
+    totalMachines
+  }
+}
+
+query machine($id: String!) {
+  machine(id: $id) {
+    id
+    name
+    status
+    createdAt
+    configuration
+    templateId
+    userId
+    department {
+      id
+      name
+    }
+    template {
+      id
+      name
+      description
+    }
+    user {
+      id
+      email
+    }
+  }
+}
+
+query machines($orderBy: MachineOrderBy, $pagination: PaginationInputType) {
+  machines(orderBy: $orderBy, pagination: $pagination) {
+    id
+    name
+    status
+    createdAt
+    configuration
+    templateId
+    userId
+    department {
+      id
+      name
+    }
+    template {
+      id
+      name
+      description
+    }
+    user {
+      id
+      email
+    }
+  }
+}
+
+query graphicConnection($id: String!) {
+  graphicConnection(id: $id) {
+    link
+    password
+    protocol
+  }
+}
+
+query checkSetupStatus {
+  checkSetupStatus {
+    value
+  }
+}
+
+query departments {
+  departments {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+    totalMachines
+  }
+}
+
+query department($id: String!) {
+  department(id: $id) {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+    totalMachines
+  }
+}
+
+query findDepartmentByName($name: String!) {
+  findDepartmentByName(name: $name) {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+    totalMachines
+  }
+}
+
+query machineTemplateCategories {
+  machineTemplateCategories {
+    id
+    name
+    description
+  }
+}
+
+query machineTemplateCategory($id: String!) {
+  machineTemplateCategory(id: $id) {
+    id
+    name
+    description
+  }
+}
+
+query applications {
+  applications {
+    id
+    name
+    description
+    createdAt
+    installCommand
+    os
+    parameters
+  }
+}
+
+query application($id: String!) {
+  application(id: $id) {
+    id
+    name
+    description
+    createdAt
+    installCommand
+    os
+    parameters
+  }
+}
+
+query getGraphics {
+  getGraphics {
+    memory
+    model
+    pciBus
+    vendor
+  }
+}
+
+query networks {
+  networks {
+    name
+    description
+    uuid
+    bridge {
+      name
+      delay
+      stp
+    }
+    ip {
+      address
+      netmask
+      dhcp {
+        range {
+          start
+          end
+        }
+      }
+    }
+  }
+}
+
+query network($name: String!) {
+  network(name: $name) {
+    name
+    description
+    uuid
+    bridge {
+      name
+      delay
+      stp
+    }
+    ip {
+      address
+      netmask
+      dhcp {
+        range {
+          start
+          end
+        }
+      }
+    }
+  }
+}
+
+query listFilters($vmId: ID, $departmentId: ID) {
+  listFilters(vmId: $vmId, departmentId: $departmentId) {
+    id
+    name
+    description
+    chain
+    type
+    priority
+    internalName
+    stateMatch
+    uuid
+    createdAt
+    updatedAt
+    flushedAt
+  }
+}
+
+query getFilter($id: ID!) {
+  getFilter(id: $id) {
+    id
+    name
+    description
+    chain
+    type
+    priority
+    internalName
+    stateMatch
+    uuid
+    createdAt
+    updatedAt
+    flushedAt
+  }
+}
+
+query listFilterRules($filterId: ID) {
+  listFilterRules(filterId: $filterId) {
+    id
+    action
+    direction
+    protocol
+    priority
+    srcPortStart
+    srcPortEnd
+    dstPortStart
+    dstPortEnd
+    srcIpAddr
+    dstIpAddr
+    comment
+    createdAt
+    updatedAt
+  }
+}

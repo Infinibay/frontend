@@ -1,7 +1,15 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { USERS_QUERY } from '../../graphql/queries';
-import { CREATE_USER_MUTATION, UPDATE_USER_MUTATION, DELETE_USER_MUTATION } from '../../graphql/mutations';
+
+// TODO: Destroy User does not exist in the backend yet
+import { DELETE_USER_MUTATION } from '../../graphql/mutations';
+
+import {
+  UsersDocument,
+  CreateUserDocument,
+  UpdateUserDocument,
+  // DestroyUserDocument
+} from '@/gql/hooks';
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
@@ -26,7 +34,7 @@ const executeGraphQLMutation = async (mutation, variables = {}) => {
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
   async () => {
-    const data = await executeGraphQLQuery(USERS_QUERY);
+    const data = await executeGraphQLQuery(UsersDocument, {pagination: {take: 1000, skip: 0}});
     return data.users;
   }
 );
@@ -34,7 +42,7 @@ export const fetchUsers = createAsyncThunk(
 export const createUser = createAsyncThunk(
   'users/createUser',
   async (input) => {
-    const data = await executeGraphQLMutation(CREATE_USER_MUTATION, { input });
+    const data = await executeGraphQLMutation(CreateUserDocument, { input });
     return data.createUser;
   }
 );
@@ -42,7 +50,7 @@ export const createUser = createAsyncThunk(
 export const updateUser = createAsyncThunk(
   'users/updateUser',
   async ({ id, input }) => {
-    const data = await executeGraphQLMutation(UPDATE_USER_MUTATION, { id, input });
+    const data = await executeGraphQLMutation(UpdateUserDocument, { id, input });
     return data.updateUser;
   }
 );

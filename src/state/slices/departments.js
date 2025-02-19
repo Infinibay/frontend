@@ -1,10 +1,13 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { DEPARTMENTS_QUERY, DEPARTMENT_QUERY, FIND_DEPARTMENT_BY_NAME_QUERY } from '@/graphql/queries';
-import { 
-    CREATE_DEPARTMENT_MUTATION,
-    DELETE_DEPARTMENT_MUTATION,
-} from '@/graphql/mutations';
+
+import {
+    DepartmentsDocument,
+    DepartmentDocument,
+    FindDepartmentByNameDocument,
+    CreateDepartmentDocument,
+    DestroyDepartmentDocument
+} from '@/gql/hooks';
 
 const executeGraphQLMutation = async (mutation, variables) => {
     try {
@@ -29,7 +32,7 @@ const executeGraphQLQuery = async (query, variables = {}) => {
 export const fetchDepartments = createAsyncThunk(
     'departments/fetchDepartments',
     async () => {
-        const data = await executeGraphQLQuery(DEPARTMENTS_QUERY);
+        const data = await executeGraphQLQuery(DepartmentsDocument);
         return data.departments;
     }
 );
@@ -37,7 +40,7 @@ export const fetchDepartments = createAsyncThunk(
 export const fetchDepartment = createAsyncThunk(
     'departments/fetchDepartment',
     async (id) => {
-        const data = await executeGraphQLQuery(DEPARTMENT_QUERY, { id });
+        const data = await executeGraphQLQuery(DepartmentDocument, { id });
         return data.department;
     }
 );
@@ -45,7 +48,7 @@ export const fetchDepartment = createAsyncThunk(
 export const fetchDepartmentByName = createAsyncThunk(
 	'departments/fetchDepartmentByName',
 	async (name) => {
-		const data = await executeGraphQLQuery(FIND_DEPARTMENT_BY_NAME_QUERY, { name });
+		const data = await executeGraphQLQuery(FindDepartmentByNameDocument, { name });
 		return data.findDepartmentByName;
 	}
 );
@@ -54,7 +57,7 @@ export const createDepartment = createAsyncThunk(
     'departments/createDepartment',
     async (input) => {
         console.log(name);
-        const data = await executeGraphQLMutation(CREATE_DEPARTMENT_MUTATION, { name: input.name });
+        const data = await executeGraphQLMutation(CreateDepartmentDocument, { name: input.name });
         return data.createDepartment;
     }
 );
@@ -62,7 +65,7 @@ export const createDepartment = createAsyncThunk(
 export const deleteDepartment = createAsyncThunk(
     'departments/deleteDepartment',
     async (id) => {
-        const data = await executeGraphQLMutation(DELETE_DEPARTMENT_MUTATION, { id });
+        const data = await executeGraphQLMutation(DestroyDepartmentDocument, { id });
         return data.destroyDepartment;
     }
 );

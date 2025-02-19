@@ -1,14 +1,15 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { MACHINES_QUERY } from '@/graphql/queries';
-import { 
-  CREATE_MACHINE_MUTATION,
-  DELETE_MACHINE_MUTATION,
-  POWER_OFF_MUTATION,
-  POWER_ON_MUTATION,
-  SUSPEND_MUTATION,
-  MOVE_MACHINE_MUTATION
-} from '@/graphql/mutations';
+
+import {
+  MachinesDocument,
+  CreateMachineDocument,
+  PowerOffDocument,
+  PowerOnDocument,
+  SuspendDocument,
+  MoveMachineDocument,
+  DestroyMachineDocument
+} from '@/gql/hooks';
 
 const executeGraphQLMutation = async (mutation, variables) => {
   try {
@@ -66,7 +67,7 @@ export const fetchVms = createAsyncThunk(
   'vms/fetchVms',
   async (_, { rejectWithValue }) => {
     try {
-      const data = await executeGraphQLQuery(MACHINES_QUERY);
+      const data = await executeGraphQLQuery(MachinesDocument);
       return data.machines || [];
     } catch (error) {
       return rejectWithValue(error.message);
@@ -88,7 +89,7 @@ export const deleteVm = createAsyncThunk(
   'vms/deleteVm',
   async (payload, { dispatch, rejectWithValue }) => {
     try {
-      await executeGraphQLMutation(DELETE_MACHINE_MUTATION, { id: payload.id });
+      await executeGraphQLMutation(DestroyMachineDocument, { id: payload.id });
       await dispatch(fetchVms());
       return payload;
     } catch (error) {
@@ -101,7 +102,7 @@ export const createVm = createAsyncThunk(
   'vms/createVm',
   async (payload, { rejectWithValue }) => {
     try {
-      const data = await executeGraphQLMutation(CREATE_MACHINE_MUTATION, { input: payload });
+      const data = await executeGraphQLMutation(CreateMachineDocument, { input: payload });
       return data.createMachine;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -113,7 +114,7 @@ export const playVm = createAsyncThunk(
   'vms/playVm',
   async (payload, { dispatch, rejectWithValue }) => {
     try {
-      await executeGraphQLMutation(POWER_ON_MUTATION, { id: payload.id });
+      await executeGraphQLMutation(PowerOnDocument, { id: payload.id });
       await dispatch(fetchVms());
       return payload;
     } catch (error) {
@@ -126,7 +127,7 @@ export const pauseVm = createAsyncThunk(
   'vms/pauseVm',
   async (payload, { dispatch, rejectWithValue }) => {
     try {
-      await executeGraphQLMutation(SUSPEND_MUTATION, { id: payload.id });
+      await executeGraphQLMutation(SuspendDocument, { id: payload.id });
       await dispatch(fetchVms());
       return payload;
     } catch (error) {
@@ -139,7 +140,7 @@ export const stopVm = createAsyncThunk(
   'vms/stopVm',
   async (payload, { dispatch, rejectWithValue }) => {
     try {
-      await executeGraphQLMutation(POWER_OFF_MUTATION, { id: payload.id });
+      await executeGraphQLMutation(PowerOffDocument, { id: payload.id });
       await dispatch(fetchVms());
       return payload;
     } catch (error) {
@@ -152,7 +153,7 @@ export const moveMachine = createAsyncThunk(
   'vms/moveMachine',
   async ({ id, departmentId }, { rejectWithValue }) => {
     try {
-      const response = await executeGraphQLMutation(MOVE_MACHINE_MUTATION, {
+      const response = await executeGraphQLMutation(MoveMachineDocument, {
         id,
         departmentId,
       });

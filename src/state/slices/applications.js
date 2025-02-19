@@ -1,11 +1,17 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { APPLICATIONS_QUERY, APPLICATION_QUERY } from '@/graphql/queries';
 import {
-  CREATE_APPLICATION_MUTATION,
-  UPDATE_APPLICATION_MUTATION,
   DELETE_APPLICATION_MUTATION
 } from '@/graphql/mutations';
+
+import {
+  ApplicationsDocument,
+  ApplicationDocument,
+  CreateApplicationDocument,
+  UpdateApplicationDocument,
+  // DestroyApplicationDocument // Does not exist yet
+} from '@/gql/hooks';
+
 import { persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
@@ -32,7 +38,7 @@ const executeGraphQLQuery = async (query, variables = {}) => {
 export const fetchApplications = createAsyncThunk(
   'applications/fetchApplications',
   async () => {
-    const data = await executeGraphQLQuery(APPLICATIONS_QUERY);
+    const data = await executeGraphQLQuery(ApplicationsDocument);
     return data.applications;
   }
 );
@@ -40,7 +46,7 @@ export const fetchApplications = createAsyncThunk(
 export const fetchApplicationById = createAsyncThunk(
   'applications/fetchApplicationById',
   async (id) => {
-    const data = await executeGraphQLQuery(APPLICATION_QUERY, { id });
+    const data = await executeGraphQLQuery(ApplicationDocument, { id });
     return data.application;
   }
 );
@@ -48,7 +54,7 @@ export const fetchApplicationById = createAsyncThunk(
 export const createApplication = createAsyncThunk(
   'applications/createApplication',
   async (payload) => {
-    const data = await executeGraphQLMutation(CREATE_APPLICATION_MUTATION, { input: payload });
+    const data = await executeGraphQLMutation(CreateApplicationDocument, { input: payload });
     return data.createApplication;
   }
 );
@@ -56,7 +62,7 @@ export const createApplication = createAsyncThunk(
 export const updateApplication = createAsyncThunk(
   'applications/updateApplication',
   async (payload) => {
-    const data = await executeGraphQLMutation(UPDATE_APPLICATION_MUTATION, { input: payload.input, id: payload.id });
+    const data = await executeGraphQLMutation(UpdateApplicationDocument, { input: payload.input, id: payload.id });
     return data.updateApplication;
   }
 );

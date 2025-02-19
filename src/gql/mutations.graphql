@@ -1,0 +1,308 @@
+mutation createUser($input: CreateUserInputType!) {
+  createUser(input: $input) {
+    id
+    firstName
+    lastName
+    role
+    email
+    createdAt
+  }
+}
+
+mutation updateUser($input: UpdateUserInputType!, $id: String!) {
+  updateUser(input: $input, id: $id) {
+    id
+    firstName
+    lastName
+    role
+    email
+    createdAt
+  }
+}
+
+mutation createMachineTemplate($input: MachineTemplateInputType!) {
+  createMachineTemplate(input: $input) {
+    id
+    name
+    description
+    cores
+    ram
+    storage
+    createdAt
+    categoryId
+    totalMachines
+  }
+}
+
+mutation updateMachineTemplate($input: MachineTemplateInputType!, $id: String!) {
+  updateMachineTemplate(input: $input, id: $id) {
+    id
+    name
+    description
+    cores
+    ram
+    storage
+    createdAt
+    categoryId
+    totalMachines
+  }
+}
+
+mutation destroyMachineTemplate($id: String!) {
+  destroyMachineTemplate(id: $id)
+}
+
+mutation destroyMachineTemplateCategory($id: String!) {
+  destroyMachineTemplateCategory(id: $id)
+}
+
+mutation createMachine($input: CreateMachineInputType!) {
+  createMachine(input: $input) {
+    id
+    name
+    status
+    createdAt
+    configuration
+    templateId
+    userId
+    department {
+      id
+      name
+    }
+    template {
+      id
+      name
+      description
+    }
+    user {
+      id
+      email
+    }
+  }
+}
+
+mutation powerOn($id: String!) {
+  powerOn(id: $id) {
+    success
+  }
+}
+
+mutation powerOff($id: String!) {
+  powerOff(id: $id) {
+    success
+  }
+}
+
+mutation suspend($id: String!) {
+  suspend(id: $id) {
+    success
+  }
+}
+
+mutation destroyMachine($id: String!) {
+  destroyMachine(id: $id) {
+    success
+  }
+}
+
+mutation executeCommand($command: String!, $id: String!) {
+  executeCommand(command: $command, id: $id) {
+    success
+    message
+    response
+  }
+}
+
+mutation moveMachine($departmentId: String!, $id: String!) {
+  moveMachine(departmentId: $departmentId, id: $id) {
+    id
+    name
+    status
+    department {
+      id
+      name
+    }
+  }
+}
+
+mutation setupNode {
+  setupNode {
+    value
+  }
+}
+
+mutation createDepartment($name: String!) {
+  createDepartment(name: $name) {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+    totalMachines
+  }
+}
+
+mutation destroyDepartment($id: String!) {
+  destroyDepartment(id: $id) {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+    totalMachines
+  }
+}
+
+mutation createMachineTemplateCategory($input: MachineTemplateCategoryInputType!) {
+  createMachineTemplateCategory(input: $input) {
+    id
+    name
+    description
+    createdAt
+    totalMachines
+    totalTemplates
+  }
+}
+
+mutation updateMachineTemplateCategory($input: MachineTemplateCategoryInputType!, $id: String!) {
+  updateMachineTemplateCategory(input: $input, id: $id) {
+    id
+    name
+    description
+    createdAt
+    totalMachines
+    totalTemplates
+  }
+}
+
+mutation createApplication($input: CreateApplicationInputType!) {
+  createApplication(input: $input) {
+    id
+    name
+    description
+    createdAt
+    installCommand
+    os
+    parameters
+  }
+}
+
+mutation updateApplication($input: CreateApplicationInputType!, $id: String!) {
+  updateApplication(input: $input, id: $id) {
+    id
+    name
+    description
+    createdAt
+    installCommand
+    os
+    parameters
+  }
+}
+
+mutation deleteApplication($id: String!) {
+  deleteApplication(id: $id)
+}
+
+mutation createNetwork($input: CreateNetworkInput!) {
+  createNetwork(input: $input)
+}
+
+mutation setNetworkIpRange($input: IpRangeInput!) {
+  setNetworkIpRange(input: $input)
+}
+
+mutation setNetworkIp($input: NetworkIpInput!) {
+  setNetworkIp(input: $input)
+}
+
+mutation setNetworkBridgeName($input: BridgeNameInput!) {
+  setNetworkBridgeName(input: $input)
+}
+
+mutation deleteNetwork($input: DeleteNetworkInput!) {
+  deleteNetwork(input: $input)
+}
+
+mutation createFilter($input: CreateFilterInput!) {
+  createFilter(input: $input) {
+    id
+    name
+    description
+    chain
+    type
+    priority
+    internalName
+    stateMatch
+    uuid
+    createdAt
+    updatedAt
+    flushedAt
+  }
+}
+
+mutation updateFilter($input: UpdateFilterInput!, $id: ID!) {
+  updateFilter(input: $input, id: $id) {
+    id
+    name
+    description
+    chain
+    type
+    priority
+    internalName
+    stateMatch
+    uuid
+    createdAt
+    updatedAt
+    flushedAt
+  }
+}
+
+mutation deleteFilter($id: ID!) {
+  deleteFilter(id: $id)
+}
+
+mutation createFilterRule($input: CreateFilterRuleInput!, $filterId: ID!) {
+  createFilterRule(input: $input, filterId: $filterId) {
+    id
+    action
+    direction
+    protocol
+    priority
+    srcPortStart
+    srcPortEnd
+    dstPortStart
+    dstPortEnd
+    srcIpAddr
+    dstIpAddr
+    comment
+    createdAt
+    updatedAt
+  }
+}
+
+mutation updateFilterRule($input: UpdateFilterRuleInput!, $id: ID!) {
+  updateFilterRule(input: $input, id: $id) {
+    id
+    action
+    direction
+    protocol
+    priority
+    srcPortStart
+    srcPortEnd
+    dstPortStart
+    dstPortEnd
+    srcIpAddr
+    dstIpAddr
+    comment
+    createdAt
+    updatedAt
+  }
+}
+
+mutation deleteFilterRule($id: ID!) {
+  deleteFilterRule(id: $id)
+}
+
+mutation flushFilter($filterId: ID!) {
+  flushFilter(filterId: $filterId)
+}

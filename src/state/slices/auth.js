@@ -1,8 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import auth from '@/utils/auth'
-import { CURRENT_USER_QUERY } from '@/graphql/queries';
-import { client } from '@/apollo-client';
-import { ApolloClient } from '@apollo/client';
+
 
 const fetchCurrentUser = createAsyncThunk('auth/fetchCurrentUser', async (_, { getState }) => {
 	return await auth.fetchCurrentUser();
@@ -10,6 +8,10 @@ const fetchCurrentUser = createAsyncThunk('auth/fetchCurrentUser', async (_, { g
 
 const loginUser = createAsyncThunk('auth/login', async ({ email, password }, { dispatch }) => {
 	const token = await auth.login(email, password);
+	if (token) {
+		// redirect to /computers using browser url
+		window.location.href = '/computers';
+	}
 	return token;
 });
 

@@ -1,8 +1,7 @@
-import { fetchCurrentUser } from '@/state/slices/auth';
 import { ApolloClient, InMemoryCache, createHttpLink, gql } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
-import { CURRENT_USER_QUERY } from '@/graphql/queries';
+import { CurrentUserDocument, LoginDocument } from '@/gql/hooks';
 
 // GraphQL API endpoint (use environment variable)
 const API_URL = process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:4000/graphql';
@@ -27,23 +26,15 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 });
 
-// Login mutation
-const LOGIN_QUERY = gql`
-  query Login($email: String!, $password: String!) {
-    login(email: $email, password: $password) {
-      token
-    }
-  }
-`;
-
 // Authentication functions
 export const auth = {
   login: async (email, password) => {
     try {
-      const { data } = await client.query({
-        query: LOGIN_QUERY,
-        variables: { email, password },
-      });
+      const { data } = (await client.query({
+        query: LoginDocument,
+        variables: {  password, email },
+      }));
+      console.log(data);
 
       if (data.login && data.login.token) {
         localStorage.setItem('token', data.login.token);
@@ -59,9 +50,9 @@ export const auth = {
     }
   },
   fetchCurrentUser: async () => {
-    const { data } = await client.query({
-      query: CURRENT_USER_QUERY,
-    });
+    const data = (await client.query({
+      query: CurrentUserDocument,
+    })).data;
     return data.currentUser;
   },
 
