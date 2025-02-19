@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { GPUS_QUERY } from '@/graphql/queries';
 import { 
   GetGraphicsDocument
 } from '@/gql/hooks';

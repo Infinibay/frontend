@@ -1,9 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import {
-  DELETE_APPLICATION_MUTATION
-} from '@/graphql/mutations';
-
+import { gql } from '@apollo/client';
 import {
   ApplicationsDocument,
   ApplicationDocument,
@@ -14,6 +11,14 @@ import {
 
 import { persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
+
+
+// TODO: Implement destroyApplication
+export const DELETE_APPLICATION_MUTATION = gql`
+  mutation DeleteApplication($id: String!) {
+    destroyApplication(id: $id)
+  }
+`;
 
 const executeGraphQLMutation = async (mutation, variables) => {
   try {

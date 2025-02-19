@@ -1,8 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-
-// TODO: Destroy User does not exist in the backend yet
-import { DELETE_USER_MUTATION } from '../../graphql/mutations';
+import { gql } from '@apollo/client';
 
 import {
   UsersDocument,
@@ -10,6 +8,13 @@ import {
   UpdateUserDocument,
   // DestroyUserDocument
 } from '@/gql/hooks';
+
+// TODO: Implement destroyUser
+export const DELETE_USER_MUTATION = gql`
+  mutation DeleteUser($id: String!) {
+    destroyUser(id: $id)
+  }
+`;
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
