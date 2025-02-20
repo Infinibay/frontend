@@ -5,6 +5,8 @@ import { fetchDepartments } from '@/state/slices/departments';
 import { fetchApplications } from './state/slices/applications';
 import { fetchGraphics } from './state/slices/system';
 import { fetchUsers } from './state/slices/users';
+import { fetchFilters } from './state/slices/filters';
+import { fetchFilterRules } from './state/slices/filterRules';
 
 export const fetchInitialData = createAsyncThunk(
 	'app/fetchInitialData',
@@ -20,6 +22,8 @@ export const fetchInitialData = createAsyncThunk(
 				dispatch(fetchApplications()),
 				dispatch(fetchGraphics()),
 				dispatch(fetchUsers()),
+				dispatch(fetchFilters()),
+				dispatch(fetchFilterRules()),
 			]);
 
 			return true;

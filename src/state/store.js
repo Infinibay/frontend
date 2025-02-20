@@ -9,6 +9,8 @@ import templatesReducer from './slices/templates'
 import templateCategoriesReducer from './slices/templateCategories'
 import systemReducer from './slices/system'
 import usersReducer from './slices/users'
+import filtersReducer from './slices/filters'
+import filterRulesReducer from './slices/filterRules'
 
 const persistConfig = {
   key: 'root',
@@ -35,9 +37,23 @@ const persistSystemConfig = {
   whitelist: ['graphics'] // Only persist the graphics array
 };
 
+const persistFilterRulesConfig = {
+  key: 'filterRules',
+  storage,
+  whitelist: ['items'],
+};
+
+const persistFiltersConfig = {
+  key: 'filters',
+  storage,
+  whitelist: ['items', 'selectedFilter'],
+};
+
 const persistedAuth = persistReducer(persistAuthConfig, authReducer)
 const persistedDeparments = persistReducer(persistConfigDepartments, departments)
 const persistedSystem = persistReducer(persistSystemConfig, systemReducer)
+const persistedFilterRules = persistReducer(persistFilterRulesConfig, filterRulesReducer);
+const persistedFilters = persistReducer(persistFiltersConfig, filtersReducer);
 
 export const store = configureStore({
   reducer: {
@@ -49,6 +65,8 @@ export const store = configureStore({
     templateCategories: templateCategoriesReducer,
     system: persistedSystem,
     users: usersReducer,
+    filters: persistedFilters,
+    filterRules: persistedFilterRules,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
