@@ -386,6 +386,7 @@ type Query {
   graphicConnection(id: String!): GraphicConfigurationType
   listFilterRules(filterId: ID): [FWRule!]!
   listFilters(departmentId: ID, vmId: ID): [FirewallFilter!]!
+  listVmPorts: [VmPortType!]!
   login(email: String!, password: String!): UserToken!
   machine(id: String!): Machine
   machineTemplate(id: String!): MachineTemplateType
@@ -468,4 +469,16 @@ type UserType {
   id: ID!
   lastName: String!
   role: String!
+}
+
+type VmPortType {
+  enabled: Boolean!
+  id: ID!
+  lastSeen: DateTimeISO!
+  portEnd: Int!
+  portStart: Int!
+  protocol: String!
+  running: Boolean!
+  toEnable: Boolean!
+  vmId: ID!
 }

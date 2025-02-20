@@ -575,6 +575,7 @@ export type Query = {
   graphicConnection?: Maybe<GraphicConfigurationType>;
   listFilterRules: Array<FwRule>;
   listFilters: Array<FirewallFilter>;
+  listVmPorts: Array<VmPortType>;
   login: UserToken;
   machine?: Maybe<Machine>;
   machineTemplate?: Maybe<MachineTemplateType>;
@@ -745,6 +746,19 @@ export type UserType = {
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
   role: Scalars['String']['output'];
+};
+
+export type VmPortType = {
+  __typename?: 'VmPortType';
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  lastSeen: Scalars['DateTimeISO']['output'];
+  portEnd: Scalars['Int']['output'];
+  portStart: Scalars['Int']['output'];
+  protocol: Scalars['String']['output'];
+  running: Scalars['Boolean']['output'];
+  toEnable: Scalars['Boolean']['output'];
+  vmId: Scalars['ID']['output'];
 };
 
 export type CreateUserMutationVariables = Exact<{
@@ -1136,6 +1150,11 @@ export type ListFilterRulesQueryVariables = Exact<{
 
 
 export type ListFilterRulesQuery = { __typename?: 'Query', listFilterRules: Array<{ __typename?: 'FWRule', id: string, action: string, direction: string, protocol: string, priority: number, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, srcIpAddr?: string | null, dstIpAddr?: string | null, comment?: string | null, createdAt: string, updatedAt: string }> };
+
+export type ListVmPortsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ListVmPortsQuery = { __typename?: 'Query', listVmPorts: Array<{ __typename?: 'VmPortType', id: string, portStart: number, portEnd: number, protocol: string, running: boolean, enabled: boolean, toEnable: boolean, lastSeen: string, vmId: string }> };
 
 
 export const CreateUserDocument = gql`
@@ -3506,4 +3525,54 @@ export type ListFilterRulesSuspenseQueryHookResult = ReturnType<typeof useListFi
 export type ListFilterRulesQueryResult = Apollo.QueryResult<ListFilterRulesQuery, ListFilterRulesQueryVariables>;
 export function refetchListFilterRulesQuery(variables?: ListFilterRulesQueryVariables) {
       return { query: ListFilterRulesDocument, variables: variables }
+    }
+export const ListVmPortsDocument = gql`
+    query listVmPorts {
+  listVmPorts {
+    id
+    portStart
+    portEnd
+    protocol
+    running
+    enabled
+    toEnable
+    lastSeen
+    vmId
+  }
+}
+    `;
+
+/**
+ * __useListVmPortsQuery__
+ *
+ * To run a query within a React component, call `useListVmPortsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListVmPortsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListVmPortsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useListVmPortsQuery(baseOptions?: Apollo.QueryHookOptions<ListVmPortsQuery, ListVmPortsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ListVmPortsQuery, ListVmPortsQueryVariables>(ListVmPortsDocument, options);
+      }
+export function useListVmPortsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ListVmPortsQuery, ListVmPortsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ListVmPortsQuery, ListVmPortsQueryVariables>(ListVmPortsDocument, options);
+        }
+export function useListVmPortsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ListVmPortsQuery, ListVmPortsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ListVmPortsQuery, ListVmPortsQueryVariables>(ListVmPortsDocument, options);
+        }
+export type ListVmPortsQueryHookResult = ReturnType<typeof useListVmPortsQuery>;
+export type ListVmPortsLazyQueryHookResult = ReturnType<typeof useListVmPortsLazyQuery>;
+export type ListVmPortsSuspenseQueryHookResult = ReturnType<typeof useListVmPortsSuspenseQuery>;
+export type ListVmPortsQueryResult = Apollo.QueryResult<ListVmPortsQuery, ListVmPortsQueryVariables>;
+export function refetchListVmPortsQuery(variables?: ListVmPortsQueryVariables) {
+      return { query: ListVmPortsDocument, variables: variables }
     }

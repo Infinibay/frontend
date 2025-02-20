@@ -11,12 +11,13 @@ import systemReducer from './slices/system'
 import usersReducer from './slices/users'
 import filtersReducer from './slices/filters'
 import filterRulesReducer from './slices/filterRules'
+import vmPortsReducer from './slices/vmPorts'
 
 const persistConfig = {
   key: 'root',
   version: 1,
   storage,
-  blacklist: ['vms', 'templates', 'templateCategories', 'users'] // Don't persist these reducers
+  blacklist: ['vms', 'templates', 'templateCategories', 'users', 'vmPorts'] // Don't persist these reducers
 };
 
 const persistAuthConfig = {
@@ -67,6 +68,7 @@ export const store = configureStore({
     users: usersReducer,
     filters: persistedFilters,
     filterRules: persistedFilterRules,
+    vmPorts: vmPortsReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

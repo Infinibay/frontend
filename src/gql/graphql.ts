@@ -573,6 +573,7 @@ export type Query = {
   graphicConnection?: Maybe<GraphicConfigurationType>;
   listFilterRules: Array<FwRule>;
   listFilters: Array<FirewallFilter>;
+  listVmPorts: Array<VmPortType>;
   login: UserToken;
   machine?: Maybe<Machine>;
   machineTemplate?: Maybe<MachineTemplateType>;
@@ -743,4 +744,17 @@ export type UserType = {
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
   role: Scalars['String']['output'];
+};
+
+export type VmPortType = {
+  __typename?: 'VmPortType';
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  lastSeen: Scalars['DateTimeISO']['output'];
+  portEnd: Scalars['Int']['output'];
+  portStart: Scalars['Int']['output'];
+  protocol: Scalars['String']['output'];
+  running: Scalars['Boolean']['output'];
+  toEnable: Scalars['Boolean']['output'];
+  vmId: Scalars['ID']['output'];
 };

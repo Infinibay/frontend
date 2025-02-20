@@ -309,3 +309,17 @@ query listFilterRules($filterId: ID) {
     updatedAt
   }
 }
+
+query listVmPorts {
+  listVmPorts {
+    id
+    portStart
+    portEnd
+    protocol
+    running
+    enabled
+    toEnable
+    lastSeen
+    vmId
+  }
+}
