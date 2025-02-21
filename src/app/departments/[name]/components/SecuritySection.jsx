@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,206 +17,269 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { knownServices, findServiceByPort, getRiskLevelDescription } from '@/config/securityServices';
+import { Badge } from "@/components/ui/badge";
+import { knownServices, serviceCategories, findServiceByPort, getRiskLevelDescription } from '@/config/securityServices';
 import AdvancedFirewall from './AdvancedFirewall';
 import { 
   AlertCircle,
   Shield,
-  ShieldCheck,
   Globe,
-  Monitor,
+  MonitorController,
+  FolderNetwork,
+  Network,
+  Gamepad2,
+  Database,
+  MessageSquare,
+  ActivitySquare,
   Lock,
-  Terminal,
-  ChevronDown,
-  ChevronRight
+  LockOpen,
+  Building2,
+  Laptop,
+  ChevronDown
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVmPorts, selectVmPortsState } from '@/state/slices/vmPorts';
 
 const icons = {
-  desktop: Monitor,
-  globe: Globe,
-  lock: Lock,
-  terminal: Terminal,
-  server: Terminal
+  MonitorController,
+  FolderNetwork,
+  Network,
+  Globe,
+  Gamepad2,
+  Database,
+  MessageSquare,
+  ActivitySquare
 };
 
 const SecuritySection = () => {
   const dispatch = useDispatch();
   const { items: vmPorts, loading: vmPortsLoading } = useSelector(selectVmPortsState);
-  const [activeTab, setActiveTab] = useState("simple");
-  const [globalServices, setGlobalServices] = useState({
-    "3389/tcp": false,
-  });
+  const [activeTab, setActiveTab] = useState("incoming");
+  const [globalServices, setGlobalServices] = useState({});
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     service: null,
     serviceKey: null,
-    applyToPast: false
+    scope: null,
+    vmId: null,
   });
-  const [openVMs, setOpenVMs] = useState({});
 
   useEffect(() => {
     dispatch(fetchVmPorts());
   }, [dispatch]);
 
-  const toggleVM = (vmId) => {
-    setOpenVMs(prev => ({
-      ...prev,
-      [vmId]: !prev[vmId]
-    }));
+  const getRiskBadge = (riskLevel) => {
+    const color = riskLevel >= 4 ? 'destructive' : riskLevel >= 3 ? 'warning' : 'secondary';
+    const text = getRiskLevelDescription(riskLevel);
+    return <Badge variant={color}>{text}</Badge>;
   };
 
-  const handleGlobalServiceToggle = (serviceKey, service) => {
-    if (!globalServices[serviceKey]) {
-      setConfirmDialog({
-        open: true,
-        service,
-        serviceKey,
-        applyToPast: false
-      });
-    } else {
-      setGlobalServices(prev => ({
-        ...prev,
-        [serviceKey]: false
-      }));
+  const handleServiceToggle = (serviceKey, service, scope, vmId = null) => {
+    setConfirmDialog({
+      open: true,
+      service,
+      serviceKey,
+      scope,
+      vmId,
+    });
+  };
+
+  // Group services by category
+  const servicesByCategory = knownServices.reduce((acc, service) => {
+    if (!acc[service.category]) {
+      acc[service.category] = [];
     }
-  };
+    acc[service.category].push(service);
+    return acc;
+  }, {});
 
-  const handleConfirmServiceEnable = () => {
-    setGlobalServices(prev => ({
-      ...prev,
-      [confirmDialog.serviceKey]: true
-    }));
-    // Here you would handle the actual enabling of the service
-    // based on the confirmDialog.applyToPast value
-    setConfirmDialog({ open: false, service: null, serviceKey: null, applyToPast: false });
-  };
+  const CategorySection = ({ categoryKey, services, scope = 'department', vmId = null }) => {
+    const category = serviceCategories[categoryKey];
+    if (!category) return null;
 
-  const getServiceInfo = (port, protocol) => {
-    const service = findServiceByPort(port, protocol);
-    if (service) {
-      return {
-        name: service.name,
-        description: service.description,
-        riskLevel: service.riskLevel,
-        riskReason: service.riskReason,
-        icon: service.icon || 'globe'
-      };
+    let Icon = icons[category.icon];
+    if (!Icon) {
+      Icon = Globe;
     }
-    return {
-      name: `Port ${port}/${protocol}`,
-      description: 'Unknown service',
-      riskLevel: 3,
-      riskReason: 'Unknown service running on this port. Potential security risk.',
-      icon: 'globe'
-    };
-  };
-
-  const renderServiceRisk = (riskLevel, riskReason) => {
-    const riskColors = {
-      5: 'text-red-500',
-      4: 'text-orange-500',
-      3: 'text-yellow-500',
-      2: 'text-blue-500',
-      1: 'text-green-500',
-      0: 'text-green-600'
-    };
 
     return (
-      <div className="mt-2">
-        <div className={`flex items-center gap-2 ${riskColors[riskLevel] || 'text-gray-500'}`}>
-          <AlertCircle className="h-4 w-4" />
-          <span className="font-medium">Risk Level: {riskLevel} - {getRiskLevelDescription(riskLevel)}</span>
+      <div className="mb-8 border rounded-lg overflow-hidden">
+        <div className="bg-muted p-4 border-b">
+          <div className="flex items-center gap-2">
+            {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
+            <h4 className="font-medium text-lg">{category.name}</h4>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
         </div>
-        <p className="mt-1 text-sm text-gray-600">{riskReason}</p>
+        <div className="p-4 space-y-4 bg-card">
+          {services.map(service => (
+            <ServiceCard 
+              key={service.name} 
+              service={service}
+              scope={scope}
+              vmId={vmId}
+            />
+          ))}
+        </div>
       </div>
     );
   };
 
-  const getRunningVmPorts = () => {
-    return vmPorts.filter(port => port.running).map(port => ({
-      port: port.portStart,
-      protocol: port.protocol,
-      ...getServiceInfo(port.portStart, port.protocol)
-    }));
-  };
+  const ServiceCard = ({ service, scope = 'department', vmId = null }) => {
+    const isEnabled = scope === 'department' 
+      ? globalServices[service.ports[0]?.start]
+      : vmPorts[vmId]?.includes(service.ports[0]?.start);
 
-  const renderServicesList = () => {
-    const runningServices = getRunningVmPorts();
-    
     return (
-      <div className="space-y-4">
-        {vmPortsLoading ? (
-          <div className="text-sm text-muted-foreground">Loading VM services...</div>
-        ) : (
-          runningServices.map((service, index) => {
-            const serviceInfo = getServiceInfo(service.port, service.protocol);
-            return (
-              <div key={`${service.port}-${service.protocol}-${index}`} 
-                   className="flex items-center justify-between p-4 border rounded hover:bg-gray-50">
-                <div className="flex items-center gap-4">
-                  {React.createElement(icons[serviceInfo.icon] || AlertCircle, { 
-                    className: "h-5 w-5 text-gray-600" 
-                  })}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{serviceInfo.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        ({service.port}/{service.protocol})
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {serviceInfo.description}
-                    </p>
-                    {renderServiceRisk(serviceInfo.riskLevel, serviceInfo.riskReason)}
-                  </div>
+      <Card className="border shadow-sm">
+        <Collapsible>
+          <div className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {isEnabled ? <LockOpen className="h-5 w-5 text-warning" /> : <Lock className="h-5 w-5 text-muted-foreground" />}
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{service.name}</span>
+                  {getRiskBadge(service.riskLevel)}
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    serviceInfo.riskLevel >= 4 ? 'bg-red-100 text-red-800' :
-                    serviceInfo.riskLevel >= 3 ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {serviceInfo.riskDescription}
-                  </span>
-                  <span className="text-sm text-green-600">Allowed (Service Provider)</span>
-                </div>
+                <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
               </div>
-            );
-          })
-        )}
-      </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium">
+                {isEnabled ? "Service Active" : "Protected (Blocked)"}
+              </span>
+              <Switch
+                checked={isEnabled}
+                onCheckedChange={() => handleServiceToggle(
+                  service.ports[0]?.start,
+                  service,
+                  scope,
+                  vmId
+                )}
+              />
+            </div>
+          </div>
+          <CollapsibleTrigger className="w-full text-left border-t">
+            <Button variant="ghost" size="sm" className="w-full flex justify-between p-2 h-8">
+              <span className="text-xs">Show details</span>
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="p-4 border-t bg-muted/50 space-y-3">
+              <Alert variant="warning" className="bg-warning/10 border-warning/20">
+                <AlertCircle className="h-4 w-4" />
+                <p className="ml-2 text-sm">{service.riskReason}</p>
+              </Alert>
+              {scope === 'department' && (
+                <div>
+                  <p className="text-sm font-medium mb-2">Recommended Security Measures:</p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li className="flex items-center gap-2">
+                      <span className="h-1 w-1 rounded-full bg-muted-foreground"></span>
+                      Enable only for specific IP ranges
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="h-1 w-1 rounded-full bg-muted-foreground"></span>
+                      Set up enhanced monitoring
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="h-1 w-1 rounded-full bg-muted-foreground"></span>
+                      Configure automatic blocking for suspicious activity
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
     );
   };
 
   return (
-    <Card className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5" />
-          <h2 className="text-xl font-semibold">Security Settings</h2>
-        </div>
-      </div>
-
+    <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="simple">Basic</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced</TabsTrigger>
+          <TabsTrigger value="incoming">
+            <Shield className="w-4 h-4 mr-2" />
+            Service Provide (Incoming)
+          </TabsTrigger>
+          <TabsTrigger value="outgoing">
+            <Globe className="w-4 h-4 mr-2" />
+            Service Usage (Outgoing)
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="simple" className="space-y-4">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Services</h3>
-            {renderServicesList()}
+        <TabsContent value="incoming" className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Building2 className="h-5 w-5" />
+            <h3 className="text-lg font-medium">Department-wide Services</h3>
           </div>
+
+          {Object.entries(servicesByCategory).map(([category, services]) => (
+            <CategorySection 
+              key={category}
+              categoryKey={category}
+              services={services}
+              scope="department"
+            />
+          ))}
+
+          <div className="flex items-center gap-2 mb-4 mt-8">
+            <Laptop className="h-5 w-5" />
+            <h3 className="text-lg font-medium">VM-Specific Services</h3>
+          </div>
+          {/* VM-specific service controls would go here */}
         </TabsContent>
 
-        <TabsContent value="advanced">
-          <AdvancedFirewall />
+        <TabsContent value="outgoing">
+          <div className="p-4">
+            <h3 className="text-lg font-medium mb-4">Outgoing Service Access</h3>
+            {/* Outgoing service controls would go here */}
+          </div>
         </TabsContent>
       </Tabs>
-    </Card>
+
+      <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enable {confirmDialog.service?.name}</DialogTitle>
+            <DialogDescription>
+              <div className="space-y-4">
+                <Alert variant="warning">
+                  <AlertCircle className="h-4 w-4" />
+                  <p className="ml-2">
+                    {confirmDialog.scope === 'department' 
+                      ? 'This will enable the service for all VMs in the department'
+                      : 'This will enable the service for this specific VM'}
+                  </p>
+                </Alert>
+                <p>{confirmDialog.service?.riskReason}</p>
+                <p>Are you sure you want to proceed?</p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDialog({ open: false })}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => {
+              if (confirmDialog.scope === 'department') {
+                setGlobalServices(prev => ({
+                  ...prev,
+                  [confirmDialog.serviceKey]: true
+                }));
+              }
+              // Handle VM-specific enable here
+              setConfirmDialog({ open: false });
+            }}>
+              Enable Service
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
