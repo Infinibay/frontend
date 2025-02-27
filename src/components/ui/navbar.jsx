@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Image } from "@nextui-org/react";
 import { cn } from "@/lib/utils";
 
@@ -29,13 +29,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./dialog";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./select";
 
 // Icons
 import { RiDashboardLine, RiSettings4Line } from "react-icons/ri";
 import { FiUsers } from "react-icons/fi";
 import { BiLogOut, BiBuildings } from "react-icons/bi";
 import { ImInsertTemplate } from "react-icons/im";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { HiPlus } from "react-icons/hi";
 
 const AppSidebar = React.forwardRef(({ 
@@ -47,10 +48,14 @@ const AppSidebar = React.forwardRef(({
     ...props
   }, ref) => {
   const pathname = usePathname();
+  const router = useRouter();
   const isActive = (path) => pathname === path;
   const [isDeptsOpen, setIsDeptsOpen] = React.useState(true);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [newDepartmentName, setNewDepartmentName] = React.useState("");
+  const [activeSidebarSection, setActiveSidebarSection] = React.useState(null);
+  const [selectedDepartment, setSelectedDepartment] = React.useState("");
+  const [subSidebarVisible, setSubSidebarVisible] = React.useState(false);
 
   const { size: contextSize } = useSizeContext();
   const sizes = sizeVariants[contextSize];
@@ -86,6 +91,42 @@ const AppSidebar = React.forwardRef(({
     setIsDialogOpen(false);
   };
 
+  const handleDepartmentChange = (value) => {
+    // Only update and navigate if the value actually changed
+    if (value !== selectedDepartment) {
+      setSelectedDepartment(value);
+      router.push(`/departments/${value}`);
+    }
+  };
+
+  const openSubSidebar = (section) => {
+    setActiveSidebarSection(section);
+    setSubSidebarVisible(true);
+  };
+
+  const closeSubSidebar = () => {
+    setSubSidebarVisible(false);
+  };
+
+  // Initialize department selection and sidebar state based on the current path
+  React.useEffect(() => {
+    // Check if we're on a department page
+    if (pathname.startsWith('/departments/')) {
+      // Extract department name from the path
+      const departmentName = pathname.split('/').pop();
+      
+      if (departmentName) {
+        // Set the selected department
+        setSelectedDepartment(departmentName);
+        
+        // Open the departments section in the sidebar
+        setIsDeptsOpen(true);
+        setActiveSidebarSection('departments');
+        setSubSidebarVisible(true);
+      }
+    }
+  }, [pathname]);
+
   // Menu item styles based on size
   const menuStyles = {
     text: sizes.text,
@@ -97,128 +138,146 @@ const AppSidebar = React.forwardRef(({
   };
 
   const navItems = [
-    { href: "/computers", icon: RiDashboardLine, label: "Computers" },
-    {
-      label: "Departments",
-      icon: BiBuildings,
-      children: [
-        ...departments.map((dept) => ({
-          href: `/departments/${dept.name}`,
-          label: dept.name,
-          badge: dept.computersCount || 0,
-        })),
-        {
-          label: (<><HiPlus className="w-4 h-4" /> Create Department</>),
-          onClick: handleCreateDepartmentClick,
-          className: "text-blue-200 hover:text-white"
-        }
-      ],
-    },
-    { href: "/users", icon: FiUsers, label: "Users" },
-    { href: "/settings", icon: RiSettings4Line, label: "Settings" },
-    { href: "/templates", icon: ImInsertTemplate, label: "Templates" }
+    { id: "computers", href: "/computers", icon: RiDashboardLine, label: "Computers", hasSubmenu: false },
+    { id: "departments", href: "/departments", icon: BiBuildings, label: "Departments", hasSubmenu: true },
+    { id: "templates", href: "/templates", icon: ImInsertTemplate, label: "Templates", hasSubmenu: false },
+    { id: "users", href: "/users", icon: FiUsers, label: "Users", hasSubmenu: false },
+    { id: "settings", href: "/settings", icon: RiSettings4Line, label: "Settings", hasSubmenu: false }
   ];
 
-  const renderMenuItems = () => {
-    return navItems.map((item) => {
-      if (!item.children) {
-        return (
-          <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={isActive(item.href)}
-              className={cn(
-                "text-gray-300 hover:text-white w-full",
-                menuStyles.text,
-                menuStyles.spacing.item
-              )}
-            >
-              <Link href={item.href} className={cn("flex items-center", menuStyles.gap)}>
-                {item.icon && <item.icon className={menuStyles.icon} />}
-                <span>{item.label}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      }
+  const renderMainMenuItems = () => {
+    return navItems.map((item) => (
+      <SidebarMenuItem key={item.id}>
+        <SidebarMenuButton
+          className={cn(
+            "text-gray-300 hover:text-white w-full",
+            menuStyles.text,
+            menuStyles.spacing.item,
+            isActive(item.href) && "bg-blue-600 text-white"
+          )}
+          onClick={() => item.hasSubmenu ? openSubSidebar(item.id) : router.push(item.href)}
+        >
+          <div className={cn("flex items-center", menuStyles.gap)}>
+            {item.icon && <item.icon className={menuStyles.icon} />}
+            <span>{item.label}</span>
+          </div>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    ));
+  };
 
-      return (
-        <React.Fragment key={item.label}>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => setIsDeptsOpen(!isDeptsOpen)}
-              className={cn(
-                "text-gray-300 hover:text-white justify-between w-full",
-                menuStyles.text,
-                menuStyles.spacing.item
-              )}
+  const renderDepartmentsSubMenu = () => {
+    return (
+      <>
+        <SidebarHeader className={cn("border-b border-blue-700 relative flex items-center justify-between", menuStyles.spacing.container)}>
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              onClick={closeSubSidebar}
+              className="text-white hover:text-white hover:bg-blue-600 mr-2"
             >
-              <div className={cn("flex items-center", menuStyles.gap)}>
-                {item.icon && <item.icon className={menuStyles.icon} />}
-                <span>{item.label}</span>
+              <ChevronLeft className={menuStyles.icon} />
+            </Button>
+            <span className="text-white font-medium">Departments</span>
+          </div>
+        </SidebarHeader>
+        <SidebarContent className="relative">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <div className="p-3">
+                <label className="block text-sm text-gray-300 mb-1">Department</label>
+                <Select onValueChange={handleDepartmentChange} value={selectedDepartment}>
+                  <SelectTrigger className="w-full bg-blue-800 text-white border-blue-700">
+                    <SelectValue placeholder="Select Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.name} value={dept.name}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
-              {isDeptsOpen ? (
-                <ChevronDown className={menuStyles.icon} />
-              ) : (
-                <ChevronRight className={menuStyles.icon} />
-              )}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          {isDeptsOpen &&
-            item.children.map((child) => (
-              <SidebarMenuItem key={child.href || child.label}>
-                {child.href ? (
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(child.href)}
-                    className={cn(
-                      "text-gray-300 hover:text-white justify-between w-full",
-                      menuStyles.text,
-                      menuStyles.spacing.subItem
-                    )}
-                  >
-                    <Link
-                      href={child.href}
-                      className={cn("flex items-center justify-between w-full", menuStyles.gap)}
-                    >
-                      <span>{child.label}</span>
-                      {child.badge > 0 && (
-                        <span
-                          className={cn(
-                            "bg-blue-500 text-white px-2 py-0.5 rounded-full",
-                            sizes.badge.text
-                          )}
-                        >
-                          {child.badge}
-                        </span>
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                ) : (
-                  <SidebarMenuButton
-                    onClick={child.onClick}
-                    className={cn(
-                      "w-full",
-                      menuStyles.text,
-                      menuStyles.spacing.subItem,
-                      child.className
-                    )}
-                  >
-                    <Button
-                      type="button"
-                      onClick={handleCreateDepartmentClick}
-                      variant="ghost"
-                      className="flex items-center gap-1 px-2 py-0.5"
-                    >
-                      <HiPlus className="w-4 h-4" /> Create Department
-                    </Button>
-                  </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/departments"}
+                className={cn(
+                  "text-gray-300 hover:text-white w-full",
+                  menuStyles.text,
+                  menuStyles.spacing.item
                 )}
-              </SidebarMenuItem>
-            ))}
-        </React.Fragment>
-      );
-    });
+              >
+                <Link href="/departments" className={cn("flex items-center", menuStyles.gap)}>
+                  <span>All Departments</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={handleCreateDepartmentClick}
+                className={cn(
+                  "text-blue-200 hover:text-white w-full",
+                  menuStyles.text,
+                  menuStyles.spacing.item
+                )}
+              >
+                <div className={cn("flex items-center", menuStyles.gap)}>
+                  <HiPlus className="w-4 h-4" />
+                  <span>Create Department</span>
+                </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            
+            {/* Computers section */}
+            <SidebarMenuItem className="mt-4">
+              <div className="px-3 py-2 text-sm font-semibold text-gray-400">Computers</div>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                className={cn(
+                  "text-gray-300 hover:text-white w-full",
+                  menuStyles.text,
+                  menuStyles.spacing.item
+                )}
+              >
+                <Link href={selectedDepartment ? `/departments/${selectedDepartment}` : "/departments"} className={cn("flex items-center justify-between", menuStyles.gap)}>
+                  <span>All computers</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {/* Security section */}
+            <SidebarMenuItem className="mt-4">
+              <div className="px-3 py-2 text-sm font-semibold text-gray-400">Security</div>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                className={cn(
+                  "text-gray-300 hover:text-white w-full",
+                  menuStyles.text,
+                  menuStyles.spacing.item
+                )}
+              >
+                <Link href={selectedDepartment ? `/departments/${selectedDepartment}/security` : "/departments"} className={cn("flex items-center", menuStyles.gap)}>
+                  <span>Security Settings</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarContent>
+      </>
+    );
   };
 
   return (
@@ -268,8 +327,12 @@ const AppSidebar = React.forwardRef(({
           sidebarWidthMobile={sidebarWidthMobile}
           sidebarWidthIcon={sidebarWidthIcon}
         >
+          {/* Main Sidebar */}
           <Sidebar
-            className="bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50"
+            className={cn(
+              "bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50 transition-all duration-300",
+              subSidebarVisible && "transform -translate-x-full"
+            )}
             data-collapsible="sidebar"
           >
             {/* Decorative waves */}
@@ -342,7 +405,7 @@ const AppSidebar = React.forwardRef(({
               </Link>
             </SidebarHeader>
             <SidebarContent className="relative">
-              <SidebarMenu>{renderMenuItems()}</SidebarMenu>
+              <SidebarMenu>{renderMainMenuItems()}</SidebarMenu>
             </SidebarContent>
             <SidebarFooter
               className={cn("border-t border-blue-700 relative", menuStyles.spacing.container)}
@@ -379,6 +442,18 @@ const AppSidebar = React.forwardRef(({
               </Button>
             </SidebarFooter>
           </Sidebar>
+
+          {/* Sub-Sidebar */}
+          <Sidebar
+            className={cn(
+              "bg-blue-800 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50 absolute top-0 left-0 h-full transition-all duration-300",
+              subSidebarVisible ? "transform translate-x-0" : "transform -translate-x-full"
+            )}
+            data-collapsible="sidebar"
+          >
+            {activeSidebarSection === "departments" && renderDepartmentsSubMenu()}
+          </Sidebar>
+
           <SidebarInset>{children}</SidebarInset>
         </SidebarProvider>
       </div>

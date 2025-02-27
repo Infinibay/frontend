@@ -12,7 +12,12 @@ const httpLink = createHttpLink({
 });
 
 const authLink = setContext((_, { headers }) => {
-  const token = localStorage.getItem('token');
+  // Only access localStorage in browser environment
+  let token = '';
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+  }
+  
   return {
     headers: {
       ...headers,
@@ -23,7 +28,8 @@ const authLink = setContext((_, { headers }) => {
 
 const client = new ApolloClient({
   link: authLink.concat(httpLink),
-  cache: new InMemoryCache()
+  cache: new InMemoryCache(),
+  ssrMode: typeof window === 'undefined', // Enable SSR mode when running on server
 });
 
 // Authentication functions
@@ -37,7 +43,10 @@ export const auth = {
       console.log(data);
 
       if (data.login && data.login.token) {
-        localStorage.setItem('token', data.login.token);
+        // Only access localStorage in browser environment
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', data.login.token);
+        }
         return data.login.token;
       }
       throw new Error('401'); // Unauthorized
@@ -57,15 +66,26 @@ export const auth = {
   },
 
   logout: () => {
-    localStorage.removeItem('token');
+    // Only access localStorage in browser environment
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
   },
 
   isLoggedIn: () => {
-    return !!localStorage.getItem('token');
+    // Only access localStorage in browser environment
+    if (typeof window !== 'undefined') {
+      return !!localStorage.getItem('token');
+    }
+    return false;
   },
 
   getToken: () => {
-    return localStorage.getItem('token');
+    // Only access localStorage in browser environment
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
   },
 
   // Optionally, add a method to check if the token is still valid

@@ -35,7 +35,9 @@ import {
   LockOpen,
   Building2,
   Laptop,
-  ChevronDown
+  ChevronDown,
+  Settings,
+  Cpu
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVmPorts, selectVmPortsState } from '@/state/slices/vmPorts';
@@ -48,7 +50,9 @@ const icons = {
   Gamepad2,
   Database,
   MessageSquare,
-  ActivitySquare
+  ActivitySquare,
+  Settings,
+  Cpu
 };
 
 const SecuritySection = () => {
@@ -167,7 +171,7 @@ const SecuritySection = () => {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="p-4 border-t bg-muted/50 space-y-3">
-              <Alert variant="warning" className="bg-warning/10 border-warning/20">
+              <Alert variant="warning" className="border-warning/20">
                 <AlertCircle className="h-4 w-4" />
                 <p className="ml-2 text-sm">{service.riskReason}</p>
               </Alert>
@@ -283,4 +287,6 @@ const SecuritySection = () => {
   );
 };
 
+// Make sure we're properly exporting the component
+export { SecuritySection };
 export default SecuritySection;

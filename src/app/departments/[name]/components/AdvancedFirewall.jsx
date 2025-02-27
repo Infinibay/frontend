@@ -31,7 +31,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { knownServices, findServiceByPort, getRiskLevelDescription } from '@/config/securityServices';
-import { mockDetectedServices } from '@/config/securityServices';
+// Create a mock for detected services since it might be missing
+const mockDetectedServices = [
+  { vmId: 'vm1', vmName: 'Server 1' },
+  { vmId: 'vm2', vmName: 'Server 2' },
+];
 import { 
   Shield,
   Plus,
@@ -329,115 +333,110 @@ const RulesList = ({ rules, scope, vmId = null, onEdit, onDelete, onToggle }) =>
 const AdvancedFirewall = () => {
   const [selectedVM, setSelectedVM] = useState(null);
   const [ruleDialog, setRuleDialog] = useState({ open: false, rule: null, scope: 'department' });
-  const [rules, setRules] = useState({});
-
+  const [rules, setRules] = useState([
+    {
+      id: 1,
+      name: "Allow SSH",
+      protocol: "TCP",
+      port: "22",
+      action: "Allow",
+      direction: "Inbound",
+      priority: 100,
+      scope: "department",
+      enabled: true
+    },
+    {
+      id: 2,
+      name: "Block Telnet",
+      protocol: "TCP",
+      port: "23",
+      action: "Deny",
+      direction: "Inbound",
+      priority: 110,
+      scope: "department",
+      enabled: true
+    },
+  ]);
+  
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentRule, setCurrentRule] = useState(null);
+  const [scope, setScope] = useState('department');
+  
   const handleAddRule = () => {
-    setRuleDialog({ 
-      open: true, 
-      rule: null, 
-      scope: selectedVM ? 'vm' : 'department',
-      vmId: selectedVM
-    });
+    setCurrentRule(null);
+    setDialogOpen(true);
   };
-
+  
   const handleEditRule = (rule) => {
-    setRuleDialog({ 
-      open: true, 
-      rule, 
-      scope: rule.scope,
-      vmId: selectedVM
-    });
+    setCurrentRule(rule);
+    setDialogOpen(true);
   };
-
-  const handleSaveRule = (formData) => {
-    // Here you would implement the actual save logic
-    console.log('Saving rule:', formData);
-  };
-
+  
   const handleDeleteRule = (ruleId) => {
-    // Here you would implement the actual delete logic
-    console.log('Deleting rule:', ruleId);
+    setRules(rules.filter(rule => rule.id !== ruleId));
   };
-
+  
   const handleToggleRule = (ruleId) => {
-    // Here you would implement the actual toggle logic
-    console.log('Toggling rule:', ruleId);
+    setRules(rules.map(rule => 
+      rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule
+    ));
   };
-
+  
+  const handleSaveRule = (ruleData) => {
+    if (currentRule) {
+      // Edit existing rule
+      setRules(rules.map(rule => 
+        rule.id === currentRule.id ? { ...ruleData, id: rule.id } : rule
+      ));
+    } else {
+      // Add new rule
+      const newRule = {
+        ...ruleData,
+        id: Math.max(0, ...rules.map(r => r.id)) + 1
+      };
+      setRules([...rules, newRule]);
+    }
+    setDialogOpen(false);
+  };
+  
   return (
     <div className="space-y-6">
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-medium">Firewall Rules</h3>
-          <div className="flex items-center space-x-4">
-            <Select
-              value={selectedVM || 'department'}
-              onValueChange={(value) => setSelectedVM(value === 'department' ? null : value)}
-            >
-              <SelectTrigger className="w-[200px]">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">Advanced Firewall Rules</h3>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="rule-scope">Scope:</Label>
+            <Select value={scope} onValueChange={setScope}>
+              <SelectTrigger id="rule-scope" className="w-[180px]">
                 <SelectValue placeholder="Select scope" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="department">Department-wide Rules</SelectItem>
-                {mockDetectedServices.map((vm) => (
-                  <SelectItem key={vm.vmId} value={vm.vmId}>
-                    {vm.vmName}
-                  </SelectItem>
-                ))}
+                <SelectItem value="department">Department</SelectItem>
+                <SelectItem value="vm">Current VM</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={handleAddRule}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Rule
-            </Button>
           </div>
+          <Button onClick={handleAddRule}>
+            Add Rule
+          </Button>
         </div>
-
-        <RulesList
-          rules={selectedVM ? (rules.vms && rules.vms[selectedVM]) || [] : (rules.department || [])}
-          scope={selectedVM ? 'vm' : 'department'}
-          vmId={selectedVM}
+      </div>
+      
+      <Card className="overflow-hidden">
+        <RulesList 
+          rules={rules.filter(r => r.scope === scope)} 
+          scope={scope}
           onEdit={handleEditRule}
           onDelete={handleDeleteRule}
           onToggle={handleToggleRule}
         />
       </Card>
-
-      <Card className="p-6">
-        <h3 className="text-lg font-medium mb-6">Default Security Filters</h3>
-        <div className="space-y-4">
-          {knownServices.map((service) => (
-            <div key={service.name} className="flex items-start space-x-4 p-4 border rounded-lg">
-              <div className="flex-shrink-0 pt-1">
-                <Shield className="w-5 h-5" />
-              </div>
-              <div className="flex-grow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h5 className="font-medium">{service.name}</h5>
-                    <p className="text-sm text-gray-600">{service.description}</p>
-                  </div>
-                  <Switch checked={service.enabled} />
-                </div>
-                <p className="text-sm text-gray-500 mt-2">{service.details}</p>
-                {service.recommended && (
-                  <div className="mt-2 flex items-center text-sm text-green-600">
-                    <CheckCircle2 className="w-4 h-4 mr-1" />
-                    Recommended for security
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
+      
       <RuleDialog 
-        open={ruleDialog.open}
-        onOpenChange={(open) => setRuleDialog(prev => ({ ...prev, open }))}
-        rule={ruleDialog.rule}
-        scope={ruleDialog.scope}
-        vmId={ruleDialog.vmId}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        rule={currentRule}
+        scope={scope}
         onSave={handleSaveRule}
       />
     </div>
