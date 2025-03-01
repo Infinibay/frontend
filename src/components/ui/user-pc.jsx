@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import { Square } from "lucide-react" // Use Square as StopIcon
 
-const UserPc = React.forwardRef(({ 
+const UserPc = React.forwardRef(({
   className,
   name,
   status = "idle", // idle, running, paused, stopped, building
@@ -25,16 +25,21 @@ const UserPc = React.forwardRef(({
   ram,
   storage,
   username = "User",
+  pc,
   ...props
 }, ref) => {
+  // Extract name and status from pc object if provided
+  const displayName = pc?.name || name;
+  const displayStatus = pc?.status || status;
+  const displayUsername = pc?.user?.name || username;
   // Render actions based on status
   const renderActions = () => {
     return (
       <div className="flex justify-center gap-1 mt-1">
-        {(status === "stopped" || status === "idle") && (
-          <Button 
-            size="sm" 
-            variant="ghost" 
+        {(displayStatus === "stopped" || displayStatus === "idle") && (
+          <Button
+            size="sm"
+            variant="ghost"
             className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-auto"
             onClick={(e) => {
               e.stopPropagation();
@@ -44,11 +49,11 @@ const UserPc = React.forwardRef(({
             <PlayIcon className="w-4 h-4" />
           </Button>
         )}
-        {status === "running" && (
+        {displayStatus === "running" && (
           <>
-            <Button 
-              size="sm" 
-              variant="ghost" 
+            <Button
+              size="sm"
+              variant="ghost"
               className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-100 p-1 h-auto"
               onClick={(e) => {
                 e.stopPropagation();
@@ -57,9 +62,9 @@ const UserPc = React.forwardRef(({
             >
               <PauseIcon className="w-4 h-4" />
             </Button>
-            <Button 
-              size="sm" 
-              variant="ghost" 
+            <Button
+              size="sm"
+              variant="ghost"
               className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-auto"
               onClick={(e) => {
                 e.stopPropagation();
@@ -70,11 +75,11 @@ const UserPc = React.forwardRef(({
             </Button>
           </>
         )}
-        {status === "paused" && (
+        {displayStatus === "paused" && (
           <>
-            <Button 
-              size="sm" 
-              variant="ghost" 
+            <Button
+              size="sm"
+              variant="ghost"
               className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-auto"
               onClick={(e) => {
                 e.stopPropagation();
@@ -83,9 +88,9 @@ const UserPc = React.forwardRef(({
             >
               <PlayIcon className="w-4 h-4" />
             </Button>
-            <Button 
-              size="sm" 
-              variant="ghost" 
+            <Button
+              size="sm"
+              variant="ghost"
               className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-auto"
               onClick={(e) => {
                 e.stopPropagation();
@@ -140,7 +145,7 @@ const UserPc = React.forwardRef(({
             
             {/* PC Name Section */}
             <div className="bg-[#1E1E1E] text-white px-5 py-1.5 text-sm rounded-b-xl line-clamp-1">
-              {name}
+              {displayName}
             </div>
           </CardContent>
 
@@ -154,15 +159,15 @@ const UserPc = React.forwardRef(({
           </div>
 
           {/* Status Indicator */}
-          {status !== "idle" && (
-            <div 
+          {displayStatus !== "idle" && (
+            <div
               className={cn(
                 "absolute -top-2 -right-2 w-5 h-5 rounded-full",
-                status === "running" && "bg-green-500",
-                status === "paused" && "bg-yellow-500",
-                status === "building" && "bg-yellow-500",
-                status === "stopped" && "bg-red-500"
-              )} 
+                displayStatus === "running" && "bg-green-500",
+                displayStatus === "paused" && "bg-yellow-500",
+                displayStatus === "building" && "bg-yellow-500",
+                displayStatus === "stopped" && "bg-red-500"
+              )}
             />
           )}
         </div>
@@ -189,16 +194,16 @@ const UserPc = React.forwardRef(({
         <div className="flex items-center gap-3">
           <div className={cn(
             "w-3 h-3 rounded-full",
-            status === "running" && "bg-green-500",
-            status === "paused" && "bg-yellow-500",
-            status === "building" && "bg-yellow-500",
-            status === "stopped" && "bg-red-500",
-            status === "idle" && "bg-gray-300"
+            displayStatus === "running" && "bg-green-500",
+            displayStatus === "paused" && "bg-yellow-500",
+            displayStatus === "building" && "bg-yellow-500",
+            displayStatus === "stopped" && "bg-red-500",
+            displayStatus === "idle" && "bg-gray-300"
           )} />
-          <span className="font-medium">{name}</span>
+          <span className="font-medium">{displayName}</span>
         </div>
       </td>
-      <td className="py-3 px-4">{username}</td>
+      <td className="py-3 px-4">{displayUsername}</td>
       <td className="py-3 px-4">
         <div className="flex flex-col text-xs text-gray-600">
           <span>{cpuCores} CPUs</span>
@@ -208,10 +213,10 @@ const UserPc = React.forwardRef(({
       </td>
       <td className="py-3 px-4">
         <div className="flex gap-1 justify-end">
-          {(status === "stopped" || status === "idle") && (
-            <Button 
-              size="sm" 
-              variant="ghost" 
+          {(displayStatus === "stopped" || displayStatus === "idle") && (
+            <Button
+              size="sm"
+              variant="ghost"
               className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-8 w-8"
               onClick={(e) => {
                 e.stopPropagation();
@@ -222,11 +227,11 @@ const UserPc = React.forwardRef(({
               <PlayIcon className="w-4 h-4" />
             </Button>
           )}
-          {status === "running" && (
+          {displayStatus === "running" && (
             <>
-              <Button 
-                size="sm" 
-                variant="ghost" 
+              <Button
+                size="sm"
+                variant="ghost"
                 className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-100 p-1 h-8 w-8"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -236,9 +241,9 @@ const UserPc = React.forwardRef(({
               >
                 <PauseIcon className="w-4 h-4" />
               </Button>
-              <Button 
-                size="sm" 
-                variant="ghost" 
+              <Button
+                size="sm"
+                variant="ghost"
                 className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-8 w-8"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -250,11 +255,11 @@ const UserPc = React.forwardRef(({
               </Button>
             </>
           )}
-          {status === "paused" && (
+          {displayStatus === "paused" && (
             <>
-              <Button 
-                size="sm" 
-                variant="ghost" 
+              <Button
+                size="sm"
+                variant="ghost"
                 className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-8 w-8"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -264,9 +269,9 @@ const UserPc = React.forwardRef(({
               >
                 <PlayIcon className="w-4 h-4" />
               </Button>
-              <Button 
-                size="sm" 
-                variant="ghost" 
+              <Button
+                size="sm"
+                variant="ghost"
                 className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-8 w-8"
                 onClick={(e) => {
                   e.stopPropagation();

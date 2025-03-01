@@ -29,7 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./dialog";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./select";
+import { InputSelector } from "./input-selector";
 
 // Icons
 import { RiDashboardLine, RiSettings4Line } from "react-icons/ri";
@@ -93,9 +93,20 @@ const AppSidebar = React.forwardRef(({
 
   const handleDepartmentChange = (value) => {
     // Only update and navigate if the value actually changed
-    if (value !== selectedDepartment) {
+    if (value && value !== selectedDepartment) {
+      console.log(`Selecting department: ${value}`);
       setSelectedDepartment(value);
-      router.push(`/departments/${value}`);
+      
+      // Use toLowerCase for URL but keep original case for display
+      const departmentUrlValue = value.toLowerCase();
+      
+      // Update sidebar state
+      setIsDeptsOpen(true);
+      setActiveSidebarSection('departments');
+      setSubSidebarVisible(true);
+      
+      // Navigate to the department page
+      router.push(`/departments/${departmentUrlValue}`);
     }
   };
 
@@ -113,19 +124,35 @@ const AppSidebar = React.forwardRef(({
     // Check if we're on a department page
     if (pathname.startsWith('/departments/')) {
       // Extract department name from the path
-      const departmentName = pathname.split('/').pop();
+      const pathParts = pathname.split('/');
+      const departmentIndex = pathParts.findIndex(part => part === 'departments');
       
-      if (departmentName) {
-        // Set the selected department
-        setSelectedDepartment(departmentName);
+      if (departmentIndex !== -1 && pathParts.length > departmentIndex + 1) {
+        // Get the department name from the URL
+        const departmentName = pathParts[departmentIndex + 1];
         
-        // Open the departments section in the sidebar
-        setIsDeptsOpen(true);
-        setActiveSidebarSection('departments');
-        setSubSidebarVisible(true);
+        if (departmentName) {
+          // Find the matching department with proper case from the departments array
+          const matchingDept = departments.find(
+            dept => dept.name.toLowerCase() === departmentName.toLowerCase()
+          );
+          
+          if (matchingDept) {
+            // Set the selected department with proper case
+            setSelectedDepartment(matchingDept.name);
+          } else {
+            // If no match found, use the URL value (fallback)
+            setSelectedDepartment(departmentName);
+          }
+          
+          // Open the departments section in the sidebar
+          setIsDeptsOpen(true);
+          setActiveSidebarSection('departments');
+          setSubSidebarVisible(true);
+        }
       }
     }
-  }, [pathname]);
+  }, [pathname, departments]);
 
   // Menu item styles based on size
   const menuStyles = {
@@ -169,111 +196,130 @@ const AppSidebar = React.forwardRef(({
   const renderDepartmentsSubMenu = () => {
     return (
       <>
-        <SidebarHeader className={cn("border-b border-blue-700 relative flex items-center justify-between", menuStyles.spacing.container)}>
+        <SidebarHeader className={cn("relative flex items-center justify-between", menuStyles.spacing.container)}>
           <div className="flex items-center">
             <Button 
               variant="ghost" 
               onClick={closeSubSidebar}
-              className="text-white hover:text-white hover:bg-blue-600 mr-2"
+              className="text-white hover:text-white hover:bg-indigo-500/30 mr-2 rounded-full transition-all transform hover:scale-105"
             >
               <ChevronLeft className={menuStyles.icon} />
             </Button>
-            <span className="text-white font-medium">Departments</span>
+            <span className="text-white font-medium tracking-wide text-lg">Departments</span>
           </div>
         </SidebarHeader>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-800 via-indigo-700 to-purple-800 opacity-90 z-[-1]"></div>
+        <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-5 z-[-1]"></div>
         <SidebarContent className="relative">
           <SidebarMenu>
             <SidebarMenuItem>
-              <div className="p-3">
-                <label className="block text-sm text-gray-300 mb-1">Department</label>
-                <Select onValueChange={handleDepartmentChange} value={selectedDepartment}>
-                  <SelectTrigger className="w-full bg-blue-800 text-white border-blue-700">
-                    <SelectValue placeholder="Select Department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.name} value={dept.name}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+              <div className="p-4">
+                <label className="block text-sm text-blue-100 mb-2 font-medium">Department</label>
+                <div className="bg-white/10 rounded-lg overflow-hidden backdrop-blur-md border border-white/20 shadow-lg">
+                  <InputSelector
+                    items={departments}
+                    selectedItem={departments.find(dept => dept.name.toLowerCase() === selectedDepartment.toLowerCase())}
+                    onSelectItem={(department) => handleDepartmentChange(department.name)}
+                    placeholder="Select department"
+                    searchPlaceholder="Search departments..."
+                    itemLabelKey="name"
+                    itemValueKey="id"
+                    className="!bg-transparent text-white border-transparent hover:!bg-white/10 transition-colors"
+                  />
+                </div>
               </div>
             </SidebarMenuItem>
 
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === "/departments"}
-                className={cn(
-                  "text-gray-300 hover:text-white w-full",
-                  menuStyles.text,
-                  menuStyles.spacing.item
-                )}
-              >
-                <Link href="/departments" className={cn("flex items-center", menuStyles.gap)}>
-                  <span>All Departments</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <div className="px-4 pt-2 pb-4">
+              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === "/departments"}
+                    className={cn(
+                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg",
+                      pathname === "/departments" ? "bg-indigo-500/30 text-white" : "",
+                      menuStyles.text,
+                      menuStyles.spacing.item
+                    )}
+                  >
+                    <Link href="/departments" className={cn("flex items-center", menuStyles.gap)}>
+                      <span>All Departments</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
 
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={handleCreateDepartmentClick}
-                className={cn(
-                  "text-blue-200 hover:text-white w-full",
-                  menuStyles.text,
-                  menuStyles.spacing.item
-                )}
-              >
-                <div className={cn("flex items-center", menuStyles.gap)}>
-                  <HiPlus className="w-4 h-4" />
-                  <span>Create Department</span>
-                </div>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={handleCreateDepartmentClick}
+                    className={cn(
+                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg mt-1",
+                      menuStyles.text,
+                      menuStyles.spacing.item
+                    )}
+                  >
+                    <div className={cn("flex items-center", menuStyles.gap)}>
+                      <div className="bg-gradient-to-r from-indigo-400 to-purple-400 p-1 rounded-md">
+                        <HiPlus className="w-3 h-3 text-indigo-900" />
+                      </div>
+                      <span>Create Department</span>
+                    </div>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </div>
+            </div>
             
             {/* Computers section */}
-            <SidebarMenuItem className="mt-4">
-              <div className="px-3 py-2 text-sm font-semibold text-gray-400">Computers</div>
-            </SidebarMenuItem>
-
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className={cn(
-                  "text-gray-300 hover:text-white w-full",
-                  menuStyles.text,
-                  menuStyles.spacing.item
-                )}
-              >
-                <Link href={selectedDepartment ? `/departments/${selectedDepartment}` : "/departments"} className={cn("flex items-center justify-between", menuStyles.gap)}>
-                  <span>All computers</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <div className="px-4 pt-2 pb-4">
+              <div className="flex items-center mb-3">
+                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
+                <h3 className="px-3 text-sm font-semibold text-indigo-200">Computers</h3>
+                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
+              </div>
+              
+              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className={cn(
+                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg",
+                      menuStyles.text,
+                      menuStyles.spacing.item
+                    )}
+                  >
+                    <Link href={selectedDepartment ? `/departments/${selectedDepartment}` : "/departments"} className={cn("flex items-center justify-between", menuStyles.gap)}>
+                      <span>All computers</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </div>
+            </div>
 
             {/* Security section */}
-            <SidebarMenuItem className="mt-4">
-              <div className="px-3 py-2 text-sm font-semibold text-gray-400">Security</div>
-            </SidebarMenuItem>
-
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className={cn(
-                  "text-gray-300 hover:text-white w-full",
-                  menuStyles.text,
-                  menuStyles.spacing.item
-                )}
-              >
-                <Link href={selectedDepartment ? `/departments/${selectedDepartment}/security` : "/departments"} className={cn("flex items-center", menuStyles.gap)}>
-                  <span>Security Settings</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <div className="px-4 pt-2 pb-4">
+              <div className="flex items-center mb-3">
+                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
+                <h3 className="px-3 text-sm font-semibold text-indigo-200">Security</h3>
+                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
+              </div>
+              
+              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className={cn(
+                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg",
+                      menuStyles.text,
+                      menuStyles.spacing.item
+                    )}
+                  >
+                    <Link href={selectedDepartment ? `/departments/${selectedDepartment}/security` : "/departments"} className={cn("flex items-center", menuStyles.gap)}>
+                      <span>Security Settings</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </div>
+            </div>
           </SidebarMenu>
         </SidebarContent>
       </>
