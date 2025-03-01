@@ -46,6 +46,7 @@
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "cmdk": "^1.0.4",
     "connect-timeout": "^1.9.0",
     "framer-motion": "*",
     "graphql": "^16.9.0",

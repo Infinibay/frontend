@@ -142,7 +142,7 @@ const DepartmentPage = () => {
         onPlay={selectedPc ? () => handlePlayAction(selectedPc) : undefined}
         onPause={selectedPc ? () => handlePauseAction(selectedPc) : undefined}
         onStop={selectedPc ? () => handleStopAction(selectedPc) : undefined}
-        onDelete={selectedPc ? () => handleDeleteAction(selectedPc.vmId) : undefined}
+        onDelete={selectedPc ? () => handleDeleteAction(selectedPc.id) : undefined}
       />
 
       <CreateDepartmentDialog 

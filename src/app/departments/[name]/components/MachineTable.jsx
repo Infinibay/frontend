@@ -113,7 +113,7 @@ const MachineTable = ({
                   <Button 
                     variant="destructive" 
                     size="sm"
-                    onClick={() => handleDelete(machine.vmId)}
+                    onClick={() => handleDelete(machine.id)}
                   >
                     Delete
                   </Button>

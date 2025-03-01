@@ -24,7 +24,7 @@ const MachineGrid = ({
           onPlay={() => onPlay(machine)}
           onPause={() => onPause(machine)}
           onStop={() => onStop(machine)}
-          onDelete={() => onDelete(machine.vmId)}
+          onDelete={() => onDelete(machine.id)}
           size={size}
         />
       ))}

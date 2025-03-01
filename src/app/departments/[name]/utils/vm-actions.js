@@ -18,7 +18,7 @@ import {
  */
 export const handlePlay = async (dispatch, pc) => {
   if (pc) {
-    await dispatch(playVm({ id: pc.vmId }));
+    await dispatch(playVm({ id: pc.id }));
     dispatch(fetchVms());
   }
 };
@@ -31,7 +31,7 @@ export const handlePlay = async (dispatch, pc) => {
  */
 export const handlePause = async (dispatch, pc) => {
   if (pc) {
-    await dispatch(pauseVm({ id: pc.vmId }));
+    await dispatch(pauseVm({ id: pc.id }));
     dispatch(fetchVms());
   }
 };
@@ -44,7 +44,7 @@ export const handlePause = async (dispatch, pc) => {
  */
 export const handleStop = async (dispatch, pc) => {
   if (pc) {
-    await dispatch(stopVm({ id: pc.vmId }));
+    await dispatch(stopVm({ id: pc.id }));
     dispatch(fetchVms());
   }
 };

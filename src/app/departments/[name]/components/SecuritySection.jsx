@@ -24,8 +24,8 @@ import {
   AlertCircle,
   Shield,
   Globe,
-  MonitorController,
-  FolderNetwork,
+  Monitor,
+  Folder,
   Network,
   Gamepad2,
   Database,
@@ -43,8 +43,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchVmPorts, selectVmPortsState } from '@/state/slices/vmPorts';
 
 const icons = {
-  MonitorController,
-  FolderNetwork,
+  Monitor,
+  Folder,
   Network,
   Globe,
   Gamepad2,

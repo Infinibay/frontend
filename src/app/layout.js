@@ -17,6 +17,7 @@ import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { createDepartment as createDepartmentAction } from '@/state/slices/departments';
 import { SizeProvider } from "@/components/ui/size-provider";
+import { Toaster } from "@/components/ui/toaster";
 
 const monst = Montserrat({ 
   subsets: ["latin"],
@@ -106,6 +107,7 @@ export default function RootLayout({ children }) {
                         {children}
                       </AppContent>
                     </InitialDataLoader>
+                    <Toaster />
                   </NextUIProvider>
                 </ApolloProvider>
               </PersistGate>

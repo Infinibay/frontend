@@ -11,7 +11,7 @@ const NotFound = ({ departmentName }) => {
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-4">Department Not Found</h2>
         <p className="text-gray-600 mb-6">
-          The department "{departmentName}" could not be found.
+          The department &quot;{departmentName}&quot; could not be found.
         </p>
         <Button asChild>
           <Link href="/departments">View All Departments</Link>
