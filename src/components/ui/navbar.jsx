@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Image } from "@nextui-org/react";
 import { cn } from "@/lib/utils";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchVms } from "@/state/slices/vms";
 
 // UI Components
 import { Button } from "./button";
@@ -31,6 +33,9 @@ import {
 } from "./dialog";
 import { InputSelector } from "./input-selector";
 
+// Custom Components
+import SidebarVMList from "@/app/departments/[name]/components/SidebarVMList";
+
 // Icons
 import { RiDashboardLine, RiSettings4Line } from "react-icons/ri";
 import { FiUsers } from "react-icons/fi";
@@ -49,6 +54,7 @@ const AppSidebar = React.forwardRef(({
   }, ref) => {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useDispatch();
   const isActive = (path) => pathname === path;
   const [isDeptsOpen, setIsDeptsOpen] = React.useState(true);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -62,6 +68,24 @@ const AppSidebar = React.forwardRef(({
   const sidebarWidth = sizes.navbar.width;
   const sidebarWidthMobile = sizes.navbar.mobileWidth;
   const sidebarWidthIcon = sizes.icon.button.replace("w-", "") + "rem";
+
+  // Fetch VMs if they're not already loaded
+  const vms = useSelector((state) => state.vms.items);
+  const vmsLoading = useSelector((state) => state.vms.loading.fetch);
+  
+  // Filter VMs by the selected department
+  const departmentVMs = React.useMemo(() => {
+    return vms.filter(vm => 
+      vm.department?.name?.toLowerCase() === selectedDepartment.toLowerCase()
+    );
+  }, [vms, selectedDepartment]);
+  
+  // React.useEffect(() => {
+  //   // Only fetch VMs if we don't have any and we're not already fetching
+  //   if (vms.length === 0 && !vmsLoading) {
+  //     dispatch(fetchVms());
+  //   }
+  // }, [dispatch, vms.length, vmsLoading]);
 
   const handleCreateDepartmentClick = () => {
     setIsDialogOpen(true);
@@ -193,7 +217,7 @@ const AppSidebar = React.forwardRef(({
     ));
   };
 
-  const renderDepartmentsSubMenu = () => {
+  const renderDepartmentsSubMenu = (departmentVMs) => {
     return (
       <>
         <SidebarHeader className={cn("relative flex items-center justify-between", menuStyles.spacing.container)}>
@@ -289,9 +313,27 @@ const AppSidebar = React.forwardRef(({
                   >
                     <Link href={selectedDepartment ? `/departments/${selectedDepartment}` : "/departments"} className={cn("flex items-center justify-between", menuStyles.gap)}>
                       <span>All computers</span>
+                      {departmentVMs.length > 0 && (
+                        <span className="bg-indigo-500/40 text-white text-xs px-2 py-0.5 rounded-full">
+                          {departmentVMs.length}
+                        </span>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                
+                {/* VM List */}
+                {selectedDepartment && departmentVMs.length > 0 && (
+                  <div className="mt-2 border-t border-white/10 pt-2">
+                    <div className="px-3 py-1">
+                      <span className="text-xs font-medium text-indigo-200/70">Virtual Machines</span>
+                    </div>
+                    <SidebarVMList 
+                      machines={departmentVMs} 
+                      menuStyles={menuStyles} 
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -497,7 +539,7 @@ const AppSidebar = React.forwardRef(({
             )}
             data-collapsible="sidebar"
           >
-            {activeSidebarSection === "departments" && renderDepartmentsSubMenu()}
+            {activeSidebarSection === "departments" && renderDepartmentsSubMenu(departmentVMs)}
           </Sidebar>
 
           <SidebarInset>{children}</SidebarInset>

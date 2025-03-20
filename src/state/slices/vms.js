@@ -36,6 +36,7 @@ const executeGraphQLMutation = async (mutation, variables) => {
 };
 
 const executeGraphQLQuery = async (query, variables = {}) => {
+  console.log("Backtrace:", new Error("Here is your backtrace"));
   try {
     const response = await client.query({ 
       query, 

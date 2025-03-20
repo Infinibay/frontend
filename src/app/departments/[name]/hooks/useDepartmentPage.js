@@ -4,13 +4,11 @@ import { useRouter } from "next/navigation";
 
 // Redux actions
 import { 
-  fetchVms, 
   selectMachine, 
   deselectMachine,
 } from "@/state/slices/vms";
 import { 
   fetchDepartmentByName, 
-  fetchDepartments, 
   createDepartment 
 } from "@/state/slices/departments";
 
@@ -52,7 +50,6 @@ export const useDepartmentPage = (departmentName) => {
   const departments = useSelector((state) => state.departments.items);
   const vms = useSelector((state) => state.vms.items);
   const departmentsLoading = useSelector((state) => state.departments.loading);
-  const vmsLoading = useSelector((state) => state.vms.loading);
   
   // Derived state
   const department = departments.find(d => d.name.toLowerCase() === departmentName?.toLowerCase());
@@ -63,11 +60,6 @@ export const useDepartmentPage = (departmentName) => {
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      
-      // Fetch all departments if not already loaded
-      if (departments.length === 0 && !departmentsLoading.fetch) {
-        await dispatch(fetchDepartments());
-      }
       
       // Fetch specific department data
       if (departmentName) {
@@ -82,16 +74,11 @@ export const useDepartmentPage = (departmentName) => {
         }
       }
       
-      // Fetch VMs if not already loaded
-      if (vms.length === 0 && !vmsLoading.fetch) {
-        await dispatch(fetchVms());
-      }
-      
       setIsLoading(false);
     };
     
     loadData();
-  }, [dispatch, departmentName, departments.length, vms.length, departmentsLoading.fetch, vmsLoading.fetch]);
+  }, [dispatch, departmentName]);
 
   // Handle Escape key
   useEffect(() => {

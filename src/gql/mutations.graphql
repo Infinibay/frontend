@@ -60,23 +60,37 @@ mutation createMachine($input: CreateMachineInputType!) {
   createMachine(input: $input) {
     id
     name
-    status
-    createdAt
     configuration
-    templateId
+    status
     userId
-    department {
-      id
-      name
-    }
+    templateId
+    createdAt
     template {
       id
       name
       description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
+    department {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
     }
     user {
       id
+      firstName
+      lastName
+      role
       email
+      createdAt
     }
   }
 }
@@ -84,24 +98,28 @@ mutation createMachine($input: CreateMachineInputType!) {
 mutation powerOn($id: String!) {
   powerOn(id: $id) {
     success
+    message
   }
 }
 
 mutation powerOff($id: String!) {
   powerOff(id: $id) {
     success
+    message
   }
 }
 
 mutation suspend($id: String!) {
   suspend(id: $id) {
     success
+    message
   }
 }
 
 mutation destroyMachine($id: String!) {
   destroyMachine(id: $id) {
     success
+    message
   }
 }
 
@@ -117,10 +135,37 @@ mutation moveMachine($departmentId: String!, $id: String!) {
   moveMachine(departmentId: $departmentId, id: $id) {
     id
     name
+    configuration
     status
+    userId
+    templateId
+    createdAt
+    template {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
     department {
       id
       name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
+    }
+    user {
+      id
+      firstName
+      lastName
+      role
+      email
+      createdAt
     }
   }
 }
@@ -159,8 +204,8 @@ mutation createMachineTemplateCategory($input: MachineTemplateCategoryInputType!
     name
     description
     createdAt
-    totalMachines
     totalTemplates
+    totalMachines
   }
 }
 
@@ -170,8 +215,8 @@ mutation updateMachineTemplateCategory($input: MachineTemplateCategoryInputType!
     name
     description
     createdAt
-    totalMachines
     totalTemplates
+    totalMachines
   }
 }
 
@@ -180,10 +225,10 @@ mutation createApplication($input: CreateApplicationInputType!) {
     id
     name
     description
-    createdAt
-    installCommand
     os
+    installCommand
     parameters
+    createdAt
   }
 }
 
@@ -192,10 +237,10 @@ mutation updateApplication($input: CreateApplicationInputType!, $id: String!) {
     id
     name
     description
-    createdAt
-    installCommand
     os
+    installCommand
     parameters
+    createdAt
   }
 }
 
@@ -228,15 +273,31 @@ mutation createFilter($input: CreateFilterInput!) {
     id
     name
     description
-    chain
     type
-    priority
-    internalName
-    stateMatch
-    uuid
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
     createdAt
     updatedAt
-    flushedAt
   }
 }
 
@@ -245,15 +306,31 @@ mutation updateFilter($input: UpdateFilterInput!, $id: ID!) {
     id
     name
     description
-    chain
     type
-    priority
-    internalName
-    stateMatch
-    uuid
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
     createdAt
     updatedAt
-    flushedAt
   }
 }
 
@@ -264,16 +341,21 @@ mutation deleteFilter($id: ID!) {
 mutation createFilterRule($input: CreateFilterRuleInput!, $filterId: ID!) {
   createFilterRule(input: $input, filterId: $filterId) {
     id
-    action
-    direction
     protocol
+    direction
+    action
     priority
+    ipVersion
+    srcMacAddr
+    srcIpAddr
+    srcIpMask
+    dstIpAddr
+    dstIpMask
     srcPortStart
     srcPortEnd
     dstPortStart
     dstPortEnd
-    srcIpAddr
-    dstIpAddr
+    state
     comment
     createdAt
     updatedAt
@@ -283,16 +365,21 @@ mutation createFilterRule($input: CreateFilterRuleInput!, $filterId: ID!) {
 mutation updateFilterRule($input: UpdateFilterRuleInput!, $id: ID!) {
   updateFilterRule(input: $input, id: $id) {
     id
-    action
-    direction
     protocol
+    direction
+    action
     priority
+    ipVersion
+    srcMacAddr
+    srcIpAddr
+    srcIpMask
+    dstIpAddr
+    dstIpMask
     srcPortStart
     srcPortEnd
     dstPortStart
     dstPortEnd
-    srcIpAddr
-    dstIpAddr
+    state
     comment
     createdAt
     updatedAt

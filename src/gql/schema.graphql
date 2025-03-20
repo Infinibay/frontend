@@ -109,7 +109,7 @@ type DyummyType {
 type FWRule {
   action: String!
   comment: String
-  createdAt: DateTimeISO!
+  createdAt: DateTimeISO
   direction: String!
   dstIpAddr: String
   dstIpMask: String
@@ -125,7 +125,7 @@ type FWRule {
   srcPortEnd: Int
   srcPortStart: Int
   state: JSONObject
-  updatedAt: DateTimeISO!
+  updatedAt: DateTimeISO
 }
 
 """Type of network filter"""
@@ -135,28 +135,22 @@ enum FilterType {
   VM
 }
 
-type FirewallFilter {
-  chain: String
-  createdAt: DateTimeISO!
-  description: String
-  flushedAt: DateTimeISO
-  id: ID!
-  internalName: String!
-  name: String!
-  priority: Int!
-  references: [String!]!
-  rules: [FWRule!]
-  stateMatch: Boolean!
-  type: FilterType!
-  updatedAt: DateTimeISO!
-  uuid: String!
-}
-
 type GPU {
   memory: Float!
   model: String!
   pciBus: String!
   vendor: String!
+}
+
+type GenericFilter {
+  createdAt: DateTimeISO!
+  description: String
+  id: ID!
+  name: String!
+  references: [String!]!
+  rules: [FWRule!]
+  type: FilterType!
+  updatedAt: DateTimeISO!
 }
 
 type GraphicConfigurationType {
@@ -282,7 +276,7 @@ type MachineTemplateType {
 type Mutation {
   createApplication(input: CreateApplicationInputType!): ApplicationType!
   createDepartment(name: String!): DepartmentType!
-  createFilter(input: CreateFilterInput!): FirewallFilter!
+  createFilter(input: CreateFilterInput!): GenericFilter!
   createFilterRule(filterId: ID!, input: CreateFilterRuleInput!): FWRule!
   createMachine(input: CreateMachineInputType!): Machine!
   createMachineTemplate(input: MachineTemplateInputType!): MachineTemplateType!
@@ -310,7 +304,7 @@ type Mutation {
   setupNode: DyummyType!
   suspend(id: String!): SuccessType!
   updateApplication(id: String!, input: CreateApplicationInputType!): ApplicationType!
-  updateFilter(id: ID!, input: UpdateFilterInput!): FirewallFilter!
+  updateFilter(id: ID!, input: UpdateFilterInput!): GenericFilter!
   updateFilterRule(id: ID!, input: UpdateFilterRuleInput!): FWRule!
   updateMachineTemplate(id: String!, input: MachineTemplateInputType!): MachineTemplateType!
   updateMachineTemplateCategory(id: String!, input: MachineTemplateCategoryInputType!): MachineTemplateCategoryType!
@@ -381,12 +375,11 @@ type Query {
   department(id: String!): DepartmentType
   departments: [DepartmentType!]!
   findDepartmentByName(name: String!): DepartmentType
-  getFilter(id: ID!): FirewallFilter
+  getFilter(id: ID!): GenericFilter
   getGraphics: [GPU!]!
   graphicConnection(id: String!): GraphicConfigurationType
   listFilterRules(filterId: ID): [FWRule!]!
-  listFilters(departmentId: ID, vmId: ID): [FirewallFilter!]!
-  listVmPorts: [VmPortType!]!
+  listFilters(departmentId: ID, vmId: ID): [GenericFilter!]!
   login(email: String!, password: String!): UserToken!
   machine(id: String!): Machine
   machineTemplate(id: String!): MachineTemplateType
@@ -469,16 +462,4 @@ type UserType {
   id: ID!
   lastName: String!
   role: String!
-}
-
-type VmPortType {
-  enabled: Boolean!
-  id: ID!
-  lastSeen: DateTimeISO!
-  portEnd: Int!
-  portStart: Int!
-  protocol: String!
-  running: Boolean!
-  toEnable: Boolean!
-  vmId: ID!
 }

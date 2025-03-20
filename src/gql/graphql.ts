@@ -125,7 +125,7 @@ export type FwRule = {
   __typename?: 'FWRule';
   action: Scalars['String']['output'];
   comment?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['DateTimeISO']['output'];
+  createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
   direction: Scalars['String']['output'];
   dstIpAddr?: Maybe<Scalars['String']['output']>;
   dstIpMask?: Maybe<Scalars['String']['output']>;
@@ -141,7 +141,7 @@ export type FwRule = {
   srcPortEnd?: Maybe<Scalars['Int']['output']>;
   srcPortStart?: Maybe<Scalars['Int']['output']>;
   state?: Maybe<Scalars['JSONObject']['output']>;
-  updatedAt: Scalars['DateTimeISO']['output'];
+  updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
 };
 
 /** Type of network filter */
@@ -151,30 +151,24 @@ export enum FilterType {
   Vm = 'VM'
 }
 
-export type FirewallFilter = {
-  __typename?: 'FirewallFilter';
-  chain?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['DateTimeISO']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  flushedAt?: Maybe<Scalars['DateTimeISO']['output']>;
-  id: Scalars['ID']['output'];
-  internalName: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-  priority: Scalars['Int']['output'];
-  references: Array<Scalars['String']['output']>;
-  rules?: Maybe<Array<FwRule>>;
-  stateMatch: Scalars['Boolean']['output'];
-  type: FilterType;
-  updatedAt: Scalars['DateTimeISO']['output'];
-  uuid: Scalars['String']['output'];
-};
-
 export type Gpu = {
   __typename?: 'GPU';
   memory: Scalars['Float']['output'];
   model: Scalars['String']['output'];
   pciBus: Scalars['String']['output'];
   vendor: Scalars['String']['output'];
+};
+
+export type GenericFilter = {
+  __typename?: 'GenericFilter';
+  createdAt: Scalars['DateTimeISO']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  references: Array<Scalars['String']['output']>;
+  rules?: Maybe<Array<FwRule>>;
+  type: FilterType;
+  updatedAt: Scalars['DateTimeISO']['output'];
 };
 
 export type GraphicConfigurationType = {
@@ -295,7 +289,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   createApplication: ApplicationType;
   createDepartment: DepartmentType;
-  createFilter: FirewallFilter;
+  createFilter: GenericFilter;
   createFilterRule: FwRule;
   createMachine: Machine;
   createMachineTemplate: MachineTemplateType;
@@ -322,7 +316,7 @@ export type Mutation = {
   setupNode: DyummyType;
   suspend: SuccessType;
   updateApplication: ApplicationType;
-  updateFilter: FirewallFilter;
+  updateFilter: GenericFilter;
   updateFilterRule: FwRule;
   updateMachineTemplate: MachineTemplateType;
   updateMachineTemplateCategory: MachineTemplateCategoryType;
@@ -568,12 +562,11 @@ export type Query = {
   department?: Maybe<DepartmentType>;
   departments: Array<DepartmentType>;
   findDepartmentByName?: Maybe<DepartmentType>;
-  getFilter?: Maybe<FirewallFilter>;
+  getFilter?: Maybe<GenericFilter>;
   getGraphics: Array<Gpu>;
   graphicConnection?: Maybe<GraphicConfigurationType>;
   listFilterRules: Array<FwRule>;
-  listFilters: Array<FirewallFilter>;
-  listVmPorts: Array<VmPortType>;
+  listFilters: Array<GenericFilter>;
   login: UserToken;
   machine?: Maybe<Machine>;
   machineTemplate?: Maybe<MachineTemplateType>;
@@ -744,17 +737,4 @@ export type UserType = {
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
   role: Scalars['String']['output'];
-};
-
-export type VmPortType = {
-  __typename?: 'VmPortType';
-  enabled: Scalars['Boolean']['output'];
-  id: Scalars['ID']['output'];
-  lastSeen: Scalars['DateTimeISO']['output'];
-  portEnd: Scalars['Int']['output'];
-  portStart: Scalars['Int']['output'];
-  protocol: Scalars['String']['output'];
-  running: Scalars['Boolean']['output'];
-  toEnable: Scalars['Boolean']['output'];
-  vmId: Scalars['ID']['output'];
 };

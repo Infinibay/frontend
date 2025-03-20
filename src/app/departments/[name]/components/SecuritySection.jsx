@@ -1,292 +1,168 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Alert } from "@/components/ui/alert";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { knownServices, serviceCategories, findServiceByPort, getRiskLevelDescription } from '@/config/securityServices';
-import AdvancedFirewall from './AdvancedFirewall';
-import { 
-  AlertCircle,
-  Shield,
-  Globe,
-  Monitor,
-  Folder,
-  Network,
-  Gamepad2,
-  Database,
-  MessageSquare,
-  ActivitySquare,
-  Lock,
-  LockOpen,
-  Building2,
-  Laptop,
-  ChevronDown,
-  Settings,
-  Cpu
-} from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchVmPorts, selectVmPortsState } from '@/state/slices/vmPorts';
+import { Shield, Monitor, Lock, LockOpen } from 'lucide-react';
+import SecurityTabs from './security/SecurityTabs';
+import GeneralTab from './security/GeneralTab';
+import OthersTab from './security/OthersTab';
 
-const icons = {
-  Monitor,
-  Folder,
-  Network,
-  Globe,
-  Gamepad2,
-  Database,
-  MessageSquare,
-  ActivitySquare,
-  Settings,
-  Cpu
-};
-
+/**
+ * Security Section Component
+ * Allows users to enable or disable services on VMs in a department
+ */
 const SecuritySection = () => {
-  const dispatch = useDispatch();
-  const { items: vmPorts, loading: vmPortsLoading } = useSelector(selectVmPortsState);
-  const [activeTab, setActiveTab] = useState("incoming");
-  const [globalServices, setGlobalServices] = useState({});
-  const [confirmDialog, setConfirmDialog] = useState({
-    open: false,
-    service: null,
-    serviceKey: null,
-    scope: null,
-    vmId: null,
-  });
-
+  const [activeTab, setActiveTab] = useState("general");
+  const [selectedService, setSelectedService] = useState("SSH");
+  const [enableForAll, setEnableForAll] = useState(false);
+  
+  // Mock data for VMs in the department
+  const mockVms = [
+    { id: 1, name: "Computer", enabled: false },
+    { id: 2, name: "Arnold", enabled: false },
+    { id: 3, name: "Daniel", enabled: false },
+    { id: 4, name: "Emily", enabled: false }
+  ];
+  
+  // Mock data for services
+  const mockServices = [
+    { id: "SSH", name: "SSH", description: "Secure Shell for remote access", riskLevel: "high", icon: <Lock className="h-5 w-5" /> },
+    { id: "HTTP", name: "HTTP", description: "Web server protocol", riskLevel: "medium", icon: <Monitor className="h-5 w-5" /> },
+    { id: "FTP", name: "FTP", description: "File Transfer Protocol", riskLevel: "medium", icon: <Monitor className="h-5 w-5" /> },
+    { id: "SMTP", name: "SMTP", description: "Email server protocol", riskLevel: "low", icon: <Monitor className="h-5 w-5" /> }
+  ];
+  
+  // State for services that VMs are enabled to use
+  const [enabledVmsToUse, setEnabledVmsToUse] = useState({});
+  
+  // State for services that VMs are enabled to provide
+  const [enabledVmsToProvide, setEnabledVmsToProvide] = useState({});
+  
+  // State for enabling all VMs to use a service
+  const [enableAllToUse, setEnableAllToUse] = useState(false);
+  
+  // State for enabling all VMs to provide a service
+  const [enableAllToProvide, setEnableAllToProvide] = useState(false);
+  
+  // Handle toggle for VM to use a service
+  const handleToggleUse = (vmId) => {
+    setEnabledVmsToUse(prev => ({
+      ...prev,
+      [vmId]: {
+        ...prev[vmId],
+        [selectedService]: !prev[vmId]?.[selectedService]
+      }
+    }));
+  };
+  
+  // Handle toggle for VM to provide a service
+  const handleToggleProvide = (vmId) => {
+    setEnabledVmsToProvide(prev => ({
+      ...prev,
+      [vmId]: {
+        ...prev[vmId],
+        [selectedService]: !prev[vmId]?.[selectedService]
+      }
+    }));
+  };
+  
+  // Handle "enable all to use" toggle
+  const handleEnableAllToUse = (checked) => {
+    setEnableAllToUse(checked);
+    
+    // If checked, enable all VMs to use the service
+    if (checked) {
+      const updatedVms = {};
+      mockVms.forEach(vm => {
+        updatedVms[vm.id] = {
+          ...enabledVmsToUse[vm.id],
+          [selectedService]: true
+        };
+      });
+      setEnabledVmsToUse(updatedVms);
+    }
+  };
+  
+  // Handle "enable all to provide" toggle
+  const handleEnableAllToProvide = (checked) => {
+    setEnableAllToProvide(checked);
+    
+    // If checked, enable all VMs to provide the service
+    if (checked) {
+      const updatedVms = {};
+      mockVms.forEach(vm => {
+        updatedVms[vm.id] = {
+          ...enabledVmsToProvide[vm.id],
+          [selectedService]: true
+        };
+      });
+      setEnabledVmsToProvide(updatedVms);
+    }
+  };
+  
+  // Check if a VM is enabled to use a service
+  const isVmEnabledToUse = (vmId) => {
+    return enableAllToUse || enabledVmsToUse[vmId]?.[selectedService] || false;
+  };
+  
+  // Check if a VM is enabled to provide a service
+  const isVmEnabledToProvide = (vmId) => {
+    return enableAllToProvide || enabledVmsToProvide[vmId]?.[selectedService] || false;
+  };
+  
+  // Get the selected service details
+  const getSelectedService = () => {
+    return mockServices.find(service => service.id === selectedService);
+  };
+  
+  // Get risk level badge
+  const getRiskBadge = (level) => {
+    switch(level) {
+      case 'high':
+        return <Badge variant="destructive" className="ml-2">High Risk</Badge>;
+      case 'medium':
+        return <Badge variant="warning" className="ml-2 bg-amber-500 hover:bg-amber-600">Medium Risk</Badge>;
+      case 'low':
+        return <Badge variant="secondary" className="ml-2">Low Risk</Badge>;
+      default:
+        return null;
+    }
+  };
+  
+  // Reset service selection when tab changes
   useEffect(() => {
-    dispatch(fetchVmPorts());
-  }, [dispatch]);
-
-  const getRiskBadge = (riskLevel) => {
-    const color = riskLevel >= 4 ? 'destructive' : riskLevel >= 3 ? 'warning' : 'secondary';
-    const text = getRiskLevelDescription(riskLevel);
-    return <Badge variant={color}>{text}</Badge>;
-  };
-
-  const handleServiceToggle = (serviceKey, service, scope, vmId = null) => {
-    setConfirmDialog({
-      open: true,
-      service,
-      serviceKey,
-      scope,
-      vmId,
-    });
-  };
-
-  // Group services by category
-  const servicesByCategory = knownServices.reduce((acc, service) => {
-    if (!acc[service.category]) {
-      acc[service.category] = [];
-    }
-    acc[service.category].push(service);
-    return acc;
-  }, {});
-
-  const CategorySection = ({ categoryKey, services, scope = 'department', vmId = null }) => {
-    const category = serviceCategories[categoryKey];
-    if (!category) return null;
-
-    let Icon = icons[category.icon];
-    if (!Icon) {
-      Icon = Globe;
-    }
-
-    return (
-      <div className="mb-8 border rounded-lg overflow-hidden">
-        <div className="bg-muted p-4 border-b">
-          <div className="flex items-center gap-2">
-            {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
-            <h4 className="font-medium text-lg">{category.name}</h4>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
-        </div>
-        <div className="p-4 space-y-4 bg-card">
-          {services.map(service => (
-            <ServiceCard 
-              key={service.name} 
-              service={service}
-              scope={scope}
-              vmId={vmId}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const ServiceCard = ({ service, scope = 'department', vmId = null }) => {
-    const isEnabled = scope === 'department' 
-      ? globalServices[service.ports[0]?.start]
-      : vmPorts[vmId]?.includes(service.ports[0]?.start);
-
-    return (
-      <Card className="border shadow-sm">
-        <Collapsible>
-          <div className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {isEnabled ? <LockOpen className="h-5 w-5 text-warning" /> : <Lock className="h-5 w-5 text-muted-foreground" />}
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{service.name}</span>
-                  {getRiskBadge(service.riskLevel)}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium">
-                {isEnabled ? "Service Active" : "Protected (Blocked)"}
-              </span>
-              <Switch
-                checked={isEnabled}
-                onCheckedChange={() => handleServiceToggle(
-                  service.ports[0]?.start,
-                  service,
-                  scope,
-                  vmId
-                )}
-              />
-            </div>
-          </div>
-          <CollapsibleTrigger className="w-full text-left border-t">
-            <Button variant="ghost" size="sm" className="w-full flex justify-between p-2 h-8">
-              <span className="text-xs">Show details</span>
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="p-4 border-t bg-muted/50 space-y-3">
-              <Alert variant="warning" className="border-warning/20">
-                <AlertCircle className="h-4 w-4" />
-                <p className="ml-2 text-sm">{service.riskReason}</p>
-              </Alert>
-              {scope === 'department' && (
-                <div>
-                  <p className="text-sm font-medium mb-2">Recommended Security Measures:</p>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li className="flex items-center gap-2">
-                      <span className="h-1 w-1 rounded-full bg-muted-foreground"></span>
-                      Enable only for specific IP ranges
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="h-1 w-1 rounded-full bg-muted-foreground"></span>
-                      Set up enhanced monitoring
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="h-1 w-1 rounded-full bg-muted-foreground"></span>
-                      Configure automatic blocking for suspicious activity
-                    </li>
-                  </ul>
-                </div>
-              )}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
-    );
-  };
-
+    setEnableAllToUse(false);
+    setEnableAllToProvide(false);
+  }, [selectedService]);
+  
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="incoming">
-            <Shield className="w-4 h-4 mr-2" />
-            Service Provide (Incoming)
-          </TabsTrigger>
-          <TabsTrigger value="outgoing">
-            <Globe className="w-4 h-4 mr-2" />
-            Service Usage (Outgoing)
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="incoming" className="space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Building2 className="h-5 w-5" />
-            <h3 className="text-lg font-medium">Department-wide Services</h3>
-          </div>
-
-          {Object.entries(servicesByCategory).map(([category, services]) => (
-            <CategorySection 
-              key={category}
-              categoryKey={category}
-              services={services}
-              scope="department"
-            />
-          ))}
-
-          <div className="flex items-center gap-2 mb-4 mt-8">
-            <Laptop className="h-5 w-5" />
-            <h3 className="text-lg font-medium">VM-Specific Services</h3>
-          </div>
-          {/* VM-specific service controls would go here */}
-        </TabsContent>
-
-        <TabsContent value="outgoing">
-          <div className="p-4">
-            <h3 className="text-lg font-medium mb-4">Outgoing Service Access</h3>
-            {/* Outgoing service controls would go here */}
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Enable {confirmDialog.service?.name}</DialogTitle>
-            <DialogDescription>
-              <div className="space-y-4">
-                <Alert variant="warning">
-                  <AlertCircle className="h-4 w-4" />
-                  <p className="ml-2">
-                    {confirmDialog.scope === 'department' 
-                      ? 'This will enable the service for all VMs in the department'
-                      : 'This will enable the service for this specific VM'}
-                  </p>
-                </Alert>
-                <p>{confirmDialog.service?.riskReason}</p>
-                <p>Are you sure you want to proceed?</p>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDialog({ open: false })}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={() => {
-              if (confirmDialog.scope === 'department') {
-                setGlobalServices(prev => ({
-                  ...prev,
-                  [confirmDialog.serviceKey]: true
-                }));
-              }
-              // Handle VM-specific enable here
-              setConfirmDialog({ open: false });
-            }}>
-              Enable Service
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Security Tabs Navigation */}
+      <SecurityTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      
+      <div className="mt-6">
+        {/* Render the appropriate tab content based on activeTab */}
+        {activeTab === "general" ? (
+          <GeneralTab 
+            selectedService={selectedService}
+            setSelectedService={setSelectedService}
+            mockServices={mockServices}
+            getSelectedService={getSelectedService}
+            getRiskBadge={getRiskBadge}
+            enableAllToUse={enableAllToUse}
+            setEnableAllToUse={handleEnableAllToUse}
+            enableAllToProvide={enableAllToProvide}
+            setEnableAllToProvide={handleEnableAllToProvide}
+            mockVms={mockVms}
+            isVmEnabledToUse={isVmEnabledToUse}
+            isVmEnabledToProvide={isVmEnabledToProvide}
+            handleToggleUse={handleToggleUse}
+            handleToggleProvide={handleToggleProvide}
+          />
+        ) : (
+          <OthersTab />
+        )}
+      </div>
     </div>
   );
 };
 
-// Make sure we're properly exporting the component
-export { SecuritySection };
 export default SecuritySection;

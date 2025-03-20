@@ -127,7 +127,7 @@ export type FwRule = {
   __typename?: 'FWRule';
   action: Scalars['String']['output'];
   comment?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['DateTimeISO']['output'];
+  createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
   direction: Scalars['String']['output'];
   dstIpAddr?: Maybe<Scalars['String']['output']>;
   dstIpMask?: Maybe<Scalars['String']['output']>;
@@ -143,7 +143,7 @@ export type FwRule = {
   srcPortEnd?: Maybe<Scalars['Int']['output']>;
   srcPortStart?: Maybe<Scalars['Int']['output']>;
   state?: Maybe<Scalars['JSONObject']['output']>;
-  updatedAt: Scalars['DateTimeISO']['output'];
+  updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
 };
 
 /** Type of network filter */
@@ -153,30 +153,24 @@ export enum FilterType {
   Vm = 'VM'
 }
 
-export type FirewallFilter = {
-  __typename?: 'FirewallFilter';
-  chain?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['DateTimeISO']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  flushedAt?: Maybe<Scalars['DateTimeISO']['output']>;
-  id: Scalars['ID']['output'];
-  internalName: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-  priority: Scalars['Int']['output'];
-  references: Array<Scalars['String']['output']>;
-  rules?: Maybe<Array<FwRule>>;
-  stateMatch: Scalars['Boolean']['output'];
-  type: FilterType;
-  updatedAt: Scalars['DateTimeISO']['output'];
-  uuid: Scalars['String']['output'];
-};
-
 export type Gpu = {
   __typename?: 'GPU';
   memory: Scalars['Float']['output'];
   model: Scalars['String']['output'];
   pciBus: Scalars['String']['output'];
   vendor: Scalars['String']['output'];
+};
+
+export type GenericFilter = {
+  __typename?: 'GenericFilter';
+  createdAt: Scalars['DateTimeISO']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  references: Array<Scalars['String']['output']>;
+  rules?: Maybe<Array<FwRule>>;
+  type: FilterType;
+  updatedAt: Scalars['DateTimeISO']['output'];
 };
 
 export type GraphicConfigurationType = {
@@ -297,7 +291,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   createApplication: ApplicationType;
   createDepartment: DepartmentType;
-  createFilter: FirewallFilter;
+  createFilter: GenericFilter;
   createFilterRule: FwRule;
   createMachine: Machine;
   createMachineTemplate: MachineTemplateType;
@@ -324,7 +318,7 @@ export type Mutation = {
   setupNode: DyummyType;
   suspend: SuccessType;
   updateApplication: ApplicationType;
-  updateFilter: FirewallFilter;
+  updateFilter: GenericFilter;
   updateFilterRule: FwRule;
   updateMachineTemplate: MachineTemplateType;
   updateMachineTemplateCategory: MachineTemplateCategoryType;
@@ -570,12 +564,11 @@ export type Query = {
   department?: Maybe<DepartmentType>;
   departments: Array<DepartmentType>;
   findDepartmentByName?: Maybe<DepartmentType>;
-  getFilter?: Maybe<FirewallFilter>;
+  getFilter?: Maybe<GenericFilter>;
   getGraphics: Array<Gpu>;
   graphicConnection?: Maybe<GraphicConfigurationType>;
   listFilterRules: Array<FwRule>;
-  listFilters: Array<FirewallFilter>;
-  listVmPorts: Array<VmPortType>;
+  listFilters: Array<GenericFilter>;
   login: UserToken;
   machine?: Maybe<Machine>;
   machineTemplate?: Maybe<MachineTemplateType>;
@@ -748,19 +741,6 @@ export type UserType = {
   role: Scalars['String']['output'];
 };
 
-export type VmPortType = {
-  __typename?: 'VmPortType';
-  enabled: Scalars['Boolean']['output'];
-  id: Scalars['ID']['output'];
-  lastSeen: Scalars['DateTimeISO']['output'];
-  portEnd: Scalars['Int']['output'];
-  portStart: Scalars['Int']['output'];
-  protocol: Scalars['String']['output'];
-  running: Scalars['Boolean']['output'];
-  toEnable: Scalars['Boolean']['output'];
-  vmId: Scalars['ID']['output'];
-};
-
 export type CreateUserMutationVariables = Exact<{
   input: CreateUserInputType;
 }>;
@@ -810,35 +790,35 @@ export type CreateMachineMutationVariables = Exact<{
 }>;
 
 
-export type CreateMachineMutation = { __typename?: 'Mutation', createMachine: { __typename?: 'Machine', id: string, name: string, status: string, createdAt?: string | null, configuration?: { [key: string]: any } | null, templateId: string, userId: string, department?: { __typename?: 'DepartmentType', id: string, name: string } | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null } | null, user?: { __typename?: 'UserType', id: string, email: string } | null } };
+export type CreateMachineMutation = { __typename?: 'Mutation', createMachine: { __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId: string, templateId: string, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null } };
 
 export type PowerOnMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type PowerOnMutation = { __typename?: 'Mutation', powerOn: { __typename?: 'SuccessType', success: boolean } };
+export type PowerOnMutation = { __typename?: 'Mutation', powerOn: { __typename?: 'SuccessType', success: boolean, message: string } };
 
 export type PowerOffMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type PowerOffMutation = { __typename?: 'Mutation', powerOff: { __typename?: 'SuccessType', success: boolean } };
+export type PowerOffMutation = { __typename?: 'Mutation', powerOff: { __typename?: 'SuccessType', success: boolean, message: string } };
 
 export type SuspendMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type SuspendMutation = { __typename?: 'Mutation', suspend: { __typename?: 'SuccessType', success: boolean } };
+export type SuspendMutation = { __typename?: 'Mutation', suspend: { __typename?: 'SuccessType', success: boolean, message: string } };
 
 export type DestroyMachineMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type DestroyMachineMutation = { __typename?: 'Mutation', destroyMachine: { __typename?: 'SuccessType', success: boolean } };
+export type DestroyMachineMutation = { __typename?: 'Mutation', destroyMachine: { __typename?: 'SuccessType', success: boolean, message: string } };
 
 export type ExecuteCommandMutationVariables = Exact<{
   command: Scalars['String']['input'];
@@ -854,7 +834,7 @@ export type MoveMachineMutationVariables = Exact<{
 }>;
 
 
-export type MoveMachineMutation = { __typename?: 'Mutation', moveMachine: { __typename?: 'Machine', id: string, name: string, status: string, department?: { __typename?: 'DepartmentType', id: string, name: string } | null } };
+export type MoveMachineMutation = { __typename?: 'Mutation', moveMachine: { __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId: string, templateId: string, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null } };
 
 export type SetupNodeMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -880,7 +860,7 @@ export type CreateMachineTemplateCategoryMutationVariables = Exact<{
 }>;
 
 
-export type CreateMachineTemplateCategoryMutation = { __typename?: 'Mutation', createMachineTemplateCategory: { __typename?: 'MachineTemplateCategoryType', id: string, name: string, description?: string | null, createdAt: string, totalMachines?: number | null, totalTemplates?: number | null } };
+export type CreateMachineTemplateCategoryMutation = { __typename?: 'Mutation', createMachineTemplateCategory: { __typename?: 'MachineTemplateCategoryType', id: string, name: string, description?: string | null, createdAt: string, totalTemplates?: number | null, totalMachines?: number | null } };
 
 export type UpdateMachineTemplateCategoryMutationVariables = Exact<{
   input: MachineTemplateCategoryInputType;
@@ -888,14 +868,14 @@ export type UpdateMachineTemplateCategoryMutationVariables = Exact<{
 }>;
 
 
-export type UpdateMachineTemplateCategoryMutation = { __typename?: 'Mutation', updateMachineTemplateCategory: { __typename?: 'MachineTemplateCategoryType', id: string, name: string, description?: string | null, createdAt: string, totalMachines?: number | null, totalTemplates?: number | null } };
+export type UpdateMachineTemplateCategoryMutation = { __typename?: 'Mutation', updateMachineTemplateCategory: { __typename?: 'MachineTemplateCategoryType', id: string, name: string, description?: string | null, createdAt: string, totalTemplates?: number | null, totalMachines?: number | null } };
 
 export type CreateApplicationMutationVariables = Exact<{
   input: CreateApplicationInputType;
 }>;
 
 
-export type CreateApplicationMutation = { __typename?: 'Mutation', createApplication: { __typename?: 'ApplicationType', id: string, name: string, description?: string | null, createdAt: string, installCommand: { [key: string]: any }, os: Array<string>, parameters?: { [key: string]: any } | null } };
+export type CreateApplicationMutation = { __typename?: 'Mutation', createApplication: { __typename?: 'ApplicationType', id: string, name: string, description?: string | null, os: Array<string>, installCommand: { [key: string]: any }, parameters?: { [key: string]: any } | null, createdAt: string } };
 
 export type UpdateApplicationMutationVariables = Exact<{
   input: CreateApplicationInputType;
@@ -903,7 +883,7 @@ export type UpdateApplicationMutationVariables = Exact<{
 }>;
 
 
-export type UpdateApplicationMutation = { __typename?: 'Mutation', updateApplication: { __typename?: 'ApplicationType', id: string, name: string, description?: string | null, createdAt: string, installCommand: { [key: string]: any }, os: Array<string>, parameters?: { [key: string]: any } | null } };
+export type UpdateApplicationMutation = { __typename?: 'Mutation', updateApplication: { __typename?: 'ApplicationType', id: string, name: string, description?: string | null, os: Array<string>, installCommand: { [key: string]: any }, parameters?: { [key: string]: any } | null, createdAt: string } };
 
 export type DeleteApplicationMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -952,7 +932,7 @@ export type CreateFilterMutationVariables = Exact<{
 }>;
 
 
-export type CreateFilterMutation = { __typename?: 'Mutation', createFilter: { __typename?: 'FirewallFilter', id: string, name: string, description?: string | null, chain?: string | null, type: FilterType, priority: number, internalName: string, stateMatch: boolean, uuid: string, createdAt: string, updatedAt: string, flushedAt?: string | null } };
+export type CreateFilterMutation = { __typename?: 'Mutation', createFilter: { __typename?: 'GenericFilter', id: string, name: string, description?: string | null, type: FilterType, references: Array<string>, createdAt: string, updatedAt: string, rules?: Array<{ __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion?: string | null, srcMacAddr?: string | null, srcIpAddr?: string | null, srcIpMask?: string | null, dstIpAddr?: string | null, dstIpMask?: string | null, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, state?: { [key: string]: any } | null, comment?: string | null, createdAt?: string | null, updatedAt?: string | null }> | null } };
 
 export type UpdateFilterMutationVariables = Exact<{
   input: UpdateFilterInput;
@@ -960,7 +940,7 @@ export type UpdateFilterMutationVariables = Exact<{
 }>;
 
 
-export type UpdateFilterMutation = { __typename?: 'Mutation', updateFilter: { __typename?: 'FirewallFilter', id: string, name: string, description?: string | null, chain?: string | null, type: FilterType, priority: number, internalName: string, stateMatch: boolean, uuid: string, createdAt: string, updatedAt: string, flushedAt?: string | null } };
+export type UpdateFilterMutation = { __typename?: 'Mutation', updateFilter: { __typename?: 'GenericFilter', id: string, name: string, description?: string | null, type: FilterType, references: Array<string>, createdAt: string, updatedAt: string, rules?: Array<{ __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion?: string | null, srcMacAddr?: string | null, srcIpAddr?: string | null, srcIpMask?: string | null, dstIpAddr?: string | null, dstIpMask?: string | null, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, state?: { [key: string]: any } | null, comment?: string | null, createdAt?: string | null, updatedAt?: string | null }> | null } };
 
 export type DeleteFilterMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -975,7 +955,7 @@ export type CreateFilterRuleMutationVariables = Exact<{
 }>;
 
 
-export type CreateFilterRuleMutation = { __typename?: 'Mutation', createFilterRule: { __typename?: 'FWRule', id: string, action: string, direction: string, protocol: string, priority: number, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, srcIpAddr?: string | null, dstIpAddr?: string | null, comment?: string | null, createdAt: string, updatedAt: string } };
+export type CreateFilterRuleMutation = { __typename?: 'Mutation', createFilterRule: { __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion?: string | null, srcMacAddr?: string | null, srcIpAddr?: string | null, srcIpMask?: string | null, dstIpAddr?: string | null, dstIpMask?: string | null, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, state?: { [key: string]: any } | null, comment?: string | null, createdAt?: string | null, updatedAt?: string | null } };
 
 export type UpdateFilterRuleMutationVariables = Exact<{
   input: UpdateFilterRuleInput;
@@ -983,7 +963,7 @@ export type UpdateFilterRuleMutationVariables = Exact<{
 }>;
 
 
-export type UpdateFilterRuleMutation = { __typename?: 'Mutation', updateFilterRule: { __typename?: 'FWRule', id: string, action: string, direction: string, protocol: string, priority: number, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, srcIpAddr?: string | null, dstIpAddr?: string | null, comment?: string | null, createdAt: string, updatedAt: string } };
+export type UpdateFilterRuleMutation = { __typename?: 'Mutation', updateFilterRule: { __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion?: string | null, srcMacAddr?: string | null, srcIpAddr?: string | null, srcIpMask?: string | null, dstIpAddr?: string | null, dstIpMask?: string | null, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, state?: { [key: string]: any } | null, comment?: string | null, createdAt?: string | null, updatedAt?: string | null } };
 
 export type DeleteFilterRuleMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -1047,7 +1027,7 @@ export type MachineQueryVariables = Exact<{
 }>;
 
 
-export type MachineQuery = { __typename?: 'Query', machine?: { __typename?: 'Machine', id: string, name: string, status: string, createdAt?: string | null, configuration?: { [key: string]: any } | null, templateId: string, userId: string, department?: { __typename?: 'DepartmentType', id: string, name: string } | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null } | null, user?: { __typename?: 'UserType', id: string, email: string } | null } | null };
+export type MachineQuery = { __typename?: 'Query', machine?: { __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId: string, templateId: string, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null } | null };
 
 export type MachinesQueryVariables = Exact<{
   orderBy?: InputMaybe<MachineOrderBy>;
@@ -1055,7 +1035,7 @@ export type MachinesQueryVariables = Exact<{
 }>;
 
 
-export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, status: string, createdAt?: string | null, configuration?: { [key: string]: any } | null, templateId: string, userId: string, department?: { __typename?: 'DepartmentType', id: string, name: string } | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null } | null, user?: { __typename?: 'UserType', id: string, email: string } | null }> };
+export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId: string, templateId: string, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null }> };
 
 export type GraphicConnectionQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -1091,43 +1071,43 @@ export type FindDepartmentByNameQuery = { __typename?: 'Query', findDepartmentBy
 export type MachineTemplateCategoriesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MachineTemplateCategoriesQuery = { __typename?: 'Query', machineTemplateCategories: Array<{ __typename?: 'MachineTemplateCategoryType', id: string, name: string, description?: string | null }> };
+export type MachineTemplateCategoriesQuery = { __typename?: 'Query', machineTemplateCategories: Array<{ __typename?: 'MachineTemplateCategoryType', id: string, name: string, description?: string | null, createdAt: string, totalTemplates?: number | null, totalMachines?: number | null }> };
 
 export type MachineTemplateCategoryQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type MachineTemplateCategoryQuery = { __typename?: 'Query', machineTemplateCategory?: { __typename?: 'MachineTemplateCategoryType', id: string, name: string, description?: string | null } | null };
+export type MachineTemplateCategoryQuery = { __typename?: 'Query', machineTemplateCategory?: { __typename?: 'MachineTemplateCategoryType', id: string, name: string, description?: string | null, createdAt: string, totalTemplates?: number | null, totalMachines?: number | null } | null };
 
 export type ApplicationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ApplicationsQuery = { __typename?: 'Query', applications: Array<{ __typename?: 'ApplicationType', id: string, name: string, description?: string | null, createdAt: string, installCommand: { [key: string]: any }, os: Array<string>, parameters?: { [key: string]: any } | null }> };
+export type ApplicationsQuery = { __typename?: 'Query', applications: Array<{ __typename?: 'ApplicationType', id: string, name: string, description?: string | null, os: Array<string>, installCommand: { [key: string]: any }, parameters?: { [key: string]: any } | null, createdAt: string }> };
 
 export type ApplicationQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type ApplicationQuery = { __typename?: 'Query', application?: { __typename?: 'ApplicationType', id: string, name: string, description?: string | null, createdAt: string, installCommand: { [key: string]: any }, os: Array<string>, parameters?: { [key: string]: any } | null } | null };
+export type ApplicationQuery = { __typename?: 'Query', application?: { __typename?: 'ApplicationType', id: string, name: string, description?: string | null, os: Array<string>, installCommand: { [key: string]: any }, parameters?: { [key: string]: any } | null, createdAt: string } | null };
 
 export type GetGraphicsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetGraphicsQuery = { __typename?: 'Query', getGraphics: Array<{ __typename?: 'GPU', memory: number, model: string, pciBus: string, vendor: string }> };
+export type GetGraphicsQuery = { __typename?: 'Query', getGraphics: Array<{ __typename?: 'GPU', pciBus: string, vendor: string, model: string, memory: number }> };
 
 export type NetworksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type NetworksQuery = { __typename?: 'Query', networks: Array<{ __typename?: 'Network', name: string, description?: string | null, uuid: string, bridge: { __typename?: 'NetworkBridge', name: string, delay: string, stp: string }, ip: { __typename?: 'NetworkIp', address: string, netmask: string, dhcp?: { __typename?: 'NetworkDhcp', range: { __typename?: 'NetworkDhcpRange', start: string, end: string } } | null } }> };
+export type NetworksQuery = { __typename?: 'Query', networks: Array<{ __typename?: 'Network', name: string, uuid: string, description?: string | null, bridge: { __typename?: 'NetworkBridge', name: string, stp: string, delay: string }, ip: { __typename?: 'NetworkIp', address: string, netmask: string, dhcp?: { __typename?: 'NetworkDhcp', range: { __typename?: 'NetworkDhcpRange', start: string, end: string } } | null } }> };
 
 export type NetworkQueryVariables = Exact<{
   name: Scalars['String']['input'];
 }>;
 
 
-export type NetworkQuery = { __typename?: 'Query', network: { __typename?: 'Network', name: string, description?: string | null, uuid: string, bridge: { __typename?: 'NetworkBridge', name: string, delay: string, stp: string }, ip: { __typename?: 'NetworkIp', address: string, netmask: string, dhcp?: { __typename?: 'NetworkDhcp', range: { __typename?: 'NetworkDhcpRange', start: string, end: string } } | null } } };
+export type NetworkQuery = { __typename?: 'Query', network: { __typename?: 'Network', name: string, uuid: string, description?: string | null, bridge: { __typename?: 'NetworkBridge', name: string, stp: string, delay: string }, ip: { __typename?: 'NetworkIp', address: string, netmask: string, dhcp?: { __typename?: 'NetworkDhcp', range: { __typename?: 'NetworkDhcpRange', start: string, end: string } } | null } } };
 
 export type ListFiltersQueryVariables = Exact<{
   vmId?: InputMaybe<Scalars['ID']['input']>;
@@ -1135,26 +1115,21 @@ export type ListFiltersQueryVariables = Exact<{
 }>;
 
 
-export type ListFiltersQuery = { __typename?: 'Query', listFilters: Array<{ __typename?: 'FirewallFilter', id: string, name: string, description?: string | null, chain?: string | null, type: FilterType, priority: number, internalName: string, stateMatch: boolean, uuid: string, createdAt: string, updatedAt: string, flushedAt?: string | null }> };
+export type ListFiltersQuery = { __typename?: 'Query', listFilters: Array<{ __typename?: 'GenericFilter', id: string, name: string, description?: string | null, type: FilterType, references: Array<string>, createdAt: string, updatedAt: string, rules?: Array<{ __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion?: string | null, srcMacAddr?: string | null, srcIpAddr?: string | null, srcIpMask?: string | null, dstIpAddr?: string | null, dstIpMask?: string | null, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, state?: { [key: string]: any } | null, comment?: string | null, createdAt?: string | null, updatedAt?: string | null }> | null }> };
 
 export type GetFilterQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetFilterQuery = { __typename?: 'Query', getFilter?: { __typename?: 'FirewallFilter', id: string, name: string, description?: string | null, chain?: string | null, type: FilterType, priority: number, internalName: string, stateMatch: boolean, uuid: string, createdAt: string, updatedAt: string, flushedAt?: string | null } | null };
+export type GetFilterQuery = { __typename?: 'Query', getFilter?: { __typename?: 'GenericFilter', id: string, name: string, description?: string | null, type: FilterType, references: Array<string>, createdAt: string, updatedAt: string, rules?: Array<{ __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion?: string | null, srcMacAddr?: string | null, srcIpAddr?: string | null, srcIpMask?: string | null, dstIpAddr?: string | null, dstIpMask?: string | null, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, state?: { [key: string]: any } | null, comment?: string | null, createdAt?: string | null, updatedAt?: string | null }> | null } | null };
 
 export type ListFilterRulesQueryVariables = Exact<{
   filterId?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
-export type ListFilterRulesQuery = { __typename?: 'Query', listFilterRules: Array<{ __typename?: 'FWRule', id: string, action: string, direction: string, protocol: string, priority: number, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, srcIpAddr?: string | null, dstIpAddr?: string | null, comment?: string | null, createdAt: string, updatedAt: string }> };
-
-export type ListVmPortsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ListVmPortsQuery = { __typename?: 'Query', listVmPorts: Array<{ __typename?: 'VmPortType', id: string, portStart: number, portEnd: number, protocol: string, running: boolean, enabled: boolean, toEnable: boolean, lastSeen: string, vmId: string }> };
+export type ListFilterRulesQuery = { __typename?: 'Query', listFilterRules: Array<{ __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion?: string | null, srcMacAddr?: string | null, srcIpAddr?: string | null, srcIpMask?: string | null, dstIpAddr?: string | null, dstIpMask?: string | null, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, state?: { [key: string]: any } | null, comment?: string | null, createdAt?: string | null, updatedAt?: string | null }> };
 
 
 export const CreateUserDocument = gql`
@@ -1384,23 +1359,37 @@ export const CreateMachineDocument = gql`
   createMachine(input: $input) {
     id
     name
-    status
-    createdAt
     configuration
-    templateId
+    status
     userId
-    department {
-      id
-      name
-    }
+    templateId
+    createdAt
     template {
       id
       name
       description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
+    department {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
     }
     user {
       id
+      firstName
+      lastName
+      role
       email
+      createdAt
     }
   }
 }
@@ -1435,6 +1424,7 @@ export const PowerOnDocument = gql`
     mutation powerOn($id: String!) {
   powerOn(id: $id) {
     success
+    message
   }
 }
     `;
@@ -1468,6 +1458,7 @@ export const PowerOffDocument = gql`
     mutation powerOff($id: String!) {
   powerOff(id: $id) {
     success
+    message
   }
 }
     `;
@@ -1501,6 +1492,7 @@ export const SuspendDocument = gql`
     mutation suspend($id: String!) {
   suspend(id: $id) {
     success
+    message
   }
 }
     `;
@@ -1534,6 +1526,7 @@ export const DestroyMachineDocument = gql`
     mutation destroyMachine($id: String!) {
   destroyMachine(id: $id) {
     success
+    message
   }
 }
     `;
@@ -1604,10 +1597,37 @@ export const MoveMachineDocument = gql`
   moveMachine(departmentId: $departmentId, id: $id) {
     id
     name
+    configuration
     status
+    userId
+    templateId
+    createdAt
+    template {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
     department {
       id
       name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
+    }
+    user {
+      id
+      firstName
+      lastName
+      role
+      email
+      createdAt
     }
   }
 }
@@ -1754,8 +1774,8 @@ export const CreateMachineTemplateCategoryDocument = gql`
     name
     description
     createdAt
-    totalMachines
     totalTemplates
+    totalMachines
   }
 }
     `;
@@ -1792,8 +1812,8 @@ export const UpdateMachineTemplateCategoryDocument = gql`
     name
     description
     createdAt
-    totalMachines
     totalTemplates
+    totalMachines
   }
 }
     `;
@@ -1830,10 +1850,10 @@ export const CreateApplicationDocument = gql`
     id
     name
     description
-    createdAt
-    installCommand
     os
+    installCommand
     parameters
+    createdAt
   }
 }
     `;
@@ -1869,10 +1889,10 @@ export const UpdateApplicationDocument = gql`
     id
     name
     description
-    createdAt
-    installCommand
     os
+    installCommand
     parameters
+    createdAt
   }
 }
     `;
@@ -2095,15 +2115,31 @@ export const CreateFilterDocument = gql`
     id
     name
     description
-    chain
     type
-    priority
-    internalName
-    stateMatch
-    uuid
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
     createdAt
     updatedAt
-    flushedAt
   }
 }
     `;
@@ -2139,15 +2175,31 @@ export const UpdateFilterDocument = gql`
     id
     name
     description
-    chain
     type
-    priority
-    internalName
-    stateMatch
-    uuid
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
     createdAt
     updatedAt
-    flushedAt
   }
 }
     `;
@@ -2213,16 +2265,21 @@ export const CreateFilterRuleDocument = gql`
     mutation createFilterRule($input: CreateFilterRuleInput!, $filterId: ID!) {
   createFilterRule(input: $input, filterId: $filterId) {
     id
-    action
-    direction
     protocol
+    direction
+    action
     priority
+    ipVersion
+    srcMacAddr
+    srcIpAddr
+    srcIpMask
+    dstIpAddr
+    dstIpMask
     srcPortStart
     srcPortEnd
     dstPortStart
     dstPortEnd
-    srcIpAddr
-    dstIpAddr
+    state
     comment
     createdAt
     updatedAt
@@ -2260,16 +2317,21 @@ export const UpdateFilterRuleDocument = gql`
     mutation updateFilterRule($input: UpdateFilterRuleInput!, $id: ID!) {
   updateFilterRule(input: $input, id: $id) {
     id
-    action
-    direction
     protocol
+    direction
+    action
     priority
+    ipVersion
+    srcMacAddr
+    srcIpAddr
+    srcIpMask
+    dstIpAddr
+    dstIpMask
     srcPortStart
     srcPortEnd
     dstPortStart
     dstPortEnd
-    srcIpAddr
-    dstIpAddr
+    state
     comment
     createdAt
     updatedAt
@@ -2661,23 +2723,37 @@ export const MachineDocument = gql`
   machine(id: $id) {
     id
     name
-    status
-    createdAt
     configuration
-    templateId
+    status
     userId
-    department {
-      id
-      name
-    }
+    templateId
+    createdAt
     template {
       id
       name
       description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
+    department {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
     }
     user {
       id
+      firstName
+      lastName
+      role
       email
+      createdAt
     }
   }
 }
@@ -2723,23 +2799,37 @@ export const MachinesDocument = gql`
   machines(orderBy: $orderBy, pagination: $pagination) {
     id
     name
-    status
-    createdAt
     configuration
-    templateId
+    status
     userId
-    department {
-      id
-      name
-    }
+    templateId
+    createdAt
     template {
       id
       name
       description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
+    department {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
     }
     user {
       id
+      firstName
+      lastName
+      role
       email
+      createdAt
     }
   }
 }
@@ -3017,6 +3107,9 @@ export const MachineTemplateCategoriesDocument = gql`
     id
     name
     description
+    createdAt
+    totalTemplates
+    totalMachines
   }
 }
     `;
@@ -3061,6 +3154,9 @@ export const MachineTemplateCategoryDocument = gql`
     id
     name
     description
+    createdAt
+    totalTemplates
+    totalMachines
   }
 }
     `;
@@ -3106,10 +3202,10 @@ export const ApplicationsDocument = gql`
     id
     name
     description
-    createdAt
-    installCommand
     os
+    installCommand
     parameters
+    createdAt
   }
 }
     `;
@@ -3154,10 +3250,10 @@ export const ApplicationDocument = gql`
     id
     name
     description
-    createdAt
-    installCommand
     os
+    installCommand
     parameters
+    createdAt
   }
 }
     `;
@@ -3200,10 +3296,10 @@ export function refetchApplicationQuery(variables: ApplicationQueryVariables) {
 export const GetGraphicsDocument = gql`
     query getGraphics {
   getGraphics {
-    memory
-    model
     pciBus
     vendor
+    model
+    memory
   }
 }
     `;
@@ -3246,12 +3342,11 @@ export const NetworksDocument = gql`
     query networks {
   networks {
     name
-    description
     uuid
     bridge {
       name
-      delay
       stp
+      delay
     }
     ip {
       address
@@ -3263,6 +3358,7 @@ export const NetworksDocument = gql`
         }
       }
     }
+    description
   }
 }
     `;
@@ -3305,12 +3401,11 @@ export const NetworkDocument = gql`
     query network($name: String!) {
   network(name: $name) {
     name
-    description
     uuid
     bridge {
       name
-      delay
       stp
+      delay
     }
     ip {
       address
@@ -3322,6 +3417,7 @@ export const NetworkDocument = gql`
         }
       }
     }
+    description
   }
 }
     `;
@@ -3367,15 +3463,31 @@ export const ListFiltersDocument = gql`
     id
     name
     description
-    chain
     type
-    priority
-    internalName
-    stateMatch
-    uuid
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
     createdAt
     updatedAt
-    flushedAt
   }
 }
     `;
@@ -3422,15 +3534,31 @@ export const GetFilterDocument = gql`
     id
     name
     description
-    chain
     type
-    priority
-    internalName
-    stateMatch
-    uuid
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
     createdAt
     updatedAt
-    flushedAt
   }
 }
     `;
@@ -3474,16 +3602,21 @@ export const ListFilterRulesDocument = gql`
     query listFilterRules($filterId: ID) {
   listFilterRules(filterId: $filterId) {
     id
-    action
-    direction
     protocol
+    direction
+    action
     priority
+    ipVersion
+    srcMacAddr
+    srcIpAddr
+    srcIpMask
+    dstIpAddr
+    dstIpMask
     srcPortStart
     srcPortEnd
     dstPortStart
     dstPortEnd
-    srcIpAddr
-    dstIpAddr
+    state
     comment
     createdAt
     updatedAt
@@ -3525,54 +3658,4 @@ export type ListFilterRulesSuspenseQueryHookResult = ReturnType<typeof useListFi
 export type ListFilterRulesQueryResult = Apollo.QueryResult<ListFilterRulesQuery, ListFilterRulesQueryVariables>;
 export function refetchListFilterRulesQuery(variables?: ListFilterRulesQueryVariables) {
       return { query: ListFilterRulesDocument, variables: variables }
-    }
-export const ListVmPortsDocument = gql`
-    query listVmPorts {
-  listVmPorts {
-    id
-    portStart
-    portEnd
-    protocol
-    running
-    enabled
-    toEnable
-    lastSeen
-    vmId
-  }
-}
-    `;
-
-/**
- * __useListVmPortsQuery__
- *
- * To run a query within a React component, call `useListVmPortsQuery` and pass it any options that fit your needs.
- * When your component renders, `useListVmPortsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListVmPortsQuery({
- *   variables: {
- *   },
- * });
- */
-export function useListVmPortsQuery(baseOptions?: Apollo.QueryHookOptions<ListVmPortsQuery, ListVmPortsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<ListVmPortsQuery, ListVmPortsQueryVariables>(ListVmPortsDocument, options);
-      }
-export function useListVmPortsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ListVmPortsQuery, ListVmPortsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<ListVmPortsQuery, ListVmPortsQueryVariables>(ListVmPortsDocument, options);
-        }
-export function useListVmPortsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ListVmPortsQuery, ListVmPortsQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<ListVmPortsQuery, ListVmPortsQueryVariables>(ListVmPortsDocument, options);
-        }
-export type ListVmPortsQueryHookResult = ReturnType<typeof useListVmPortsQuery>;
-export type ListVmPortsLazyQueryHookResult = ReturnType<typeof useListVmPortsLazyQuery>;
-export type ListVmPortsSuspenseQueryHookResult = ReturnType<typeof useListVmPortsSuspenseQuery>;
-export type ListVmPortsQueryResult = Apollo.QueryResult<ListVmPortsQuery, ListVmPortsQueryVariables>;
-export function refetchListVmPortsQuery(variables?: ListVmPortsQueryVariables) {
-      return { query: ListVmPortsDocument, variables: variables }
     }
