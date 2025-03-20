@@ -106,6 +106,26 @@ export type DeleteNetworkInput = {
   name: Scalars['String']['input'];
 };
 
+export type DepartmentServiceStatus = {
+  __typename?: 'DepartmentServiceStatus';
+  /** Unique identifier for the department */
+  departmentId: Scalars['ID']['output'];
+  /** Name of the department */
+  departmentName: Scalars['String']['output'];
+  /** Number of VMs in the department with this service enabled */
+  enabledVmCount: Scalars['Float']['output'];
+  /** Whether the service is enabled for inbound traffic */
+  provideEnabled: Scalars['Boolean']['output'];
+  /** Unique identifier for the service */
+  serviceId: Scalars['ID']['output'];
+  /** Name of the service */
+  serviceName: Scalars['String']['output'];
+  /** Whether the service is enabled for outbound traffic */
+  useEnabled: Scalars['Boolean']['output'];
+  /** Total number of VMs in the department */
+  vmCount: Scalars['Float']['output'];
+};
+
 export type DepartmentType = {
   __typename?: 'DepartmentType';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -169,6 +189,18 @@ export type GenericFilter = {
   rules?: Maybe<Array<FwRule>>;
   type: FilterType;
   updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type GlobalServiceStatus = {
+  __typename?: 'GlobalServiceStatus';
+  /** Whether the service is enabled for inbound traffic */
+  provideEnabled: Scalars['Boolean']['output'];
+  /** Unique identifier for the service */
+  serviceId: Scalars['ID']['output'];
+  /** Name of the service */
+  serviceName: Scalars['String']['output'];
+  /** Whether the service is enabled for outbound traffic */
+  useEnabled: Scalars['Boolean']['output'];
 };
 
 export type GraphicConfigurationType = {
@@ -315,6 +347,9 @@ export type Mutation = {
   setNetworkIpRange: Scalars['Boolean']['output'];
   setupNode: DyummyType;
   suspend: SuccessType;
+  toggleDepartmentService: DepartmentServiceStatus;
+  toggleGlobalService: GlobalServiceStatus;
+  toggleVmService: VmServiceStatus;
   updateApplication: ApplicationType;
   updateFilter: GenericFilter;
   updateFilterRule: FwRule;
@@ -457,6 +492,21 @@ export type MutationSuspendArgs = {
 };
 
 
+export type MutationToggleDepartmentServiceArgs = {
+  input: ToggleDepartmentServiceInput;
+};
+
+
+export type MutationToggleGlobalServiceArgs = {
+  input: ToggleServiceInput;
+};
+
+
+export type MutationToggleVmServiceArgs = {
+  input: ToggleVmServiceInput;
+};
+
+
 export type MutationUpdateApplicationArgs = {
   id: Scalars['String']['input'];
   input: CreateApplicationInputType;
@@ -562,11 +612,17 @@ export type Query = {
   department?: Maybe<DepartmentType>;
   departments: Array<DepartmentType>;
   findDepartmentByName?: Maybe<DepartmentType>;
+  getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
+  getDepartmentVmsServiceStatus: Array<VmServiceStatus>;
   getFilter?: Maybe<GenericFilter>;
+  getGlobalServiceStatus: Array<GlobalServiceStatus>;
   getGraphics: Array<Gpu>;
+  getServiceStatusSummary: Array<ServiceStatusSummary>;
+  getVmServiceStatus: Array<VmServiceStatus>;
   graphicConnection?: Maybe<GraphicConfigurationType>;
   listFilterRules: Array<FwRule>;
   listFilters: Array<GenericFilter>;
+  listServices: Array<ServiceDefinition>;
   login: UserToken;
   machine?: Maybe<Machine>;
   machineTemplate?: Maybe<MachineTemplateType>;
@@ -596,8 +652,31 @@ export type QueryFindDepartmentByNameArgs = {
 };
 
 
+export type QueryGetDepartmentServiceStatusArgs = {
+  departmentId: Scalars['ID']['input'];
+  serviceId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryGetDepartmentVmsServiceStatusArgs = {
+  departmentId: Scalars['ID']['input'];
+  serviceId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
 export type QueryGetFilterArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryGetGlobalServiceStatusArgs = {
+  serviceId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryGetVmServiceStatusArgs = {
+  serviceId?: InputMaybe<Scalars['ID']['input']>;
+  vmId: Scalars['ID']['input'];
 };
 
 
@@ -665,10 +744,96 @@ export type QueryUsersArgs = {
   pagination?: InputMaybe<PaginationInputType>;
 };
 
+/** Service action type (USE for outbound, PROVIDE for inbound) */
+export enum ServiceAction {
+  Provide = 'PROVIDE',
+  Use = 'USE'
+}
+
+export type ServiceDefinition = {
+  __typename?: 'ServiceDefinition';
+  /** Description of the service */
+  description: Scalars['String']['output'];
+  /** Human-readable name of the service */
+  displayName: Scalars['String']['output'];
+  /** Unique identifier for the service */
+  id: Scalars['ID']['output'];
+  /** Internal name of the service */
+  name: Scalars['String']['output'];
+  /** Port configurations for the service */
+  ports: Array<ServicePort>;
+  /** Description of the risk */
+  riskDescription: Scalars['String']['output'];
+  /** Risk level of the service */
+  riskLevel: ServiceRiskLevel;
+};
+
+export type ServicePort = {
+  __typename?: 'ServicePort';
+  /** Ending port number */
+  portEnd: Scalars['Float']['output'];
+  /** Starting port number */
+  portStart: Scalars['Float']['output'];
+  /** Protocol (TCP or UDP) */
+  protocol: Scalars['String']['output'];
+};
+
+/** Risk level of a service */
+export enum ServiceRiskLevel {
+  High = 'HIGH',
+  Low = 'LOW',
+  Medium = 'MEDIUM'
+}
+
+export type ServiceStatusSummary = {
+  __typename?: 'ServiceStatusSummary';
+  /** Number of VMs with this service enabled */
+  enabledVms: Scalars['Float']['output'];
+  /** Number of VMs with this service running */
+  runningVms: Scalars['Float']['output'];
+  /** Unique identifier for the service */
+  serviceId: Scalars['ID']['output'];
+  /** Name of the service */
+  serviceName: Scalars['String']['output'];
+  /** Total number of VMs */
+  totalVms: Scalars['Float']['output'];
+};
+
 export type SuccessType = {
   __typename?: 'SuccessType';
   message: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
+};
+
+export type ToggleDepartmentServiceInput = {
+  /** Service action (USE for outbound, PROVIDE for inbound) */
+  action: ServiceAction;
+  /** Unique identifier of the department */
+  departmentId: Scalars['ID']['input'];
+  /** Whether to enable or disable the service */
+  enabled: Scalars['Boolean']['input'];
+  /** Unique identifier of the service to toggle */
+  serviceId: Scalars['ID']['input'];
+};
+
+export type ToggleServiceInput = {
+  /** Service action (USE for outbound, PROVIDE for inbound) */
+  action: ServiceAction;
+  /** Whether to enable or disable the service */
+  enabled: Scalars['Boolean']['input'];
+  /** Unique identifier of the service to toggle */
+  serviceId: Scalars['ID']['input'];
+};
+
+export type ToggleVmServiceInput = {
+  /** Service action (USE for outbound, PROVIDE for inbound) */
+  action: ServiceAction;
+  /** Whether to enable or disable the service */
+  enabled: Scalars['Boolean']['input'];
+  /** Unique identifier of the service to toggle */
+  serviceId: Scalars['ID']['input'];
+  /** Unique identifier of the VM */
+  vmId: Scalars['ID']['input'];
 };
 
 export type UpdateFilterInput = {
@@ -737,4 +902,24 @@ export type UserType = {
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
   role: Scalars['String']['output'];
+};
+
+export type VmServiceStatus = {
+  __typename?: 'VmServiceStatus';
+  /** When the service was last seen running */
+  lastSeen?: Maybe<Scalars['DateTimeISO']['output']>;
+  /** Whether the service is enabled for inbound traffic */
+  provideEnabled: Scalars['Boolean']['output'];
+  /** Whether the service is currently running */
+  running: Scalars['Boolean']['output'];
+  /** Unique identifier for the service */
+  serviceId: Scalars['ID']['output'];
+  /** Name of the service */
+  serviceName: Scalars['String']['output'];
+  /** Whether the service is enabled for outbound traffic */
+  useEnabled: Scalars['Boolean']['output'];
+  /** Unique identifier for the VM */
+  vmId: Scalars['ID']['output'];
+  /** Name of the VM */
+  vmName: Scalars['String']['output'];
 };

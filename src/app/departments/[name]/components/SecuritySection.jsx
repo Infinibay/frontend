@@ -1,137 +1,352 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Shield, Monitor, Lock, LockOpen } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from '@/hooks/use-toast';
+
+// Import security components
 import SecurityTabs from './security/SecurityTabs';
 import GeneralTab from './security/GeneralTab';
 import OthersTab from './security/OthersTab';
 
-/**
- * Security Section Component
- * Allows users to enable or disable services on VMs in a department
- */
+// Import security slice functions and selectors
+import { 
+  fetchServices, 
+  fetchDepartmentByName,
+  fetchDepartmentServiceStatus,
+  fetchDepartmentVmsServiceStatus,
+  toggleDepartmentService,
+  toggleVmService,
+  setSelectedService,
+  selectServices,
+  selectSelectedDepartment,
+  selectDepartmentVmsServiceStatus,
+  selectDepartmentServiceStatus,
+  selectServiceLoading
+} from '@/state/slices/security';
+
+// Import departments slice selectors
+import { selectDepartments } from '@/state/slices/departments';
+
 const SecuritySection = () => {
+  const dispatch = useDispatch();
+  const { name } = useParams();
+  
+  // Local state
+  const [selectedService, setSelectedService] = useState(null);
   const [activeTab, setActiveTab] = useState("general");
-  const [selectedService, setSelectedService] = useState("SSH");
-  const [enableForAll, setEnableForAll] = useState(false);
-  
-  // Mock data for VMs in the department
-  const mockVms = [
-    { id: 1, name: "Computer", enabled: false },
-    { id: 2, name: "Arnold", enabled: false },
-    { id: 3, name: "Daniel", enabled: false },
-    { id: 4, name: "Emily", enabled: false }
-  ];
-  
-  // Mock data for services
-  const mockServices = [
-    { id: "SSH", name: "SSH", description: "Secure Shell for remote access", riskLevel: "high", icon: <Lock className="h-5 w-5" /> },
-    { id: "HTTP", name: "HTTP", description: "Web server protocol", riskLevel: "medium", icon: <Monitor className="h-5 w-5" /> },
-    { id: "FTP", name: "FTP", description: "File Transfer Protocol", riskLevel: "medium", icon: <Monitor className="h-5 w-5" /> },
-    { id: "SMTP", name: "SMTP", description: "Email server protocol", riskLevel: "low", icon: <Monitor className="h-5 w-5" /> }
-  ];
-  
-  // State for services that VMs are enabled to use
-  const [enabledVmsToUse, setEnabledVmsToUse] = useState({});
-  
-  // State for services that VMs are enabled to provide
-  const [enabledVmsToProvide, setEnabledVmsToProvide] = useState({});
-  
-  // State for enabling all VMs to use a service
   const [enableAllToUse, setEnableAllToUse] = useState(false);
-  
-  // State for enabling all VMs to provide a service
   const [enableAllToProvide, setEnableAllToProvide] = useState(false);
   
-  // Handle toggle for VM to use a service
-  const handleToggleUse = (vmId) => {
-    setEnabledVmsToUse(prev => ({
-      ...prev,
-      [vmId]: {
-        ...prev[vmId],
-        [selectedService]: !prev[vmId]?.[selectedService]
+  // Get data from Redux
+  const services = useSelector(selectServices);
+  const selectedDepartment = useSelector(selectSelectedDepartment);
+  
+  // Get all departments from the departments slice as a fallback
+  const allDepartments = useSelector(selectDepartments);
+  
+  // If selectedDepartment is null, try to find it in allDepartments
+  const effectiveDepartment = selectedDepartment || 
+    (name && allDepartments.find(d => d.name.toLowerCase() === name.toLowerCase()));
+    
+  // Get department service status
+  const departmentServiceStatus = useSelector((state) => 
+    selectedService ? selectDepartmentServiceStatus(state, selectedService) : null
+  );
+  
+  // Get department-specific VM status from Redux
+  const departmentVms = useSelector(state => {
+    console.log("Selecting VM service status for service:", selectedService);
+    console.log("Current state:", state.security);
+    if (!selectedService) {
+      console.log("No selected service, returning empty array");
+      return [];
+    }
+    return selectDepartmentVmsServiceStatus(state, selectedService);
+  });
+  
+  const loading = useSelector(selectServiceLoading);
+  
+  // Handle service selection - define this before any useEffects that depend on it
+  const handleServiceSelection = useCallback((serviceId) => {
+    console.log("Setting serviceId to ", serviceId, effectiveDepartment?.id, 'lll');
+    setSelectedService(serviceId);
+    
+    // Ensure we fetch data when service changes
+    if (serviceId && effectiveDepartment?.id) {
+      console.log("Fetching department service status for", serviceId, effectiveDepartment.id);
+      dispatch(fetchDepartmentServiceStatus({ 
+        serviceId, 
+        departmentId: effectiveDepartment.id 
+      }));
+      
+      console.log("Fetching VM service status for", serviceId, effectiveDepartment.id);
+      dispatch(fetchDepartmentVmsServiceStatus({
+        serviceId,
+        departmentId: effectiveDepartment.id
+      }));
+    } else {
+      console.log("Cannot fetch data - missing serviceId or departmentId", { serviceId, departmentId: effectiveDepartment?.id });
+    }
+  }, [dispatch, effectiveDepartment]);
+  
+  // Fetch department ID by name
+  useEffect(() => {
+    console.log("Department name from URL:", name);
+    if (name) {
+      console.log("Dispatching fetchDepartmentByName for", name);
+      dispatch(fetchDepartmentByName(name));
+    } else {
+      console.warn("No department name in URL params");
+    }
+  }, [dispatch, name]);
+  
+  // When department is loaded, fetch service status
+  useEffect(() => {
+    console.log("Department changed:", effectiveDepartment);
+    if (effectiveDepartment?.id && selectedService) {
+      console.log("Department loaded, fetching service status for", selectedService, effectiveDepartment.id);
+      handleServiceSelection(selectedService);
+    }
+  }, [effectiveDepartment, selectedService, handleServiceSelection]);
+  
+  // Fetch available services from API
+  useEffect(() => {
+    dispatch(fetchServices());
+  }, [dispatch]);
+  
+  // Set initial service selection when services are loaded
+  useEffect(() => {
+    console.log("Services changed:", services);
+    // Don't override an existing selection
+    if (services.length > 0 && !selectedService) {
+      console.log("Setting initial service selection to:", services[0].id);
+      setSelectedService(services[0].id);
+    }
+  }, [services, selectedService]);
+  
+  // Update VM service status when service or department changes
+  useEffect(() => {
+    console.log("Service selection or department changed", { selectedService, departmentId: effectiveDepartment?.id });
+    
+    if (selectedService && effectiveDepartment?.id) {
+      console.log("Fetching service status with serviceId:", selectedService, "and departmentId:", effectiveDepartment.id);
+      
+      // Fetch status for the selected service
+      dispatch(fetchDepartmentServiceStatus({ 
+        serviceId: selectedService, 
+        departmentId: effectiveDepartment.id 
+      }));
+      
+      // Fetch VM-level status for the selected service
+      dispatch(fetchDepartmentVmsServiceStatus({
+        serviceId: selectedService,
+        departmentId: effectiveDepartment.id
+      }));
+      
+      // Set global status for the service
+      // setServiceStatusText(getSelectedService()?.statusText || "");
+    } else {
+      console.log("Cannot fetch service status: missing serviceId or departmentId", 
+        selectedService ? "serviceId is present" : "serviceId is missing",
+        effectiveDepartment?.id ? "departmentId is present" : "departmentId is missing");
+    }
+  }, [selectedService, effectiveDepartment, dispatch]);
+  
+  // Toggle service for VM
+  const handleToggleVmService = (vmId, action) => {
+    if (!selectedService || !vmId || !effectiveDepartment?.id) {
+      console.error("Missing required parameters for toggling VM service", { 
+        serviceId: selectedService, 
+        vmId, 
+        departmentId: effectiveDepartment?.id 
+      });
+      return;
+    }
+    
+    const isEnabled = action === "USE" 
+      ? isVmEnabledToUse(vmId) 
+      : isVmEnabledToProvide(vmId);
+    
+    dispatch(toggleVmService({ 
+      serviceId: selectedService, 
+      vmId, 
+      departmentId: effectiveDepartment.id, 
+      enabled: !isEnabled,
+      action
+    }))
+    .unwrap()
+    .then(() => {
+      toast({
+        title: "Service Updated",
+        description: "VM service settings have been updated successfully",
+      });
+      // Refetch department service status to update the UI
+      if (effectiveDepartment?.id) {
+        dispatch(fetchDepartmentServiceStatus({ 
+          serviceId: selectedService, 
+          departmentId: effectiveDepartment.id 
+        }));
+        dispatch(fetchDepartmentVmsServiceStatus({
+          serviceId: selectedService,
+          departmentId: effectiveDepartment.id
+        }));
       }
-    }));
+    })
+    .catch((error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update VM service settings",
+        variant: "destructive",
+      });
+    });
+  };
+
+  // Toggle service for department
+  const handleToggleDepartmentService = (action) => {
+    if (!selectedService || !effectiveDepartment?.id) {
+      console.error("Missing required parameters for toggling department service", { 
+        serviceId: selectedService, 
+        departmentId: effectiveDepartment?.id 
+      });
+      return;
+    }
+    
+    const isEnabled = action === "USE" ? enableAllToUse : enableAllToProvide;
+    
+    dispatch(toggleDepartmentService({ 
+      serviceId: selectedService, 
+      departmentId: effectiveDepartment.id, 
+      enabled: !isEnabled,
+      action
+    }))
+    .unwrap()
+    .then(() => {
+      toast({
+        title: "Service Updated",
+        description: "Department service settings have been updated successfully",
+      });
+      // Refetch department service status to update the UI
+      if (effectiveDepartment?.id) {
+        dispatch(fetchDepartmentServiceStatus({ 
+          serviceId: selectedService, 
+          departmentId: effectiveDepartment.id 
+        }));
+        dispatch(fetchDepartmentVmsServiceStatus({
+          serviceId: selectedService,
+          departmentId: effectiveDepartment.id
+        }));
+      }
+    })
+    .catch((error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update department service settings",
+        variant: "destructive",
+      });
+    });
+  };
+  
+  // VM service toggle handler
+  const handleToggleUse = (vmId) => {
+    handleToggleVmService(vmId, "USE");
   };
   
   // Handle toggle for VM to provide a service
   const handleToggleProvide = (vmId) => {
-    setEnabledVmsToProvide(prev => ({
-      ...prev,
-      [vmId]: {
-        ...prev[vmId],
-        [selectedService]: !prev[vmId]?.[selectedService]
-      }
-    }));
+    handleToggleVmService(vmId, "PROVIDE");
   };
   
   // Handle "enable all to use" toggle
-  const handleEnableAllToUse = (checked) => {
+  const handleToggleAllUse = (checked) => {
     setEnableAllToUse(checked);
-    
-    // If checked, enable all VMs to use the service
-    if (checked) {
-      const updatedVms = {};
-      mockVms.forEach(vm => {
-        updatedVms[vm.id] = {
-          ...enabledVmsToUse[vm.id],
-          [selectedService]: true
-        };
-      });
-      setEnabledVmsToUse(updatedVms);
-    }
+    handleToggleDepartmentService("USE");
   };
   
   // Handle "enable all to provide" toggle
-  const handleEnableAllToProvide = (checked) => {
+  const handleToggleAllProvide = (checked) => {
     setEnableAllToProvide(checked);
-    
-    // If checked, enable all VMs to provide the service
-    if (checked) {
-      const updatedVms = {};
-      mockVms.forEach(vm => {
-        updatedVms[vm.id] = {
-          ...enabledVmsToProvide[vm.id],
-          [selectedService]: true
-        };
-      });
-      setEnabledVmsToProvide(updatedVms);
-    }
+    handleToggleDepartmentService("PROVIDE");
   };
   
-  // Check if a VM is enabled to use a service
+  // Get VMs from service status data
+  const vms = departmentVms;
+  
+  // Utility functions for checking VM service status
   const isVmEnabledToUse = (vmId) => {
-    return enableAllToUse || enabledVmsToUse[vmId]?.[selectedService] || false;
+    if (!selectedService || !departmentVms || departmentVms.length === 0) return false;
+    const vm = departmentVms.find(vm => vm.vmId === vmId);
+    return vm ? vm.useEnabled : false;
   };
   
-  // Check if a VM is enabled to provide a service
   const isVmEnabledToProvide = (vmId) => {
-    return enableAllToProvide || enabledVmsToProvide[vmId]?.[selectedService] || false;
+    if (!selectedService || !departmentVms || departmentVms.length === 0) return false;
+    const vm = departmentVms.find(vm => vm.vmId === vmId);
+    return vm ? vm.provideEnabled : false;
+  };
+  
+  const isVmRunning = (vmId) => {
+    if (!selectedService || !departmentVms || departmentVms.length === 0) return false;
+    const vm = departmentVms.find(vm => vm.vmId === vmId);
+    return vm ? vm.running : false;
   };
   
   // Get the selected service details
   const getSelectedService = () => {
-    return mockServices.find(service => service.id === selectedService);
+    if (!services) return null;
+    return services.find(service => service.id === selectedService);
   };
   
   // Get risk level badge
   const getRiskBadge = (level) => {
     switch(level) {
-      case 'high':
+      case 'HIGH':
         return <Badge variant="destructive" className="ml-2">High Risk</Badge>;
-      case 'medium':
+      case 'MEDIUM':
         return <Badge variant="warning" className="ml-2 bg-amber-500 hover:bg-amber-600">Medium Risk</Badge>;
-      case 'low':
+      case 'LOW':
         return <Badge variant="secondary" className="ml-2">Low Risk</Badge>;
       default:
         return null;
     }
   };
   
-  // Reset service selection when tab changes
+  // Reset enableAll toggles when service selection changes
   useEffect(() => {
     setEnableAllToUse(false);
     setEnableAllToProvide(false);
   }, [selectedService]);
+  
+  // Get formatted VM data for the table
+  const formatVmData = () => {
+    console.log("Formatting VM data from:", vms);
+    if (!vms || !vms.length) {
+      console.log("No VMs to format");
+      return [];
+    }
+    
+    const formattedVms = vms.map(vm => {
+      console.log("Processing VM:", vm);
+      // Use the correct property names from the API response
+      // The API returns vmId, vmName, running as seen in the GraphQL query
+      return {
+        id: vm.vmId,        // Use vmId for the id (from API)
+        name: vm.vmName,    // Use vmName for the name (from API)
+        running: vm.running // Use running directly (from API)
+      };
+    });
+    
+    console.log("Formatted VMs:", formattedVms);
+    return formattedVms;
+  };
+  
+  const isLoading = loading.services || 
+                    loading.departmentService ||
+                    loading.departmentVmsService ||
+                    loading.departmentByName || 
+                    loading.toggleVm || 
+                    loading.toggleDepartment;
   
   return (
     <div className="space-y-6">
@@ -143,19 +358,20 @@ const SecuritySection = () => {
         {activeTab === "general" ? (
           <GeneralTab 
             selectedService={selectedService}
-            setSelectedService={setSelectedService}
-            mockServices={mockServices}
+            setSelectedService={handleServiceSelection}
+            mockServices={services || []}
             getSelectedService={getSelectedService}
             getRiskBadge={getRiskBadge}
             enableAllToUse={enableAllToUse}
-            setEnableAllToUse={handleEnableAllToUse}
+            setEnableAllToUse={handleToggleAllUse}
             enableAllToProvide={enableAllToProvide}
-            setEnableAllToProvide={handleEnableAllToProvide}
-            mockVms={mockVms}
+            setEnableAllToProvide={handleToggleAllProvide}
+            mockVms={formatVmData()}
             isVmEnabledToUse={isVmEnabledToUse}
             isVmEnabledToProvide={isVmEnabledToProvide}
             handleToggleUse={handleToggleUse}
             handleToggleProvide={handleToggleProvide}
+            isLoading={isLoading}
           />
         ) : (
           <OthersTab />

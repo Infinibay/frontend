@@ -393,3 +393,38 @@ mutation deleteFilterRule($id: ID!) {
 mutation flushFilter($filterId: ID!) {
   flushFilter(filterId: $filterId)
 }
+
+mutation toggleVmService($vmId: ID!, $serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
+  toggleVmService(input: { vmId: $vmId, serviceId: $serviceId, enabled: $enabled, action: $action }) {
+    vmId
+    vmName
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+    running
+    lastSeen
+  }
+}
+
+mutation toggleDepartmentService($departmentId: ID!, $serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
+  toggleDepartmentService(input: { departmentId: $departmentId, serviceId: $serviceId, enabled: $enabled, action: $action }) {
+    departmentId
+    departmentName
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+    vmCount
+    enabledVmCount
+  }
+}
+
+mutation toggleGlobalService($serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
+  toggleGlobalService(input: { serviceId: $serviceId, enabled: $enabled, action: $action }) {
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+  }
+}

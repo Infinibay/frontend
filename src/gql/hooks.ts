@@ -108,6 +108,26 @@ export type DeleteNetworkInput = {
   name: Scalars['String']['input'];
 };
 
+export type DepartmentServiceStatus = {
+  __typename?: 'DepartmentServiceStatus';
+  /** Unique identifier for the department */
+  departmentId: Scalars['ID']['output'];
+  /** Name of the department */
+  departmentName: Scalars['String']['output'];
+  /** Number of VMs in the department with this service enabled */
+  enabledVmCount: Scalars['Float']['output'];
+  /** Whether the service is enabled for inbound traffic */
+  provideEnabled: Scalars['Boolean']['output'];
+  /** Unique identifier for the service */
+  serviceId: Scalars['ID']['output'];
+  /** Name of the service */
+  serviceName: Scalars['String']['output'];
+  /** Whether the service is enabled for outbound traffic */
+  useEnabled: Scalars['Boolean']['output'];
+  /** Total number of VMs in the department */
+  vmCount: Scalars['Float']['output'];
+};
+
 export type DepartmentType = {
   __typename?: 'DepartmentType';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -171,6 +191,18 @@ export type GenericFilter = {
   rules?: Maybe<Array<FwRule>>;
   type: FilterType;
   updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type GlobalServiceStatus = {
+  __typename?: 'GlobalServiceStatus';
+  /** Whether the service is enabled for inbound traffic */
+  provideEnabled: Scalars['Boolean']['output'];
+  /** Unique identifier for the service */
+  serviceId: Scalars['ID']['output'];
+  /** Name of the service */
+  serviceName: Scalars['String']['output'];
+  /** Whether the service is enabled for outbound traffic */
+  useEnabled: Scalars['Boolean']['output'];
 };
 
 export type GraphicConfigurationType = {
@@ -317,6 +349,9 @@ export type Mutation = {
   setNetworkIpRange: Scalars['Boolean']['output'];
   setupNode: DyummyType;
   suspend: SuccessType;
+  toggleDepartmentService: DepartmentServiceStatus;
+  toggleGlobalService: GlobalServiceStatus;
+  toggleVmService: VmServiceStatus;
   updateApplication: ApplicationType;
   updateFilter: GenericFilter;
   updateFilterRule: FwRule;
@@ -459,6 +494,21 @@ export type MutationSuspendArgs = {
 };
 
 
+export type MutationToggleDepartmentServiceArgs = {
+  input: ToggleDepartmentServiceInput;
+};
+
+
+export type MutationToggleGlobalServiceArgs = {
+  input: ToggleServiceInput;
+};
+
+
+export type MutationToggleVmServiceArgs = {
+  input: ToggleVmServiceInput;
+};
+
+
 export type MutationUpdateApplicationArgs = {
   id: Scalars['String']['input'];
   input: CreateApplicationInputType;
@@ -564,11 +614,17 @@ export type Query = {
   department?: Maybe<DepartmentType>;
   departments: Array<DepartmentType>;
   findDepartmentByName?: Maybe<DepartmentType>;
+  getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
+  getDepartmentVmsServiceStatus: Array<VmServiceStatus>;
   getFilter?: Maybe<GenericFilter>;
+  getGlobalServiceStatus: Array<GlobalServiceStatus>;
   getGraphics: Array<Gpu>;
+  getServiceStatusSummary: Array<ServiceStatusSummary>;
+  getVmServiceStatus: Array<VmServiceStatus>;
   graphicConnection?: Maybe<GraphicConfigurationType>;
   listFilterRules: Array<FwRule>;
   listFilters: Array<GenericFilter>;
+  listServices: Array<ServiceDefinition>;
   login: UserToken;
   machine?: Maybe<Machine>;
   machineTemplate?: Maybe<MachineTemplateType>;
@@ -598,8 +654,31 @@ export type QueryFindDepartmentByNameArgs = {
 };
 
 
+export type QueryGetDepartmentServiceStatusArgs = {
+  departmentId: Scalars['ID']['input'];
+  serviceId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryGetDepartmentVmsServiceStatusArgs = {
+  departmentId: Scalars['ID']['input'];
+  serviceId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
 export type QueryGetFilterArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryGetGlobalServiceStatusArgs = {
+  serviceId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryGetVmServiceStatusArgs = {
+  serviceId?: InputMaybe<Scalars['ID']['input']>;
+  vmId: Scalars['ID']['input'];
 };
 
 
@@ -667,10 +746,96 @@ export type QueryUsersArgs = {
   pagination?: InputMaybe<PaginationInputType>;
 };
 
+/** Service action type (USE for outbound, PROVIDE for inbound) */
+export enum ServiceAction {
+  Provide = 'PROVIDE',
+  Use = 'USE'
+}
+
+export type ServiceDefinition = {
+  __typename?: 'ServiceDefinition';
+  /** Description of the service */
+  description: Scalars['String']['output'];
+  /** Human-readable name of the service */
+  displayName: Scalars['String']['output'];
+  /** Unique identifier for the service */
+  id: Scalars['ID']['output'];
+  /** Internal name of the service */
+  name: Scalars['String']['output'];
+  /** Port configurations for the service */
+  ports: Array<ServicePort>;
+  /** Description of the risk */
+  riskDescription: Scalars['String']['output'];
+  /** Risk level of the service */
+  riskLevel: ServiceRiskLevel;
+};
+
+export type ServicePort = {
+  __typename?: 'ServicePort';
+  /** Ending port number */
+  portEnd: Scalars['Float']['output'];
+  /** Starting port number */
+  portStart: Scalars['Float']['output'];
+  /** Protocol (TCP or UDP) */
+  protocol: Scalars['String']['output'];
+};
+
+/** Risk level of a service */
+export enum ServiceRiskLevel {
+  High = 'HIGH',
+  Low = 'LOW',
+  Medium = 'MEDIUM'
+}
+
+export type ServiceStatusSummary = {
+  __typename?: 'ServiceStatusSummary';
+  /** Number of VMs with this service enabled */
+  enabledVms: Scalars['Float']['output'];
+  /** Number of VMs with this service running */
+  runningVms: Scalars['Float']['output'];
+  /** Unique identifier for the service */
+  serviceId: Scalars['ID']['output'];
+  /** Name of the service */
+  serviceName: Scalars['String']['output'];
+  /** Total number of VMs */
+  totalVms: Scalars['Float']['output'];
+};
+
 export type SuccessType = {
   __typename?: 'SuccessType';
   message: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
+};
+
+export type ToggleDepartmentServiceInput = {
+  /** Service action (USE for outbound, PROVIDE for inbound) */
+  action: ServiceAction;
+  /** Unique identifier of the department */
+  departmentId: Scalars['ID']['input'];
+  /** Whether to enable or disable the service */
+  enabled: Scalars['Boolean']['input'];
+  /** Unique identifier of the service to toggle */
+  serviceId: Scalars['ID']['input'];
+};
+
+export type ToggleServiceInput = {
+  /** Service action (USE for outbound, PROVIDE for inbound) */
+  action: ServiceAction;
+  /** Whether to enable or disable the service */
+  enabled: Scalars['Boolean']['input'];
+  /** Unique identifier of the service to toggle */
+  serviceId: Scalars['ID']['input'];
+};
+
+export type ToggleVmServiceInput = {
+  /** Service action (USE for outbound, PROVIDE for inbound) */
+  action: ServiceAction;
+  /** Whether to enable or disable the service */
+  enabled: Scalars['Boolean']['input'];
+  /** Unique identifier of the service to toggle */
+  serviceId: Scalars['ID']['input'];
+  /** Unique identifier of the VM */
+  vmId: Scalars['ID']['input'];
 };
 
 export type UpdateFilterInput = {
@@ -739,6 +904,26 @@ export type UserType = {
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
   role: Scalars['String']['output'];
+};
+
+export type VmServiceStatus = {
+  __typename?: 'VmServiceStatus';
+  /** When the service was last seen running */
+  lastSeen?: Maybe<Scalars['DateTimeISO']['output']>;
+  /** Whether the service is enabled for inbound traffic */
+  provideEnabled: Scalars['Boolean']['output'];
+  /** Whether the service is currently running */
+  running: Scalars['Boolean']['output'];
+  /** Unique identifier for the service */
+  serviceId: Scalars['ID']['output'];
+  /** Name of the service */
+  serviceName: Scalars['String']['output'];
+  /** Whether the service is enabled for outbound traffic */
+  useEnabled: Scalars['Boolean']['output'];
+  /** Unique identifier for the VM */
+  vmId: Scalars['ID']['output'];
+  /** Name of the VM */
+  vmName: Scalars['String']['output'];
 };
 
 export type CreateUserMutationVariables = Exact<{
@@ -979,6 +1164,35 @@ export type FlushFilterMutationVariables = Exact<{
 
 export type FlushFilterMutation = { __typename?: 'Mutation', flushFilter: boolean };
 
+export type ToggleVmServiceMutationVariables = Exact<{
+  vmId: Scalars['ID']['input'];
+  serviceId: Scalars['ID']['input'];
+  enabled: Scalars['Boolean']['input'];
+  action: ServiceAction;
+}>;
+
+
+export type ToggleVmServiceMutation = { __typename?: 'Mutation', toggleVmService: { __typename?: 'VmServiceStatus', vmId: string, vmName: string, serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean, running: boolean, lastSeen?: string | null } };
+
+export type ToggleDepartmentServiceMutationVariables = Exact<{
+  departmentId: Scalars['ID']['input'];
+  serviceId: Scalars['ID']['input'];
+  enabled: Scalars['Boolean']['input'];
+  action: ServiceAction;
+}>;
+
+
+export type ToggleDepartmentServiceMutation = { __typename?: 'Mutation', toggleDepartmentService: { __typename?: 'DepartmentServiceStatus', departmentId: string, departmentName: string, serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean, vmCount: number, enabledVmCount: number } };
+
+export type ToggleGlobalServiceMutationVariables = Exact<{
+  serviceId: Scalars['ID']['input'];
+  enabled: Scalars['Boolean']['input'];
+  action: ServiceAction;
+}>;
+
+
+export type ToggleGlobalServiceMutation = { __typename?: 'Mutation', toggleGlobalService: { __typename?: 'GlobalServiceStatus', serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean } };
+
 export type CurrentUserQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1130,6 +1344,47 @@ export type ListFilterRulesQueryVariables = Exact<{
 
 
 export type ListFilterRulesQuery = { __typename?: 'Query', listFilterRules: Array<{ __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion?: string | null, srcMacAddr?: string | null, srcIpAddr?: string | null, srcIpMask?: string | null, dstIpAddr?: string | null, dstIpMask?: string | null, srcPortStart?: number | null, srcPortEnd?: number | null, dstPortStart?: number | null, dstPortEnd?: number | null, state?: { [key: string]: any } | null, comment?: string | null, createdAt?: string | null, updatedAt?: string | null }> };
+
+export type ListServicesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ListServicesQuery = { __typename?: 'Query', listServices: Array<{ __typename?: 'ServiceDefinition', id: string, name: string, displayName: string, description: string, riskLevel: ServiceRiskLevel, riskDescription: string, ports: Array<{ __typename?: 'ServicePort', protocol: string, portStart: number, portEnd: number }> }> };
+
+export type GetVmServiceStatusQueryVariables = Exact<{
+  serviceId: Scalars['ID']['input'];
+  vmId: Scalars['ID']['input'];
+}>;
+
+
+export type GetVmServiceStatusQuery = { __typename?: 'Query', getVmServiceStatus: Array<{ __typename?: 'VmServiceStatus', vmId: string, vmName: string, serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean, running: boolean, lastSeen?: string | null }> };
+
+export type GetDepartmentVmsServiceStatusQueryVariables = Exact<{
+  serviceId: Scalars['ID']['input'];
+  departmentId: Scalars['ID']['input'];
+}>;
+
+
+export type GetDepartmentVmsServiceStatusQuery = { __typename?: 'Query', getDepartmentVmsServiceStatus: Array<{ __typename?: 'VmServiceStatus', vmId: string, vmName: string, serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean, running: boolean, lastSeen?: string | null }> };
+
+export type GetDepartmentServiceStatusQueryVariables = Exact<{
+  serviceId: Scalars['ID']['input'];
+  departmentId: Scalars['ID']['input'];
+}>;
+
+
+export type GetDepartmentServiceStatusQuery = { __typename?: 'Query', getDepartmentServiceStatus: Array<{ __typename?: 'DepartmentServiceStatus', departmentId: string, departmentName: string, serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean, vmCount: number, enabledVmCount: number }> };
+
+export type GetGlobalServiceStatusQueryVariables = Exact<{
+  serviceId: Scalars['ID']['input'];
+}>;
+
+
+export type GetGlobalServiceStatusQuery = { __typename?: 'Query', getGlobalServiceStatus: Array<{ __typename?: 'GlobalServiceStatus', serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean }> };
+
+export type GetServiceStatusSummaryQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetServiceStatusSummaryQuery = { __typename?: 'Query', getServiceStatusSummary: Array<{ __typename?: 'ServiceStatusSummary', serviceId: string, serviceName: string, totalVms: number, runningVms: number, enabledVms: number }> };
 
 
 export const CreateUserDocument = gql`
@@ -2427,6 +2682,136 @@ export function useFlushFilterMutation(baseOptions?: Apollo.MutationHookOptions<
 export type FlushFilterMutationHookResult = ReturnType<typeof useFlushFilterMutation>;
 export type FlushFilterMutationResult = Apollo.MutationResult<FlushFilterMutation>;
 export type FlushFilterMutationOptions = Apollo.BaseMutationOptions<FlushFilterMutation, FlushFilterMutationVariables>;
+export const ToggleVmServiceDocument = gql`
+    mutation toggleVmService($vmId: ID!, $serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
+  toggleVmService(
+    input: {vmId: $vmId, serviceId: $serviceId, enabled: $enabled, action: $action}
+  ) {
+    vmId
+    vmName
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+    running
+    lastSeen
+  }
+}
+    `;
+export type ToggleVmServiceMutationFn = Apollo.MutationFunction<ToggleVmServiceMutation, ToggleVmServiceMutationVariables>;
+
+/**
+ * __useToggleVmServiceMutation__
+ *
+ * To run a mutation, you first call `useToggleVmServiceMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useToggleVmServiceMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [toggleVmServiceMutation, { data, loading, error }] = useToggleVmServiceMutation({
+ *   variables: {
+ *      vmId: // value for 'vmId'
+ *      serviceId: // value for 'serviceId'
+ *      enabled: // value for 'enabled'
+ *      action: // value for 'action'
+ *   },
+ * });
+ */
+export function useToggleVmServiceMutation(baseOptions?: Apollo.MutationHookOptions<ToggleVmServiceMutation, ToggleVmServiceMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ToggleVmServiceMutation, ToggleVmServiceMutationVariables>(ToggleVmServiceDocument, options);
+      }
+export type ToggleVmServiceMutationHookResult = ReturnType<typeof useToggleVmServiceMutation>;
+export type ToggleVmServiceMutationResult = Apollo.MutationResult<ToggleVmServiceMutation>;
+export type ToggleVmServiceMutationOptions = Apollo.BaseMutationOptions<ToggleVmServiceMutation, ToggleVmServiceMutationVariables>;
+export const ToggleDepartmentServiceDocument = gql`
+    mutation toggleDepartmentService($departmentId: ID!, $serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
+  toggleDepartmentService(
+    input: {departmentId: $departmentId, serviceId: $serviceId, enabled: $enabled, action: $action}
+  ) {
+    departmentId
+    departmentName
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+    vmCount
+    enabledVmCount
+  }
+}
+    `;
+export type ToggleDepartmentServiceMutationFn = Apollo.MutationFunction<ToggleDepartmentServiceMutation, ToggleDepartmentServiceMutationVariables>;
+
+/**
+ * __useToggleDepartmentServiceMutation__
+ *
+ * To run a mutation, you first call `useToggleDepartmentServiceMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useToggleDepartmentServiceMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [toggleDepartmentServiceMutation, { data, loading, error }] = useToggleDepartmentServiceMutation({
+ *   variables: {
+ *      departmentId: // value for 'departmentId'
+ *      serviceId: // value for 'serviceId'
+ *      enabled: // value for 'enabled'
+ *      action: // value for 'action'
+ *   },
+ * });
+ */
+export function useToggleDepartmentServiceMutation(baseOptions?: Apollo.MutationHookOptions<ToggleDepartmentServiceMutation, ToggleDepartmentServiceMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ToggleDepartmentServiceMutation, ToggleDepartmentServiceMutationVariables>(ToggleDepartmentServiceDocument, options);
+      }
+export type ToggleDepartmentServiceMutationHookResult = ReturnType<typeof useToggleDepartmentServiceMutation>;
+export type ToggleDepartmentServiceMutationResult = Apollo.MutationResult<ToggleDepartmentServiceMutation>;
+export type ToggleDepartmentServiceMutationOptions = Apollo.BaseMutationOptions<ToggleDepartmentServiceMutation, ToggleDepartmentServiceMutationVariables>;
+export const ToggleGlobalServiceDocument = gql`
+    mutation toggleGlobalService($serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
+  toggleGlobalService(
+    input: {serviceId: $serviceId, enabled: $enabled, action: $action}
+  ) {
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+  }
+}
+    `;
+export type ToggleGlobalServiceMutationFn = Apollo.MutationFunction<ToggleGlobalServiceMutation, ToggleGlobalServiceMutationVariables>;
+
+/**
+ * __useToggleGlobalServiceMutation__
+ *
+ * To run a mutation, you first call `useToggleGlobalServiceMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useToggleGlobalServiceMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [toggleGlobalServiceMutation, { data, loading, error }] = useToggleGlobalServiceMutation({
+ *   variables: {
+ *      serviceId: // value for 'serviceId'
+ *      enabled: // value for 'enabled'
+ *      action: // value for 'action'
+ *   },
+ * });
+ */
+export function useToggleGlobalServiceMutation(baseOptions?: Apollo.MutationHookOptions<ToggleGlobalServiceMutation, ToggleGlobalServiceMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ToggleGlobalServiceMutation, ToggleGlobalServiceMutationVariables>(ToggleGlobalServiceDocument, options);
+      }
+export type ToggleGlobalServiceMutationHookResult = ReturnType<typeof useToggleGlobalServiceMutation>;
+export type ToggleGlobalServiceMutationResult = Apollo.MutationResult<ToggleGlobalServiceMutation>;
+export type ToggleGlobalServiceMutationOptions = Apollo.BaseMutationOptions<ToggleGlobalServiceMutation, ToggleGlobalServiceMutationVariables>;
 export const CurrentUserDocument = gql`
     query currentUser {
   currentUser {
@@ -3658,4 +4043,304 @@ export type ListFilterRulesSuspenseQueryHookResult = ReturnType<typeof useListFi
 export type ListFilterRulesQueryResult = Apollo.QueryResult<ListFilterRulesQuery, ListFilterRulesQueryVariables>;
 export function refetchListFilterRulesQuery(variables?: ListFilterRulesQueryVariables) {
       return { query: ListFilterRulesDocument, variables: variables }
+    }
+export const ListServicesDocument = gql`
+    query listServices {
+  listServices {
+    id
+    name
+    displayName
+    description
+    riskLevel
+    riskDescription
+    ports {
+      protocol
+      portStart
+      portEnd
+    }
+  }
+}
+    `;
+
+/**
+ * __useListServicesQuery__
+ *
+ * To run a query within a React component, call `useListServicesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListServicesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListServicesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useListServicesQuery(baseOptions?: Apollo.QueryHookOptions<ListServicesQuery, ListServicesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ListServicesQuery, ListServicesQueryVariables>(ListServicesDocument, options);
+      }
+export function useListServicesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ListServicesQuery, ListServicesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ListServicesQuery, ListServicesQueryVariables>(ListServicesDocument, options);
+        }
+export function useListServicesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ListServicesQuery, ListServicesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ListServicesQuery, ListServicesQueryVariables>(ListServicesDocument, options);
+        }
+export type ListServicesQueryHookResult = ReturnType<typeof useListServicesQuery>;
+export type ListServicesLazyQueryHookResult = ReturnType<typeof useListServicesLazyQuery>;
+export type ListServicesSuspenseQueryHookResult = ReturnType<typeof useListServicesSuspenseQuery>;
+export type ListServicesQueryResult = Apollo.QueryResult<ListServicesQuery, ListServicesQueryVariables>;
+export function refetchListServicesQuery(variables?: ListServicesQueryVariables) {
+      return { query: ListServicesDocument, variables: variables }
+    }
+export const GetVmServiceStatusDocument = gql`
+    query getVmServiceStatus($serviceId: ID!, $vmId: ID!) {
+  getVmServiceStatus(serviceId: $serviceId, vmId: $vmId) {
+    vmId
+    vmName
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+    running
+    lastSeen
+  }
+}
+    `;
+
+/**
+ * __useGetVmServiceStatusQuery__
+ *
+ * To run a query within a React component, call `useGetVmServiceStatusQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetVmServiceStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetVmServiceStatusQuery({
+ *   variables: {
+ *      serviceId: // value for 'serviceId'
+ *      vmId: // value for 'vmId'
+ *   },
+ * });
+ */
+export function useGetVmServiceStatusQuery(baseOptions: Apollo.QueryHookOptions<GetVmServiceStatusQuery, GetVmServiceStatusQueryVariables> & ({ variables: GetVmServiceStatusQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetVmServiceStatusQuery, GetVmServiceStatusQueryVariables>(GetVmServiceStatusDocument, options);
+      }
+export function useGetVmServiceStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetVmServiceStatusQuery, GetVmServiceStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetVmServiceStatusQuery, GetVmServiceStatusQueryVariables>(GetVmServiceStatusDocument, options);
+        }
+export function useGetVmServiceStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetVmServiceStatusQuery, GetVmServiceStatusQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetVmServiceStatusQuery, GetVmServiceStatusQueryVariables>(GetVmServiceStatusDocument, options);
+        }
+export type GetVmServiceStatusQueryHookResult = ReturnType<typeof useGetVmServiceStatusQuery>;
+export type GetVmServiceStatusLazyQueryHookResult = ReturnType<typeof useGetVmServiceStatusLazyQuery>;
+export type GetVmServiceStatusSuspenseQueryHookResult = ReturnType<typeof useGetVmServiceStatusSuspenseQuery>;
+export type GetVmServiceStatusQueryResult = Apollo.QueryResult<GetVmServiceStatusQuery, GetVmServiceStatusQueryVariables>;
+export function refetchGetVmServiceStatusQuery(variables: GetVmServiceStatusQueryVariables) {
+      return { query: GetVmServiceStatusDocument, variables: variables }
+    }
+export const GetDepartmentVmsServiceStatusDocument = gql`
+    query getDepartmentVmsServiceStatus($serviceId: ID!, $departmentId: ID!) {
+  getDepartmentVmsServiceStatus(
+    serviceId: $serviceId
+    departmentId: $departmentId
+  ) {
+    vmId
+    vmName
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+    running
+    lastSeen
+  }
+}
+    `;
+
+/**
+ * __useGetDepartmentVmsServiceStatusQuery__
+ *
+ * To run a query within a React component, call `useGetDepartmentVmsServiceStatusQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDepartmentVmsServiceStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDepartmentVmsServiceStatusQuery({
+ *   variables: {
+ *      serviceId: // value for 'serviceId'
+ *      departmentId: // value for 'departmentId'
+ *   },
+ * });
+ */
+export function useGetDepartmentVmsServiceStatusQuery(baseOptions: Apollo.QueryHookOptions<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables> & ({ variables: GetDepartmentVmsServiceStatusQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>(GetDepartmentVmsServiceStatusDocument, options);
+      }
+export function useGetDepartmentVmsServiceStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>(GetDepartmentVmsServiceStatusDocument, options);
+        }
+export function useGetDepartmentVmsServiceStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>(GetDepartmentVmsServiceStatusDocument, options);
+        }
+export type GetDepartmentVmsServiceStatusQueryHookResult = ReturnType<typeof useGetDepartmentVmsServiceStatusQuery>;
+export type GetDepartmentVmsServiceStatusLazyQueryHookResult = ReturnType<typeof useGetDepartmentVmsServiceStatusLazyQuery>;
+export type GetDepartmentVmsServiceStatusSuspenseQueryHookResult = ReturnType<typeof useGetDepartmentVmsServiceStatusSuspenseQuery>;
+export type GetDepartmentVmsServiceStatusQueryResult = Apollo.QueryResult<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>;
+export function refetchGetDepartmentVmsServiceStatusQuery(variables: GetDepartmentVmsServiceStatusQueryVariables) {
+      return { query: GetDepartmentVmsServiceStatusDocument, variables: variables }
+    }
+export const GetDepartmentServiceStatusDocument = gql`
+    query getDepartmentServiceStatus($serviceId: ID!, $departmentId: ID!) {
+  getDepartmentServiceStatus(serviceId: $serviceId, departmentId: $departmentId) {
+    departmentId
+    departmentName
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+    vmCount
+    enabledVmCount
+  }
+}
+    `;
+
+/**
+ * __useGetDepartmentServiceStatusQuery__
+ *
+ * To run a query within a React component, call `useGetDepartmentServiceStatusQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDepartmentServiceStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDepartmentServiceStatusQuery({
+ *   variables: {
+ *      serviceId: // value for 'serviceId'
+ *      departmentId: // value for 'departmentId'
+ *   },
+ * });
+ */
+export function useGetDepartmentServiceStatusQuery(baseOptions: Apollo.QueryHookOptions<GetDepartmentServiceStatusQuery, GetDepartmentServiceStatusQueryVariables> & ({ variables: GetDepartmentServiceStatusQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetDepartmentServiceStatusQuery, GetDepartmentServiceStatusQueryVariables>(GetDepartmentServiceStatusDocument, options);
+      }
+export function useGetDepartmentServiceStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetDepartmentServiceStatusQuery, GetDepartmentServiceStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetDepartmentServiceStatusQuery, GetDepartmentServiceStatusQueryVariables>(GetDepartmentServiceStatusDocument, options);
+        }
+export function useGetDepartmentServiceStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetDepartmentServiceStatusQuery, GetDepartmentServiceStatusQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetDepartmentServiceStatusQuery, GetDepartmentServiceStatusQueryVariables>(GetDepartmentServiceStatusDocument, options);
+        }
+export type GetDepartmentServiceStatusQueryHookResult = ReturnType<typeof useGetDepartmentServiceStatusQuery>;
+export type GetDepartmentServiceStatusLazyQueryHookResult = ReturnType<typeof useGetDepartmentServiceStatusLazyQuery>;
+export type GetDepartmentServiceStatusSuspenseQueryHookResult = ReturnType<typeof useGetDepartmentServiceStatusSuspenseQuery>;
+export type GetDepartmentServiceStatusQueryResult = Apollo.QueryResult<GetDepartmentServiceStatusQuery, GetDepartmentServiceStatusQueryVariables>;
+export function refetchGetDepartmentServiceStatusQuery(variables: GetDepartmentServiceStatusQueryVariables) {
+      return { query: GetDepartmentServiceStatusDocument, variables: variables }
+    }
+export const GetGlobalServiceStatusDocument = gql`
+    query getGlobalServiceStatus($serviceId: ID!) {
+  getGlobalServiceStatus(serviceId: $serviceId) {
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+  }
+}
+    `;
+
+/**
+ * __useGetGlobalServiceStatusQuery__
+ *
+ * To run a query within a React component, call `useGetGlobalServiceStatusQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetGlobalServiceStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetGlobalServiceStatusQuery({
+ *   variables: {
+ *      serviceId: // value for 'serviceId'
+ *   },
+ * });
+ */
+export function useGetGlobalServiceStatusQuery(baseOptions: Apollo.QueryHookOptions<GetGlobalServiceStatusQuery, GetGlobalServiceStatusQueryVariables> & ({ variables: GetGlobalServiceStatusQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetGlobalServiceStatusQuery, GetGlobalServiceStatusQueryVariables>(GetGlobalServiceStatusDocument, options);
+      }
+export function useGetGlobalServiceStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetGlobalServiceStatusQuery, GetGlobalServiceStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetGlobalServiceStatusQuery, GetGlobalServiceStatusQueryVariables>(GetGlobalServiceStatusDocument, options);
+        }
+export function useGetGlobalServiceStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetGlobalServiceStatusQuery, GetGlobalServiceStatusQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetGlobalServiceStatusQuery, GetGlobalServiceStatusQueryVariables>(GetGlobalServiceStatusDocument, options);
+        }
+export type GetGlobalServiceStatusQueryHookResult = ReturnType<typeof useGetGlobalServiceStatusQuery>;
+export type GetGlobalServiceStatusLazyQueryHookResult = ReturnType<typeof useGetGlobalServiceStatusLazyQuery>;
+export type GetGlobalServiceStatusSuspenseQueryHookResult = ReturnType<typeof useGetGlobalServiceStatusSuspenseQuery>;
+export type GetGlobalServiceStatusQueryResult = Apollo.QueryResult<GetGlobalServiceStatusQuery, GetGlobalServiceStatusQueryVariables>;
+export function refetchGetGlobalServiceStatusQuery(variables: GetGlobalServiceStatusQueryVariables) {
+      return { query: GetGlobalServiceStatusDocument, variables: variables }
+    }
+export const GetServiceStatusSummaryDocument = gql`
+    query getServiceStatusSummary {
+  getServiceStatusSummary {
+    serviceId
+    serviceName
+    totalVms
+    runningVms
+    enabledVms
+  }
+}
+    `;
+
+/**
+ * __useGetServiceStatusSummaryQuery__
+ *
+ * To run a query within a React component, call `useGetServiceStatusSummaryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetServiceStatusSummaryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetServiceStatusSummaryQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetServiceStatusSummaryQuery(baseOptions?: Apollo.QueryHookOptions<GetServiceStatusSummaryQuery, GetServiceStatusSummaryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetServiceStatusSummaryQuery, GetServiceStatusSummaryQueryVariables>(GetServiceStatusSummaryDocument, options);
+      }
+export function useGetServiceStatusSummaryLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetServiceStatusSummaryQuery, GetServiceStatusSummaryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetServiceStatusSummaryQuery, GetServiceStatusSummaryQueryVariables>(GetServiceStatusSummaryDocument, options);
+        }
+export function useGetServiceStatusSummarySuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetServiceStatusSummaryQuery, GetServiceStatusSummaryQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetServiceStatusSummaryQuery, GetServiceStatusSummaryQueryVariables>(GetServiceStatusSummaryDocument, options);
+        }
+export type GetServiceStatusSummaryQueryHookResult = ReturnType<typeof useGetServiceStatusSummaryQuery>;
+export type GetServiceStatusSummaryLazyQueryHookResult = ReturnType<typeof useGetServiceStatusSummaryLazyQuery>;
+export type GetServiceStatusSummarySuspenseQueryHookResult = ReturnType<typeof useGetServiceStatusSummarySuspenseQuery>;
+export type GetServiceStatusSummaryQueryResult = Apollo.QueryResult<GetServiceStatusSummaryQuery, GetServiceStatusSummaryQueryVariables>;
+export function refetchGetServiceStatusSummaryQuery(variables?: GetServiceStatusSummaryQueryVariables) {
+      return { query: GetServiceStatusSummaryDocument, variables: variables }
     }

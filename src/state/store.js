@@ -12,6 +12,7 @@ import usersReducer from './slices/users'
 import filtersReducer from './slices/filters'
 import filterRulesReducer from './slices/filterRules'
 import vmPortsReducer from './slices/vmPorts'
+import securityReducer from './slices/security'
 
 const persistConfig = {
   key: 'root',
@@ -68,7 +69,8 @@ export const store = configureStore({
     users: usersReducer,
     filters: persistedFilters,
     filterRules: persistedFilterRules,
-    vmPorts: vmPortsReducer
+    vmPorts: vmPortsReducer,
+    security: securityReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

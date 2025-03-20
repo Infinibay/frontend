@@ -93,6 +93,32 @@ input DeleteNetworkInput {
   name: String!
 }
 
+type DepartmentServiceStatus {
+  """Unique identifier for the department"""
+  departmentId: ID!
+
+  """Name of the department"""
+  departmentName: String!
+
+  """Number of VMs in the department with this service enabled"""
+  enabledVmCount: Float!
+
+  """Whether the service is enabled for inbound traffic"""
+  provideEnabled: Boolean!
+
+  """Unique identifier for the service"""
+  serviceId: ID!
+
+  """Name of the service"""
+  serviceName: String!
+
+  """Whether the service is enabled for outbound traffic"""
+  useEnabled: Boolean!
+
+  """Total number of VMs in the department"""
+  vmCount: Float!
+}
+
 type DepartmentType {
   createdAt: DateTimeISO!
   id: ID!
@@ -151,6 +177,20 @@ type GenericFilter {
   rules: [FWRule!]
   type: FilterType!
   updatedAt: DateTimeISO!
+}
+
+type GlobalServiceStatus {
+  """Whether the service is enabled for inbound traffic"""
+  provideEnabled: Boolean!
+
+  """Unique identifier for the service"""
+  serviceId: ID!
+
+  """Name of the service"""
+  serviceName: String!
+
+  """Whether the service is enabled for outbound traffic"""
+  useEnabled: Boolean!
 }
 
 type GraphicConfigurationType {
@@ -303,6 +343,9 @@ type Mutation {
   setNetworkIpRange(input: IpRangeInput!): Boolean!
   setupNode: DyummyType!
   suspend(id: String!): SuccessType!
+  toggleDepartmentService(input: ToggleDepartmentServiceInput!): DepartmentServiceStatus!
+  toggleGlobalService(input: ToggleServiceInput!): GlobalServiceStatus!
+  toggleVmService(input: ToggleVmServiceInput!): VmServiceStatus!
   updateApplication(id: String!, input: CreateApplicationInputType!): ApplicationType!
   updateFilter(id: ID!, input: UpdateFilterInput!): GenericFilter!
   updateFilterRule(id: ID!, input: UpdateFilterRuleInput!): FWRule!
@@ -375,11 +418,17 @@ type Query {
   department(id: String!): DepartmentType
   departments: [DepartmentType!]!
   findDepartmentByName(name: String!): DepartmentType
+  getDepartmentServiceStatus(departmentId: ID!, serviceId: ID): [DepartmentServiceStatus!]!
+  getDepartmentVmsServiceStatus(departmentId: ID!, serviceId: ID): [VmServiceStatus!]!
   getFilter(id: ID!): GenericFilter
+  getGlobalServiceStatus(serviceId: ID): [GlobalServiceStatus!]!
   getGraphics: [GPU!]!
+  getServiceStatusSummary: [ServiceStatusSummary!]!
+  getVmServiceStatus(serviceId: ID, vmId: ID!): [VmServiceStatus!]!
   graphicConnection(id: String!): GraphicConfigurationType
   listFilterRules(filterId: ID): [FWRule!]!
   listFilters(departmentId: ID, vmId: ID): [GenericFilter!]!
+  listServices: [ServiceDefinition!]!
   login(email: String!, password: String!): UserToken!
   machine(id: String!): Machine
   machineTemplate(id: String!): MachineTemplateType
@@ -393,9 +442,112 @@ type Query {
   users(orderBy: UserOrderByInputType, pagination: PaginationInputType): [UserType!]!
 }
 
+"""Service action type (USE for outbound, PROVIDE for inbound)"""
+enum ServiceAction {
+  PROVIDE
+  USE
+}
+
+type ServiceDefinition {
+  """Description of the service"""
+  description: String!
+
+  """Human-readable name of the service"""
+  displayName: String!
+
+  """Unique identifier for the service"""
+  id: ID!
+
+  """Internal name of the service"""
+  name: String!
+
+  """Port configurations for the service"""
+  ports: [ServicePort!]!
+
+  """Description of the risk"""
+  riskDescription: String!
+
+  """Risk level of the service"""
+  riskLevel: ServiceRiskLevel!
+}
+
+type ServicePort {
+  """Ending port number"""
+  portEnd: Float!
+
+  """Starting port number"""
+  portStart: Float!
+
+  """Protocol (TCP or UDP)"""
+  protocol: String!
+}
+
+"""Risk level of a service"""
+enum ServiceRiskLevel {
+  HIGH
+  LOW
+  MEDIUM
+}
+
+type ServiceStatusSummary {
+  """Number of VMs with this service enabled"""
+  enabledVms: Float!
+
+  """Number of VMs with this service running"""
+  runningVms: Float!
+
+  """Unique identifier for the service"""
+  serviceId: ID!
+
+  """Name of the service"""
+  serviceName: String!
+
+  """Total number of VMs"""
+  totalVms: Float!
+}
+
 type SuccessType {
   message: String!
   success: Boolean!
+}
+
+input ToggleDepartmentServiceInput {
+  """Service action (USE for outbound, PROVIDE for inbound)"""
+  action: ServiceAction!
+
+  """Unique identifier of the department"""
+  departmentId: ID!
+
+  """Whether to enable or disable the service"""
+  enabled: Boolean!
+
+  """Unique identifier of the service to toggle"""
+  serviceId: ID!
+}
+
+input ToggleServiceInput {
+  """Service action (USE for outbound, PROVIDE for inbound)"""
+  action: ServiceAction!
+
+  """Whether to enable or disable the service"""
+  enabled: Boolean!
+
+  """Unique identifier of the service to toggle"""
+  serviceId: ID!
+}
+
+input ToggleVmServiceInput {
+  """Service action (USE for outbound, PROVIDE for inbound)"""
+  action: ServiceAction!
+
+  """Whether to enable or disable the service"""
+  enabled: Boolean!
+
+  """Unique identifier of the service to toggle"""
+  serviceId: ID!
+
+  """Unique identifier of the VM"""
+  vmId: ID!
 }
 
 input UpdateFilterInput {
@@ -462,4 +614,30 @@ type UserType {
   id: ID!
   lastName: String!
   role: String!
+}
+
+type VmServiceStatus {
+  """When the service was last seen running"""
+  lastSeen: DateTimeISO
+
+  """Whether the service is enabled for inbound traffic"""
+  provideEnabled: Boolean!
+
+  """Whether the service is currently running"""
+  running: Boolean!
+
+  """Unique identifier for the service"""
+  serviceId: ID!
+
+  """Name of the service"""
+  serviceName: String!
+
+  """Whether the service is enabled for outbound traffic"""
+  useEnabled: Boolean!
+
+  """Unique identifier for the VM"""
+  vmId: ID!
+
+  """Name of the VM"""
+  vmName: String!
 }
