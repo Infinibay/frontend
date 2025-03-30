@@ -1,10 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useQuery } from '@apollo/client';
 import { Card } from '@/components/ui/card';
 import { useWizardContext } from '@/components/ui/wizard';
-import { MACHINE_TEMPLATES_QUERY } from '@/graphql/queries';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, Package } from 'lucide-react';
 import { useSelector } from 'react-redux';
@@ -27,8 +25,7 @@ const formatMemory = (memory) => {
 
 export function ReviewStep({ id }) {
   const { values } = useWizardContext();
-  const { data } = useQuery(MACHINE_TEMPLATES_QUERY);
-  const templates = data?.machineTemplates || [];
+  const templates = useSelector((state) => state.templates.items);
   const applications = useSelector((state) => state.applications.items);
 
   const selectedTemplate = templates.find(t => t.id === values.resources?.templateId);

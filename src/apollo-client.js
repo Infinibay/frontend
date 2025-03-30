@@ -6,7 +6,12 @@ const httpLink = createHttpLink({
 });
 
 const authLink = setContext((_, { headers }) => {
-  const token = localStorage.getItem('token');
+  // Only access localStorage when in browser environment
+  let token = '';
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+  }
+  
   return {
     headers: {
       ...headers,
@@ -39,6 +44,7 @@ const cache = new InMemoryCache({
   }
 });
 
+// Initialize ApolloClient
 const client = new ApolloClient({
   link: authLink.concat(httpLink),
   cache: cache,
@@ -47,6 +53,7 @@ const client = new ApolloClient({
       fetchPolicy: 'cache-and-network',
     },
   },
+  ssrMode: typeof window === 'undefined', // Enable SSR mode when running on server
 });
 
 export default client;

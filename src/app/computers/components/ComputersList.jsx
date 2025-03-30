@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SortableItem } from "@/components/ui/sortable-item";
-import { moveMachine, fetchVms } from "@/state/slices/vms";
+import { moveMachine } from "@/state/slices/vms";
 
 function DraggableUserPc({ machine, selected, onSelect, size }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -115,7 +115,6 @@ export function ComputersList({
       const destinationId = over.id;
       console.log('Moving machine:', { machineId: active.id, departmentId: destinationId });
       await dispatch(moveMachine({ id: active.id, departmentId: destinationId }));
-      await dispatch(fetchVms());
     }
   };
 

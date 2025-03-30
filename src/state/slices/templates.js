@@ -1,11 +1,12 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { MACHINE_TEMPLATES_QUERY } from '@/graphql/queries';
-import { 
-  CREATE_MACHINE_TEMPLATE_MUTATION,
-  UPDATE_MACHINE_TEMPLATE_MUTATION,
-  DESTROY_MACHINE_TEMPLATE_MUTATION
-} from '@/graphql/mutations';
+
+import {
+  MachineTemplatesDocument,
+  CreateMachineTemplateDocument,
+  UpdateMachineTemplateDocument,
+  DestroyMachineTemplateDocument
+} from '@/gql/hooks';
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
@@ -30,7 +31,7 @@ const executeGraphQLMutation = async (mutation, variables = {}) => {
 export const fetchTemplates = createAsyncThunk(
   'templates/fetchTemplates',
   async () => {
-    const data = await executeGraphQLQuery(MACHINE_TEMPLATES_QUERY);
+    const data = await executeGraphQLQuery(MachineTemplatesDocument);
     return data.machineTemplates;
   }
 );
@@ -38,7 +39,7 @@ export const fetchTemplates = createAsyncThunk(
 export const createTemplate = createAsyncThunk(
   'templates/createTemplate',
   async (input) => {
-    const data = await executeGraphQLMutation(CREATE_MACHINE_TEMPLATE_MUTATION, { input });
+    const data = await executeGraphQLMutation(CreateMachineTemplateDocument, { input });
     return data.createMachineTemplate;
   }
 );
@@ -46,7 +47,7 @@ export const createTemplate = createAsyncThunk(
 export const updateTemplate = createAsyncThunk(
   'templates/updateTemplate',
   async ({ input, id }) => {
-    const data = await executeGraphQLMutation(UPDATE_MACHINE_TEMPLATE_MUTATION, { input, id });
+    const data = await executeGraphQLMutation(UpdateMachineTemplateDocument, { input, id });
     return data.updateMachineTemplate;
   }
 );
@@ -54,7 +55,7 @@ export const updateTemplate = createAsyncThunk(
 export const destroyTemplate = createAsyncThunk(
   'templates/destroyTemplate',
   async (id) => {
-    const data = await executeGraphQLMutation(DESTROY_MACHINE_TEMPLATE_MUTATION, { id });
+    const data = await executeGraphQLMutation(DestroyMachineTemplateDocument, { id });
     if (data.destroyMachineTemplate) {
       return id;
     }

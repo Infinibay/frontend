@@ -1,0 +1,457 @@
+query currentUser {
+  currentUser {
+    id
+    firstName
+    lastName
+    role
+    email
+    createdAt
+  }
+}
+
+query user($id: String!) {
+  user(id: $id) {
+    id
+    firstName
+    lastName
+    role
+    email
+    createdAt
+  }
+}
+
+query users($pagination: PaginationInputType, $orderBy: UserOrderByInputType) {
+  users(pagination: $pagination, orderBy: $orderBy) {
+    id
+    firstName
+    lastName
+    role
+    email
+    createdAt
+  }
+}
+
+query login($password: String!, $email: String!) {
+  login(password: $password, email: $email) {
+    token
+  }
+}
+
+query machineTemplate($id: String!) {
+  machineTemplate(id: $id) {
+    id
+    name
+    description
+    cores
+    ram
+    storage
+    createdAt
+    categoryId
+    totalMachines
+  }
+}
+
+query machineTemplates($orderBy: MachineTemplateOrderBy, $pagination: PaginationInputType) {
+  machineTemplates(orderBy: $orderBy, pagination: $pagination) {
+    id
+    name
+    description
+    cores
+    ram
+    storage
+    createdAt
+    categoryId
+    totalMachines
+  }
+}
+
+query machine($id: String!) {
+  machine(id: $id) {
+    id
+    name
+    configuration
+    status
+    userId
+    templateId
+    createdAt
+    template {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
+    department {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
+    }
+    user {
+      id
+      firstName
+      lastName
+      role
+      email
+      createdAt
+    }
+  }
+}
+
+query machines($orderBy: MachineOrderBy, $pagination: PaginationInputType) {
+  machines(orderBy: $orderBy, pagination: $pagination) {
+    id
+    name
+    configuration
+    status
+    userId
+    templateId
+    createdAt
+    template {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
+    department {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
+    }
+    user {
+      id
+      firstName
+      lastName
+      role
+      email
+      createdAt
+    }
+  }
+}
+
+query graphicConnection($id: String!) {
+  graphicConnection(id: $id) {
+    link
+    password
+    protocol
+  }
+}
+
+query checkSetupStatus {
+  checkSetupStatus {
+    value
+  }
+}
+
+query departments {
+  departments {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+    totalMachines
+  }
+}
+
+query department($id: String!) {
+  department(id: $id) {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+    totalMachines
+  }
+}
+
+query findDepartmentByName($name: String!) {
+  findDepartmentByName(name: $name) {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+    totalMachines
+  }
+}
+
+query machineTemplateCategories {
+  machineTemplateCategories {
+    id
+    name
+    description
+    createdAt
+    totalTemplates
+    totalMachines
+  }
+}
+
+query machineTemplateCategory($id: String!) {
+  machineTemplateCategory(id: $id) {
+    id
+    name
+    description
+    createdAt
+    totalTemplates
+    totalMachines
+  }
+}
+
+query applications {
+  applications {
+    id
+    name
+    description
+    os
+    installCommand
+    parameters
+    createdAt
+  }
+}
+
+query application($id: String!) {
+  application(id: $id) {
+    id
+    name
+    description
+    os
+    installCommand
+    parameters
+    createdAt
+  }
+}
+
+query getGraphics {
+  getGraphics {
+    pciBus
+    vendor
+    model
+    memory
+  }
+}
+
+query networks {
+  networks {
+    name
+    uuid
+    bridge {
+      name
+      stp
+      delay
+    }
+    ip {
+      address
+      netmask
+      dhcp {
+        range {
+          start
+          end
+        }
+      }
+    }
+    description
+  }
+}
+
+query network($name: String!) {
+  network(name: $name) {
+    name
+    uuid
+    bridge {
+      name
+      stp
+      delay
+    }
+    ip {
+      address
+      netmask
+      dhcp {
+        range {
+          start
+          end
+        }
+      }
+    }
+    description
+  }
+}
+
+query listFilters($vmId: ID, $departmentId: ID) {
+  listFilters(vmId: $vmId, departmentId: $departmentId) {
+    id
+    name
+    description
+    type
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
+    createdAt
+    updatedAt
+  }
+}
+
+query getFilter($id: ID!) {
+  getFilter(id: $id) {
+    id
+    name
+    description
+    type
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
+    createdAt
+    updatedAt
+  }
+}
+
+query listFilterRules($filterId: ID) {
+  listFilterRules(filterId: $filterId) {
+    id
+    protocol
+    direction
+    action
+    priority
+    ipVersion
+    srcMacAddr
+    srcIpAddr
+    srcIpMask
+    dstIpAddr
+    dstIpMask
+    srcPortStart
+    srcPortEnd
+    dstPortStart
+    dstPortEnd
+    state
+    comment
+    createdAt
+    updatedAt
+  }
+}
+
+query listServices {
+  listServices {
+    id
+    name
+    displayName
+    description
+    riskLevel
+    riskDescription
+    ports {
+      protocol
+      portStart
+      portEnd
+    }
+  }
+}
+
+query getVmServiceStatus($serviceId: ID!, $vmId: ID!) {
+  getVmServiceStatus(serviceId: $serviceId, vmId: $vmId) {
+    vmId
+    vmName
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+    running
+    lastSeen
+  }
+}
+
+query getDepartmentVmsServiceStatus($serviceId: ID!, $departmentId: ID!) {
+  getDepartmentVmsServiceStatus(serviceId: $serviceId, departmentId: $departmentId) {
+    vmId
+    vmName
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+    running
+    lastSeen
+  }
+}
+
+query getDepartmentServiceStatus($serviceId: ID!, $departmentId: ID!) {
+  getDepartmentServiceStatus(serviceId: $serviceId, departmentId: $departmentId) {
+    departmentId
+    departmentName
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+    vmCount
+    enabledVmCount
+  }
+}
+
+query getGlobalServiceStatus($serviceId: ID!) {
+  getGlobalServiceStatus(serviceId: $serviceId) {
+    serviceId
+    serviceName
+    useEnabled
+    provideEnabled
+  }
+}
+
+query getServiceStatusSummary {
+  getServiceStatusSummary {
+    serviceId
+    serviceName
+    totalVms
+    runningVms
+    enabledVms
+  }
+}
+  

@@ -8,7 +8,7 @@ import { store, persistor } from "@/state/store";
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { InitialDataLoader } from '@/components/InitialDataLoader';
-import { AppSidebar } from "@/components/ui/navbar";
+import { AppSidebar } from "@/components/ui/navbar"; 
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import auth from '@/utils/auth';
@@ -17,8 +17,12 @@ import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { createDepartment as createDepartmentAction } from '@/state/slices/departments';
 import { SizeProvider } from "@/components/ui/size-provider";
+import { Toaster } from "@/components/ui/toaster";
 
-const monst = Montserrat({ subsets: ["latin"] });
+const monst = Montserrat({ 
+  subsets: ["latin"],
+  display: 'swap'
+});
 
 // Separate component to use Redux hooks after Provider is initialized
 function AppContent({ children, isAuthenticated }) {
@@ -90,8 +94,9 @@ export default function RootLayout({ children }) {
   }, []);
 
   return (
-    <html lang="en">
-      <body className={monst.className}>
+    <html lang="en" className={monst.className}>
+      <body>
+        <div className="app-container">
           <SizeProvider defaultSize="xl">
             <Provider store={store}>
               <PersistGate loading={null} persistor={persistor}>
@@ -102,12 +107,22 @@ export default function RootLayout({ children }) {
                         {children}
                       </AppContent>
                     </InitialDataLoader>
+                    <Toaster />
                   </NextUIProvider>
                 </ApolloProvider>
               </PersistGate>
             </Provider>
           </SizeProvider>
+        </div>
       </body>
     </html>
+  );
+}
+
+export function ClientRootLayout({ children }) {
+  return (
+    <RootLayout>
+      {children}
+    </RootLayout>
   );
 }

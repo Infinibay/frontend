@@ -58,11 +58,6 @@ export default function ComputersPage() {
   // Group machines by department
   const groupedMachines = groupMachinesByDepartment(byDepartment, machines || [], departments);
 
-  // Fetch machines on mount
-  useEffect(() => {
-    dispatch(fetchVms());
-  }, [dispatch]);
-
   // Handle Escape key
   useEffect(() => {
     const handleKeyDown = (event) => {

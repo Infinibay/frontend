@@ -1,6 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { GPUS_QUERY } from '@/graphql/queries';
+import { 
+  GetGraphicsDocument
+} from '@/gql/hooks';
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
@@ -32,7 +34,7 @@ export const fetchGraphics = createAsyncThunk(
   'system/fetchGraphics',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await executeGraphQLQuery(GPUS_QUERY);
+      const response = await executeGraphQLQuery(GetGraphicsDocument);
       return response.getGraphics;
     } catch (error) {
       return rejectWithValue(error.message);

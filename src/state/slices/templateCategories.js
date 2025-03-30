@@ -1,11 +1,12 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { MACHINE_TEMPLATE_CATEGORIES_QUERY } from '@/graphql/queries';
-import { 
-  CREATE_MACHINE_TEMPLATE_CATEGORY_MUTATION,
-  UPDATE_MACHINE_TEMPLATE_CATEGORY_MUTATION,
-  DESTROY_MACHINE_TEMPLATE_CATEGORY_MUTATION
-} from '@/graphql/mutations';
+
+import {
+  MachineTemplateCategoriesDocument,
+  CreateMachineTemplateCategoryDocument,
+  UpdateMachineTemplateCategoryDocument,
+  DestroyMachineTemplateCategoryDocument
+} from '@/gql/hooks';
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
@@ -30,7 +31,7 @@ const executeGraphQLMutation = async (mutation, variables = {}) => {
 export const fetchTemplateCategories = createAsyncThunk(
   'templateCategories/fetchTemplateCategories',
   async () => {
-    const data = await executeGraphQLQuery(MACHINE_TEMPLATE_CATEGORIES_QUERY);
+    const data = await executeGraphQLQuery(MachineTemplateCategoriesDocument);
     return data.machineTemplateCategories;
   }
 );
@@ -38,7 +39,7 @@ export const fetchTemplateCategories = createAsyncThunk(
 export const createTemplateCategory = createAsyncThunk(
   'templateCategories/createTemplateCategory',
   async (input) => {
-    const data = await executeGraphQLMutation(CREATE_MACHINE_TEMPLATE_CATEGORY_MUTATION, { input });
+    const data = await executeGraphQLMutation(CreateMachineTemplateCategoryDocument, { input });
     return data.createMachineTemplateCategory;
   }
 );
@@ -46,7 +47,7 @@ export const createTemplateCategory = createAsyncThunk(
 export const updateTemplateCategory = createAsyncThunk(
   'templateCategories/updateTemplateCategory',
   async ({ input, id }) => {
-    const data = await executeGraphQLMutation(UPDATE_MACHINE_TEMPLATE_CATEGORY_MUTATION, { input, id });
+    const data = await executeGraphQLMutation(UpdateMachineTemplateCategoryDocument, { input, id });
     return data.updateMachineTemplateCategory;
   }
 );
@@ -54,7 +55,7 @@ export const updateTemplateCategory = createAsyncThunk(
 export const destroyTemplateCategory = createAsyncThunk(
   'templateCategories/destroyTemplateCategory',
   async (id) => {
-    const data = await executeGraphQLMutation(DESTROY_MACHINE_TEMPLATE_CATEGORY_MUTATION, { id });
+    const data = await executeGraphQLMutation(DestroyMachineTemplateCategoryDocument, { id });
     if (data.destroyMachineTemplateCategory) {
       return id;
     }

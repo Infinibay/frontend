@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006 --no-open",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
     "@apollo/client": "^3.11.8",
@@ -40,18 +41,19 @@
     "@storybook/addon-actions": "^8.4.5",
     "@storybook/addon-console": "^3.0.0",
     "@types/react": "^18.3.12",
-    "apexcharts": "^3.45.1",
+    "apexcharts": "^4.0.0",
     "apollo3-cache-persist": "^0.15.0",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "cmdk": "^1.0.4",
     "connect-timeout": "^1.9.0",
-    "framer-motion": "^10.17.4",
+    "framer-motion": "*",
     "graphql": "^16.9.0",
     "lucide-react": "^0.454.0",
     "next": "14.0.4",
     "react": "^18",
-    "react-apexcharts": "^1.4.1",
+    "react-apexcharts": "^1.7.0",
     "react-dom": "^18",
     "react-hook-form": "^7.53.1",
     "react-hot-toast": "^2.4.1",
@@ -65,6 +67,11 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^3.2.2",
+    "@graphql-codegen/cli": "5.0.5",
+    "@graphql-codegen/client-preset": "4.6.3",
+    "@graphql-codegen/typescript": "4.1.4",
+    "@graphql-codegen/typescript-operations": "^4.5.0",
+    "@graphql-codegen/typescript-react-apollo": "^4.3.2",
     "@mdx-js/react": "latest",
     "@storybook/addon-docs": "latest",
     "@storybook/addon-essentials": "^8.4.4",
@@ -83,6 +90,7 @@
     "postcss": "^8.4.32",
     "postcss-loader": "^8.1.1",
     "storybook": "^8.4.4",
-    "tailwindcss": "^3.4.0"
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.7.3"
   }
 }

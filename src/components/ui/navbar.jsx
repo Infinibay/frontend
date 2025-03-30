@@ -2,9 +2,11 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Image } from "@nextui-org/react";
 import { cn } from "@/lib/utils";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchVms } from "@/state/slices/vms";
 
 // UI Components
 import { Button } from "./button";
@@ -29,13 +31,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./dialog";
+import { InputSelector } from "./input-selector";
+
+// Custom Components
+import SidebarVMList from "@/app/departments/[name]/components/SidebarVMList";
 
 // Icons
 import { RiDashboardLine, RiSettings4Line } from "react-icons/ri";
 import { FiUsers } from "react-icons/fi";
 import { BiLogOut, BiBuildings } from "react-icons/bi";
 import { ImInsertTemplate } from "react-icons/im";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { HiPlus } from "react-icons/hi";
 
 const AppSidebar = React.forwardRef(({ 
@@ -47,16 +53,39 @@ const AppSidebar = React.forwardRef(({
     ...props
   }, ref) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const dispatch = useDispatch();
   const isActive = (path) => pathname === path;
   const [isDeptsOpen, setIsDeptsOpen] = React.useState(true);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [newDepartmentName, setNewDepartmentName] = React.useState("");
+  const [activeSidebarSection, setActiveSidebarSection] = React.useState(null);
+  const [selectedDepartment, setSelectedDepartment] = React.useState("");
+  const [subSidebarVisible, setSubSidebarVisible] = React.useState(false);
 
   const { size: contextSize } = useSizeContext();
   const sizes = sizeVariants[contextSize];
   const sidebarWidth = sizes.navbar.width;
   const sidebarWidthMobile = sizes.navbar.mobileWidth;
   const sidebarWidthIcon = sizes.icon.button.replace("w-", "") + "rem";
+
+  // Fetch VMs if they're not already loaded
+  const vms = useSelector((state) => state.vms.items);
+  const vmsLoading = useSelector((state) => state.vms.loading.fetch);
+  
+  // Filter VMs by the selected department
+  const departmentVMs = React.useMemo(() => {
+    return vms.filter(vm => 
+      vm.department?.name?.toLowerCase() === selectedDepartment.toLowerCase()
+    );
+  }, [vms, selectedDepartment]);
+  
+  // React.useEffect(() => {
+  //   // Only fetch VMs if we don't have any and we're not already fetching
+  //   if (vms.length === 0 && !vmsLoading) {
+  //     dispatch(fetchVms());
+  //   }
+  // }, [dispatch, vms.length, vmsLoading]);
 
   const handleCreateDepartmentClick = () => {
     setIsDialogOpen(true);
@@ -86,6 +115,69 @@ const AppSidebar = React.forwardRef(({
     setIsDialogOpen(false);
   };
 
+  const handleDepartmentChange = (value) => {
+    // Only update and navigate if the value actually changed
+    if (value && value !== selectedDepartment) {
+      console.log(`Selecting department: ${value}`);
+      setSelectedDepartment(value);
+      
+      // Use toLowerCase for URL but keep original case for display
+      const departmentUrlValue = value.toLowerCase();
+      
+      // Update sidebar state
+      setIsDeptsOpen(true);
+      setActiveSidebarSection('departments');
+      setSubSidebarVisible(true);
+      
+      // Navigate to the department page
+      router.push(`/departments/${departmentUrlValue}`);
+    }
+  };
+
+  const openSubSidebar = (section) => {
+    setActiveSidebarSection(section);
+    setSubSidebarVisible(true);
+  };
+
+  const closeSubSidebar = () => {
+    setSubSidebarVisible(false);
+  };
+
+  // Initialize department selection and sidebar state based on the current path
+  React.useEffect(() => {
+    // Check if we're on a department page
+    if (pathname.startsWith('/departments/')) {
+      // Extract department name from the path
+      const pathParts = pathname.split('/');
+      const departmentIndex = pathParts.findIndex(part => part === 'departments');
+      
+      if (departmentIndex !== -1 && pathParts.length > departmentIndex + 1) {
+        // Get the department name from the URL
+        const departmentName = pathParts[departmentIndex + 1];
+        
+        if (departmentName) {
+          // Find the matching department with proper case from the departments array
+          const matchingDept = departments.find(
+            dept => dept.name.toLowerCase() === departmentName.toLowerCase()
+          );
+          
+          if (matchingDept) {
+            // Set the selected department with proper case
+            setSelectedDepartment(matchingDept.name);
+          } else {
+            // If no match found, use the URL value (fallback)
+            setSelectedDepartment(departmentName);
+          }
+          
+          // Open the departments section in the sidebar
+          setIsDeptsOpen(true);
+          setActiveSidebarSection('departments');
+          setSubSidebarVisible(true);
+        }
+      }
+    }
+  }, [pathname, departments]);
+
   // Menu item styles based on size
   const menuStyles = {
     text: sizes.text,
@@ -97,128 +189,183 @@ const AppSidebar = React.forwardRef(({
   };
 
   const navItems = [
-    { href: "/computers", icon: RiDashboardLine, label: "Computers" },
-    {
-      label: "Departments",
-      icon: BiBuildings,
-      children: [
-        ...departments.map((dept) => ({
-          href: `/departments/${dept.name}`,
-          label: dept.name,
-          badge: dept.computersCount || 0,
-        })),
-        {
-          label: (<><HiPlus className="w-4 h-4" /> Create Department</>),
-          onClick: handleCreateDepartmentClick,
-          className: "text-blue-200 hover:text-white"
-        }
-      ],
-    },
-    { href: "/users", icon: FiUsers, label: "Users" },
-    { href: "/settings", icon: RiSettings4Line, label: "Settings" },
-    { href: "/templates", icon: ImInsertTemplate, label: "Templates" }
+    { id: "computers", href: "/computers", icon: RiDashboardLine, label: "Computers", hasSubmenu: false },
+    { id: "departments", href: "/departments", icon: BiBuildings, label: "Departments", hasSubmenu: true },
+    { id: "templates", href: "/templates", icon: ImInsertTemplate, label: "Templates", hasSubmenu: false },
+    { id: "users", href: "/users", icon: FiUsers, label: "Users", hasSubmenu: false },
+    { id: "settings", href: "/settings", icon: RiSettings4Line, label: "Settings", hasSubmenu: false }
   ];
 
-  const renderMenuItems = () => {
-    return navItems.map((item) => {
-      if (!item.children) {
-        return (
-          <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={isActive(item.href)}
-              className={cn(
-                "text-gray-300 hover:text-white w-full",
-                menuStyles.text,
-                menuStyles.spacing.item
-              )}
-            >
-              <Link href={item.href} className={cn("flex items-center", menuStyles.gap)}>
-                {item.icon && <item.icon className={menuStyles.icon} />}
-                <span>{item.label}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      }
+  const renderMainMenuItems = () => {
+    return navItems.map((item) => (
+      <SidebarMenuItem key={item.id}>
+        <SidebarMenuButton
+          className={cn(
+            "text-gray-300 hover:text-white w-full",
+            menuStyles.text,
+            menuStyles.spacing.item,
+            isActive(item.href) && "bg-blue-600 text-white"
+          )}
+          onClick={() => item.hasSubmenu ? openSubSidebar(item.id) : router.push(item.href)}
+        >
+          <div className={cn("flex items-center", menuStyles.gap)}>
+            {item.icon && <item.icon className={menuStyles.icon} />}
+            <span>{item.label}</span>
+          </div>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    ));
+  };
 
-      return (
-        <React.Fragment key={item.label}>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => setIsDeptsOpen(!isDeptsOpen)}
-              className={cn(
-                "text-gray-300 hover:text-white justify-between w-full",
-                menuStyles.text,
-                menuStyles.spacing.item
-              )}
+  const renderDepartmentsSubMenu = (departmentVMs) => {
+    return (
+      <>
+        <SidebarHeader className={cn("relative flex items-center justify-between", menuStyles.spacing.container)}>
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              onClick={closeSubSidebar}
+              className="text-white hover:text-white hover:bg-indigo-500/30 mr-2 rounded-full transition-all transform hover:scale-105"
             >
-              <div className={cn("flex items-center", menuStyles.gap)}>
-                {item.icon && <item.icon className={menuStyles.icon} />}
-                <span>{item.label}</span>
+              <ChevronLeft className={menuStyles.icon} />
+            </Button>
+            <span className="text-white font-medium tracking-wide text-lg">Departments</span>
+          </div>
+        </SidebarHeader>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-800 via-indigo-700 to-purple-800 opacity-90 z-[-1]"></div>
+        <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-5 z-[-1]"></div>
+        <SidebarContent className="relative">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <div className="p-4">
+                <label className="block text-sm text-blue-100 mb-2 font-medium">Department</label>
+                <div className="bg-white/10 rounded-lg overflow-hidden backdrop-blur-md border border-white/20 shadow-lg">
+                  <InputSelector
+                    items={departments}
+                    selectedItem={departments.find(dept => dept.name.toLowerCase() === selectedDepartment.toLowerCase())}
+                    onSelectItem={(department) => handleDepartmentChange(department.name)}
+                    placeholder="Select department"
+                    searchPlaceholder="Search departments..."
+                    itemLabelKey="name"
+                    itemValueKey="id"
+                    className="!bg-transparent text-white border-transparent hover:!bg-white/10 transition-colors"
+                  />
+                </div>
               </div>
-              {isDeptsOpen ? (
-                <ChevronDown className={menuStyles.icon} />
-              ) : (
-                <ChevronRight className={menuStyles.icon} />
-              )}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          {isDeptsOpen &&
-            item.children.map((child) => (
-              <SidebarMenuItem key={child.href || child.label}>
-                {child.href ? (
+            </SidebarMenuItem>
+
+            <div className="px-4 pt-2 pb-4">
+              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={isActive(child.href)}
+                    isActive={pathname === "/departments"}
                     className={cn(
-                      "text-gray-300 hover:text-white justify-between w-full",
+                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg",
+                      pathname === "/departments" ? "bg-indigo-500/30 text-white" : "",
                       menuStyles.text,
-                      menuStyles.spacing.subItem
+                      menuStyles.spacing.item
                     )}
                   >
-                    <Link
-                      href={child.href}
-                      className={cn("flex items-center justify-between w-full", menuStyles.gap)}
-                    >
-                      <span>{child.label}</span>
-                      {child.badge > 0 && (
-                        <span
-                          className={cn(
-                            "bg-blue-500 text-white px-2 py-0.5 rounded-full",
-                            sizes.badge.text
-                          )}
-                        >
-                          {child.badge}
+                    <Link href="/departments" className={cn("flex items-center", menuStyles.gap)}>
+                      <span>All Departments</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={handleCreateDepartmentClick}
+                    className={cn(
+                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg mt-1",
+                      menuStyles.text,
+                      menuStyles.spacing.item
+                    )}
+                  >
+                    <div className={cn("flex items-center", menuStyles.gap)}>
+                      <div className="bg-gradient-to-r from-indigo-400 to-purple-400 p-1 rounded-md">
+                        <HiPlus className="w-3 h-3 text-indigo-900" />
+                      </div>
+                      <span>Create Department</span>
+                    </div>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </div>
+            </div>
+            
+            {/* Computers section */}
+            <div className="px-4 pt-2 pb-4">
+              <div className="flex items-center mb-3">
+                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
+                <h3 className="px-3 text-sm font-semibold text-indigo-200">Computers</h3>
+                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
+              </div>
+              
+              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className={cn(
+                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg",
+                      menuStyles.text,
+                      menuStyles.spacing.item
+                    )}
+                  >
+                    <Link href={selectedDepartment ? `/departments/${selectedDepartment}` : "/departments"} className={cn("flex items-center justify-between", menuStyles.gap)}>
+                      <span>All computers</span>
+                      {departmentVMs.length > 0 && (
+                        <span className="bg-indigo-500/40 text-white text-xs px-2 py-0.5 rounded-full">
+                          {departmentVMs.length}
                         </span>
                       )}
                     </Link>
                   </SidebarMenuButton>
-                ) : (
+                </SidebarMenuItem>
+                
+                {/* VM List */}
+                {selectedDepartment && departmentVMs.length > 0 && (
+                  <div className="mt-2 border-t border-white/10 pt-2">
+                    <div className="px-3 py-1">
+                      <span className="text-xs font-medium text-indigo-200/70">Virtual Machines</span>
+                    </div>
+                    <SidebarVMList 
+                      machines={departmentVMs} 
+                      menuStyles={menuStyles} 
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Security section */}
+            <div className="px-4 pt-2 pb-4">
+              <div className="flex items-center mb-3">
+                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
+                <h3 className="px-3 text-sm font-semibold text-indigo-200">Security</h3>
+                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
+              </div>
+              
+              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                <SidebarMenuItem>
                   <SidebarMenuButton
-                    onClick={child.onClick}
+                    asChild
                     className={cn(
-                      "w-full",
+                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg",
                       menuStyles.text,
-                      menuStyles.spacing.subItem,
-                      child.className
+                      menuStyles.spacing.item
                     )}
                   >
-                    <Button
-                      type="button"
-                      onClick={handleCreateDepartmentClick}
-                      variant="ghost"
-                      className="flex items-center gap-1 px-2 py-0.5"
-                    >
-                      <HiPlus className="w-4 h-4" /> Create Department
-                    </Button>
+                    <Link href={selectedDepartment ? `/departments/${selectedDepartment}/security` : "/departments"} className={cn("flex items-center", menuStyles.gap)}>
+                      <span>Security Settings</span>
+                    </Link>
                   </SidebarMenuButton>
-                )}
-              </SidebarMenuItem>
-            ))}
-        </React.Fragment>
-      );
-    });
+                </SidebarMenuItem>
+              </div>
+            </div>
+          </SidebarMenu>
+        </SidebarContent>
+      </>
+    );
   };
 
   return (
@@ -268,8 +415,12 @@ const AppSidebar = React.forwardRef(({
           sidebarWidthMobile={sidebarWidthMobile}
           sidebarWidthIcon={sidebarWidthIcon}
         >
+          {/* Main Sidebar */}
           <Sidebar
-            className="bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50"
+            className={cn(
+              "bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50 transition-all duration-300",
+              subSidebarVisible && "transform -translate-x-full"
+            )}
             data-collapsible="sidebar"
           >
             {/* Decorative waves */}
@@ -342,7 +493,7 @@ const AppSidebar = React.forwardRef(({
               </Link>
             </SidebarHeader>
             <SidebarContent className="relative">
-              <SidebarMenu>{renderMenuItems()}</SidebarMenu>
+              <SidebarMenu>{renderMainMenuItems()}</SidebarMenu>
             </SidebarContent>
             <SidebarFooter
               className={cn("border-t border-blue-700 relative", menuStyles.spacing.container)}
@@ -379,6 +530,18 @@ const AppSidebar = React.forwardRef(({
               </Button>
             </SidebarFooter>
           </Sidebar>
+
+          {/* Sub-Sidebar */}
+          <Sidebar
+            className={cn(
+              "bg-blue-800 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50 absolute top-0 left-0 h-full transition-all duration-300",
+              subSidebarVisible ? "transform translate-x-0" : "transform -translate-x-full"
+            )}
+            data-collapsible="sidebar"
+          >
+            {activeSidebarSection === "departments" && renderDepartmentsSubMenu(departmentVMs)}
+          </Sidebar>
+
           <SidebarInset>{children}</SidebarInset>
         </SidebarProvider>
       </div>

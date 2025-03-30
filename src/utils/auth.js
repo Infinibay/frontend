@@ -1,8 +1,7 @@
-import { fetchCurrentUser } from '@/state/slices/auth';
 import { ApolloClient, InMemoryCache, createHttpLink, gql } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
-import { CURRENT_USER_QUERY } from '@/graphql/queries';
+import { CurrentUserDocument, LoginDocument } from '@/gql/hooks';
 
 // GraphQL API endpoint (use environment variable)
 const API_URL = process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:4000/graphql';
@@ -13,7 +12,12 @@ const httpLink = createHttpLink({
 });
 
 const authLink = setContext((_, { headers }) => {
-  const token = localStorage.getItem('token');
+  // Only access localStorage in browser environment
+  let token = '';
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+  }
+  
   return {
     headers: {
       ...headers,
@@ -24,29 +28,25 @@ const authLink = setContext((_, { headers }) => {
 
 const client = new ApolloClient({
   link: authLink.concat(httpLink),
-  cache: new InMemoryCache()
+  cache: new InMemoryCache(),
+  ssrMode: typeof window === 'undefined', // Enable SSR mode when running on server
 });
-
-// Login mutation
-const LOGIN_QUERY = gql`
-  query Login($email: String!, $password: String!) {
-    login(email: $email, password: $password) {
-      token
-    }
-  }
-`;
 
 // Authentication functions
 export const auth = {
   login: async (email, password) => {
     try {
-      const { data } = await client.query({
-        query: LOGIN_QUERY,
-        variables: { email, password },
-      });
+      const { data } = (await client.query({
+        query: LoginDocument,
+        variables: {  password, email },
+      }));
+      console.log(data);
 
       if (data.login && data.login.token) {
-        localStorage.setItem('token', data.login.token);
+        // Only access localStorage in browser environment
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', data.login.token);
+        }
         return data.login.token;
       }
       throw new Error('401'); // Unauthorized
@@ -59,22 +59,33 @@ export const auth = {
     }
   },
   fetchCurrentUser: async () => {
-    const { data } = await client.query({
-      query: CURRENT_USER_QUERY,
-    });
+    const data = (await client.query({
+      query: CurrentUserDocument,
+    })).data;
     return data.currentUser;
   },
 
   logout: () => {
-    localStorage.removeItem('token');
+    // Only access localStorage in browser environment
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
   },
 
   isLoggedIn: () => {
-    return !!localStorage.getItem('token');
+    // Only access localStorage in browser environment
+    if (typeof window !== 'undefined') {
+      return !!localStorage.getItem('token');
+    }
+    return false;
   },
 
   getToken: () => {
-    return localStorage.getItem('token');
+    // Only access localStorage in browser environment
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
   },
 
   // Optionally, add a method to check if the token is still valid

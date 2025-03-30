@@ -1,6 +1,4 @@
 "use client";
-import Header from "@/components/dashboard/Header";
-import Sidebar from "@/components/dashboard/Sidebar";
 import ProtectedRoute from '@/components/ProtectedRoute/ProtectedRoute';
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -27,10 +25,10 @@ export default function ApplicationsLayout({ children }) {
 
   return (
     <ProtectedRoute>
-      <div className="flex items-start  !bg-[#FAFAFA]">
+      <div className="flex items-start !bg-[#FAFAFA]">
         <div className="ml-auto w-full">
           <div className="flex flex-col min-h-screen">
-            <Header setUserSidebar={setUserSidebar} />
+            {/* Header would go here */}
             {children}
           </div>
         </div>

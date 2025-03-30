@@ -1,10 +1,13 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { DEPARTMENTS_QUERY, DEPARTMENT_QUERY, FIND_DEPARTMENT_BY_NAME_QUERY } from '@/graphql/queries';
-import { 
-    CREATE_DEPARTMENT_MUTATION,
-    DELETE_DEPARTMENT_MUTATION,
-} from '@/graphql/mutations';
+
+import {
+    DepartmentsDocument,
+    DepartmentDocument,
+    FindDepartmentByNameDocument,
+    CreateDepartmentDocument,
+    DestroyDepartmentDocument
+} from '@/gql/hooks';
 
 const executeGraphQLMutation = async (mutation, variables) => {
     try {
@@ -18,10 +21,39 @@ const executeGraphQLMutation = async (mutation, variables) => {
 
 const executeGraphQLQuery = async (query, variables = {}) => {
     try {
-        const { data } = await client.query({ query, variables });
-        return data;
+        const response = await client.query({ 
+            query, 
+            variables,
+            fetchPolicy: 'network-only' // Force network request
+        });
+        
+        // Check for GraphQL errors in the response
+        if (response.errors) {
+            const errorMessage = response.errors.map(err => err.message).join(', ');
+            console.error('GraphQL query error:', errorMessage);
+            throw new Error(errorMessage);
+        }
+        
+        // Get the first key in the data object (e.g., 'departments', 'findDepartmentByName')
+        const firstKey = Object.keys(response.data)[0];
+        
+        // Check if the data exists
+        if (response.data[firstKey] === undefined) {
+            console.warn(`GraphQL query returned undefined for ${firstKey}`);
+            return { [firstKey]: null };
+        }
+        
+        // Check for errors in the data response
+        if (response.data[firstKey]?.errors) {
+            const errorMessage = response.data[firstKey].errors.map(err => err.message).join(', ');
+            console.error('GraphQL data error:', errorMessage);
+            throw new Error(errorMessage);
+        }
+        
+        return response.data;
     } catch (error) {
         console.error('GraphQL query error:', error);
+        // Re-throw the error so it can be handled by the calling function
         throw error;
     }
 };
@@ -29,7 +61,7 @@ const executeGraphQLQuery = async (query, variables = {}) => {
 export const fetchDepartments = createAsyncThunk(
     'departments/fetchDepartments',
     async () => {
-        const data = await executeGraphQLQuery(DEPARTMENTS_QUERY);
+        const data = await executeGraphQLQuery(DepartmentsDocument);
         return data.departments;
     }
 );
@@ -37,24 +69,29 @@ export const fetchDepartments = createAsyncThunk(
 export const fetchDepartment = createAsyncThunk(
     'departments/fetchDepartment',
     async (id) => {
-        const data = await executeGraphQLQuery(DEPARTMENT_QUERY, { id });
+        const data = await executeGraphQLQuery(DepartmentDocument, { id });
         return data.department;
     }
 );
 
 export const fetchDepartmentByName = createAsyncThunk(
-	'departments/fetchDepartmentByName',
-	async (name) => {
-		const data = await executeGraphQLQuery(FIND_DEPARTMENT_BY_NAME_QUERY, { name });
-		return data.findDepartmentByName;
-	}
+    'departments/fetchDepartmentByName',
+    async (name, { rejectWithValue }) => {
+        try {
+            const data = await executeGraphQLQuery(FindDepartmentByNameDocument, { name });
+            return data.findDepartmentByName;
+        } catch (error) {
+            console.error(`Error fetching department by name "${name}":`, error);
+            return rejectWithValue(error.message);
+        }
+    }
 );
 
 export const createDepartment = createAsyncThunk(
     'departments/createDepartment',
     async (input) => {
         console.log(name);
-        const data = await executeGraphQLMutation(CREATE_DEPARTMENT_MUTATION, { name: input.name });
+        const data = await executeGraphQLMutation(CreateDepartmentDocument, { name: input.name });
         return data.createDepartment;
     }
 );
@@ -62,7 +99,7 @@ export const createDepartment = createAsyncThunk(
 export const deleteDepartment = createAsyncThunk(
     'departments/deleteDepartment',
     async (id) => {
-        const data = await executeGraphQLMutation(DELETE_DEPARTMENT_MUTATION, { id });
+        const data = await executeGraphQLMutation(DestroyDepartmentDocument, { id });
         return data.destroyDepartment;
     }
 );
@@ -130,12 +167,17 @@ const departmentsSlice = createSlice({
             })
             .addCase(fetchDepartmentByName.fulfilled, (state, action) => {
                 state.loading.fetchByName = false;
-                const index = state.items.findIndex((dept) => dept.id === action.payload.id);
-                if (index !== -1) {
-                    state.items[index] = action.payload;
-                } else {
-                    state.items.push(action.payload);
+                
+                // Check if payload exists before accessing its properties
+                if (action.payload) {
+                    const index = state.items.findIndex((dept) => dept.id === action.payload.id);
+                    if (index !== -1) {
+                        state.items[index] = action.payload;
+                    } else {
+                        state.items.push(action.payload);
+                    }
                 }
+                // If payload is null, we don't need to update the state
             })
             .addCase(fetchDepartmentByName.rejected, (state, action) => {
                 state.loading.fetchByName = false;

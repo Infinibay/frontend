@@ -45,7 +45,21 @@ const PcDetails = React.forwardRef(({
   open,
   onOpenChange,
   size = "md",
-  pc: {
+  pc,
+  onPlay,
+  onPause,
+  onStop,
+  onDelete,
+  className,
+  ...props
+}, ref) => {
+  // Early return if pc is null or undefined
+  if (!pc) {
+    return null;
+  }
+
+  // Destructure pc properties with defaults
+  const {
     id,
     name,
     user,
@@ -55,14 +69,8 @@ const PcDetails = React.forwardRef(({
     screenshot = "/images/default-screenshot.png",
     avatar,
     configuration
-  },
-  onPlay,
-  onPause,
-  onStop,
-  onFullScreen,
-  onDelete,
-  ...props
-}, ref) => {
+  } = pc;
+
   const isRunning = status === "running";
   const isPaused = status === "paused";
   const isStopped = status === "stopped";
