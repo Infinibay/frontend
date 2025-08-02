@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { cn } from "@/lib/utils";
 import PropTypes from 'prop-types';
 
@@ -13,9 +14,11 @@ export const Avatar = ({ src, alt, className }) => {
       className
     )}>
       {src ? (
-        <img
+        <Image
           src={src}
           alt={alt}
+          width={32}
+          height={32}
           className="h-full w-full object-cover"
           onError={(e) => {
             e.target.style.display = 'none';

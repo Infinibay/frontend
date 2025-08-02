@@ -2,8 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Image } from "@nextui-org/react";
 import { cn } from "@/lib/utils";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchVms } from "@/state/slices/vms";
@@ -500,9 +500,11 @@ const AppSidebar = React.forwardRef(({
             >
               {user && (
                 <div className={cn("flex items-center px-2 mb-4", menuStyles.gap)}>
-                  <img
+                  <Image
                     src={user.avatar}
                     alt={`${user.firstName} ${user.lastName}'s avatar`}
+                    width={40}
+                    height={40}
                     className={cn("rounded-full bg-blue-800 p-1", menuStyles.avatar)}
                   />
                   <div className="flex-1 min-w-0">

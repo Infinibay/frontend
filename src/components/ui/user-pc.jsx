@@ -1,4 +1,5 @@
 import * as React from "react"
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -262,9 +263,11 @@ const UserPc = React.forwardRef(({
                 "px-8 py-4 rounded-t-xl",
                 selected && "bg-[#00A6FF]/20"
               )}>
-                <img
+                <Image
                   src="/images/smallScreenmointer.png"
                   alt="PC Monitor"
+                  width={100}
+                  height={80}
                   className="w-full max-w-[100px] mx-auto"
                 />
               </div>
@@ -277,9 +280,11 @@ const UserPc = React.forwardRef(({
 
             {/* User Avatar */}
             <div className="absolute -bottom-1.5 -right-2">
-              <img
+              <Image
                 src={avatar}
                 alt="User Avatar"
+                width={48}
+                height={48}
                 className="w-12 h-12 rounded-full shadow-xl"
               />
             </div>
@@ -443,7 +448,7 @@ const UserPc = React.forwardRef(({
         </td>
         <td className="py-3 px-4">
           <div className="flex items-center gap-2">
-            <img src={avatar} alt={displayUsername} className="w-6 h-6 rounded-full" />
+            <Image src={avatar} alt={displayUsername} width={24} height={24} className="w-6 h-6 rounded-full" />
             <span>{displayUsername}</span>
           </div>
         </td>

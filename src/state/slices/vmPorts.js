@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { ListVmPortsDocument } from '@/gql/hooks';
+// TODO: ListVmPortsDocument query needs to be added to GraphQL schema
+// import { ListVmPortsDocument } from '@/gql/hooks';
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
@@ -34,8 +35,10 @@ export const fetchVmPorts = createAsyncThunk(
   'vmPorts/fetchVmPorts',
   async (_, { rejectWithValue }) => {
     try {
-      const data = await executeGraphQLQuery(ListVmPortsDocument);
-      return data.listVmPorts || [];
+      // TODO: Implement ListVmPortsDocument query in GraphQL schema
+      // const data = await executeGraphQLQuery(ListVmPortsDocument);
+      // return data.listVmPorts || [];
+      return []; // Return empty array for now
     } catch (error) {
       return rejectWithValue(error.message);
     }

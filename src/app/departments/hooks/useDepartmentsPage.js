@@ -126,7 +126,7 @@ export const useDepartmentsPage = () => {
       
       fetchData();
     }
-  }, []); // Empty dependency array - runs once on mount
+  }, [dispatch]); // Include dispatch in dependency array
   
   // Memoize retry function to avoid recreating it on every render
   const retryLoading = useCallback(() => {

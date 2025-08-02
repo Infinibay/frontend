@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
+import Image from 'next/image';
 import { cn } from '../../lib/utils';
 import DualList from './dual-list';
 import { Spinner } from './spinner';
@@ -118,9 +119,11 @@ const AppInstaller = ({
             }
           )}>
             <div className="flex items-center justify-center">
-              <img 
+              <Image 
                 src={app.icon} 
                 alt={`${app.name} icon`}
+                width={size === "sm" ? 24 : size === "md" ? 32 : size === "lg" ? 40 : 48}
+                height={size === "sm" ? 24 : size === "md" ? 32 : size === "lg" ? 40 : 48}
                 className={cn(
                   "object-contain",
                   {

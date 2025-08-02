@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "./sheet";
@@ -115,9 +116,10 @@ const PcDetails = React.forwardRef(({
               
               {/* Screen Content */}
               <div className="relative aspect-video">
-                <img
+                <Image
                   src={screenshot}
                   alt={`${name} screenshot`}
+                  fill
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -185,9 +187,11 @@ const PcDetails = React.forwardRef(({
 
         <SheetHeader className="pb-4">
           <SheetTitle className={cn("font-bold flex items-center gap-3", sizes.title)}>
-            <img
+            <Image
               src={avatar}
               alt={`${name} avatar`}
+              width={48}
+              height={48}
               className={cn("rounded-full", sizes.avatar)}
             />
             {name}
