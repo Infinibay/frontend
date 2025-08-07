@@ -171,9 +171,20 @@ export class SocketService {
     return this.subscribe(eventPattern, callback)
   }
 
-  // Subscribe to all events for a resource
-  subscribeToAllResourceEvents(resource, callback) {
-    const patterns = ['create', 'update', 'delete', 'power_on', 'power_off', 'suspend']
+  // Subscribe to all events for a resource, with sensible defaults per resource.
+  // Optionally override actions by providing an array of action names.
+  subscribeToAllResourceEvents(resource, callback, actionsOverride = null) {
+    const defaultActionsByResource = {
+      vms: ['create', 'update', 'delete', 'power_on', 'power_off', 'suspend'],
+      users: ['create', 'update', 'delete'],
+      departments: ['create', 'update', 'delete'],
+      applications: ['create', 'update', 'delete']
+    }
+
+    const patterns = Array.isArray(actionsOverride) && actionsOverride.length > 0
+      ? actionsOverride
+      : (defaultActionsByResource[resource] || ['create', 'update', 'delete'])
+
     const unsubscribeFunctions = []
 
     patterns.forEach(action => {

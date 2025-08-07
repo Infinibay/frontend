@@ -39,7 +39,7 @@ const executeGraphQLMutation = async (mutation, variables = {}) => {
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
   async () => {
-    const data = await executeGraphQLQuery(UsersDocument, {pagination: {take: 1000, skip: 0}});
+    const data = await executeGraphQLQuery(UsersDocument, { pagination: { take: 1000, skip: 0 } });
     return data.users;
   }
 );
@@ -95,7 +95,31 @@ const usersSlice = createSlice({
       delete: null,
     },
   },
-  reducers: {},
+  reducers: {
+    // Real-time event handlers
+    realTimeUserCreated: (state, action) => {
+      const newUser = action.payload;
+      if (!newUser || !newUser.id) return;
+      const exists = state.items.findIndex(u => u.id === newUser.id) !== -1;
+      if (!exists) {
+        state.items.push(newUser);
+      }
+    },
+    realTimeUserUpdated: (state, action) => {
+      const updated = action.payload;
+      if (!updated || !updated.id) return;
+      const idx = state.items.findIndex(u => u.id === updated.id);
+      if (idx !== -1) {
+        state.items[idx] = updated;
+      }
+    },
+    realTimeUserDeleted: (state, action) => {
+      const payload = action.payload;
+      const id = payload?.id || payload;
+      if (!id) return;
+      state.items = state.items.filter(u => u.id !== id);
+    },
+  },
   extraReducers: (builder) => {
     // Fetch cases
     builder

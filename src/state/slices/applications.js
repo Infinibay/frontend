@@ -105,6 +105,35 @@ const applicationsSlice = createSlice({
     deselectApplication: (state) => {
       state.selectedApplication = null;
     },
+    // Real-time event handlers
+    realTimeApplicationCreated: (state, action) => {
+      const app = action.payload;
+      if (!app || !app.id) return;
+      const exists = state.items.findIndex(a => a.id === app.id) !== -1;
+      if (!exists) {
+        state.items.push(app);
+      }
+    },
+    realTimeApplicationUpdated: (state, action) => {
+      const app = action.payload;
+      if (!app || !app.id) return;
+      const idx = state.items.findIndex(a => a.id === app.id);
+      if (idx !== -1) {
+        state.items[idx] = app;
+        if (state.selectedApplication?.id === app.id) {
+          state.selectedApplication = app;
+        }
+      }
+    },
+    realTimeApplicationDeleted: (state, action) => {
+      const payload = action.payload;
+      const id = payload?.id || payload;
+      if (!id) return;
+      state.items = state.items.filter(a => a.id !== id);
+      if (state.selectedApplication?.id === id) {
+        state.selectedApplication = null;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder

@@ -21,35 +21,35 @@ const executeGraphQLMutation = async (mutation, variables) => {
 
 const executeGraphQLQuery = async (query, variables = {}) => {
     try {
-        const response = await client.query({ 
-            query, 
+        const response = await client.query({
+            query,
             variables,
             fetchPolicy: 'network-only' // Force network request
         });
-        
+
         // Check for GraphQL errors in the response
         if (response.errors) {
             const errorMessage = response.errors.map(err => err.message).join(', ');
             console.error('GraphQL query error:', errorMessage);
             throw new Error(errorMessage);
         }
-        
+
         // Get the first key in the data object (e.g., 'departments', 'findDepartmentByName')
         const firstKey = Object.keys(response.data)[0];
-        
+
         // Check if the data exists
         if (response.data[firstKey] === undefined) {
             console.warn(`GraphQL query returned undefined for ${firstKey}`);
             return { [firstKey]: null };
         }
-        
+
         // Check for errors in the data response
         if (response.data[firstKey]?.errors) {
             const errorMessage = response.data[firstKey].errors.map(err => err.message).join(', ');
             console.error('GraphQL data error:', errorMessage);
             throw new Error(errorMessage);
         }
-        
+
         return response.data;
     } catch (error) {
         console.error('GraphQL query error:', error);
@@ -124,6 +124,30 @@ const departmentsSlice = createSlice({
         }
     },
     reducers: {
+        // Real-time event handlers
+        realTimeDepartmentCreated: (state, action) => {
+            const newDepartment = action.payload;
+            // Check if department already exists to avoid duplicates
+            const existingIndex = state.items.findIndex(dept => dept.id === newDepartment.id);
+            if (existingIndex === -1) {
+                state.items.push(newDepartment);
+                console.log('✅ Real-time: Department created', newDepartment.name);
+            }
+        },
+        realTimeDepartmentUpdated: (state, action) => {
+            const updatedDepartment = action.payload;
+            const index = state.items.findIndex(dept => dept.id === updatedDepartment.id);
+            if (index !== -1) {
+                state.items[index] = updatedDepartment;
+                console.log('✅ Real-time: Department updated', updatedDepartment.name);
+            }
+        },
+        realTimeDepartmentDeleted: (state, action) => {
+            const deletedDepartment = action.payload;
+            const deptId = deletedDepartment.id || deletedDepartment;
+            state.items = state.items.filter(dept => dept.id !== deptId);
+            console.log('✅ Real-time: Department deleted', deptId);
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -167,7 +191,7 @@ const departmentsSlice = createSlice({
             })
             .addCase(fetchDepartmentByName.fulfilled, (state, action) => {
                 state.loading.fetchByName = false;
-                
+
                 // Check if payload exists before accessing its properties
                 if (action.payload) {
                     const index = state.items.findIndex((dept) => dept.id === action.payload.id);
@@ -215,6 +239,13 @@ const departmentsSlice = createSlice({
 });
 
 export default departmentsSlice.reducer;
+
+// Export action creators
+export const {
+    realTimeDepartmentCreated,
+    realTimeDepartmentUpdated,
+    realTimeDepartmentDeleted
+} = departmentsSlice.actions;
 
 // Selectors
 export const selectDepartments = (state) => state.departments.items;

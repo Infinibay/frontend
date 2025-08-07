@@ -20,10 +20,10 @@ export function RealTimeProvider({ children }) {
 
     const initializeRealTime = async () => {
       if (!isLoggedIn || !token || !socketNamespace) {
-        console.log('🔌 RealTimeProvider: Not ready for connection:', { 
-          isLoggedIn, 
-          hasToken: !!token, 
-          hasNamespace: !!socketNamespace 
+        console.log('🔌 RealTimeProvider: Not ready for connection:', {
+          isLoggedIn,
+          hasToken: !!token,
+          hasNamespace: !!socketNamespace
         })
         return
       }
@@ -35,10 +35,10 @@ export function RealTimeProvider({ children }) {
 
         // Create the real-time Redux service
         service = createRealTimeReduxService(store)
-        
+
         // Initialize the service
         await service.initialize()
-        
+
         setRealTimeService(service)
         setConnectionStatus('connected')
         console.log('✅ RealTimeProvider: Real-time service initialized successfully')
@@ -95,13 +95,7 @@ export function RealTimeProvider({ children }) {
   return (
     <RealTimeContext.Provider value={contextValue}>
       {children}
-      {/* Optional: Add a small connection indicator for development */}
-      {process.env.NODE_ENV === 'development' && (
-        <RealTimeConnectionIndicator 
-          status={connectionStatus} 
-          error={error}
-        />
-      )}
+
     </RealTimeContext.Provider>
   )
 }
