@@ -14,20 +14,20 @@ import {
 const executeGraphQLMutation = async (mutation, variables) => {
   try {
     const response = await client.mutate({ mutation, variables });
-    
+
     // Check for GraphQL errors in the response
     if (response.errors) {
       const errorMessage = response.errors.map(err => err.message).join(', ');
       throw new Error(errorMessage);
     }
-    
+
     // Check for errors in the data response
     const firstKey = Object.keys(response.data)[0];
     if (response.data[firstKey]?.errors) {
       const errorMessage = response.data[firstKey].errors.map(err => err.message).join(', ');
       throw new Error(errorMessage);
     }
-    
+
     return response.data;
   } catch (error) {
     console.error('GraphQL mutation error:', error);
@@ -38,25 +38,25 @@ const executeGraphQLMutation = async (mutation, variables) => {
 const executeGraphQLQuery = async (query, variables = {}) => {
   console.log("Backtrace:", new Error("Here is your backtrace"));
   try {
-    const response = await client.query({ 
-      query, 
+    const response = await client.query({
+      query,
       variables,
       fetchPolicy: 'network-only' // Force network request
     });
-    
+
     // Check for GraphQL errors in the response
     if (response.errors) {
       const errorMessage = response.errors.map(err => err.message).join(', ');
       throw new Error(errorMessage);
     }
-    
+
     // Check for errors in the data response
     const firstKey = Object.keys(response.data)[0];
     if (response.data[firstKey]?.errors) {
       const errorMessage = response.data[firstKey].errors.map(err => err.message).join(', ');
       throw new Error(errorMessage);
     }
-    
+
     return response.data;
   } catch (error) {
     console.error('GraphQL query error:', error);
@@ -202,6 +202,54 @@ const vmsSlice = createSlice({
       Object.keys(state.error).forEach(key => {
         state.error[key] = null;
       });
+    },
+    // Real-time event handlers
+    realTimeVmCreated: (state, action) => {
+      const newVm = action.payload;
+      // Check if VM already exists to avoid duplicates
+      const existingIndex = state.items.findIndex(vm => vm.id === newVm.id);
+      if (existingIndex === -1) {
+        state.items.push(newVm);
+        console.log('✅ Real-time: VM created', newVm.name);
+      }
+    },
+    realTimeVmUpdated: (state, action) => {
+      const updatedVm = action.payload;
+      const index = state.items.findIndex(vm => vm.id === updatedVm.id);
+      if (index !== -1) {
+        state.items[index] = updatedVm;
+        console.log('✅ Real-time: VM updated', updatedVm.name);
+
+        // Update selected machine if it's the one being updated
+        if (state.selectedMachine?.id === updatedVm.id) {
+          state.selectedMachine = updatedVm;
+        }
+      }
+    },
+    realTimeVmDeleted: (state, action) => {
+      const deletedVm = action.payload;
+      const vmId = deletedVm.id || deletedVm;
+      state.items = state.items.filter(vm => vm.id !== vmId);
+      console.log('✅ Real-time: VM deleted', vmId);
+
+      // Clear selected machine if it was deleted
+      if (state.selectedMachine?.id === vmId) {
+        state.selectedMachine = null;
+      }
+    },
+    realTimeVmStatusChanged: (state, action) => {
+      const { id, action: statusAction, ...vmData } = action.payload;
+      const index = state.items.findIndex(vm => vm.id === id);
+      if (index !== -1) {
+        // Update the VM with new data, especially status
+        state.items[index] = { ...state.items[index], ...vmData };
+        console.log(`✅ Real-time: VM ${statusAction}`, state.items[index].name);
+
+        // Update selected machine if it's the one being updated
+        if (state.selectedMachine?.id === id) {
+          state.selectedMachine = { ...state.selectedMachine, ...vmData };
+        }
+      }
     }
   },
   extraReducers: (builder) => {
@@ -320,7 +368,15 @@ const vmsSlice = createSlice({
 });
 
 export default vmsSlice.reducer;
-export const { selectMachine, deselectMachine, clearErrors } = vmsSlice.actions;
+export const {
+  selectMachine,
+  deselectMachine,
+  clearErrors,
+  realTimeVmCreated,
+  realTimeVmUpdated,
+  realTimeVmDeleted,
+  realTimeVmStatusChanged
+} = vmsSlice.actions;
 
 // Selectors
 export const selectVmsState = (state) => state.vms;

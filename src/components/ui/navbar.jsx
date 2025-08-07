@@ -44,14 +44,14 @@ import { ImInsertTemplate } from "react-icons/im";
 import { ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { HiPlus } from "react-icons/hi";
 
-const AppSidebar = React.forwardRef(({ 
-    user, 
-    departments = [], 
-    children,
-    onLogOut,
-    onCreateDepartment,
-    ...props
-  }, ref) => {
+const AppSidebar = React.forwardRef(({
+  user,
+  departments = [],
+  children,
+  onLogOut,
+  onCreateDepartment,
+  ...props
+}, ref) => {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useDispatch();
@@ -72,14 +72,14 @@ const AppSidebar = React.forwardRef(({
   // Fetch VMs if they're not already loaded
   const vms = useSelector((state) => state.vms.items);
   const vmsLoading = useSelector((state) => state.vms.loading.fetch);
-  
+
   // Filter VMs by the selected department
   const departmentVMs = React.useMemo(() => {
-    return vms.filter(vm => 
+    return vms.filter(vm =>
       vm.department?.name?.toLowerCase() === selectedDepartment.toLowerCase()
     );
   }, [vms, selectedDepartment]);
-  
+
   // React.useEffect(() => {
   //   // Only fetch VMs if we don't have any and we're not already fetching
   //   if (vms.length === 0 && !vmsLoading) {
@@ -94,7 +94,7 @@ const AppSidebar = React.forwardRef(({
   const handleCreateDepartment = async (e) => {
     e.preventDefault();
     const trimmedName = newDepartmentName.trim();
-    
+
     if (!trimmedName) {
       setIsDialogOpen(false);
       return;
@@ -105,7 +105,7 @@ const AppSidebar = React.forwardRef(({
     } catch (error) {
       console.error("Failed to create department:", error);
     }
-    
+
     setNewDepartmentName("");
     setIsDialogOpen(false);
   };
@@ -120,15 +120,15 @@ const AppSidebar = React.forwardRef(({
     if (value && value !== selectedDepartment) {
       console.log(`Selecting department: ${value}`);
       setSelectedDepartment(value);
-      
+
       // Use toLowerCase for URL but keep original case for display
       const departmentUrlValue = value.toLowerCase();
-      
+
       // Update sidebar state
       setIsDeptsOpen(true);
       setActiveSidebarSection('departments');
       setSubSidebarVisible(true);
-      
+
       // Navigate to the department page
       router.push(`/departments/${departmentUrlValue}`);
     }
@@ -150,17 +150,17 @@ const AppSidebar = React.forwardRef(({
       // Extract department name from the path
       const pathParts = pathname.split('/');
       const departmentIndex = pathParts.findIndex(part => part === 'departments');
-      
+
       if (departmentIndex !== -1 && pathParts.length > departmentIndex + 1) {
         // Get the department name from the URL
         const departmentName = pathParts[departmentIndex + 1];
-        
+
         if (departmentName) {
           // Find the matching department with proper case from the departments array
           const matchingDept = departments.find(
             dept => dept.name.toLowerCase() === departmentName.toLowerCase()
           );
-          
+
           if (matchingDept) {
             // Set the selected department with proper case
             setSelectedDepartment(matchingDept.name);
@@ -168,7 +168,7 @@ const AppSidebar = React.forwardRef(({
             // If no match found, use the URL value (fallback)
             setSelectedDepartment(departmentName);
           }
-          
+
           // Open the departments section in the sidebar
           setIsDeptsOpen(true);
           setActiveSidebarSection('departments');
@@ -222,8 +222,8 @@ const AppSidebar = React.forwardRef(({
       <>
         <SidebarHeader className={cn("relative flex items-center justify-between", menuStyles.spacing.container)}>
           <div className="flex items-center">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={closeSubSidebar}
               className="text-white hover:text-white hover:bg-indigo-500/30 mr-2 rounded-full transition-all transform hover:scale-105"
             >
@@ -292,7 +292,7 @@ const AppSidebar = React.forwardRef(({
                 </SidebarMenuItem>
               </div>
             </div>
-            
+
             {/* Computers section */}
             <div className="px-4 pt-2 pb-4">
               <div className="flex items-center mb-3">
@@ -300,7 +300,7 @@ const AppSidebar = React.forwardRef(({
                 <h3 className="px-3 text-sm font-semibold text-indigo-200">Computers</h3>
                 <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
               </div>
-              
+
               <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
                 <SidebarMenuItem>
                   <SidebarMenuButton
@@ -321,16 +321,16 @@ const AppSidebar = React.forwardRef(({
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                
+
                 {/* VM List */}
                 {selectedDepartment && departmentVMs.length > 0 && (
                   <div className="mt-2 border-t border-white/10 pt-2">
                     <div className="px-3 py-1">
                       <span className="text-xs font-medium text-indigo-200/70">Virtual Machines</span>
                     </div>
-                    <SidebarVMList 
-                      machines={departmentVMs} 
-                      menuStyles={menuStyles} 
+                    <SidebarVMList
+                      machines={departmentVMs}
+                      menuStyles={menuStyles}
                     />
                   </div>
                 )}
@@ -344,7 +344,7 @@ const AppSidebar = React.forwardRef(({
                 <h3 className="px-3 text-sm font-semibold text-indigo-200">Security</h3>
                 <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
               </div>
-              
+
               <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
                 <SidebarMenuItem>
                   <SidebarMenuButton
@@ -396,7 +396,7 @@ const AppSidebar = React.forwardRef(({
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="submit"
                 onClick={handleCreateDepartment}
                 variant="success"
@@ -487,6 +487,8 @@ const AppSidebar = React.forwardRef(({
                 <Image
                   src="/images/sidebarLogo.png"
                   alt="Logo"
+                  width={120}
+                  height={40}
                   className={cn("w-auto rounded-none", menuStyles.logo)}
                   radius="none"
                 />

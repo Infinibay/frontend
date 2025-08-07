@@ -93,6 +93,10 @@ export default function ComputersPage() {
             selectedPc={selectedPc}
             onSelectMachine={handlePcSelect}
             size={size}
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onStop={handleStop}
+            onDelete={handleDelete}
           />
         </div>
 

@@ -20,6 +20,7 @@ const authSlice = createSlice({
 	initialState: {
 		isLoggedIn: false,
 		token: null,
+		socketNamespace: null,
 		user: {
 			id: null,
 			firstName: null,
@@ -39,6 +40,7 @@ const authSlice = createSlice({
 	reducers: {
 		logout: (state) => {
 			state.token = null;
+			state.socketNamespace = null;
 			state.user = {
 				id: null,
 				firstName: null,
@@ -49,6 +51,18 @@ const authSlice = createSlice({
 			state.isLoggedIn = false;
 			state.error.login = null;
 			state.error.fetchUser = null;
+
+			// Clear socket namespace from localStorage
+			if (typeof window !== 'undefined') {
+				localStorage.removeItem('socketNamespace');
+			}
+		},
+		setSocketNamespace: (state, action) => {
+			state.socketNamespace = action.payload;
+			// Store in localStorage for persistence
+			if (typeof window !== 'undefined') {
+				localStorage.setItem('socketNamespace', action.payload);
+			}
 		},
 	},
 	extraReducers: (builder) => {
@@ -61,6 +75,23 @@ const authSlice = createSlice({
 				state.loading.fetchUser = false;
 				state.user = action.payload;
 				state.isLoggedIn = true;
+
+				// Use namespace from backend response, or generate one if not provided
+				if (action.payload?.namespace) {
+					console.log('🔑 Using namespace from backend:', action.payload.namespace);
+					state.socketNamespace = action.payload.namespace;
+					if (typeof window !== 'undefined') {
+						localStorage.setItem('socketNamespace', action.payload.namespace);
+					}
+				} else if (action.payload?.id) {
+					// Fallback: generate namespace if backend doesn't provide one
+					const namespace = `user_${action.payload.id}_${Date.now()}`;
+					console.log('🔑 Generated fallback namespace:', namespace);
+					state.socketNamespace = namespace;
+					if (typeof window !== 'undefined') {
+						localStorage.setItem('socketNamespace', namespace);
+					}
+				}
 			})
 			.addCase(fetchCurrentUser.rejected, (state, action) => {
 				state.loading.fetchUser = false;
@@ -82,6 +113,8 @@ const authSlice = createSlice({
 				state.loading.login = false;
 				state.token = action.payload;
 				state.isLoggedIn = true;
+
+				// Socket namespace will be set when fetchCurrentUser is called after login
 			})
 			.addCase(loginUser.rejected, (state, action) => {
 				state.loading.login = false;
@@ -92,6 +125,6 @@ const authSlice = createSlice({
 	}
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, setSocketNamespace } = authSlice.actions;
 export { fetchCurrentUser, loginUser };
 export default authSlice.reducer;

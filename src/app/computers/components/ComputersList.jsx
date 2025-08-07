@@ -4,11 +4,11 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { cn } from "@/lib/utils";
 import { UserPc } from "@/components/ui/user-pc";
-import { 
-  DndContext, 
+import {
+  DndContext,
   DragOverlay,
-  useSensor, 
-  useSensors, 
+  useSensor,
+  useSensors,
   PointerSensor,
   useDroppable,
   useDraggable
@@ -17,7 +17,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { SortableItem } from "@/components/ui/sortable-item";
 import { moveMachine } from "@/state/slices/vms";
 
-function DraggableUserPc({ machine, selected, onSelect, size }) {
+function DraggableUserPc({ machine, selected, onSelect, size, onPlay, onPause, onStop, onDelete }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: machine.id,
   });
@@ -31,6 +31,10 @@ function DraggableUserPc({ machine, selected, onSelect, size }) {
         selected={selected}
         onClick={onSelect}
         size={size}
+        onPlay={() => onPlay?.(machine)}
+        onPause={() => onPause?.(machine)}
+        onStop={() => onStop?.(machine)}
+        onDelete={() => onDelete?.(machine)}
         className={cn(isDragging && "opacity-50")}
       />
     </div>
@@ -70,6 +74,10 @@ export function ComputersList({
   selectedPc,
   onSelectMachine,
   size,
+  onPlay,
+  onPause,
+  onStop,
+  onDelete,
 }) {
   const dispatch = useDispatch();
   const [activeId, setActiveId] = useState(null);
@@ -87,7 +95,7 @@ export function ComputersList({
   const handleDragStart = (event) => {
     const { active } = event;
     setActiveId(active.id);
-    
+
     // Find the machine being dragged
     for (const [, departmentData] of Object.entries(groupedMachines)) {
       const machine = (departmentData.machines || []).find(m => m.id === active.id);
@@ -178,6 +186,10 @@ export function ComputersList({
                   selected={selectedPc?.id === machine.id}
                   onSelect={() => onSelectMachine(machine)}
                   size={size}
+                  onPlay={onPlay}
+                  onPause={onPause}
+                  onStop={onStop}
+                  onDelete={onDelete}
                 />
               ))}
               {byDepartment && (!departmentData.machines || departmentData.machines.length === 0) && (

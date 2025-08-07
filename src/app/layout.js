@@ -8,7 +8,7 @@ import { store, persistor } from "@/state/store";
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { InitialDataLoader } from '@/components/InitialDataLoader';
-import { AppSidebar } from "@/components/ui/navbar"; 
+import { AppSidebar } from "@/components/ui/navbar";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import auth from '@/utils/auth';
@@ -18,8 +18,9 @@ import { useDispatch } from 'react-redux';
 import { createDepartment as createDepartmentAction } from '@/state/slices/departments';
 import { SizeProvider } from "@/components/ui/size-provider";
 import { Toaster } from "@/components/ui/toaster";
+import { RealTimeProvider } from '@/components/RealTimeProvider';
 
-const monst = Montserrat({ 
+const monst = Montserrat({
   subsets: ["latin"],
   display: 'swap'
 });
@@ -59,7 +60,7 @@ function AppContent({ children, isAuthenticated }) {
 
   return (
     <>
-      <AppSidebar 
+      <AppSidebar
         user={user?.firstName ? {
           firstName: user.firstName,
           lastName: user.lastName,
@@ -103,9 +104,11 @@ export default function RootLayout({ children }) {
                 <ApolloProvider client={client}>
                   <NextUIProvider>
                     <InitialDataLoader>
-                      <AppContent isAuthenticated={isAuthenticated}>
-                        {children}
-                      </AppContent>
+                      <RealTimeProvider>
+                        <AppContent isAuthenticated={isAuthenticated}>
+                          {children}
+                        </AppContent>
+                      </RealTimeProvider>
                     </InitialDataLoader>
                     <Toaster />
                   </NextUIProvider>
