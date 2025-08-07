@@ -1,4 +1,16 @@
 import { getSocketService } from './socketService'
+// Normalize backend status values to UI-friendly values
+const normalizeVmStatus = (status) => {
+  switch (status) {
+    case 'off':
+      return 'stopped'
+    case 'suspended':
+      return 'paused'
+    default:
+      return status
+  }
+}
+
 
 // Redux Real-time Service - integrates Socket.io events with Redux store
 export class RealTimeReduxService {
@@ -121,10 +133,13 @@ export class RealTimeReduxService {
       case 'power_on':
       case 'power_off':
       case 'suspend':
-        this.store.dispatch({
-          type: 'vms/realTimeVmStatusChanged',
-          payload: { ...vmData, action }
-        })
+        {
+          const normalized = { ...vmData, status: normalizeVmStatus(vmData.status) }
+          this.store.dispatch({
+            type: 'vms/realTimeVmStatusChanged',
+            payload: { ...normalized, action }
+          })
+        }
         break
 
       default:
