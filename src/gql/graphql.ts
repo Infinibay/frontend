@@ -30,9 +30,25 @@ export type ApplicationType = {
   parameters?: Maybe<Scalars['JSONObject']['output']>;
 };
 
+export type ApplyDepartmentServiceToAllInput = {
+  /** Service action (USE for outbound, PROVIDE for inbound) */
+  action: ServiceAction;
+  /** Unique identifier of the department */
+  departmentId: Scalars['ID']['input'];
+  /** Whether to enable or disable the service */
+  enabled: Scalars['Boolean']['input'];
+  /** Unique identifier of the service to toggle */
+  serviceId: Scalars['ID']['input'];
+};
+
 export type BridgeNameInput = {
   bridgeName?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
+};
+
+export type ClearVmOverridesInput = {
+  serviceId?: InputMaybe<Scalars['ID']['input']>;
+  vmId: Scalars['ID']['input'];
 };
 
 export type CommandExecutionResponseType = {
@@ -219,10 +235,13 @@ export type IpRangeInput = {
 export type Machine = {
   __typename?: 'Machine';
   configuration?: Maybe<Scalars['JSONObject']['output']>;
+  cpuCores?: Maybe<Scalars['Int']['output']>;
   createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
   department?: Maybe<DepartmentType>;
+  gpuPciAddress?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  ramGB?: Maybe<Scalars['Int']['output']>;
   status: Scalars['String']['output'];
   template?: Maybe<MachineTemplateType>;
   templateId: Scalars['String']['output'];
@@ -319,6 +338,8 @@ export type MachineTemplateType = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  applyDepartmentServiceToAll: DepartmentServiceStatus;
+  clearVmServiceOverrides: Array<VmServiceStatus>;
   createApplication: ApplicationType;
   createDepartment: DepartmentType;
   createFilter: GenericFilter;
@@ -342,6 +363,7 @@ export type Mutation = {
   moveMachine: Machine;
   powerOff: SuccessType;
   powerOn: SuccessType;
+  resetVmServiceOverrides: ResetVmOverridesResult;
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
@@ -353,9 +375,20 @@ export type Mutation = {
   updateApplication: ApplicationType;
   updateFilter: GenericFilter;
   updateFilterRule: FwRule;
+  updateMachineHardware: Machine;
   updateMachineTemplate: MachineTemplateType;
   updateMachineTemplateCategory: MachineTemplateCategoryType;
   updateUser: UserType;
+};
+
+
+export type MutationApplyDepartmentServiceToAllArgs = {
+  input: ApplyDepartmentServiceToAllInput;
+};
+
+
+export type MutationClearVmServiceOverridesArgs = {
+  input: ClearVmOverridesInput;
 };
 
 
@@ -472,6 +505,11 @@ export type MutationPowerOnArgs = {
 };
 
 
+export type MutationResetVmServiceOverridesArgs = {
+  input: ResetVmOverridesInput;
+};
+
+
 export type MutationSetNetworkBridgeNameArgs = {
   input: BridgeNameInput;
 };
@@ -522,6 +560,11 @@ export type MutationUpdateFilterArgs = {
 export type MutationUpdateFilterRuleArgs = {
   id: Scalars['ID']['input'];
   input: UpdateFilterRuleInput;
+};
+
+
+export type MutationUpdateMachineHardwareArgs = {
+  input: UpdateMachineHardwareInput;
 };
 
 
@@ -660,7 +703,7 @@ export type QueryGetDepartmentServiceStatusArgs = {
 
 export type QueryGetDepartmentVmsServiceStatusArgs = {
   departmentId: Scalars['ID']['input'];
-  serviceId?: InputMaybe<Scalars['ID']['input']>;
+  serviceId: Scalars['ID']['input'];
 };
 
 
@@ -742,6 +785,33 @@ export type QueryUserArgs = {
 export type QueryUsersArgs = {
   orderBy?: InputMaybe<UserOrderByInputType>;
   pagination?: InputMaybe<PaginationInputType>;
+};
+
+export type ResetVmOverrideFailureItem = {
+  __typename?: 'ResetVmOverrideFailureItem';
+  error: Scalars['String']['output'];
+  vmId: Scalars['ID']['output'];
+};
+
+export type ResetVmOverrideSuccessItem = {
+  __typename?: 'ResetVmOverrideSuccessItem';
+  vmId: Scalars['ID']['output'];
+  vmName: Scalars['String']['output'];
+};
+
+export type ResetVmOverridesInput = {
+  departmentId: Scalars['ID']['input'];
+  serviceId: Scalars['ID']['input'];
+  vmIds: Array<Scalars['ID']['input']>;
+};
+
+export type ResetVmOverridesResult = {
+  __typename?: 'ResetVmOverridesResult';
+  departmentId: Scalars['ID']['output'];
+  failedResets: Array<ResetVmOverrideFailureItem>;
+  resetVmCount: Scalars['Float']['output'];
+  serviceId: Scalars['ID']['output'];
+  successfulResets: Array<ResetVmOverrideSuccessItem>;
 };
 
 /** Service action type (USE for outbound, PROVIDE for inbound) */
@@ -857,6 +927,16 @@ export type UpdateFilterRuleInput = {
   state?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateMachineHardwareInput = {
+  /** New number of CPU cores */
+  cpuCores?: InputMaybe<Scalars['Int']['input']>;
+  /** New GPU PCI address (e.g., 0000:01:00.0). Set to null to remove GPU. */
+  gpuPciAddress?: InputMaybe<Scalars['String']['input']>;
+  id?: Scalars['ID']['input'];
+  /** New RAM in GB */
+  ramGB?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type UpdateUserInputType = {
   firstName?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
@@ -901,6 +981,7 @@ export type UserType = {
   firstName: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
+  namespace?: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
 };
 

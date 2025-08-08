@@ -17,6 +17,7 @@ export class SocketService {
     this.userNamespace = null
     this.reconnectAttempts = 0
     this.maxReconnectAttempts = 5
+    this.pendingSubscriptions = [] // Store subscription info for re-subscribing
   }
 
   // Connect to Socket.io server with authentication
@@ -31,6 +32,7 @@ export class SocketService {
 
       this.connectionState = ConnectionState.CONNECTING
       this.userNamespace = namespace
+      this.pendingSubscriptions = [] // Store subscriptions that need to be re-applied
 
       // Create Socket.io connection
       this.socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000', {
@@ -54,11 +56,19 @@ export class SocketService {
       this.socket.on('connected', (data) => {
         console.log('👋 Socket.io welcome:', data.message)
         console.log('🏷️ Assigned namespace:', data.namespace)
+
+        const oldNamespace = this.userNamespace
         this.userNamespace = data.namespace
 
         // Update namespace in localStorage if it changed
         if (typeof window !== 'undefined') {
           localStorage.setItem('socketNamespace', data.namespace)
+        }
+
+        // If namespace changed, we need to re-subscribe to all events with the new namespace
+        if (oldNamespace !== data.namespace) {
+          console.log(`🔄 Namespace changed from ${oldNamespace} to ${data.namespace}, re-subscribing to events...`)
+          this.resubscribeWithNewNamespace(oldNamespace, data.namespace)
         }
       })
 
@@ -109,6 +119,7 @@ export class SocketService {
       this.connectionState = ConnectionState.DISCONNECTED
       this.userNamespace = null
       this.eventListeners.clear()
+      this.pendingSubscriptions = []
     }
   }
 
@@ -134,6 +145,10 @@ export class SocketService {
     }
     this.eventListeners.get(eventPattern).add(callback)
 
+    // Store subscription info for potential re-subscribing
+    const subscriptionInfo = { eventPattern, callback }
+    this.pendingSubscriptions.push(subscriptionInfo)
+
     // For namespace-specific events, listen for the full event name
     if (this.userNamespace && eventPattern.includes(':')) {
       const fullEventName = eventPattern.startsWith(this.userNamespace)
@@ -151,6 +166,7 @@ export class SocketService {
           this.socket.off(fullEventName, callback)
         }
         this.removeEventListener(eventPattern, callback)
+        this.removePendingSubscription(eventPattern, callback)
       }
     } else {
       // For general events (like 'connected', 'disconnect', etc.)
@@ -161,6 +177,7 @@ export class SocketService {
           this.socket.off(eventPattern, callback)
         }
         this.removeEventListener(eventPattern, callback)
+        this.removePendingSubscription(eventPattern, callback)
       }
     }
   }
@@ -174,6 +191,7 @@ export class SocketService {
   // Subscribe to all events for a resource, with sensible defaults per resource.
   // Optionally override actions by providing an array of action names.
   subscribeToAllResourceEvents(resource, callback, actionsOverride = null) {
+    console.log("SSSSSSS")
     const defaultActionsByResource = {
       vms: ['create', 'update', 'delete', 'power_on', 'power_off', 'suspend'],
       users: ['create', 'update', 'delete'],
@@ -189,6 +207,7 @@ export class SocketService {
 
     patterns.forEach(action => {
       const unsubscribe = this.subscribeToResource(resource, action, (data) => {
+        console.log(`📨 Received ${resource}:${action} event`, data)
         callback(action, data)
       })
       unsubscribeFunctions.push(unsubscribe)
@@ -209,6 +228,49 @@ export class SocketService {
         this.eventListeners.delete(eventPattern)
       }
     }
+  }
+
+  // Remove pending subscription
+  removePendingSubscription(eventPattern, callback) {
+    this.pendingSubscriptions = this.pendingSubscriptions.filter(
+      sub => !(sub.eventPattern === eventPattern && sub.callback === callback)
+    )
+  }
+
+  // Re-subscribe to all events with new namespace
+  resubscribeWithNewNamespace(oldNamespace, newNamespace) {
+    if (!this.socket || !newNamespace) {
+      console.warn('⚠️ Cannot re-subscribe: socket not available or no new namespace')
+      return
+    }
+
+    console.log(`🔄 Re-subscribing ${this.pendingSubscriptions.length} events with new namespace: ${newNamespace}`)
+
+    // Remove old event listeners that used the old namespace
+    this.pendingSubscriptions.forEach(({ eventPattern, callback }) => {
+      if (eventPattern.includes(':')) {
+        const oldFullEventName = eventPattern.startsWith(oldNamespace)
+          ? eventPattern
+          : `${oldNamespace}:${eventPattern}`
+
+        // Remove old listener
+        this.socket.off(oldFullEventName, callback)
+        console.log(`🗑️ Removed old listener: ${oldFullEventName}`)
+
+        // Add new listener with updated namespace
+        const newFullEventName = eventPattern.startsWith(newNamespace)
+          ? eventPattern
+          : `${newNamespace}:${eventPattern}`
+
+        this.socket.on(newFullEventName, (data) => {
+          console.log(`📨 Received event: ${newFullEventName}`, data)
+          callback(data)
+        })
+        console.log(`✅ Added new listener: ${newFullEventName}`)
+      }
+    })
+
+    console.log('🎯 Re-subscription complete')
   }
 
   // Emit event to server (if needed for bidirectional communication)

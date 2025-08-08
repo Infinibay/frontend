@@ -20,6 +20,7 @@ import { moveMachine } from "@/state/slices/vms";
 function DraggableUserPc({ machine, selected, onSelect, size, onPlay, onPause, onStop, onDelete }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: machine.id,
+    data: { type: 'machine' }
   });
 
   return (
@@ -44,6 +45,7 @@ function DraggableUserPc({ machine, selected, onSelect, size, onPlay, onPause, o
 function DroppableDepartment({ departmentId, departmentName, children, isOver }) {
   const { setNodeRef } = useDroppable({
     id: departmentId,
+    data: { type: 'department', departmentId }
   });
 
   return (
@@ -120,9 +122,17 @@ export function ComputersList({
     setOverDepartmentId(null);
 
     if (over) {
-      const destinationId = over.id;
-      console.log('Moving machine:', { machineId: active.id, departmentId: destinationId });
-      await dispatch(moveMachine({ id: active.id, departmentId: destinationId }));
+      // Determine drop target; may be a department container or a machine card
+      const dropData = over.data?.current;
+      const destinationId = dropData?.type === 'department'
+        ? dropData.departmentId
+        : groupedMachines[over.id]?.id || over.id; // fallback
+
+      console.log('Moving machine:', { machineId: active.id, departmentId: destinationId, dropData });
+      // Only dispatch if destinationId looks like a department (skip if it's same as source, optional)
+      if (destinationId) {
+        await dispatch(moveMachine({ id: active.id, departmentId: destinationId }));
+      }
     }
   };
 

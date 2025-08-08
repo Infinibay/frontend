@@ -11,7 +11,10 @@ import {
     ToggleDepartmentServiceDocument,
     ToggleGlobalServiceDocument,
     FindDepartmentByNameDocument,
-    GetDepartmentVmsServiceStatusDocument
+    GetDepartmentVmsServiceStatusDocument,
+    ClearVmServiceOverridesDocument,
+    ApplyDepartmentServiceToAllDocument,
+    ResetVmServiceOverridesDocument
 } from '@/gql/hooks';
 
 // Helper functions for GraphQL operations
@@ -22,18 +25,18 @@ const executeGraphQLMutation = async (document, variables = {}) => {
             mutation: document,
             variables
         });
-        
+
         // Get the first key in the data object (the operation name)
         const keys = Object.keys(response.data);
         const firstKey = keys[0];
-        
+
         // Check for errors in the data response
         if (response.data[firstKey]?.errors) {
             const errorMessage = response.data[firstKey].errors.map(err => err.message).join(', ');
             console.error('GraphQL data error:', errorMessage);
             throw new Error(errorMessage);
         }
-        
+
         console.log("GraphQL mutation response:", response.data);
         return response.data;
     } catch (error) {
@@ -51,22 +54,22 @@ const executeGraphQLQuery = async (document, variables = {}) => {
             variables,
             fetchPolicy: 'network-only' // Skip cache to get fresh data
         });
-        
+
         console.log("GraphQL raw response:", response);
-        
+
         // Get the first key in the data object (the operation name)
         const keys = Object.keys(response.data);
         const firstKey = keys[0];
-        
+
         console.log("GraphQL response for operation:", firstKey, "data:", response.data[firstKey]);
-        
+
         // Check for errors in the data response
         if (response.data[firstKey]?.errors) {
             const errorMessage = response.data[firstKey].errors.map(err => err.message).join(', ');
             console.error('GraphQL data error:', errorMessage);
             throw new Error(errorMessage);
         }
-        
+
         return response.data;
     } catch (error) {
         console.error('GraphQL query error:', error);
@@ -171,11 +174,11 @@ export const toggleVmService = createAsyncThunk(
     'security/toggleVmService',
     async ({ vmId, serviceId, enabled, action }, { rejectWithValue }) => {
         try {
-            const data = await executeGraphQLMutation(ToggleVmServiceDocument, { 
-                vmId, 
-                serviceId, 
-                enabled, 
-                action 
+            const data = await executeGraphQLMutation(ToggleVmServiceDocument, {
+                vmId,
+                serviceId,
+                enabled,
+                action
             });
             return data.toggleVmService;
         } catch (error) {
@@ -189,11 +192,11 @@ export const toggleDepartmentService = createAsyncThunk(
     'security/toggleDepartmentService',
     async ({ departmentId, serviceId, enabled, action }, { rejectWithValue }) => {
         try {
-            const data = await executeGraphQLMutation(ToggleDepartmentServiceDocument, { 
-                departmentId, 
-                serviceId, 
-                enabled, 
-                action 
+            const data = await executeGraphQLMutation(ToggleDepartmentServiceDocument, {
+                departmentId,
+                serviceId,
+                enabled,
+                action
             });
             return data.toggleDepartmentService;
         } catch (error) {
@@ -207,14 +210,54 @@ export const toggleGlobalService = createAsyncThunk(
     'security/toggleGlobalService',
     async ({ serviceId, enabled, action }, { rejectWithValue }) => {
         try {
-            const data = await executeGraphQLMutation(ToggleGlobalServiceDocument, { 
-                serviceId, 
-                enabled, 
-                action 
+            const data = await executeGraphQLMutation(ToggleGlobalServiceDocument, {
+                serviceId,
+                enabled,
+                action
             });
             return data.toggleGlobalService;
         } catch (error) {
             console.error('Error toggling global service:', error);
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+// New admin operations
+export const clearVmServiceOverrides = createAsyncThunk(
+    'security/clearVmServiceOverrides',
+    async ({ vmId, serviceId }, { rejectWithValue }) => {
+        try {
+            const data = await executeGraphQLMutation(ClearVmServiceOverridesDocument, { vmId, serviceId });
+            return data.clearVmServiceOverrides;
+        } catch (error) {
+            console.error('Error clearing VM overrides:', error);
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const applyDepartmentServiceToAll = createAsyncThunk(
+    'security/applyDepartmentServiceToAll',
+    async ({ departmentId, serviceId, action, enabled }, { rejectWithValue }) => {
+        try {
+            const data = await executeGraphQLMutation(ApplyDepartmentServiceToAllDocument, { departmentId, serviceId, action, enabled });
+            return data.applyDepartmentServiceToAll;
+        } catch (error) {
+            console.error('Error applying department service to all VMs:', error);
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const resetVmServiceOverrides = createAsyncThunk(
+    'security/resetVmServiceOverrides',
+    async ({ departmentId, serviceId, vmIds }, { rejectWithValue }) => {
+        try {
+            const data = await executeGraphQLMutation(ResetVmServiceOverridesDocument, { departmentId, serviceId, vmIds });
+            return data.resetVmServiceOverrides;
+        } catch (error) {
+            console.error('Error resetting VM overrides:', error);
             return rejectWithValue(error.message);
         }
     }
@@ -386,6 +429,51 @@ const securitySlice = createSlice({
                 state.error.toggleVm = action.error.message;
             })
 
+            // Clear VM Overrides
+            .addCase(clearVmServiceOverrides.pending, (state) => {
+                state.loading.toggleVm = true;
+                state.error.toggleVm = null;
+            })
+            .addCase(clearVmServiceOverrides.fulfilled, (state, action) => {
+                state.loading.toggleVm = false;
+                // Replace VM status list for the service if provided in meta
+                const { serviceId } = action.meta.arg;
+                if (serviceId) {
+                    state.vmServiceStatus[serviceId] = action.payload;
+                }
+            })
+            .addCase(clearVmServiceOverrides.rejected, (state, action) => {
+                state.loading.toggleVm = false;
+                state.error.toggleVm = action.error.message;
+            })
+
+            // Apply department to all
+            .addCase(applyDepartmentServiceToAll.pending, (state) => {
+                state.loading.toggleDepartment = true;
+                state.error.toggleDepartment = null;
+            })
+            .addCase(applyDepartmentServiceToAll.fulfilled, (state, action) => {
+                state.loading.toggleDepartment = false;
+                const { serviceId } = action.meta.arg;
+                state.departmentServiceStatus[serviceId] = action.payload;
+            })
+            .addCase(applyDepartmentServiceToAll.rejected, (state, action) => {
+                state.loading.toggleDepartment = false;
+                state.error.toggleDepartment = action.error.message;
+            })
+
+            // Reset VM overrides (bulk)
+            .addCase(resetVmServiceOverrides.pending, (state) => {
+                state.loading.toggleDepartment = true;
+            })
+            .addCase(resetVmServiceOverrides.fulfilled, (state) => {
+                state.loading.toggleDepartment = false;
+            })
+            .addCase(resetVmServiceOverrides.rejected, (state, action) => {
+                state.loading.toggleDepartment = false;
+                state.error.toggleDepartment = action.error.message;
+            })
+
             // Toggle Department Service
             .addCase(toggleDepartmentService.pending, (state) => {
                 state.loading.toggleDepartment = true;
@@ -448,11 +536,11 @@ export const selectServicesLoading = (state) => state.security.loading.services;
 export const selectVmServiceStatus = (state, serviceId) => state.security.vmServiceStatus[serviceId] || [];
 export const selectDepartmentServiceStatus = (state, serviceId) => state.security.departmentServiceStatus[serviceId];
 export const selectDepartmentVmsServiceStatus = (state, serviceId) => {
-  console.log("Selecting department VMs for serviceId:", serviceId);
-  console.log("Available VM statuses:", state.security.departmentVmsServiceStatus);
-  const result = state.security.departmentVmsServiceStatus[serviceId] || [];
-  console.log("Result:", result);
-  return result;
+    console.log("Selecting department VMs for serviceId:", serviceId);
+    console.log("Available VM statuses:", state.security.departmentVmsServiceStatus);
+    const result = state.security.departmentVmsServiceStatus[serviceId] || [];
+    console.log("Result:", result);
+    return result;
 };
 export const selectGlobalServiceStatus = (state, serviceId) => state.security.globalServiceStatus[serviceId];
 export const selectServiceStatusSummary = (state) => state.security.serviceStatusSummary;

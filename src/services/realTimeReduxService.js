@@ -134,6 +134,7 @@ export class RealTimeReduxService {
       case 'power_off':
       case 'suspend':
         {
+          console.log("Updating bm....")
           const normalized = { ...vmData, status: normalizeVmStatus(vmData.status) }
           this.store.dispatch({
             type: 'vms/realTimeVmStatusChanged',

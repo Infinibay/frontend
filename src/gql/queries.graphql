@@ -5,7 +5,6 @@ query currentUser {
     lastName
     role
     email
-    namespace
     createdAt
   }
 }

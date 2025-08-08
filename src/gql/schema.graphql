@@ -640,4 +640,54 @@ type VmServiceStatus {
 
   """Name of the VM"""
   vmName: String!
+
+# --- Extensions for new Security mutations and types ---
+
+enum ServiceAction {
+  USE
+  PROVIDE
+}
+
+input ApplyDepartmentServiceToAllInput {
+  action: ServiceAction!
+  departmentId: ID!
+  enabled: Boolean!
+  serviceId: ID!
+}
+
+input ClearVmOverridesInput {
+  serviceId: ID
+  vmId: ID!
+}
+
+input ResetVmOverridesInput {
+  departmentId: ID!
+  serviceId: ID!
+  vmIds: [ID!]!
+}
+
+type ResetVmOverrideSuccessItem {
+  vmId: ID!
+  vmName: String!
+}
+
+type ResetVmOverrideFailureItem {
+  vmId: ID!
+  error: String!
+}
+
+type ResetVmOverridesResult {
+  departmentId: ID!
+  serviceId: ID!
+  resetVmCount: Float!
+  successfulResets: [ResetVmOverrideSuccessItem!]!
+  failedResets: [ResetVmOverrideFailureItem!]!
+}
+
+extend type Mutation {
+  applyDepartmentServiceToAll(input: ApplyDepartmentServiceToAllInput!): DepartmentServiceStatus!
+  clearVmServiceOverrides(input: ClearVmOverridesInput!): [VmServiceStatus!]!
+  resetVmServiceOverrides(input: ResetVmOverridesInput!): ResetVmOverridesResult!
+}
+
 }
