@@ -36,7 +36,6 @@ function AppContent({ children, isAuthenticated }) {
 
   const handleCreateDepartment = async (name) => {
     try {
-      console.log("Sending ", name);
       await dispatch(createDepartmentAction({ name })).unwrap();
       setToastData({
         title: "Success",

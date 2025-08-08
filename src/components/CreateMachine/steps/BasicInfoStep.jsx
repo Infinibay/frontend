@@ -10,14 +10,13 @@ import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
 import { fetchDepartments, selectDepartments, selectDepartmentsLoading } from '@/state/slices/departments';
 
-export function BasicInfoStep({ id, departmentId=null }) {
+export function BasicInfoStep({ id, departmentId = null }) {
   const dispatch = useDispatch();
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
   const stepValues = values[id] || {};
   const departments = useSelector(selectDepartments);
   const isLoading = useSelector(selectDepartmentsLoading);
-  console.log("first step, department id is", departmentId);
 
   // useEffect(() => {
   //   if (!values.basicInfo?.departmentId) {
@@ -46,7 +45,7 @@ export function BasicInfoStep({ id, departmentId=null }) {
         <div className="space-y-4">
           {departmentId == null && (
             <div className="space-y-2">
-              <Label 
+              <Label
                 htmlFor="departmentId"
                 moreInformation="Select the department this machine will belong to"
               >
@@ -74,7 +73,7 @@ export function BasicInfoStep({ id, departmentId=null }) {
             </div>
           )}
           <div className="space-y-2">
-            <Label 
+            <Label
               htmlFor="name"
               moreInformation="The machine name must be unique across your organization. Use a descriptive name that helps identify the machine's purpose."
             >
@@ -96,7 +95,7 @@ export function BasicInfoStep({ id, departmentId=null }) {
           </div>
 
           <div className="space-y-2">
-            <Label 
+            <Label
               htmlFor="username"
               moreInformation="This username will be used to log into the machine. Choose a username that follows your organization's naming conventions."
             >
@@ -118,7 +117,7 @@ export function BasicInfoStep({ id, departmentId=null }) {
           </div>
 
           <div className="space-y-2">
-            <Label 
+            <Label
               htmlFor="password"
               moreInformation="Password must be secure. Use a combination of uppercase, lowercase, numbers, and special characters."
             >
@@ -142,7 +141,7 @@ export function BasicInfoStep({ id, departmentId=null }) {
 
           {values.configuration?.os?.startsWith('WINDOWS') && (
             <div className="space-y-2">
-              <Label 
+              <Label
                 htmlFor="productKey"
                 moreInformation="A valid Windows product key is required to activate Windows. If you don't have one now, you can add it later."
               >

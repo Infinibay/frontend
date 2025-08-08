@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
+import { createDebugger } from '@/utils/debug';
 import { gql } from '@apollo/client';
 import {
   ListFilterRulesDocument,
@@ -20,14 +21,16 @@ const executeGraphQLMutation = async (mutation, variables) => {
   }
 };
 
+// Create debug instance for filter rules state
+const debug = createDebugger('frontend:state:filterRules');
+
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
     const { data } = await client.query({ query, variables });
-    console.log("aaaaaaaaa");
-    console.log(data);
+    debug.log('graphql', 'GraphQL query result:', data);
     return data;
   } catch (error) {
-    console.error('GraphQL query error:', error);
+    debug.error('graphql', 'GraphQL query error:', error);
     throw error;
   }
 };

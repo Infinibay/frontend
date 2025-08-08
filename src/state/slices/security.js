@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
+import { createDebugger } from '@/utils/debug';
 
 import {
     ListServicesDocument,
@@ -17,9 +18,12 @@ import {
     ResetVmServiceOverridesDocument
 } from '@/gql/hooks';
 
+// Create debug instance for security state
+const debug = createDebugger('frontend:state:security');
+
 // Helper functions for GraphQL operations
 const executeGraphQLMutation = async (document, variables = {}) => {
-    console.log("Executing GraphQL mutation:", document, "with variables:", variables);
+    debug.log('graphql', 'Executing GraphQL mutation:', document.definitions[0]?.name?.value, variables);
     try {
         const response = await client.mutate({
             mutation: document,
@@ -33,21 +37,21 @@ const executeGraphQLMutation = async (document, variables = {}) => {
         // Check for errors in the data response
         if (response.data[firstKey]?.errors) {
             const errorMessage = response.data[firstKey].errors.map(err => err.message).join(', ');
-            console.error('GraphQL data error:', errorMessage);
+            debug.error('graphql', 'GraphQL data error:', errorMessage);
             throw new Error(errorMessage);
         }
 
-        console.log("GraphQL mutation response:", response.data);
+        debug.success('graphql', 'GraphQL mutation response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('GraphQL mutation error:', error);
+        debug.error('graphql', 'GraphQL mutation error:', error);
         // Re-throw the error so it can be handled by the calling function
         throw error;
     }
 };
 
 const executeGraphQLQuery = async (document, variables = {}) => {
-    console.log("Executing GraphQL query:", document.definitions[0]?.name?.value || 'unnamed query', "with variables:", variables);
+    debug.log('graphql', 'Executing GraphQL query:', document.definitions[0]?.name?.value || 'unnamed query', variables);
     try {
         const response = await client.query({
             query: document,

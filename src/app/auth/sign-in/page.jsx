@@ -16,7 +16,7 @@ import { IoEye } from "react-icons/io5";
 import auth from '@/utils/auth';
 import { loginUser, fetchCurrentUser } from "@/state/slices/auth";
 
-const Page = () => { 
+const Page = () => {
   const {
     register,
     handleSubmit,
@@ -35,11 +35,10 @@ const Page = () => {
   const dispatch = useDispatch();
 
   // handle form submit
-  const onSubmit = async (data) => {  
+  const onSubmit = async (data) => {
     setError('');
 
     try {
-      console.log(email, password);
       dispatch(loginUser({ email, password }));
       dispatch(fetchCurrentUser());
       const success = auth.isLoggedIn();

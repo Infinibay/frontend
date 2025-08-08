@@ -2,6 +2,7 @@ import { ApolloClient, InMemoryCache, createHttpLink, gql } from '@apollo/client
 import { setContext } from '@apollo/client/link/context';
 
 import { CurrentUserDocument, LoginDocument } from '@/gql/hooks';
+import { createDebugger } from '@/utils/debug';
 
 // GraphQL API endpoint (use environment variable)
 const API_URL = process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:4000/graphql';
@@ -17,7 +18,7 @@ const authLink = setContext((_, { headers }) => {
   if (typeof window !== 'undefined') {
     token = localStorage.getItem('token');
   }
-  
+
   return {
     headers: {
       ...headers,
@@ -32,15 +33,18 @@ const client = new ApolloClient({
   ssrMode: typeof window === 'undefined', // Enable SSR mode when running on server
 });
 
+// Create debug instance for auth
+const debug = createDebugger('frontend:auth');
+
 // Authentication functions
 export const auth = {
   login: async (email, password) => {
     try {
       const { data } = (await client.query({
         query: LoginDocument,
-        variables: {  password, email },
+        variables: { password, email },
       }));
-      console.log(data);
+      debug.success('login', 'Login successful:', { email, hasToken: !!data.login?.token });
 
       if (data.login && data.login.token) {
         // Only access localStorage in browser environment
@@ -51,7 +55,7 @@ export const auth = {
       }
       throw new Error('401'); // Unauthorized
     } catch (error) {
-      console.error('Login error:', error);
+      debug.error('login', 'Login error:', error);
       if (error.message.includes('401') || error.message.includes('403')) {
         throw error; // Re-throw authentication errors
       }

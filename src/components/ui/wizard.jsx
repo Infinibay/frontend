@@ -14,12 +14,12 @@ export function useWizardContext() {
   return context
 }
 
-function WizardContent({ 
-  children, 
+function WizardContent({
+  children,
   className,
   onComplete,
   initialValues = {},
-  ...props 
+  ...props
 }) {
   const [currentStep, setCurrentStep] = React.useState(0)
   const [values, setValues] = React.useState(initialValues)
@@ -32,41 +32,27 @@ function WizardContent({
 
   const next = async () => {
     const stepId = currentStepElement.props.id
-    console.log(' Wizard Next:', {
-      stepId,
-      currentStep,
-      isLastStep,
-      hasValidation: !!currentStepElement.props.validate,
-      currentValues: values[stepId]
-    })
-    
+
     // Clear all errors before starting validation
     clearAllErrors()
-    
+
     if (currentStepElement.props.validate) {
-      console.log(' Starting validation for step:', stepId)
       setIsValidating(true)
-      
+
       try {
         // Ensure we always pass an object to validate
         const stepValues = values[stepId] || {}
-        console.log(' Validating values:', stepValues)
         await currentStepElement.props.validate(stepValues)
-        console.log(' Validation passed')
-        
+
         if (isLastStep) {
-          console.log(' Completing wizard with values:', values)
           onComplete?.(values)
         } else {
-          console.log(' Moving to next step:', currentStep + 1)
           setCurrentStep(prev => prev + 1)
         }
       } catch (error) {
         // Handle validation errors
-        console.error(' Validation failed:', error)
         if (error && typeof error === 'object') {
           Object.entries(error).forEach(([field, message]) => {
-            console.log(' Setting field error:', field, message)
             setFieldError(field, message)
           })
         }
@@ -74,25 +60,20 @@ function WizardContent({
         setIsValidating(false)
       }
     } else {
-      console.log(' No validation required, proceeding to next step')
       if (isLastStep) {
-        console.log(' Completing wizard with values:', values)
         onComplete?.(values)
       } else {
-        console.log(' Moving to next step:', currentStep + 1)
         setCurrentStep(prev => prev + 1)
       }
     }
   }
 
   const previous = () => {
-    console.log(' Moving to previous step:', currentStep - 1)
     setCurrentStep(s => Math.max(s - 1, 0))
     clearAllErrors() // Clear errors when going back
   }
 
   const setStepValues = React.useCallback((stepId, stepValues) => {
-    console.log(' Setting step values for', stepId, ':', stepValues)
     // Clear errors when values change
     clearAllErrors()
     setValues(prev => ({
@@ -104,11 +85,10 @@ function WizardContent({
   const setValue = React.useCallback((name, value) => {
     const [stepId, ...parts] = name.split('.')
     const fieldName = parts.join('.')
-    console.log(' Setting value:', { stepId, fieldName, value })
 
     // Clear field error when value changes
     clearFieldError(fieldName)
-    
+
     setValues(prev => ({
       ...prev,
       [stepId]: {
@@ -117,14 +97,6 @@ function WizardContent({
       }
     }))
   }, [clearFieldError])
-
-  React.useEffect(() => {
-    console.log(' Wizard state updated:', {
-      currentStep,
-      values,
-      isValidating
-    })
-  }, [currentStep, values, isValidating])
 
   const contextValue = React.useMemo(() => ({
     currentStep,
@@ -142,9 +114,9 @@ function WizardContent({
             <div className="relative flex w-full">
               {/* Background line */}
               <div className="absolute top-1/2 left-0 w-full h-[2px] bg-border -translate-y-1/2" />
-              
+
               {/* Active line */}
-              <div 
+              <div
                 className="absolute top-1/2 left-0 h-[2px] bg-primary -translate-y-1/2 transition-all duration-300"
                 style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
               />
@@ -182,7 +154,7 @@ function WizardContent({
             >
               Previous
             </Button>
-            <Button 
+            <Button
               onClick={next}
               disabled={isValidating}
             >

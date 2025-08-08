@@ -15,10 +15,9 @@ export default function CreateMachinePage({ params }) {
     const getDepartment = async () => {
       try {
         const result = await dispatch(fetchDepartmentByName(params.name)).unwrap();
-        console.log("Setting department id to", result.id);
         setDepartmentId(result.id);
       } catch (error) {
-        console.error('Failed to fetch department:', error);
+        // Error will be handled by the Redux error state
       } finally {
         setLoading(false);
       }

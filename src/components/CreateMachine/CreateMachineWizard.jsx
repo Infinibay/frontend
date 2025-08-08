@@ -21,7 +21,6 @@ export default function CreateMachineWizard({ departmentId }) {
   const { toast } = useToast();
   const { create: isCreating } = useSelector(selectVmsLoading);
   const { create: createError } = useSelector(selectVmsError);
-  console.log("Department id is", departmentId);
 
   const handleComplete = async (values) => {
     try {
@@ -40,15 +39,15 @@ export default function CreateMachineWizard({ departmentId }) {
           parameters: {} // Add any necessary parameters here
         }))
       };
-      
+
       await dispatch(createVm(machineData)).unwrap();
-      
+
       toast({
         variant: "success",
         title: "Success!",
         description: `Virtual machine "${values.basicInfo.name}" has been created successfully.`
       });
-      
+
       router.push('/computers');
     } catch (error) {
       console.error('Failed to create machine:', error);
@@ -63,14 +62,14 @@ export default function CreateMachineWizard({ departmentId }) {
   return (
     <FormErrorProvider>
       {isCreating && (
-        <LoadingOverlay 
-          message="Creating your virtual machine..." 
+        <LoadingOverlay
+          message="Creating your virtual machine..."
           variant="pulse"
           size="xl"
         />
       )}
       <Wizard onComplete={handleComplete}>
-        <BasicInfoStep 
+        <BasicInfoStep
           id="basicInfo"
           validate={async (values) => {
             const errors = {};
@@ -92,7 +91,7 @@ export default function CreateMachineWizard({ departmentId }) {
           }}
           departmentId={departmentId}
         />
-        <ConfigurationStep 
+        <ConfigurationStep
           id="configuration"
           validate={async (values) => {
             const errors = {};
@@ -102,7 +101,7 @@ export default function CreateMachineWizard({ departmentId }) {
             if (Object.keys(errors).length > 0) throw errors;
           }}
         />
-        <ResourcesStep 
+        <ResourcesStep
           id="resources"
           validate={async (values) => {
             const errors = {};
@@ -122,7 +121,7 @@ export default function CreateMachineWizard({ departmentId }) {
             if (Object.keys(errors).length > 0) throw errors;
           }}
         />
-        <ApplicationsStep 
+        <ApplicationsStep
           id="applications"
         />
         <ReviewStep id="review" />

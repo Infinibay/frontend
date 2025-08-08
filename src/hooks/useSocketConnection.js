@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { getRealTimeReduxService } from '@/services/realTimeReduxService'
+import { createDebugger } from '@/utils/debug'
+
+// Create debug instance for socket connection hook
+const debug = createDebugger('frontend:hooks:socketConnection')
 
 // Hook to manage Socket.io connection and real-time Redux integration
 export const useSocketConnection = () => {
@@ -16,7 +20,7 @@ export const useSocketConnection = () => {
 
     const initializeRealTime = async () => {
       if (!isLoggedIn || !token || !socketNamespace) {
-        console.log('🔌 Not ready for real-time connection:', { isLoggedIn, hasToken: !!token, hasNamespace: !!socketNamespace })
+        debug.warn('init', 'Not ready for real-time connection:', { isLoggedIn, hasToken: !!token, hasNamespace: !!socketNamespace })
         return
       }
 
@@ -29,16 +33,16 @@ export const useSocketConnection = () => {
           service = getRealTimeReduxService()
         } catch (e) {
           // Service doesn't exist yet, it will be created in the layout
-          console.log('🔌 Real-time service not yet available, will retry...')
+          debug.warn('init', 'Real-time service not yet available, will retry...')
           return
         }
 
         // Initialize the service
         await service.initialize()
-        
+
         setRealTimeService(service)
         setConnectionStatus('connected')
-        console.log('🎯 Socket connection hook: Real-time service initialized')
+        debug.success('init', 'Socket connection hook: Real-time service initialized')
 
       } catch (error) {
         console.error('❌ Socket connection hook: Failed to initialize real-time service:', error)

@@ -1,4 +1,8 @@
 import { ApolloError } from '@apollo/client';
+import { createDebugger } from '@/utils/debug';
+
+// Create debug instance for GraphQL adapter
+const debug = createDebugger('frontend:graphql:adapter');
 
 export class GraphQLAdapter {
   static async executeQuery(hook, variables = {}) {
@@ -17,7 +21,7 @@ export class GraphQLAdapter {
 
       return data;
     } catch (error) {
-      console.error('GraphQL query error:', error);
+      debug.error('query', 'GraphQL query error:', error);
       throw error;
     }
   }
@@ -39,7 +43,7 @@ export class GraphQLAdapter {
 
       return data;
     } catch (error) {
-      console.error('GraphQL mutation error:', error);
+      debug.error('mutation', 'GraphQL mutation error:', error);
       throw error;
     }
   }

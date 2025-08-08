@@ -118,7 +118,6 @@ const AppSidebar = React.forwardRef(({
   const handleDepartmentChange = (value) => {
     // Only update and navigate if the value actually changed
     if (value && value !== selectedDepartment) {
-      console.log(`Selecting department: ${value}`);
       setSelectedDepartment(value);
 
       // Use toLowerCase for URL but keep original case for display

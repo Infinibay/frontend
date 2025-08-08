@@ -47,14 +47,19 @@ debug.success('operation', 'Data saved successfully')
 frontend:realtime:*          // All real-time related logs
 frontend:realtime:redux      // Real-time Redux service
 frontend:realtime:socket     // Socket service
+frontend:realtime:provider   // RealTimeProvider component
 frontend:state:*             // All Redux state logs
 frontend:state:vms           // VM state slice
-frontend:state:auth          // Auth state slice
+frontend:state:security      // Security state slice
+frontend:state:filterRules   // Filter rules state slice
+frontend:state:system        // System state slice
+frontend:state:vmPorts       // VM ports state slice
 frontend:graphql:*           // All GraphQL operations
-frontend:graphql:queries     // GraphQL queries
-frontend:graphql:mutations   // GraphQL mutations
+frontend:graphql:adapter     // GraphQL adapter utility
 frontend:components:*        // All component logs
 frontend:components:userpc   // UserPC component
+frontend:hooks:*             // All custom hooks
+frontend:hooks:socketConnection // Socket connection hook
 frontend:auth:*              // Authentication flow
 frontend:routing:*           // Navigation and routing
 ```
@@ -98,9 +103,29 @@ localStorage.setItem('DEBUG', 'frontend:realtime:socket,frontend:state:vms,front
 
 The debug system is currently implemented in:
 
+**Services:**
 - ✅ `src/services/realTimeReduxService.js` - Real-time Redux integration (complete)
 - ✅ `src/services/socketService.js` - Socket.io service (complete)
+
+**State Management:**
 - ✅ `src/state/slices/vms.js` - VM state management (partial)
+- ✅ `src/state/slices/security.js` - Security state management (complete)
+- ✅ `src/state/slices/filterRules.js` - Filter rules state management (complete)
+- ✅ `src/state/slices/system.js` - System state management (complete)
+- ✅ `src/state/slices/vmPorts.js` - VM ports state management (complete)
+
+**Utilities:**
+- ✅ `src/utils/auth.js` - Authentication utilities (complete)
+- ✅ `src/utils/graphql-adapter.js` - GraphQL adapter (complete)
+
+**Components:**
+- ✅ `src/components/RealTimeProvider.jsx` - Real-time provider (complete)
+- ✅ `src/hooks/useSocketConnection.js` - Socket connection hook (complete)
+
+**Cleaned Up:**
+- ✅ `src/components/ui/wizard.jsx` - Removed validation debugging logs
+- ✅ `src/components/CreateMachine/` - Removed component debugging logs
+- ✅ `src/app/auth/sign-in/page.jsx` - Removed login debugging logs
 
 ## Migration Guide
 

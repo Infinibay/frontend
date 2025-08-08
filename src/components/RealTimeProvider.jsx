@@ -2,11 +2,15 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { createRealTimeReduxService } from '@/services/realTimeReduxService'
 import { store } from '@/state/store'
+import { createDebugger } from '@/utils/debug'
 
 // Real-time context
 const RealTimeContext = createContext(null)
 
 // Real-Time Provider Component
+// Create debug instance for RealTimeProvider
+const debug = createDebugger('frontend:realtime:provider')
+
 export function RealTimeProvider({ children }) {
   const [realTimeService, setRealTimeService] = useState(null)
   const [connectionStatus, setConnectionStatus] = useState('disconnected')
@@ -20,7 +24,7 @@ export function RealTimeProvider({ children }) {
 
     const initializeRealTime = async () => {
       if (!isLoggedIn || !token || !socketNamespace) {
-        console.log('🔌 RealTimeProvider: Not ready for connection:', {
+        debug.warn('init', 'Not ready for connection:', {
           isLoggedIn,
           hasToken: !!token,
           hasNamespace: !!socketNamespace
@@ -29,7 +33,7 @@ export function RealTimeProvider({ children }) {
       }
 
       try {
-        console.log('🚀 RealTimeProvider: Initializing real-time service...')
+        debug.info('init', 'Initializing real-time service...')
         setConnectionStatus('connecting')
         setError(null)
 
@@ -41,7 +45,7 @@ export function RealTimeProvider({ children }) {
 
         setRealTimeService(service)
         setConnectionStatus('connected')
-        console.log('✅ RealTimeProvider: Real-time service initialized successfully')
+        debug.success('init', 'Real-time service initialized successfully')
 
       } catch (error) {
         console.error('❌ RealTimeProvider: Failed to initialize real-time service:', error)
