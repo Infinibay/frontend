@@ -63,7 +63,6 @@ export class RealTimeReduxService {
     // Subscribe to VM events
     this.subscriptions.push(
       this.socketService.subscribeToAllResourceEvents('vms', (action, data) => {
-        console.log('🖥️ VM event received:', action, data)
         this.handleVmEvent(action, data)
       })
     )

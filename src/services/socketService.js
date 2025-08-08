@@ -191,7 +191,6 @@ export class SocketService {
   // Subscribe to all events for a resource, with sensible defaults per resource.
   // Optionally override actions by providing an array of action names.
   subscribeToAllResourceEvents(resource, callback, actionsOverride = null) {
-    console.log("SSSSSSS")
     const defaultActionsByResource = {
       vms: ['create', 'update', 'delete', 'power_on', 'power_off', 'suspend'],
       users: ['create', 'update', 'delete'],
