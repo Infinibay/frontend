@@ -19,6 +19,8 @@ import { createDepartment as createDepartmentAction } from '@/state/slices/depar
 import { SizeProvider } from "@/components/ui/size-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { RealTimeProvider } from '@/components/RealTimeProvider';
+import '@/utils/debugInit'; // Initialize debug panel
+import '@/utils/debugPanelStatus'; // Debug panel utilities
 
 const monst = Montserrat({
   subsets: ["latin"],
