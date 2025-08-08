@@ -1,4 +1,6 @@
 import { getSocketService } from './socketService'
+import { createDebugger } from '@/utils/debug'
+
 // Normalize backend status values to UI-friendly values
 const normalizeVmStatus = (status) => {
   switch (status) {
@@ -19,12 +21,13 @@ export class RealTimeReduxService {
     this.socketService = getSocketService()
     this.subscriptions = []
     this.isInitialized = false
+    this.debug = createDebugger('frontend:realtime:redux')
   }
 
   // Initialize real-time Redux integration
   async initialize() {
     if (this.isInitialized) {
-      console.log('🔄 Real-time Redux service already initialized')
+      this.debug.warn('init', 'Real-time Redux service already initialized')
       return
     }
 
@@ -32,16 +35,17 @@ export class RealTimeReduxService {
     const { token, socketNamespace } = state.auth
 
     if (!token) {
-      console.warn('⚠️ No auth token available, cannot initialize real-time service')
+      this.debug.warn('init', 'No auth token available, cannot initialize real-time service')
       return
     }
 
     if (!socketNamespace) {
-      console.warn('⚠️ No socket namespace available, cannot initialize real-time service')
+      this.debug.warn('init', 'No socket namespace available, cannot initialize real-time service')
       return
     }
 
     try {
+      this.debug.info('init', 'Connecting to Socket.io server...')
       // Connect to Socket.io server
       await this.socketService.connect(token, socketNamespace)
 
@@ -49,16 +53,16 @@ export class RealTimeReduxService {
       this.subscribeToEvents()
 
       this.isInitialized = true
-      console.log('🎯 Real-time Redux service initialized successfully')
+      this.debug.success('init', 'Real-time Redux service initialized successfully')
     } catch (error) {
-      console.error('❌ Failed to initialize real-time Redux service:', error)
+      this.debug.error('init', 'Failed to initialize real-time Redux service:', error)
     }
   }
 
   // Subscribe to all relevant real-time events
   subscribeToEvents() {
-    console.log('👂 Subscribing to real-time events...')
-    console.log('🔑 Using socket namespace:', this.socketService.userNamespace)
+    this.debug.info('subscribe', 'Subscribing to real-time events...')
+    this.debug.info('subscribe', 'Using socket namespace:', this.socketService.userNamespace)
 
     // Subscribe to VM events
     this.subscriptions.push(
@@ -88,21 +92,21 @@ export class RealTimeReduxService {
       })
     )
 
-    console.log(`✅ Subscribed to ${this.subscriptions.length} real-time event groups`)
+    this.debug.success('subscribe', `Subscribed to ${this.subscriptions.length} real-time event groups`)
   }
 
   // Handle VM real-time events
   handleVmEvent(action, eventData) {
-    console.log(`🖥️ Received VM ${action} event:`, eventData)
+    this.debug.log('vm-event', `Received VM ${action} event:`, eventData)
 
     if (eventData.status === 'error') {
-      console.error(`❌ VM ${action} error:`, eventData.error)
+      this.debug.error('vm-event', `VM ${action} error:`, eventData.error)
       return
     }
 
     const vmData = eventData.data
     if (!vmData) {
-      console.warn(`⚠️ No data in VM ${action} event`)
+      this.debug.warn('vm-event', `No data in VM ${action} event`)
       return
     }
 
@@ -133,7 +137,7 @@ export class RealTimeReduxService {
       case 'power_off':
       case 'suspend':
         {
-          console.log("Updating bm....")
+          this.debug.info('vm-event', `Updating VM status for ${action}`)
           const normalized = { ...vmData, status: normalizeVmStatus(vmData.status) }
           this.store.dispatch({
             type: 'vms/realTimeVmStatusChanged',
@@ -143,22 +147,22 @@ export class RealTimeReduxService {
         break
 
       default:
-        console.warn(`🤷 Unknown VM action: ${action}`)
+        this.debug.warn('vm-event', `Unknown VM action: ${action}`)
     }
   }
 
   // Handle User real-time events
   handleUserEvent(action, eventData) {
-    console.log(`👤 Received User ${action} event:`, eventData)
+    this.debug.log('user-event', `Received User ${action} event:`, eventData)
 
     if (eventData.status === 'error') {
-      console.error(`❌ User ${action} error:`, eventData.error)
+      this.debug.error('user-event', `User ${action} error:`, eventData.error)
       return
     }
 
     const userData = eventData.data
     if (!userData) {
-      console.warn(`⚠️ No data in User ${action} event`)
+      this.debug.warn('user-event', `No data in User ${action} event`)
       return
     }
 
@@ -186,22 +190,22 @@ export class RealTimeReduxService {
         break
 
       default:
-        console.warn(`🤷 Unknown User action: ${action}`)
+        this.debug.warn('user-event', `Unknown User action: ${action}`)
     }
   }
 
   // Handle Department real-time events
   handleDepartmentEvent(action, eventData) {
-    console.log(`🏢 Received Department ${action} event:`, eventData)
+    this.debug.log('dept-event', `Received Department ${action} event:`, eventData)
 
     if (eventData.status === 'error') {
-      console.error(`❌ Department ${action} error:`, eventData.error)
+      this.debug.error('dept-event', `Department ${action} error:`, eventData.error)
       return
     }
 
     const deptData = eventData.data
     if (!deptData) {
-      console.warn(`⚠️ No data in Department ${action} event`)
+      this.debug.warn('dept-event', `No data in Department ${action} event`)
       return
     }
 
@@ -229,22 +233,22 @@ export class RealTimeReduxService {
         break
 
       default:
-        console.warn(`🤷 Unknown Department action: ${action}`)
+        this.debug.warn('dept-event', `Unknown Department action: ${action}`)
     }
   }
 
   // Handle Application real-time events
   handleApplicationEvent(action, eventData) {
-    console.log(`📱 Received Application ${action} event:`, eventData)
+    this.debug.log('app-event', `Received Application ${action} event:`, eventData)
 
     if (eventData.status === 'error') {
-      console.error(`❌ Application ${action} error:`, eventData.error)
+      this.debug.error('app-event', `Application ${action} error:`, eventData.error)
       return
     }
 
     const appData = eventData.data
     if (!appData) {
-      console.warn(`⚠️ No data in Application ${action} event`)
+      this.debug.warn('app-event', `No data in Application ${action} event`)
       return
     }
 
@@ -272,13 +276,13 @@ export class RealTimeReduxService {
         break
 
       default:
-        console.warn(`🤷 Unknown Application action: ${action}`)
+        this.debug.warn('app-event', `Unknown Application action: ${action}`)
     }
   }
 
   // Cleanup subscriptions
   cleanup() {
-    console.log('🧹 Cleaning up real-time Redux service')
+    this.debug.info('cleanup', 'Cleaning up real-time Redux service')
 
     // Unsubscribe from all events
     this.subscriptions.forEach(unsubscribe => {

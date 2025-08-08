@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
+import { createDebugger } from '@/utils/debug';
 
 import {
   MachinesDocument,
@@ -35,8 +36,11 @@ const executeGraphQLMutation = async (mutation, variables) => {
   }
 };
 
+// Create debug instance for VMs state
+const debug = createDebugger('frontend:state:vms');
+
 const executeGraphQLQuery = async (query, variables = {}) => {
-  console.log("Backtrace:", new Error("Here is your backtrace"));
+  debug.log('graphql', 'Executing GraphQL query:', query.definitions[0]?.name?.value, variables);
   try {
     const response = await client.query({
       query,
@@ -59,7 +63,7 @@ const executeGraphQLQuery = async (query, variables = {}) => {
 
     return response.data;
   } catch (error) {
-    console.error('GraphQL query error:', error);
+    debug.error('graphql', 'GraphQL query error:', error);
     throw error;
   }
 };
@@ -210,7 +214,7 @@ const vmsSlice = createSlice({
       const existingIndex = state.items.findIndex(vm => vm.id === newVm.id);
       if (existingIndex === -1) {
         state.items.push(newVm);
-        console.log('✅ Real-time: VM created', newVm.name);
+        debug.success('realtime', 'VM created', newVm.name);
       }
     },
     realTimeVmUpdated: (state, action) => {
@@ -218,7 +222,7 @@ const vmsSlice = createSlice({
       const index = state.items.findIndex(vm => vm.id === updatedVm.id);
       if (index !== -1) {
         state.items[index] = updatedVm;
-        console.log('✅ Real-time: VM updated', updatedVm.name);
+        debug.success('realtime', 'VM updated', updatedVm.name);
 
         // Update selected machine if it's the one being updated
         if (state.selectedMachine?.id === updatedVm.id) {

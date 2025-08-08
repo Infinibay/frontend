@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client'
+import { createDebugger } from '@/utils/debug'
 
 // Socket connection states
 export const ConnectionState = {
@@ -18,17 +19,18 @@ export class SocketService {
     this.reconnectAttempts = 0
     this.maxReconnectAttempts = 5
     this.pendingSubscriptions = [] // Store subscription info for re-subscribing
+    this.debug = createDebugger('frontend:realtime:socket')
   }
 
   // Connect to Socket.io server with authentication
   connect(token, namespace) {
     if (this.socket?.connected) {
-      console.log('🔌 Already connected to Socket.io server')
+      this.debug.warn('connect', 'Already connected to Socket.io server')
       return Promise.resolve()
     }
 
     return new Promise((resolve, reject) => {
-      console.log('🔌 Connecting to Socket.io server...', { namespace })
+      this.debug.info('connect', 'Connecting to Socket.io server...', { namespace })
 
       this.connectionState = ConnectionState.CONNECTING
       this.userNamespace = namespace
@@ -46,7 +48,7 @@ export class SocketService {
 
       // Connection successful
       this.socket.on('connect', () => {
-        console.log('🎉 Connected to Socket.io server:', this.socket.id)
+        this.debug.success('connect', 'Connected to Socket.io server:', this.socket.id)
         this.connectionState = ConnectionState.CONNECTED
         this.reconnectAttempts = 0
         resolve()
@@ -54,8 +56,8 @@ export class SocketService {
 
       // Welcome message with namespace info
       this.socket.on('connected', (data) => {
-        console.log('👋 Socket.io welcome:', data.message)
-        console.log('🏷️ Assigned namespace:', data.namespace)
+        this.debug.info('welcome', 'Socket.io welcome:', data.message)
+        this.debug.info('welcome', 'Assigned namespace:', data.namespace)
 
         const oldNamespace = this.userNamespace
         this.userNamespace = data.namespace
@@ -67,44 +69,44 @@ export class SocketService {
 
         // If namespace changed, we need to re-subscribe to all events with the new namespace
         if (oldNamespace !== data.namespace) {
-          console.log(`🔄 Namespace changed from ${oldNamespace} to ${data.namespace}, re-subscribing to events...`)
+          this.debug.info('namespace', `Namespace changed from ${oldNamespace} to ${data.namespace}, re-subscribing to events...`)
           this.resubscribeWithNewNamespace(oldNamespace, data.namespace)
         }
       })
 
       // Connection error
       this.socket.on('connect_error', (error) => {
-        console.error('❌ Socket.io connection error:', error.message)
+        this.debug.error('connect', 'Socket.io connection error:', error.message)
         this.connectionState = ConnectionState.ERROR
         reject(error)
       })
 
       // Disconnection
       this.socket.on('disconnect', (reason) => {
-        console.log('💔 Disconnected from Socket.io server:', reason)
+        this.debug.warn('disconnect', 'Disconnected from Socket.io server:', reason)
         this.connectionState = ConnectionState.DISCONNECTED
 
         // Auto-reconnect for certain disconnect reasons
         if (reason === 'io server disconnect') {
           // Server initiated disconnect, don't reconnect automatically
-          console.log('🚫 Server disconnected us, not reconnecting automatically')
+          this.debug.warn('disconnect', 'Server disconnected us, not reconnecting automatically')
         } else if (this.reconnectAttempts < this.maxReconnectAttempts) {
           // Client-side disconnect, attempt to reconnect
           this.reconnectAttempts++
-          console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
+          this.debug.info('reconnect', `Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
           setTimeout(() => this.reconnect(), 2000 * this.reconnectAttempts)
         }
       })
 
       // Reconnection events
       this.socket.on('reconnect', (attemptNumber) => {
-        console.log(`✅ Reconnected after ${attemptNumber} attempts`)
+        this.debug.success('reconnect', `Reconnected after ${attemptNumber} attempts`)
         this.connectionState = ConnectionState.CONNECTED
         this.reconnectAttempts = 0
       })
 
       this.socket.on('reconnect_failed', () => {
-        console.error('❌ Failed to reconnect to Socket.io server')
+        this.debug.error('reconnect', 'Failed to reconnect to Socket.io server')
         this.connectionState = ConnectionState.ERROR
       })
     })
@@ -113,7 +115,7 @@ export class SocketService {
   // Disconnect from server
   disconnect() {
     if (this.socket) {
-      console.log('🔌 Disconnecting from Socket.io server')
+      this.debug.info('disconnect', 'Disconnecting from Socket.io server')
       this.socket.disconnect()
       this.socket = null
       this.connectionState = ConnectionState.DISCONNECTED
@@ -133,11 +135,11 @@ export class SocketService {
   // Subscribe to events with pattern matching
   subscribe(eventPattern, callback) {
     if (!this.socket) {
-      console.warn(`⚠️ Cannot subscribe to ${eventPattern}: not connected`)
+      this.debug.warn('subscribe', `Cannot subscribe to ${eventPattern}: not connected`)
       return () => { } // Return empty unsubscribe function
     }
 
-    console.log(`👂 Subscribing to event pattern: ${eventPattern}`)
+    this.debug.info('subscribe', `Subscribing to event pattern: ${eventPattern}`)
 
     // Store listener for cleanup
     if (!this.eventListeners.has(eventPattern)) {
@@ -155,9 +157,9 @@ export class SocketService {
         ? eventPattern
         : `${this.userNamespace}:${eventPattern}`
 
-      console.log(`🔔 Subscribing to event: ${fullEventName} (namespace: ${this.userNamespace})`)
+      this.debug.info('subscribe', `Subscribing to event: ${fullEventName} (namespace: ${this.userNamespace})`)
       this.socket.on(fullEventName, (data) => {
-        console.log(`📨 Received event: ${fullEventName}`, data)
+        this.debug.log('event', `Received event: ${fullEventName}`, data)
         callback(data)
       })
 
@@ -206,7 +208,7 @@ export class SocketService {
 
     patterns.forEach(action => {
       const unsubscribe = this.subscribeToResource(resource, action, (data) => {
-        console.log(`📨 Received ${resource}:${action} event`, data)
+        this.debug.log('resource-event', `Received ${resource}:${action} event`, data)
         callback(action, data)
       })
       unsubscribeFunctions.push(unsubscribe)
@@ -239,11 +241,11 @@ export class SocketService {
   // Re-subscribe to all events with new namespace
   resubscribeWithNewNamespace(oldNamespace, newNamespace) {
     if (!this.socket || !newNamespace) {
-      console.warn('⚠️ Cannot re-subscribe: socket not available or no new namespace')
+      this.debug.warn('resubscribe', 'Cannot re-subscribe: socket not available or no new namespace')
       return
     }
 
-    console.log(`🔄 Re-subscribing ${this.pendingSubscriptions.length} events with new namespace: ${newNamespace}`)
+    this.debug.info('resubscribe', `Re-subscribing ${this.pendingSubscriptions.length} events with new namespace: ${newNamespace}`)
 
     // Remove old event listeners that used the old namespace
     this.pendingSubscriptions.forEach(({ eventPattern, callback }) => {
@@ -254,7 +256,7 @@ export class SocketService {
 
         // Remove old listener
         this.socket.off(oldFullEventName, callback)
-        console.log(`🗑️ Removed old listener: ${oldFullEventName}`)
+        this.debug.info('resubscribe', `Removed old listener: ${oldFullEventName}`)
 
         // Add new listener with updated namespace
         const newFullEventName = eventPattern.startsWith(newNamespace)
@@ -262,24 +264,24 @@ export class SocketService {
           : `${newNamespace}:${eventPattern}`
 
         this.socket.on(newFullEventName, (data) => {
-          console.log(`📨 Received event: ${newFullEventName}`, data)
+          this.debug.log('event', `Received event: ${newFullEventName}`, data)
           callback(data)
         })
-        console.log(`✅ Added new listener: ${newFullEventName}`)
+        this.debug.success('resubscribe', `Added new listener: ${newFullEventName}`)
       }
     })
 
-    console.log('🎯 Re-subscription complete')
+    this.debug.success('resubscribe', 'Re-subscription complete')
   }
 
   // Emit event to server (if needed for bidirectional communication)
   emit(event, data) {
     if (!this.socket?.connected) {
-      console.warn(`⚠️ Cannot emit ${event}: not connected`)
+      this.debug.warn('emit', `Cannot emit ${event}: not connected`)
       return false
     }
 
-    console.log(`📡 Emitting ${event}:`, data)
+    this.debug.info('emit', `Emitting ${event}:`, data)
     this.socket.emit(event, data)
     return true
   }
