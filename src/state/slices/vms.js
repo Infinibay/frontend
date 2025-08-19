@@ -280,7 +280,8 @@ const vmsSlice = createSlice({
       })
       .addCase(createVm.fulfilled, (state, action) => {
         state.loading.create = false;
-        state.items.push(action.payload);
+        // Don't add the VM here - it will be added via real-time event
+        // This prevents duplicates when the real-time event arrives
       })
       .addCase(createVm.rejected, (state, action) => {
         state.loading.create = false;
