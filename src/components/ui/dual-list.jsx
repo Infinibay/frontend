@@ -306,7 +306,7 @@ DualList.propTypes = {
   layout: PropTypes.oneOf(['vertical', 'horizontal', 'grid']),
   containerClassName: PropTypes.string,
   listClassName: PropTypes.string,
-  sensors: PropTypes.func,
+  sensors: PropTypes.array,
   moveRight: PropTypes.any,
   moveLeft: PropTypes.any,
   canDrag: PropTypes.func
