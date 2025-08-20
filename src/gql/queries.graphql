@@ -6,6 +6,7 @@ query currentUser {
     role
     email
     createdAt
+    namespace
   }
 }
 
@@ -410,18 +411,18 @@ query getVmServiceStatus($serviceId: ID!, $vmId: ID!) {
   }
 }
 
-query getDepartmentVmsServiceStatus($serviceId: ID!, $departmentId: ID!) {
-  getDepartmentVmsServiceStatus(serviceId: $serviceId, departmentId: $departmentId) {
-    vmId
-    vmName
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-    running
-    lastSeen
-  }
-}
+# query getDepartmentVmsServiceStatus($serviceId: ID!, $departmentId: ID!) {
+#   getDepartmentVmsServiceStatus(serviceId: $serviceId, departmentId: $departmentId) {
+#     vmId
+#     vmName
+#     serviceId
+#     serviceName
+#     useEnabled
+#     provideEnabled
+#     running
+#     lastSeen
+#   }
+# }
 
 query getDepartmentServiceStatus($serviceId: ID!, $departmentId: ID!) {
   getDepartmentServiceStatus(serviceId: $serviceId, departmentId: $departmentId) {

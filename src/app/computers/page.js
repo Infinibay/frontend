@@ -24,6 +24,7 @@ import { groupMachinesByDepartment } from "./utils/groupMachines";
 
 // Redux actions
 import { fetchVms } from "@/state/slices/vms";
+import { useSystemStatus } from "@/hooks/useSystemStatus";
 
 export default function ComputersPage() {
   // Context and size
@@ -40,6 +41,9 @@ export default function ComputersPage() {
   const selectedPc = useSelector((state) => state.vms.selectedMachine);
   const loading = useSelector((state) => state.vms.loading?.fetch);
   const error = useSelector((state) => state.vms.error?.fetch);
+  
+  // Check ISO availability
+  const { isReady: hasISOs } = useSystemStatus({ checkOnMount: true });
 
   // Actions and handlers
   const {
@@ -80,7 +84,7 @@ export default function ComputersPage() {
       )}
       <ToastViewport />
 
-      <ComputersHeader />
+      <ComputersHeader hasISOs={hasISOs} />
 
       <section className="flex-1 p-4 md:p-8">
         <div className="space-y-4">

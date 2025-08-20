@@ -14,7 +14,8 @@ export class SocketService {
   constructor() {
     this.socket = null
     this.connectionState = ConnectionState.DISCONNECTED
-    this.eventListeners = new Map()
+    this.eventListeners = new Map() // Maps eventPattern -> Set of callbacks
+    this.eventHandlers = new Map() // Maps fullEventName -> actual socket handler
     this.userNamespace = null
     this.reconnectAttempts = 0
     this.maxReconnectAttempts = 5
@@ -37,7 +38,7 @@ export class SocketService {
       this.pendingSubscriptions = [] // Store subscriptions that need to be re-applied
 
       // Create Socket.io connection
-      this.socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000', {
+      this.socket = io(process.env.NEXT_PUBLIC_BACKEND_HOST || 'http://localhost:4000', {
         auth: {
           token: token
         },
@@ -116,11 +117,18 @@ export class SocketService {
   disconnect() {
     if (this.socket) {
       this.debug.info('disconnect', 'Disconnecting from Socket.io server')
+      
+      // Remove all event handlers from socket
+      this.eventHandlers.forEach((handler, eventName) => {
+        this.socket.off(eventName, handler)
+      })
+      
       this.socket.disconnect()
       this.socket = null
       this.connectionState = ConnectionState.DISCONNECTED
       this.userNamespace = null
       this.eventListeners.clear()
+      this.eventHandlers.clear()
       this.pendingSubscriptions = []
     }
   }
@@ -158,17 +166,46 @@ export class SocketService {
         : `${this.userNamespace}:${eventPattern}`
 
       this.debug.info('subscribe', `Subscribing to event: ${fullEventName} (namespace: ${this.userNamespace})`)
-      this.socket.on(fullEventName, (data) => {
-        this.debug.log('event', `Received event: ${fullEventName}`, data)
-        callback(data)
-      })
+      
+      // Check if we already have a handler for this full event name
+      let eventHandler = this.eventHandlers.get(fullEventName)
+      
+      if (!eventHandler) {
+        // Create a new handler that will call all callbacks for this event
+        eventHandler = (data) => {
+          this.debug.log('event', `Received event: ${fullEventName}`, data)
+          const callbacks = this.eventListeners.get(eventPattern)
+          if (callbacks) {
+            callbacks.forEach(cb => {
+              try {
+                cb(data)
+              } catch (error) {
+                this.debug.error('event', `Error in callback for ${fullEventName}:`, error)
+              }
+            })
+          }
+        }
+        
+        // Store the handler and register it with socket
+        this.eventHandlers.set(fullEventName, eventHandler)
+        this.socket.on(fullEventName, eventHandler)
+        this.debug.success('subscribe', `Registered new handler for: ${fullEventName}`)
+      }
 
       return () => {
-        if (this.socket) {
-          this.socket.off(fullEventName, callback)
-        }
         this.removeEventListener(eventPattern, callback)
         this.removePendingSubscription(eventPattern, callback)
+        
+        // Only remove the socket handler if no more callbacks exist
+        const callbacks = this.eventListeners.get(eventPattern)
+        if (!callbacks || callbacks.size === 0) {
+          if (this.socket && this.eventHandlers.has(fullEventName)) {
+            const handler = this.eventHandlers.get(fullEventName)
+            this.socket.off(fullEventName, handler)
+            this.eventHandlers.delete(fullEventName)
+            this.debug.info('unsubscribe', `Removed handler for: ${fullEventName}`)
+          }
+        }
       }
     } else {
       // For general events (like 'connected', 'disconnect', etc.)
@@ -245,29 +282,38 @@ export class SocketService {
       return
     }
 
-    this.debug.info('resubscribe', `Re-subscribing ${this.pendingSubscriptions.length} events with new namespace: ${newNamespace}`)
+    this.debug.info('resubscribe', `Re-subscribing events with new namespace: ${newNamespace}`)
 
-    // Remove old event listeners that used the old namespace
-    this.pendingSubscriptions.forEach(({ eventPattern, callback }) => {
+    // Remove all old handlers
+    this.eventHandlers.forEach((handler, eventName) => {
+      if (eventName.startsWith(oldNamespace)) {
+        this.socket.off(eventName, handler)
+        this.eventHandlers.delete(eventName)
+        this.debug.info('resubscribe', `Removed old handler: ${eventName}`)
+      }
+    })
+
+    // Re-subscribe with new namespace
+    this.eventListeners.forEach((callbacks, eventPattern) => {
       if (eventPattern.includes(':')) {
-        const oldFullEventName = eventPattern.startsWith(oldNamespace)
-          ? eventPattern
-          : `${oldNamespace}:${eventPattern}`
-
-        // Remove old listener
-        this.socket.off(oldFullEventName, callback)
-        this.debug.info('resubscribe', `Removed old listener: ${oldFullEventName}`)
-
-        // Add new listener with updated namespace
-        const newFullEventName = eventPattern.startsWith(newNamespace)
-          ? eventPattern
-          : `${newNamespace}:${eventPattern}`
-
-        this.socket.on(newFullEventName, (data) => {
+        const newFullEventName = `${newNamespace}:${eventPattern}`
+        
+        // Create new handler for this event
+        const eventHandler = (data) => {
           this.debug.log('event', `Received event: ${newFullEventName}`, data)
-          callback(data)
-        })
-        this.debug.success('resubscribe', `Added new listener: ${newFullEventName}`)
+          callbacks.forEach(cb => {
+            try {
+              cb(data)
+            } catch (error) {
+              this.debug.error('event', `Error in callback for ${newFullEventName}:`, error)
+            }
+          })
+        }
+        
+        // Store and register the new handler
+        this.eventHandlers.set(newFullEventName, eventHandler)
+        this.socket.on(newFullEventName, eventHandler)
+        this.debug.success('resubscribe', `Added new handler: ${newFullEventName}`)
       }
     })
 

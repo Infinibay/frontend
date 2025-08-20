@@ -56,13 +56,16 @@ input CreateFilterRuleInput {
 
 input CreateMachineInputType {
   applications: [MachineApplicationInputType!]! = []
+  customCores: Int
+  customRam: Int
+  customStorage: Int
   departmentId: ID = ""
   name: String! = ""
   os: MachineOs! = WINDOWS10
   password: String! = ""
   pciBus: String = null
   productKey: String
-  templateId: String! = ""
+  templateId: String
   username: String! = ""
 }
 
@@ -199,6 +202,39 @@ type GraphicConfigurationType {
   protocol: String!
 }
 
+type ISO {
+  checksum: String
+  createdAt: DateTimeISO!
+  downloadUrl: String
+  filename: String!
+  id: ID!
+  isAvailable: Boolean!
+  lastVerified: DateTimeISO
+  os: String!
+  path: String!
+  size: String!
+  updatedAt: DateTimeISO!
+  uploadedAt: DateTimeISO!
+  version: String
+}
+
+type ISOAvailabilityMap {
+  available: Boolean!
+  os: String!
+}
+
+type ISOStatus {
+  available: Boolean!
+  iso: ISO
+  os: String!
+}
+
+type InfiniServiceStatus {
+  error: String
+  installed: Boolean!
+  running: Boolean!
+}
+
 input IpRangeInput {
   end: String! = ""
   networkName: String! = ""
@@ -212,15 +248,18 @@ scalar JSONObject
 
 type Machine {
   configuration: JSONObject
+  cpuCores: Int
   createdAt: DateTimeISO
   department: DepartmentType
+  gpuPciAddress: String
   id: ID!
   name: String!
+  ramGB: Int
   status: String!
   template: MachineTemplateType
-  templateId: String!
+  templateId: String
   user: UserType
-  userId: String!
+  userId: String
 }
 
 input MachineApplicationInputType {
@@ -314,6 +353,8 @@ type MachineTemplateType {
 }
 
 type Mutation {
+  """Calculate ISO checksum"""
+  calculateISOChecksum(isoId: String!): String!
   createApplication(input: CreateApplicationInputType!): ApplicationType!
   createDepartment(name: String!): DepartmentType!
   createFilter(input: CreateFilterInput!): GenericFilter!
@@ -338,20 +379,33 @@ type Mutation {
   moveMachine(departmentId: String!, id: String!): Machine!
   powerOff(id: String!): SuccessType!
   powerOn(id: String!): SuccessType!
+
+  """Register uploaded ISO"""
+  registerISO(filename: String!, os: String!, path: String!, size: Float!): ISO!
+
+  """Remove ISO file"""
+  removeISO(isoId: String!): Boolean!
   setNetworkBridgeName(input: BridgeNameInput!): Boolean!
   setNetworkIp(input: NetworkIpInput!): Boolean!
   setNetworkIpRange(input: IpRangeInput!): Boolean!
   setupNode: DyummyType!
   suspend(id: String!): SuccessType!
+
+  """Sync ISOs with filesystem"""
+  syncISOs: Boolean!
   toggleDepartmentService(input: ToggleDepartmentServiceInput!): DepartmentServiceStatus!
   toggleGlobalService(input: ToggleServiceInput!): GlobalServiceStatus!
   toggleVmService(input: ToggleVmServiceInput!): VmServiceStatus!
   updateApplication(id: String!, input: CreateApplicationInputType!): ApplicationType!
   updateFilter(id: ID!, input: UpdateFilterInput!): GenericFilter!
   updateFilterRule(id: ID!, input: UpdateFilterRuleInput!): FWRule!
+  updateMachineHardware(input: UpdateMachineHardwareInput!): Machine!
   updateMachineTemplate(id: String!, input: MachineTemplateInputType!): MachineTemplateType!
   updateMachineTemplateCategory(id: String!, input: MachineTemplateCategoryInputType!): MachineTemplateCategoryType!
   updateUser(id: String!, input: UpdateUserInputType!): UserType!
+
+  """Validate ISO file integrity"""
+  validateISO(isoId: String!): Boolean!
 }
 
 type Network {
@@ -411,19 +465,35 @@ input PaginationInputType {
 }
 
 type Query {
+  """Get all ISOs (available and unavailable)"""
+  allISOs: [ISO!]!
   application(id: String!): ApplicationType
   applications: [ApplicationType!]!
+
+  """Get all available ISOs"""
+  availableISOs: [ISO!]!
+
+  """Check if ISO is available for specific OS"""
+  checkISOStatus(os: String!): ISOStatus!
+
+  """Check availability for multiple OS types"""
+  checkMultipleOSAvailability(osList: [String!]!): [ISOAvailabilityMap!]!
   checkSetupStatus: DyummyType!
-  currentUser: UserType!
+
+  """Check overall system readiness"""
+  checkSystemReadiness: SystemReadiness!
+  currentUser: UserType
   department(id: String!): DepartmentType
   departments: [DepartmentType!]!
   findDepartmentByName(name: String!): DepartmentType
   getDepartmentServiceStatus(departmentId: ID!, serviceId: ID): [DepartmentServiceStatus!]!
-  getDepartmentVmsServiceStatus(departmentId: ID!, serviceId: ID): [VmServiceStatus!]!
   getFilter(id: ID!): GenericFilter
   getGlobalServiceStatus(serviceId: ID): [GlobalServiceStatus!]!
   getGraphics: [GPU!]!
   getServiceStatusSummary: [ServiceStatusSummary!]!
+
+  """Get supported OS types"""
+  getSupportedOSTypes: [String!]!
   getVmServiceStatus(serviceId: ID, vmId: ID!): [VmServiceStatus!]!
   graphicConnection(id: String!): GraphicConfigurationType
   listFilterRules(filterId: ID): [FWRule!]!
@@ -438,8 +508,14 @@ type Query {
   machines(orderBy: MachineOrderBy, pagination: PaginationInputType): [Machine!]!
   network(name: String!): Network!
   networks: [Network!]!
+
+  """Get current socket connection statistics for all VMs"""
+  socketConnectionStats: SocketConnectionStats
   user(id: String!): UserType!
   users(orderBy: UserOrderByInputType, pagination: PaginationInputType): [UserType!]!
+
+  """Get comprehensive diagnostics for VM socket connection issues"""
+  vmSocketDiagnostics(vmId: String!): VmDiagnostics!
 }
 
 """Service action type (USE for outbound, PROVIDE for inbound)"""
@@ -506,9 +582,24 @@ type ServiceStatusSummary {
   totalVms: Float!
 }
 
+type SocketConnectionStats {
+  activeConnections: Float
+  connections: [VmConnectionInfo!]
+  isConnected: Boolean
+  lastMessageTime: String
+  reconnectAttempts: Float
+  totalConnections: Float
+}
+
 type SuccessType {
   message: String!
   success: Boolean!
+}
+
+type SystemReadiness {
+  availableOS: [String!]!
+  missingOS: [String!]!
+  ready: Boolean!
 }
 
 input ToggleDepartmentServiceInput {
@@ -571,6 +662,18 @@ input UpdateFilterRuleInput {
   state: String
 }
 
+input UpdateMachineHardwareInput {
+  """New number of CPU cores"""
+  cpuCores: Int
+
+  """New GPU PCI address (e.g., 0000:01:00.0). Set to null to remove GPU."""
+  gpuPciAddress: String
+  id: ID! = ""
+
+  """New RAM in GB"""
+  ramGB: Int
+}
+
 input UpdateUserInputType {
   firstName: String = ""
   lastName: String = ""
@@ -613,7 +716,29 @@ type UserType {
   firstName: String!
   id: ID!
   lastName: String!
+
+  """User namespace for real-time events"""
+  namespace: String
   role: String!
+}
+
+type VmConnectionInfo {
+  isConnected: Boolean!
+  lastMessageTime: String!
+  reconnectAttempts: Float!
+  vmId: String!
+}
+
+type VmDiagnostics {
+  connectionStats: SocketConnectionStats
+  diagnostics: [String!]!
+  infiniService: InfiniServiceStatus!
+  manualCommands: [String!]!
+  recommendations: [String!]!
+  timestamp: String!
+  vmId: String!
+  vmName: String!
+  vmStatus: String!
 }
 
 type VmServiceStatus {
@@ -640,54 +765,4 @@ type VmServiceStatus {
 
   """Name of the VM"""
   vmName: String!
-
-# --- Extensions for new Security mutations and types ---
-
-enum ServiceAction {
-  USE
-  PROVIDE
-}
-
-input ApplyDepartmentServiceToAllInput {
-  action: ServiceAction!
-  departmentId: ID!
-  enabled: Boolean!
-  serviceId: ID!
-}
-
-input ClearVmOverridesInput {
-  serviceId: ID
-  vmId: ID!
-}
-
-input ResetVmOverridesInput {
-  departmentId: ID!
-  serviceId: ID!
-  vmIds: [ID!]!
-}
-
-type ResetVmOverrideSuccessItem {
-  vmId: ID!
-  vmName: String!
-}
-
-type ResetVmOverrideFailureItem {
-  vmId: ID!
-  error: String!
-}
-
-type ResetVmOverridesResult {
-  departmentId: ID!
-  serviceId: ID!
-  resetVmCount: Float!
-  successfulResets: [ResetVmOverrideSuccessItem!]!
-  failedResets: [ResetVmOverrideFailureItem!]!
-}
-
-extend type Mutation {
-  applyDepartmentServiceToAll(input: ApplyDepartmentServiceToAllInput!): DepartmentServiceStatus!
-  clearVmServiceOverrides(input: ClearVmOverridesInput!): [VmServiceStatus!]!
-  resetVmServiceOverrides(input: ResetVmOverridesInput!): ResetVmOverridesResult!
-}
-
 }

@@ -80,8 +80,10 @@ export function GpuSelectionStep({ id }) {
             {allOptions.map((gpu) => (
               <Label
                 key={gpu.pciBus}
-                className={`relative flex cursor-pointer rounded-lg border p-6 hover:border-primary transition-colors duration-200 ${
-                  stepValues.gpuId === gpu.pciBus ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:shadow-sm'
+                className={`relative flex cursor-pointer rounded-lg border-2 p-4 hover:border-primary transition-all duration-200 ${
+                  stepValues.gpuId === gpu.pciBus 
+                    ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg' 
+                    : 'border-input hover:shadow-md hover:bg-accent/50'
                 }`}
               >
                 <RadioGroupItem
@@ -89,26 +91,38 @@ export function GpuSelectionStep({ id }) {
                   id={gpu.pciBus}
                   className="sr-only"
                 />
-                <div className="flex flex-col gap-3 w-full">
-                  <div className="flex items-center justify-between">
-                    <span className="text-base font-semibold leading-none">
-                      {formatGpuName(gpu)}
-                    </span>
-                    {gpu.pciBus !== 'no-gpu' && (
-                      <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-                        {formatMemory(gpu.memory)}
-                      </span>
-                    )}
-                  </div>
-                  {gpu.pciBus !== 'no-gpu' && (
-                    <div className="space-y-1.5">
-                      <span className="text-sm text-muted-foreground flex items-center gap-2">
-                        <span className="font-medium text-foreground/80">Vendor:</span> {gpu.vendor}
-                      </span>
-                      <span className="text-sm text-muted-foreground flex items-center gap-2">
-                        <span className="font-medium text-foreground/80">PCI Bus:</span> {gpu.pciBus}
-                      </span>
+                <div className="flex flex-col gap-2 w-full">
+                  {gpu.pciBus === 'no-gpu' ? (
+                    <div className="text-center py-2">
+                      <span className="text-base font-semibold">No GPU</span>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Continue without graphics acceleration
+                      </p>
                     </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-semibold text-sm leading-tight break-words flex-1">
+                            {gpu.model}
+                          </h4>
+                          <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full whitespace-nowrap">
+                            {formatMemory(gpu.memory)}
+                          </span>
+                        </div>
+                        <div className="text-xs space-y-1">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <span className="font-medium">Graphics Controller</span>
+                          </div>
+                          <div className="text-muted-foreground truncate" title={gpu.vendor}>
+                            <span className="font-medium">Vendor:</span> {gpu.vendor}
+                          </div>
+                          <div className="text-muted-foreground">
+                            <span className="font-medium">PCI Bus:</span> {gpu.pciBus}
+                          </div>
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               </Label>

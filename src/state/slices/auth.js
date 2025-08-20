@@ -84,8 +84,9 @@ const authSlice = createSlice({
 						localStorage.setItem('socketNamespace', action.payload.namespace);
 					}
 				} else if (action.payload?.id) {
-					// Fallback: generate namespace if backend doesn't provide one
-					const namespace = `user_${action.payload.id}_${Date.now()}`;
+					// Fallback: generate namespace using same format as backend
+					// Backend uses: user_${userId.substring(0, 8)}
+					const namespace = `user_${action.payload.id.substring(0, 8)}`;
 					console.log('🔑 Generated fallback namespace:', namespace);
 					state.socketNamespace = namespace;
 					if (typeof window !== 'undefined') {

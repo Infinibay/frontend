@@ -30,25 +30,9 @@ export type ApplicationType = {
   parameters?: Maybe<Scalars['JSONObject']['output']>;
 };
 
-export type ApplyDepartmentServiceToAllInput = {
-  /** Service action (USE for outbound, PROVIDE for inbound) */
-  action: ServiceAction;
-  /** Unique identifier of the department */
-  departmentId: Scalars['ID']['input'];
-  /** Whether to enable or disable the service */
-  enabled: Scalars['Boolean']['input'];
-  /** Unique identifier of the service to toggle */
-  serviceId: Scalars['ID']['input'];
-};
-
 export type BridgeNameInput = {
   bridgeName?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
-};
-
-export type ClearVmOverridesInput = {
-  serviceId?: InputMaybe<Scalars['ID']['input']>;
-  vmId: Scalars['ID']['input'];
 };
 
 export type CommandExecutionResponseType = {
@@ -90,13 +74,16 @@ export type CreateFilterRuleInput = {
 
 export type CreateMachineInputType = {
   applications?: Array<MachineApplicationInputType>;
+  customCores?: InputMaybe<Scalars['Int']['input']>;
+  customRam?: InputMaybe<Scalars['Int']['input']>;
+  customStorage?: InputMaybe<Scalars['Int']['input']>;
   departmentId?: InputMaybe<Scalars['ID']['input']>;
   name?: Scalars['String']['input'];
   os?: MachineOs;
   password?: Scalars['String']['input'];
   pciBus?: InputMaybe<Scalars['String']['input']>;
   productKey?: InputMaybe<Scalars['String']['input']>;
-  templateId?: Scalars['String']['input'];
+  templateId?: InputMaybe<Scalars['String']['input']>;
   username?: Scalars['String']['input'];
 };
 
@@ -226,6 +213,43 @@ export type GraphicConfigurationType = {
   protocol: Scalars['String']['output'];
 };
 
+export type Iso = {
+  __typename?: 'ISO';
+  checksum?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  downloadUrl?: Maybe<Scalars['String']['output']>;
+  filename: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isAvailable: Scalars['Boolean']['output'];
+  lastVerified?: Maybe<Scalars['DateTimeISO']['output']>;
+  os: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+  size: Scalars['String']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
+  uploadedAt: Scalars['DateTimeISO']['output'];
+  version?: Maybe<Scalars['String']['output']>;
+};
+
+export type IsoAvailabilityMap = {
+  __typename?: 'ISOAvailabilityMap';
+  available: Scalars['Boolean']['output'];
+  os: Scalars['String']['output'];
+};
+
+export type IsoStatus = {
+  __typename?: 'ISOStatus';
+  available: Scalars['Boolean']['output'];
+  iso?: Maybe<Iso>;
+  os: Scalars['String']['output'];
+};
+
+export type InfiniServiceStatus = {
+  __typename?: 'InfiniServiceStatus';
+  error?: Maybe<Scalars['String']['output']>;
+  installed: Scalars['Boolean']['output'];
+  running: Scalars['Boolean']['output'];
+};
+
 export type IpRangeInput = {
   end?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
@@ -244,9 +268,9 @@ export type Machine = {
   ramGB?: Maybe<Scalars['Int']['output']>;
   status: Scalars['String']['output'];
   template?: Maybe<MachineTemplateType>;
-  templateId: Scalars['String']['output'];
+  templateId?: Maybe<Scalars['String']['output']>;
   user?: Maybe<UserType>;
-  userId: Scalars['String']['output'];
+  userId?: Maybe<Scalars['String']['output']>;
 };
 
 export type MachineApplicationInputType = {
@@ -338,8 +362,8 @@ export type MachineTemplateType = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  applyDepartmentServiceToAll: DepartmentServiceStatus;
-  clearVmServiceOverrides: Array<VmServiceStatus>;
+  /** Calculate ISO checksum */
+  calculateISOChecksum: Scalars['String']['output'];
   createApplication: ApplicationType;
   createDepartment: DepartmentType;
   createFilter: GenericFilter;
@@ -363,12 +387,17 @@ export type Mutation = {
   moveMachine: Machine;
   powerOff: SuccessType;
   powerOn: SuccessType;
-  resetVmServiceOverrides: ResetVmOverridesResult;
+  /** Register uploaded ISO */
+  registerISO: Iso;
+  /** Remove ISO file */
+  removeISO: Scalars['Boolean']['output'];
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
   setupNode: DyummyType;
   suspend: SuccessType;
+  /** Sync ISOs with filesystem */
+  syncISOs: Scalars['Boolean']['output'];
   toggleDepartmentService: DepartmentServiceStatus;
   toggleGlobalService: GlobalServiceStatus;
   toggleVmService: VmServiceStatus;
@@ -379,16 +408,13 @@ export type Mutation = {
   updateMachineTemplate: MachineTemplateType;
   updateMachineTemplateCategory: MachineTemplateCategoryType;
   updateUser: UserType;
+  /** Validate ISO file integrity */
+  validateISO: Scalars['Boolean']['output'];
 };
 
 
-export type MutationApplyDepartmentServiceToAllArgs = {
-  input: ApplyDepartmentServiceToAllInput;
-};
-
-
-export type MutationClearVmServiceOverridesArgs = {
-  input: ClearVmOverridesInput;
+export type MutationCalculateIsoChecksumArgs = {
+  isoId: Scalars['String']['input'];
 };
 
 
@@ -505,8 +531,16 @@ export type MutationPowerOnArgs = {
 };
 
 
-export type MutationResetVmServiceOverridesArgs = {
-  input: ResetVmOverridesInput;
+export type MutationRegisterIsoArgs = {
+  filename: Scalars['String']['input'];
+  os: Scalars['String']['input'];
+  path: Scalars['String']['input'];
+  size: Scalars['Float']['input'];
+};
+
+
+export type MutationRemoveIsoArgs = {
+  isoId: Scalars['String']['input'];
 };
 
 
@@ -585,6 +619,11 @@ export type MutationUpdateUserArgs = {
   input: UpdateUserInputType;
 };
 
+
+export type MutationValidateIsoArgs = {
+  isoId: Scalars['String']['input'];
+};
+
 export type Network = {
   __typename?: 'Network';
   bridge: NetworkBridge;
@@ -648,19 +687,30 @@ export type PaginationInputType = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Get all ISOs (available and unavailable) */
+  allISOs: Array<Iso>;
   application?: Maybe<ApplicationType>;
   applications: Array<ApplicationType>;
+  /** Get all available ISOs */
+  availableISOs: Array<Iso>;
+  /** Check if ISO is available for specific OS */
+  checkISOStatus: IsoStatus;
+  /** Check availability for multiple OS types */
+  checkMultipleOSAvailability: Array<IsoAvailabilityMap>;
   checkSetupStatus: DyummyType;
-  currentUser: UserType;
+  /** Check overall system readiness */
+  checkSystemReadiness: SystemReadiness;
+  currentUser?: Maybe<UserType>;
   department?: Maybe<DepartmentType>;
   departments: Array<DepartmentType>;
   findDepartmentByName?: Maybe<DepartmentType>;
   getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
-  getDepartmentVmsServiceStatus: Array<VmServiceStatus>;
   getFilter?: Maybe<GenericFilter>;
   getGlobalServiceStatus: Array<GlobalServiceStatus>;
   getGraphics: Array<Gpu>;
   getServiceStatusSummary: Array<ServiceStatusSummary>;
+  /** Get supported OS types */
+  getSupportedOSTypes: Array<Scalars['String']['output']>;
   getVmServiceStatus: Array<VmServiceStatus>;
   graphicConnection?: Maybe<GraphicConfigurationType>;
   listFilterRules: Array<FwRule>;
@@ -675,13 +725,27 @@ export type Query = {
   machines: Array<Machine>;
   network: Network;
   networks: Array<Network>;
+  /** Get current socket connection statistics for all VMs */
+  socketConnectionStats?: Maybe<SocketConnectionStats>;
   user: UserType;
   users: Array<UserType>;
+  /** Get comprehensive diagnostics for VM socket connection issues */
+  vmSocketDiagnostics: VmDiagnostics;
 };
 
 
 export type QueryApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryCheckIsoStatusArgs = {
+  os: Scalars['String']['input'];
+};
+
+
+export type QueryCheckMultipleOsAvailabilityArgs = {
+  osList: Array<Scalars['String']['input']>;
 };
 
 
@@ -698,12 +762,6 @@ export type QueryFindDepartmentByNameArgs = {
 export type QueryGetDepartmentServiceStatusArgs = {
   departmentId: Scalars['ID']['input'];
   serviceId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type QueryGetDepartmentVmsServiceStatusArgs = {
-  departmentId: Scalars['ID']['input'];
-  serviceId: Scalars['ID']['input'];
 };
 
 
@@ -787,31 +845,9 @@ export type QueryUsersArgs = {
   pagination?: InputMaybe<PaginationInputType>;
 };
 
-export type ResetVmOverrideFailureItem = {
-  __typename?: 'ResetVmOverrideFailureItem';
-  error: Scalars['String']['output'];
-  vmId: Scalars['ID']['output'];
-};
 
-export type ResetVmOverrideSuccessItem = {
-  __typename?: 'ResetVmOverrideSuccessItem';
-  vmId: Scalars['ID']['output'];
-  vmName: Scalars['String']['output'];
-};
-
-export type ResetVmOverridesInput = {
-  departmentId: Scalars['ID']['input'];
-  serviceId: Scalars['ID']['input'];
-  vmIds: Array<Scalars['ID']['input']>;
-};
-
-export type ResetVmOverridesResult = {
-  __typename?: 'ResetVmOverridesResult';
-  departmentId: Scalars['ID']['output'];
-  failedResets: Array<ResetVmOverrideFailureItem>;
-  resetVmCount: Scalars['Float']['output'];
-  serviceId: Scalars['ID']['output'];
-  successfulResets: Array<ResetVmOverrideSuccessItem>;
+export type QueryVmSocketDiagnosticsArgs = {
+  vmId: Scalars['String']['input'];
 };
 
 /** Service action type (USE for outbound, PROVIDE for inbound) */
@@ -869,10 +905,27 @@ export type ServiceStatusSummary = {
   totalVms: Scalars['Float']['output'];
 };
 
+export type SocketConnectionStats = {
+  __typename?: 'SocketConnectionStats';
+  activeConnections?: Maybe<Scalars['Float']['output']>;
+  connections?: Maybe<Array<VmConnectionInfo>>;
+  isConnected?: Maybe<Scalars['Boolean']['output']>;
+  lastMessageTime?: Maybe<Scalars['String']['output']>;
+  reconnectAttempts?: Maybe<Scalars['Float']['output']>;
+  totalConnections?: Maybe<Scalars['Float']['output']>;
+};
+
 export type SuccessType = {
   __typename?: 'SuccessType';
   message: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
+};
+
+export type SystemReadiness = {
+  __typename?: 'SystemReadiness';
+  availableOS: Array<Scalars['String']['output']>;
+  missingOS: Array<Scalars['String']['output']>;
+  ready: Scalars['Boolean']['output'];
 };
 
 export type ToggleDepartmentServiceInput = {
@@ -981,8 +1034,30 @@ export type UserType = {
   firstName: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
+  /** User namespace for real-time events */
   namespace?: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
+};
+
+export type VmConnectionInfo = {
+  __typename?: 'VmConnectionInfo';
+  isConnected: Scalars['Boolean']['output'];
+  lastMessageTime: Scalars['String']['output'];
+  reconnectAttempts: Scalars['Float']['output'];
+  vmId: Scalars['String']['output'];
+};
+
+export type VmDiagnostics = {
+  __typename?: 'VmDiagnostics';
+  connectionStats?: Maybe<SocketConnectionStats>;
+  diagnostics: Array<Scalars['String']['output']>;
+  infiniService: InfiniServiceStatus;
+  manualCommands: Array<Scalars['String']['output']>;
+  recommendations: Array<Scalars['String']['output']>;
+  timestamp: Scalars['String']['output'];
+  vmId: Scalars['String']['output'];
+  vmName: Scalars['String']['output'];
+  vmStatus: Scalars['String']['output'];
 };
 
 export type VmServiceStatus = {

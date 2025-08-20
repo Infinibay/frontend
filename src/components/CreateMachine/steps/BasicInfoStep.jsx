@@ -1,36 +1,22 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React from 'react';
+import { useSelector } from 'react-redux';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
-import { fetchDepartments, selectDepartments, selectDepartmentsLoading } from '@/state/slices/departments';
+import { selectDepartments, selectDepartmentsLoading } from '@/state/slices/departments';
+import { Building2, User, Lock, KeyRound, Server } from 'lucide-react';
 
 export function BasicInfoStep({ id, departmentId = null }) {
-  const dispatch = useDispatch();
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
   const stepValues = values[id] || {};
   const departments = useSelector(selectDepartments);
   const isLoading = useSelector(selectDepartmentsLoading);
-
-  // useEffect(() => {
-  //   if (!values.basicInfo?.departmentId) {
-  //     dispatch(fetchDepartments());
-  //   }
-  // }, [dispatch]);
-
-  // If departmentId is provided in the URL, set it once when the component mounts
-  // useEffect(() => {
-  //   const urlDepartmentId = values.departmentId;
-  //   if (urlDepartmentId && !stepValues.departmentId) {
-  //     setValue(`${id}.departmentId`, urlDepartmentId);
-  //   }
-  // }, [values.departmentId, stepValues.departmentId, setValue, id]);
 
   return (
     <div className="space-y-6">
@@ -41,22 +27,33 @@ export function BasicInfoStep({ id, departmentId = null }) {
         </p>
       </div>
 
-      <Card className="p-6 border-primary/10 bg-primary/5">
-        <div className="space-y-4">
-          {departmentId == null && (
-            <div className="space-y-2">
-              <Label
-                htmlFor="departmentId"
-                moreInformation="Select the department this machine will belong to"
-              >
-                Department
-              </Label>
+      <div className="space-y-6">
+        {departmentId == null && (
+          <Card className="p-6 bg-gradient-to-br from-primary/5 via-primary/3 to-background border-primary/20 shadow-lg">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="departmentId"
+                    className="text-base font-semibold"
+                    moreInformation="Select the department this machine will belong to"
+                  >
+                    Department
+                  </Label>
+                </div>
+              </div>
               <Select
                 value={stepValues.departmentId || ''}
                 onValueChange={(value) => setValue(`${id}.departmentId`, value)}
                 disabled={isLoading}
               >
-                <SelectTrigger id="departmentId" className={`bg-background ${getError('departmentId') ? 'border-red-500' : ''}`}>
+                <SelectTrigger 
+                  id="departmentId" 
+                  className={`bg-background hover:bg-accent/50 transition-colors ${getError('departmentId') ? 'border-red-500' : ''}`}
+                >
                   <SelectValue placeholder="Select a department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -71,99 +68,142 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 <p className="text-sm text-red-500">{getError('departmentId')}</p>
               )}
             </div>
-          )}
-          <div className="space-y-2">
-            <Label
-              htmlFor="name"
-              moreInformation="The machine name must be unique across your organization. Use a descriptive name that helps identify the machine's purpose."
-            >
-              Machine Name
-            </Label>
-            <Input
-              id="name"
-              placeholder="Enter machine name"
-              value={stepValues.name || ''}
-              onChange={(e) => setValue(`${id}.name`, e.target.value)}
-              className={`bg-background ${getError('name') ? 'border-red-500' : ''}`}
-            />
-            {getError('name') && (
-              <p className="text-sm text-red-500">{getError('name')}</p>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Choose a unique name that helps you identify this machine.
-            </p>
-          </div>
+          </Card>
+        )}
 
-          <div className="space-y-2">
-            <Label
-              htmlFor="username"
-              moreInformation="This username will be used to log into the machine. Choose a username that follows your organization's naming conventions."
-            >
-              Username
-            </Label>
-            <Input
-              id="username"
-              placeholder="Enter username"
-              value={stepValues.username || ''}
-              onChange={(e) => setValue(`${id}.username`, e.target.value)}
-              className={`bg-background ${getError('username') ? 'border-red-500' : ''}`}
-            />
-            {getError('username') && (
-              <p className="text-sm text-red-500">{getError('username')}</p>
-            )}
-            <p className="text-sm text-muted-foreground">
-              This will be the main user account for the machine.
-            </p>
+        <Card className="p-6 bg-gradient-to-br from-blue-500/5 via-blue-400/3 to-background border-blue-500/20 shadow-lg">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Server className="h-5 w-5 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <Label
+                    htmlFor="name"
+                    className="text-base font-semibold"
+                    moreInformation="The machine name must be unique across your organization. Use a descriptive name that helps identify the machine's purpose."
+                  >
+                    Machine Name
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Choose a unique name that helps you identify this machine
+                  </p>
+                </div>
+              </div>
+              <Input
+                id="name"
+                placeholder="e.g., dev-server-01, web-app-prod"
+                value={stepValues.name || ''}
+                onChange={(e) => setValue(`${id}.name`, e.target.value)}
+                className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('name') ? 'border-red-500' : ''}`}
+              />
+              {getError('name') && (
+                <p className="text-sm text-red-500">{getError('name')}</p>
+              )}
+            </div>
           </div>
+        </Card>
 
-          <div className="space-y-2">
-            <Label
-              htmlFor="password"
-              moreInformation="Password must be secure. Use a combination of uppercase, lowercase, numbers, and special characters."
-            >
-              Password
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter password"
-              value={stepValues.password || ''}
-              onChange={(e) => setValue(`${id}.password`, e.target.value)}
-              className={`bg-background ${getError('password') ? 'border-red-500' : ''}`}
-            />
-            {getError('password') && (
-              <p className="text-sm text-red-500">{getError('password')}</p>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Choose a strong password for the user account.
-            </p>
+        <Card className="p-6 bg-gradient-to-br from-purple-500/5 via-purple-400/3 to-background border-purple-500/20 shadow-lg">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-purple-500" />
+                </div>
+                <div className="flex-1">
+                  <Label
+                    htmlFor="username"
+                    className="text-base font-semibold"
+                    moreInformation="This username will be used to log into the machine. Choose a username that follows your organization's naming conventions."
+                  >
+                    Username
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This will be the main user account for the machine
+                  </p>
+                </div>
+              </div>
+              <Input
+                id="username"
+                placeholder="e.g., admin, developer"
+                value={stepValues.username || ''}
+                onChange={(e) => setValue(`${id}.username`, e.target.value)}
+                className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('username') ? 'border-red-500' : ''}`}
+              />
+              {getError('username') && (
+                <p className="text-sm text-red-500">{getError('username')}</p>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <Lock className="h-5 w-5 text-purple-500" />
+                </div>
+                <div className="flex-1">
+                  <Label
+                    htmlFor="password"
+                    className="text-base font-semibold"
+                    moreInformation="Password must be secure. Use a combination of uppercase, lowercase, numbers, and special characters."
+                  >
+                    Password
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Choose a strong password for the user account
+                  </p>
+                </div>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter a secure password"
+                value={stepValues.password || ''}
+                onChange={(e) => setValue(`${id}.password`, e.target.value)}
+                className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('password') ? 'border-red-500' : ''}`}
+              />
+              {getError('password') && (
+                <p className="text-sm text-red-500">{getError('password')}</p>
+              )}
+            </div>
           </div>
+        </Card>
 
-          {values.configuration?.os?.startsWith('WINDOWS') && (
-            <div className="space-y-2">
-              <Label
-                htmlFor="productKey"
-                moreInformation="A valid Windows product key is required to activate Windows. If you don't have one now, you can add it later."
-              >
-                Product Key (Optional)
-              </Label>
+        {values.configuration?.os?.startsWith('WINDOWS') && (
+          <Card className="p-6 bg-gradient-to-br from-amber-500/5 via-amber-400/3 to-background border-amber-500/20 shadow-lg">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <KeyRound className="h-5 w-5 text-amber-500" />
+                </div>
+                <div className="flex-1">
+                  <Label
+                    htmlFor="productKey"
+                    className="text-base font-semibold"
+                    moreInformation="A valid Windows product key is required to activate Windows. If you don't have one now, you can add it later."
+                  >
+                    Product Key (Optional)
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    If you have a Windows product key, enter it here
+                  </p>
+                </div>
+              </div>
               <Input
                 id="productKey"
-                placeholder="Enter Windows product key"
+                placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
                 value={stepValues.productKey || ''}
                 onChange={(e) => setValue(`${id}.productKey`, e.target.value)}
-                className={`bg-background ${getError('productKey') ? 'border-red-500' : ''}`}
+                className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('productKey') ? 'border-red-500' : ''}`}
               />
               {getError('productKey') && (
                 <p className="text-sm text-red-500">{getError('productKey')}</p>
               )}
-              <p className="text-sm text-muted-foreground">
-                If you have a Windows product key, enter it here.
-              </p>
             </div>
-          )}
-        </div>
-      </Card>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

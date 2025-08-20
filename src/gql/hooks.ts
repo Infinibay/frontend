@@ -30,25 +30,9 @@ export type ApplicationType = {
   parameters?: Maybe<Scalars['JSONObject']['output']>;
 };
 
-export type ApplyDepartmentServiceToAllInput = {
-  /** Service action (USE for outbound, PROVIDE for inbound) */
-  action: ServiceAction;
-  /** Unique identifier of the department */
-  departmentId: Scalars['ID']['input'];
-  /** Whether to enable or disable the service */
-  enabled: Scalars['Boolean']['input'];
-  /** Unique identifier of the service to toggle */
-  serviceId: Scalars['ID']['input'];
-};
-
 export type BridgeNameInput = {
   bridgeName?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
-};
-
-export type ClearVmOverridesInput = {
-  serviceId?: InputMaybe<Scalars['ID']['input']>;
-  vmId: Scalars['ID']['input'];
 };
 
 export type CommandExecutionResponseType = {
@@ -90,13 +74,16 @@ export type CreateFilterRuleInput = {
 
 export type CreateMachineInputType = {
   applications?: Array<MachineApplicationInputType>;
+  customCores?: InputMaybe<Scalars['Int']['input']>;
+  customRam?: InputMaybe<Scalars['Int']['input']>;
+  customStorage?: InputMaybe<Scalars['Int']['input']>;
   departmentId?: InputMaybe<Scalars['ID']['input']>;
   name?: Scalars['String']['input'];
   os?: MachineOs;
   password?: Scalars['String']['input'];
   pciBus?: InputMaybe<Scalars['String']['input']>;
   productKey?: InputMaybe<Scalars['String']['input']>;
-  templateId?: Scalars['String']['input'];
+  templateId?: InputMaybe<Scalars['String']['input']>;
   username?: Scalars['String']['input'];
 };
 
@@ -226,6 +213,43 @@ export type GraphicConfigurationType = {
   protocol: Scalars['String']['output'];
 };
 
+export type Iso = {
+  __typename?: 'ISO';
+  checksum?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  downloadUrl?: Maybe<Scalars['String']['output']>;
+  filename: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isAvailable: Scalars['Boolean']['output'];
+  lastVerified?: Maybe<Scalars['DateTimeISO']['output']>;
+  os: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+  size: Scalars['String']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
+  uploadedAt: Scalars['DateTimeISO']['output'];
+  version?: Maybe<Scalars['String']['output']>;
+};
+
+export type IsoAvailabilityMap = {
+  __typename?: 'ISOAvailabilityMap';
+  available: Scalars['Boolean']['output'];
+  os: Scalars['String']['output'];
+};
+
+export type IsoStatus = {
+  __typename?: 'ISOStatus';
+  available: Scalars['Boolean']['output'];
+  iso?: Maybe<Iso>;
+  os: Scalars['String']['output'];
+};
+
+export type InfiniServiceStatus = {
+  __typename?: 'InfiniServiceStatus';
+  error?: Maybe<Scalars['String']['output']>;
+  installed: Scalars['Boolean']['output'];
+  running: Scalars['Boolean']['output'];
+};
+
 export type IpRangeInput = {
   end?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
@@ -244,9 +268,9 @@ export type Machine = {
   ramGB?: Maybe<Scalars['Int']['output']>;
   status: Scalars['String']['output'];
   template?: Maybe<MachineTemplateType>;
-  templateId: Scalars['String']['output'];
+  templateId?: Maybe<Scalars['String']['output']>;
   user?: Maybe<UserType>;
-  userId: Scalars['String']['output'];
+  userId?: Maybe<Scalars['String']['output']>;
 };
 
 export type MachineApplicationInputType = {
@@ -338,8 +362,8 @@ export type MachineTemplateType = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  applyDepartmentServiceToAll: DepartmentServiceStatus;
-  clearVmServiceOverrides: Array<VmServiceStatus>;
+  /** Calculate ISO checksum */
+  calculateISOChecksum: Scalars['String']['output'];
   createApplication: ApplicationType;
   createDepartment: DepartmentType;
   createFilter: GenericFilter;
@@ -363,12 +387,17 @@ export type Mutation = {
   moveMachine: Machine;
   powerOff: SuccessType;
   powerOn: SuccessType;
-  resetVmServiceOverrides: ResetVmOverridesResult;
+  /** Register uploaded ISO */
+  registerISO: Iso;
+  /** Remove ISO file */
+  removeISO: Scalars['Boolean']['output'];
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
   setupNode: DyummyType;
   suspend: SuccessType;
+  /** Sync ISOs with filesystem */
+  syncISOs: Scalars['Boolean']['output'];
   toggleDepartmentService: DepartmentServiceStatus;
   toggleGlobalService: GlobalServiceStatus;
   toggleVmService: VmServiceStatus;
@@ -379,16 +408,13 @@ export type Mutation = {
   updateMachineTemplate: MachineTemplateType;
   updateMachineTemplateCategory: MachineTemplateCategoryType;
   updateUser: UserType;
+  /** Validate ISO file integrity */
+  validateISO: Scalars['Boolean']['output'];
 };
 
 
-export type MutationApplyDepartmentServiceToAllArgs = {
-  input: ApplyDepartmentServiceToAllInput;
-};
-
-
-export type MutationClearVmServiceOverridesArgs = {
-  input: ClearVmOverridesInput;
+export type MutationCalculateIsoChecksumArgs = {
+  isoId: Scalars['String']['input'];
 };
 
 
@@ -505,8 +531,16 @@ export type MutationPowerOnArgs = {
 };
 
 
-export type MutationResetVmServiceOverridesArgs = {
-  input: ResetVmOverridesInput;
+export type MutationRegisterIsoArgs = {
+  filename: Scalars['String']['input'];
+  os: Scalars['String']['input'];
+  path: Scalars['String']['input'];
+  size: Scalars['Float']['input'];
+};
+
+
+export type MutationRemoveIsoArgs = {
+  isoId: Scalars['String']['input'];
 };
 
 
@@ -585,6 +619,11 @@ export type MutationUpdateUserArgs = {
   input: UpdateUserInputType;
 };
 
+
+export type MutationValidateIsoArgs = {
+  isoId: Scalars['String']['input'];
+};
+
 export type Network = {
   __typename?: 'Network';
   bridge: NetworkBridge;
@@ -648,19 +687,30 @@ export type PaginationInputType = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Get all ISOs (available and unavailable) */
+  allISOs: Array<Iso>;
   application?: Maybe<ApplicationType>;
   applications: Array<ApplicationType>;
+  /** Get all available ISOs */
+  availableISOs: Array<Iso>;
+  /** Check if ISO is available for specific OS */
+  checkISOStatus: IsoStatus;
+  /** Check availability for multiple OS types */
+  checkMultipleOSAvailability: Array<IsoAvailabilityMap>;
   checkSetupStatus: DyummyType;
-  currentUser: UserType;
+  /** Check overall system readiness */
+  checkSystemReadiness: SystemReadiness;
+  currentUser?: Maybe<UserType>;
   department?: Maybe<DepartmentType>;
   departments: Array<DepartmentType>;
   findDepartmentByName?: Maybe<DepartmentType>;
   getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
-  getDepartmentVmsServiceStatus: Array<VmServiceStatus>;
   getFilter?: Maybe<GenericFilter>;
   getGlobalServiceStatus: Array<GlobalServiceStatus>;
   getGraphics: Array<Gpu>;
   getServiceStatusSummary: Array<ServiceStatusSummary>;
+  /** Get supported OS types */
+  getSupportedOSTypes: Array<Scalars['String']['output']>;
   getVmServiceStatus: Array<VmServiceStatus>;
   graphicConnection?: Maybe<GraphicConfigurationType>;
   listFilterRules: Array<FwRule>;
@@ -675,13 +725,27 @@ export type Query = {
   machines: Array<Machine>;
   network: Network;
   networks: Array<Network>;
+  /** Get current socket connection statistics for all VMs */
+  socketConnectionStats?: Maybe<SocketConnectionStats>;
   user: UserType;
   users: Array<UserType>;
+  /** Get comprehensive diagnostics for VM socket connection issues */
+  vmSocketDiagnostics: VmDiagnostics;
 };
 
 
 export type QueryApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryCheckIsoStatusArgs = {
+  os: Scalars['String']['input'];
+};
+
+
+export type QueryCheckMultipleOsAvailabilityArgs = {
+  osList: Array<Scalars['String']['input']>;
 };
 
 
@@ -698,12 +762,6 @@ export type QueryFindDepartmentByNameArgs = {
 export type QueryGetDepartmentServiceStatusArgs = {
   departmentId: Scalars['ID']['input'];
   serviceId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type QueryGetDepartmentVmsServiceStatusArgs = {
-  departmentId: Scalars['ID']['input'];
-  serviceId: Scalars['ID']['input'];
 };
 
 
@@ -787,31 +845,9 @@ export type QueryUsersArgs = {
   pagination?: InputMaybe<PaginationInputType>;
 };
 
-export type ResetVmOverrideFailureItem = {
-  __typename?: 'ResetVmOverrideFailureItem';
-  error: Scalars['String']['output'];
-  vmId: Scalars['ID']['output'];
-};
 
-export type ResetVmOverrideSuccessItem = {
-  __typename?: 'ResetVmOverrideSuccessItem';
-  vmId: Scalars['ID']['output'];
-  vmName: Scalars['String']['output'];
-};
-
-export type ResetVmOverridesInput = {
-  departmentId: Scalars['ID']['input'];
-  serviceId: Scalars['ID']['input'];
-  vmIds: Array<Scalars['ID']['input']>;
-};
-
-export type ResetVmOverridesResult = {
-  __typename?: 'ResetVmOverridesResult';
-  departmentId: Scalars['ID']['output'];
-  failedResets: Array<ResetVmOverrideFailureItem>;
-  resetVmCount: Scalars['Float']['output'];
-  serviceId: Scalars['ID']['output'];
-  successfulResets: Array<ResetVmOverrideSuccessItem>;
+export type QueryVmSocketDiagnosticsArgs = {
+  vmId: Scalars['String']['input'];
 };
 
 /** Service action type (USE for outbound, PROVIDE for inbound) */
@@ -869,10 +905,27 @@ export type ServiceStatusSummary = {
   totalVms: Scalars['Float']['output'];
 };
 
+export type SocketConnectionStats = {
+  __typename?: 'SocketConnectionStats';
+  activeConnections?: Maybe<Scalars['Float']['output']>;
+  connections?: Maybe<Array<VmConnectionInfo>>;
+  isConnected?: Maybe<Scalars['Boolean']['output']>;
+  lastMessageTime?: Maybe<Scalars['String']['output']>;
+  reconnectAttempts?: Maybe<Scalars['Float']['output']>;
+  totalConnections?: Maybe<Scalars['Float']['output']>;
+};
+
 export type SuccessType = {
   __typename?: 'SuccessType';
   message: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
+};
+
+export type SystemReadiness = {
+  __typename?: 'SystemReadiness';
+  availableOS: Array<Scalars['String']['output']>;
+  missingOS: Array<Scalars['String']['output']>;
+  ready: Scalars['Boolean']['output'];
 };
 
 export type ToggleDepartmentServiceInput = {
@@ -981,8 +1034,30 @@ export type UserType = {
   firstName: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
+  /** User namespace for real-time events */
   namespace?: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
+};
+
+export type VmConnectionInfo = {
+  __typename?: 'VmConnectionInfo';
+  isConnected: Scalars['Boolean']['output'];
+  lastMessageTime: Scalars['String']['output'];
+  reconnectAttempts: Scalars['Float']['output'];
+  vmId: Scalars['String']['output'];
+};
+
+export type VmDiagnostics = {
+  __typename?: 'VmDiagnostics';
+  connectionStats?: Maybe<SocketConnectionStats>;
+  diagnostics: Array<Scalars['String']['output']>;
+  infiniService: InfiniServiceStatus;
+  manualCommands: Array<Scalars['String']['output']>;
+  recommendations: Array<Scalars['String']['output']>;
+  timestamp: Scalars['String']['output'];
+  vmId: Scalars['String']['output'];
+  vmName: Scalars['String']['output'];
+  vmStatus: Scalars['String']['output'];
 };
 
 export type VmServiceStatus = {
@@ -1054,7 +1129,7 @@ export type CreateMachineMutationVariables = Exact<{
 }>;
 
 
-export type CreateMachineMutation = { __typename?: 'Mutation', createMachine: { __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId: string, templateId: string, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null } };
+export type CreateMachineMutation = { __typename?: 'Mutation', createMachine: { __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId?: string | null, templateId?: string | null, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null } };
 
 export type PowerOnMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -1098,7 +1173,7 @@ export type MoveMachineMutationVariables = Exact<{
 }>;
 
 
-export type MoveMachineMutation = { __typename?: 'Mutation', moveMachine: { __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId: string, templateId: string, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null } };
+export type MoveMachineMutation = { __typename?: 'Mutation', moveMachine: { __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId?: string | null, templateId?: string | null, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null } };
 
 export type SetupNodeMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -1272,37 +1347,10 @@ export type ToggleGlobalServiceMutationVariables = Exact<{
 
 export type ToggleGlobalServiceMutation = { __typename?: 'Mutation', toggleGlobalService: { __typename?: 'GlobalServiceStatus', serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean } };
 
-export type ClearVmServiceOverridesMutationVariables = Exact<{
-  vmId: Scalars['ID']['input'];
-  serviceId?: InputMaybe<Scalars['ID']['input']>;
-}>;
-
-
-export type ClearVmServiceOverridesMutation = { __typename?: 'Mutation', clearVmServiceOverrides: Array<{ __typename?: 'VmServiceStatus', vmId: string, vmName: string, serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean, running: boolean, lastSeen?: string | null }> };
-
-export type ApplyDepartmentServiceToAllMutationVariables = Exact<{
-  departmentId: Scalars['ID']['input'];
-  serviceId: Scalars['ID']['input'];
-  action: ServiceAction;
-  enabled: Scalars['Boolean']['input'];
-}>;
-
-
-export type ApplyDepartmentServiceToAllMutation = { __typename?: 'Mutation', applyDepartmentServiceToAll: { __typename?: 'DepartmentServiceStatus', departmentId: string, departmentName: string, serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean, vmCount: number, enabledVmCount: number } };
-
-export type ResetVmServiceOverridesMutationVariables = Exact<{
-  departmentId: Scalars['ID']['input'];
-  serviceId: Scalars['ID']['input'];
-  vmIds: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
-}>;
-
-
-export type ResetVmServiceOverridesMutation = { __typename?: 'Mutation', resetVmServiceOverrides: { __typename?: 'ResetVmOverridesResult', departmentId: string, serviceId: string, resetVmCount: number } };
-
 export type CurrentUserQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentUserQuery = { __typename?: 'Query', currentUser: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } };
+export type CurrentUserQuery = { __typename?: 'Query', currentUser?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string, namespace?: string | null } | null };
 
 export type UserQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -1347,7 +1395,7 @@ export type MachineQueryVariables = Exact<{
 }>;
 
 
-export type MachineQuery = { __typename?: 'Query', machine?: { __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId: string, templateId: string, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null } | null };
+export type MachineQuery = { __typename?: 'Query', machine?: { __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId?: string | null, templateId?: string | null, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null } | null };
 
 export type MachinesQueryVariables = Exact<{
   orderBy?: InputMaybe<MachineOrderBy>;
@@ -1355,7 +1403,7 @@ export type MachinesQueryVariables = Exact<{
 }>;
 
 
-export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId: string, templateId: string, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null }> };
+export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration?: { [key: string]: any } | null, status: string, userId?: string | null, templateId?: string | null, createdAt?: string | null, template?: { __typename?: 'MachineTemplateType', id: string, name?: string | null, description?: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId?: string | null, totalMachines?: number | null } | null, department?: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed?: number | null, ipSubnet?: string | null, totalMachines?: number | null } | null, user?: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, createdAt: string } | null }> };
 
 export type GraphicConnectionQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -1463,14 +1511,6 @@ export type GetVmServiceStatusQueryVariables = Exact<{
 
 
 export type GetVmServiceStatusQuery = { __typename?: 'Query', getVmServiceStatus: Array<{ __typename?: 'VmServiceStatus', vmId: string, vmName: string, serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean, running: boolean, lastSeen?: string | null }> };
-
-export type GetDepartmentVmsServiceStatusQueryVariables = Exact<{
-  serviceId: Scalars['ID']['input'];
-  departmentId: Scalars['ID']['input'];
-}>;
-
-
-export type GetDepartmentVmsServiceStatusQuery = { __typename?: 'Query', getDepartmentVmsServiceStatus: Array<{ __typename?: 'VmServiceStatus', vmId: string, vmName: string, serviceId: string, serviceName: string, useEnabled: boolean, provideEnabled: boolean, running: boolean, lastSeen?: string | null }> };
 
 export type GetDepartmentServiceStatusQueryVariables = Exact<{
   serviceId: Scalars['ID']['input'];
@@ -2918,131 +2958,6 @@ export function useToggleGlobalServiceMutation(baseOptions?: Apollo.MutationHook
 export type ToggleGlobalServiceMutationHookResult = ReturnType<typeof useToggleGlobalServiceMutation>;
 export type ToggleGlobalServiceMutationResult = Apollo.MutationResult<ToggleGlobalServiceMutation>;
 export type ToggleGlobalServiceMutationOptions = Apollo.BaseMutationOptions<ToggleGlobalServiceMutation, ToggleGlobalServiceMutationVariables>;
-export const ClearVmServiceOverridesDocument = gql`
-    mutation ClearVmServiceOverrides($vmId: ID!, $serviceId: ID) {
-  clearVmServiceOverrides(input: {vmId: $vmId, serviceId: $serviceId}) {
-    vmId
-    vmName
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-    running
-    lastSeen
-  }
-}
-    `;
-export type ClearVmServiceOverridesMutationFn = Apollo.MutationFunction<ClearVmServiceOverridesMutation, ClearVmServiceOverridesMutationVariables>;
-
-/**
- * __useClearVmServiceOverridesMutation__
- *
- * To run a mutation, you first call `useClearVmServiceOverridesMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useClearVmServiceOverridesMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [clearVmServiceOverridesMutation, { data, loading, error }] = useClearVmServiceOverridesMutation({
- *   variables: {
- *      vmId: // value for 'vmId'
- *      serviceId: // value for 'serviceId'
- *   },
- * });
- */
-export function useClearVmServiceOverridesMutation(baseOptions?: Apollo.MutationHookOptions<ClearVmServiceOverridesMutation, ClearVmServiceOverridesMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<ClearVmServiceOverridesMutation, ClearVmServiceOverridesMutationVariables>(ClearVmServiceOverridesDocument, options);
-      }
-export type ClearVmServiceOverridesMutationHookResult = ReturnType<typeof useClearVmServiceOverridesMutation>;
-export type ClearVmServiceOverridesMutationResult = Apollo.MutationResult<ClearVmServiceOverridesMutation>;
-export type ClearVmServiceOverridesMutationOptions = Apollo.BaseMutationOptions<ClearVmServiceOverridesMutation, ClearVmServiceOverridesMutationVariables>;
-export const ApplyDepartmentServiceToAllDocument = gql`
-    mutation ApplyDepartmentServiceToAll($departmentId: ID!, $serviceId: ID!, $action: ServiceAction!, $enabled: Boolean!) {
-  applyDepartmentServiceToAll(
-    input: {departmentId: $departmentId, serviceId: $serviceId, action: $action, enabled: $enabled}
-  ) {
-    departmentId
-    departmentName
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-    vmCount
-    enabledVmCount
-  }
-}
-    `;
-export type ApplyDepartmentServiceToAllMutationFn = Apollo.MutationFunction<ApplyDepartmentServiceToAllMutation, ApplyDepartmentServiceToAllMutationVariables>;
-
-/**
- * __useApplyDepartmentServiceToAllMutation__
- *
- * To run a mutation, you first call `useApplyDepartmentServiceToAllMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useApplyDepartmentServiceToAllMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [applyDepartmentServiceToAllMutation, { data, loading, error }] = useApplyDepartmentServiceToAllMutation({
- *   variables: {
- *      departmentId: // value for 'departmentId'
- *      serviceId: // value for 'serviceId'
- *      action: // value for 'action'
- *      enabled: // value for 'enabled'
- *   },
- * });
- */
-export function useApplyDepartmentServiceToAllMutation(baseOptions?: Apollo.MutationHookOptions<ApplyDepartmentServiceToAllMutation, ApplyDepartmentServiceToAllMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<ApplyDepartmentServiceToAllMutation, ApplyDepartmentServiceToAllMutationVariables>(ApplyDepartmentServiceToAllDocument, options);
-      }
-export type ApplyDepartmentServiceToAllMutationHookResult = ReturnType<typeof useApplyDepartmentServiceToAllMutation>;
-export type ApplyDepartmentServiceToAllMutationResult = Apollo.MutationResult<ApplyDepartmentServiceToAllMutation>;
-export type ApplyDepartmentServiceToAllMutationOptions = Apollo.BaseMutationOptions<ApplyDepartmentServiceToAllMutation, ApplyDepartmentServiceToAllMutationVariables>;
-export const ResetVmServiceOverridesDocument = gql`
-    mutation ResetVmServiceOverrides($departmentId: ID!, $serviceId: ID!, $vmIds: [ID!]!) {
-  resetVmServiceOverrides(
-    input: {departmentId: $departmentId, serviceId: $serviceId, vmIds: $vmIds}
-  ) {
-    departmentId
-    serviceId
-    resetVmCount
-  }
-}
-    `;
-export type ResetVmServiceOverridesMutationFn = Apollo.MutationFunction<ResetVmServiceOverridesMutation, ResetVmServiceOverridesMutationVariables>;
-
-/**
- * __useResetVmServiceOverridesMutation__
- *
- * To run a mutation, you first call `useResetVmServiceOverridesMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useResetVmServiceOverridesMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [resetVmServiceOverridesMutation, { data, loading, error }] = useResetVmServiceOverridesMutation({
- *   variables: {
- *      departmentId: // value for 'departmentId'
- *      serviceId: // value for 'serviceId'
- *      vmIds: // value for 'vmIds'
- *   },
- * });
- */
-export function useResetVmServiceOverridesMutation(baseOptions?: Apollo.MutationHookOptions<ResetVmServiceOverridesMutation, ResetVmServiceOverridesMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<ResetVmServiceOverridesMutation, ResetVmServiceOverridesMutationVariables>(ResetVmServiceOverridesDocument, options);
-      }
-export type ResetVmServiceOverridesMutationHookResult = ReturnType<typeof useResetVmServiceOverridesMutation>;
-export type ResetVmServiceOverridesMutationResult = Apollo.MutationResult<ResetVmServiceOverridesMutation>;
-export type ResetVmServiceOverridesMutationOptions = Apollo.BaseMutationOptions<ResetVmServiceOverridesMutation, ResetVmServiceOverridesMutationVariables>;
 export const CurrentUserDocument = gql`
     query currentUser {
   currentUser {
@@ -3052,6 +2967,7 @@ export const CurrentUserDocument = gql`
     role
     email
     createdAt
+    namespace
   }
 }
     `;
@@ -4377,60 +4293,6 @@ export type GetVmServiceStatusSuspenseQueryHookResult = ReturnType<typeof useGet
 export type GetVmServiceStatusQueryResult = Apollo.QueryResult<GetVmServiceStatusQuery, GetVmServiceStatusQueryVariables>;
 export function refetchGetVmServiceStatusQuery(variables: GetVmServiceStatusQueryVariables) {
       return { query: GetVmServiceStatusDocument, variables: variables }
-    }
-export const GetDepartmentVmsServiceStatusDocument = gql`
-    query getDepartmentVmsServiceStatus($serviceId: ID!, $departmentId: ID!) {
-  getDepartmentVmsServiceStatus(
-    serviceId: $serviceId
-    departmentId: $departmentId
-  ) {
-    vmId
-    vmName
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-    running
-    lastSeen
-  }
-}
-    `;
-
-/**
- * __useGetDepartmentVmsServiceStatusQuery__
- *
- * To run a query within a React component, call `useGetDepartmentVmsServiceStatusQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetDepartmentVmsServiceStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetDepartmentVmsServiceStatusQuery({
- *   variables: {
- *      serviceId: // value for 'serviceId'
- *      departmentId: // value for 'departmentId'
- *   },
- * });
- */
-export function useGetDepartmentVmsServiceStatusQuery(baseOptions: Apollo.QueryHookOptions<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables> & ({ variables: GetDepartmentVmsServiceStatusQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>(GetDepartmentVmsServiceStatusDocument, options);
-      }
-export function useGetDepartmentVmsServiceStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>(GetDepartmentVmsServiceStatusDocument, options);
-        }
-export function useGetDepartmentVmsServiceStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>(GetDepartmentVmsServiceStatusDocument, options);
-        }
-export type GetDepartmentVmsServiceStatusQueryHookResult = ReturnType<typeof useGetDepartmentVmsServiceStatusQuery>;
-export type GetDepartmentVmsServiceStatusLazyQueryHookResult = ReturnType<typeof useGetDepartmentVmsServiceStatusLazyQuery>;
-export type GetDepartmentVmsServiceStatusSuspenseQueryHookResult = ReturnType<typeof useGetDepartmentVmsServiceStatusSuspenseQuery>;
-export type GetDepartmentVmsServiceStatusQueryResult = Apollo.QueryResult<GetDepartmentVmsServiceStatusQuery, GetDepartmentVmsServiceStatusQueryVariables>;
-export function refetchGetDepartmentVmsServiceStatusQuery(variables: GetDepartmentVmsServiceStatusQueryVariables) {
-      return { query: GetDepartmentVmsServiceStatusDocument, variables: variables }
     }
 export const GetDepartmentServiceStatusDocument = gql`
     query getDepartmentServiceStatus($serviceId: ID!, $departmentId: ID!) {

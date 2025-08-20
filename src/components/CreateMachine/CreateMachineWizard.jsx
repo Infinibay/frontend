@@ -1,11 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { createVm, selectVmsLoading, selectVmsError } from '@/state/slices/vms';
 import { Wizard } from '@/components/ui/wizard';
-import { FormErrorProvider } from '@/components/ui/form-error-provider';
 import { LoadingOverlay } from '@/components/ui/loading-overlay';
 import { useToast } from '@/hooks/use-toast';
 import { BasicInfoStep } from './steps/BasicInfoStep';
@@ -14,6 +13,7 @@ import { ConfigurationStep } from './steps/ConfigurationStep';
 import { ApplicationsStep } from './steps/ApplicationsStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { GpuSelectionStep } from './steps/GpuSelectionStep';
+import { fetchDepartments, selectDepartments } from '@/state/slices/departments';
 
 export default function CreateMachineWizard({ departmentId }) {
   const dispatch = useDispatch();
@@ -21,6 +21,29 @@ export default function CreateMachineWizard({ departmentId }) {
   const { toast } = useToast();
   const { create: isCreating } = useSelector(selectVmsLoading);
   const { create: createError } = useSelector(selectVmsError);
+  const departments = useSelector(selectDepartments);
+  const [initialValues, setInitialValues] = useState(null);
+
+  // Load departments and set initial values once
+  // useEffect(() => {
+  //   dispatch(fetchDepartments());
+  // }, [dispatch]);
+
+  // Set initial values once departments are loaded
+  useEffect(() => {
+    if (departments.length > 0 && !initialValues) {
+      setInitialValues({
+        basicInfo: {
+          departmentId: departmentId || departments[0].id
+        },
+        gpu: {
+          gpuId: 'no-gpu',
+          pciBus: null,
+          gpuInfo: null
+        }
+      });
+    }
+  }, [departments, departmentId, initialValues]);
 
   const handleComplete = async (values) => {
     try {
@@ -29,7 +52,6 @@ export default function CreateMachineWizard({ departmentId }) {
         name: values.basicInfo.name,
         username: values.basicInfo.username,
         password: values.basicInfo.password,
-        templateId: values.resources.templateId,
         os: values.configuration.os,
         productKey: values.configuration.productKey || '',
         pciBus: values.gpu.pciBus,
@@ -39,6 +61,18 @@ export default function CreateMachineWizard({ departmentId }) {
           parameters: {} // Add any necessary parameters here
         }))
       };
+
+      // Add template or custom hardware data
+      if (values.resources.templateId === 'custom') {
+        // Using custom hardware
+        machineData.templateId = null;
+        machineData.customCores = values.resources.customCores;
+        machineData.customRam = values.resources.customRam;
+        machineData.customStorage = values.resources.customStorage;
+      } else {
+        // Using template
+        machineData.templateId = values.resources.templateId;
+      }
 
       await dispatch(createVm(machineData)).unwrap();
 
@@ -59,8 +93,17 @@ export default function CreateMachineWizard({ departmentId }) {
     }
   };
 
+  // Don't render until initial values are ready
+  if (!initialValues) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
   return (
-    <FormErrorProvider>
+    <>
       {isCreating && (
         <LoadingOverlay
           message="Creating your virtual machine..."
@@ -68,7 +111,7 @@ export default function CreateMachineWizard({ departmentId }) {
           size="xl"
         />
       )}
-      <Wizard onComplete={handleComplete}>
+      <Wizard onComplete={handleComplete} initialValues={initialValues}>
         <BasicInfoStep
           id="basicInfo"
           validate={async (values) => {
@@ -113,19 +156,12 @@ export default function CreateMachineWizard({ departmentId }) {
         />
         <GpuSelectionStep
           id="gpu"
-          validate={async (values) => {
-            const errors = {};
-            if (!values.gpuId) {
-              errors.gpuId = 'GPU selection is required';
-            }
-            if (Object.keys(errors).length > 0) throw errors;
-          }}
         />
         <ApplicationsStep
           id="applications"
         />
         <ReviewStep id="review" />
       </Wizard>
-    </FormErrorProvider>
+    </>
   );
 }

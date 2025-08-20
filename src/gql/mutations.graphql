@@ -431,38 +431,38 @@ mutation toggleGlobalService($serviceId: ID!, $enabled: Boolean!, $action: Servi
 
 
 # Clear overrides in a VM (optionally only one service)
-mutation ClearVmServiceOverrides($vmId: ID!, $serviceId: ID) {
-  clearVmServiceOverrides(input: { vmId: $vmId, serviceId: $serviceId }) {
-    vmId
-    vmName
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-    running
-    lastSeen
-  }
-}
+# mutation ClearVmServiceOverrides($vmId: ID!, $serviceId: ID) {
+#   clearVmServiceOverrides(input: { vmId: $vmId, serviceId: $serviceId }) {
+#     vmId
+#     vmName
+#     serviceId
+#     serviceName
+#     useEnabled
+#     provideEnabled
+#     running
+#     lastSeen
+#   }
+# }
 
 # Apply a department service setting to all VMs (kept for department UX)
-mutation ApplyDepartmentServiceToAll($departmentId: ID!, $serviceId: ID!, $action: ServiceAction!, $enabled: Boolean!) {
-  applyDepartmentServiceToAll(input: { departmentId: $departmentId, serviceId: $serviceId, action: $action, enabled: $enabled }) {
-    departmentId
-    departmentName
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-    vmCount
-    enabledVmCount
-  }
-}
+# mutation ApplyDepartmentServiceToAll($departmentId: ID!, $serviceId: ID!, $action: ServiceAction!, $enabled: Boolean!) {
+#   applyDepartmentServiceToAll(input: { departmentId: $departmentId, serviceId: $serviceId, action: $action, enabled: $enabled }) {
+#     departmentId
+#     departmentName
+#     serviceId
+#     serviceName
+#     useEnabled
+#     provideEnabled
+#     vmCount
+#     enabledVmCount
+#   }
+# }
 
 # Reset a list of VMs overrides back to department defaults
-mutation ResetVmServiceOverrides($departmentId: ID!, $serviceId: ID!, $vmIds: [ID!]!) {
-  resetVmServiceOverrides(input: { departmentId: $departmentId, serviceId: $serviceId, vmIds: $vmIds }) {
-    departmentId
-    serviceId
-    resetVmCount
-  }
-}
+# mutation ResetVmServiceOverrides($departmentId: ID!, $serviceId: ID!, $vmIds: [ID!]!) {
+#   resetVmServiceOverrides(input: { departmentId: $departmentId, serviceId: $serviceId, vmIds: $vmIds }) {
+#     departmentId
+#     serviceId
+#     resetVmCount
+#   }
+# }
