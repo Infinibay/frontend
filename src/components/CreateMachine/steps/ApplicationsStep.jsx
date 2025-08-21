@@ -16,16 +16,29 @@ export function ApplicationsStep({ id }) {
   const loading = useSelector((state) => state.applications.loading.fetch);
   const error = useSelector((state) => state.applications.error.fetch);
 
-  const availableApps = applications.map(app => ({
-    id: app.id,
-    name: app.name,
-    description: app.description || `Install ${app.name} on your machine`,
-    icon: app.icon || null,
-    iconType: app.icon ? 'svg' : 'url',
-    fallbackIcon: 'https://cdn.simpleicons.org/2k'
-  }));
+  const selectedAppIds = stepValues.applications || [];
+  
+  const availableApps = applications
+    .filter(app => !selectedAppIds.includes(app.id))
+    .map(app => ({
+      id: app.id,
+      name: app.name,
+      description: app.description || `Install ${app.name} on your machine`,
+      icon: app.icon || null,
+      iconType: app.icon ? 'svg' : 'url',
+      fallbackIcon: 'https://cdn.simpleicons.org/2k'
+    }));
 
-  const installedApps = [];
+  const installedApps = applications
+    .filter(app => selectedAppIds.includes(app.id))
+    .map(app => ({
+      id: app.id,
+      name: app.name,
+      description: app.description || `Install ${app.name} on your machine`,
+      icon: app.icon || null,
+      iconType: app.icon ? 'svg' : 'url',
+      fallbackIcon: 'https://cdn.simpleicons.org/2k'
+    }));
 
   const handleInstall = async (app) => {
     const currentApps = stepValues.applications || [];
