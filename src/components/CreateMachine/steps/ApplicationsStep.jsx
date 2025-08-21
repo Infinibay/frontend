@@ -7,8 +7,6 @@ import { useFormError } from '@/components/ui/form-error-provider';
 import AppInstaller from '@/components/ui/app-installer';
 import { Label } from '@/components/ui/label';
 
-const APP_ICON = 'https://cdn.simpleicons.org/2k';
-
 export function ApplicationsStep({ id }) {
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
@@ -22,7 +20,9 @@ export function ApplicationsStep({ id }) {
     id: app.id,
     name: app.name,
     description: app.description || `Install ${app.name} on your machine`,
-    icon: APP_ICON
+    icon: app.icon || null,
+    iconType: app.icon ? 'svg' : 'url',
+    fallbackIcon: 'https://cdn.simpleicons.org/2k'
   }));
 
   const installedApps = [];

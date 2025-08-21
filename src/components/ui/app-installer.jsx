@@ -119,21 +119,43 @@ const AppInstaller = ({
             }
           )}>
             <div className="flex items-center justify-center">
-              <Image 
-                src={app.icon} 
-                alt={`${app.name} icon`}
-                width={size === "sm" ? 24 : size === "md" ? 32 : size === "lg" ? 40 : 48}
-                height={size === "sm" ? 24 : size === "md" ? 32 : size === "lg" ? 40 : 48}
-                className={cn(
-                  "object-contain",
-                  {
-                    "w-6 h-6": size === "sm",
-                    "w-8 h-8": size === "md",
-                    "w-10 h-10": size === "lg",
-                    "w-12 h-12": size === "xl",
-                  }
-                )}
-              />
+              {app.iconType === 'svg' && app.icon ? (
+                <div 
+                  className={cn(
+                    "flex items-center justify-center overflow-hidden",
+                    {
+                      "w-6 h-6": size === "sm",
+                      "w-8 h-8": size === "md",
+                      "w-10 h-10": size === "lg",
+                      "w-12 h-12": size === "xl",
+                    }
+                  )}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center' 
+                  }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: app.icon.replace('<svg', '<svg style="width: 100%; height: 100%; max-width: 100%; max-height: 100%;"') 
+                  }}
+                />
+              ) : (
+                <Image 
+                  src={app.icon || app.fallbackIcon || 'https://cdn.simpleicons.org/2k'} 
+                  alt={`${app.name} icon`}
+                  width={size === "sm" ? 24 : size === "md" ? 32 : size === "lg" ? 40 : 48}
+                  height={size === "sm" ? 24 : size === "md" ? 32 : size === "lg" ? 40 : 48}
+                  className={cn(
+                    "object-contain",
+                    {
+                      "w-6 h-6": size === "sm",
+                      "w-8 h-8": size === "md",
+                      "w-10 h-10": size === "lg",
+                      "w-12 h-12": size === "xl",
+                    }
+                  )}
+                />
+              )}
             </div>
           </div>
           <div>

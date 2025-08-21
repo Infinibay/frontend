@@ -23,6 +23,7 @@ export type ApplicationType = {
   __typename?: 'ApplicationType';
   createdAt: Scalars['DateTimeISO']['output'];
   description?: Maybe<Scalars['String']['output']>;
+  icon?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   installCommand: Scalars['JSONObject']['output'];
   name: Scalars['String']['output'];

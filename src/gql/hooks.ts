@@ -23,6 +23,7 @@ export type ApplicationType = {
   __typename?: 'ApplicationType';
   createdAt: Scalars['DateTimeISO']['output'];
   description?: Maybe<Scalars['String']['output']>;
+  icon?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   installCommand: Scalars['JSONObject']['output'];
   name: Scalars['String']['output'];
@@ -1451,14 +1452,14 @@ export type MachineTemplateCategoryQuery = { __typename?: 'Query', machineTempla
 export type ApplicationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ApplicationsQuery = { __typename?: 'Query', applications: Array<{ __typename?: 'ApplicationType', id: string, name: string, description?: string | null, os: Array<string>, installCommand: { [key: string]: any }, parameters?: { [key: string]: any } | null, createdAt: string }> };
+export type ApplicationsQuery = { __typename?: 'Query', applications: Array<{ __typename?: 'ApplicationType', id: string, name: string, description?: string | null, os: Array<string>, installCommand: { [key: string]: any }, parameters?: { [key: string]: any } | null, icon?: string | null, createdAt: string }> };
 
 export type ApplicationQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type ApplicationQuery = { __typename?: 'Query', application?: { __typename?: 'ApplicationType', id: string, name: string, description?: string | null, os: Array<string>, installCommand: { [key: string]: any }, parameters?: { [key: string]: any } | null, createdAt: string } | null };
+export type ApplicationQuery = { __typename?: 'Query', application?: { __typename?: 'ApplicationType', id: string, name: string, description?: string | null, os: Array<string>, installCommand: { [key: string]: any }, parameters?: { [key: string]: any } | null, icon?: string | null, createdAt: string } | null };
 
 export type GetGraphicsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3737,6 +3738,7 @@ export const ApplicationsDocument = gql`
     os
     installCommand
     parameters
+    icon
     createdAt
   }
 }
@@ -3785,6 +3787,7 @@ export const ApplicationDocument = gql`
     os
     installCommand
     parameters
+    icon
     createdAt
   }
 }

@@ -221,6 +221,7 @@ query applications {
     os
     installCommand
     parameters
+    icon
     createdAt
   }
 }
@@ -233,6 +234,7 @@ query application($id: String!) {
     os
     installCommand
     parameters
+    icon
     createdAt
   }
 }
