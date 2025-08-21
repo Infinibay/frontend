@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { cn } from "@/lib/utils";
 import { UserPc } from "@/components/ui/user-pc";
+import { LottieAnimation } from "@/components/ui/lottie-animation";
 import {
   DndContext,
   DragOverlay,
@@ -162,8 +163,15 @@ export function ComputersList({
 
   if (machineCount === 0) {
     return (
-      <div className="text-center p-8 text-muted-foreground">
-        No machines found
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+        <LottieAnimation
+          animationPath="/lottie/not-found.json"
+          className="w-64 h-64 opacity-80 mb-4"
+          loop={true}
+          autoplay={true}
+        />
+        <p className="text-lg text-muted-foreground">No virtual machines found</p>
+        <p className="text-sm text-muted-foreground mt-2">Create your first virtual machine to get started</p>
       </div>
     );
   }
@@ -203,8 +211,14 @@ export function ComputersList({
                 />
               ))}
               {byDepartment && (!departmentData.machines || departmentData.machines.length === 0) && (
-                <div className="text-center p-8 text-muted-foreground col-span-full">
-                  No machines found
+                <div className="flex flex-col items-center justify-center min-h-[300px] p-8 col-span-full">
+                  <LottieAnimation
+                    animationPath="/lottie/not-found.json"
+                    className="w-48 h-48 opacity-80 mb-4"
+                    loop={true}
+                    autoplay={true}
+                  />
+                  <p className="text-muted-foreground">No machines in this department</p>
                 </div>
               )}
             </div>

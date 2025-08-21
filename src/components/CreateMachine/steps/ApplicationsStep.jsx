@@ -46,33 +46,33 @@ export function ApplicationsStep({ id }) {
         </p>
       </div>
 
-      <div>
-        <Label
-          moreInformation="Applications will be automatically installed during machine creation. You can drag applications from the available list to the installed list. Additional applications can be installed later through the machine's management interface."
-        >
-          Applications to Install
-        </Label>
-        {loading ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-muted-foreground">Loading applications...</div>
-          </div>
-        ) : error ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-red-500">Error loading applications: {error.message}</div>
-          </div>
-        ) : (
-          <AppInstaller
-            apps={{
-              available: availableApps,
-              installed: installedApps
-            }}
-            onInstall={handleInstall}
-            onUninstall={handleUninstall}
-            size="md"
-            className="min-h-[400px]"
-          />
-        )}
-      </div>
+        <div>
+          <Label
+            moreInformation="Applications will be automatically installed during machine creation. You can drag applications from the available list to the installed list. Additional applications can be installed later through the machine's management interface."
+          >
+            Applications to Install
+          </Label>
+          {loading ? (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-muted-foreground">Loading applications...</div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-red-500">Error loading applications: {error.message}</div>
+            </div>
+          ) : (
+            <AppInstaller
+              apps={{
+                available: availableApps,
+                installed: installedApps
+              }}
+              onInstall={handleInstall}
+              onUninstall={handleUninstall}
+              size="md"
+              className="min-h-[400px]"
+            />
+          )}
+        </div>
 
       {getError('applications') && (
         <p className="mt-2 text-sm text-red-500">{getError('applications')}</p>
