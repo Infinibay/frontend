@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useWizardContext } from '@/components/ui/wizard';
@@ -12,6 +12,7 @@ import { AlertCircle, Upload } from 'lucide-react';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { LottieAnimation } from '@/components/ui/lottie-animation';
 
 const osOptions = [
   {
@@ -50,13 +51,12 @@ export function ConfigurationStep({ id }) {
   const { getError } = useFormError();
   const stepValues = values[id] || {};
   const router = useRouter();
-  
+
   // Check ISO availability - checkOnMount: true handles the initial check
-  const { 
-    isOSAvailable, 
-    checkStatus, 
+  const {
+    isOSAvailable,
     loading,
-    isReady 
+    isReady
   } = useSystemStatus({ checkOnMount: true });
 
   return (
@@ -80,7 +80,7 @@ export function ConfigurationStep({ id }) {
               const Icon = os.icon;
               const available = isOSAvailable(os.id);
               const isDisabled = !available;
-              
+
               return (
                 <Card
                   key={os.id}
@@ -103,13 +103,13 @@ export function ConfigurationStep({ id }) {
                         </Badge>
                       </div>
                     )}
-                    
+
                     <div className="aspect-square flex items-center justify-center mb-4">
-                      <Icon 
+                      <Icon
                         className={cn(
                           "w-20 h-20 transition-transform duration-300",
                           !isDisabled && "group-hover:scale-110"
-                        )} 
+                        )}
                         style={{ color: isDisabled ? '#6b7280' : os.color }}
                       />
                     </div>
@@ -140,30 +140,65 @@ export function ConfigurationStep({ id }) {
             <p className="mt-2 text-sm text-red-500">{getError('os')}</p>
           )}
         </div>
-        
-        {/* Warning message if no ISOs available */}
-        {!loading && !isReady && (
-          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-yellow-900 dark:text-yellow-100">
-                  No ISOs Available
-                </h4>
-                <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
-                  You need to upload at least one ISO image to create virtual machines.
-                  <button
-                    onClick={() => router.push('/settings?tab=iso')}
-                    className="ml-1 underline hover:no-underline"
-                  >
-                    Go to Settings
-                  </button>
-                </p>
-              </div>
+      </div>
+
+      {/* Informational message if some ISOs are missing */}
+      {!loading && osOptions.some(os => !isOSAvailable(os.id)) && (
+        <div className="relative p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg overflow-visible">
+          <div className="space-y-2 pr-40">
+            <h4 className="font-medium text-slate-900 dark:text-slate-100">
+              What does "ISO Required" mean?
+            </h4>
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              An ISO file is a disc image that contains the installation files for an operating system.
+              To create a virtual machine with an operating system marked as "ISO Required", you need to upload the corresponding ISO file first.
+            </p>
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              <span className="font-medium text-slate-900 dark:text-slate-100">How to fix this:</span> Click on "Upload ISO" under the operating system you want to use,
+              or go to <button
+                onClick={() => router.push('/settings?tab=iso')}
+                className="underline hover:no-underline font-medium text-blue-700 dark:text-blue-400"
+              >
+                Settings → ISO Management
+              </button> to upload multiple ISO files at once. Once uploaded, the operating system will become available for selection.
+            </p>
+          </div>
+          {/* Animation emerging from the right side, bottom aligned with text */}
+          <div className="absolute -right-8 bottom-0">
+            <LottieAnimation
+              animationPath="/lottie/man-downloading-from-cloud.json"
+              className="w-60 h-60"
+              loop={true}
+              autoplay={true}
+              speed={0.8}
+              ariaLabel="Download animation"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Warning message if no ISOs available */}
+      {!loading && !isReady && (
+        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-yellow-900 dark:text-yellow-100">
+                No ISOs Available
+              </h4>
+              <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
+                You need to upload at least one ISO image to create virtual machines.
+                <button
+                  onClick={() => router.push('/settings?tab=iso')}
+                  className="ml-1 underline hover:no-underline"
+                >
+                  Go to Settings
+                </button>
+              </p>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

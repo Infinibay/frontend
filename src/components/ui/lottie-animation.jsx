@@ -35,7 +35,7 @@ export function LottieAnimation({
 
     const handleChange = (e) => setPrefersReducedMotion(e.matches);
     mediaQuery.addEventListener('change', handleChange);
-    
+
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
@@ -69,7 +69,7 @@ export function LottieAnimation({
   }
 
   return (
-    <div 
+    <div
       className={cn(
         "relative select-none pointer-events-none",
         isLoaded && "animate-in fade-in duration-500",
