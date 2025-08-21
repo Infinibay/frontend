@@ -12,14 +12,7 @@ export default function CreateMachinePage() {
           <h1 className="text-2xl font-bold mb-6">Create New Machine</h1>
           <CreateMachineWizard />
         </div>
-        <div className="hidden lg:flex items-start justify-center pt-32">
-          <LottieAnimation
-            animationPath="/lottie/system-update.json"
-            className="w-80 h-80 opacity-80 sticky top-32"
-            loop={true}
-            autoplay={true}
-          />
-        </div>
+
       </div>
     </div>
   );

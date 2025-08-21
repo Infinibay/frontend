@@ -175,6 +175,14 @@ export enum FilterType {
   Vm = 'VM'
 }
 
+export type Gpu = {
+  __typename?: 'GPU';
+  memory: Scalars['Float']['output'];
+  model: Scalars['String']['output'];
+  pciBus: Scalars['String']['output'];
+  vendor: Scalars['String']['output'];
+};
+
 export type GenericFilter = {
   __typename?: 'GenericFilter';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -700,6 +708,7 @@ export type Query = {
   getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
   getFilter?: Maybe<GenericFilter>;
   getGlobalServiceStatus: Array<GlobalServiceStatus>;
+  getGraphics: Array<Gpu>;
   getServiceStatusSummary: Array<ServiceStatusSummary>;
   /** Get supported OS types */
   getSupportedOSTypes: Array<Scalars['String']['output']>;

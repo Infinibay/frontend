@@ -21,6 +21,8 @@ export function RealTimeProvider({ children }) {
 
   useEffect(() => {
     let service = null
+    let isCleanedUp = false
+    let initializationTimeout = null
 
     const initializeRealTime = async () => {
       if (!isLoggedIn || !token || !socketNamespace) {
@@ -37,25 +39,52 @@ export function RealTimeProvider({ children }) {
         setConnectionStatus('connecting')
         setError(null)
 
+        // Add a small delay to avoid rapid connect/disconnect in React Strict Mode
+        await new Promise(resolve => {
+          initializationTimeout = setTimeout(resolve, 100)
+        })
+
+        // Check if we were cleaned up during the delay
+        if (isCleanedUp) {
+          debug.info('init', 'Initialization cancelled - component was cleaned up')
+          return
+        }
+
         // Create the real-time Redux service
         service = createRealTimeReduxService(store)
 
         // Initialize the service
         await service.initialize()
 
+        // Check again if we were cleaned up during initialization
+        if (isCleanedUp) {
+          debug.info('init', 'Initialization completed but component was cleaned up - cleaning service')
+          service.cleanup()
+          return
+        }
+
         setRealTimeService(service)
         setConnectionStatus('connected')
         debug.success('init', 'Real-time service initialized successfully')
 
       } catch (error) {
-        console.error('❌ RealTimeProvider: Failed to initialize real-time service:', error)
-        setError(error.message)
-        setConnectionStatus('error')
+        if (!isCleanedUp) {
+          console.error('❌ RealTimeProvider: Failed to initialize real-time service:', error)
+          setError(error.message)
+          setConnectionStatus('error')
+        }
       }
     }
 
     const cleanupRealTime = () => {
       console.log('🧹 RealTimeProvider: Cleaning up real-time service')
+      isCleanedUp = true
+      
+      if (initializationTimeout) {
+        clearTimeout(initializationTimeout)
+        initializationTimeout = null
+      }
+      
       if (service) {
         service.cleanup()
         setRealTimeService(null)

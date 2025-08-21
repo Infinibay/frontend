@@ -175,6 +175,14 @@ export enum FilterType {
   Vm = 'VM'
 }
 
+export type Gpu = {
+  __typename?: 'GPU';
+  memory: Scalars['Float']['output'];
+  model: Scalars['String']['output'];
+  pciBus: Scalars['String']['output'];
+  vendor: Scalars['String']['output'];
+};
+
 export type GenericFilter = {
   __typename?: 'GenericFilter';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -700,6 +708,7 @@ export type Query = {
   getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
   getFilter?: Maybe<GenericFilter>;
   getGlobalServiceStatus: Array<GlobalServiceStatus>;
+  getGraphics: Array<Gpu>;
   getServiceStatusSummary: Array<ServiceStatusSummary>;
   /** Get supported OS types */
   getSupportedOSTypes: Array<Scalars['String']['output']>;
@@ -1478,6 +1487,11 @@ export type ApplicationQueryVariables = Exact<{
 
 
 export type ApplicationQuery = { __typename?: 'Query', application?: { __typename?: 'ApplicationType', id: string, name: string, description?: string | null, os: Array<string>, installCommand: { [key: string]: any }, parameters?: { [key: string]: any } | null, icon?: string | null, createdAt: string } | null };
+
+export type GetGraphicsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetGraphicsQuery = { __typename?: 'Query', getGraphics: Array<{ __typename?: 'GPU', pciBus: string, vendor: string, model: string, memory: number }> };
 
 export type GetSystemResourcesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3845,6 +3859,51 @@ export type ApplicationSuspenseQueryHookResult = ReturnType<typeof useApplicatio
 export type ApplicationQueryResult = Apollo.QueryResult<ApplicationQuery, ApplicationQueryVariables>;
 export function refetchApplicationQuery(variables: ApplicationQueryVariables) {
       return { query: ApplicationDocument, variables: variables }
+    }
+export const GetGraphicsDocument = gql`
+    query getGraphics {
+  getGraphics {
+    pciBus
+    vendor
+    model
+    memory
+  }
+}
+    `;
+
+/**
+ * __useGetGraphicsQuery__
+ *
+ * To run a query within a React component, call `useGetGraphicsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetGraphicsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetGraphicsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetGraphicsQuery(baseOptions?: Apollo.QueryHookOptions<GetGraphicsQuery, GetGraphicsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetGraphicsQuery, GetGraphicsQueryVariables>(GetGraphicsDocument, options);
+      }
+export function useGetGraphicsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetGraphicsQuery, GetGraphicsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetGraphicsQuery, GetGraphicsQueryVariables>(GetGraphicsDocument, options);
+        }
+export function useGetGraphicsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetGraphicsQuery, GetGraphicsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetGraphicsQuery, GetGraphicsQueryVariables>(GetGraphicsDocument, options);
+        }
+export type GetGraphicsQueryHookResult = ReturnType<typeof useGetGraphicsQuery>;
+export type GetGraphicsLazyQueryHookResult = ReturnType<typeof useGetGraphicsLazyQuery>;
+export type GetGraphicsSuspenseQueryHookResult = ReturnType<typeof useGetGraphicsSuspenseQuery>;
+export type GetGraphicsQueryResult = Apollo.QueryResult<GetGraphicsQuery, GetGraphicsQueryVariables>;
+export function refetchGetGraphicsQuery(variables?: GetGraphicsQueryVariables) {
+      return { query: GetGraphicsDocument, variables: variables }
     }
 export const GetSystemResourcesDocument = gql`
     query GetSystemResources {

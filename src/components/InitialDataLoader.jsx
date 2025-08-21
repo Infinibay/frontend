@@ -76,6 +76,11 @@ export const InitialDataLoader = ({ children }) => {
   useEffect(() => {
     const initialize = async () => {
       try {
+        // First, restore auth from localStorage if available
+        const { restoreAuthFromStorage } = await import('@/state/slices/auth');
+        dispatch(restoreAuthFromStorage());
+        
+        // Then fetch initial data
         await dispatch(fetchInitialData()).unwrap();
       } catch (err) {
         setError(err);

@@ -19,6 +19,7 @@ import { createDepartment as createDepartmentAction } from '@/state/slices/depar
 import { SizeProvider } from "@/components/ui/size-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { RealTimeProvider } from '@/components/RealTimeProvider';
+import { SocketNamespaceGuard } from '@/components/SocketNamespaceGuard';
 import '@/utils/debugInit'; // Initialize debug panel
 import '@/utils/debugPanelStatus'; // Debug panel utilities
 
@@ -105,11 +106,13 @@ export default function RootLayout({ children }) {
                 <ApolloProvider client={client}>
                   <NextUIProvider>
                     <InitialDataLoader>
-                      <RealTimeProvider>
-                        <AppContent isAuthenticated={isAuthenticated}>
-                          {children}
-                        </AppContent>
-                      </RealTimeProvider>
+                      <SocketNamespaceGuard>
+                        <RealTimeProvider>
+                          <AppContent isAuthenticated={isAuthenticated}>
+                            {children}
+                          </AppContent>
+                        </RealTimeProvider>
+                      </SocketNamespaceGuard>
                     </InitialDataLoader>
                     <Toaster />
                   </NextUIProvider>

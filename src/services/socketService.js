@@ -30,6 +30,14 @@ export class SocketService {
       return Promise.resolve()
     }
 
+    // Clean up any existing socket before creating a new one
+    if (this.socket) {
+      this.debug.info('connect', 'Cleaning up existing socket before reconnecting')
+      this.socket.removeAllListeners()
+      this.socket.disconnect()
+      this.socket = null
+    }
+
     return new Promise((resolve, reject) => {
       this.debug.info('connect', 'Connecting to Socket.io server...', { namespace })
 
@@ -37,14 +45,22 @@ export class SocketService {
       this.userNamespace = namespace
       this.pendingSubscriptions = [] // Store subscriptions that need to be re-applied
 
+      // Get backend host, preferring environment variable
+      const backendHost = process.env.NEXT_PUBLIC_BACKEND_HOST || 'http://localhost:4000'
+      this.debug.info('connect', 'Using backend host:', backendHost)
+
       // Create Socket.io connection
-      this.socket = io(process.env.NEXT_PUBLIC_BACKEND_HOST || 'http://localhost:4000', {
+      this.socket = io(backendHost, {
         auth: {
           token: token
         },
         transports: ['websocket', 'polling'],
         timeout: 10000,
-        forceNew: true // Force new connection for namespace changes
+        forceNew: true, // Force new connection for namespace changes
+        reconnection: true, // Enable auto-reconnection
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000
       })
 
       // Connection successful

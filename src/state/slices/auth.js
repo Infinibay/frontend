@@ -15,9 +15,49 @@ const loginUser = createAsyncThunk('auth/login', async ({ email, password }, { d
 	return token;
 });
 
-const authSlice = createSlice({
-	name: 'auth',
-	initialState: {
+// Function to get initial state from localStorage
+const getInitialState = () => {
+	// Only access localStorage in browser environment
+	if (typeof window !== 'undefined') {
+		try {
+			const token = localStorage.getItem('token');
+			const socketNamespace = localStorage.getItem('socketNamespace');
+			
+			// Log for debugging Chrome issue
+			console.log('🔍 Auth initial state from localStorage:', { 
+				hasToken: !!token, 
+				hasNamespace: !!socketNamespace,
+				namespace: socketNamespace 
+			});
+			
+			return {
+				isLoggedIn: !!token,
+				token: token || null,
+				socketNamespace: socketNamespace || null,
+				user: {
+					id: null,
+					firstName: null,
+					lastName: null,
+					email: null,
+					role: null,
+				},
+				loading: {
+					login: false,
+					fetchUser: false
+				},
+				error: {
+					login: null,
+					fetchUser: null
+				}
+			};
+		} catch (error) {
+			console.error('❌ Error reading from localStorage:', error);
+			// Fall through to default state
+		}
+	}
+	
+	// Default state for SSR or if localStorage fails
+	return {
 		isLoggedIn: false,
 		token: null,
 		socketNamespace: null,
@@ -36,7 +76,12 @@ const authSlice = createSlice({
 			login: null,
 			fetchUser: null
 		}
-	},
+	};
+};
+
+const authSlice = createSlice({
+	name: 'auth',
+	initialState: getInitialState(),
 	reducers: {
 		logout: (state) => {
 			state.token = null;
@@ -52,16 +97,40 @@ const authSlice = createSlice({
 			state.error.login = null;
 			state.error.fetchUser = null;
 
-			// Clear socket namespace from localStorage
+			// Clear both token and socket namespace from localStorage
 			if (typeof window !== 'undefined') {
+				localStorage.removeItem('token');
 				localStorage.removeItem('socketNamespace');
 			}
 		},
 		setSocketNamespace: (state, action) => {
 			state.socketNamespace = action.payload;
 			// Store in localStorage for persistence
-			if (typeof window !== 'undefined') {
+			if (typeof window !== 'undefined' && action.payload) {
 				localStorage.setItem('socketNamespace', action.payload);
+				console.log('✅ Socket namespace saved to localStorage:', action.payload);
+			}
+		},
+		restoreAuthFromStorage: (state) => {
+			// Restore auth state from localStorage if it exists
+			if (typeof window !== 'undefined') {
+				try {
+					const token = localStorage.getItem('token');
+					const socketNamespace = localStorage.getItem('socketNamespace');
+					
+					if (token) {
+						state.token = token;
+						state.isLoggedIn = true;
+						console.log('✅ Token restored from localStorage');
+					}
+					
+					if (socketNamespace) {
+						state.socketNamespace = socketNamespace;
+						console.log('✅ Socket namespace restored from localStorage:', socketNamespace);
+					}
+				} catch (error) {
+					console.error('❌ Error restoring auth from localStorage:', error);
+				}
 			}
 		},
 	},
@@ -115,6 +184,11 @@ const authSlice = createSlice({
 				state.token = action.payload;
 				state.isLoggedIn = true;
 
+				// Store token in localStorage (already done in auth.login, but ensure consistency)
+				if (typeof window !== 'undefined' && action.payload) {
+					localStorage.setItem('token', action.payload);
+				}
+
 				// Socket namespace will be set when fetchCurrentUser is called after login
 			})
 			.addCase(loginUser.rejected, (state, action) => {
@@ -126,6 +200,6 @@ const authSlice = createSlice({
 	}
 });
 
-export const { logout, setSocketNamespace } = authSlice.actions;
+export const { logout, setSocketNamespace, restoreAuthFromStorage } = authSlice.actions;
 export { fetchCurrentUser, loginUser };
 export default authSlice.reducer;
