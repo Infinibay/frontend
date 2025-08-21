@@ -12,6 +12,8 @@ import { fetchTemplateCategories } from '@/state/slices/templateCategories';
 import { Settings2, Server, HardDrive, Cpu, MemoryStick } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { DiskSpaceSlider } from '@/components/ui/disk-space-slider';
+import { useGetSystemResourcesQuery } from '@/gql/hooks';
 
 export function ResourcesStep({ id }) {
   const dispatch = useDispatch();
@@ -20,6 +22,9 @@ export function ResourcesStep({ id }) {
   const { items: templates, loading: templatesLoading, error: templatesError } = useSelector(selectTemplatesState);
   const { items: categories } = useSelector(state => state.templateCategories);
   const stepValues = values[id] || {};
+  
+  // Fetch system resources
+  const { data: systemResources, loading: resourcesLoading } = useGetSystemResourcesQuery();
   
   // State for custom hardware
   const [useCustomHardware, setUseCustomHardware] = useState(false);
@@ -61,6 +66,13 @@ export function ResourcesStep({ id }) {
     setCustomHardware(newHardware);
     setValue(`${id}.custom${key.charAt(0).toUpperCase() + key.slice(1)}`, value);
   };
+  
+  // Get system limits or use defaults
+  const cpuLimit = systemResources?.getSystemResources?.cpu?.available || 64;
+  const memoryLimit = systemResources?.getSystemResources?.memory?.available || 512;
+  const diskTotal = systemResources?.getSystemResources?.disk?.total || 1000;
+  const diskUsed = systemResources?.getSystemResources?.disk?.used || 200;
+  const diskAvailable = systemResources?.getSystemResources?.disk?.available || 800;
 
   if (templatesLoading.fetch) {
     return (
@@ -104,10 +116,10 @@ export function ResourcesStep({ id }) {
       {/* Custom Hardware Option */}
       <Card 
         className={cn(
-          "p-6 border-2 cursor-pointer transition-all bg-gradient-to-br",
+          "p-6 border cursor-pointer transition-all",
           useCustomHardware || stepValues.templateId === 'custom'
-            ? "border-primary from-primary/10 via-primary/5 to-background shadow-xl"
-            : "from-background to-background hover:border-primary/50 hover:shadow-lg hover:from-primary/5 hover:to-background"
+            ? "border-primary bg-primary/5 shadow-lg"
+            : "hover:border-primary/50 hover:shadow-md hover:bg-accent/50"
         )}
         onClick={handleCustomSelect}
       >
@@ -116,8 +128,8 @@ export function ResourcesStep({ id }) {
             <div className={cn(
               "h-12 w-12 rounded-xl flex items-center justify-center transition-all",
               useCustomHardware || stepValues.templateId === 'custom'
-                ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg"
-                : "bg-gradient-to-br from-muted to-muted/50"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted"
             )}>
               <Settings2 className="h-6 w-6" />
             </div>
@@ -136,6 +148,9 @@ export function ResourcesStep({ id }) {
                 <Label className="flex items-center gap-2 text-sm font-medium">
                   <Cpu className="h-4 w-4 text-blue-500" />
                   CPU Cores: <span className="font-bold text-base text-blue-600">{customHardware.cores}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    Max available: {cpuLimit}
+                  </span>
                 </Label>
                 <div className="flex items-center gap-4">
                   <Input
@@ -143,20 +158,20 @@ export function ResourcesStep({ id }) {
                     value={customHardware.cores}
                     onChange={(e) => updateCustomHardware('cores', parseInt(e.target.value))}
                     min={1}
-                    max={64}
+                    max={cpuLimit}
                     step={1}
                     className="flex-1 accent-blue-500"
                   />
                   <Input
                     type="number"
                     value={customHardware.cores}
-                    onChange={(e) => updateCustomHardware('cores', Math.min(64, Math.max(1, parseInt(e.target.value) || 1)))}
+                    onChange={(e) => updateCustomHardware('cores', Math.min(cpuLimit, Math.max(1, parseInt(e.target.value) || 1)))}
                     className="w-20 border-blue-200 focus:border-blue-500"
                     min={1}
-                    max={64}
+                    max={cpuLimit}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">Between 1 and 64 cores</p>
+                <p className="text-xs text-muted-foreground">Between 1 and {cpuLimit} cores</p>
               </div>
 
               {/* RAM */}
@@ -164,6 +179,9 @@ export function ResourcesStep({ id }) {
                 <Label className="flex items-center gap-2 text-sm font-medium">
                   <MemoryStick className="h-4 w-4 text-green-500" />
                   RAM: <span className="font-bold text-base text-green-600">{customHardware.ram} GB</span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    Max available: {memoryLimit} GB
+                  </span>
                 </Label>
                 <div className="flex items-center gap-4">
                   <Input
@@ -171,53 +189,38 @@ export function ResourcesStep({ id }) {
                     value={customHardware.ram}
                     onChange={(e) => updateCustomHardware('ram', parseInt(e.target.value))}
                     min={1}
-                    max={512}
+                    max={memoryLimit}
                     step={1}
                     className="flex-1 accent-green-500"
                   />
                   <Input
                     type="number"
                     value={customHardware.ram}
-                    onChange={(e) => updateCustomHardware('ram', Math.min(512, Math.max(1, parseInt(e.target.value) || 1)))}
+                    onChange={(e) => updateCustomHardware('ram', Math.min(memoryLimit, Math.max(1, parseInt(e.target.value) || 1)))}
                     className="w-20 border-green-200 focus:border-green-500"
                     min={1}
-                    max={512}
+                    max={memoryLimit}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">Between 1 and 512 GB</p>
+                <p className="text-xs text-muted-foreground">Between 1 and {memoryLimit} GB</p>
               </div>
 
-              {/* Storage */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm font-medium">
-                  <HardDrive className="h-4 w-4 text-purple-500" />
-                  Storage: <span className="font-bold text-base text-purple-600">{customHardware.storage} GB</span>
-                </Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    type="range"
-                    value={customHardware.storage}
-                    onChange={(e) => updateCustomHardware('storage', parseInt(e.target.value))}
-                    min={10}
-                    max={1024}
-                    step={10}
-                    className="flex-1 accent-purple-500"
-                  />
-                  <Input
-                    type="number"
-                    value={customHardware.storage}
-                    onChange={(e) => updateCustomHardware('storage', Math.min(1024, Math.max(10, parseInt(e.target.value) || 10)))}
-                    className="w-20 border-purple-200 focus:border-purple-500"
-                    min={10}
-                    max={1024}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Between 10 and 1024 GB</p>
-              </div>
+              {/* Storage - Using the new DiskSpaceSlider component */}
+              <DiskSpaceSlider
+                total={diskTotal}
+                used={diskUsed}
+                available={diskAvailable}
+                value={customHardware.storage}
+                onChange={(value) => updateCustomHardware('storage', value)}
+                min={10}
+                step={10}
+                label="Storage"
+                color="purple"
+              />
 
               {/* Summary */}
-              <div className="p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-background rounded-lg border border-primary/20">
-                <p className="text-sm font-semibold mb-3 text-primary">Configuration Summary:</p>
+              <div className="p-4 bg-muted/50 rounded-lg border">
+                <p className="text-sm font-semibold mb-3">Configuration Summary:</p>
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div className="flex items-center gap-2 p-2 bg-blue-500/10 rounded-md">
                     <Cpu className="h-4 w-4 text-blue-500" />

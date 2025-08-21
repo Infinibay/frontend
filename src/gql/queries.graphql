@@ -239,12 +239,30 @@ query application($id: String!) {
   }
 }
 
-query getGraphics {
-  getGraphics {
-    pciBus
-    vendor
-    model
-    memory
+# query getGraphics {
+#   getGraphics {
+#     pciBus
+#     vendor
+#     model
+#     memory
+#   }
+# }
+
+query GetSystemResources {
+  getSystemResources {
+    cpu {
+      total
+      available
+    }
+    memory {
+      total
+      available
+    }
+    disk {
+      total
+      available
+      used
+    }
   }
 }
 

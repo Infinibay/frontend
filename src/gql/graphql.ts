@@ -175,14 +175,6 @@ export enum FilterType {
   Vm = 'VM'
 }
 
-export type Gpu = {
-  __typename?: 'GPU';
-  memory: Scalars['Float']['output'];
-  model: Scalars['String']['output'];
-  pciBus: Scalars['String']['output'];
-  vendor: Scalars['String']['output'];
-};
-
 export type GenericFilter = {
   __typename?: 'GenericFilter';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -708,10 +700,10 @@ export type Query = {
   getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
   getFilter?: Maybe<GenericFilter>;
   getGlobalServiceStatus: Array<GlobalServiceStatus>;
-  getGraphics: Array<Gpu>;
   getServiceStatusSummary: Array<ServiceStatusSummary>;
   /** Get supported OS types */
   getSupportedOSTypes: Array<Scalars['String']['output']>;
+  getSystemResources: SystemResources;
   getVmServiceStatus: Array<VmServiceStatus>;
   graphicConnection?: Maybe<GraphicConfigurationType>;
   listFilterRules: Array<FwRule>;
@@ -927,6 +919,32 @@ export type SystemReadiness = {
   availableOS: Array<Scalars['String']['output']>;
   missingOS: Array<Scalars['String']['output']>;
   ready: Scalars['Boolean']['output'];
+};
+
+export type SystemResourceCpu = {
+  __typename?: 'SystemResourceCPU';
+  available: Scalars['Float']['output'];
+  total: Scalars['Float']['output'];
+};
+
+export type SystemResourceDisk = {
+  __typename?: 'SystemResourceDisk';
+  available: Scalars['Float']['output'];
+  total: Scalars['Float']['output'];
+  used: Scalars['Float']['output'];
+};
+
+export type SystemResourceMemory = {
+  __typename?: 'SystemResourceMemory';
+  available: Scalars['Float']['output'];
+  total: Scalars['Float']['output'];
+};
+
+export type SystemResources = {
+  __typename?: 'SystemResources';
+  cpu: SystemResourceCpu;
+  disk: SystemResourceDisk;
+  memory: SystemResourceMemory;
 };
 
 export type ToggleDepartmentServiceInput = {

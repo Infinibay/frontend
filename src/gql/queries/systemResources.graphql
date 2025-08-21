@@ -1,0 +1,17 @@
+query GetSystemResources {
+  getSystemResources {
+    cpu {
+      total
+      available
+    }
+    memory {
+      total
+      available
+    }
+    disk {
+      total
+      available
+      used
+    }
+  }
+}
