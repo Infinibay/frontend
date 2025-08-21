@@ -15,6 +15,32 @@ import { cn } from '@/lib/utils';
 import { DiskSpaceSlider } from '@/components/ui/disk-space-slider';
 import { useGetSystemResourcesQuery } from '@/gql/hooks';
 
+// Calculate performance score based on CPU, RAM, and Storage
+const calculatePerformanceScore = (cores, ram, storage) => {
+  // Normalize values (0-100 scale)
+  // CPU: max 32 cores for normalization
+  const cpuScore = Math.min((cores / 32) * 100, 100);
+  
+  // RAM: max 128 GB for normalization
+  const ramScore = Math.min((ram / 128) * 100, 100);
+  
+  // Storage: max 1000 GB for normalization
+  const storageScore = Math.min((storage / 1000) * 100, 100);
+  
+  // Weighted average: CPU 40%, RAM 40%, Storage 20%
+  const totalScore = (cpuScore * 0.4) + (ramScore * 0.4) + (storageScore * 0.2);
+  
+  return {
+    score: Math.round(totalScore),
+    level: totalScore <= 20 ? 'Basic' : 
+           totalScore <= 40 ? 'Standard' : 
+           totalScore <= 60 ? 'Advanced' : 
+           totalScore <= 80 ? 'High Performance' : 
+           'Enterprise',
+    percentage: Math.min(totalScore, 100)
+  };
+};
+
 export function ResourcesStep({ id }) {
   const dispatch = useDispatch();
   const { setValue, values } = useWizardContext();
@@ -218,23 +244,53 @@ export function ResourcesStep({ id }) {
                 color="purple"
               />
 
-              {/* Summary */}
-              <div className="p-4 bg-muted/50 rounded-lg border">
-                <p className="text-sm font-semibold mb-3">Configuration Summary:</p>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center gap-2 p-2 bg-blue-500/10 rounded-md">
-                    <Cpu className="h-4 w-4 text-blue-500" />
-                    <span className="font-medium">{customHardware.cores} Cores</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-md">
-                    <MemoryStick className="h-4 w-4 text-green-500" />
-                    <span className="font-medium">{customHardware.ram} GB RAM</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2 bg-purple-500/10 rounded-md">
-                    <HardDrive className="h-4 w-4 text-purple-500" />
-                    <span className="font-medium">{customHardware.storage} GB Storage</span>
+              {/* Summary with Performance Score */}
+              <div className="p-4 bg-muted/50 rounded-lg border space-y-4">
+                <div>
+                  <p className="text-sm font-semibold mb-3">Configuration Summary:</p>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="flex items-center gap-2 p-2 bg-blue-500/10 rounded-md">
+                      <Cpu className="h-4 w-4 text-blue-500" />
+                      <span className="font-medium">{customHardware.cores} Cores</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-md">
+                      <MemoryStick className="h-4 w-4 text-green-500" />
+                      <span className="font-medium">{customHardware.ram} GB RAM</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 bg-purple-500/10 rounded-md">
+                      <HardDrive className="h-4 w-4 text-purple-500" />
+                      <span className="font-medium">{customHardware.storage} GB Storage</span>
+                    </div>
                   </div>
                 </div>
+                
+                {/* Performance Score for Custom Hardware */}
+                {(() => {
+                  const perf = calculatePerformanceScore(customHardware.cores, customHardware.ram, customHardware.storage);
+                  return (
+                    <div className="pt-3 border-t">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                        <span>Performance Score</span>
+                        <span className="font-medium">
+                          {perf.level} ({perf.score}%)
+                        </span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full rounded-full transition-all duration-300",
+                            perf.score <= 20 ? 'bg-blue-400' : 
+                            perf.score <= 40 ? 'bg-green-400' : 
+                            perf.score <= 60 ? 'bg-yellow-400' :
+                            perf.score <= 80 ? 'bg-orange-400' : 
+                            'bg-gradient-to-r from-purple-400 to-pink-400'
+                          )}
+                          style={{ width: `${perf.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -263,10 +319,10 @@ export function ResourcesStep({ id }) {
                     <Label
                       key={template.id}
                       className={cn(
-                        "relative flex cursor-pointer rounded-lg border-2 p-4 hover:border-primary hover:shadow-md transition-all",
+                        "relative flex cursor-pointer rounded-xl border-2 p-5 transition-all duration-200 group",
                         stepValues.templateId === template.id && !useCustomHardware
-                          ? 'border-primary bg-primary/5 shadow-md' 
-                          : 'border-input bg-card'
+                          ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg scale-[1.02]' 
+                          : 'border-border/60 bg-card hover:border-primary/60 hover:shadow-lg hover:scale-[1.01] hover:bg-gradient-to-br hover:from-accent/30 hover:to-accent/10'
                       )}
                     >
                       <RadioGroupItem
@@ -274,21 +330,90 @@ export function ResourcesStep({ id }) {
                         id={template.id}
                         className="sr-only"
                       />
-                      <div className="space-y-2">
-                        <h3 className="font-medium">{template.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {template.description}
-                        </p>
-                        <div className="grid grid-cols-3 gap-2 text-sm mt-4 pt-4 border-t">
-                          <div>
-                            <span className="font-medium">{template.cores}</span> Cores
+                      <div className="w-full space-y-4">
+                        {/* Header with icon and title */}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">
+                              {template.name}
+                            </h3>
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {template.description}
+                            </p>
                           </div>
-                          <div>
-                            <span className="font-medium">{template.ram}</span> GB RAM
+                          {stepValues.templateId === template.id && !useCustomHardware && (
+                            <div className="ml-2 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
+                              <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Specs with icons and colors */}
+                        <div className="space-y-3 pt-3 border-t border-border/50">
+                          {/* CPU */}
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                              <Cpu className="h-4 w-4 text-blue-500" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-muted-foreground">CPU</p>
+                              <p className="font-semibold text-sm">{template.cores} Cores</p>
+                            </div>
                           </div>
-                          <div>
-                            <span className="font-medium">{template.storage}</span> GB Storage
+
+                          {/* RAM */}
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                              <MemoryStick className="h-4 w-4 text-green-500" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-muted-foreground">Memory</p>
+                              <p className="font-semibold text-sm">{template.ram} GB RAM</p>
+                            </div>
                           </div>
+
+                          {/* Storage */}
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                              <HardDrive className="h-4 w-4 text-purple-500" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-muted-foreground">Storage</p>
+                              <p className="font-semibold text-sm">{template.storage} GB</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Performance indicator bar */}
+                        <div className="pt-3 border-t border-border/50">
+                          {(() => {
+                            const perf = calculatePerformanceScore(template.cores, template.ram, template.storage);
+                            return (
+                              <>
+                                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                                  <span>Performance Score</span>
+                                  <span className="font-medium">
+                                    {perf.level} ({perf.score}%)
+                                  </span>
+                                </div>
+                                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                  <div 
+                                    className={cn(
+                                      "h-full rounded-full transition-all duration-500",
+                                      perf.score <= 20 ? 'bg-blue-400' : 
+                                      perf.score <= 40 ? 'bg-green-400' : 
+                                      perf.score <= 60 ? 'bg-yellow-400' :
+                                      perf.score <= 80 ? 'bg-orange-400' : 
+                                      'bg-gradient-to-r from-purple-400 to-pink-400'
+                                    )}
+                                    style={{ width: `${perf.percentage}%` }}
+                                  />
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     </Label>
