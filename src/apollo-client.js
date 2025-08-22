@@ -56,4 +56,16 @@ const client = new ApolloClient({
   ssrMode: typeof window === 'undefined', // Enable SSR mode when running on server
 });
 
+// Utility function to clear Apollo cache
+export const clearApolloCache = async () => {
+  await client.clearStore();
+  console.log('Apollo cache cleared');
+};
+
+// Utility function to reset Apollo cache (more aggressive)
+export const resetApolloCache = async () => {
+  await client.resetStore();
+  console.log('Apollo cache reset');
+};
+
 export default client;

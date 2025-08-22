@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { gql } from '@apollo/client';
 import client from '@/apollo-client';
+import { clearISOCache } from '@/utils/cache-manager';
 
 // GraphQL queries
 const AVAILABLE_ISOS_QUERY = gql`
@@ -72,6 +73,10 @@ export const fetchAvailableISOs = createAsyncThunk(
       });
       return data.availableISOs;
     } catch (error) {
+      // Clear ISO cache on validation errors
+      if (error.message && error.message.includes('GRAPHQL_VALIDATION_FAILED')) {
+        await clearISOCache(client);
+      }
       return rejectWithValue(error.message);
     }
   }
@@ -88,6 +93,10 @@ export const checkISOStatus = createAsyncThunk(
       });
       return data.checkISOStatus;
     } catch (error) {
+      // Clear ISO cache on validation errors
+      if (error.message && error.message.includes('GRAPHQL_VALIDATION_FAILED')) {
+        await clearISOCache(client);
+      }
       return rejectWithValue(error.message);
     }
   }

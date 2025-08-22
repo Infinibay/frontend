@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-
+import React, { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { UploadProgress } from "@/components/ui/upload-progress";
+import { FaUbuntu, FaWindows } from 'react-icons/fa';
+import { SiFedora } from 'react-icons/si';
+import { Upload, Download, CheckCircle, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useSystemStatus } from '@/hooks/useSystemStatus';
 import axios from "axios";
 
 const SettingMain = () => {
@@ -23,28 +23,51 @@ const SettingMain = () => {
   const [lastTime, setLastTime] = useState(Date.now());
   const [uploadController, setUploadController] = useState(null);
 
+  const fileInputRef = useRef(null);
+  const [draggedOverOS, setDraggedOverOS] = useState(null);
+  
+  // Use the same hook as the wizard to check ISO availability
+  const { isOSAvailable, loading, checkStatus } = useSystemStatus({ checkOnMount: true });
+
   const osOptions = [
     { 
+      id: 'WINDOWS10',
       value: "windows10", 
       label: "Windows 10",
+      icon: FaWindows,
+      color: '#00A4EF',
+      description: 'Microsoft Windows 10 operating system',
       downloadUrl: "https://www.microsoft.com/es-es/software-download/windows10ISO"
     },
     { 
+      id: 'WINDOWS11',
       value: "windows11", 
       label: "Windows 11",
+      icon: FaWindows,
+      color: '#00A4EF',
+      description: 'Latest version of Microsoft Windows',
       downloadUrl: "https://www.microsoft.com/es-es/software-download/windows11"
     },
     { 
+      id: 'UBUNTU',
       value: "ubuntu", 
       label: "Ubuntu",
+      icon: FaUbuntu,
+      color: '#E95420',
+      description: 'Popular Linux distribution',
       downloadUrl: "https://ubuntu.com/download/desktop"
     },
     { 
+      id: 'FEDORA',
       value: "fedora", 
       label: "Fedora",
+      icon: SiFedora,
+      color: '#294172',
+      description: 'Advanced Linux distribution',
       downloadUrl: "https://fedoraproject.org/workstation/download"
     },
   ];
+
 
   const formatSize = (bytes) => {
     const units = ['B', 'KB', 'MB', 'GB'];
@@ -57,10 +80,18 @@ const SettingMain = () => {
     return `${size.toFixed(2)} ${units[unitIndex]}`;
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileSelect = (file, osValue = null, autoUpload = false) => {
     if (file && file.name.toLowerCase().endsWith('.iso')) {
       setIsoFile(file);
+      if (osValue) {
+        setSelectedOS(osValue);
+      }
+      if (autoUpload && osValue) {
+        // Auto-upload when dropping file on a card
+        setTimeout(() => {
+          handleUploadWithParams(file, osValue);
+        }, 100);
+      }
     } else {
       toast({
         title: "Invalid File",
@@ -70,8 +101,39 @@ const SettingMain = () => {
     }
   };
 
-  const handleUpload = async () => {
-    if (!selectedOS || !isoFile) {
+  const handleDragOver = (e, osValue) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggedOverOS(osValue);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggedOverOS(null);
+  };
+
+  const handleDrop = (e, osValue) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggedOverOS(null);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileSelect(files[0], osValue, true); // true = autoUpload
+    }
+  };
+
+  const handleCardClick = (osValue) => {
+    setSelectedOS(osValue);
+    fileInputRef.current?.click();
+  };
+
+  const handleUploadWithParams = async (file = null, os = null) => {
+    const fileToUpload = file || isoFile;
+    const osToUpload = os || selectedOS;
+    
+    if (!osToUpload || !fileToUpload) {
       toast({
         title: "Missing Information",
         description: "Please select an OS and ISO file",
@@ -81,7 +143,7 @@ const SettingMain = () => {
     }
 
     const MAX_FILE_SIZE = 100 * 1024 * 1024 * 1024; // 100GB
-    if (isoFile.size > MAX_FILE_SIZE) {
+    if (fileToUpload.size > MAX_FILE_SIZE) {
       toast({
         title: "File Too Large",
         description: "ISO file size must be less than 100GB",
@@ -98,8 +160,8 @@ const SettingMain = () => {
       setUploadController(controller);
       
       const formData = new FormData();
-      formData.append('file', isoFile);
-      formData.append('os', selectedOS);
+      formData.append('file', fileToUpload);
+      formData.append('os', osToUpload);
 
       const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_HOST}/isoUpload`, formData, {
         headers: {
@@ -127,6 +189,8 @@ const SettingMain = () => {
         throw new Error(response.data);
       }
 
+      // Refresh ISO availability after successful upload
+      await checkStatus();
       setIsoFile(null);
       setSelectedOS("");
       toast({
@@ -147,85 +211,160 @@ const SettingMain = () => {
     }
   };
 
-  const getUploadButtonTooltip = () => {
-    if (!isoFile && !selectedOS) return "Please select an OS and ISO file";
-    if (!isoFile) return "Please select an ISO file";
-    if (!selectedOS) return "Please select an operating system";
-    return "";
+  const handleUpload = async () => {
+    if (!selectedOS || !isoFile) {
+      toast({
+        title: "Missing Information",
+        description: "Please select an OS and ISO file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await handleUploadWithParams();
   };
 
+
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="mx-auto lg:p-5 pt-5 !w-[95%]">
-        <Card className="mt-6 p-6">
-          <h2 className="text-2xl font-bold mb-4">ISO Management</h2>
-          
-          <div className="mb-6 bg-muted p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Where to download ISO files</h3>
-            <div className="space-y-2">
-              {osOptions.map((os) => (
-                <div key={os.value} className="flex items-center justify-between">
-                  <span className="font-medium">{os.label}:</span>
-                  <a 
-                    href={os.downloadUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-6xl mx-auto p-6 space-y-8">
+        {/* Header */}
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your ISO files and system configuration
+          </p>
+        </div>
+
+        {/* ISO Management Section */}
+        <Card className="p-8">
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold mb-2">ISO Management</h2>
+              <p className="text-sm text-muted-foreground">
+                Upload ISO files for different operating systems. You can drag and drop files directly onto the OS cards.
+              </p>
+            </div>
+
+            {/* OS Selection Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {osOptions.map((os) => {
+                const Icon = os.icon;
+                const isSelected = selectedOS === os.value;
+                const hasISO = isOSAvailable(os.id);
+                const isDraggedOver = draggedOverOS === os.value;
+
+                return (
+                  <Card
+                    key={os.value}
+                    className={cn(
+                      'relative transition-all duration-300 cursor-pointer',
+                      'hover:scale-105 hover:shadow-xl hover:z-10',
+                      isSelected && 'shadow-lg shadow-primary/25 bg-primary/5 border-primary',
+                      isDraggedOver && 'scale-105 shadow-2xl border-primary border-2',
+                      hasISO && 'bg-green-50/50 dark:bg-green-900/10 border-green-500/30',
+                      'hover:border-primary/50'
+                    )}
+                    onClick={() => handleCardClick(os.value)}
+                    onDragOver={(e) => handleDragOver(e, os.value)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, os.value)}
                   >
-                    Download Link
-                  </a>
+                    <div className="p-6">
+                      {/* Status Badge */}
+                      {hasISO && (
+                        <div className="absolute top-2 right-2 flex items-center gap-1">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <span className="text-xs font-medium text-green-600 dark:text-green-400">ISO Ready</span>
+                        </div>
+                      )}
+
+                      <div className="aspect-square flex items-center justify-center mb-4">
+                        <Icon
+                          className="w-20 h-20 transition-transform duration-300"
+                          style={{ color: os.color }}
+                        />
+                      </div>
+                      
+                      <div className="text-center space-y-2">
+                        <h3 className="font-semibold text-lg">{os.label}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          {hasISO ? 'ISO uploaded - Click to replace' : os.description}
+                        </p>
+                        
+                        {/* Drop zone indicator */}
+                        {isDraggedOver && (
+                          <div className="absolute inset-0 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <Upload className="h-12 w-12 text-primary animate-pulse" />
+                          </div>
+                        )}
+                        
+                        <div className="pt-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(os.downloadUrl, '_blank');
+                            }}
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            Download ISO
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Upload Section */}
+            {(selectedOS || isoFile) && (
+              <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">
+                      {selectedOS && `Selected OS: ${osOptions.find(os => os.value === selectedOS)?.label}`}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {isoFile && `File: ${isoFile.name} (${formatSize(isoFile.size)})`}
+                    </p>
+                    {selectedOS && isOSAvailable(osOptions.find(os => os.value === selectedOS)?.id) && (
+                      <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+                        <AlertCircle className="h-4 w-4" />
+                        <p className="text-xs font-medium">
+                          Warning: This will replace the existing ISO file for this OS
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleUpload}
+                    disabled={!selectedOS || !isoFile || isUploading}
+                    variant={selectedOS && isOSAvailable(osOptions.find(os => os.value === selectedOS)?.id) ? "destructive" : "default"}
+                  >
+                    {isUploading ? `Uploading ${uploadProgress}%` : (selectedOS && isOSAvailable(osOptions.find(os => os.value === selectedOS)?.id) ? 'Replace ISO' : 'Upload ISO')}
+                  </Button>
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".iso"
+              onChange={(e) => handleFileSelect(e.target.files[0])}
+              className="hidden"
+            />
+
+            {/* Instructions */}
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Click on any OS card to select and upload an ISO file, or drag and drop directly onto the cards</p>
             </div>
           </div>
-
-          <Form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Operating System</label>
-              <Select value={selectedOS} onValueChange={setSelectedOS}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select an operating system" />
-                </SelectTrigger>
-                <SelectContent>
-                  {osOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">ISO File</label>
-              <Input
-                type="file"
-                accept=".iso"
-                onChange={handleFileChange}
-                className="w-full"
-              />
-            </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-full">
-                    <Button
-                      onClick={handleUpload}
-                      disabled={!selectedOS || !isoFile || isUploading}
-                      className="w-full"
-                      variant={!selectedOS || !isoFile ? "secondary" : "default"}
-                    >
-                      {isUploading ? `Uploading ${uploadProgress}%` : "Upload ISO"}
-                    </Button>
-                  </div>
-                </TooltipTrigger>
-                {(!selectedOS || !isoFile) && (
-                  <TooltipContent>
-                    <p>{getUploadButtonTooltip()}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          </Form>
         </Card>
       </div>
       {/* Replace the old progress dialog with the new component */}
