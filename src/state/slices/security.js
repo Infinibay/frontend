@@ -12,10 +12,10 @@ import {
     ToggleDepartmentServiceDocument,
     ToggleGlobalServiceDocument,
     FindDepartmentByNameDocument,
-    GetDepartmentVmsServiceStatusDocument,
-    ClearVmServiceOverridesDocument,
-    ApplyDepartmentServiceToAllDocument,
-    ResetVmServiceOverridesDocument
+    // GetDepartmentVmsServiceStatusDocument,
+    // ClearVmServiceOverridesDocument,
+    // ApplyDepartmentServiceToAllDocument,
+    // ResetVmServiceOverridesDocument
 } from '@/gql/hooks';
 
 // Create debug instance for security state
@@ -132,18 +132,29 @@ export const fetchDepartmentServiceStatus = createAsyncThunk(
     }
 );
 
+// TODO: Uncomment when GetDepartmentVmsServiceStatusDocument is available in backend
+// export const fetchDepartmentVmsServiceStatus = createAsyncThunk(
+//     'security/fetchDepartmentVmsServiceStatus',
+//     async ({ serviceId, departmentId }, { rejectWithValue }) => {
+//         console.log("Fetching VM service status with:", { serviceId, departmentId });
+//         try {
+//             const data = await executeGraphQLQuery(GetDepartmentVmsServiceStatusDocument, { serviceId, departmentId });
+//             console.log("VM service status response:", data.getDepartmentVmsServiceStatus);
+//             return data.getDepartmentVmsServiceStatus;
+//         } catch (error) {
+//             console.error('Error fetching department VMs service status:', error);
+//             return rejectWithValue(error.message);
+//         }
+//     }
+// );
+
+// Temporary placeholder - returns empty array until backend implements this
 export const fetchDepartmentVmsServiceStatus = createAsyncThunk(
     'security/fetchDepartmentVmsServiceStatus',
     async ({ serviceId, departmentId }, { rejectWithValue }) => {
         console.log("Fetching VM service status with:", { serviceId, departmentId });
-        try {
-            const data = await executeGraphQLQuery(GetDepartmentVmsServiceStatusDocument, { serviceId, departmentId });
-            console.log("VM service status response:", data.getDepartmentVmsServiceStatus);
-            return data.getDepartmentVmsServiceStatus;
-        } catch (error) {
-            console.error('Error fetching department VMs service status:', error);
-            return rejectWithValue(error.message);
-        }
+        // Return empty array for now
+        return [];
     }
 );
 
@@ -227,43 +238,72 @@ export const toggleGlobalService = createAsyncThunk(
     }
 );
 
-// New admin operations
+// TODO: Uncomment when ClearVmServiceOverridesDocument is available in backend
+// export const clearVmServiceOverrides = createAsyncThunk(
+//     'security/clearVmServiceOverrides',
+//     async ({ vmId, serviceId }, { rejectWithValue }) => {
+//         try {
+//             const data = await executeGraphQLMutation(ClearVmServiceOverridesDocument, { vmId, serviceId });
+//             return data.clearVmServiceOverrides;
+//         } catch (error) {
+//             console.error('Error clearing VM overrides:', error);
+//             return rejectWithValue(error.message);
+//         }
+//     }
+// );
+
+// Temporary placeholder
 export const clearVmServiceOverrides = createAsyncThunk(
     'security/clearVmServiceOverrides',
     async ({ vmId, serviceId }, { rejectWithValue }) => {
-        try {
-            const data = await executeGraphQLMutation(ClearVmServiceOverridesDocument, { vmId, serviceId });
-            return data.clearVmServiceOverrides;
-        } catch (error) {
-            console.error('Error clearing VM overrides:', error);
-            return rejectWithValue(error.message);
-        }
+        console.warn('clearVmServiceOverrides not implemented in backend');
+        return [];
     }
 );
 
+// TODO: Uncomment when ApplyDepartmentServiceToAllDocument is available in backend
+// export const applyDepartmentServiceToAll = createAsyncThunk(
+//     'security/applyDepartmentServiceToAll',
+//     async ({ departmentId, serviceId, action, enabled }, { rejectWithValue }) => {
+//         try {
+//             const data = await executeGraphQLMutation(ApplyDepartmentServiceToAllDocument, { departmentId, serviceId, action, enabled });
+//             return data.applyDepartmentServiceToAll;
+//         } catch (error) {
+//             console.error('Error applying department service to all VMs:', error);
+//             return rejectWithValue(error.message);
+//         }
+//     }
+// );
+
+// Temporary placeholder
 export const applyDepartmentServiceToAll = createAsyncThunk(
     'security/applyDepartmentServiceToAll',
     async ({ departmentId, serviceId, action, enabled }, { rejectWithValue }) => {
-        try {
-            const data = await executeGraphQLMutation(ApplyDepartmentServiceToAllDocument, { departmentId, serviceId, action, enabled });
-            return data.applyDepartmentServiceToAll;
-        } catch (error) {
-            console.error('Error applying department service to all VMs:', error);
-            return rejectWithValue(error.message);
-        }
+        console.warn('applyDepartmentServiceToAll not implemented in backend');
+        return {};
     }
 );
 
+// TODO: Uncomment when ResetVmServiceOverridesDocument is available in backend
+// export const resetVmServiceOverrides = createAsyncThunk(
+//     'security/resetVmServiceOverrides',
+//     async ({ departmentId, serviceId, vmIds }, { rejectWithValue }) => {
+//         try {
+//             const data = await executeGraphQLMutation(ResetVmServiceOverridesDocument, { departmentId, serviceId, vmIds });
+//             return data.resetVmServiceOverrides;
+//         } catch (error) {
+//             console.error('Error resetting VM overrides:', error);
+//             return rejectWithValue(error.message);
+//         }
+//     }
+// );
+
+// Temporary placeholder
 export const resetVmServiceOverrides = createAsyncThunk(
     'security/resetVmServiceOverrides',
     async ({ departmentId, serviceId, vmIds }, { rejectWithValue }) => {
-        try {
-            const data = await executeGraphQLMutation(ResetVmServiceOverridesDocument, { departmentId, serviceId, vmIds });
-            return data.resetVmServiceOverrides;
-        } catch (error) {
-            console.error('Error resetting VM overrides:', error);
-            return rejectWithValue(error.message);
-        }
+        console.warn('resetVmServiceOverrides not implemented in backend');
+        return {};
     }
 );
 
