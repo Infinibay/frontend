@@ -1,0 +1,15 @@
+mutation controlService($input: ServiceControlInput!) {
+  controlService(input: $input) {
+    success
+    message
+    error
+    service {
+      name
+      displayName
+      status
+      startType
+      description
+      pid
+    }
+  }
+}

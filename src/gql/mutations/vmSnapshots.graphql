@@ -1,0 +1,32 @@
+mutation createSnapshot($input: CreateSnapshotInput!) {
+  createSnapshot(input: $input) {
+    success
+    message
+    snapshot {
+      id
+      name
+      description
+      vmId
+      vmName
+      createdAt
+      isCurrent
+      parentId
+      hasMetadata
+      state
+    }
+  }
+}
+
+mutation restoreSnapshot($input: RestoreSnapshotInput!) {
+  restoreSnapshot(input: $input) {
+    success
+    message
+  }
+}
+
+mutation deleteSnapshot($input: DeleteSnapshotInput!) {
+  deleteSnapshot(input: $input) {
+    success
+    message
+  }
+}

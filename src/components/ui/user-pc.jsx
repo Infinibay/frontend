@@ -1,5 +1,6 @@
 import * as React from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -45,8 +46,11 @@ const UserPc = React.forwardRef(({
   storage,
   username = "User",
   pc,
+  departmentName, // Add department name prop for navigation
   ...props
 }, ref) => {
+  const router = useRouter();
+  
   // Extract name and status from pc object if provided
   const displayName = pc?.name || name;
   const displayStatus = pc?.status || status;
@@ -57,6 +61,22 @@ const UserPc = React.forwardRef(({
   const [getGraphicConnection, { data: connectionData, loading: connectionLoading, error: connectionError }] = useGraphicConnectionLazyQuery();
   const [showPassword, setShowPassword] = React.useState(false);
   const [copiedPassword, setCopiedPassword] = React.useState(false);
+  
+  // Handle card click to navigate to VM detail view
+  const handleCardClick = (e) => {
+    // Don't navigate if clicking on action buttons
+    if (e.target.closest('button')) {
+      return;
+    }
+    
+    // Navigate to VM detail view if we have the necessary info
+    if (pc?.id && departmentName) {
+      router.push(`/departments/${departmentName}/vm/${pc.id}`);
+    } else if (onClick) {
+      // Fallback to original onClick handler
+      onClick(e);
+    }
+  };
   
   // Handle connection button click
   const handleConnect = (e) => {
@@ -253,7 +273,7 @@ const UserPc = React.forwardRef(({
             selected ? "border-[#00A6FF] bg-[#00A6FF]/10" : "hover:border-[#00A6FF] hover:bg-[#00A6FF]/10",
             className
           )}
-          onClick={onClick}
+          onClick={handleCardClick}
           {...props}
         >
           <div className="relative">
@@ -430,7 +450,7 @@ const UserPc = React.forwardRef(({
           selected ? "bg-[#00A6FF]/10" : "hover:bg-[#00A6FF]/5",
           className
         )}
-        onClick={onClick}
+        onClick={handleCardClick}
         {...props}
       >
         <td className="py-3 px-4">

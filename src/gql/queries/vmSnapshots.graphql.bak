@@ -1,0 +1,37 @@
+query machineSnapshots($machineId: String!) {
+  machineSnapshots(machineId: $machineId) {
+    success
+    message
+    snapshots {
+      id
+      name
+      description
+      vmId
+      vmName
+      createdAt
+      isCurrent
+      parentId
+      hasMetadata
+      state
+    }
+  }
+}
+
+query currentSnapshot($machineId: String!) {
+  currentSnapshot(machineId: $machineId) {
+    success
+    message
+    snapshot {
+      id
+      name
+      description
+      vmId
+      vmName
+      createdAt
+      isCurrent
+      parentId
+      hasMetadata
+      state
+    }
+  }
+}

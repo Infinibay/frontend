@@ -1,0 +1,88 @@
+query latestSystemMetrics($machineId: String!) {
+  latestSystemMetrics(machineId: $machineId) {
+    id
+    machineId
+    timestamp
+    cpuUsagePercent
+    cpuCoresUsage
+    cpuTemperature
+    totalMemoryKB
+    usedMemoryKB
+    availableMemoryKB
+    swapTotalKB
+    swapUsedKB
+    diskUsageStats
+    diskIOStats
+    networkStats
+    uptime
+    loadAverage
+  }
+}
+
+query machineMetricsSummary($machineId: String!) {
+  machineMetricsSummary(machineId: $machineId) {
+    machineId
+    latestSystemMetrics {
+      id
+      machineId
+      timestamp
+      cpuUsagePercent
+      cpuCoresUsage
+      cpuTemperature
+      totalMemoryKB
+      usedMemoryKB
+      availableMemoryKB
+      swapTotalKB
+      swapUsedKB
+      diskUsageStats
+      diskIOStats
+      networkStats
+      uptime
+      loadAverage
+    }
+    totalDataPoints
+    firstDataPoint
+    lastDataPoint
+    activeProcessCount
+    openPortsCount
+    installedApplicationsCount
+  }
+}
+
+query topProcessesByMachine($machineId: String!, $limit: Float) {
+  topProcessesByMachine(machineId: $machineId, limit: $limit) {
+    id
+    machineId
+    timestamp
+    parentPid
+    name
+    executablePath
+    commandLine
+    cpuUsagePercent
+    memoryUsageKB
+    diskReadBytes
+    diskWriteBytes
+    startTime
+  }
+}
+
+query systemMetricsHistory($machineId: String!, $hours: Float, $maxPoints: Float) {
+  systemMetricsHistory(machineId: $machineId, hours: $hours, maxPoints: $maxPoints) {
+    id
+    machineId
+    timestamp
+    cpuUsagePercent
+    cpuCoresUsage
+    cpuTemperature
+    totalMemoryKB
+    usedMemoryKB
+    availableMemoryKB
+    swapTotalKB
+    swapUsedKB
+    diskUsageStats
+    diskIOStats
+    networkStats
+    uptime
+    loadAverage
+  }
+}

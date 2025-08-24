@@ -1,0 +1,19 @@
+mutation killProcess($machineId: String!, $pid: Int!, $force: Boolean = false) {
+  killProcess(machineId: $machineId, pid: $pid, force: $force) {
+    success
+    message
+    pid
+    processName
+    error
+  }
+}
+
+mutation killProcesses($machineId: String!, $pids: [Int!]!, $force: Boolean = false) {
+  killProcesses(machineId: $machineId, pids: $pids, force: $force) {
+    success
+    message
+    pid
+    processName
+    error
+  }
+}

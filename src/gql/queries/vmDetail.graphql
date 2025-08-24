@@ -1,0 +1,30 @@
+query vmDetailedInfo($id: String!) {
+  machine(id: $id) {
+    id
+    name
+    status
+    userId
+    templateId
+    createdAt
+    configuration
+    department {
+      id
+      name
+    }
+    template {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+    }
+    user {
+      id
+      email
+      firstName
+      lastName
+      role
+    }
+  }
+}

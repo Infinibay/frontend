@@ -1,0 +1,34 @@
+mutation restartMachine($id: String!) {
+  restartMachine(id: $id) {
+    success
+    message
+  }
+}
+
+mutation forcePowerOff($id: String!) {
+  forcePowerOff(id: $id) {
+    success
+    message
+  }
+}
+
+mutation resetMachine($id: String!) {
+  resetMachine(id: $id) {
+    success
+    message
+  }
+}
+
+mutation powerOnMachine($id: String!) {
+  powerOn(id: $id) {
+    success
+    message
+  }
+}
+
+mutation powerOffMachine($id: String!) {
+  powerOff(id: $id) {
+    success
+    message
+  }
+}

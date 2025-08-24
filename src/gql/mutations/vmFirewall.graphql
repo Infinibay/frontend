@@ -1,0 +1,131 @@
+mutation applyFirewallTemplate($input: ApplyFirewallTemplateInput!) {
+  applyFirewallTemplate(input: $input) {
+    appliedTemplates
+    customRules {
+      id
+      name
+      direction
+      action
+      port
+      protocol
+      sourceIp
+      destinationIp
+      enabled
+      description
+      origin
+    }
+    effectiveRules {
+      id
+      name
+      direction
+      action
+      port
+      protocol
+      sourceIp
+      destinationIp
+      enabled
+      description
+      origin
+    }
+    lastSync
+  }
+}
+
+mutation removeFirewallTemplate($machineId: ID!, $template: FirewallTemplate!) {
+  removeFirewallTemplate(machineId: $machineId, template: $template) {
+    appliedTemplates
+    customRules {
+      id
+      name
+      direction
+      action
+      port
+      protocol
+      sourceIp
+      destinationIp
+      enabled
+      description
+      origin
+    }
+    effectiveRules {
+      id
+      name
+      direction
+      action
+      port
+      protocol
+      sourceIp
+      destinationIp
+      enabled
+      description
+      origin
+    }
+    lastSync
+  }
+}
+
+mutation createSimplifiedFirewallRule($input: CreateSimplifiedFirewallRuleInput!) {
+  createSimplifiedFirewallRule(input: $input) {
+    appliedTemplates
+    customRules {
+      id
+      name
+      direction
+      action
+      port
+      protocol
+      sourceIp
+      destinationIp
+      enabled
+      description
+      origin
+    }
+    effectiveRules {
+      id
+      name
+      direction
+      action
+      port
+      protocol
+      sourceIp
+      destinationIp
+      enabled
+      description
+      origin
+    }
+    lastSync
+  }
+}
+
+mutation removeSimplifiedFirewallRule($machineId: ID!, $ruleId: ID!) {
+  removeSimplifiedFirewallRule(machineId: $machineId, ruleId: $ruleId) {
+    appliedTemplates
+    customRules {
+      id
+      name
+      direction
+      action
+      port
+      protocol
+      sourceIp
+      destinationIp
+      enabled
+      description
+      origin
+    }
+    effectiveRules {
+      id
+      name
+      direction
+      action
+      port
+      protocol
+      sourceIp
+      destinationIp
+      enabled
+      description
+      origin
+    }
+    lastSync
+  }
+}

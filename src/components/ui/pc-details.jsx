@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "./sheet";
@@ -51,9 +52,12 @@ const PcDetails = React.forwardRef(({
   onPause,
   onStop,
   onDelete,
+  departmentName, // Add department name prop
   className,
   ...props
 }, ref) => {
+  const router = useRouter();
+  
   // Early return if pc is null or undefined
   if (!pc) {
     return null;
@@ -69,7 +73,8 @@ const PcDetails = React.forwardRef(({
     status,
     screenshot = "/images/default-screenshot.png",
     avatar,
-    configuration
+    configuration,
+    department
   } = pc;
 
   const isRunning = status === "running";
@@ -77,6 +82,15 @@ const PcDetails = React.forwardRef(({
   const isStopped = status === "stopped";
   
   const sizes = sizeVariants[size];
+  
+  // Handle fullscreen navigation
+  const handleFullScreen = () => {
+    const deptName = departmentName || department?.name;
+    if (id && deptName) {
+      router.push(`/departments/${deptName}/vm/${id}`);
+      onOpenChange(false); // Close the sheet
+    }
+  };
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this VM?")) {
@@ -164,16 +178,15 @@ const PcDetails = React.forwardRef(({
                 </Button>
               </>
             )}
-            {onFullScreen && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onFullScreen}
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              >
-                <BiFullscreen className={sizes.controlIcon} />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleFullScreen}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              title="View VM Details"
+            >
+              <BiFullscreen className={sizes.controlIcon} />
+            </Button>
           </div>
           <Button
             variant="ghost"

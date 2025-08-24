@@ -1,0 +1,10 @@
+query listVMServices($machineId: String!) {
+  listServices(machineId: $machineId) {
+    name
+    displayName
+    status
+    startType
+    description
+    pid
+  }
+}

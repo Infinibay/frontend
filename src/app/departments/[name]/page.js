@@ -103,6 +103,7 @@ const DepartmentPage = () => {
                 {viewMode === "grid" ? (
                   <MachineGrid 
                     machines={machines}
+                    departmentName={department?.name}
                     onSelect={handlePcSelect}
                     onPlay={handlePlayAction}
                     onPause={handlePauseAction}
@@ -139,6 +140,7 @@ const DepartmentPage = () => {
         open={detailsOpen}
         onOpenChange={handleDetailsClose}
         pc={selectedPc}
+        departmentName={department?.name}
         onPlay={selectedPc ? () => handlePlayAction(selectedPc) : undefined}
         onPause={selectedPc ? () => handlePauseAction(selectedPc) : undefined}
         onStop={selectedPc ? () => handleStopAction(selectedPc) : undefined}

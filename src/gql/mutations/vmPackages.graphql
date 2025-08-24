@@ -1,0 +1,47 @@
+mutation managePackage($input: PackageManagementInput!) {
+  managePackage(input: $input) {
+    success
+    message
+    stdout
+    stderr
+    error
+    packages {
+      name
+      version
+      description
+      installed
+      publisher
+      source
+    }
+  }
+}
+
+mutation installPackage($machineId: ID!, $packageName: String!) {
+  installPackage(machineId: $machineId, packageName: $packageName) {
+    success
+    output
+    stdout
+    stderr
+    error
+  }
+}
+
+mutation removePackage($machineId: ID!, $packageName: String!) {
+  removePackage(machineId: $machineId, packageName: $packageName) {
+    success
+    output
+    stdout
+    stderr
+    error
+  }
+}
+
+mutation updatePackage($machineId: ID!, $packageName: String!) {
+  updatePackage(machineId: $machineId, packageName: $packageName) {
+    success
+    output
+    stdout
+    stderr
+    error
+  }
+}

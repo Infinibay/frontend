@@ -12,7 +12,8 @@ const MachineGrid = ({
   onPause, 
   onStop, 
   onDelete, 
-  size 
+  size,
+  departmentName 
 }) => {
   return (
     <div className="flex flex-wrap gap-4 justify-start">
@@ -20,6 +21,7 @@ const MachineGrid = ({
         <UserPc
           key={machine.id}
           pc={machine}
+          departmentName={departmentName}
           onSelect={() => onSelect(machine)}
           onPlay={() => onPlay(machine)}
           onPause={() => onPause(machine)}
