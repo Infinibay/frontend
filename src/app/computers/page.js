@@ -6,7 +6,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { cn } from "@/lib/utils";
 
 // UI Components
-import { PcDetails } from "@/components/ui/pc-details";
 import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
 import {
   Toast,
@@ -47,7 +46,6 @@ export default function ComputersPage() {
 
   // Actions and handlers
   const {
-    detailsOpen,
     showToast,
     toastProps,
     setShowToast,
@@ -104,19 +102,6 @@ export default function ComputersPage() {
           />
         </div>
 
-        {/* PC Details Sheet */}
-        {selectedPc && (
-          <PcDetails
-            pc={selectedPc}
-            open={detailsOpen}
-            onOpenChange={handleDetailsClose}
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onStop={handleStop}
-            onDelete={handleDelete}
-            size={size}
-          />
-        )}
       </section>
     </ToastProvider>
   );

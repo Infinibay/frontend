@@ -32,7 +32,6 @@ export const useDepartmentPage = (departmentName) => {
   const router = useRouter();
   
   // UI State
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastProps, setToastProps] = useState({});
   const [activeTab, setActiveTab] = useState("computers");
@@ -80,12 +79,12 @@ export const useDepartmentPage = (departmentName) => {
     loadData();
   }, [dispatch, departmentName]);
 
-  // Handle Escape key
+  // Handle Escape key - now just deselects machine since we navigate to new page
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === "Escape" && selectedPc) {
         dispatch(deselectMachine());
-        setDetailsOpen(false);
+        setSelectedPc(null);
       }
     };
 
@@ -93,18 +92,16 @@ export const useDepartmentPage = (departmentName) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [dispatch, selectedPc]);
 
-  // Handle PC selection
+  // Handle PC selection - Navigate to VM view
   const handlePcSelect = (machine) => {
     if (!machine) return;
     
-    dispatch(selectMachine(machine));
-    setDetailsOpen(true);
-    setSelectedPc(machine);
+    // Navigate to VM view instead of opening the deprecated panel
+    router.push(`/departments/${encodeURIComponent(departmentName)}/vm/${machine.id}`);
   };
 
-  // Handle details sheet close
+  // Handle details sheet close - kept for compatibility but simplified
   const handleDetailsClose = (open) => {
-    setDetailsOpen(open);
     if (!open) {
       dispatch(deselectMachine());
       setSelectedPc(null);
@@ -129,7 +126,6 @@ export const useDepartmentPage = (departmentName) => {
       dispatch, 
       vmId, 
       () => {
-        setDetailsOpen(false);
         setSelectedPc(null);
         setToastProps({
           variant: "success",
@@ -205,7 +201,6 @@ export const useDepartmentPage = (departmentName) => {
     isLoading,
     department,
     machines: sortedMachines,
-    detailsOpen,
     showToast,
     toastProps,
     activeTab,

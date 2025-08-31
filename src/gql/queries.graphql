@@ -402,19 +402,14 @@ query listFilterRules($filterId: ID) {
   }
 }
 
-query listServices {
-  listServices {
-    id
+query listServices($machineId: String!) {
+  listServices(machineId: $machineId) {
     name
     displayName
+    status
+    startType
+    pid
     description
-    riskLevel
-    riskDescription
-    ports {
-      protocol
-      portStart
-      portEnd
-    }
   }
 }
 

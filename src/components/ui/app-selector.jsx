@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { 
   Search, 
@@ -130,10 +131,12 @@ export function AppSelector({
       {/* App icon */}
       <div className="mb-3">
         {app.icon ? (
-          <img 
+          <Image 
             src={app.icon} 
             alt={app.name}
-            className="h-12 w-12 object-contain"
+            width={48}
+            height={48}
+            className="object-contain"
           />
         ) : (
           <Package className="h-12 w-12 text-muted-foreground" />
@@ -177,10 +180,12 @@ export function AppSelector({
     >
       {/* App icon */}
       {app.icon ? (
-        <img 
+        <Image 
           src={app.icon} 
           alt={app.name}
-          className="h-8 w-8 object-contain flex-shrink-0"
+          width={32}
+          height={32}
+          className="object-contain flex-shrink-0"
         />
       ) : (
         <Package className="h-8 w-8 text-muted-foreground flex-shrink-0" />

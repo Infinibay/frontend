@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Monitor, Activity, Package, Server, Shield, Network, Zap, FileText } from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, Monitor, Activity, Package, Server, Shield, Network, Zap, FileText, Heart } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,13 +18,28 @@ import NetworkTab from './components/tabs/NetworkTab';
 import AutomationTab from './components/tabs/AutomationTab';
 import LogsTab from './components/tabs/LogsTab';
 
+// Health Dashboard
+import { HealthDashboard } from '@/components/vm/health';
+
 // Hooks
 import useVMDetail from './hooks/useVMDetail';
 
 const VMDetailPage = () => {
   const { name: departmentName, id: vmId } = useParams();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('overview');
+  const searchParams = useSearchParams();
+  
+  // Get initial tab from URL parameter, default to 'health'
+  const initialTab = searchParams.get('tab') || 'health';
+  const [activeTab, setActiveTab] = useState(initialTab);
+  
+  // Update active tab when URL parameter changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams, activeTab]);
   
   // Fetch VM details
   const { vm, loading, error, refetch } = useVMDetail(vmId);
@@ -122,7 +137,11 @@ const VMDetailPage = () => {
 
         {/* Tabs Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-auto">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 h-auto">
+            <TabsTrigger value="health" className="flex items-center gap-2">
+              <Heart className="h-4 w-4" />
+              <span className="hidden sm:inline">Health</span>
+            </TabsTrigger>
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Monitor className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -159,6 +178,10 @@ const VMDetailPage = () => {
 
           {/* Tab Content */}
           <div className="mt-6">
+            <TabsContent value="health" className="space-y-4">
+              <HealthDashboard vmId={vmId} vmName={vm?.name} />
+            </TabsContent>
+            
             <TabsContent value="overview" className="space-y-4">
               <OverviewTab vm={vm} />
             </TabsContent>

@@ -69,9 +69,9 @@ const UserPc = React.forwardRef(({
       return;
     }
     
-    // Navigate to VM detail view if we have the necessary info
+    // Navigate to VM detail view with health tab as default if we have the necessary info
     if (pc?.id && departmentName) {
-      router.push(`/departments/${departmentName}/vm/${pc.id}`);
+      router.push(`/departments/${departmentName}/vm/${pc.id}?tab=health`);
     } else if (onClick) {
       // Fallback to original onClick handler
       onClick(e);

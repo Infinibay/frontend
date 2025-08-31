@@ -90,7 +90,6 @@ export const fetchDepartmentByName = createAsyncThunk(
 export const createDepartment = createAsyncThunk(
     'departments/createDepartment',
     async (input) => {
-        console.log(name);
         const data = await executeGraphQLMutation(CreateDepartmentDocument, { name: input.name });
         return data.createDepartment;
     }

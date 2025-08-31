@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useDispatch } from "react-redux";
+import { useRouter } from "next/navigation";
 import {
   playVm,
   pauseVm,
@@ -13,17 +14,19 @@ import {
 
 export function useComputerActions() {
   const dispatch = useDispatch();
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const router = useRouter();
   const [showToast, setShowToast] = useState(false);
   const [toastProps, setToastProps] = useState({});
 
   const handlePcSelect = (machine) => {
-    dispatch(selectMachine(machine));
-    setDetailsOpen(true);
+    // Navigate to VM view instead of opening the deprecated panel
+    const departmentName = machine.department?.name || 'default';
+    router.push(`/departments/${encodeURIComponent(departmentName)}/vm/${machine.id}`);
   };
 
   const handleDetailsClose = (open) => {
-    setDetailsOpen(open);
+    // This function is kept for compatibility but doesn't need to do anything
+    // since we're navigating to a new page instead of opening a panel
     if (!open) {
       dispatch(deselectMachine());
     }
@@ -104,7 +107,6 @@ export function useComputerActions() {
   };
 
   return {
-    detailsOpen,
     showToast,
     toastProps,
     setShowToast,

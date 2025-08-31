@@ -31,6 +31,26 @@ export type ApplicationType = {
   parameters?: Maybe<Scalars['JSONObject']['output']>;
 };
 
+export type ApplicationUsage = {
+  __typename?: 'ApplicationUsage';
+  accessCount: Scalars['Int']['output'];
+  applicationName: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  executablePath: Scalars['String']['output'];
+  fileSize?: Maybe<Scalars['Float']['output']>;
+  firstSeen: Scalars['DateTimeISO']['output'];
+  iconFormat?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  lastAccessTime?: Maybe<Scalars['DateTimeISO']['output']>;
+  lastModifiedTime?: Maybe<Scalars['DateTimeISO']['output']>;
+  lastSeen: Scalars['DateTimeISO']['output'];
+  machineId: Scalars['String']['output'];
+  publisher?: Maybe<Scalars['String']['output']>;
+  totalUsageMinutes: Scalars['Int']['output'];
+  version?: Maybe<Scalars['String']['output']>;
+};
+
 export type ApplyFirewallTemplateInput = {
   machineId: Scalars['ID']['input'];
   template: FirewallTemplate;
@@ -318,6 +338,7 @@ export type Machine = {
   cpuCores?: Maybe<Scalars['Int']['output']>;
   createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
   department?: Maybe<DepartmentType>;
+  departmentId?: Maybe<Scalars['String']['output']>;
   gpuPciAddress?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
@@ -333,6 +354,18 @@ export type MachineApplicationInputType = {
   applicationId?: Scalars['String']['input'];
   machineId?: Scalars['String']['input'];
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
+};
+
+export type MachineMetricsSummary = {
+  __typename?: 'MachineMetricsSummary';
+  activeProcessCount: Scalars['Int']['output'];
+  firstDataPoint?: Maybe<Scalars['DateTimeISO']['output']>;
+  installedApplicationsCount: Scalars['Int']['output'];
+  lastDataPoint?: Maybe<Scalars['DateTimeISO']['output']>;
+  latestSystemMetrics?: Maybe<SystemMetrics>;
+  machineId: Scalars['String']['output'];
+  openPortsCount: Scalars['Int']['output'];
+  totalDataPoints: Scalars['Int']['output'];
 };
 
 export type MachineOrderBy = {
@@ -416,6 +449,14 @@ export type MachineTemplateType = {
   totalMachines?: Maybe<Scalars['Int']['output']>;
 };
 
+export type MetricsFilterInput = {
+  endDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  machineId?: InputMaybe<Scalars['String']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  startDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   applyFirewallTemplate: VmFirewallState;
@@ -458,6 +499,8 @@ export type Mutation = {
   /** Install, remove, or update a package on a virtual machine */
   managePackage: PackageManagementResult;
   moveMachine: Machine;
+  /** Perform disk cleanup on a VM */
+  performDiskCleanup: Scalars['JSONObject']['output'];
   powerOff: SuccessType;
   powerOn: SuccessType;
   /** Register uploaded ISO */
@@ -472,6 +515,8 @@ export type Mutation = {
   restartMachine: SuccessType;
   /** Restore a virtual machine to a snapshot */
   restoreSnapshot: SuccessType;
+  /** Run Windows Defender quick scan on a VM */
+  runDefenderQuickScan: Scalars['JSONObject']['output'];
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
@@ -665,6 +710,13 @@ export type MutationMoveMachineArgs = {
 };
 
 
+export type MutationPerformDiskCleanupArgs = {
+  drive: Scalars['String']['input'];
+  targets?: InputMaybe<Array<Scalars['String']['input']>>;
+  vmId: Scalars['ID']['input'];
+};
+
+
 export type MutationPowerOffArgs = {
   id: Scalars['String']['input'];
 };
@@ -718,6 +770,11 @@ export type MutationRestartMachineArgs = {
 
 export type MutationRestoreSnapshotArgs = {
   input: RestoreSnapshotInput;
+};
+
+
+export type MutationRunDefenderQuickScanArgs = {
+  vmId: Scalars['ID']['input'];
 };
 
 
@@ -925,6 +982,22 @@ export type PaginationInputType = {
   take?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type PortUsage = {
+  __typename?: 'PortUsage';
+  connectionCount: Scalars['Int']['output'];
+  executablePath?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isListening: Scalars['Boolean']['output'];
+  lastActivity: Scalars['DateTimeISO']['output'];
+  machineId: Scalars['String']['output'];
+  port: Scalars['Int']['output'];
+  processId?: Maybe<Scalars['Int']['output']>;
+  processName?: Maybe<Scalars['String']['output']>;
+  protocol: Scalars['String']['output'];
+  state: Scalars['String']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+};
+
 export type ProcessControlResult = {
   __typename?: 'ProcessControlResult';
   error?: Maybe<Scalars['String']['output']>;
@@ -932,6 +1005,14 @@ export type ProcessControlResult = {
   pid?: Maybe<Scalars['Int']['output']>;
   processName?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type ProcessFilterInput = {
+  endDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  machineId?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  startDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
 };
 
 export type ProcessInfo = {
@@ -944,6 +1025,24 @@ export type ProcessInfo = {
   startTime?: Maybe<Scalars['DateTimeISO']['output']>;
   status: Scalars['String']['output'];
   user?: Maybe<Scalars['String']['output']>;
+};
+
+export type ProcessSnapshot = {
+  __typename?: 'ProcessSnapshot';
+  commandLine?: Maybe<Scalars['String']['output']>;
+  cpuUsagePercent: Scalars['Float']['output'];
+  diskReadBytes?: Maybe<Scalars['Float']['output']>;
+  diskWriteBytes?: Maybe<Scalars['Float']['output']>;
+  executablePath?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  machineId: Scalars['String']['output'];
+  memoryUsageKB: Scalars['Float']['output'];
+  name: Scalars['String']['output'];
+  parentPid?: Maybe<Scalars['Int']['output']>;
+  processId: Scalars['Int']['output'];
+  startTime?: Maybe<Scalars['DateTimeISO']['output']>;
+  status: Scalars['String']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
 };
 
 /** Options for sorting processes */
@@ -959,16 +1058,27 @@ export type Query = {
   /** Get all ISOs (available and unavailable) */
   allISOs: Array<Iso>;
   application?: Maybe<ApplicationType>;
+  applicationUsage: Array<ApplicationUsage>;
   applications: Array<ApplicationType>;
   /** Get all available ISOs */
   availableISOs: Array<Iso>;
+  /** Check for application updates on a VM */
+  checkApplicationUpdates: Scalars['JSONObject']['output'];
   /** Check if ISO is available for specific OS */
   checkISOStatus: IsoStatus;
   /** Check availability for multiple OS types */
   checkMultipleOSAvailability: Array<IsoAvailabilityMap>;
+  /** Check resource optimization opportunities for a VM */
+  checkResourceOptimization: Scalars['JSONObject']['output'];
   checkSetupStatus: DyummyType;
   /** Check overall system readiness */
   checkSystemReadiness: SystemReadiness;
+  /** Check disk space status for a VM */
+  checkVMDiskSpace: Scalars['JSONObject']['output'];
+  /** Check Windows Defender status for a VM */
+  checkWindowsDefender: Scalars['JSONObject']['output'];
+  /** Check Windows Updates status for a VM */
+  checkWindowsUpdates: Scalars['JSONObject']['output'];
   /** Get the current snapshot of a virtual machine */
   currentSnapshot?: Maybe<Snapshot>;
   currentUser?: Maybe<UserType>;
@@ -987,9 +1097,16 @@ export type Query = {
   getSupportedOSTypes: Array<Scalars['String']['output']>;
   getSystemResources: SystemResources;
   getTopProcesses: Array<ProcessInfo>;
+  /** Get installed applications inventory for a VM */
+  getVMApplicationInventory: Scalars['JSONObject']['output'];
   getVMFirewallState: VmFirewallState;
+  /** Get comprehensive health check status for a VM */
+  getVMHealthStatus: Scalars['JSONObject']['output'];
   getVmServiceStatus: Array<VmServiceStatus>;
+  /** Get Windows Update history for a VM */
+  getWindowsUpdateHistory: Scalars['JSONObject']['output'];
   graphicConnection?: Maybe<GraphicConfigurationType>;
+  latestSystemMetrics?: Maybe<SystemMetrics>;
   listFilterRules: Array<FwRule>;
   listFilters: Array<GenericFilter>;
   /** List all installed packages on a virtual machine */
@@ -999,6 +1116,7 @@ export type Query = {
   listServices: Array<ServiceInfo>;
   login: UserToken;
   machine?: Maybe<Machine>;
+  machineMetricsSummary?: Maybe<MachineMetricsSummary>;
   /** List all snapshots for a virtual machine */
   machineSnapshots: SnapshotListResult;
   machineTemplate?: Maybe<MachineTemplateType>;
@@ -1008,19 +1126,38 @@ export type Query = {
   machines: Array<Machine>;
   network: Network;
   networks: Array<Network>;
+  portUsage: Array<PortUsage>;
+  processSnapshots: Array<ProcessSnapshot>;
+  /** Run a specific health check on a VM */
+  runHealthCheck: Scalars['JSONObject']['output'];
   /** Search for available packages on a virtual machine */
   searchPackages: Array<PackageInfo>;
   /** Get current socket connection statistics for all VMs */
   socketConnectionStats?: Maybe<SocketConnectionStats>;
+  systemMetrics: Array<SystemMetrics>;
+  systemMetricsHistory: Array<SystemMetrics>;
+  topProcessesByMachine: Array<ProcessSnapshot>;
   user: UserType;
   users: Array<UserType>;
   /** Get comprehensive diagnostics for VM socket connection issues */
   vmSocketDiagnostics: VmDiagnostics;
+  windowsServices: Array<WindowsService>;
 };
 
 
 export type QueryApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryApplicationUsageArgs = {
+  limit?: InputMaybe<Scalars['Float']['input']>;
+  machineId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryCheckApplicationUpdatesArgs = {
+  vmId: Scalars['ID']['input'];
 };
 
 
@@ -1031,6 +1168,29 @@ export type QueryCheckIsoStatusArgs = {
 
 export type QueryCheckMultipleOsAvailabilityArgs = {
   osList: Array<Scalars['String']['input']>;
+};
+
+
+export type QueryCheckResourceOptimizationArgs = {
+  evaluationWindowDays?: InputMaybe<Scalars['Float']['input']>;
+  vmId: Scalars['ID']['input'];
+};
+
+
+export type QueryCheckVmDiskSpaceArgs = {
+  criticalThreshold?: InputMaybe<Scalars['Float']['input']>;
+  vmId: Scalars['ID']['input'];
+  warningThreshold?: InputMaybe<Scalars['Float']['input']>;
+};
+
+
+export type QueryCheckWindowsDefenderArgs = {
+  vmId: Scalars['ID']['input'];
+};
+
+
+export type QueryCheckWindowsUpdatesArgs = {
+  vmId: Scalars['ID']['input'];
 };
 
 
@@ -1082,8 +1242,18 @@ export type QueryGetTopProcessesArgs = {
 };
 
 
+export type QueryGetVmApplicationInventoryArgs = {
+  vmId: Scalars['ID']['input'];
+};
+
+
 export type QueryGetVmFirewallStateArgs = {
   machineId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetVmHealthStatusArgs = {
+  vmId: Scalars['ID']['input'];
 };
 
 
@@ -1093,8 +1263,19 @@ export type QueryGetVmServiceStatusArgs = {
 };
 
 
+export type QueryGetWindowsUpdateHistoryArgs = {
+  days?: InputMaybe<Scalars['Float']['input']>;
+  vmId: Scalars['ID']['input'];
+};
+
+
 export type QueryGraphicConnectionArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryLatestSystemMetricsArgs = {
+  machineId: Scalars['String']['input'];
 };
 
 
@@ -1136,6 +1317,11 @@ export type QueryMachineArgs = {
 };
 
 
+export type QueryMachineMetricsSummaryArgs = {
+  machineId: Scalars['String']['input'];
+};
+
+
 export type QueryMachineSnapshotsArgs = {
   machineId: Scalars['String']['input'];
 };
@@ -1168,9 +1354,44 @@ export type QueryNetworkArgs = {
 };
 
 
+export type QueryPortUsageArgs = {
+  listeningOnly?: InputMaybe<Scalars['Boolean']['input']>;
+  machineId: Scalars['String']['input'];
+};
+
+
+export type QueryProcessSnapshotsArgs = {
+  filter?: InputMaybe<ProcessFilterInput>;
+};
+
+
+export type QueryRunHealthCheckArgs = {
+  checkName: Scalars['String']['input'];
+  vmId: Scalars['ID']['input'];
+};
+
+
 export type QuerySearchPackagesArgs = {
   machineId: Scalars['ID']['input'];
   query: Scalars['String']['input'];
+};
+
+
+export type QuerySystemMetricsArgs = {
+  filter?: InputMaybe<MetricsFilterInput>;
+};
+
+
+export type QuerySystemMetricsHistoryArgs = {
+  hours?: InputMaybe<Scalars['Float']['input']>;
+  machineId: Scalars['String']['input'];
+  maxPoints?: InputMaybe<Scalars['Float']['input']>;
+};
+
+
+export type QueryTopProcessesByMachineArgs = {
+  limit?: InputMaybe<Scalars['Float']['input']>;
+  machineId: Scalars['String']['input'];
 };
 
 
@@ -1187,6 +1408,12 @@ export type QueryUsersArgs = {
 
 export type QueryVmSocketDiagnosticsArgs = {
   vmId: Scalars['String']['input'];
+};
+
+
+export type QueryWindowsServicesArgs = {
+  machineId: Scalars['String']['input'];
+  runningOnly?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type RestoreSnapshotInput = {
@@ -1307,6 +1534,26 @@ export type SuccessType = {
   __typename?: 'SuccessType';
   message: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
+};
+
+export type SystemMetrics = {
+  __typename?: 'SystemMetrics';
+  availableMemoryKB: Scalars['Float']['output'];
+  cpuCoresUsage: Array<Scalars['Float']['output']>;
+  cpuTemperature?: Maybe<Scalars['Float']['output']>;
+  cpuUsagePercent: Scalars['Float']['output'];
+  diskIOStats: Scalars['JSONObject']['output'];
+  diskUsageStats: Scalars['JSONObject']['output'];
+  id: Scalars['ID']['output'];
+  loadAverage?: Maybe<Scalars['JSONObject']['output']>;
+  machineId: Scalars['String']['output'];
+  networkStats: Scalars['JSONObject']['output'];
+  swapTotalKB?: Maybe<Scalars['Float']['output']>;
+  swapUsedKB?: Maybe<Scalars['Float']['output']>;
+  timestamp: Scalars['DateTimeISO']['output'];
+  totalMemoryKB: Scalars['Float']['output'];
+  uptime: Scalars['Float']['output'];
+  usedMemoryKB: Scalars['Float']['output'];
 };
 
 export type SystemReadiness = {
@@ -1510,4 +1757,25 @@ export type VmServiceStatus = {
   vmId: Scalars['ID']['output'];
   /** Name of the VM */
   vmName: Scalars['String']['output'];
+};
+
+export type WindowsService = {
+  __typename?: 'WindowsService';
+  currentState: Scalars['String']['output'];
+  dependencies?: Maybe<Scalars['JSONObject']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  executablePath?: Maybe<Scalars['String']['output']>;
+  firstSeen: Scalars['DateTimeISO']['output'];
+  id: Scalars['ID']['output'];
+  isDefaultService: Scalars['Boolean']['output'];
+  lastSeen: Scalars['DateTimeISO']['output'];
+  lastStateChange?: Maybe<Scalars['DateTimeISO']['output']>;
+  machineId: Scalars['String']['output'];
+  processId?: Maybe<Scalars['Int']['output']>;
+  serviceName: Scalars['String']['output'];
+  serviceType: Scalars['String']['output'];
+  startType: Scalars['String']['output'];
+  stateChangeCount: Scalars['Int']['output'];
+  usageScore?: Maybe<Scalars['Float']['output']>;
 };

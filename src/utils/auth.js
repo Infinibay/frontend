@@ -1,8 +1,34 @@
 import { ApolloClient, InMemoryCache, createHttpLink, gql } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
-
-import { CurrentUserDocument, LoginDocument } from '@/gql/hooks';
 import { createDebugger } from '@/utils/debug';
+
+// Define GraphQL documents
+const LoginDocument = gql`
+  mutation login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      user {
+        id
+        email
+        firstName
+        lastName
+        role
+      }
+      token
+    }
+  }
+`;
+
+const CurrentUserDocument = gql`
+  query currentUser {
+    currentUser {
+      id
+      email
+      firstName
+      lastName
+      role
+    }
+  }
+`;
 
 // GraphQL API endpoint (use environment variable)
 const API_URL = process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:4000/graphql';

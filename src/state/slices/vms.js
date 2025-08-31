@@ -1,16 +1,75 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { gql } from '@apollo/client';
 import client from '@/apollo-client';
 import { createDebugger } from '@/utils/debug';
 
-import {
-  MachinesDocument,
-  CreateMachineDocument,
-  PowerOffDocument,
-  PowerOnDocument,
-  SuspendDocument,
-  MoveMachineDocument,
-  DestroyMachineDocument
-} from '@/gql/hooks';
+// Define GraphQL documents
+const MachinesDocument = gql`
+  query machines {
+    machines {
+      id
+      name
+      status
+      userId
+      departmentId
+    }
+  }
+`;
+
+const CreateMachineDocument = gql`
+  mutation createMachine($input: CreateMachineInputType!) {
+    createMachine(input: $input) {
+      id
+      name
+      status
+    }
+  }
+`;
+
+const PowerOnDocument = gql`
+  mutation powerOn($id: String!) {
+    powerOn(id: $id) {
+      success
+      message
+    }
+  }
+`;
+
+const PowerOffDocument = gql`
+  mutation powerOff($id: String!) {
+    powerOff(id: $id) {
+      success
+      message
+    }
+  }
+`;
+
+const SuspendDocument = gql`
+  mutation suspend($id: String!) {
+    suspend(id: $id) {
+      success
+      message
+    }
+  }
+`;
+
+const MoveMachineDocument = gql`
+  mutation moveMachine($id: String!, $departmentId: String!) {
+    moveMachine(id: $id, departmentId: $departmentId) {
+      success
+      message
+    }
+  }
+`;
+
+const DestroyMachineDocument = gql`
+  mutation destroyMachine($id: String!) {
+    destroyMachine(id: $id) {
+      success
+      message
+    }
+  }
+`;
 
 const executeGraphQLMutation = async (mutation, variables) => {
   try {

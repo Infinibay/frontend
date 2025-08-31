@@ -14,7 +14,6 @@ import dynamic from 'next/dynamic';
 import { useDepartmentPage } from "./hooks/useDepartmentPage";
 
 // Components
-import { PcDetails } from "@/components/ui/pc-details";
 import LoadingState from "./components/LoadingState";
 import NotFound from "./components/NotFound";
 import DepartmentHeader from "./components/DepartmentHeader";
@@ -45,7 +44,6 @@ const DepartmentPage = () => {
     isLoading,
     department,
     machines,
-    detailsOpen,
     showToast,
     toastProps,
     activeTab,
@@ -135,17 +133,6 @@ const DepartmentPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-
-      <PcDetails
-        open={detailsOpen}
-        onOpenChange={handleDetailsClose}
-        pc={selectedPc}
-        departmentName={department?.name}
-        onPlay={selectedPc ? () => handlePlayAction(selectedPc) : undefined}
-        onPause={selectedPc ? () => handlePauseAction(selectedPc) : undefined}
-        onStop={selectedPc ? () => handleStopAction(selectedPc) : undefined}
-        onDelete={selectedPc ? () => handleDeleteAction(selectedPc.id) : undefined}
-      />
 
       <CreateDepartmentDialog 
         open={isCreateDeptDialogOpen}

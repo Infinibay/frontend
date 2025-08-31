@@ -3,29 +3,21 @@ mutation applyFirewallTemplate($input: ApplyFirewallTemplateInput!) {
     appliedTemplates
     customRules {
       id
-      name
-      direction
-      action
       port
       protocol
-      sourceIp
-      destinationIp
-      enabled
+      direction
+      action
       description
-      origin
+      sources
     }
     effectiveRules {
       id
-      name
-      direction
-      action
       port
       protocol
-      sourceIp
-      destinationIp
-      enabled
+      direction
+      action
       description
-      origin
+      sources
     }
     lastSync
   }
@@ -36,29 +28,21 @@ mutation removeFirewallTemplate($machineId: ID!, $template: FirewallTemplate!) {
     appliedTemplates
     customRules {
       id
-      name
-      direction
-      action
       port
       protocol
-      sourceIp
-      destinationIp
-      enabled
+      direction
+      action
       description
-      origin
+      sources
     }
     effectiveRules {
       id
-      name
-      direction
-      action
       port
       protocol
-      sourceIp
-      destinationIp
-      enabled
+      direction
+      action
       description
-      origin
+      sources
     }
     lastSync
   }
@@ -69,29 +53,21 @@ mutation createSimplifiedFirewallRule($input: CreateSimplifiedFirewallRuleInput!
     appliedTemplates
     customRules {
       id
-      name
-      direction
-      action
       port
       protocol
-      sourceIp
-      destinationIp
-      enabled
+      direction
+      action
       description
-      origin
+      sources
     }
     effectiveRules {
       id
-      name
-      direction
-      action
       port
       protocol
-      sourceIp
-      destinationIp
-      enabled
+      direction
+      action
       description
-      origin
+      sources
     }
     lastSync
   }
@@ -102,29 +78,21 @@ mutation removeSimplifiedFirewallRule($machineId: ID!, $ruleId: ID!) {
     appliedTemplates
     customRules {
       id
-      name
-      direction
-      action
       port
       protocol
-      sourceIp
-      destinationIp
-      enabled
+      direction
+      action
       description
-      origin
+      sources
     }
     effectiveRules {
       id
-      name
-      direction
-      action
       port
       protocol
-      sourceIp
-      destinationIp
-      enabled
+      direction
+      action
       description
-      origin
+      sources
     }
     lastSync
   }
