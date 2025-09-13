@@ -2,24 +2,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Monitor, Activity, Package, Server, Shield, Network, Zap, FileText, Heart } from 'lucide-react';
+import { ArrowLeft, Activity, AlertTriangle, Wrench, History, BarChart3 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Components
 import VMHeader from './components/VMHeader';
-import OverviewTab from './components/tabs/OverviewTab';
 import PerformanceTab from './components/tabs/PerformanceTab';
-import ApplicationsTab from './components/tabs/ApplicationsTab';
-import ServicesTab from './components/tabs/ServicesTab';
-import SecurityTab from './components/tabs/SecurityTab';
-import NetworkTab from './components/tabs/NetworkTab';
-import AutomationTab from './components/tabs/AutomationTab';
-import LogsTab from './components/tabs/LogsTab';
+import MaintenanceTab from './components/tabs/MaintenanceTab';
+import HistoryTab from './components/tabs/HistoryTab';
 
 // Health Dashboard
-import { HealthDashboard } from '@/components/vm/health';
+import { VMDashboardTab } from '@/components/vm/dashboard';
+
+// Problems Management
+import { ProblemsTab } from '../../../../../components/vm/problems/ProblemsTab';
 
 // Hooks
 import useVMDetail from './hooks/useVMDetail';
@@ -28,11 +26,11 @@ const VMDetailPage = () => {
   const { name: departmentName, id: vmId } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  
-  // Get initial tab from URL parameter, default to 'health'
-  const initialTab = searchParams.get('tab') || 'health';
+
+  // Get initial tab from URL parameter, default to 'dashboard'
+  const initialTab = searchParams.get('tab') || 'dashboard';
   const [activeTab, setActiveTab] = useState(initialTab);
-  
+
   // Update active tab when URL parameter changes
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -40,7 +38,15 @@ const VMDetailPage = () => {
       setActiveTab(tabParam);
     }
   }, [searchParams, activeTab]);
-  
+
+  // Handle tab change with URL update
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('tab', newTab);
+    router.replace(currentUrl.pathname + currentUrl.search);
+  };
+
   // Fetch VM details
   const { vm, loading, error, refetch } = useVMDetail(vmId);
 
@@ -67,10 +73,10 @@ const VMDetailPage = () => {
               <Skeleton className="h-10 w-24" />
             </div>
           </div>
-          
+
           {/* Tabs Skeleton */}
           <Skeleton className="h-12 w-full mb-6" />
-          
+
           {/* Content Skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
@@ -122,9 +128,9 @@ const VMDetailPage = () => {
     <div className="min-h-screen bg-background">
       <div className="p-6">
         {/* Back Button */}
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={handleBack}
           className="mb-4"
         >
@@ -136,82 +142,50 @@ const VMDetailPage = () => {
         <VMHeader vm={vm} onRefresh={refetch} />
 
         {/* Tabs Navigation */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 h-auto">
-            <TabsTrigger value="health" className="flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              <span className="hidden sm:inline">Health</span>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-6">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
             </TabsTrigger>
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Monitor className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
+            <TabsTrigger value="problems" className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="hidden sm:inline">Problemas</span>
             </TabsTrigger>
             <TabsTrigger value="performance" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">Performance</span>
+              <span className="hidden sm:inline">Rendimiento</span>
             </TabsTrigger>
-            <TabsTrigger value="applications" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Applications</span>
+            <TabsTrigger value="maintenance" className="flex items-center gap-2">
+              <Wrench className="h-4 w-4" />
+              <span className="hidden sm:inline">Mantenimiento</span>
             </TabsTrigger>
-            <TabsTrigger value="services" className="flex items-center gap-2">
-              <Server className="h-4 w-4" />
-              <span className="hidden sm:inline">Services</span>
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">Security</span>
-            </TabsTrigger>
-            <TabsTrigger value="network" className="flex items-center gap-2">
-              <Network className="h-4 w-4" />
-              <span className="hidden sm:inline">Network</span>
-            </TabsTrigger>
-            <TabsTrigger value="automation" className="flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              <span className="hidden sm:inline">Automation</span>
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Logs</span>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              <span className="hidden sm:inline">Historial</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Tab Content */}
           <div className="mt-6">
-            <TabsContent value="health" className="space-y-4">
-              <HealthDashboard vmId={vmId} vmName={vm?.name} />
+            <TabsContent value="dashboard" className="space-y-4">
+              <VMDashboardTab vmId={vmId} vmName={vm?.name} onRefresh={refetch} />
             </TabsContent>
-            
-            <TabsContent value="overview" className="space-y-4">
-              <OverviewTab vm={vm} />
+
+            <TabsContent value="problems" className="space-y-4">
+              <ProblemsTab vmId={vmId} vmName={vm?.name} />
             </TabsContent>
-            
+
             <TabsContent value="performance" className="space-y-4">
               <PerformanceTab vm={vm} />
             </TabsContent>
-            
-            <TabsContent value="applications" className="space-y-4">
-              <ApplicationsTab vm={vm} />
+
+            <TabsContent value="maintenance" className="space-y-4">
+              <MaintenanceTab vm={vm} />
             </TabsContent>
-            
-            <TabsContent value="services" className="space-y-4">
-              <ServicesTab vm={vm} />
-            </TabsContent>
-            
-            <TabsContent value="security" className="space-y-4">
-              <SecurityTab vm={vm} />
-            </TabsContent>
-            
-            <TabsContent value="network" className="space-y-4">
-              <NetworkTab vm={vm} />
-            </TabsContent>
-            
-            <TabsContent value="automation" className="space-y-4">
-              <AutomationTab vm={vm} />
-            </TabsContent>
-            
-            <TabsContent value="logs" className="space-y-4">
-              <LogsTab vm={vm} />
+
+            <TabsContent value="history" className="space-y-4">
+              <HistoryTab vm={vm} />
             </TabsContent>
           </div>
         </Tabs>

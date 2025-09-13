@@ -1,13 +1,18 @@
 import React from 'react';
-import { 
-  Play, 
-  Pause, 
-  Power, 
-  RotateCw, 
+import {
+  Play,
+  Pause,
+  Power,
+  RotateCw,
   Camera,
   HardDrive,
   Monitor,
-  MoreVertical
+  MoreVertical,
+  Heart,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,17 +25,31 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
 import useVMActions from '../hooks/useVMActions';
+import { useHealthTransformation } from '@/hooks/useHealthTransformation';
+import { useRouter } from 'next/navigation';
 
 const VMHeader = ({ vm, onRefresh }) => {
-  const { 
-    startVM, 
-    stopVM, 
-    restartVM, 
+  const router = useRouter();
+  const {
+    startVM,
+    stopVM,
+    restartVM,
     forceStopVM,
     pauseVM,
     createSnapshot,
-    isLoading 
+    isLoading
   } = useVMActions(vm?.id);
+
+  // Get health data for the VM
+  const {
+    overallStatus,
+    problems,
+    lastUpdate,
+    isLoading: healthLoading
+  } = useHealthTransformation(vm?.id, {
+    refreshInterval: 60000, // 1 minute
+    enableRealTime: true
+  });
 
   // Determine status color
   const getStatusColor = (status) => {
@@ -174,6 +193,35 @@ const VMHeader = ({ vm, onRefresh }) => {
     }
   };
 
+  // Health status helpers
+  const getHealthIcon = (level) => {
+    switch (level) {
+      case 'excellent':
+      case 'normal':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'warning':
+        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+      case 'critical':
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <Heart className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getHealthColor = (level) => {
+    switch (level) {
+      case 'excellent':
+      case 'normal':
+        return 'text-green-700 bg-green-50 border-green-200';
+      case 'warning':
+        return 'text-yellow-700 bg-yellow-50 border-yellow-200';
+      case 'critical':
+        return 'text-red-700 bg-red-50 border-red-200';
+      default:
+        return 'text-gray-700 bg-gray-50 border-gray-200';
+    }
+  };
+
   const isRunning = vm?.status?.toLowerCase() === 'running';
   const isStopped = vm?.status?.toLowerCase() === 'stopped' || vm?.status?.toLowerCase() === 'shut off';
   const isPaused = vm?.status?.toLowerCase() === 'paused';
@@ -198,7 +246,7 @@ const VMHeader = ({ vm, onRefresh }) => {
                 {vm?.status}
               </Badge>
             </div>
-            
+
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>Department: {vm?.department?.name || 'N/A'}</span>
               <span>•</span>
@@ -219,6 +267,74 @@ const VMHeader = ({ vm, onRefresh }) => {
                 <span className="font-medium">Storage:</span> {vm?.configuration?.storage || vm?.template?.storage || 0} GB
               </span>
             </div>
+
+            {/* Health Status */}
+            {overallStatus && !healthLoading && (
+              <div className={`flex items-center gap-3 mt-3 p-2 rounded-md border ${getHealthColor(overallStatus.level)}`}>
+                <div className="flex items-center gap-2">
+                  {getHealthIcon(overallStatus.level)}
+                  <span className="text-sm font-medium">
+                    Estado de Salud: {overallStatus.label}
+                  </span>
+                </div>
+
+                {overallStatus.criticalProblems > 0 && (
+                  <Badge className="bg-red-100 text-red-800 border-red-200">
+                    {overallStatus.criticalProblems} críticos
+                  </Badge>
+                )}
+
+                {overallStatus.lastCheck && (
+                  <div className="flex items-center gap-1 text-xs opacity-75">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      Última revisión: {new Date(overallStatus.lastCheck).toLocaleTimeString('es-ES')}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 ml-auto">
+                  {overallStatus.level === 'critical' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-6 px-2"
+                      onClick={() => {
+                        // Navigate to problems tab
+                        const currentUrl = new URL(window.location);
+                        currentUrl.searchParams.set('tab', 'problems');
+                        router.replace(currentUrl.pathname + currentUrl.search);
+                      }}
+                    >
+                      Ver Problemas
+                    </Button>
+                  )}
+
+                  {overallStatus.level !== 'critical' && overallStatus.level !== 'excellent' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-6 px-2"
+                      onClick={() => {
+                        // Navigate to maintenance tab
+                        const currentUrl = new URL(window.location);
+                        currentUrl.searchParams.set('tab', 'maintenance');
+                        router.replace(currentUrl.pathname + currentUrl.search);
+                      }}
+                    >
+                      Optimizar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {healthLoading && (
+              <div className="flex items-center gap-2 mt-3 p-2 bg-gray-50 rounded-md border border-gray-200">
+                <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                <span className="text-sm text-gray-600">Verificando estado de salud...</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -226,8 +342,8 @@ const VMHeader = ({ vm, onRefresh }) => {
         <div className="flex items-center gap-2">
           {/* Primary Actions */}
           {isStopped && (
-            <Button 
-              onClick={handleStart} 
+            <Button
+              onClick={handleStart}
               disabled={isLoading}
               size="sm"
               className="bg-green-600 hover:bg-green-700"
@@ -236,11 +352,11 @@ const VMHeader = ({ vm, onRefresh }) => {
               Start
             </Button>
           )}
-          
+
           {isRunning && (
             <>
-              <Button 
-                onClick={handlePause} 
+              <Button
+                onClick={handlePause}
                 disabled={isLoading}
                 size="sm"
                 variant="outline"
@@ -248,8 +364,8 @@ const VMHeader = ({ vm, onRefresh }) => {
                 <Pause className="h-4 w-4 mr-1" />
                 Pause
               </Button>
-              <Button 
-                onClick={handleStop} 
+              <Button
+                onClick={handleStop}
                 disabled={isLoading}
                 size="sm"
                 variant="outline"
@@ -262,8 +378,8 @@ const VMHeader = ({ vm, onRefresh }) => {
           )}
 
           {isPaused && (
-            <Button 
-              onClick={handleStart} 
+            <Button
+              onClick={handleStart}
               disabled={isLoading}
               size="sm"
               className="bg-green-600 hover:bg-green-700"
@@ -273,8 +389,8 @@ const VMHeader = ({ vm, onRefresh }) => {
             </Button>
           )}
 
-          <Button 
-            onClick={handleRestart} 
+          <Button
+            onClick={handleRestart}
             disabled={isLoading || isStopped}
             size="sm"
             variant="outline"
@@ -300,7 +416,7 @@ const VMHeader = ({ vm, onRefresh }) => {
                 Clone VM
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={handleForceStop}
                 className="text-red-600"
                 disabled={isStopped}

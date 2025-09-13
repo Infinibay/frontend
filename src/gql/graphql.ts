@@ -19,6 +19,26 @@ export type Scalars = {
   JSONObject: { input: any; output: any; }
 };
 
+export type ApplicationInfo = {
+  __typename?: 'ApplicationInfo';
+  installDate?: Maybe<Scalars['DateTimeISO']['output']>;
+  installLocation?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  publisher?: Maybe<Scalars['String']['output']>;
+  sizeInMB?: Maybe<Scalars['Float']['output']>;
+  version?: Maybe<Scalars['String']['output']>;
+};
+
+export type ApplicationInventory = {
+  __typename?: 'ApplicationInventory';
+  applications: Array<ApplicationInfo>;
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  totalCount: Scalars['Int']['output'];
+  vmId: Scalars['ID']['output'];
+};
+
 export type ApplicationType = {
   __typename?: 'ApplicationType';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -29,6 +49,27 @@ export type ApplicationType = {
   name: Scalars['String']['output'];
   os: Array<Scalars['String']['output']>;
   parameters?: Maybe<Scalars['JSONObject']['output']>;
+};
+
+export type ApplicationUpdateInfo = {
+  __typename?: 'ApplicationUpdateInfo';
+  applicationName: Scalars['String']['output'];
+  availableVersion: Scalars['String']['output'];
+  currentVersion: Scalars['String']['output'];
+  downloadUrl?: Maybe<Scalars['String']['output']>;
+  releaseDate?: Maybe<Scalars['DateTimeISO']['output']>;
+  sizeInMB?: Maybe<Scalars['Float']['output']>;
+  updateType?: Maybe<Scalars['String']['output']>;
+};
+
+export type ApplicationUpdates = {
+  __typename?: 'ApplicationUpdates';
+  availableUpdates: Array<ApplicationUpdateInfo>;
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  totalUpdatesCount: Scalars['Int']['output'];
+  vmId: Scalars['ID']['output'];
 };
 
 export type ApplicationUsage = {
@@ -200,6 +241,28 @@ export type DepartmentType = {
   totalMachines?: Maybe<Scalars['Float']['output']>;
 };
 
+export type DiskDriveInfo = {
+  __typename?: 'DiskDriveInfo';
+  drive: Scalars['String']['output'];
+  freeGB: Scalars['Float']['output'];
+  label: Scalars['String']['output'];
+  status: HealthCheckSeverity;
+  totalGB: Scalars['Float']['output'];
+  usedGB: Scalars['Float']['output'];
+  usedPercent: Scalars['Float']['output'];
+};
+
+export type DiskSpaceInfo = {
+  __typename?: 'DiskSpaceInfo';
+  criticalThreshold?: Maybe<Scalars['Float']['output']>;
+  drives: Array<DiskDriveInfo>;
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['ID']['output'];
+  warningThreshold?: Maybe<Scalars['Float']['output']>;
+};
+
 export type DyummyType = {
   __typename?: 'DyummyType';
   value: Scalars['String']['output'];
@@ -270,6 +333,18 @@ export type GenericFilter = {
   updatedAt: Scalars['DateTimeISO']['output'];
 };
 
+export type GenericHealthCheckResponse = {
+  __typename?: 'GenericHealthCheckResponse';
+  checkName: Scalars['String']['output'];
+  details?: Maybe<Scalars['String']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
+  severity: HealthCheckSeverity;
+  success: Scalars['Boolean']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['ID']['output'];
+};
+
 export type GlobalServiceStatus = {
   __typename?: 'GlobalServiceStatus';
   /** Whether the service is enabled for inbound traffic */
@@ -287,6 +362,33 @@ export type GraphicConfigurationType = {
   link: Scalars['String']['output'];
   password: Scalars['String']['output'];
   protocol: Scalars['String']['output'];
+};
+
+export type HealthCheckResult = {
+  __typename?: 'HealthCheckResult';
+  checkName: Scalars['String']['output'];
+  details?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
+  severity: HealthCheckSeverity;
+  timestamp: Scalars['DateTimeISO']['output'];
+};
+
+/** Severity level of health check results */
+export enum HealthCheckSeverity {
+  Failed = 'FAILED',
+  Info = 'INFO',
+  Passed = 'PASSED',
+  Warning = 'WARNING'
+}
+
+export type HealthCheckStatus = {
+  __typename?: 'HealthCheckStatus';
+  checks: Array<HealthCheckResult>;
+  error?: Maybe<Scalars['String']['output']>;
+  overallScore: Scalars['Float']['output'];
+  success: Scalars['Boolean']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['ID']['output'];
 };
 
 export type Iso = {
@@ -1063,22 +1165,22 @@ export type Query = {
   /** Get all available ISOs */
   availableISOs: Array<Iso>;
   /** Check for application updates on a VM */
-  checkApplicationUpdates: Scalars['JSONObject']['output'];
+  checkApplicationUpdates: ApplicationUpdates;
   /** Check if ISO is available for specific OS */
   checkISOStatus: IsoStatus;
   /** Check availability for multiple OS types */
   checkMultipleOSAvailability: Array<IsoAvailabilityMap>;
   /** Check resource optimization opportunities for a VM */
-  checkResourceOptimization: Scalars['JSONObject']['output'];
+  checkResourceOptimization: ResourceOptimizationInfo;
   checkSetupStatus: DyummyType;
   /** Check overall system readiness */
   checkSystemReadiness: SystemReadiness;
   /** Check disk space status for a VM */
-  checkVMDiskSpace: Scalars['JSONObject']['output'];
+  checkVMDiskSpace: DiskSpaceInfo;
   /** Check Windows Defender status for a VM */
-  checkWindowsDefender: Scalars['JSONObject']['output'];
+  checkWindowsDefender: WindowsDefenderStatus;
   /** Check Windows Updates status for a VM */
-  checkWindowsUpdates: Scalars['JSONObject']['output'];
+  checkWindowsUpdates: WindowsUpdateInfo;
   /** Get the current snapshot of a virtual machine */
   currentSnapshot?: Maybe<Snapshot>;
   currentUser?: Maybe<UserType>;
@@ -1098,13 +1200,13 @@ export type Query = {
   getSystemResources: SystemResources;
   getTopProcesses: Array<ProcessInfo>;
   /** Get installed applications inventory for a VM */
-  getVMApplicationInventory: Scalars['JSONObject']['output'];
+  getVMApplicationInventory: ApplicationInventory;
   getVMFirewallState: VmFirewallState;
   /** Get comprehensive health check status for a VM */
-  getVMHealthStatus: Scalars['JSONObject']['output'];
+  getVMHealthStatus: HealthCheckStatus;
   getVmServiceStatus: Array<VmServiceStatus>;
   /** Get Windows Update history for a VM */
-  getWindowsUpdateHistory: Scalars['JSONObject']['output'];
+  getWindowsUpdateHistory: WindowsUpdateHistory;
   graphicConnection?: Maybe<GraphicConfigurationType>;
   latestSystemMetrics?: Maybe<SystemMetrics>;
   listFilterRules: Array<FwRule>;
@@ -1129,7 +1231,7 @@ export type Query = {
   portUsage: Array<PortUsage>;
   processSnapshots: Array<ProcessSnapshot>;
   /** Run a specific health check on a VM */
-  runHealthCheck: Scalars['JSONObject']['output'];
+  runHealthCheck: GenericHealthCheckResponse;
   /** Search for available packages on a virtual machine */
   searchPackages: Array<PackageInfo>;
   /** Get current socket connection statistics for all VMs */
@@ -1414,6 +1516,27 @@ export type QueryVmSocketDiagnosticsArgs = {
 export type QueryWindowsServicesArgs = {
   machineId: Scalars['String']['input'];
   runningOnly?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type ResourceOptimizationInfo = {
+  __typename?: 'ResourceOptimizationInfo';
+  error?: Maybe<Scalars['String']['output']>;
+  evaluationWindowDays?: Maybe<Scalars['Float']['output']>;
+  overallStatus: HealthCheckSeverity;
+  recommendations: Array<ResourceRecommendation>;
+  success: Scalars['Boolean']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['ID']['output'];
+};
+
+export type ResourceRecommendation = {
+  __typename?: 'ResourceRecommendation';
+  currentValue: Scalars['Float']['output'];
+  potentialSavingsPercent?: Maybe<Scalars['Float']['output']>;
+  reason: Scalars['String']['output'];
+  recommendedValue: Scalars['Float']['output'];
+  resource: Scalars['String']['output'];
+  unit: Scalars['String']['output'];
 };
 
 export type RestoreSnapshotInput = {
@@ -1759,6 +1882,24 @@ export type VmServiceStatus = {
   vmName: Scalars['String']['output'];
 };
 
+export type WindowsDefenderStatus = {
+  __typename?: 'WindowsDefenderStatus';
+  antispywareEnabled: Scalars['Boolean']['output'];
+  antivirusEnabled: Scalars['Boolean']['output'];
+  antivirusSignatureLastUpdated: Scalars['DateTimeISO']['output'];
+  antivirusSignatureVersion: Scalars['String']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  lastFullScanTime?: Maybe<Scalars['DateTimeISO']['output']>;
+  lastQuickScanTime?: Maybe<Scalars['DateTimeISO']['output']>;
+  overallStatus: HealthCheckSeverity;
+  realTimeProtectionEnabled: Scalars['Boolean']['output'];
+  success: Scalars['Boolean']['output'];
+  threatsDetected: Scalars['Int']['output'];
+  threatsQuarantined: Scalars['Int']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['ID']['output'];
+};
+
 export type WindowsService = {
   __typename?: 'WindowsService';
   currentState: Scalars['String']['output'];
@@ -1778,4 +1919,48 @@ export type WindowsService = {
   startType: Scalars['String']['output'];
   stateChangeCount: Scalars['Int']['output'];
   usageScore?: Maybe<Scalars['Float']['output']>;
+};
+
+export type WindowsUpdateHistory = {
+  __typename?: 'WindowsUpdateHistory';
+  daysIncluded?: Maybe<Scalars['Float']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  totalCount: Scalars['Int']['output'];
+  updates: Array<WindowsUpdateHistoryItem>;
+  vmId: Scalars['ID']['output'];
+};
+
+export type WindowsUpdateHistoryItem = {
+  __typename?: 'WindowsUpdateHistoryItem';
+  description?: Maybe<Scalars['String']['output']>;
+  installDate: Scalars['DateTimeISO']['output'];
+  kbArticle?: Maybe<Scalars['String']['output']>;
+  resultCode?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type WindowsUpdateInfo = {
+  __typename?: 'WindowsUpdateInfo';
+  criticalUpdatesCount: Scalars['Int']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  lastCheckTime?: Maybe<Scalars['DateTimeISO']['output']>;
+  lastInstallTime?: Maybe<Scalars['DateTimeISO']['output']>;
+  pendingUpdates: Array<WindowsUpdateItem>;
+  pendingUpdatesCount: Scalars['Int']['output'];
+  securityUpdatesCount: Scalars['Int']['output'];
+  success: Scalars['Boolean']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['ID']['output'];
+};
+
+export type WindowsUpdateItem = {
+  __typename?: 'WindowsUpdateItem';
+  description?: Maybe<Scalars['String']['output']>;
+  kbArticle?: Maybe<Scalars['String']['output']>;
+  severity: Scalars['String']['output'];
+  sizeInMB: Scalars['Float']['output'];
+  title: Scalars['String']['output'];
 };
