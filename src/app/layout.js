@@ -126,10 +126,3 @@ export default function RootLayout({ children }) {
   );
 }
 
-export function ClientRootLayout({ children }) {
-  return (
-    <RootLayout>
-      {children}
-    </RootLayout>
-  );
-}

@@ -19,6 +19,12 @@ export type Scalars = {
   JSONObject: { input: any; output: any; }
 };
 
+export type AdvancedPortInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  type: PortInputType;
+  value: Scalars['String']['input'];
+};
+
 export type ApplicationInfo = {
   __typename?: 'ApplicationInfo';
   installDate?: Maybe<Scalars['DateTimeISO']['output']>;
@@ -55,46 +61,51 @@ export type ApplicationUpdateInfo = {
   __typename?: 'ApplicationUpdateInfo';
   applicationName: Scalars['String']['output'];
   availableVersion: Scalars['String']['output'];
+  canUpdate: Scalars['Boolean']['output'];
   currentVersion: Scalars['String']['output'];
   downloadUrl?: Maybe<Scalars['String']['output']>;
+  installDate?: Maybe<Scalars['DateTimeISO']['output']>;
+  installLocation?: Maybe<Scalars['String']['output']>;
+  installType?: Maybe<Scalars['String']['output']>;
+  isSecurityUpdate: Scalars['Boolean']['output'];
+  lastUpdateCheck?: Maybe<Scalars['DateTimeISO']['output']>;
+  registryKey?: Maybe<Scalars['String']['output']>;
   releaseDate?: Maybe<Scalars['DateTimeISO']['output']>;
   sizeInMB?: Maybe<Scalars['Float']['output']>;
+  updateSizeBytes?: Maybe<Scalars['Float']['output']>;
+  updateSource?: Maybe<Scalars['String']['output']>;
   updateType?: Maybe<Scalars['String']['output']>;
+  vendor?: Maybe<Scalars['String']['output']>;
 };
 
 export type ApplicationUpdates = {
   __typename?: 'ApplicationUpdates';
   availableUpdates: Array<ApplicationUpdateInfo>;
   error?: Maybe<Scalars['String']['output']>;
+  executionTimeMs?: Maybe<Scalars['Int']['output']>;
+  microsoftStoreUpdatesCount?: Maybe<Scalars['Int']['output']>;
   success: Scalars['Boolean']['output'];
+  summary?: Maybe<Scalars['String']['output']>;
   timestamp: Scalars['DateTimeISO']['output'];
   totalUpdatesCount: Scalars['Int']['output'];
   vmId: Scalars['ID']['output'];
-};
-
-export type ApplicationUsage = {
-  __typename?: 'ApplicationUsage';
-  accessCount: Scalars['Int']['output'];
-  applicationName: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  executablePath: Scalars['String']['output'];
-  fileSize?: Maybe<Scalars['Float']['output']>;
-  firstSeen: Scalars['DateTimeISO']['output'];
-  iconFormat?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  isActive: Scalars['Boolean']['output'];
-  lastAccessTime?: Maybe<Scalars['DateTimeISO']['output']>;
-  lastModifiedTime?: Maybe<Scalars['DateTimeISO']['output']>;
-  lastSeen: Scalars['DateTimeISO']['output'];
-  machineId: Scalars['String']['output'];
-  publisher?: Maybe<Scalars['String']['output']>;
-  totalUsageMinutes: Scalars['Int']['output'];
-  version?: Maybe<Scalars['String']['output']>;
+  windowsUpdatesCount?: Maybe<Scalars['Int']['output']>;
 };
 
 export type ApplyFirewallTemplateInput = {
   machineId: Scalars['ID']['input'];
   template: FirewallTemplate;
+};
+
+export type BackgroundHealthServiceStatus = {
+  __typename?: 'BackgroundHealthServiceStatus';
+  activeQueues: Scalars['Int']['output'];
+  cronActive: Scalars['Boolean']['output'];
+  isRunning: Scalars['Boolean']['output'];
+  lastRun: Scalars['DateTimeISO']['output'];
+  nextRun?: Maybe<Scalars['DateTimeISO']['output']>;
+  pendingChecks: Scalars['Int']['output'];
+  totalVMsMonitored: Scalars['Int']['output'];
 };
 
 export type BridgeNameInput = {
@@ -122,6 +133,15 @@ export type CommandResult = {
   stdout?: Maybe<Scalars['String']['output']>;
   /** Whether the command was successful */
   success: Scalars['Boolean']['output'];
+};
+
+export type CreateAdvancedFirewallRuleInput = {
+  action?: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  direction?: Scalars['String']['input'];
+  machineId: Scalars['ID']['input'];
+  ports: AdvancedPortInput;
+  protocol?: Scalars['String']['input'];
 };
 
 export type CreateApplicationInputType = {
@@ -169,6 +189,18 @@ export type CreateMachineInputType = {
   username?: Scalars['String']['input'];
 };
 
+export type CreateMaintenanceTaskInput = {
+  cronSchedule?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  isEnabled?: Scalars['Boolean']['input'];
+  isRecurring?: Scalars['Boolean']['input'];
+  machineId: Scalars['ID']['input'];
+  name: Scalars['String']['input'];
+  parameters?: InputMaybe<Scalars['JSONObject']['input']>;
+  runAt?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  taskType: MaintenanceTaskType;
+};
+
 export type CreateNetworkInput = {
   bridgeName?: Scalars['String']['input'];
   description?: Scalars['String']['input'];
@@ -200,6 +232,18 @@ export type CreateUserInputType = {
   password?: Scalars['String']['input'];
   passwordConfirmation?: Scalars['String']['input'];
   role?: UserRole;
+};
+
+export type DefenderScanResult = {
+  __typename?: 'DefenderScanResult';
+  error?: Maybe<Scalars['String']['output']>;
+  filesScanned: Scalars['Int']['output'];
+  scanDuration: Scalars['Float']['output'];
+  scanType: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+  threatsFound: Scalars['Int']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['ID']['output'];
 };
 
 export type DeleteNetworkInput = {
@@ -241,6 +285,18 @@ export type DepartmentType = {
   totalMachines?: Maybe<Scalars['Float']['output']>;
 };
 
+export type DiskCleanupResult = {
+  __typename?: 'DiskCleanupResult';
+  drive: Scalars['String']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  filesDeleted: Scalars['Int']['output'];
+  spaceClearedMB: Scalars['Float']['output'];
+  success: Scalars['Boolean']['output'];
+  targetsProcessed: Array<Scalars['String']['output']>;
+  timestamp: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['ID']['output'];
+};
+
 export type DiskDriveInfo = {
   __typename?: 'DiskDriveInfo';
   drive: Scalars['String']['output'];
@@ -266,6 +322,12 @@ export type DiskSpaceInfo = {
 export type DyummyType = {
   __typename?: 'DyummyType';
   value: Scalars['String']['output'];
+};
+
+export type ExecuteMaintenanceInput = {
+  machineId: Scalars['ID']['input'];
+  parameters?: InputMaybe<Scalars['JSONObject']['input']>;
+  taskType: MaintenanceTaskType;
 };
 
 export type FwRule = {
@@ -364,12 +426,46 @@ export type GraphicConfigurationType = {
   protocol: Scalars['String']['output'];
 };
 
+/** Available health check types that can be executed individually */
+export enum HealthCheckName {
+  ApplicationHealth = 'APPLICATION_HEALTH',
+  BootTime = 'BOOT_TIME',
+  CpuUsage = 'CPU_USAGE',
+  CriticalServices = 'CRITICAL_SERVICES',
+  DiskFragmentation = 'DISK_FRAGMENTATION',
+  DiskHealth = 'DISK_HEALTH',
+  DiskSpace = 'DISK_SPACE',
+  EventLogErrors = 'EVENT_LOG_ERRORS',
+  FirewallStatus = 'FIREWALL_STATUS',
+  MemoryUsage = 'MEMORY_USAGE',
+  NetworkConnectivity = 'NETWORK_CONNECTIVITY',
+  PerformanceCounters = 'PERFORMANCE_COUNTERS',
+  RegistryHealth = 'REGISTRY_HEALTH',
+  ResourceOptimization = 'RESOURCE_OPTIMIZATION',
+  SecurityUpdates = 'SECURITY_UPDATES',
+  StartupPrograms = 'STARTUP_PROGRAMS',
+  SystemFiles = 'SYSTEM_FILES',
+  SystemTemperature = 'SYSTEM_TEMPERATURE',
+  UpdateServices = 'UPDATE_SERVICES',
+  WindowsDefender = 'WINDOWS_DEFENDER',
+  WindowsUpdates = 'WINDOWS_UPDATES'
+}
+
 export type HealthCheckResult = {
   __typename?: 'HealthCheckResult';
   checkName: Scalars['String']['output'];
   details?: Maybe<Scalars['String']['output']>;
   message: Scalars['String']['output'];
   severity: HealthCheckSeverity;
+  timestamp: Scalars['DateTimeISO']['output'];
+};
+
+export type HealthCheckRoundResult = {
+  __typename?: 'HealthCheckRoundResult';
+  error?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+  taskId: Scalars['String']['output'];
   timestamp: Scalars['DateTimeISO']['output'];
 };
 
@@ -441,9 +537,12 @@ export type Machine = {
   createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
   department?: Maybe<DepartmentType>;
   departmentId?: Maybe<Scalars['String']['output']>;
+  diskSizeGB?: Maybe<Scalars['Int']['output']>;
   gpuPciAddress?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  internalName: Scalars['String']['output'];
   name: Scalars['String']['output'];
+  os: Scalars['String']['output'];
   ramGB?: Maybe<Scalars['Int']['output']>;
   status: Scalars['String']['output'];
   template?: Maybe<MachineTemplateType>;
@@ -456,18 +555,6 @@ export type MachineApplicationInputType = {
   applicationId?: Scalars['String']['input'];
   machineId?: Scalars['String']['input'];
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
-};
-
-export type MachineMetricsSummary = {
-  __typename?: 'MachineMetricsSummary';
-  activeProcessCount: Scalars['Int']['output'];
-  firstDataPoint?: Maybe<Scalars['DateTimeISO']['output']>;
-  installedApplicationsCount: Scalars['Int']['output'];
-  lastDataPoint?: Maybe<Scalars['DateTimeISO']['output']>;
-  latestSystemMetrics?: Maybe<SystemMetrics>;
-  machineId: Scalars['String']['output'];
-  openPortsCount: Scalars['Int']['output'];
-  totalDataPoints: Scalars['Int']['output'];
 };
 
 export type MachineOrderBy = {
@@ -551,16 +638,103 @@ export type MachineTemplateType = {
   totalMachines?: Maybe<Scalars['Int']['output']>;
 };
 
-export type MetricsFilterInput = {
-  endDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  machineId?: InputMaybe<Scalars['String']['input']>;
-  offset?: InputMaybe<Scalars['Int']['input']>;
-  startDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
+export type MaintenanceExecutionResponse = {
+  __typename?: 'MaintenanceExecutionResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  execution?: Maybe<MaintenanceHistory>;
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
 };
+
+export type MaintenanceHistory = {
+  __typename?: 'MaintenanceHistory';
+  duration?: Maybe<Scalars['Float']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  executedAt: Scalars['DateTimeISO']['output'];
+  executedByUserId?: Maybe<Scalars['ID']['output']>;
+  id: Scalars['ID']['output'];
+  machineId: Scalars['ID']['output'];
+  parameters?: Maybe<Scalars['JSONObject']['output']>;
+  result?: Maybe<Scalars['JSONObject']['output']>;
+  status: MaintenanceStatus;
+  taskId?: Maybe<Scalars['ID']['output']>;
+  taskType: MaintenanceTaskType;
+  triggeredBy: MaintenanceTrigger;
+};
+
+export type MaintenanceStats = {
+  __typename?: 'MaintenanceStats';
+  enabledTasks: Scalars['Float']['output'];
+  failedExecutions: Scalars['Float']['output'];
+  lastExecutionDate?: Maybe<Scalars['DateTimeISO']['output']>;
+  machineId: Scalars['ID']['output'];
+  pendingTasks: Scalars['Float']['output'];
+  recurringTasks: Scalars['Float']['output'];
+  successfulExecutions: Scalars['Float']['output'];
+  totalExecutions: Scalars['Float']['output'];
+  totalTasks: Scalars['Float']['output'];
+};
+
+/** Status of maintenance task execution */
+export enum MaintenanceStatus {
+  Cancelled = 'CANCELLED',
+  Failed = 'FAILED',
+  Running = 'RUNNING',
+  Success = 'SUCCESS',
+  Timeout = 'TIMEOUT'
+}
+
+export type MaintenanceTask = {
+  __typename?: 'MaintenanceTask';
+  createdAt: Scalars['DateTimeISO']['output'];
+  createdByUserId: Scalars['ID']['output'];
+  cronSchedule?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  executionStatus: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  isRecurring: Scalars['Boolean']['output'];
+  lastRunAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  machineId: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  nextRunAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  parameters?: Maybe<Scalars['JSONObject']['output']>;
+  runAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  taskType: MaintenanceTaskType;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type MaintenanceTaskResponse = {
+  __typename?: 'MaintenanceTaskResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  task?: Maybe<MaintenanceTask>;
+};
+
+/** Types of maintenance tasks that can be performed */
+export enum MaintenanceTaskType {
+  CustomScript = 'CUSTOM_SCRIPT',
+  DefenderScan = 'DEFENDER_SCAN',
+  Defrag = 'DEFRAG',
+  DiskCheck = 'DISK_CHECK',
+  DiskCleanup = 'DISK_CLEANUP',
+  RegistryCleanup = 'REGISTRY_CLEANUP',
+  SystemFileCheck = 'SYSTEM_FILE_CHECK',
+  WindowsUpdates = 'WINDOWS_UPDATES'
+}
+
+/** What triggered the maintenance task execution */
+export enum MaintenanceTrigger {
+  Manual = 'MANUAL',
+  Scheduled = 'SCHEDULED'
+}
 
 export type Mutation = {
   __typename?: 'Mutation';
+  _placeholderCreateAdvancedFirewallRule: PortValidationResult;
+  _placeholderSimplifiedFirewallRule: Scalars['Boolean']['output'];
+  _placeholderValidatePortString: PortValidationResult;
   applyFirewallTemplate: VmFirewallState;
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
@@ -573,6 +747,7 @@ export type Mutation = {
   createMachine: Machine;
   createMachineTemplate: MachineTemplateType;
   createMachineTemplateCategory: MachineTemplateCategoryType;
+  createMaintenanceTask: MaintenanceTaskResponse;
   createNetwork: Scalars['Boolean']['output'];
   createSimplifiedFirewallRule: VmFirewallState;
   /** Create a snapshot of a virtual machine */
@@ -581,6 +756,7 @@ export type Mutation = {
   deleteApplication: Scalars['Boolean']['output'];
   deleteFilter: Scalars['Boolean']['output'];
   deleteFilterRule: Scalars['Boolean']['output'];
+  deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
   /** Delete a snapshot from a virtual machine */
   deleteSnapshot: SuccessType;
@@ -589,6 +765,8 @@ export type Mutation = {
   destroyMachineTemplate: Scalars['Boolean']['output'];
   destroyMachineTemplateCategory: Scalars['Boolean']['output'];
   executeCommand: CommandExecutionResponseType;
+  executeImmediateMaintenance: MaintenanceExecutionResponse;
+  executeMaintenanceTask: MaintenanceExecutionResponse;
   /** Apply a network filter inmediatly */
   flushFilter: Scalars['Boolean']['output'];
   forcePowerOff: SuccessType;
@@ -602,9 +780,10 @@ export type Mutation = {
   managePackage: PackageManagementResult;
   moveMachine: Machine;
   /** Perform disk cleanup on a VM */
-  performDiskCleanup: Scalars['JSONObject']['output'];
+  performDiskCleanup: DiskCleanupResult;
   powerOff: SuccessType;
   powerOn: SuccessType;
+  queueAllVMHealthChecks: HealthCheckRoundResult;
   /** Register uploaded ISO */
   registerISO: Iso;
   removeFirewallTemplate: VmFirewallState;
@@ -618,7 +797,7 @@ export type Mutation = {
   /** Restore a virtual machine to a snapshot */
   restoreSnapshot: SuccessType;
   /** Run Windows Defender quick scan on a VM */
-  runDefenderQuickScan: Scalars['JSONObject']['output'];
+  runDefenderQuickScan: DefenderScanResult;
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
@@ -629,18 +808,36 @@ export type Mutation = {
   toggleDepartmentService: DepartmentServiceStatus;
   toggleFirewallTemplate: VmFirewallState;
   toggleGlobalService: GlobalServiceStatus;
+  toggleMaintenanceTask: MaintenanceTaskResponse;
   toggleVmService: VmServiceStatus;
+  triggerHealthCheckRound: HealthCheckRoundResult;
   updateApplication: ApplicationType;
   updateFilter: GenericFilter;
   updateFilterRule: FwRule;
   updateMachineHardware: Machine;
   updateMachineTemplate: MachineTemplateType;
   updateMachineTemplateCategory: MachineTemplateCategoryType;
+  updateMaintenanceTask: MaintenanceTaskResponse;
   /** Update a package on a virtual machine (legacy compatibility) */
   updatePackage: CommandResult;
   updateUser: UserType;
   /** Validate ISO file integrity */
   validateISO: Scalars['Boolean']['output'];
+};
+
+
+export type Mutation_PlaceholderCreateAdvancedFirewallRuleArgs = {
+  input: CreateAdvancedFirewallRuleInput;
+};
+
+
+export type Mutation_PlaceholderSimplifiedFirewallRuleArgs = {
+  input: SimplifiedFirewallRuleInput;
+};
+
+
+export type Mutation_PlaceholderValidatePortStringArgs = {
+  portString: Scalars['String']['input'];
 };
 
 
@@ -695,6 +892,11 @@ export type MutationCreateMachineTemplateCategoryArgs = {
 };
 
 
+export type MutationCreateMaintenanceTaskArgs = {
+  input: CreateMaintenanceTaskInput;
+};
+
+
 export type MutationCreateNetworkArgs = {
   input: CreateNetworkInput;
 };
@@ -726,6 +928,11 @@ export type MutationDeleteFilterArgs = {
 
 
 export type MutationDeleteFilterRuleArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteMaintenanceTaskArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -763,6 +970,16 @@ export type MutationDestroyMachineTemplateCategoryArgs = {
 export type MutationExecuteCommandArgs = {
   command: Scalars['String']['input'];
   id: Scalars['String']['input'];
+};
+
+
+export type MutationExecuteImmediateMaintenanceArgs = {
+  input: ExecuteMaintenanceInput;
+};
+
+
+export type MutationExecuteMaintenanceTaskArgs = {
+  taskId: Scalars['ID']['input'];
 };
 
 
@@ -916,6 +1133,12 @@ export type MutationToggleGlobalServiceArgs = {
 };
 
 
+export type MutationToggleMaintenanceTaskArgs = {
+  enabled: Scalars['Boolean']['input'];
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationToggleVmServiceArgs = {
   input: ToggleVmServiceInput;
 };
@@ -953,6 +1176,11 @@ export type MutationUpdateMachineTemplateArgs = {
 export type MutationUpdateMachineTemplateCategoryArgs = {
   id: Scalars['String']['input'];
   input: MachineTemplateCategoryInputType;
+};
+
+
+export type MutationUpdateMaintenanceTaskArgs = {
+  input: UpdateMaintenanceTaskInput;
 };
 
 
@@ -1084,20 +1312,26 @@ export type PaginationInputType = {
   take?: InputMaybe<Scalars['Int']['input']>;
 };
 
-export type PortUsage = {
-  __typename?: 'PortUsage';
-  connectionCount: Scalars['Int']['output'];
-  executablePath?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  isListening: Scalars['Boolean']['output'];
-  lastActivity: Scalars['DateTimeISO']['output'];
-  machineId: Scalars['String']['output'];
-  port: Scalars['Int']['output'];
-  processId?: Maybe<Scalars['Int']['output']>;
-  processName?: Maybe<Scalars['String']['output']>;
-  protocol: Scalars['String']['output'];
-  state: Scalars['String']['output'];
-  timestamp: Scalars['DateTimeISO']['output'];
+/** Types of port configurations supported in firewall rules */
+export enum PortInputType {
+  All = 'ALL',
+  Multiple = 'MULTIPLE',
+  Range = 'RANGE',
+  Single = 'SINGLE'
+}
+
+export type PortRange = {
+  __typename?: 'PortRange';
+  description?: Maybe<Scalars['String']['output']>;
+  end: Scalars['Int']['output'];
+  start: Scalars['Int']['output'];
+};
+
+export type PortValidationResult = {
+  __typename?: 'PortValidationResult';
+  errors: Array<Scalars['String']['output']>;
+  isValid: Scalars['Boolean']['output'];
+  parsedRanges?: Maybe<Array<PortRange>>;
 };
 
 export type ProcessControlResult = {
@@ -1109,61 +1343,15 @@ export type ProcessControlResult = {
   success: Scalars['Boolean']['output'];
 };
 
-export type ProcessFilterInput = {
-  endDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  machineId?: InputMaybe<Scalars['String']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  startDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
-};
-
-export type ProcessInfo = {
-  __typename?: 'ProcessInfo';
-  commandLine?: Maybe<Scalars['String']['output']>;
-  cpuUsage: Scalars['Float']['output'];
-  memoryKb: Scalars['Int']['output'];
-  name: Scalars['String']['output'];
-  pid: Scalars['Int']['output'];
-  startTime?: Maybe<Scalars['DateTimeISO']['output']>;
-  status: Scalars['String']['output'];
-  user?: Maybe<Scalars['String']['output']>;
-};
-
-export type ProcessSnapshot = {
-  __typename?: 'ProcessSnapshot';
-  commandLine?: Maybe<Scalars['String']['output']>;
-  cpuUsagePercent: Scalars['Float']['output'];
-  diskReadBytes?: Maybe<Scalars['Float']['output']>;
-  diskWriteBytes?: Maybe<Scalars['Float']['output']>;
-  executablePath?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  machineId: Scalars['String']['output'];
-  memoryUsageKB: Scalars['Float']['output'];
-  name: Scalars['String']['output'];
-  parentPid?: Maybe<Scalars['Int']['output']>;
-  processId: Scalars['Int']['output'];
-  startTime?: Maybe<Scalars['DateTimeISO']['output']>;
-  status: Scalars['String']['output'];
-  timestamp: Scalars['DateTimeISO']['output'];
-};
-
-/** Options for sorting processes */
-export enum ProcessSortBy {
-  Cpu = 'CPU',
-  Memory = 'MEMORY',
-  Name = 'NAME',
-  Pid = 'PID'
-}
-
 export type Query = {
   __typename?: 'Query';
   /** Get all ISOs (available and unavailable) */
   allISOs: Array<Iso>;
   application?: Maybe<ApplicationType>;
-  applicationUsage: Array<ApplicationUsage>;
   applications: Array<ApplicationType>;
   /** Get all available ISOs */
   availableISOs: Array<Iso>;
+  backgroundHealthServiceStatus: BackgroundHealthServiceStatus;
   /** Check for application updates on a VM */
   checkApplicationUpdates: ApplicationUpdates;
   /** Check if ISO is available for specific OS */
@@ -1186,6 +1374,7 @@ export type Query = {
   currentUser?: Maybe<UserType>;
   department?: Maybe<DepartmentType>;
   departments: Array<DepartmentType>;
+  dueMaintenanceTasks: Array<MaintenanceTask>;
   findDepartmentByName?: Maybe<DepartmentType>;
   getAvailableFirewallTemplates: Array<FirewallTemplateInfo>;
   getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
@@ -1193,32 +1382,34 @@ export type Query = {
   getFirewallTemplateInfo?: Maybe<FirewallTemplateInfo>;
   getGlobalServiceStatus: Array<GlobalServiceStatus>;
   getGraphics: Array<Gpu>;
+  getLatestVMHealth?: Maybe<VmHealthSnapshotType>;
   getServiceStatusSummary: Array<ServiceStatusSummary>;
   getSimplifiedFirewallRules: Array<SimplifiedFirewallRule>;
   /** Get supported OS types */
   getSupportedOSTypes: Array<Scalars['String']['output']>;
   getSystemResources: SystemResources;
-  getTopProcesses: Array<ProcessInfo>;
   /** Get installed applications inventory for a VM */
   getVMApplicationInventory: ApplicationInventory;
   getVMFirewallState: VmFirewallState;
   /** Get comprehensive health check status for a VM */
   getVMHealthStatus: HealthCheckStatus;
+  /** Get automated recommendations for VM optimization, security, and maintenance based on system analysis. Returns up to 20 recommendations by default to prevent over-fetch. Use pagination for more results. */
+  getVMRecommendations: Array<VmRecommendationType>;
   getVmServiceStatus: Array<VmServiceStatus>;
   /** Get Windows Update history for a VM */
   getWindowsUpdateHistory: WindowsUpdateHistory;
   graphicConnection?: Maybe<GraphicConfigurationType>;
-  latestSystemMetrics?: Maybe<SystemMetrics>;
+  healthCheckQueueStats: QueueStatsType;
+  healthQueueStatistics: QueueStatistics;
+  latestVMHealthSnapshot?: Maybe<VmHealthSnapshotType>;
   listFilterRules: Array<FwRule>;
   listFilters: Array<GenericFilter>;
   /** List all installed packages on a virtual machine */
   listInstalledPackages: Array<PackageInfo>;
-  listProcesses: Array<ProcessInfo>;
   /** List all services running on a virtual machine */
   listServices: Array<ServiceInfo>;
-  login: UserToken;
+  login?: Maybe<UserToken>;
   machine?: Maybe<Machine>;
-  machineMetricsSummary?: Maybe<MachineMetricsSummary>;
   /** List all snapshots for a virtual machine */
   machineSnapshots: SnapshotListResult;
   machineTemplate?: Maybe<MachineTemplateType>;
@@ -1226,35 +1417,30 @@ export type Query = {
   machineTemplateCategory?: Maybe<MachineTemplateCategoryType>;
   machineTemplates: Array<MachineTemplateType>;
   machines: Array<Machine>;
+  maintenanceHistory: Array<MaintenanceHistory>;
+  maintenanceStats: MaintenanceStats;
+  maintenanceTask?: Maybe<MaintenanceTask>;
+  maintenanceTasks: Array<MaintenanceTask>;
   network: Network;
   networks: Array<Network>;
-  portUsage: Array<PortUsage>;
-  processSnapshots: Array<ProcessSnapshot>;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
   /** Search for available packages on a virtual machine */
   searchPackages: Array<PackageInfo>;
   /** Get current socket connection statistics for all VMs */
   socketConnectionStats?: Maybe<SocketConnectionStats>;
-  systemMetrics: Array<SystemMetrics>;
-  systemMetricsHistory: Array<SystemMetrics>;
-  topProcessesByMachine: Array<ProcessSnapshot>;
   user: UserType;
   users: Array<UserType>;
+  vmHealthCheckQueue: Array<VmHealthCheckQueueType>;
+  vmHealthHistory: Array<VmHealthSnapshotType>;
+  vmHealthStats: VmHealthStatsType;
   /** Get comprehensive diagnostics for VM socket connection issues */
   vmSocketDiagnostics: VmDiagnostics;
-  windowsServices: Array<WindowsService>;
 };
 
 
 export type QueryApplicationArgs = {
   id: Scalars['String']['input'];
-};
-
-
-export type QueryApplicationUsageArgs = {
-  limit?: InputMaybe<Scalars['Float']['input']>;
-  machineId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1332,15 +1518,13 @@ export type QueryGetGlobalServiceStatusArgs = {
 };
 
 
-export type QueryGetSimplifiedFirewallRulesArgs = {
+export type QueryGetLatestVmHealthArgs = {
   machineId: Scalars['ID']['input'];
 };
 
 
-export type QueryGetTopProcessesArgs = {
-  limit?: Scalars['Int']['input'];
-  machineId: Scalars['String']['input'];
-  sortBy?: ProcessSortBy;
+export type QueryGetSimplifiedFirewallRulesArgs = {
+  machineId: Scalars['ID']['input'];
 };
 
 
@@ -1355,6 +1539,13 @@ export type QueryGetVmFirewallStateArgs = {
 
 
 export type QueryGetVmHealthStatusArgs = {
+  vmId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetVmRecommendationsArgs = {
+  filter?: InputMaybe<RecommendationFilterInput>;
+  refresh?: InputMaybe<Scalars['Boolean']['input']>;
   vmId: Scalars['ID']['input'];
 };
 
@@ -1376,8 +1567,8 @@ export type QueryGraphicConnectionArgs = {
 };
 
 
-export type QueryLatestSystemMetricsArgs = {
-  machineId: Scalars['String']['input'];
+export type QueryLatestVmHealthSnapshotArgs = {
+  machineId: Scalars['ID']['input'];
 };
 
 
@@ -1397,12 +1588,6 @@ export type QueryListInstalledPackagesArgs = {
 };
 
 
-export type QueryListProcessesArgs = {
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  machineId: Scalars['String']['input'];
-};
-
-
 export type QueryListServicesArgs = {
   machineId: Scalars['String']['input'];
 };
@@ -1416,11 +1601,6 @@ export type QueryLoginArgs = {
 
 export type QueryMachineArgs = {
   id: Scalars['String']['input'];
-};
-
-
-export type QueryMachineMetricsSummaryArgs = {
-  machineId: Scalars['String']['input'];
 };
 
 
@@ -1451,24 +1631,37 @@ export type QueryMachinesArgs = {
 };
 
 
+export type QueryMaintenanceHistoryArgs = {
+  limit?: InputMaybe<Scalars['Float']['input']>;
+  machineId: Scalars['ID']['input'];
+  status?: InputMaybe<MaintenanceStatus>;
+  taskType?: InputMaybe<MaintenanceTaskType>;
+};
+
+
+export type QueryMaintenanceStatsArgs = {
+  machineId: Scalars['ID']['input'];
+};
+
+
+export type QueryMaintenanceTaskArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryMaintenanceTasksArgs = {
+  machineId: Scalars['ID']['input'];
+  status?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type QueryNetworkArgs = {
   name: Scalars['String']['input'];
 };
 
 
-export type QueryPortUsageArgs = {
-  listeningOnly?: InputMaybe<Scalars['Boolean']['input']>;
-  machineId: Scalars['String']['input'];
-};
-
-
-export type QueryProcessSnapshotsArgs = {
-  filter?: InputMaybe<ProcessFilterInput>;
-};
-
-
 export type QueryRunHealthCheckArgs = {
-  checkName: Scalars['String']['input'];
+  checkName: HealthCheckName;
   vmId: Scalars['ID']['input'];
 };
 
@@ -1476,24 +1669,6 @@ export type QueryRunHealthCheckArgs = {
 export type QuerySearchPackagesArgs = {
   machineId: Scalars['ID']['input'];
   query: Scalars['String']['input'];
-};
-
-
-export type QuerySystemMetricsArgs = {
-  filter?: InputMaybe<MetricsFilterInput>;
-};
-
-
-export type QuerySystemMetricsHistoryArgs = {
-  hours?: InputMaybe<Scalars['Float']['input']>;
-  machineId: Scalars['String']['input'];
-  maxPoints?: InputMaybe<Scalars['Float']['input']>;
-};
-
-
-export type QueryTopProcessesByMachineArgs = {
-  limit?: InputMaybe<Scalars['Float']['input']>;
-  machineId: Scalars['String']['input'];
 };
 
 
@@ -1508,15 +1683,86 @@ export type QueryUsersArgs = {
 };
 
 
+export type QueryVmHealthCheckQueueArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  machineId?: InputMaybe<Scalars['ID']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryVmHealthHistoryArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  machineId: Scalars['ID']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryVmHealthStatsArgs = {
+  machineId: Scalars['ID']['input'];
+};
+
+
 export type QueryVmSocketDiagnosticsArgs = {
   vmId: Scalars['String']['input'];
 };
 
-
-export type QueryWindowsServicesArgs = {
-  machineId: Scalars['String']['input'];
-  runningOnly?: InputMaybe<Scalars['Boolean']['input']>;
+export type QueueStatistics = {
+  __typename?: 'QueueStatistics';
+  activeChecks: Scalars['Int']['output'];
+  completedToday: Scalars['Int']['output'];
+  failedToday: Scalars['Int']['output'];
+  pendingTasks: Scalars['Int']['output'];
+  totalQueues: Scalars['Int']['output'];
 };
+
+export type QueueStatsType = {
+  __typename?: 'QueueStatsType';
+  completed: Scalars['Int']['output'];
+  failed: Scalars['Int']['output'];
+  pending: Scalars['Int']['output'];
+  retryScheduled: Scalars['Int']['output'];
+  running: Scalars['Int']['output'];
+  totalToday: Scalars['Int']['output'];
+};
+
+/** Filters for querying VM recommendations with specific criteria */
+export type RecommendationFilterInput = {
+  /** Only return recommendations created after this date/time */
+  createdAfter?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  /** Only return recommendations created before this date/time */
+  createdBefore?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  /** Maximum number of recommendations to return (for pagination, defaults to 20, max 100) */
+  limit?: InputMaybe<Scalars['Float']['input']>;
+  /** Filter by specific recommendation types (e.g., only security or storage recommendations) */
+  types?: InputMaybe<Array<RecommendationType>>;
+};
+
+/** Types of VM recommendations that can be generated by the system based on health checks and system analysis */
+export enum RecommendationType {
+  /** Generated when application updates, especially security updates, are available */
+  AppUpdateAvailable = 'APP_UPDATE_AVAILABLE',
+  /** Generated when Windows Defender antivirus or real-time protection is disabled */
+  DefenderDisabled = 'DEFENDER_DISABLED',
+  /** Generated when Windows Defender has detected active threats or quarantined items */
+  DefenderThreat = 'DEFENDER_THREAT',
+  /** Generated when disk space usage exceeds warning thresholds (typically 80-90%) */
+  DiskSpaceLow = 'DISK_SPACE_LOW',
+  /** Generated when specific applications are consuming excessive CPU resources */
+  HighCpuApp = 'HIGH_CPU_APP',
+  /** Generated when specific applications are consuming excessive memory resources */
+  HighRamApp = 'HIGH_RAM_APP',
+  /** Generated when critical or security Windows updates are available */
+  OsUpdateAvailable = 'OS_UPDATE_AVAILABLE',
+  /** Generated for miscellaneous recommendations that do not fit other categories */
+  Other = 'OTHER',
+  /** Generated when VM resources (CPU/RAM) are consistently underutilized over time */
+  OverProvisioned = 'OVER_PROVISIONED',
+  /** Generated when firewall rules are blocking ports that applications are trying to use */
+  PortBlocked = 'PORT_BLOCKED',
+  /** Generated when VM resources are consistently over-utilized and affecting performance */
+  UnderProvisioned = 'UNDER_PROVISIONED'
+}
 
 export type ResourceOptimizationInfo = {
   __typename?: 'ResourceOptimizationInfo';
@@ -1615,6 +1861,15 @@ export type SimplifiedFirewallRule = {
   sources?: Maybe<Array<Scalars['String']['output']>>;
 };
 
+export type SimplifiedFirewallRuleInput = {
+  action?: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  direction: Scalars['String']['input'];
+  port: Scalars['String']['input'];
+  portType?: InputMaybe<PortInputType>;
+  protocol: Scalars['String']['input'];
+};
+
 export type Snapshot = {
   __typename?: 'Snapshot';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -1657,26 +1912,6 @@ export type SuccessType = {
   __typename?: 'SuccessType';
   message: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
-};
-
-export type SystemMetrics = {
-  __typename?: 'SystemMetrics';
-  availableMemoryKB: Scalars['Float']['output'];
-  cpuCoresUsage: Array<Scalars['Float']['output']>;
-  cpuTemperature?: Maybe<Scalars['Float']['output']>;
-  cpuUsagePercent: Scalars['Float']['output'];
-  diskIOStats: Scalars['JSONObject']['output'];
-  diskUsageStats: Scalars['JSONObject']['output'];
-  id: Scalars['ID']['output'];
-  loadAverage?: Maybe<Scalars['JSONObject']['output']>;
-  machineId: Scalars['String']['output'];
-  networkStats: Scalars['JSONObject']['output'];
-  swapTotalKB?: Maybe<Scalars['Float']['output']>;
-  swapUsedKB?: Maybe<Scalars['Float']['output']>;
-  timestamp: Scalars['DateTimeISO']['output'];
-  totalMemoryKB: Scalars['Float']['output'];
-  uptime: Scalars['Float']['output'];
-  usedMemoryKB: Scalars['Float']['output'];
 };
 
 export type SystemReadiness = {
@@ -1774,6 +2009,17 @@ export type UpdateMachineHardwareInput = {
   ramGB?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type UpdateMaintenanceTaskInput = {
+  cronSchedule?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  isEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  isRecurring?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  parameters?: InputMaybe<Scalars['JSONObject']['input']>;
+  runAt?: InputMaybe<Scalars['DateTimeISO']['input']>;
+};
+
 export type UpdateUserInputType = {
   firstName?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
@@ -1829,6 +2075,78 @@ export type VmFirewallState = {
   customRules: Array<SimplifiedFirewallRule>;
   effectiveRules: Array<SimplifiedFirewallRule>;
   lastSync?: Maybe<Scalars['DateTimeISO']['output']>;
+};
+
+export type VmHealthCheckQueueType = {
+  __typename?: 'VMHealthCheckQueueType';
+  attempts: Scalars['Int']['output'];
+  checkType: Scalars['String']['output'];
+  completedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  executedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  executionTimeMs?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  machineId: Scalars['ID']['output'];
+  maxAttempts: Scalars['Int']['output'];
+  payload?: Maybe<Scalars['JSONObject']['output']>;
+  priority: Scalars['String']['output'];
+  result?: Maybe<Scalars['JSONObject']['output']>;
+  scheduledFor: Scalars['DateTimeISO']['output'];
+  status: Scalars['String']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type VmHealthSnapshotType = {
+  __typename?: 'VMHealthSnapshotType';
+  applicationInventory?: Maybe<Scalars['JSONObject']['output']>;
+  checksCompleted: Scalars['Int']['output'];
+  checksFailed: Scalars['Int']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  customCheckResults?: Maybe<Scalars['JSONObject']['output']>;
+  defenderStatus?: Maybe<Scalars['JSONObject']['output']>;
+  diskSpaceInfo?: Maybe<Scalars['JSONObject']['output']>;
+  errorSummary?: Maybe<Scalars['String']['output']>;
+  executionTimeMs?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  machineId: Scalars['ID']['output'];
+  osType?: Maybe<Scalars['String']['output']>;
+  overallStatus: Scalars['String']['output'];
+  resourceOptInfo?: Maybe<Scalars['JSONObject']['output']>;
+  snapshotDate: Scalars['DateTimeISO']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
+  windowsUpdateInfo?: Maybe<Scalars['JSONObject']['output']>;
+};
+
+export type VmHealthStatsType = {
+  __typename?: 'VMHealthStatsType';
+  errorSnapshots: Scalars['Int']['output'];
+  healthySnapshots: Scalars['Int']['output'];
+  lastHealthCheck?: Maybe<Scalars['DateTimeISO']['output']>;
+  lastHealthStatus?: Maybe<Scalars['String']['output']>;
+  totalSnapshots: Scalars['Int']['output'];
+  warningSnapshots: Scalars['Int']['output'];
+};
+
+/** Represents an automated recommendation for VM optimization, security, or maintenance */
+export type VmRecommendationType = {
+  __typename?: 'VMRecommendationType';
+  /** Suggested action to address the recommendation */
+  actionText: Scalars['String']['output'];
+  /** Timestamp when this recommendation was generated */
+  createdAt: Scalars['DateTimeISO']['output'];
+  /** Additional structured data specific to this recommendation type (metrics, thresholds, affected resources) */
+  data?: Maybe<Scalars['JSONObject']['output']>;
+  /** Unique identifier for the recommendation */
+  id: Scalars['ID']['output'];
+  /** ID of the VM this recommendation applies to */
+  machineId: Scalars['ID']['output'];
+  /** ID of the health snapshot that generated this recommendation, if applicable */
+  snapshotId?: Maybe<Scalars['ID']['output']>;
+  /** Human-readable description of the issue or opportunity identified */
+  text: Scalars['String']['output'];
+  /** Category of recommendation (storage, performance, security, etc.) */
+  type: RecommendationType;
 };
 
 /** Actions that can be performed on a VM service */
@@ -1898,27 +2216,6 @@ export type WindowsDefenderStatus = {
   threatsQuarantined: Scalars['Int']['output'];
   timestamp: Scalars['DateTimeISO']['output'];
   vmId: Scalars['ID']['output'];
-};
-
-export type WindowsService = {
-  __typename?: 'WindowsService';
-  currentState: Scalars['String']['output'];
-  dependencies?: Maybe<Scalars['JSONObject']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  displayName: Scalars['String']['output'];
-  executablePath?: Maybe<Scalars['String']['output']>;
-  firstSeen: Scalars['DateTimeISO']['output'];
-  id: Scalars['ID']['output'];
-  isDefaultService: Scalars['Boolean']['output'];
-  lastSeen: Scalars['DateTimeISO']['output'];
-  lastStateChange?: Maybe<Scalars['DateTimeISO']['output']>;
-  machineId: Scalars['String']['output'];
-  processId?: Maybe<Scalars['Int']['output']>;
-  serviceName: Scalars['String']['output'];
-  serviceType: Scalars['String']['output'];
-  startType: Scalars['String']['output'];
-  stateChangeCount: Scalars['Int']['output'];
-  usageScore?: Maybe<Scalars['Float']['output']>;
 };
 
 export type WindowsUpdateHistory = {

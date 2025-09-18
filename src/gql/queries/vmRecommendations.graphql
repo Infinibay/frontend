@@ -1,0 +1,20 @@
+query getVMRecommendations(
+  $vmId: ID!
+  $filter: RecommendationFilterInput
+  $refresh: Boolean
+) {
+  getVMRecommendations(
+    vmId: $vmId
+    filter: $filter
+    refresh: $refresh
+  ) {
+    id
+    machineId
+    snapshotId
+    type
+    text
+    actionText
+    data
+    createdAt
+  }
+}

@@ -466,3 +466,82 @@ mutation toggleGlobalService($serviceId: ID!, $enabled: Boolean!, $action: Servi
 #     resetVmCount
 #   }
 # }
+
+# VM Recommendations Action Mutations
+mutation runDefenderQuickScan($vmId: ID!) {
+  runDefenderQuickScan(vmId: $vmId) {
+    success
+    error
+    vmId
+    scanType
+    scanDuration
+    threatsFound
+    filesScanned
+    timestamp
+  }
+}
+
+mutation performDiskCleanup($vmId: ID!, $drive: String!, $targets: [String!]) {
+  performDiskCleanup(vmId: $vmId, drive: $drive, targets: $targets) {
+    success
+    error
+    vmId
+    drive
+    spaceClearedMB
+    filesDeleted
+    targetsProcessed
+    timestamp
+  }
+}
+
+mutation executeImmediateMaintenance($input: ExecuteMaintenanceInput!) {
+  executeImmediateMaintenance(input: $input) {
+    success
+    error
+    message
+    execution {
+      id
+      machineId
+      taskType
+      status
+      executedAt
+      duration
+      result
+    }
+  }
+}
+
+mutation createMaintenanceTask($input: CreateMaintenanceTaskInput!) {
+  createMaintenanceTask(input: $input) {
+    success
+    error
+    message
+    task {
+      id
+      name
+      description
+      taskType
+      machineId
+      isEnabled
+      isRecurring
+      runAt
+      cronSchedule
+      createdAt
+    }
+  }
+}
+
+mutation controlService($input: ServiceControlInput!) {
+  controlService(input: $input) {
+    success
+    error
+    message
+    service {
+      name
+      displayName
+      status
+      startType
+      description
+    }
+  }
+}

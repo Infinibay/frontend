@@ -1,0 +1,137 @@
+# Maintenance Task Management Mutations
+
+# Create a new maintenance task
+mutation createMaintenanceTask($input: CreateMaintenanceTaskInput!) {
+  createMaintenanceTask(input: $input) {
+    success
+    message
+    task {
+      id
+      machineId
+      taskType
+      name
+      description
+      isEnabled
+      isRecurring
+      cronSchedule
+      nextRunAt
+      lastRunAt
+      runAt
+      executionStatus
+      parameters
+      createdByUserId
+      createdAt
+      updatedAt
+    }
+    error
+  }
+}
+
+# Update an existing maintenance task
+mutation updateMaintenanceTask($input: UpdateMaintenanceTaskInput!) {
+  updateMaintenanceTask(input: $input) {
+    success
+    message
+    task {
+      id
+      machineId
+      taskType
+      name
+      description
+      isEnabled
+      isRecurring
+      cronSchedule
+      nextRunAt
+      lastRunAt
+      runAt
+      executionStatus
+      parameters
+      createdByUserId
+      createdAt
+      updatedAt
+    }
+    error
+  }
+}
+
+# Delete a maintenance task
+mutation deleteMaintenanceTask($id: ID!) {
+  deleteMaintenanceTask(id: $id) {
+    success
+    message
+    error
+  }
+}
+
+# Execute a maintenance task immediately
+mutation executeMaintenanceTask($taskId: ID!) {
+  executeMaintenanceTask(taskId: $taskId) {
+    success
+    message
+    execution {
+      id
+      taskId
+      machineId
+      taskType
+      status
+      triggeredBy
+      executedByUserId
+      executedAt
+      duration
+      result
+      error
+      parameters
+    }
+    error
+  }
+}
+
+# Execute immediate maintenance without creating a task
+mutation executeImmediateMaintenance($input: ExecuteMaintenanceInput!) {
+  executeImmediateMaintenance(input: $input) {
+    success
+    message
+    execution {
+      id
+      taskId
+      machineId
+      taskType
+      status
+      triggeredBy
+      executedByUserId
+      executedAt
+      duration
+      result
+      error
+      parameters
+    }
+    error
+  }
+}
+
+# Enable or disable a maintenance task
+mutation toggleMaintenanceTask($id: ID!, $enabled: Boolean!) {
+  toggleMaintenanceTask(id: $id, enabled: $enabled) {
+    success
+    message
+    task {
+      id
+      machineId
+      taskType
+      name
+      description
+      isEnabled
+      isRecurring
+      cronSchedule
+      nextRunAt
+      lastRunAt
+      runAt
+      executionStatus
+      parameters
+      createdByUserId
+      createdAt
+      updatedAt
+    }
+    error
+  }
+}

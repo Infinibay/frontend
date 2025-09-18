@@ -75,6 +75,8 @@ query machine($id: String!) {
     userId
     templateId
     createdAt
+    localIP
+    publicIP
     template {
       id
       name
@@ -114,6 +116,8 @@ query machines($orderBy: MachineOrderBy, $pagination: PaginationInputType) {
     userId
     templateId
     createdAt
+    localIP
+    publicIP
     template {
       id
       name
@@ -470,4 +474,5 @@ query getServiceStatusSummary {
     enabledVms
   }
 }
+
   

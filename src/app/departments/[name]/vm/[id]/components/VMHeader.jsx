@@ -1,431 +1,266 @@
-import React from 'react';
-import {
-  Play,
-  Pause,
-  Power,
-  RotateCw,
-  Camera,
-  HardDrive,
-  Monitor,
-  MoreVertical,
-  Heart,
-  CheckCircle,
-  AlertTriangle,
-  XCircle,
-  Clock
-} from 'lucide-react';
+import React, { useState } from "react";
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { toast } from '@/hooks/use-toast';
-import useVMActions from '../hooks/useVMActions';
-import { useHealthTransformation } from '@/hooks/useHealthTransformation';
-import { useRouter } from 'next/navigation';
+import { ChevronLeft, Play, Square, RotateCcw, Network, Globe, Home, Copy, Check } from 'lucide-react';
+import { useVMNetworkRealTime } from '@/components/vm/hooks/useVMNetworkRealTime';
 
-const VMHeader = ({ vm, onRefresh }) => {
-  const router = useRouter();
-  const {
-    startVM,
-    stopVM,
-    restartVM,
-    forceStopVM,
-    pauseVM,
-    createSnapshot,
-    isLoading
-  } = useVMActions(vm?.id);
+/**
+ * Header component for the VM detail page
+ */
+const VMHeader = ({ vm, departmentName, onPowerAction, onRefresh }) => {
+  if (!vm) return null;
 
-  // Get health data for the VM
-  const {
-    overallStatus,
-    problems,
-    lastUpdate,
-    isLoading: healthLoading
-  } = useHealthTransformation(vm?.id, {
-    refreshInterval: 60000, // 1 minute
-    enableRealTime: true
-  });
-
-  // Determine status color
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'running':
-        return 'bg-green-500';
-      case 'stopped':
-      case 'shut off':
-        return 'bg-red-500';
-      case 'paused':
-        return 'bg-yellow-500';
-      case 'building':
-        return 'bg-blue-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  // Determine status badge variant
+  // Get status badge variant
   const getStatusVariant = (status) => {
     switch (status?.toLowerCase()) {
       case 'running':
-        return 'success';
+        return 'default'; // Green
       case 'stopped':
-      case 'shut off':
-        return 'destructive';
+      case 'shutoff':
+        return 'secondary'; // Gray
       case 'paused':
-        return 'warning';
-      case 'building':
-        return 'secondary';
+      case 'suspended':
+        return 'outline'; // Yellow outline
       default:
-        return 'outline';
+        return 'destructive'; // Red
     }
   };
 
-  // Handle VM actions
-  const handleStart = async () => {
-    try {
-      await startVM();
-      toast({
-        title: "VM Started",
-        description: `${vm.name} has been started successfully.`,
-      });
-      onRefresh();
-    } catch (error) {
-      toast({
-        title: "Failed to start VM",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStop = async () => {
-    try {
-      await stopVM();
-      toast({
-        title: "VM Stopped",
-        description: `${vm.name} has been stopped successfully.`,
-      });
-      onRefresh();
-    } catch (error) {
-      toast({
-        title: "Failed to stop VM",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRestart = async () => {
-    try {
-      await restartVM();
-      toast({
-        title: "VM Restarting",
-        description: `${vm.name} is restarting...`,
-      });
-      onRefresh();
-    } catch (error) {
-      toast({
-        title: "Failed to restart VM",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handlePause = async () => {
-    try {
-      await pauseVM();
-      toast({
-        title: "VM Paused",
-        description: `${vm.name} has been paused successfully.`,
-      });
-      onRefresh();
-    } catch (error) {
-      toast({
-        title: "Failed to pause VM",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleForceStop = async () => {
-    if (window.confirm('Are you sure you want to force stop this VM? This may cause data loss.')) {
-      try {
-        await forceStopVM();
-        toast({
-          title: "VM Force Stopped",
-          description: `${vm.name} has been forcefully stopped.`,
-          variant: "warning",
-        });
-        onRefresh();
-      } catch (error) {
-        toast({
-          title: "Failed to force stop VM",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const handleSnapshot = async () => {
-    const snapshotName = window.prompt('Enter snapshot name:', `snapshot-${Date.now()}`);
-    if (snapshotName) {
-      try {
-        await createSnapshot(snapshotName);
-        toast({
-          title: "Snapshot Created",
-          description: `Snapshot "${snapshotName}" has been created successfully.`,
-        });
-      } catch (error) {
-        toast({
-          title: "Failed to create snapshot",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  // Health status helpers
-  const getHealthIcon = (level) => {
-    switch (level) {
-      case 'excellent':
-      case 'normal':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-      case 'critical':
-        return <XCircle className="h-4 w-4 text-red-600" />;
+  // Get status display text
+  const getStatusText = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'running':
+        return 'En ejecución';
+      case 'stopped':
+      case 'shutoff':
+        return 'Detenida';
+      case 'paused':
+        return 'Pausada';
+      case 'suspended':
+        return 'Suspendida';
       default:
-        return <Heart className="h-4 w-4 text-gray-600" />;
+        return status || 'Desconocido';
     }
   };
 
-  const getHealthColor = (level) => {
-    switch (level) {
-      case 'excellent':
-      case 'normal':
-        return 'text-green-700 bg-green-50 border-green-200';
-      case 'warning':
-        return 'text-yellow-700 bg-yellow-50 border-yellow-200';
-      case 'critical':
-        return 'text-red-700 bg-red-50 border-red-200';
-      default:
-        return 'text-gray-700 bg-gray-50 border-gray-200';
-    }
+  // Format creation date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No disponible';
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const isRunning = vm?.status?.toLowerCase() === 'running';
-  const isStopped = vm?.status?.toLowerCase() === 'stopped' || vm?.status?.toLowerCase() === 'shut off';
-  const isPaused = vm?.status?.toLowerCase() === 'paused';
+  const isRunning = vm.status?.toLowerCase() === 'running';
+  const isStopped = vm.status?.toLowerCase() === 'stopped' || vm.status?.toLowerCase() === 'shutoff';
+
+  // Use VM's department name for consistent navigation
+  const deptName = vm?.department?.name || departmentName;
 
   return (
-    <div className="bg-card rounded-lg p-6 shadow-sm border">
+    <div className="mb-6">
+      {/* Breadcrumb and back button */}
+      <div className="flex items-center mb-4">
+        <Link href={`/departments/${encodeURIComponent(deptName)}`} className="mr-2">
+          <Button variant="outline" size="icon">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        </Link>
+        <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
+          <Link href="/departments" className="hover:text-foreground">
+            Departamentos
+          </Link>
+          <span>/</span>
+          <Link href={`/departments/${encodeURIComponent(deptName)}`} className="hover:text-foreground">
+            {deptName}
+          </Link>
+          <span>/</span>
+          <span className="text-foreground font-medium">{vm.name}</span>
+        </nav>
+      </div>
+
+      {/* VM Info and Controls */}
       <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
-          {/* VM Icon/Status Indicator */}
-          <div className="relative">
-            <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-              <Monitor className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${getStatusColor(vm?.status)} ring-2 ring-background`} />
+        <div className="space-y-3">
+          {/* VM Name and Status */}
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">{vm.name}</h1>
+            <Badge variant={getStatusVariant(vm.status)} className="text-sm">
+              {getStatusText(vm.status)}
+            </Badge>
           </div>
 
-          {/* VM Info */}
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold">{vm?.name}</h1>
-              <Badge variant={getStatusVariant(vm?.status)}>
-                {vm?.status}
-              </Badge>
+          {/* VM Details */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <span className="text-muted-foreground">Template:</span>
+              <p className="font-medium">{vm.template?.name || 'No disponible'}</p>
             </div>
-
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Department: {vm?.department?.name || 'N/A'}</span>
-              <span>•</span>
-              <span>User: {vm?.user?.firstName} {vm?.user?.lastName}</span>
-              <span>•</span>
-              <span>Template: {vm?.template?.name || 'Custom'}</span>
+            <div>
+              <span className="text-muted-foreground">Usuario:</span>
+              <p className="font-medium">
+                {vm.user ? vm.user.firstName + " " + vm.user.lastName + " (" + vm.user.email + ")" : 'No asignado'}
+              </p>
             </div>
-
-            {/* VM Configuration */}
-            <div className="flex items-center gap-4 mt-2 text-sm">
-              <span className="flex items-center gap-1">
-                <span className="font-medium">CPU:</span> {vm?.configuration?.cpu || vm?.template?.cores || 0} cores
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="font-medium">RAM:</span> {vm?.configuration?.memory || vm?.template?.ram || 0} GB
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="font-medium">Storage:</span> {vm?.configuration?.storage || vm?.template?.storage || 0} GB
-              </span>
+            <div>
+              <span className="text-muted-foreground">Creada:</span>
+              <p className="font-medium">{formatDate(vm.createdAt)}</p>
             </div>
-
-            {/* Health Status */}
-            {overallStatus && !healthLoading && (
-              <div className={`flex items-center gap-3 mt-3 p-2 rounded-md border ${getHealthColor(overallStatus.level)}`}>
-                <div className="flex items-center gap-2">
-                  {getHealthIcon(overallStatus.level)}
-                  <span className="text-sm font-medium">
-                    Estado de Salud: {overallStatus.label}
-                  </span>
-                </div>
-
-                {overallStatus.criticalProblems > 0 && (
-                  <Badge className="bg-red-100 text-red-800 border-red-200">
-                    {overallStatus.criticalProblems} críticos
-                  </Badge>
-                )}
-
-                {overallStatus.lastCheck && (
-                  <div className="flex items-center gap-1 text-xs opacity-75">
-                    <Clock className="h-3 w-3" />
-                    <span>
-                      Última revisión: {new Date(overallStatus.lastCheck).toLocaleTimeString('es-ES')}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 ml-auto">
-                  {overallStatus.level === 'critical' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-6 px-2"
-                      onClick={() => {
-                        // Navigate to problems tab
-                        const currentUrl = new URL(window.location);
-                        currentUrl.searchParams.set('tab', 'problems');
-                        router.replace(currentUrl.pathname + currentUrl.search);
-                      }}
-                    >
-                      Ver Problemas
-                    </Button>
-                  )}
-
-                  {overallStatus.level !== 'critical' && overallStatus.level !== 'excellent' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-6 px-2"
-                      onClick={() => {
-                        // Navigate to maintenance tab
-                        const currentUrl = new URL(window.location);
-                        currentUrl.searchParams.set('tab', 'maintenance');
-                        router.replace(currentUrl.pathname + currentUrl.search);
-                      }}
-                    >
-                      Optimizar
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {healthLoading && (
-              <div className="flex items-center gap-2 mt-3 p-2 bg-gray-50 rounded-md border border-gray-200">
-                <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-                <span className="text-sm text-gray-600">Verificando estado de salud...</span>
-              </div>
-            )}
           </div>
+
+          {/* Template specs if available */}
+          {vm.template && (
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <span>CPU: {vm.template.cores} cores</span>
+              <span>RAM: {vm.template.ram} MB</span>
+              <span>Storage: {vm.template.storage} GB</span>
+            </div>
+          )}
+
+          {/* Network Information */}
+          <NetworkInfoSection vm={vm} />
         </div>
 
-        {/* Action Buttons */}
+        {/* Control Buttons */}
         <div className="flex items-center gap-2">
-          {/* Primary Actions */}
+          {/* Start button */}
           {isStopped && (
-            <Button
-              onClick={handleStart}
-              disabled={isLoading}
+            <Button 
+              onClick={() => onPowerAction('start')}
+              variant="default"
               size="sm"
-              className="bg-green-600 hover:bg-green-700"
             >
-              <Play className="h-4 w-4 mr-1" />
-              Start
+              <Play className="h-4 w-4 mr-2" />
+              Iniciar
             </Button>
           )}
 
+          {/* Stop button */}
           {isRunning && (
-            <>
-              <Button
-                onClick={handlePause}
-                disabled={isLoading}
-                size="sm"
-                variant="outline"
-              >
-                <Pause className="h-4 w-4 mr-1" />
-                Pause
-              </Button>
-              <Button
-                onClick={handleStop}
-                disabled={isLoading}
-                size="sm"
-                variant="outline"
-                className="text-red-600 hover:text-red-700"
-              >
-                <Power className="h-4 w-4 mr-1" />
-                Stop
-              </Button>
-            </>
-          )}
-
-          {isPaused && (
-            <Button
-              onClick={handleStart}
-              disabled={isLoading}
+            <Button 
+              onClick={() => onPowerAction('stop')}
+              variant="destructive"
               size="sm"
-              className="bg-green-600 hover:bg-green-700"
             >
-              <Play className="h-4 w-4 mr-1" />
-              Resume
+              <Square className="h-4 w-4 mr-2" />
+              Detener
             </Button>
           )}
 
-          <Button
-            onClick={handleRestart}
-            disabled={isLoading || isStopped}
-            size="sm"
-            variant="outline"
-          >
-            <RotateCw className="h-4 w-4 mr-1" />
-            Restart
-          </Button>
+          {/* Restart button - disabled for now */}
+          {/* {isRunning && (
+            <Button
+              onClick={() => onPowerAction('restart')}
+              variant="outline"
+              size="sm"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reiniciar
+            </Button>
+          )} */}
+        </div>
+      </div>
+    </div>
+  );
+};
 
-          {/* More Actions */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleSnapshot}>
-                <Camera className="h-4 w-4 mr-2" />
-                Create Snapshot
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => console.log('Clone VM')}>
-                <HardDrive className="h-4 w-4 mr-2" />
-                Clone VM
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleForceStop}
-                className="text-red-600"
-                disabled={isStopped}
-              >
-                <Power className="h-4 w-4 mr-2" />
-                Force Stop
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+/**
+ * Network Information Section Component
+ * Displays IP addresses with connection status and copy functionality
+ * Uses real-time network data as fallback when GraphQL doesn't provide IP fields
+ */
+const NetworkInfoSection = ({ vm }) => {
+  const [copiedField, setCopiedField] = useState(null);
+
+  // Get real-time network info as fallback
+  const { networkInfo } = useVMNetworkRealTime(vm?.id);
+
+  // Use real-time data as fallback for IP addresses
+  const localIP = networkInfo?.localIP || vm?.localIP;
+  const publicIP = networkInfo?.publicIP || vm?.publicIP;
+
+  // Compute network status
+  const hasAnyIP = Boolean(localIP || publicIP);
+
+  const handleCopyIP = async (ip, field) => {
+    try {
+      await navigator.clipboard.writeText(ip);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 1000);
+    } catch (error) {
+      console.error('Failed to copy IP:', error);
+    }
+  };
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm">
+      {/* Connection Status Indicator */}
+      <div className="flex items-center gap-2">
+        <span
+          className={`h-2 w-2 rounded-full ${hasAnyIP ? 'bg-green-500' : 'bg-gray-300'}`}
+          aria-label={hasAnyIP ? 'Conectado' : 'Sin conexión'}
+        />
+        <span className="text-xs text-muted-foreground">
+          {hasAnyIP ? 'Conectado' : 'Sin conexión'}
+        </span>
+      </div>
+
+      {/* Local IP */}
+      <div className="flex items-center gap-2 min-w-0">
+        <Home className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <span className="text-muted-foreground">IP Local:</span>
+        <div className="flex items-center gap-1">
+          <Badge variant="outline" className="font-mono truncate" title={localIP || 'No disponible'}>
+            {localIP || 'No disponible'}
+          </Badge>
+          {localIP && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => handleCopyIP(localIP, 'local')}
+              title="Copiar IP local"
+              aria-label="Copiar IP local"
+            >
+              {copiedField === 'local' ? (
+                <Check className="h-3 w-3 text-green-500" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Public IP */}
+      <div className="flex items-center gap-2 min-w-0">
+        <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <span className="text-muted-foreground">IP Pública:</span>
+        <div className="flex items-center gap-1">
+          <Badge variant="outline" className="font-mono truncate" title={publicIP || 'No disponible'}>
+            {publicIP || 'No disponible'}
+          </Badge>
+          {publicIP && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => handleCopyIP(publicIP, 'public')}
+              title="Copiar IP pública"
+              aria-label="Copiar IP pública"
+            >
+              {copiedField === 'public' ? (
+                <Check className="h-3 w-3 text-green-500" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>

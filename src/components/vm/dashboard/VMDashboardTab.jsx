@@ -20,13 +20,15 @@ import {
 import StatusOverview from './StatusOverview';
 import CriticalProblemsSection from './CriticalProblemsSection';
 import SystemMetrics from './SystemMetrics';
+import NetworkInfo from './NetworkInfo';
 import { ProblemCard, PrioritySummary } from '../problems';
 import useVMProblems from '../../../hooks/useVMProblems';
 import { ProblemStatus } from '../../../types/problems';
 
-const VMDashboardTab = ({ 
-  vmId, 
+const VMDashboardTab = ({
+  vmId,
   vmName,
+  vm,
   onRefresh,
   className = ''
 }) => {
@@ -210,10 +212,13 @@ const VMDashboardTab = ({
           )}
 
           {/* System Metrics Preview */}
-          <SystemMetrics 
+          <SystemMetrics
             healthData={rawHealthData}
             problems={problems}
           />
+
+          {/* Network Information */}
+          <NetworkInfo vm={vm} />
         </TabsContent>
 
         {/* Critical Problems Tab */}
@@ -293,10 +298,13 @@ const VMDashboardTab = ({
 
         {/* Metrics Tab */}
         <TabsContent value="metrics" className="space-y-6">
-          <SystemMetrics 
+          <SystemMetrics
             healthData={rawHealthData}
             problems={problems}
           />
+
+          {/* Network Information */}
+          <NetworkInfo vm={vm} />
         </TabsContent>
       </Tabs>
     </div>
