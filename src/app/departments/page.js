@@ -62,7 +62,7 @@ const DepartmentsPage = () => {
   
   return (
     <ToastProvider>
-      <div className="p-6">
+      <div className="w-full">
         {/* Mock Data Banner */}
         {useMockData && (
           <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-6 flex items-center">

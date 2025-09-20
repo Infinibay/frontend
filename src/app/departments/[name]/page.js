@@ -83,7 +83,7 @@ const DepartmentPage = () => {
 
   return (
     <ToastProvider>
-      <div className="p-6">
+      <div className="w-full">
         <DepartmentHeader departmentName={department?.name} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

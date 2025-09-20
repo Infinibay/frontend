@@ -10,6 +10,7 @@ import {
   deleteVm,
   selectMachine,
   deselectMachine,
+  fetchVms,
 } from "@/state/slices/vms";
 
 export function useComputerActions() {
@@ -20,8 +21,7 @@ export function useComputerActions() {
 
   const handlePcSelect = (machine) => {
     // Navigate to VM view instead of opening the deprecated panel
-    const departmentName = machine.department?.name || 'default';
-    router.push(`/departments/${encodeURIComponent(departmentName)}/vm/${machine.id}`);
+    router.push(`/departments/${machine.departmentId}/vm/${machine.id}`);
   };
 
   const handleDetailsClose = (open) => {
@@ -106,6 +106,26 @@ export function useComputerActions() {
     setShowToast(true);
   };
 
+  const handleRefresh = async () => {
+    try {
+      await dispatch(fetchVms()).unwrap();
+      setToastProps({
+        title: "Success",
+        description: "Machines data refreshed successfully",
+        variant: "success",
+      });
+    } catch (err) {
+      const msg = typeof err === 'string' ? err : err?.message || '';
+      const isNetworkError = /Network error|fetch|connection/i.test(msg);
+      setToastProps({
+        title: "Refresh Error",
+        description: msg || "Failed to refresh machines data",
+        variant: "destructive",
+      });
+    }
+    setShowToast(true);
+  };
+
   return {
     showToast,
     toastProps,
@@ -116,5 +136,6 @@ export function useComputerActions() {
     handlePause,
     handleStop,
     handleDelete,
+    handleRefresh,
   };
 }

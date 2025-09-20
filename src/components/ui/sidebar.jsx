@@ -6,6 +6,14 @@ import { PanelLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
+import {
+  getSidebarGlass,
+  getFluentNavCard,
+  getReducedTransparencyFallback,
+  debounceNavGlassTransition,
+  getAccessibleNavContrast,
+  getFocusRingForGlass
+} from "@/utils/navigation-glass"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -140,6 +148,8 @@ const Sidebar = React.forwardRef((
     variant = "sidebar",
     collapsible = "offcanvas",
     color = "sky",
+    glass = "none",
+    elevation = 2,
     className,
     children,
     ...props
@@ -147,15 +157,17 @@ const Sidebar = React.forwardRef((
   ref
 ) => {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
-  const bgColor = `bg-${color}-600`;
-  const hoverColor = `hover:bg-${color}-700`;
-  const activeColor = `active:bg-${color}-800`;
+  const bgColor = `bg-sidebar`;
+  const hoverColor = `hover:bg-sidebar-accent`;
+  const activeColor = `active:bg-sidebar-primary`;
+  const glassClasses = glass !== "none" ? getSidebarGlass("light", glass) : "";
 
   if (collapsible === "none") {
     return (
       (<div
         className={cn(
-          `flex h-full w-[--sidebar-width] flex-col ${bgColor} text-white`,
+          `flex h-full w-[--sidebar-width] flex-col ${bgColor} text-sidebar-foreground`,
+          glassClasses,
           className
         )}
         ref={ref}
@@ -171,7 +183,7 @@ const Sidebar = React.forwardRef((
         <SheetContent
           data-sidebar="sidebar"
           data-mobile="true"
-          className={`w-[--sidebar-width] ${bgColor} text-white p-0 [&>button]:hidden`}
+          className={`w-[--sidebar-width] ${bgColor} text-sidebar-foreground p-0 [&>button]:hidden`}
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE
@@ -187,7 +199,7 @@ const Sidebar = React.forwardRef((
   return (
     (<div
       ref={ref}
-      className="group peer hidden md:block text-white"
+      className="group peer hidden md:block text-sidebar-foreground"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
@@ -206,6 +218,8 @@ const Sidebar = React.forwardRef((
       <div
         className={cn(
           `duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex ${bgColor}`,
+          glassClasses,
+          debounceNavGlassTransition(),
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -218,7 +232,7 @@ const Sidebar = React.forwardRef((
         {...props}>
         <div
           data-sidebar="sidebar"
-          className={`flex h-full w-full flex-col ${bgColor} text-white group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow`}>
+          className={`flex h-full w-full flex-col ${bgColor} text-sidebar-foreground group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow`}>
           {children}
         </div>
       </div>
@@ -279,8 +293,8 @@ const SidebarInset = React.forwardRef(({ className, ...props }, ref) => {
     (<main
       ref={ref}
       className={cn(
-        "relative flex min-h-svh flex-1 flex-col bg-background",
-        "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
+        "relative flex min-h-svh flex-1 flex-col",
+        "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
       {...props} />)
@@ -288,13 +302,14 @@ const SidebarInset = React.forwardRef(({ className, ...props }, ref) => {
 })
 SidebarInset.displayName = "SidebarInset"
 
-const SidebarInput = React.forwardRef(({ className, ...props }, ref) => {
+const SidebarInput = React.forwardRef(({ className, glass = false, ...props }, ref) => {
   return (
     (<Input
       ref={ref}
       data-sidebar="input"
       className={cn(
         "h-8 w-full bg-background shadow-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+        glass && "glass-subtle bg-sidebar-accent/10 border-sidebar-border/20",
         className
       )}
       {...props} />)
@@ -324,12 +339,16 @@ const SidebarFooter = React.forwardRef(({ className, ...props }, ref) => {
 })
 SidebarFooter.displayName = "SidebarFooter"
 
-const SidebarSeparator = React.forwardRef(({ className, ...props }, ref) => {
+const SidebarSeparator = React.forwardRef(({ className, gradient = false, ...props }, ref) => {
   return (
     (<Separator
       ref={ref}
       data-sidebar="separator"
-      className={cn("mx-2 w-auto bg-sidebar-border", className)}
+      className={cn(
+        "mx-2 w-auto bg-sidebar-border",
+        gradient && "bg-gradient-to-r from-transparent via-brand-celeste/30 to-transparent h-px",
+        className
+      )}
       {...props} />)
   );
 })
@@ -424,13 +443,15 @@ const SidebarMenuItem = React.forwardRef(({ className, ...props }, ref) => (
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sky-700 hover:text-white focus-visible:ring-2 active:bg-sky-800 active:text-white disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sky-800 data-[active=true]:font-medium data-[active=true]:text-white data-[state=open]:hover:bg-sky-700 data-[state=open]:hover:text-white group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 active:bg-selection active:text-selection-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-selection data-[active=true]:font-medium data-[active=true]:text-selection-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "hover:bg-sky-700 hover:text-white",
-        outline:
-          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sky-700 hover:text-white hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
+        default: `hover:bg-sidebar-accent hover:text-sidebar-foreground ${getAccessibleNavContrast('bg-sidebar', 'light')} ${getFocusRingForGlass('light')}`,
+        outline: `bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))] ${getAccessibleNavContrast('bg-background', 'light')} ${getFocusRingForGlass('light')}`,
+        glass: `glass-subtle hover:bg-sidebar-accent/10 hover:text-sidebar-foreground backdrop-blur-sm ${getAccessibleNavContrast('glass-subtle', 'light')} ${getFocusRingForGlass('light')}`,
+        mica: `mica hover:bg-sidebar-accent/20 hover:text-sidebar-foreground ${getAccessibleNavContrast('mica', 'light')} ${getFocusRingForGlass('light')}`,
+        acrylic: `acrylic hover:bg-sidebar-accent/15 hover:text-sidebar-foreground ${getAccessibleNavContrast('acrylic', 'light')} ${getFocusRingForGlass('light')}`,
       },
       size: {
         default: "h-8 text-sm",
@@ -594,6 +615,8 @@ const SidebarMenuSubButton = React.forwardRef(
           size === "sm" && "text-xs",
           size === "md" && "text-sm",
           "group-data-[collapsible=icon]:hidden",
+          getAccessibleNavContrast('bg-sidebar', 'light'),
+          getFocusRingForGlass('light'),
           className
         )}
         {...props} />)

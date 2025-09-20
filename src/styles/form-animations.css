@@ -1,0 +1,208 @@
+/* Form Animations CSS */
+/* Modern animation system for form components */
+
+/* CSS Custom Properties for consistent animations */
+:root {
+  --form-ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --form-ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --form-ease-sharp: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --form-duration-fast: 150ms;
+  --form-duration-normal: 200ms;
+  --form-duration-slow: 300ms;
+
+  --form-shake-distance: 4px;
+}
+
+/* Keyframe Animations */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(calc(-1 * var(--form-shake-distance)));
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(var(--form-shake-distance));
+  }
+}
+
+@keyframes pulse-once {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: hsl(var(--border));
+  }
+  50% {
+    border-color: hsl(var(--primary));
+  }
+}
+
+@keyframes glow-primary {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsla(var(--primary), 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 5px hsla(var(--primary), 0.1);
+  }
+}
+
+@keyframes float-up {
+  from {
+    transform: translateY(0) scale(1);
+  }
+  to {
+    transform: translateY(-1.5rem) scale(0.75);
+  }
+}
+
+@keyframes float-down {
+  from {
+    transform: translateY(-1.5rem) scale(0.75);
+  }
+  to {
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animation Classes */
+.animate-shake {
+  animation: shake 0.5s var(--form-ease-smooth);
+}
+
+.animate-pulse-once {
+  animation: pulse-once 0.6s var(--form-ease-smooth);
+}
+
+.animate-pulse-border {
+  animation: pulse-border 1s var(--form-ease-smooth) infinite;
+}
+
+.animate-glow-primary {
+  animation: glow-primary 2s var(--form-ease-smooth) infinite;
+}
+
+.animate-float-up {
+  animation: float-up var(--form-duration-normal) var(--form-ease-smooth) forwards;
+}
+
+.animate-float-down {
+  animation: float-down var(--form-duration-normal) var(--form-ease-smooth) forwards;
+}
+
+/* Easing Classes */
+.ease-smooth {
+  transition-timing-function: var(--form-ease-smooth);
+}
+
+.ease-bounce {
+  transition-timing-function: var(--form-ease-bounce);
+}
+
+.ease-sharp {
+  transition-timing-function: var(--form-ease-sharp);
+}
+
+/* Utility Classes */
+.scale-75 {
+  transform: scale(0.75);
+}
+
+.scale-85 {
+  transform: scale(0.85);
+}
+
+/* Focus Ring Variations */
+.focus-ring-primary {
+  @apply focus:ring-2 focus:ring-primary/20 focus:border-primary/60;
+}
+
+.focus-ring-error {
+  @apply focus:ring-2 focus:ring-destructive/20 focus:border-destructive/60;
+}
+
+.focus-ring-success {
+  @apply focus:ring-2 focus:ring-green-500/20 focus:border-green-500/60;
+}
+
+/* Glassmorphism Enhanced */
+.glass-enhanced {
+  background: hsla(var(--background), 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsla(var(--border), 0.2);
+}
+
+/* Input specific animations */
+.input-focus-glow {
+  transition: all var(--form-duration-normal) var(--form-ease-smooth);
+}
+
+.input-focus-glow:focus {
+  box-shadow:
+    0 0 0 2px hsla(var(--primary), 0.2),
+    0 4px 16px hsla(var(--primary), 0.1);
+}
+
+/* Label floating states */
+.label-floating {
+  transition: all var(--form-duration-normal) var(--form-ease-smooth);
+  transform-origin: left center;
+}
+
+.label-floated {
+  transform: translateY(-1.5rem) scale(0.75);
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+
+.label-error {
+  color: hsl(var(--destructive));
+}
+
+.label-success {
+  color: hsl(var(--success, 142 76% 36%));
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake,
+  .animate-pulse-once,
+  .animate-pulse-border,
+  .animate-glow-primary,
+  .animate-float-up,
+  .animate-float-down {
+    animation: none;
+  }
+
+  .input-focus-glow,
+  .label-floating {
+    transition: none;
+  }
+}
+
+/* Dark theme specific adjustments */
+.dark .glass-enhanced {
+  background: hsla(var(--background), 0.9);
+  border: 1px solid hsla(var(--border), 0.3);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .input-focus-glow:focus {
+    box-shadow: 0 0 0 2px currentColor;
+  }
+}

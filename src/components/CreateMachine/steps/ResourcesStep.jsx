@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { DiskSpaceSlider } from '@/components/ui/disk-space-slider';
 import { useGetSystemResourcesQuery } from '@/gql/hooks';
+import { useSafeResolvedTheme } from '@/utils/safe-theme';
+import { getWizardStepCardClasses } from '@/utils/wizard-glass-helpers';
 
 // Calculate performance score based on CPU, RAM, and Storage
 const calculatePerformanceScore = (cores, ram, storage) => {
@@ -48,6 +50,7 @@ export function ResourcesStep({ id }) {
   const { items: templates, loading: templatesLoading, error: templatesError } = useSelector(selectTemplatesState);
   const { items: categories } = useSelector(state => state.templateCategories);
   const stepValues = values[id] || {};
+  const theme = useSafeResolvedTheme();
   
   // Fetch system resources
   const { data: systemResources, loading: resourcesLoading } = useGetSystemResourcesQuery();
@@ -140,12 +143,14 @@ export function ResourcesStep({ id }) {
       </div>
 
       {/* Custom Hardware Option */}
-      <Card 
+      <Card
+        glow="none"
         className={cn(
-          "p-6 border cursor-pointer transition-all",
+          "p-6 cursor-pointer transition-all",
+          getWizardStepCardClasses(theme),
           useCustomHardware || stepValues.templateId === 'custom'
-            ? "border-primary bg-primary/5 shadow-lg"
-            : "hover:border-primary/50 hover:shadow-md hover:bg-accent/50"
+            ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+            : "hover:border-primary/50 hover:bg-primary/5"
         )}
         onClick={handleCustomSelect}
       >
@@ -154,8 +159,8 @@ export function ResourcesStep({ id }) {
             <div className={cn(
               "h-12 w-12 rounded-xl flex items-center justify-center transition-all",
               useCustomHardware || stepValues.templateId === 'custom'
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted"
+                ? "bg-primary/20 text-primary border border-primary/30"
+                : "bg-muted/50"
             )}>
               <Settings2 className="h-6 w-6" />
             </div>
@@ -245,7 +250,7 @@ export function ResourcesStep({ id }) {
               />
 
               {/* Summary with Performance Score */}
-              <div className="p-4 bg-muted/50 rounded-lg border space-y-4">
+              <div className={cn("p-4 rounded-lg space-y-4", getWizardStepCardClasses(theme), "bg-muted/20")}>
                 <div>
                   <p className="text-sm font-semibold mb-3">Configuration Summary:</p>
                   <div className="grid grid-cols-3 gap-4 text-sm">
@@ -305,7 +310,7 @@ export function ResourcesStep({ id }) {
           className="space-y-6"
         >
           {categories.map((category) => (
-            <Card key={category.id} className="p-6 border-2 shadow-sm">
+            <Card key={category.id} glow="none" className={cn("p-6", getWizardStepCardClasses(theme))}>
               <div className="space-y-6">
                 <div className="space-y-2 border-b pb-4">
                   <h3 className="text-lg font-semibold">{category.name}</h3>
@@ -319,10 +324,11 @@ export function ResourcesStep({ id }) {
                     <Label
                       key={template.id}
                       className={cn(
-                        "relative flex cursor-pointer rounded-xl border-2 p-5 transition-all duration-200 group",
+                        "relative flex cursor-pointer rounded-xl p-5 transition-all duration-200 group",
+                        getWizardStepCardClasses(theme),
                         stepValues.templateId === template.id && !useCustomHardware
-                          ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg scale-[1.02]' 
-                          : 'border-border/60 bg-card hover:border-primary/60 hover:shadow-lg hover:scale-[1.01] hover:bg-gradient-to-br hover:from-accent/30 hover:to-accent/10'
+                          ? 'border-primary bg-primary/10 scale-[1.02] ring-2 ring-primary/30'
+                          : 'hover:border-primary/60 hover:scale-[1.01] hover:bg-primary/5'
                       )}
                     >
                       <RadioGroupItem
@@ -342,7 +348,7 @@ export function ResourcesStep({ id }) {
                             </p>
                           </div>
                           {stepValues.templateId === template.id && !useCustomHardware && (
-                            <div className="ml-2 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
+                            <div className="ml-2 h-6 w-6 rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center justify-center flex-shrink-0">
                               <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
@@ -429,7 +435,7 @@ export function ResourcesStep({ id }) {
           ))}
         </RadioGroup>
       ) : (
-        <Card className="p-8 border-2 border-dashed">
+        <Card glow="none" className={cn("p-8 border-2 border-dashed", getWizardStepCardClasses(theme))}>
           <div className="text-center space-y-3">
             <Server className="h-12 w-12 mx-auto text-muted-foreground" />
             <h3 className="font-medium text-lg">No Templates Available</h3>

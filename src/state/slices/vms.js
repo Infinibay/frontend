@@ -91,12 +91,34 @@ const executeGraphQLMutation = async (mutation, variables) => {
     return response.data;
   } catch (error) {
     console.error('GraphQL mutation error:', error);
+
+    // Enhanced error categorization for mutations
+    if (error.networkError) {
+      throw new Error(`Network error: Unable to connect to the backend server. Please check your connection.`);
+    }
+
+    if (error.message.includes('fetch')) {
+      throw new Error(`Connection error: Failed to reach the backend server. Please verify the server is running.`);
+    }
+
+    if (error.name === 'ApolloError' && error.graphQLErrors?.length > 0) {
+      const graphqlErrorMessages = error.graphQLErrors.map(err => err.message).join(', ');
+      throw new Error(`GraphQL error: ${graphqlErrorMessages}`);
+    }
+
     throw error;
   }
 };
 
 // Create debug instance for VMs state
 const debug = createDebugger('frontend:state:vms');
+
+const withBackoff = async (fn, { retries=3, base=500 }={}) => {
+  let attempt=0; let lastErr;
+  while (attempt<=retries){
+    try { return await fn(); } catch(e){ lastErr=e; if(attempt===retries) throw e; await new Promise(r=>setTimeout(r, base*Math.pow(2,attempt))); attempt++; }
+  }
+};
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   debug.log('graphql', 'Executing GraphQL query:', query.definitions[0]?.name?.value, variables);
@@ -123,18 +145,47 @@ const executeGraphQLQuery = async (query, variables = {}) => {
     return response.data;
   } catch (error) {
     debug.error('graphql', 'GraphQL query error:', error);
+
+    // Enhanced error categorization
+    if (error.networkError) {
+      throw new Error(`Network error: Unable to connect to the backend server. Please check your connection.`);
+    }
+
+    if (error.message.includes('fetch')) {
+      throw new Error(`Connection error: Failed to reach the backend server. Please verify the server is running.`);
+    }
+
+    if (error.name === 'ApolloError' && error.graphQLErrors?.length > 0) {
+      const graphqlErrorMessages = error.graphQLErrors.map(err => err.message).join(', ');
+      throw new Error(`GraphQL error: ${graphqlErrorMessages}`);
+    }
+
     throw error;
   }
 };
 
 export const fetchVms = createAsyncThunk(
   'vms/fetchVms',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
-      const data = await executeGraphQLQuery(MachinesDocument);
+      debug.log('fetch', 'Starting VMs fetch operation');
+      const data = await withBackoff(() => executeGraphQLQuery(MachinesDocument));
+      debug.success('fetch', `Successfully fetched ${data.machines?.length || 0} VMs`);
       return data.machines || [];
     } catch (error) {
-      return rejectWithValue(error.message);
+      debug.error('fetch', 'VMs fetch failed:', error.message);
+
+      // Add connection status tracking
+      const connectionStatus = {
+        isNetworkError: error.message.includes('Network error') || error.message.includes('Connection error'),
+        timestamp: Date.now(),
+        errorType: error.name || 'Unknown'
+      };
+
+      return rejectWithValue({
+        message: error.message,
+        connectionStatus
+      });
     }
   },
   {
@@ -142,6 +193,7 @@ export const fetchVms = createAsyncThunk(
       const { vms } = getState();
       // Don't fetch if we're already fetching
       if (vms.loading.fetch) {
+        debug.warn('fetch', 'Skipping fetch - already in progress');
         return false;
       }
       return true;
@@ -215,13 +267,14 @@ export const stopVm = createAsyncThunk(
 
 export const moveMachine = createAsyncThunk(
   'vms/moveMachine',
-  async ({ id, departmentId }, { rejectWithValue }) => {
+  async ({ id, departmentId }, { dispatch, rejectWithValue }) => {
     try {
-      const response = await executeGraphQLMutation(MoveMachineDocument, {
+      await executeGraphQLMutation(MoveMachineDocument, {
         id,
         departmentId,
       });
-      return response.moveMachine;
+      await dispatch(fetchVms());
+      return { id, departmentId };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -231,6 +284,12 @@ export const moveMachine = createAsyncThunk(
 const initialState = {
   items: [],
   selectedMachine: null,
+  connectionStatus: {
+    isConnected: true,
+    lastError: null,
+    lastSuccessfulFetch: null,
+    retryCount: 0
+  },
   loading: {
     fetch: false,
     create: false,
@@ -325,11 +384,34 @@ const vmsSlice = createSlice({
       .addCase(fetchVms.fulfilled, (state, action) => {
         state.loading.fetch = false;
         state.items = action.payload;
+        state.connectionStatus.isConnected = true;
+        state.connectionStatus.lastSuccessfulFetch = Date.now();
+        state.connectionStatus.retryCount = 0;
+        state.error.fetch = null;
       })
       .addCase(fetchVms.rejected, (state, action) => {
         state.loading.fetch = false;
-        state.error.fetch = action.payload || 'Failed to fetch VMs';
+
+        // Handle both old string format and new object format
+        const errorData = action.payload;
+        const errorMessage = typeof errorData === 'string' ? errorData : errorData?.message || 'Failed to fetch VMs';
+        const connectionStatus = typeof errorData === 'object' ? errorData?.connectionStatus : null;
+
+        state.error.fetch = errorMessage;
         state.items = []; // Set empty array on error to prevent undefined
+
+        // Update connection status if available
+        if (connectionStatus) {
+          state.connectionStatus.isConnected = !connectionStatus.isNetworkError;
+          state.connectionStatus.lastError = connectionStatus.timestamp;
+          state.connectionStatus.retryCount += 1;
+        } else {
+          // Fallback for old error format
+          const isNetworkError = errorMessage.includes('Network error') || errorMessage.includes('Connection error');
+          state.connectionStatus.isConnected = !isNetworkError;
+          state.connectionStatus.lastError = Date.now();
+          state.connectionStatus.retryCount += 1;
+        }
       })
 
       // Create VM
@@ -419,10 +501,6 @@ const vmsSlice = createSlice({
       })
       .addCase(moveMachine.fulfilled, (state, action) => {
         state.loading.move = false;
-        const index = state.items.findIndex((vm) => vm.id === action.payload.id);
-        if (index !== -1) {
-          state.items[index] = action.payload;
-        }
       })
       .addCase(moveMachine.rejected, (state, action) => {
         state.loading.move = false;

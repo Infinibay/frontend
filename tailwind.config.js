@@ -16,6 +16,53 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        /* Brand Color Palette */
+        brand: {
+          celeste: '#6ED0E0',
+          'dark-blue': '#0F6FB7',
+          sun: '#FFB84D'
+        },
+        'brand-celeste': {
+          50: 'hsl(var(--brand-celeste-50))',
+          100: 'hsl(var(--brand-celeste-100))',
+          200: 'hsl(var(--brand-celeste-200))',
+          300: 'hsl(var(--brand-celeste-300))',
+          400: 'hsl(var(--brand-celeste-400))',
+          500: 'hsl(var(--brand-celeste-500))',
+          600: 'hsl(var(--brand-celeste-600))',
+          700: 'hsl(var(--brand-celeste-700))',
+          800: 'hsl(var(--brand-celeste-800))',
+          900: 'hsl(var(--brand-celeste-900))',
+          DEFAULT: 'hsl(var(--brand-celeste-400))'
+        },
+        'brand-dark-blue': {
+          50: 'hsl(var(--brand-dark-blue-50))',
+          100: 'hsl(var(--brand-dark-blue-100))',
+          200: 'hsl(var(--brand-dark-blue-200))',
+          300: 'hsl(var(--brand-dark-blue-300))',
+          400: 'hsl(var(--brand-dark-blue-400))',
+          500: 'hsl(var(--brand-dark-blue-500))',
+          600: 'hsl(var(--brand-dark-blue-600))',
+          700: 'hsl(var(--brand-dark-blue-700))',
+          800: 'hsl(var(--brand-dark-blue-800))',
+          900: 'hsl(var(--brand-dark-blue-900))',
+          DEFAULT: 'hsl(var(--brand-dark-blue-600))'
+        },
+        'brand-sun': {
+          50: 'hsl(var(--brand-sun-50))',
+          100: 'hsl(var(--brand-sun-100))',
+          200: 'hsl(var(--brand-sun-200))',
+          300: 'hsl(var(--brand-sun-300))',
+          400: 'hsl(var(--brand-sun-400))',
+          500: 'hsl(var(--brand-sun-500))',
+          600: 'hsl(var(--brand-sun-600))',
+          700: 'hsl(var(--brand-sun-700))',
+          800: 'hsl(var(--brand-sun-800))',
+          900: 'hsl(var(--brand-sun-900))',
+          DEFAULT: 'hsl(var(--brand-sun-500))'
+        },
+
+        /* Legacy Colors - maintaining backward compatibility */
         web_dark: '#2D2D2D',
         web_lightwhite: '#FAFAFA',
         web_borderGray: '#DDD',
@@ -25,9 +72,12 @@ module.exports = {
         web_lightbrown: '#EC9430',
         web_darkbrown: '#E08824',
         web_green: '#52C24A',
-        web_lightBlue: '#1C77BF',
-        web_darkBlue: '#16598E',
-        web_aquablue: '#3BB3E1',
+
+        /* Legacy color aliases - now using brand colors */
+        web_lightBlue: 'hsl(var(--web-light-blue))',
+        web_darkBlue: 'hsl(var(--web-dark-blue))',
+        web_aquablue: 'hsl(var(--web-aqua-blue))',
+
         web_red: '#FF0000',
         web_aquaBtnblue: '#1C74B9',
         web_lightGrey: '#E8E8E8',
@@ -74,7 +124,8 @@ module.exports = {
           '5': 'hsl(var(--chart-5))'
         },
         sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
+          DEFAULT: 'transparent', // Remove solid background to allow glass effects
+          background: 'hsl(var(--sidebar-background))', // Available as bg-sidebar-background when needed
           foreground: 'hsl(var(--sidebar-foreground))',
           primary: 'hsl(var(--sidebar-primary))',
           'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
@@ -82,6 +133,10 @@ module.exports = {
           'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
+        },
+        selection: {
+          DEFAULT: 'hsl(var(--selection-bg))',
+          foreground: 'hsl(var(--selection-text))'
         }
       },
       keyframes: {
@@ -126,7 +181,88 @@ module.exports = {
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
+        sm: 'calc(var(--radius) - 4px)',
+        /* Enhanced Border Radius - Windows 11 Fluent Design */
+        'fluent-sm': '8px',
+        'fluent-md': '12px',
+        'fluent-lg': '16px',
+        'fluent-xl': '24px'
+      },
+      /* Glassmorphism & Modern Design Tokens */
+      backdropBlur: {
+        xs: '2px',
+        sm: '8px',
+        md: '12px',
+        lg: '20px',
+        xl: '30px',
+        '2xl': '40px'
+      },
+      backdropSaturate: {
+        105: '1.05',
+        110: '1.1',
+        115: '1.15',
+        120: '1.2',
+        130: '1.3',
+        150: '1.5'
+      },
+      /* Modern Spacing Tokens */
+      spacing: {
+        18: '4.5rem',
+        22: '5.5rem',
+        26: '6.5rem',
+        30: '7.5rem',
+        34: '8.5rem'
+      },
+      gap: {
+        18: '4.5rem',
+        22: '5.5rem',
+        26: '6.5rem'
+      },
+      /* Enhanced Box Shadow - Elevation & Glow System */
+      boxShadow: {
+        /* Elevation Shadows */
+        'elevation-1': '0 1px 3px hsl(var(--brand-dark-blue-900) / 0.08), 0 1px 2px hsl(var(--brand-dark-blue-900) / 0.05)',
+        'elevation-2': '0 3px 6px hsl(var(--brand-dark-blue-900) / 0.10), 0 2px 4px hsl(var(--brand-dark-blue-900) / 0.05)',
+        'elevation-3': '0 6px 16px hsl(var(--brand-dark-blue-900) / 0.10), 0 3px 6px hsl(var(--brand-dark-blue-900) / 0.05)',
+        'elevation-4': '0 12px 24px hsl(var(--brand-dark-blue-900) / 0.12), 0 6px 12px hsl(var(--brand-dark-blue-900) / 0.06)',
+        'elevation-5': '0 20px 40px hsl(var(--brand-dark-blue-900) / 0.14), 0 10px 20px hsl(var(--brand-dark-blue-900) / 0.08)',
+
+        /* Brand-colored Glow Effects */
+        'glow-subtle': '0 0 20px hsl(var(--brand-celeste-400) / 0.3), 0 0 40px hsl(var(--brand-celeste-400) / 0.15)',
+        'glow-medium': '0 0 30px hsl(var(--brand-celeste-400) / 0.4), 0 0 60px hsl(var(--brand-celeste-400) / 0.2)',
+        'glow-strong': '0 0 40px hsl(var(--brand-celeste-400) / 0.5), 0 0 80px hsl(var(--brand-celeste-400) / 0.25)',
+
+        'glow-celeste-subtle': '0 0 20px hsl(var(--brand-celeste-400) / 0.3), 0 0 40px hsl(var(--brand-celeste-400) / 0.15)',
+        'glow-celeste-medium': '0 0 30px hsl(var(--brand-celeste-400) / 0.4), 0 0 60px hsl(var(--brand-celeste-400) / 0.2)',
+        'glow-celeste-strong': '0 0 40px hsl(var(--brand-celeste-400) / 0.5), 0 0 80px hsl(var(--brand-celeste-400) / 0.25)',
+
+        'glow-dark-blue-subtle': '0 0 20px hsl(var(--brand-dark-blue-400) / 0.3), 0 0 40px hsl(var(--brand-dark-blue-400) / 0.15)',
+        'glow-dark-blue-medium': '0 0 30px hsl(var(--brand-dark-blue-400) / 0.4), 0 0 60px hsl(var(--brand-dark-blue-400) / 0.2)',
+        'glow-dark-blue-strong': '0 0 40px hsl(var(--brand-dark-blue-400) / 0.5), 0 0 80px hsl(var(--brand-dark-blue-400) / 0.25)',
+
+        'glow-sun-subtle': '0 0 20px hsl(var(--brand-sun-400) / 0.3), 0 0 40px hsl(var(--brand-sun-400) / 0.15)',
+        'glow-sun-medium': '0 0 30px hsl(var(--brand-sun-400) / 0.4), 0 0 60px hsl(var(--brand-sun-400) / 0.2)',
+        'glow-sun-strong': '0 0 40px hsl(var(--brand-sun-400) / 0.5), 0 0 80px hsl(var(--brand-sun-400) / 0.25)',
+
+        /* Glass Effect Combinations */
+        'glass-subtle': '0 4px 16px hsl(var(--brand-dark-blue-900) / 0.1), inset 0 1px 0 hsl(255 255 255 / 0.2)',
+        'glass-medium': '0 8px 32px hsl(var(--brand-dark-blue-900) / 0.15), inset 0 1px 0 hsl(255 255 255 / 0.3)',
+        'glass-strong': '0 12px 48px hsl(var(--brand-dark-blue-900) / 0.2), inset 0 1px 0 hsl(255 255 255 / 0.4)',
+
+        /* Windows 11 Specific */
+        'mica': '0 2px 8px hsl(var(--brand-dark-blue-900) / 0.08), inset 0 1px 0 hsl(255 255 255 / 0.15)',
+        'acrylic': '0 16px 64px hsl(var(--brand-dark-blue-900) / 0.18), inset 0 1px 0 hsl(255 255 255 / 0.35)',
+        'fluent': '0 8px 24px hsl(var(--brand-dark-blue-900) / 0.12), 0 4px 8px hsl(var(--brand-dark-blue-900) / 0.08), inset 0 1px 0 hsl(255 255 255 / 0.25)'
+      },
+      /* Enhanced Transition Properties */
+      transitionProperty: {
+        'glass': 'backdrop-filter, background, box-shadow, border',
+        'elevation': 'box-shadow, transform'
+      },
+      transitionDuration: {
+        '400': '400ms',
+        '600': '600ms',
+        '800': '800ms'
       }
     },
     screens: {

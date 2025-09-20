@@ -20,6 +20,7 @@ import { SizeProvider } from "@/components/ui/size-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { RealTimeProvider } from '@/components/RealTimeProvider';
 import { SocketNamespaceGuard } from '@/components/SocketNamespaceGuard';
+import { createThemeScript } from '@/utils/theme';
 import '@/utils/debugInit'; // Initialize debug panel
 import '@/utils/debugPanelStatus'; // Debug panel utilities
 
@@ -57,23 +58,26 @@ function AppContent({ children, isAuthenticated }) {
   };
 
   if (!isAuthenticated || pathname === '/auth/sign-in' || pathname === '/auth/sign-up') {
-    return <div className="flex-1">{children}</div>;
+    return children;
   }
 
   return (
     <>
-      <AppSidebar
-        user={user?.firstName ? {
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`,
-        } : null}
-        departments={departments || []}
-        onCreateDepartment={handleCreateDepartment}
-      >
-        {children}
-      </AppSidebar>
+      <div className="flex min-h-screen w-full mt-[1rem] ml-[0.5rem] mr-[0.5rem] max-w-full">
+        <AppSidebar
+          user={user?.firstName ? {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`,
+          } : null}
+          departments={departments || []}
+          onCreateDepartment={handleCreateDepartment}
+        />
+        <main className="flex-1 px-6 md:px-8">
+          {children}
+        </main>
+      </div>
       <ToastProvider>
         <Toast open={open} onOpenChange={setOpen} variant={toastData.variant}>
           <ToastTitle>{toastData.title}</ToastTitle>
@@ -97,17 +101,20 @@ export default function RootLayout({ children }) {
   }, []);
 
   return (
-    <html lang="en" className={monst.className}>
+    <html lang="en" className={monst.className} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: createThemeScript() }} />
+      </head>
       <body>
-        <div className="app-container">
-          <SizeProvider defaultSize="xl">
+        <div className="app-container w-full flex min-h-screen overflow-hidden">
+          <SizeProvider className="w-full" defaultSize="xl">
             <Provider store={store}>
               <PersistGate loading={null} persistor={persistor}>
                 <ApolloProvider client={client}>
-                  <NextUIProvider>
-                    <InitialDataLoader>
-                      <SocketNamespaceGuard>
-                        <RealTimeProvider>
+                  <NextUIProvider className="w-full">
+                    <InitialDataLoader className="w-full">
+                      <SocketNamespaceGuard className="w-full">
+                        <RealTimeProvider className="w-full">
                           <AppContent isAuthenticated={isAuthenticated}>
                             {children}
                           </AppContent>

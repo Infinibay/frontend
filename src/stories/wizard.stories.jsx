@@ -17,17 +17,24 @@ const meta = {
     docs: {
       description: {
         component: `
-# Wizard Component
+# Modern Wizard Component
 
-A flexible multi-step form wizard component that supports validation, error handling, and a completion hook.
+A beautifully designed, flexible multi-step form wizard with glassmorphism effects, smooth animations, and comprehensive validation support.
 
-## Features
-- Multi-step form navigation
-- Step-by-step validation
-- Error handling and display
-- Form value management
-- Progress indicator
-- Completion callback
+## ✨ Design Features
+- **Modern Glassmorphism**: Elegant backdrop blur effects and transparency
+- **Icon-based Progress**: Visual step indicators with completion states
+- **Smooth Animations**: Fluid transitions and micro-interactions
+- **Enhanced Typography**: Improved visual hierarchy and spacing
+- **Dark Theme Support**: Optimized for both light and dark themes
+
+## 🚀 Core Features
+- Multi-step form navigation with modern UI
+- Step-by-step validation with visual feedback
+- Comprehensive error handling and display
+- Advanced form value management
+- Animated progress indicators
+- Customizable completion callbacks
 
 ## Basic Usage
 
@@ -36,14 +43,23 @@ import { Wizard, WizardStep } from "@/components/ui/wizard"
 
 export function MyWizard() {
   return (
-    <Wizard onComplete={(values) => console.log(values)}>
-      <WizardStep id="step1">
-        {/* Step 1 content */}
-      </WizardStep>
-      <WizardStep id="step2">
-        {/* Step 2 content */}
-      </WizardStep>
-    </Wizard>
+    <div className="w-[800px] p-8">
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold mb-2">Setup Wizard</h1>
+        <p className="text-muted-foreground">Complete your setup in a few simple steps</p>
+      </div>
+      <Wizard onComplete={(values) => console.log(values)}>
+        <WizardStep id="personal">
+          {/* Personal information step */}
+        </WizardStep>
+        <WizardStep id="contact">
+          {/* Contact details step */}
+        </WizardStep>
+        <WizardStep id="preferences">
+          {/* Preferences step */}
+        </WizardStep>
+      </Wizard>
+    </div>
   )
 }
 \`\`\`
@@ -146,52 +162,98 @@ const validateContactInfo = (values) => {
 
 export const SimpleWizard = {
   render: () => (
-    <div className="w-[600px]">
+    <div className="w-[800px] p-8">
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold mb-2">Account Setup</h1>
+        <p className="text-muted-foreground">Let's get you started with a few quick steps</p>
+      </div>
       <Wizard
-        onComplete={(values) => console.log("Wizard completed with values:", values)}
+        onComplete={(values) => {
+          console.log("Wizard completed with values:", values)
+          alert("Setup completed successfully! Check console for details.")
+        }}
       >
         <WizardStep id="personal" validate={validatePersonalInfo}>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input name="firstName" placeholder="John" />
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Input
+                  name="firstName"
+                  label="First Name *"
+                  placeholder="Enter your first name"
+                  floatingLabel
+                />
+              </div>
+              <div className="space-y-1">
+                <Input
+                  name="lastName"
+                  label="Last Name *"
+                  placeholder="Enter your last name"
+                  floatingLabel
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input name="lastName" placeholder="Doe" />
+            <div className="text-sm text-muted-foreground">
+              <p>This information will be used to personalize your experience.</p>
             </div>
           </div>
         </WizardStep>
         <WizardStep id="contact" validate={validateContactInfo}>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input name="email" type="email" placeholder="john@example.com" />
+          <div className="space-y-6">
+            <div className="space-y-6">
+              <div className="space-y-1">
+                <Input
+                  name="email"
+                  type="email"
+                  label="Email Address *"
+                  placeholder="your.email@example.com"
+                  floatingLabel
+                />
+              </div>
+              <div className="space-y-1">
+                <Input
+                  name="phone"
+                  type="tel"
+                  label="Phone Number *"
+                  placeholder="+1 (555) 123-4567"
+                  floatingLabel
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input name="phone" type="tel" placeholder="+1 (555) 000-0000" />
+            <div className="text-sm text-muted-foreground">
+              <p>We'll use this information to send you important updates and notifications.</p>
             </div>
           </div>
         </WizardStep>
         <WizardStep id="preferences">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="theme">Theme Preference</Label>
-              <Select name="theme">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a theme" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="dark">Dark</SelectItem>
-                  <SelectItem value="system">System</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-6">
+            <div className="space-y-6">
+              <div className="space-y-1">
+                <Label htmlFor="theme" className="text-sm font-semibold mb-2 block">Theme Preference</Label>
+                <Select name="theme">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose your preferred theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">🌞 Light Theme</SelectItem>
+                    <SelectItem value="dark">🌙 Dark Theme</SelectItem>
+                    <SelectItem value="system">⚙️ System Default</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Textarea
+                  name="bio"
+                  label="About You (Optional)"
+                  placeholder="Tell us a bit about yourself and your interests..."
+                  floatingLabel
+                  autoResize
+                  maxLength={500}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea name="bio" placeholder="Tell us about yourself..." />
+            <div className="text-sm text-muted-foreground">
+              <p>These preferences can be changed later in your account settings.</p>
             </div>
           </div>
         </WizardStep>
@@ -202,14 +264,23 @@ export const SimpleWizard = {
     docs: {
       description: {
         story: `
-### Simple Wizard
+### Modern Simple Wizard
 
-A basic three-step wizard with validation:
-1. Personal information (first name, last name)
-2. Contact information (email, phone)
-3. Preferences (theme, bio)
+A beautifully designed three-step account setup wizard featuring:
 
-Each step has validation to ensure required fields are filled.
+**Design Features:**
+- Modern glassmorphism effects with enhanced visual hierarchy
+- Icon-based progress indicators with smooth animations
+- Improved spacing and typography
+- Enhanced button styling with hover effects
+- Step descriptions and contextual help text
+
+**Functionality:**
+1. **Personal Info** - Collect basic user information with validation
+2. **Contact Details** - Gather communication preferences
+3. **Preferences** - Customize user experience settings
+
+Each step includes comprehensive validation and helpful user guidance.
         `,
       },
     },
@@ -336,18 +407,18 @@ const TeamStep = () => {
         <RequiredLabel>
           <Label htmlFor="teamSize">Team Size</Label>
         </RequiredLabel>
-        <Select 
+        <Select
           name="teamSize"
           value={teamValues.teamSize}
           onValueChange={(value) => setValue('team.teamSize', value)}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select team size" />
+            <SelectValue placeholder="Select your team size" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="small">1-5</SelectItem>
-            <SelectItem value="medium">6-10</SelectItem>
-            <SelectItem value="large">11+</SelectItem>
+            <SelectItem value="small">👥 Small Team (1-5 people)</SelectItem>
+            <SelectItem value="medium">🏢 Medium Team (6-10 people)</SelectItem>
+            <SelectItem value="large">🏭 Large Team (11+ people)</SelectItem>
           </SelectContent>
         </Select>
         {getError('teamSize') && (
@@ -358,18 +429,19 @@ const TeamStep = () => {
         <RequiredLabel>
           <Label htmlFor="methodology">Development Methodology</Label>
         </RequiredLabel>
-        <Select 
+        <Select
           name="methodology"
           value={teamValues.methodology}
           onValueChange={(value) => setValue('team.methodology', value)}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select methodology" />
+            <SelectValue placeholder="Choose development methodology" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="agile">Agile</SelectItem>
-            <SelectItem value="waterfall">Waterfall</SelectItem>
-            <SelectItem value="kanban">Kanban</SelectItem>
+            <SelectItem value="agile">🔄 Agile Development</SelectItem>
+            <SelectItem value="waterfall">📊 Waterfall Methodology</SelectItem>
+            <SelectItem value="kanban">📋 Kanban Workflow</SelectItem>
+            <SelectItem value="scrum">⚡ Scrum Framework</SelectItem>
           </SelectContent>
         </Select>
         {getError('methodology') && (
@@ -391,18 +463,19 @@ const SettingsStep = () => {
         <RequiredLabel>
           <Label htmlFor="privacy">Project Privacy</Label>
         </RequiredLabel>
-        <Select 
+        <Select
           name="privacy"
           value={settingsValues.privacy}
           onValueChange={(value) => setValue('settings.privacy', value)}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select privacy setting" />
+            <SelectValue placeholder="Choose privacy level" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="public">Public</SelectItem>
-            <SelectItem value="private">Private</SelectItem>
-            <SelectItem value="team">Team Only</SelectItem>
+            <SelectItem value="public">🌍 Public Access</SelectItem>
+            <SelectItem value="private">🔒 Private Project</SelectItem>
+            <SelectItem value="team">👥 Team Members Only</SelectItem>
+            <SelectItem value="restricted">🔐 Restricted Access</SelectItem>
           </SelectContent>
         </Select>
         {getError('privacy') && (
@@ -422,7 +495,11 @@ export const ComplexWizard = {
     }
 
     return (
-      <div className="w-[600px]">
+      <div className="w-[900px] p-8">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold mb-2">Project Setup Wizard</h1>
+          <p className="text-muted-foreground">Create and configure your new project in just a few steps</p>
+        </div>
         <Wizard
           onComplete={handleComplete}
           initialValues={{
@@ -491,19 +568,28 @@ export const ComplexWizard = {
     docs: {
       description: {
         story: `
-### Complex Wizard
+### Advanced Project Setup Wizard
 
-A more complex three-step wizard that demonstrates:
-1. Project information with async validation
-2. Team settings with select inputs
-3. Project settings with a completion dialog
+A sophisticated multi-step project creation wizard showcasing:
 
-Features demonstrated:
-- Async validation (project name uniqueness check)
-- Different input types (text, textarea, select)
-- Completion dialog with collected values
-- Required field indicators
-- Error message display
+**Enhanced Design Elements:**
+- Professional glassmorphism styling with backdrop blur effects
+- Animated progress indicators with completion states
+- Modern card layouts with improved visual hierarchy
+- Smooth transitions and micro-interactions
+- Enhanced button styling with loading states
+
+**Advanced Features:**
+1. **Project Details** - Async validation with uniqueness checking
+2. **Team Configuration** - Dropdown selections with team methodology
+3. **Privacy Settings** - Final configuration with completion summary
+
+**Technical Highlights:**
+- Asynchronous validation with loading states
+- Form state management across multiple steps
+- Error handling with contextual messaging
+- Completion dialog with formatted results
+- Required field validation with visual indicators
         `,
       },
     },

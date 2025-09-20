@@ -226,7 +226,7 @@ const SettingMain = () => {
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <div className="container max-w-6xl mx-auto p-6 space-y-8">
         {/* Header */}
         <div className="space-y-2">

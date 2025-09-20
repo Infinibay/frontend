@@ -5,6 +5,9 @@ import { useDispatch } from "react-redux";
 import { cn } from "@/lib/utils";
 import { UserPc } from "@/components/ui/user-pc";
 import { LottieAnimation } from "@/components/ui/lottie-animation";
+import { Button } from "@/components/ui/button";
+import { fetchVms } from "@/state/slices/vms";
+import { countMachines } from "@/app/computers/utils/groupMachines";
 import {
   DndContext,
   DragOverlay,
@@ -58,8 +61,8 @@ function DroppableDepartment({ departmentId, departmentName, children, isOver })
       )}
       <div
         className={cn(
-          "min-h-[100px] p-4 rounded-lg border border-dashed transition-colors",
-          isOver ? "border-primary bg-primary/5" : "border-border"
+          "min-h-[100px] p-4 glass-subtle rounded-xl backdrop-blur-sm transition-all duration-200",
+          isOver ? "glass-medium border-primary/30 bg-primary/10 backdrop-blur-md" : "bg-card/30"
         )}
       >
         {children}
@@ -123,16 +126,9 @@ export function ComputersList({
     setOverDepartmentId(null);
 
     if (over) {
-      // Determine drop target; may be a department container or a machine card
       const dropData = over.data?.current;
-      const destinationId = dropData?.type === 'department'
-        ? dropData.departmentId
-        : groupedMachines[over.id]?.id || over.id; // fallback
-
-      console.log('Moving machine:', { machineId: active.id, departmentId: destinationId, dropData });
-      // Only dispatch if destinationId looks like a department (skip if it's same as source, optional)
-      if (destinationId) {
-        await dispatch(moveMachine({ id: active.id, departmentId: destinationId }));
+      if (dropData?.type === 'department' && dropData.departmentId) {
+        await dispatch(moveMachine({ id: active.id, departmentId: dropData.departmentId }));
       }
     }
   };
@@ -149,19 +145,43 @@ export function ComputersList({
   }
 
   if (error) {
+    const isNetworkError = error.includes('Network error') || error.includes('fetch') || error.includes('connection');
+
     return (
-      <div className="text-red-500 p-4 text-center">
-        Error loading machines: {error}
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+        <LottieAnimation
+          animationPath="/lottie/error.json"
+          className="w-32 h-32 opacity-80 mb-4"
+          loop={true}
+          autoplay={true}
+        />
+        <div className="text-center space-y-4">
+          <h3 className="text-lg font-semibold text-destructive">
+            {isNetworkError ? 'Connection Error' : 'Loading Error'}
+          </h3>
+          <p className="text-muted-foreground max-w-md">
+            {isNetworkError
+              ? 'Unable to connect to the backend server. Please check your connection and try again.'
+              : `Error loading machines: ${error}`
+            }
+          </p>
+          <Button
+            onClick={() => dispatch(fetchVms())}
+            variant="outline"
+            className="mt-4"
+          >
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
 
-  const machineCount = Object.values(groupedMachines).reduce(
-    (count, group) => count + (group.machines?.length || group.length || 0),
-    0
-  );
+  const machineCount = countMachines(groupedMachines);
 
   if (machineCount === 0) {
+    const noDataLoaded = !loading && !error && (!groupedMachines || Object.keys(groupedMachines).length === 0);
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
         <LottieAnimation
@@ -170,8 +190,26 @@ export function ComputersList({
           loop={true}
           autoplay={true}
         />
-        <p className="text-lg text-muted-foreground">No virtual machines found</p>
-        <p className="text-sm text-muted-foreground mt-2">Create your first virtual machine to get started</p>
+        <div className="text-center space-y-2">
+          <p className="text-lg text-muted-foreground">
+            {noDataLoaded ? 'No data loaded yet' : 'No virtual machines found'}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {noDataLoaded
+              ? 'Data may still be loading or there might be a connection issue'
+              : 'Create your first virtual machine to get started'
+            }
+          </p>
+          {noDataLoaded && (
+            <Button
+              onClick={() => dispatch(fetchVms())}
+              variant="outline"
+              className="mt-4"
+            >
+              Load Machines
+            </Button>
+          )}
+        </div>
       </div>
     );
   }

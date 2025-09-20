@@ -1,7 +1,7 @@
 "use client";
 
 // React and hooks
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,7 @@ export default function ComputersPage() {
   // UI State
   const [grid, setGrid] = useState(false);
   const [byDepartment, setByDepartment] = useState(true);
+  const hasRequested = useRef(false);
 
   // Redux state
   const dispatch = useDispatch();
@@ -55,10 +56,19 @@ export default function ComputersPage() {
     handlePause,
     handleStop,
     handleDelete,
+    handleRefresh,
   } = useComputerActions();
 
   // Group machines by department
   const groupedMachines = groupMachinesByDepartment(byDepartment, machines || [], departments);
+
+  // Fetch VMs data on component mount
+  useEffect(() => {
+    if (!hasRequested.current && (!machines || machines.length === 0) && !loading) {
+      hasRequested.current = true;
+      dispatch(fetchVms());
+    }
+  }, [dispatch, machines, loading]);
 
   // Handle Escape key
   useEffect(() => {
@@ -82,9 +92,9 @@ export default function ComputersPage() {
       )}
       <ToastViewport />
 
-      <ComputersHeader hasISOs={hasISOs} />
+      <ComputersHeader hasISOs={hasISOs} onRefresh={handleRefresh} />
 
-      <section className="flex-1 p-4 md:p-8">
+      <section className="flex-1 w-full">
         <div className="space-y-4">
           <ComputersList
             loading={loading}

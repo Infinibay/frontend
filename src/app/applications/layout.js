@@ -25,7 +25,7 @@ export default function ApplicationsLayout({ children }) {
 
   return (
     <ProtectedRoute>
-      <div className="flex items-start !bg-[#FAFAFA]">
+      <div className="flex items-start">
         <div className="ml-auto w-full">
           <div className="flex flex-col min-h-screen">
             {/* Header would go here */}

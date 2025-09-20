@@ -40,6 +40,11 @@ export const sizeVariants = {
       width: "16rem",
       mobileWidth: "18rem",
       padding: "px-4",
+      fixedWidth: "16rem",
+    },
+    animation: {
+      duration: "250ms",
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
     },
     icon: {
       size: "w-4 h-4",
@@ -58,6 +63,13 @@ export const sizeVariants = {
       size: "w-5 h-5",
       text: "text-xs",
       padding: "px-1.5",
+    },
+    card: {
+      padding: "p-3",
+      title: "text-lg",
+      description: "text-xs",
+      content: "p-3 pt-0",
+      footer: "p-3 pt-0",
     }
   },
   md: {
@@ -76,6 +88,11 @@ export const sizeVariants = {
       width: "18rem",
       mobileWidth: "20rem",
       padding: "px-5",
+      fixedWidth: "18rem",
+    },
+    animation: {
+      duration: "300ms",
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
     },
     icon: {
       size: "w-5 h-5",
@@ -94,6 +111,13 @@ export const sizeVariants = {
       size: "w-6 h-6",
       text: "text-sm",
       padding: "px-2",
+    },
+    card: {
+      padding: "p-4",
+      title: "text-xl",
+      description: "text-sm",
+      content: "p-4 pt-0",
+      footer: "p-4 pt-0",
     }
   },
   lg: {
@@ -112,6 +136,11 @@ export const sizeVariants = {
       width: "20rem",
       mobileWidth: "22rem",
       padding: "px-6",
+      fixedWidth: "20rem",
+    },
+    animation: {
+      duration: "350ms",
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
     },
     icon: {
       size: "w-6 h-6",
@@ -130,6 +159,13 @@ export const sizeVariants = {
       size: "w-7 h-7",
       text: "text-base",
       padding: "px-2.5",
+    },
+    card: {
+      padding: "p-6",
+      title: "text-2xl",
+      description: "text-base",
+      content: "p-6 pt-0",
+      footer: "p-6 pt-0",
     }
   },
   xl: {
@@ -148,6 +184,11 @@ export const sizeVariants = {
       width: "24rem",
       mobileWidth: "26rem",
       padding: "px-8",
+      fixedWidth: "24rem",
+    },
+    animation: {
+      duration: "400ms",
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
     },
     icon: {
       size: "w-7 h-7",
@@ -166,6 +207,43 @@ export const sizeVariants = {
       size: "w-8 h-8",
       text: "text-lg",
       padding: "px-3",
+    },
+    card: {
+      padding: "p-8",
+      title: "text-3xl",
+      description: "text-lg",
+      content: "p-8 pt-0",
+      footer: "p-8 pt-0",
     }
   },
+}
+
+// Helper functions for animation support
+export function getSizeAnimationProps(size) {
+  const variant = sizeVariants[size] || sizeVariants.md;
+  return {
+    duration: variant.animation.duration,
+    easing: variant.animation.easing,
+    fixedWidth: variant.navbar.fixedWidth,
+  };
+}
+
+export function toCSSCustomProperties(size) {
+  const variant = sizeVariants[size] || sizeVariants.md;
+  return {
+    '--sidebar-width-fixed': variant.navbar.fixedWidth,
+    '--sidebar-animation-duration': variant.animation.duration,
+    '--sidebar-animation-easing': variant.animation.easing,
+  };
+}
+
+export function toMotionDivProps(size) {
+  const variant = sizeVariants[size] || sizeVariants.md;
+  return {
+    style: { width: variant.navbar.fixedWidth },
+    transition: {
+      duration: parseFloat(variant.animation.duration) / 1000, // Convert to seconds
+      ease: variant.animation.easing,
+    },
+  };
 }

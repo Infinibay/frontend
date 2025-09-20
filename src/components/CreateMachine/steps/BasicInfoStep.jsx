@@ -10,6 +10,9 @@ import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
 import { selectDepartments, selectDepartmentsLoading } from '@/state/slices/departments';
 import { Building2, User, Lock, KeyRound, Server } from 'lucide-react';
+import { useSafeResolvedTheme } from '@/utils/safe-theme';
+import { getWizardStepCardClasses, getWizardStepCardStyles } from '@/utils/wizard-glass-helpers';
+import { cn } from '@/lib/utils';
 
 export function BasicInfoStep({ id, departmentId = null }) {
   const { setValue, values } = useWizardContext();
@@ -17,6 +20,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
   const stepValues = values[id] || {};
   const departments = useSelector(selectDepartments);
   const isLoading = useSelector(selectDepartmentsLoading);
+  const theme = useSafeResolvedTheme();
 
   return (
     <div className="space-y-6">
@@ -29,10 +33,14 @@ export function BasicInfoStep({ id, departmentId = null }) {
 
       <div className="space-y-6">
         {departmentId == null && (
-          <Card className="p-6 bg-gradient-to-br from-primary/5 via-primary/3 to-background border-primary/20 shadow-lg">
+          <Card
+            className={cn("p-6", getWizardStepCardClasses(theme))}
+            style={getWizardStepCardStyles(theme)}
+            glow="none"
+          >
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
                   <Building2 className="h-5 w-5 text-primary" />
                 </div>
                 <div>
@@ -71,11 +79,15 @@ export function BasicInfoStep({ id, departmentId = null }) {
           </Card>
         )}
 
-        <Card className="p-6 bg-gradient-to-br from-blue-500/5 via-blue-400/3 to-background border-blue-500/20 shadow-lg">
+        <Card
+          className={cn("p-6", getWizardStepCardClasses(theme))}
+          style={getWizardStepCardStyles(theme)}
+          glow="none"
+        >
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
                   <Server className="h-5 w-5 text-blue-500" />
                 </div>
                 <div className="flex-1">
@@ -105,11 +117,15 @@ export function BasicInfoStep({ id, departmentId = null }) {
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-purple-500/5 via-purple-400/3 to-background border-purple-500/20 shadow-lg">
+        <Card
+          className={cn("p-6", getWizardStepCardClasses(theme))}
+          style={getWizardStepCardStyles(theme)}
+          glow="none"
+        >
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
                   <User className="h-5 w-5 text-purple-500" />
                 </div>
                 <div className="flex-1">
@@ -139,7 +155,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
 
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
                   <Lock className="h-5 w-5 text-purple-500" />
                 </div>
                 <div className="flex-1">
@@ -171,10 +187,14 @@ export function BasicInfoStep({ id, departmentId = null }) {
         </Card>
 
         {values.configuration?.os?.startsWith('WINDOWS') && (
-          <Card className="p-6 bg-gradient-to-br from-amber-500/5 via-amber-400/3 to-background border-amber-500/20 shadow-lg">
+          <Card
+            className={cn("p-6", getWizardStepCardClasses(theme))}
+            style={getWizardStepCardStyles(theme)}
+            glow="none"
+          >
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
                   <KeyRound className="h-5 w-5 text-amber-500" />
                 </div>
                 <div className="flex-1">

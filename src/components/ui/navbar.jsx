@@ -7,6 +7,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchVms } from "@/state/slices/vms";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { motion, AnimatePresence } from "framer-motion";
 
 // UI Components
 import { Button } from "./button";
@@ -21,8 +23,24 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarInset,
+  useSidebar,
 } from "./sidebar";
 import { useSizeContext, sizeVariants } from "./size-provider";
+import {
+  getGlassNavContainer,
+  getGlassNavItem,
+  getMicaNavigation,
+  getAcrylicOverlay,
+  getFluentNavCard,
+  getMinimalGlassContainer,
+  getNavBrandGlow,
+  getSunNavHighlight,
+  debounceNavGlassTransition,
+  getReducedTransparencyFallback,
+  getAccessibleNavContrast,
+  getFocusRingForGlass,
+  getResponsiveBlur
+} from "@/utils/navigation-glass";
 import {
   Dialog,
   DialogContent,
@@ -44,12 +62,23 @@ import { ImInsertTemplate } from "react-icons/im";
 import { ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { HiPlus } from "react-icons/hi";
 
+// Helper component to handle sidebar collapsed state
+function SidebarWidthContainer({ children }) {
+  const { isMobile, open } = useSidebar();
+  const width = isMobile ? 0 : (open ? 'var(--sidebar-width)' : 0);
+  return (
+    <div className="relative flex-shrink-0" style={{ width, height: 'calc(100vh - 2rem)' }}>
+      {children}
+    </div>
+  );
+}
+
 const AppSidebar = React.forwardRef(({
   user,
   departments = [],
-  children,
   onLogOut,
   onCreateDepartment,
+  reducedTransparency = false,
   ...props
 }, ref) => {
   const pathname = usePathname();
@@ -65,6 +94,7 @@ const AppSidebar = React.forwardRef(({
 
   const { size: contextSize } = useSizeContext();
   const sizes = sizeVariants[contextSize];
+  const isMobile = useIsMobile();
   const sidebarWidth = sizes.navbar.width;
   const sidebarWidthMobile = sizes.navbar.mobileWidth;
   const sidebarWidthIcon = sizes.icon.button.replace("w-", "") + "rem";
@@ -144,8 +174,8 @@ const AppSidebar = React.forwardRef(({
 
   // Initialize department selection and sidebar state based on the current path
   React.useEffect(() => {
-    // Check if we're on a department page
-    if (pathname.startsWith('/departments/')) {
+    // Check if we're on a specific department page (not the general departments page)
+    if (pathname.startsWith('/departments/') && pathname !== '/departments') {
       // Extract department name from the path
       const pathParts = pathname.split('/');
       const departmentIndex = pathParts.findIndex(part => part === 'departments');
@@ -177,6 +207,17 @@ const AppSidebar = React.forwardRef(({
     }
   }, [pathname, departments]);
 
+  // Close sub-sidebar when navigating to routes without submenu
+  React.useEffect(() => {
+    // Only show submenu for specific department pages, not the general departments page
+    const isDepartmentSpecificPage = pathname.startsWith('/departments/') && pathname !== '/departments';
+
+    if (!isDepartmentSpecificPage) {
+      setSubSidebarVisible(false);
+      setActiveSidebarSection(null);
+    }
+  }, [pathname]);
+
   // Menu item styles based on size
   const menuStyles = {
     text: sizes.text,
@@ -200,12 +241,28 @@ const AppSidebar = React.forwardRef(({
       <SidebarMenuItem key={item.id}>
         <SidebarMenuButton
           className={cn(
-            "text-gray-300 hover:text-white w-full",
+            "text-sidebar-foreground/80 hover:text-sidebar-foreground w-full",
             menuStyles.text,
             menuStyles.spacing.item,
-            isActive(item.href) && "bg-blue-600 text-white"
+            isActive(item.href) && "glass-subtle text-sidebar-foreground",
+            getAccessibleNavContrast('bg-sidebar', 'light'),
+            getFocusRingForGlass('light')
           )}
-          onClick={() => item.hasSubmenu ? openSubSidebar(item.id) : router.push(item.href)}
+          onClick={() => {
+            if (item.hasSubmenu) {
+              if (isMobile) {
+                // On mobile, show submenu content within main sidebar
+                setActiveSidebarSection(item.id);
+              } else {
+                // On desktop, open sub-sidebar
+                openSubSidebar(item.id);
+              }
+            } else {
+              setSubSidebarVisible(false);
+              setActiveSidebarSection(null);
+              router.push(item.href);
+            }
+          }}
         >
           <div className={cn("flex items-center", menuStyles.gap)}>
             {item.icon && <item.icon className={menuStyles.icon} />}
@@ -224,21 +281,22 @@ const AppSidebar = React.forwardRef(({
             <Button
               variant="ghost"
               onClick={closeSubSidebar}
-              className="text-white hover:text-white hover:bg-indigo-500/30 mr-2 rounded-full transition-all transform hover:scale-105"
+              className={cn(
+                "text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/30 mr-2 rounded-full transition-all transform hover:scale-105",
+                getFocusRingForGlass('light')
+              )}
             >
               <ChevronLeft className={menuStyles.icon} />
             </Button>
-            <span className="text-white font-medium tracking-wide text-lg">Departments</span>
+            <span className="text-sidebar-foreground font-medium tracking-wide text-lg">Departments</span>
           </div>
         </SidebarHeader>
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-800 via-indigo-700 to-purple-800 opacity-90 z-[-1]"></div>
-        <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-5 z-[-1]"></div>
         <SidebarContent className="relative">
           <SidebarMenu>
             <SidebarMenuItem>
               <div className="p-4">
-                <label className="block text-sm text-blue-100 mb-2 font-medium">Department</label>
-                <div className="bg-white/10 rounded-lg overflow-hidden backdrop-blur-md border border-white/20 shadow-lg">
+                <label className="block text-sm text-sidebar-foreground/80 mb-2 font-medium">Department</label>
+                <div className={cn("glass-medium rounded-lg overflow-hidden border border-sidebar-border/20 shadow-lg", getFluentNavCard())}>
                   <InputSelector
                     items={departments}
                     selectedItem={departments.find(dept => dept.name.toLowerCase() === selectedDepartment.toLowerCase())}
@@ -247,21 +305,21 @@ const AppSidebar = React.forwardRef(({
                     searchPlaceholder="Search departments..."
                     itemLabelKey="name"
                     itemValueKey="id"
-                    className="!bg-transparent text-white border-transparent hover:!bg-white/10 transition-colors"
+                    className="!bg-transparent text-sidebar-foreground border-transparent hover:!bg-sidebar-accent/10 transition-colors"
                   />
                 </div>
               </div>
             </SidebarMenuItem>
 
             <div className="px-4 pt-2 pb-4">
-              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+              <div className={cn("glass-subtle rounded-xl p-3", getFluentNavCard())}>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === "/departments"}
                     className={cn(
-                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg",
-                      pathname === "/departments" ? "bg-indigo-500/30 text-white" : "",
+                      "text-sidebar-foreground/80 hover:text-sidebar-foreground w-full transition-all hover:bg-sidebar-accent/10 rounded-lg",
+                      pathname === "/departments" ? "glass-subtle text-sidebar-foreground" : "",
                       menuStyles.text,
                       menuStyles.spacing.item
                     )}
@@ -276,14 +334,14 @@ const AppSidebar = React.forwardRef(({
                   <SidebarMenuButton
                     onClick={handleCreateDepartmentClick}
                     className={cn(
-                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg mt-1",
+                      "text-sidebar-foreground/80 hover:text-sidebar-foreground w-full transition-all hover:bg-sidebar-accent/10 rounded-lg mt-1",
                       menuStyles.text,
                       menuStyles.spacing.item
                     )}
                   >
                     <div className={cn("flex items-center", menuStyles.gap)}>
-                      <div className="bg-gradient-to-r from-indigo-400 to-purple-400 p-1 rounded-md">
-                        <HiPlus className="w-3 h-3 text-indigo-900" />
+                      <div className={cn("glass-subtle p-1 rounded-md")}>
+                        <HiPlus className="w-3 h-3 text-sidebar-foreground" />
                       </div>
                       <span>Create Department</span>
                     </div>
@@ -295,17 +353,15 @@ const AppSidebar = React.forwardRef(({
             {/* Computers section */}
             <div className="px-4 pt-2 pb-4">
               <div className="flex items-center mb-3">
-                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
-                <h3 className="px-3 text-sm font-semibold text-indigo-200">Computers</h3>
-                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
+                <h3 className="px-3 text-sm font-semibold text-sidebar-foreground/70">Computers</h3>
               </div>
 
-              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+              <div className={cn("glass-subtle rounded-xl p-3", getFluentNavCard())}>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
                     className={cn(
-                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg",
+                      "text-sidebar-foreground/80 hover:text-sidebar-foreground w-full transition-all hover:bg-sidebar-accent/10 rounded-lg",
                       menuStyles.text,
                       menuStyles.spacing.item
                     )}
@@ -313,7 +369,7 @@ const AppSidebar = React.forwardRef(({
                     <Link href={selectedDepartment ? `/departments/${selectedDepartment}` : "/departments"} className={cn("flex items-center justify-between", menuStyles.gap)}>
                       <span>All computers</span>
                       {departmentVMs.length > 0 && (
-                        <span className="bg-indigo-500/40 text-white text-xs px-2 py-0.5 rounded-full">
+                        <span className="glass-subtle text-sidebar-foreground text-xs px-2 py-0.5 rounded-full">
                           {departmentVMs.length}
                         </span>
                       )}
@@ -323,9 +379,9 @@ const AppSidebar = React.forwardRef(({
 
                 {/* VM List */}
                 {selectedDepartment && departmentVMs.length > 0 && (
-                  <div className="mt-2 border-t border-white/10 pt-2">
+                  <div className="mt-2 border-t border-sidebar-border/20 pt-2">
                     <div className="px-3 py-1">
-                      <span className="text-xs font-medium text-indigo-200/70">Virtual Machines</span>
+                      <span className="text-xs font-medium text-sidebar-foreground/60">Virtual Machines</span>
                     </div>
                     <SidebarVMList
                       machines={departmentVMs}
@@ -339,17 +395,15 @@ const AppSidebar = React.forwardRef(({
             {/* Security section */}
             <div className="px-4 pt-2 pb-4">
               <div className="flex items-center mb-3">
-                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
-                <h3 className="px-3 text-sm font-semibold text-indigo-200">Security</h3>
-                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-300/30 to-transparent"></div>
+                <h3 className="px-3 text-sm font-semibold text-sidebar-foreground/70">Security</h3>
               </div>
 
-              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+              <div className={cn("glass-subtle rounded-xl p-3", getFluentNavCard())}>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
                     className={cn(
-                      "text-white/80 hover:text-white w-full transition-all hover:bg-white/10 rounded-lg",
+                      "text-sidebar-foreground/80 hover:text-sidebar-foreground w-full transition-all hover:bg-sidebar-accent/10 rounded-lg",
                       menuStyles.text,
                       menuStyles.spacing.item
                     )}
@@ -365,6 +419,26 @@ const AppSidebar = React.forwardRef(({
         </SidebarContent>
       </>
     );
+  };
+
+  // Animation variants for slide transitions
+  const slideVariants = {
+    main: {
+      initial: { x: 0 },
+      animate: { x: subSidebarVisible ? '-100%' : 0 },
+      exit: { x: '-100%' }
+    },
+    sub: {
+      initial: { x: '-100%' },
+      animate: { x: subSidebarVisible ? 0 : '-100%' },
+      exit: { x: '-100%' }
+    }
+  };
+
+  const springTransition = {
+    type: 'spring',
+    stiffness: 260,
+    damping: 30
   };
 
   return (
@@ -407,145 +481,128 @@ const AppSidebar = React.forwardRef(({
         </DialogContent>
       </Dialog>
 
-      <div className="flex h-screen">
+      <div className="flex-shrink-0">
         <SidebarProvider
           defaultOpen
           sidebarWidth={sidebarWidth}
           sidebarWidthMobile={sidebarWidthMobile}
           sidebarWidthIcon={sidebarWidthIcon}
         >
-          {/* Main Sidebar */}
-          <Sidebar
-            className={cn(
-              "bg-blue-700 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50 transition-all duration-300",
-              subSidebarVisible && "transform -translate-x-full"
-            )}
-            data-collapsible="sidebar"
-          >
-            {/* Decorative waves */}
-            <div className="absolute inset-x-0 bottom-0 pointer-events-none opacity-20" style={{ height: '100%' }}>
-              <svg
-                className="absolute bottom-0 h-full"
-                preserveAspectRatio="none"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 1000 1000"
-              >
-                {/* First wave - slowest, biggest */}
-                <path
-                  d="M0,350 
-                     C200,300 300,400 500,350 
-                     C700,300 800,400 1000,350 
-                     C1200,300 1300,400 1500,350 
-                     L1500,1000 L0,1000 Z"
-                  fill="rgb(30 64 175)"
-                  className="animate-[wave1_25s_linear_infinite]"
-                />
-                {/* Second wave - medium speed, different pattern */}
-                <path
-                  d="M0,400 
-                     C150,350 250,450 400,400 
-                     C550,350 650,450 800,400 
-                     C950,350 1050,450 1200,400 
-                     L1200,1000 L0,1000 Z"
-                  fill="rgb(37 99 235)"
-                  className="animate-[wave2_18s_linear_infinite]"
-                />
-                {/* Third wave - fastest, most detailed */}
-                <path
-                  d="M0,450 
-                     C100,400 200,500 300,450 
-                     C400,400 500,500 600,450 
-                     C700,400 800,500 900,450 
-                     C1000,400 1100,500 1200,450 
-                     L1200,1000 L0,1000 Z"
-                  fill="rgb(59 130 246)"
-                  className="animate-[wave3_12s_linear_infinite]"
-                />
-              </svg>
-            </div>
-
-            <style jsx>{`
-              @keyframes wave1 {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-500px); }
-              }
-              @keyframes wave2 {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-400px); }
-              }
-              @keyframes wave3 {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-300px); }
-              }
-            `}</style>
-
-            <SidebarHeader
-              className={cn("border-b border-blue-700 relative", menuStyles.spacing.container)}
-            >
-              <Link href="/">
-                <Image
-                  src="/images/sidebarLogo.png"
-                  alt="Logo"
-                  width={120}
-                  height={40}
-                  className={cn("w-auto rounded-none", menuStyles.logo)}
-                  radius="none"
-                />
-              </Link>
-            </SidebarHeader>
-            <SidebarContent className="relative">
-              <SidebarMenu>{renderMainMenuItems()}</SidebarMenu>
-            </SidebarContent>
-            <SidebarFooter
-              className={cn("border-t border-blue-700 relative", menuStyles.spacing.container)}
-            >
-              {user && (
-                <div className={cn("flex items-center px-2 mb-4", menuStyles.gap)}>
-                  <Image
-                    src={user.avatar}
-                    alt={`${user.firstName} ${user.lastName}'s avatar`}
-                    width={40}
-                    height={40}
-                    className={cn("rounded-full bg-blue-800 p-1", menuStyles.avatar)}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className={cn("text-white font-medium truncate", menuStyles.text)}>
-                      {user.firstName} {user.lastName}
-                    </h3>
-                    <p className={cn("text-blue-200 truncate", menuStyles.text)}>
-                      {user.role}
-                    </p>
-                  </div>
-                </div>
+          {/* Sidebar Animation Container */}
+          <SidebarWidthContainer>
+            <AnimatePresence mode="wait">
+              {/* Main Sidebar */}
+              {(!subSidebarVisible || isMobile) && (
+                <motion.div
+                  key="main-sidebar"
+                  variants={slideVariants.main}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={springTransition}
+                  className="h-full w-full"
+                >
+                  <Sidebar
+                    variant="sidebar"
+                    collapsible="none"
+                    className={cn(
+                      "overflow-hidden border-r border-sidebar-border",
+                      "h-full",
+                      getGlassNavContainer({ variant: 'minimal', theme: 'light', size: contextSize })
+                    )}
+                    data-collapsible="sidebar"
+                    data-reduced-transparency={reducedTransparency ? 'true' : undefined}
+                  >
+                    <SidebarHeader
+                      className={cn("border-b border-sidebar-border relative", menuStyles.spacing.container)}
+                    >
+                      <Link href="/">
+                        <Image
+                          src="/images/sidebarLogo.png"
+                          alt="Logo"
+                          width={120}
+                          height={40}
+                          className={cn("w-auto rounded-none", menuStyles.logo)}
+                          radius="none"
+                        />
+                      </Link>
+                    </SidebarHeader>
+                    <SidebarContent className="relative">
+                      <SidebarMenu>
+                        {isMobile && activeSidebarSection === "departments"
+                          ? renderDepartmentsSubMenu(departmentVMs)
+                          : renderMainMenuItems()
+                        }
+                      </SidebarMenu>
+                    </SidebarContent>
+                    <SidebarFooter
+                      className={cn("border-t border-sidebar-border relative", menuStyles.spacing.container)}
+                    >
+                      {user && (
+                        <div className={cn("flex items-center px-2 mb-4", menuStyles.gap)}>
+                          <Image
+                            src={user.avatar}
+                            alt={`${user.firstName} ${user.lastName}'s avatar`}
+                            width={40}
+                            height={40}
+                            className={cn("rounded-full bg-sidebar-accent p-1", menuStyles.avatar)}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h3 className={cn("text-sidebar-foreground font-medium truncate", menuStyles.text)}>
+                              {user.firstName} {user.lastName}
+                            </h3>
+                            <p className={cn("text-sidebar-foreground/70 truncate", menuStyles.text)}>
+                              {user.role}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "w-full justify-start text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+                          menuStyles.text,
+                          menuStyles.spacing.item,
+                          menuStyles.gap
+                        )}
+                        onClick={onLogOut}
+                      >
+                        <BiLogOut className={menuStyles.icon} />
+                        Logout
+                      </Button>
+                    </SidebarFooter>
+                  </Sidebar>
+                </motion.div>
               )}
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start text-gray-300 hover:text-white hover:bg-blue-600",
-                  menuStyles.text,
-                  menuStyles.spacing.item,
-                  menuStyles.gap
-                )}
-                onClick={onLogOut}
-              >
-                <BiLogOut className={menuStyles.icon} />
-                Logout
-              </Button>
-            </SidebarFooter>
-          </Sidebar>
 
-          {/* Sub-Sidebar */}
-          <Sidebar
-            className={cn(
-              "bg-blue-800 overflow-hidden shadow-[4px_0_10px_rgba(0,0,0,0.15)] border-r border-gray-200/10 z-50 absolute top-0 left-0 h-full transition-all duration-300",
-              subSidebarVisible ? "transform translate-x-0" : "transform -translate-x-full"
-            )}
-            data-collapsible="sidebar"
-          >
-            {activeSidebarSection === "departments" && renderDepartmentsSubMenu(departmentVMs)}
-          </Sidebar>
-
-          <SidebarInset>{children}</SidebarInset>
+              {/* Sub-Sidebar - Only render on desktop when visible */}
+              {!isMobile && subSidebarVisible && (
+                <motion.div
+                  key="sub-sidebar"
+                  variants={slideVariants.sub}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={springTransition}
+                  className="h-full w-full"
+                >
+                  <Sidebar
+                    variant="sidebar"
+                    collapsible="none"
+                    className={cn(
+                      "overflow-hidden border-r border-sidebar-border",
+                      "h-full",
+                      getGlassNavContainer({ variant: 'minimal', theme: 'light', size: contextSize })
+                    )}
+                    data-collapsible="sidebar"
+                    data-reduced-transparency={reducedTransparency ? 'true' : undefined}
+                  >
+                    {activeSidebarSection === "departments" && renderDepartmentsSubMenu(departmentVMs)}
+                  </Sidebar>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </SidebarWidthContainer>
         </SidebarProvider>
       </div>
     </>

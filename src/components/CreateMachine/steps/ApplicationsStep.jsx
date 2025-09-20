@@ -6,12 +6,17 @@ import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
 import AppInstaller from '@/components/ui/app-installer';
 import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
+import { useSafeResolvedTheme } from '@/utils/safe-theme';
+import { getWizardStepCardClasses, getWizardStepCardStyles } from '@/utils/wizard-glass-helpers';
+import { cn } from '@/lib/utils';
 
 export function ApplicationsStep({ id }) {
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
   const stepValues = values[id] || {};
-  
+  const theme = useSafeResolvedTheme();
+
   const applications = useSelector((state) => state.applications.items);
   const loading = useSelector((state) => state.applications.loading.fetch);
   const error = useSelector((state) => state.applications.error.fetch);
@@ -59,7 +64,7 @@ export function ApplicationsStep({ id }) {
         </p>
       </div>
 
-        <div>
+        <Card glow="none" className={cn("p-6", getWizardStepCardClasses(theme))} style={getWizardStepCardStyles(theme)}>
           <Label
             moreInformation="Applications will be automatically installed during machine creation. You can drag applications from the available list to the installed list. Additional applications can be installed later through the machine's management interface."
           >
@@ -82,10 +87,10 @@ export function ApplicationsStep({ id }) {
               onInstall={handleInstall}
               onUninstall={handleUninstall}
               size="md"
-              className="min-h-[400px]"
+              className="min-h-[400px] mt-4"
             />
           )}
-        </div>
+        </Card>
 
       {getError('applications') && (
         <p className="mt-2 text-sm text-red-500">{getError('applications')}</p>

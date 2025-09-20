@@ -2,8 +2,9 @@
 
 import { cn } from "@/lib/utils";
 import { BsGrid, BsPlusLg } from "react-icons/bs";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useSelector } from "react-redux";
 import {
   Header,
   HeaderLeft,
@@ -26,9 +27,18 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-export function ComputersHeader({ hasISOs = true }) {
+export function ComputersHeader({ hasISOs = true, onRefresh }) {
+  const vmsLoading = useSelector((state) => state.vms.loading?.fetch);
+  const vmsError = useSelector((state) => state.vms.error?.fetch);
+
   return (
-    <Header variant="glass" elevated>
+    <Header
+      variant="glass"
+      elevated
+      sticky={true}
+      style={{ top: 0 }}
+      className="z-30"
+    >
       <HeaderLeft className="w-[200px]">
         <Breadcrumb>
           <BreadcrumbList>
@@ -43,12 +53,43 @@ export function ComputersHeader({ hasISOs = true }) {
         </Breadcrumb>
       </HeaderLeft>
       <HeaderCenter>
-        <h1 className="text-lg sm:text-2xl font-medium text-gray-800">
+        <h1 className="text-lg sm:text-2xl font-medium text-foreground">
           Computers
         </h1>
       </HeaderCenter>
       <HeaderRight className="w-[200px] flex items-center justify-end space-x-2">
         <div className="flex items-center space-x-2">
+          {/* Refresh Button */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRefresh}
+                  disabled={vmsLoading}
+                  className={cn(
+                    "whitespace-nowrap",
+                    vmsError && "border-destructive text-destructive hover:bg-destructive/10"
+                  )}
+                >
+                  <RefreshCw className={cn(
+                    "h-4 w-4",
+                    vmsLoading && "animate-spin"
+                  )} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  {vmsLoading ? 'Refreshing...' :
+                   vmsError ? 'Retry loading machines' :
+                   'Refresh machines'}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* New VM Button */}
           {hasISOs ? (
             <Link href="/computers/create">
               <Button className="whitespace-nowrap">
@@ -61,8 +102,8 @@ export function ComputersHeader({ hasISOs = true }) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div>
-                    <Button 
-                      className="whitespace-nowrap" 
+                    <Button
+                      className="whitespace-nowrap"
                       disabled
                       variant="secondary"
                     >
@@ -73,8 +114,8 @@ export function ComputersHeader({ hasISOs = true }) {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Upload an ISO image first to create VMs</p>
-                  <Link 
-                    href="/settings?tab=iso" 
+                  <Link
+                    href="/settings?tab=iso"
                     className="text-primary underline text-xs mt-1 block"
                   >
                     Go to Settings

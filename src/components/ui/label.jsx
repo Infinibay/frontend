@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { useSizeContext, sizeVariants } from "./size-provider"
 
 const labelVariants = cva(
-  "font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+  "font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground",
   {
     variants: {
       size: {

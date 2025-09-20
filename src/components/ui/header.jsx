@@ -2,6 +2,15 @@ import * as React from "react"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { useSizeContext, sizeVariants } from "./size-provider"
+import {
+  getHeaderGlass,
+  getMicaNavigation,
+  getAcrylicOverlay,
+  getNavBrandGlow,
+  getSunNavHighlight,
+  debounceNavGlassTransition,
+  getReducedTransparencyFallback
+} from "@/utils/navigation-glass"
 
 const headerVariants = cva(
   "w-full flex items-center justify-between border-b transition-all duration-200",
@@ -14,25 +23,49 @@ const headerVariants = cva(
         xl: cn("h-24", sizeVariants.xl.padding, sizeVariants.xl.gap, sizeVariants.xl.text),
       },
       variant: {
-        default: "bg-white border-gray-200",
+        default: "bg-background text-foreground border-sidebar-border",
         primary: "bg-primary text-primary-foreground border-primary/20",
         secondary: "bg-gray-900 text-white border-gray-800",
-        success: "bg-emerald-500 text-white border-emerald-600",
-        error: "bg-red-500 text-white border-red-600",
-        warning: "bg-amber-500 text-white border-amber-600",
-        info: "bg-blue-500 text-white border-blue-600",
+        success: "bg-accent text-accent-foreground border-accent/20",
+        error: "bg-destructive text-destructive-foreground border-destructive/20",
+        warning: "bg-accent text-accent-foreground border-accent/20",
+        info: "bg-primary text-primary-foreground border-primary/20",
         dark: "bg-gray-950 text-gray-200 border-gray-800",
-        glass: "bg-white/70 backdrop-blur-md border-white/20 shadow-sm",
+        glass: "mica bg-sidebar/90 backdrop-blur-md border-sidebar-border/20 shadow-sm",
+        acrylic: "acrylic bg-sidebar/70 backdrop-blur-lg border-sidebar-border/30 elevation-4",
+        fluent: "fluent-card bg-sidebar/80 backdrop-blur-md border-brand-celeste/20 glow-brand-celeste glow-subtle",
         gradient: "bg-gradient-to-r from-primary/90 to-primary text-primary-foreground border-transparent",
-        "gradient-secondary": "bg-gradient-to-r from-gray-900 to-gray-800 text-white border-transparent",
-        "gradient-success": "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white border-transparent",
-        "gradient-error": "bg-gradient-to-r from-red-600 to-red-500 text-white border-transparent",
+        "gradient-secondary": "bg-gradient-to-r from-sidebar/90 to-sidebar text-sidebar-foreground border-transparent",
+        "gradient-success": "bg-gradient-to-r from-accent/90 to-accent text-accent-foreground border-transparent",
+        "gradient-error": "bg-gradient-to-r from-destructive/90 to-destructive text-destructive-foreground border-transparent",
+        "brand-primary": "bg-brand-dark-blue text-sidebar-foreground border-brand-dark-blue/20 glow-brand-dark-blue glow-subtle",
+        "brand-secondary": "bg-brand-celeste text-sidebar border-brand-celeste/20 glow-brand-celeste glow-medium",
+        "brand-accent": "bg-brand-sun text-sidebar border-brand-sun/20 glow-brand-sun glow-subtle",
       },
       sticky: {
-        true: "sticky top-0 z-50",
+        true: "sticky z-50 top-0",
       },
       elevated: {
         true: "shadow-md",
+      },
+      elevation: {
+        1: "elevation-1",
+        2: "elevation-2",
+        3: "elevation-3",
+        4: "elevation-4",
+        5: "elevation-5",
+      },
+      glow: {
+        celeste: "glow-brand-celeste glow-subtle",
+        "dark-blue": "glow-brand-dark-blue glow-medium",
+        sun: "glow-brand-sun glow-subtle",
+      },
+      glass: {
+        subtle: "glass-subtle",
+        medium: "glass-medium",
+        strong: "glass-strong",
+        mica: "mica",
+        acrylic: "acrylic",
       },
       bordered: {
         true: "border",
@@ -49,35 +82,51 @@ const headerVariants = cva(
       {
         variant: "glass",
         sticky: true,
-        className: "backdrop-blur-lg bg-white/80"
+        className: "backdrop-blur-lg mica"
       },
     ],
   }
 )
 
-const Header = React.forwardRef(({ 
-  className, 
-  size: sizeProp, 
-  variant, 
+const Header = React.forwardRef(({
+  className,
+  size: sizeProp,
+  variant,
   sticky,
   elevated,
   bordered,
-  ...props 
+  elevation,
+  glow,
+  glass,
+  reducedTransparency = false,
+  ...props
 }, ref) => {
   const { size: contextSize } = useSizeContext()
   const size = sizeProp || contextSize
 
+  // If glass prop is provided, override any glass-related variant
+  const effectiveVariant = glass ? (variant === 'glass' || variant === 'acrylic' || variant === 'fluent' ? 'default' : variant) : variant
+
   return (
     <header
       ref={ref}
-      className={cn(headerVariants({ 
-        size, 
-        variant, 
+      className={cn(headerVariants({
+        size,
+        variant: effectiveVariant,
         sticky,
         elevated,
         bordered,
-        className 
-      }))}
+        elevation,
+        glow,
+        glass
+      }),
+      glass && getReducedTransparencyFallback(),
+      glass && debounceNavGlassTransition(),
+      className)}
+      style={{
+        ...props.style
+      }}
+      data-reduced-transparency={reducedTransparency ? 'true' : undefined}
       {...props}
     />
   )

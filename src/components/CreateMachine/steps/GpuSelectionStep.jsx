@@ -8,6 +8,9 @@ import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { fetchGraphics, selectGraphics, selectSystemLoading, selectSystemError } from '@/state/slices/system';
+import { useSafeResolvedTheme } from '@/utils/safe-theme';
+import { getWizardStepCardClasses } from '@/utils/wizard-glass-helpers';
+import { cn } from '@/lib/utils';
 
 export function GpuSelectionStep({ id }) {
   const dispatch = useDispatch();
@@ -17,6 +20,7 @@ export function GpuSelectionStep({ id }) {
   const loading = useSelector(selectSystemLoading);
   const error = useSelector(selectSystemError);
   const stepValues = values[id] || {};
+  const theme = useSafeResolvedTheme();
 
   useEffect(() => {
     dispatch(fetchGraphics());
@@ -55,7 +59,7 @@ export function GpuSelectionStep({ id }) {
         </p>
       </div>
 
-      <Card className="p-6">
+      <Card glow="none" className={cn("p-6", getWizardStepCardClasses(theme))}>
         <div className="space-y-4">
           <Label
             moreInformation="A GPU can significantly improve graphics performance for applications that require hardware acceleration."
@@ -80,11 +84,13 @@ export function GpuSelectionStep({ id }) {
             {allOptions.map((gpu) => (
               <Label
                 key={gpu.pciBus}
-                className={`relative flex cursor-pointer rounded-lg border-2 p-4 hover:border-primary transition-all duration-200 ${
-                  stepValues.gpuId === gpu.pciBus 
-                    ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg' 
-                    : 'border-input hover:shadow-md hover:bg-accent/50'
-                }`}
+                className={cn(
+                  "relative flex cursor-pointer rounded-lg p-4 transition-all duration-200",
+                  getWizardStepCardClasses(theme),
+                  stepValues.gpuId === gpu.pciBus
+                    ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                    : 'hover:border-primary/50 hover:bg-primary/5'
+                )}
               >
                 <RadioGroupItem
                   value={gpu.pciBus}
