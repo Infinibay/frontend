@@ -1,8 +1,8 @@
 import * as React from "react"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useSizeContext, sizeVariants } from "./size-provider"
-import { combineElevationAndGlow } from "@/utils/glass-effects"
+import { useSizeContext } from "./size-provider"
+import { combineElevationAndGlow, getBrandGlow } from "@/utils/glass-effects"
 
 const cardVariants = cva(
   "border bg-card text-card-foreground transition-all duration-200",
@@ -10,13 +10,16 @@ const cardVariants = cva(
     variants: {
       glass: {
         none: "",
-        minimal: "glass-minimal backdrop-blur-sm",
-        subtle: "glass-subtle backdrop-blur-sm",
-        medium: "glass-medium backdrop-blur-md",
-        strong: "glass-strong backdrop-blur-lg",
-        mica: "mica backdrop-blur-xl",
-        acrylic: "acrylic backdrop-blur-2xl",
-        fluent: "fluent-card backdrop-blur-lg",
+        minimal: "glass-minimal",
+        subtle: "glass-subtle",
+        medium: "glass-medium",
+        strong: "glass-strong",
+      },
+      effect: {
+        none: "",
+        mica: "mica",
+        acrylic: "acrylic",
+        fluent: "fluent-card",
       },
       elevation: {
         none: "",
@@ -38,19 +41,20 @@ const cardVariants = cva(
         sun: "glow-sun",
       },
       radius: {
-        sm: "rounded-fluent-sm",
-        md: "rounded-fluent-md",
-        lg: "rounded-fluent-lg",
-        xl: "rounded-fluent-xl",
-        default: "rounded-xl",
+        sm: "radius-fluent-sm",
+        md: "radius-fluent-md",
+        lg: "radius-fluent-lg",
+        xl: "radius-fluent-xl",
+        default: "radius-fluent-lg",
       },
     },
     defaultVariants: {
       glass: "none",
+      effect: "none",
       elevation: "1",
       glow: "none",
       glowColor: "celeste",
-      radius: "default",
+      radius: "lg",
     },
   }
 )
@@ -58,6 +62,7 @@ const cardVariants = cva(
 const Card = React.forwardRef(({
   className,
   glass,
+  effect,
   elevation,
   glow,
   glowColor,
@@ -70,7 +75,7 @@ const Card = React.forwardRef(({
   const getResponsiveGlass = (glass) => {
     if (!glass || glass === 'none') return 'none'
     if (size === 'sm') {
-      return glass === 'strong' || glass === 'mica' || glass === 'acrylic' ? 'minimal' : glass
+      return glass === 'strong' ? 'minimal' : glass
     }
     return glass
   }
@@ -78,20 +83,34 @@ const Card = React.forwardRef(({
   const responsiveGlass = getResponsiveGlass(glass)
   const responsiveElevation = elevation || (size === 'sm' ? '1' : elevation || '2')
 
+  // Enforce precedence: if effect is specified, don't apply glass variant
+  const effectiveGlass = effect !== 'none' ? undefined : responsiveGlass
+
   // Combine elevation and glow when glow is active
-  const boxShadow = glow !== 'none' ? combineElevationAndGlow(Number(responsiveElevation), glowColor, glow) : undefined
+  const elevationLevel = responsiveElevation === 'none' ? 0 : Number(responsiveElevation)
+  const boxShadow = glow !== 'none'
+    ? (elevationLevel === 0
+        ? getBrandGlow(glowColor, glow)
+        : combineElevationAndGlow(elevationLevel, glowColor, glow)
+      )
+    : undefined
 
   return (
     <div
       ref={ref}
       className={cn(
         cardVariants({
-          glass: responsiveGlass,
+          glass: effectiveGlass,
+          effect,
           elevation: boxShadow ? 'none' : responsiveElevation, // Skip elevation class when using combined shadow
           glow: 'none', // Skip glow class when using combined shadow
           glowColor,
           radius
         }),
+        // Apply backdrop-filter fallbacks
+        "supports-[not(backdrop-filter:blur(1px))]:bg-card/95 supports-[not(backdrop-filter:blur(1px))]:border supports-[not(backdrop-filter:blur(1px))]:border-border",
+        // Motion-reduce fallbacks
+        "motion-reduce:backdrop-blur-none motion-reduce:bg-card motion-reduce:border motion-reduce:border-border",
         className
       )}
       style={boxShadow ? { boxShadow } : undefined}
@@ -102,15 +121,12 @@ const Card = React.forwardRef(({
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
-
   return (
     <div
       ref={ref}
       className={cn(
         "flex flex-col space-y-1.5",
-        sizes.card.padding,
+        "size-card-padding",
         className
       )}
       {...props}
@@ -120,15 +136,12 @@ const CardHeader = React.forwardRef(({ className, ...props }, ref) => {
 CardHeader.displayName = "CardHeader"
 
 const CardTitle = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
-
   return (
     <div
       ref={ref}
       className={cn(
         "font-semibold leading-none tracking-tight",
-        sizes.card.title,
+        "size-card-title",
         className
       )}
       {...props}
@@ -138,15 +151,12 @@ const CardTitle = React.forwardRef(({ className, ...props }, ref) => {
 CardTitle.displayName = "CardTitle"
 
 const CardDescription = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
-
   return (
     <div
       ref={ref}
       className={cn(
         "text-foreground",
-        sizes.card.description,
+        "size-card-description",
         className
       )}
       {...props}
@@ -156,14 +166,11 @@ const CardDescription = React.forwardRef(({ className, ...props }, ref) => {
 CardDescription.displayName = "CardDescription"
 
 const CardContent = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
-
   return (
     <div
       ref={ref}
       className={cn(
-        sizes.card.content,
+        "size-card-content",
         className
       )}
       {...props}
@@ -173,15 +180,12 @@ const CardContent = React.forwardRef(({ className, ...props }, ref) => {
 CardContent.displayName = "CardContent"
 
 const CardFooter = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
-
   return (
     <div
       ref={ref}
       className={cn(
         "flex items-center",
-        sizes.card.footer,
+        "size-card-footer",
         className
       )}
       {...props}

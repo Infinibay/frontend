@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { MagnifyingGlassIcon, Cross2Icon } from "@radix-ui/react-icons"
 import { cn } from "@/lib/utils"
 import { Input } from "./input"
-import { useOptionalSizeContext, sizeVariants } from "./size-provider"
+import { useOptionalSizeContext } from "./size-provider"
 
 const AppSearchBar = React.forwardRef(({
   searchTerm = "",
@@ -17,7 +17,6 @@ const AppSearchBar = React.forwardRef(({
 }, ref) => {
   const sizeContext = useOptionalSizeContext()
   const size = propSize || sizeContext?.size || 'md'
-  const sizes = sizeVariants[size] || sizeVariants.md
 
   const [localValue, setLocalValue] = React.useState(searchTerm)
   const [debouncedValue, setDebouncedValue] = React.useState(searchTerm)

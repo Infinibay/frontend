@@ -183,55 +183,121 @@ color: hsl(var(--glass-text-primary));    /* Remains accessible */
 
 **Location**: `src/components/ui/size-provider.jsx`
 
-The size system provides four consistent scales across the entire application:
+The size system provides four consistent scales across the entire application using CSS classes and custom properties. The Size Provider automatically applies CSS classes to the document root and generates CSS variables for automatic scaling.
 
 ```jsx
 import { useSizeContext } from '@/components/ui/size-provider'
 
+// For conditional logic and settings only
 const { size, setSize, getSizeLabel } = useSizeContext()
 ```
 
 ### Available Sizes
 
-| Size | Label       | Use Case                    |
+| Size | Label       | Use Case                    | CSS Class  |
 |------|-------------|-----------------------------|
-| `sm` | Compact     | Dense UIs, mobile devices   |
-| `md` | Standard    | Default desktop experience  |
-| `lg` | Comfortable | Accessibility, larger screens |
-| `xl` | Spacious    | Presentation mode, demos    |
+| `sm` | Compact     | Dense UIs, mobile devices   | `size-sm` |
+| `md` | Standard    | Default desktop experience  | `size-md` |
+| `lg` | Comfortable | Accessibility, larger screens | `size-lg` |
+| `xl` | Spacious    | Presentation mode, demos    | `size-xl` |
 
-### Size Variants Structure
+### CSS Classes Reference
 
-Each size includes comprehensive spacing, sizing, and component definitions:
+The new system provides ready-to-use CSS classes that automatically scale based on the current size. No JavaScript required for styling.
 
+#### Typography Classes
+```css
+.size-text          /* Base text size */
+.size-heading       /* Standard headings */
+.size-mainheading   /* Main page headings */
+.size-subheading    /* Section subheadings */
+.size-heading2      /* Secondary headings */
+.size-small         /* Small text */
+.size-xsmall        /* Extra small text */
+```
+
+#### Spacing Classes
+```css
+.size-padding       /* Standard padding */
+.size-gap          /* Flex/grid gaps */
+.size-container    /* Container spacing */
+.size-item         /* List item spacing */
+.size-sub-item     /* Nested item spacing */
+.size-margin-xs    /* Extra small margins */
+.size-margin-sm    /* Small margins */
+```
+
+#### Dimension Classes
+```css
+.size-height       /* Standard height */
+.size-width        /* Standard width */
+.size-icon         /* Icon dimensions */
+.size-icon-button  /* Icon button size */
+.size-icon-nav     /* Navigation icon size */
+.size-avatar       /* Avatar dimensions */
+.size-logo         /* Logo dimensions */
+```
+
+#### Component-Specific Classes
+```css
+.size-input-height    /* Input field height */
+.size-badge-padding   /* Badge internal spacing */
+.size-card-title      /* Card title spacing */
+.size-navbar-width    /* Navigation width */
+.size-card-padding    /* Card internal spacing */
+```
+
+#### Combined Component Classes
+```css
+.size-input        /* Complete input styling */
+.size-button       /* Complete button styling */
+.size-card         /* Complete card styling */
+.size-badge        /* Complete badge styling */
+```
+
+### Usage Patterns
+
+**Simple CSS Classes (Recommended):**
 ```jsx
-// Example size variant structure
-sizeVariants.md = {
-  text: "text-base",
-  heading: "text-xl font-semibold",
-  padding: "px-4 py-2",
-  height: "h-10",
-  gap: "gap-3",
-  spacing: {
-    container: "p-4",
-    item: "px-5 py-3",
-    subItem: "pl-12 pr-5 py-3"
-  },
-  navbar: {
-    width: "18rem",
-    padding: "px-5"
-  },
-  // ... and more
+const MyComponent = () => {
+  return (
+    <div className="size-container size-padding">
+      <h2 className="size-heading">Title</h2>
+      <p className="size-text">Content that automatically scales</p>
+      <button className="size-button">Action</button>
+    </div>
+  )
 }
 ```
 
-### Using Size Variants
-
-**In Components:**
+**Component-Specific Classes:**
 ```jsx
-import { sizeVariants } from '@/components/ui/size-provider'
+const FormComponent = () => {
+  return (
+    <div className="size-card size-gap">
+      <input className="size-input" />
+      <div className="size-badge">Status</div>
+    </div>
+  )
+}
+```
 
-const MyComponent = () => {
+**Size-Specific Selectors (Advanced):**
+```css
+/* Custom styles that only apply in large size */
+.size-lg .my-component {
+  /* Custom large-size styling */
+}
+
+.size-sm .my-component {
+  /* Custom small-size styling */
+}
+```
+
+**Migration Example:**
+```jsx
+// OLD PATTERN (deprecated)
+const OldComponent = () => {
   const { size } = useSizeContext()
   const variant = sizeVariants[size]
 
@@ -241,19 +307,44 @@ const MyComponent = () => {
     </div>
   )
 }
+
+// NEW PATTERN (recommended)
+const NewComponent = () => {
+  return (
+    <div className="size-padding size-text">
+      Content
+    </div>
+  )
+}
 ```
 
-**Custom Size Classes:**
+### Advanced Usage
+
+**Using CSS Custom Properties:**
+```css
+.my-custom-component {
+  padding: var(--size-padding);
+  font-size: var(--size-text);
+  gap: var(--size-gap);
+}
+```
+
+**Conditional Logic (when needed):**
 ```jsx
-const getSizeAwareClasses = (size) => {
-  const base = "transition-all duration-200"
-  const sizeClasses = {
-    sm: "text-sm p-2 gap-1",
-    md: "text-base p-3 gap-2",
-    lg: "text-lg p-4 gap-3",
-    xl: "text-xl p-6 gap-4"
-  }
-  return `${base} ${sizeClasses[size] || sizeClasses.md}`
+const SettingsComponent = () => {
+  const { size, setSize } = useSizeContext()
+
+  // Use context for conditional logic, not styling
+  const showAdvanced = size === 'lg' || size === 'xl'
+
+  return (
+    <div className="size-container">
+      {showAdvanced && <AdvancedOptions />}
+      <select value={size} onChange={(e) => setSize(e.target.value)}>
+        {/* Size selector */}
+      </select>
+    </div>
+  )
 }
 ```
 
@@ -922,16 +1013,28 @@ const HeavyComponent = lazy(() => import('./HeavyComponent'))
 
 #### Design Tokens for Spacing
 
-Infinibay uses a consistent spacing scale based on the size provider:
+Infinibay uses a consistent spacing scale based on CSS classes that automatically scale:
 
 **Size-Aware Spacing:**
 ```jsx
-// Get spacing values from size provider
-const { size } = useSizeContext()
-const variant = sizeVariants[size]
+// Automatic scaling without JavaScript
+return (
+  <div className="size-container size-gap">
+    {/* Content automatically adapts to current size */}
+  </div>
+)
+```
 
-// Apply contextual spacing
-className={`${variant.spacing.container} ${variant.gap}`}
+**Size-Specific Overrides:**
+```css
+/* Custom spacing for specific sizes */
+.size-lg .custom-spacing {
+  padding: var(--size-padding);
+}
+
+.size-sm .custom-spacing {
+  gap: var(--size-gap);
+}
 ```
 
 **Spacing Hierarchy:**
@@ -1087,13 +1190,15 @@ import { useSizeContext } from '@/components/ui/size-provider'
 
 const StyleSettings = () => {
   const { theme, setTheme } = useAppTheme()
+  // Context used for settings logic, not styling
   const { size, setSize, availableSizes } = useSizeContext()
 
   return (
-    <div className="settings-container glass-medium p-6">
-      <h2>Appearance Settings</h2>
+    <div className="settings-container glass-medium size-container">
+      <h2 className="size-heading">Appearance Settings</h2>
 
       <ThemeSelector value={theme} onChange={setTheme} />
+      {/* Settings controls use context for logic */}
       <SizeSelector value={size} onChange={setSize} options={availableSizes} />
       <WallpaperSelector />
       <AccessibilitySettings />
@@ -1101,6 +1206,8 @@ const StyleSettings = () => {
   )
 }
 ```
+
+**Note**: `useSizeContext` is primarily used for conditional logic and settings controls. For styling, use CSS classes which automatically scale.
 
 #### Wallpaper Management
 
@@ -1351,15 +1458,31 @@ Remember: **Great design is invisible** - when users can focus on their tasks wi
 **Essential Imports:**
 ```jsx
 import { useAppTheme } from '@/contexts/ThemeProvider'
-import { useSizeContext } from '@/components/ui/size-provider'
+import { useSizeContext } from '@/components/ui/size-provider' // For conditional logic only
 import { cn } from '@/lib/utils'
+// Note: sizeVariants import no longer needed for most cases
 ```
 
 **Key Classes to Remember:**
-- `glass-minimal` - For content over wallpapers
-- `text-glass-text-primary` - For readable text on glass
-- `elevation-{1-5}` - For proper shadow hierarchy
-- `radius-fluent-{sm|md|lg|xl}` - For consistent border radius
+- **Glass Effects**: `glass-minimal`, `glass-subtle`, `glass-medium`, `glass-strong`, `glass-overlay`
+- **Size Typography**: `size-text`, `size-heading`, `size-mainheading`, `size-small`
+- **Size Spacing**: `size-padding`, `size-gap`, `size-container`, `size-margin-xs`
+- **Size Dimensions**: `size-height`, `size-width`, `size-icon`, `size-avatar`
+- **Size Components**: `size-input`, `size-button`, `size-card`, `size-badge`
+- **Size Layout**: `size-card-grid`, `size-section-spacing`, `size-navbar-width`
+- **Legacy Classes**: `text-glass-text-primary`, `elevation-{1-5}`, `radius-fluent-{sm|md|lg|xl}`
+
+**Size System Quick Reference:**
+```css
+/* Individual classes (mix and match) */
+.size-padding .size-text .size-gap
+
+/* Combined component classes (complete styling) */
+.size-button .size-input .size-card
+
+/* Size-specific selectors (advanced) */
+.size-lg .component { /* large-size only */ }
+```
 
 **Testing Checklist:**
 - [ ] Light and dark theme compatibility

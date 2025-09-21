@@ -2,7 +2,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cn } from "@/lib/utils"
 import { ChevronRightIcon, DotsHorizontalIcon } from "@radix-ui/react-icons"
-import { useSizeContext, sizeVariants } from "./size-provider"
+import { useSizeContext } from "./size-provider"
 
 const Breadcrumb = React.forwardRef(
   ({ ...props }, ref) => <nav ref={ref} aria-label="breadcrumb" {...props} />
@@ -10,41 +10,33 @@ const Breadcrumb = React.forwardRef(
 Breadcrumb.displayName = "Breadcrumb"
 
 const BreadcrumbList = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
-
   return (
     <ol
       ref={ref}
       className={cn(
         "flex flex-wrap items-center break-words text-muted-foreground",
-        sizes.text,
-        sizes.gap,
+        "size-text",
+        "size-gap",
         className
       )}
-      {...props} 
+      {...props}
     />
   )
 })
 BreadcrumbList.displayName = "BreadcrumbList"
 
 const BreadcrumbItem = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
-
   return (
     <li
       ref={ref}
-      className={cn("inline-flex items-center", sizes.gap, className)}
-      {...props} 
+      className={cn("inline-flex items-center", "size-gap", className)}
+      {...props}
     />
   )
 })
 BreadcrumbItem.displayName = "BreadcrumbItem"
 
 const BreadcrumbLink = React.forwardRef(({ asChild, className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
   const Comp = asChild ? Slot : "a"
 
   return (
@@ -52,7 +44,7 @@ const BreadcrumbLink = React.forwardRef(({ asChild, className, ...props }, ref) 
       ref={ref}
       className={cn(
         "transition-colors hover:text-foreground",
-        sizes.text,
+        "size-text",
         className
       )}
       {...props} />)
@@ -61,9 +53,6 @@ const BreadcrumbLink = React.forwardRef(({ asChild, className, ...props }, ref) 
 BreadcrumbLink.displayName = "BreadcrumbLink"
 
 const BreadcrumbPage = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
-
   return (
     <span
       ref={ref}
@@ -72,10 +61,10 @@ const BreadcrumbPage = React.forwardRef(({ className, ...props }, ref) => {
       aria-current="page"
       className={cn(
         "font-normal text-foreground",
-        sizes.text,
+        "size-text",
         className
       )}
-      {...props} 
+      {...props}
     />
   )
 })
@@ -86,16 +75,13 @@ const BreadcrumbSeparator = ({
   className,
   ...props
 }) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
-
   return (
     <li
       role="presentation"
       aria-hidden="true"
       className={cn(
         "flex items-center justify-center mx-1",
-        `[&>svg]:${sizes.icon.size}`,
+        "[&>svg]:size-icon",
         className
       )}
       {...props}
@@ -110,21 +96,18 @@ const BreadcrumbEllipsis = ({
   className,
   ...props
 }) => {
-  const { size } = useSizeContext()
-  const sizes = sizeVariants[size]
-
   return (
     <span
       role="presentation"
       aria-hidden="true"
       className={cn(
         "flex items-center justify-center",
-        sizes.text,
+        "size-text",
         className
       )}
       {...props}
     >
-      <DotsHorizontalIcon className={sizes.icon.size} />
+      <DotsHorizontalIcon className="size-icon" />
       <span className="sr-only">More</span>
     </span>
   )

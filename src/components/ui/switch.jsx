@@ -4,7 +4,7 @@ import * as React from "react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 
 import { cn } from "@/lib/utils"
-import { useSizeContext, sizeVariants } from "./size-provider"
+import { useSizeContext } from "./size-provider"
 import { getSwitchGlass, getFormFocusRing, getFormGlassTransition, getReducedTransparencyForm } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 

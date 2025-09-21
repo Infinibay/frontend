@@ -137,6 +137,10 @@ module.exports = {
         selection: {
           DEFAULT: 'hsl(var(--selection-bg))',
           foreground: 'hsl(var(--selection-text))'
+        },
+        'glass-text': {
+          primary: 'hsl(var(--glass-text-primary))',
+          secondary: 'hsl(var(--glass-text-secondary))'
         }
       },
       keyframes: {

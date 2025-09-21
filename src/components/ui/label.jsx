@@ -6,17 +6,17 @@ import { cva } from "class-variance-authority"
 import { HelpCircle } from "lucide-react"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card"
 import { cn } from "@/lib/utils"
-import { useSizeContext, sizeVariants } from "./size-provider"
+import { useSizeContext } from "./size-provider"
 
 const labelVariants = cva(
   "font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground",
   {
     variants: {
       size: {
-        sm: cn(sizeVariants.sm.text, "[&+div>svg]:h-3 [&+div>svg]:w-3"),
-        md: cn(sizeVariants.md.text, "[&+div>svg]:h-4 [&+div>svg]:w-4"),
-        lg: cn(sizeVariants.lg.text, "[&+div>svg]:h-5 [&+div>svg]:w-5"),
-        xl: cn(sizeVariants.xl.text, "[&+div>svg]:h-6 [&+div>svg]:w-6"),
+        sm: "size-text [&+div>svg]:size-icon",
+        md: "size-text [&+div>svg]:size-icon",
+        lg: "size-text [&+div>svg]:size-icon",
+        xl: "size-text [&+div>svg]:size-icon",
       }
     },
     defaultVariants: {

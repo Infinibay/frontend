@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "./sheet";
-import { useOptionalSizeContext, sizeVariants } from "./size-provider";
+import { useOptionalSizeContext } from "./size-provider";
 
 // Icons
 import { BsFillPauseFill, BsFillPlayFill } from "react-icons/bs";
@@ -36,7 +36,6 @@ const PcDetails = React.forwardRef(({
 
   // Use global size context with fallback to prop, then 'md'
   const currentSize = size || globalSize || 'md';
-  const sizes = sizeVariants[currentSize];
 
   // Extract dimensions from avatar size class
   const getDimensions = (sizeClass) => {
@@ -186,7 +185,7 @@ const PcDetails = React.forwardRef(({
         </div>
 
         <SheetHeader className="pb-4">
-          <SheetTitle className={cn("font-bold flex items-center gap-3", sizes.card.title)}>
+          <SheetTitle className={cn("font-bold flex items-center gap-3", "size-card-title")}>
             <Image
               src={avatar}
               alt={`${name} avatar`}
@@ -197,7 +196,7 @@ const PcDetails = React.forwardRef(({
             {name}
           </SheetTitle>
           <SheetDescription className="flex items-center justify-between">
-            <span className={sizes.text}>
+            <span className={"size-text"}>
               Status: <span className={cn(
                 "font-medium",
                 isRunning && "text-green-500",
@@ -205,8 +204,8 @@ const PcDetails = React.forwardRef(({
                 isStopped && "text-red-500"
               )}>{status}</span>
             </span>
-            <span className={cn("flex items-center gap-2", sizes.text)}>
-              <FaUser className={sizes.icon.size} />
+            <span className={cn("flex items-center gap-2", "size-text")}>
+              <FaUser className={"size-icon"} />
               {user?.firstName || 'N/A'}
             </span>
           </SheetDescription>
@@ -217,48 +216,48 @@ const PcDetails = React.forwardRef(({
           <div className="grid grid-cols-2 gap-4 mt-6">
             {/* CPU */}
             <div className="flex items-center gap-2">
-              <FiCpu className={sizes.icon.size} />
+              <FiCpu className={"size-icon"} />
               <div>
-                <div className={cn("font-medium", sizes.text)}>CPU</div>
-                <div className={cn("text-muted-foreground", sizes.card.description)}>{template?.cores || 'N/A'} Cores</div>
+                <div className={cn("font-medium", "size-text")}>CPU</div>
+                <div className={cn("text-muted-foreground", "size-card-description")}>{template?.cores || 'N/A'} Cores</div>
               </div>
             </div>
 
             {/* RAM */}
             <div className="flex items-center gap-2">
-              <BsMemory className={sizes.icon.size} />
+              <BsMemory className={"size-icon"} />
               <div>
-                <div className={cn("font-medium", sizes.text)}>RAM</div>
-                <div className={cn("text-muted-foreground", sizes.card.description)}>{template?.ram || 'N/A'} GB</div>
+                <div className={cn("font-medium", "size-text")}>RAM</div>
+                <div className={cn("text-muted-foreground", "size-card-description")}>{template?.ram || 'N/A'} GB</div>
               </div>
             </div>
 
             {/* Storage */}
             <div className="flex items-center gap-2">
-              <FiHardDrive className={sizes.icon.size} />
+              <FiHardDrive className={"size-icon"} />
               <div>
-                <div className={cn("font-medium", sizes.text)}>Storage</div>
-                <div className={cn("text-muted-foreground", sizes.card.description)}>{template?.storage || 'N/A'} GB</div>
+                <div className={cn("font-medium", "size-text")}>Storage</div>
+                <div className={cn("text-muted-foreground", "size-card-description")}>{template?.storage || 'N/A'} GB</div>
               </div>
             </div>
             {/* Configuration */}
             {configuration && (
               <div className="flex items-center gap-2">
-                <MdOutlineScreenshotMonitor className={sizes.icon.size} />
+                <MdOutlineScreenshotMonitor className={"size-icon"} />
                 <div>
-                  <div className={cn("font-medium", sizes.text)}>Configuration</div>
-                  <div className={cn("text-muted-foreground", sizes.card.description)}>{configuration.graphicProtocol}://{configuration.graphicHost}:{configuration.graphicPort}</div>
-                  <div className={cn("text-muted-foreground", sizes.card.description)}>{configuration.graphicPassword}</div>
+                  <div className={cn("font-medium", "size-text")}>Configuration</div>
+                  <div className={cn("text-muted-foreground", "size-card-description")}>{configuration.graphicProtocol}://{configuration.graphicHost}:{configuration.graphicPort}</div>
+                  <div className={cn("text-muted-foreground", "size-card-description")}>{configuration.graphicPassword}</div>
                 </div>
               </div>
             )}
 
             {/* User */}
             <div className="flex items-center gap-2">
-              <FaUser className={sizes.icon.size} />
+              <FaUser className={"size-icon"} />
               <div>
-                <div className={cn("font-medium", sizes.text)}>User</div>
-                <div className={cn("text-muted-foreground", sizes.card.description)}>{user?.firstName || 'N/A'}</div>
+                <div className={cn("font-medium", "size-text")}>User</div>
+                <div className={cn("text-muted-foreground", "size-card-description")}>{user?.firstName || 'N/A'}</div>
               </div>
             </div>
           </div>

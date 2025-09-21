@@ -94,10 +94,10 @@ const debug = createDebugger('frontend:auth');
 export const auth = {
   login: async (email, password) => {
     try {
-      const { data } = (await client.query({
-        query: LoginDocument,
+      const { data } = await client.mutate({
+        mutation: LoginDocument,
         variables: { password, email },
-      }));
+      });
       debug.success('login', 'Login successful:', { email, hasToken: !!data.login?.token });
 
       if (data.login && data.login.token) {

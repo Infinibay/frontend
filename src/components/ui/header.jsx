@@ -3,7 +3,7 @@
 import * as React from "react"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useSizeContext, sizeVariants } from "./size-provider"
+import { useSizeContext } from "./size-provider"
 import { useAppTheme } from "@/contexts/ThemeProvider"
 import {
   getHeaderGlass,
@@ -21,10 +21,10 @@ const headerVariants = cva(
   {
     variants: {
       size: {
-        sm: cn("h-12", sizeVariants.sm.padding, sizeVariants.sm.gap, sizeVariants.sm.text),
-        md: cn("h-16", sizeVariants.md.padding, sizeVariants.md.gap, sizeVariants.md.text),
-        lg: cn("h-20", sizeVariants.lg.padding, sizeVariants.lg.gap, sizeVariants.lg.text),
-        xl: cn("h-24", sizeVariants.xl.padding, sizeVariants.xl.gap, sizeVariants.xl.text),
+        sm: "h-12 size-padding size-gap size-text",
+        md: "h-16 size-padding size-gap size-text",
+        lg: "h-20 size-padding size-gap size-text",
+        xl: "h-24 size-padding size-gap size-text",
       },
       variant: {
         default: "bg-background text-foreground border-border",

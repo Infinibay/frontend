@@ -1,1 +1,339 @@
-/* sharjeel */
+/**
+ * Auth Module CSS
+ * Modern glassmorphism styles for authentication pages
+ * Includes accessibility fallbacks and responsive design
+ */
+
+/* CSS Custom Properties for Auth */
+:root {
+  /* Auth-specific timing and easing */
+  --auth-transition-fast: 200ms;
+  --auth-transition-normal: 300ms;
+  --auth-transition-slow: 500ms;
+  --auth-ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --auth-ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Auth layout dimensions */
+  --auth-container-max-width: 400px;
+  --auth-hero-max-width: 600px;
+  --auth-form-radius: 1rem;
+
+  /* Background patterns */
+  --auth-bg-pattern-opacity: 0.05;
+  --auth-bg-overlay-opacity: 0.8;
+}
+
+/* Main auth container with wallpaper-safe background */
+.auth-container {
+  position: relative;
+  min-height: 100vh;
+  container-type: inline-size;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background)) 0%,
+    hsl(var(--background) / 0.95) 50%,
+    hsl(var(--accent) / 0.05) 100%
+  );
+}
+
+/* Animated background pattern */
+.bg-wallpaper-pattern {
+  background-image: radial-gradient(
+      circle at 25% 25%,
+      rgba(59, 130, 246, 0.15) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 75% 75%,
+      rgba(147, 51, 234, 0.1) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(6, 182, 212, 0.08) 0%,
+      transparent 50%
+    ),
+    linear-gradient(
+      45deg,
+      rgba(30, 41, 59, 0.5) 0%,
+      transparent 100%
+    );
+  background-size: 600px 600px, 400px 400px, 500px 500px, 300px 300px;
+  background-position: 0 0, 100px 100px, 50px 50px, 200px 200px;
+  animation: auth-pattern-float var(--auth-transition-slow) ease-in-out infinite alternate;
+}
+
+/* Background pattern animation */
+@keyframes auth-pattern-float {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-5px, -8px) rotate(0.5deg);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(-10px, -10px) rotate(1deg);
+    opacity: 0.3;
+  }
+}
+
+/* Auth form container responsive sizing */
+@media (max-width: 640px) {
+  .auth-container {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-container {
+    padding: 2rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .auth-container {
+    background: hsl(var(--background));
+  }
+
+  .bg-wallpaper-pattern {
+    display: none;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .bg-wallpaper-pattern {
+    animation: none;
+  }
+
+  .auth-container * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --auth-bg-pattern-opacity: 0.03;
+    --auth-bg-overlay-opacity: 0.9;
+  }
+}
+
+/* Focus visible improvements for glass backgrounds */
+.auth-container *:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Enhanced button states for auth */
+.auth-container button {
+  transition: all var(--auth-transition-fast) var(--auth-ease-smooth);
+}
+
+.auth-container button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.2);
+}
+
+.auth-container button:active {
+  transform: translateY(0);
+  transition-duration: calc(var(--auth-transition-fast) / 2);
+}
+
+/* Input focus states with glass effects */
+.auth-container input:focus {
+  box-shadow:
+    0 0 0 2px hsl(var(--ring) / 0.2),
+    0 4px 12px hsl(var(--primary) / 0.1),
+    inset 0 1px 0 hsl(var(--foreground) / 0.1);
+  transform: scale(1.01);
+}
+
+/* Error shake animation */
+@keyframes auth-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.auth-error {
+  animation: auth-shake 0.5s ease-in-out;
+}
+
+/* Success pulse animation */
+@keyframes auth-success-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.auth-success {
+  animation: auth-success-pulse 0.6s ease-out;
+}
+
+/* Loading state styles */
+.auth-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--primary) / 0.2),
+    transparent
+  );
+  animation: auth-loading-sweep 1.5s infinite;
+}
+
+@keyframes auth-loading-sweep {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Brand color transitions */
+.auth-brand-transition {
+  transition: all var(--auth-transition-normal) var(--auth-ease-smooth);
+}
+
+/* Typography enhancements */
+.auth-container h1,
+.auth-container h2,
+.auth-container h3 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+/* Link hover effects */
+.auth-container a {
+  position: relative;
+  transition: all var(--auth-transition-fast) var(--auth-ease-smooth);
+}
+
+.auth-container a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: hsl(var(--primary));
+  transition: width var(--auth-transition-fast) var(--auth-ease-smooth);
+}
+
+.auth-container a:hover::after {
+  width: 100%;
+}
+
+/* Responsive image enhancements */
+.auth-container img {
+  transition: transform var(--auth-transition-normal) var(--auth-ease-smooth);
+}
+
+.auth-container img:hover {
+  transform: scale(1.02);
+}
+
+/* Accessibility: Ensure minimum contrast ratios */
+@media (prefers-contrast: more) {
+  .auth-container {
+    --auth-bg-pattern-opacity: 0;
+  }
+
+  .auth-container input,
+  .auth-container button {
+    border-width: 2px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .auth-container {
+    background: white;
+    color: black;
+  }
+
+  .bg-wallpaper-pattern {
+    display: none;
+  }
+}
+
+/* Container query support for responsive design */
+@container (max-width: 400px) {
+  .glass-modal-card {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+}
+
+/* Fallback media query for browsers without container query support */
+@media (max-width: 400px) {
+  .glass-modal-card {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+}
+
+/* Enhanced glass effect utilities */
+.auth-glass-enhance {
+  backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 4px 16px rgba(59, 130, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Glass modal card specific styling */
+.glass-modal-card {
+  backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(59, 130, 246, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Fallback for browsers without backdrop-filter support */
+@supports not (backdrop-filter: blur(12px)) {
+  .auth-glass-enhance {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+  }
+
+  .glass-modal-card {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+  }
+}
+
+/* Size provider integration */
+.size-sm .auth-container {
+  --auth-container-max-width: 350px;
+  --auth-form-radius: 0.75rem;
+}
+
+.size-lg .auth-container {
+  --auth-container-max-width: 450px;
+  --auth-form-radius: 1.25rem;
+}
+
+.size-xl .auth-container {
+  --auth-container-max-width: 500px;
+  --auth-form-radius: 1.5rem;
+}

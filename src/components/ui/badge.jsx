@@ -4,7 +4,7 @@ import * as React from "react"
 import { cva } from "class-variance-authority";
 
 import { cn } from "@/lib/utils"
-import { useSizeContext, sizeVariants } from "./size-provider"
+import { useSizeContext } from "./size-provider"
 import { getBadgeGlass, getBadgeGlassVariant, getDataGlassAnimation, getReducedTransparencyForm } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
@@ -25,9 +25,9 @@ const badgeVariants = cva(
         "brand-sun": "border-transparent bg-brand-sun text-brand-dark-blue shadow hover:bg-brand-sun/80",
       },
       size: {
-        sm: "px-2 py-0.5 text-xs",
-        md: "px-2.5 py-0.5 text-xs",
-        lg: "px-3 py-1 text-sm",
+        sm: "size-badge-padding size-badge-text",
+        md: "size-badge-padding size-badge-text",
+        lg: "size-badge-padding size-badge-text",
       }
     },
     defaultVariants: {
@@ -44,7 +44,7 @@ const Badge = React.forwardRef(({
   glass = false,
   ...props
 }, ref) => {
-  const contextSize = useSizeContext()
+  const { size: contextSize, getSizeClassName } = useSizeContext()
   const theme = useSafeResolvedTheme()
   const effectiveSize = size || contextSize || 'md'
   const animation = getDataGlassAnimation()
@@ -64,6 +64,7 @@ const Badge = React.forwardRef(({
         badgeVariants({ variant: effectiveVariant, size: effectiveSize }),
         glass && animation,
         glass && reducedTransparency,
+        size && getSizeClassName(size),
         className
       )}
       {...props}

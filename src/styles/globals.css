@@ -24,16 +24,443 @@
     @apply sm:text-[17px] text-sm font-medium;
   }
 
+  /* Semantic typography classes that consume SizeProvider CSS variables */
   .mainheading {
-    @apply lg:text-5xl sm:text-4xl text-4xl font-bold 4xl:text-[100px] 4xl:font-extrabold;
+    font-weight: 700;
+    font-size: var(--font-size-main-heading);
+    line-height: var(--line-height-main-heading);
   }
 
   .subheading {
-    @apply 5xl:text-5xl lg:text-2xl sm:text-xl text-lg font-bold;
+    font-weight: 700;
+    font-size: var(--font-size-sub-heading);
+    line-height: var(--line-height-sub-heading);
   }
 
   .heading2 {
-    @apply 2xl:text-3xl 4xl:text-[70px] lg:text-2xl text-xl font-bold !leading-10;
+    font-weight: 700;
+    font-size: var(--font-size-heading-2);
+    line-height: var(--line-height-heading-2);
+  }
+
+  /* Size-provider-aware typography classes */
+  .mainheading-size {
+    @apply font-bold;
+    font-size: var(--font-size-main-heading);
+    line-height: var(--line-height-main-heading);
+  }
+
+  .subheading-size {
+    @apply font-bold;
+    font-size: var(--font-size-sub-heading);
+    line-height: var(--line-height-sub-heading);
+  }
+
+  .heading2-size {
+    @apply font-bold;
+    font-size: var(--font-size-heading-2);
+    line-height: var(--line-height-heading-2);
+  }
+
+  .text-size {
+    font-size: var(--font-size-text);
+    line-height: var(--line-height-text);
+  }
+
+  /* Size-responsive grid utilities */
+  .grid-size-responsive {
+    display: grid;
+    gap: var(--grid-gap);
+    grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
+  }
+
+  .section-spacing-size {
+    margin-bottom: var(--section-spacing);
+  }
+
+  .container-spacing-size {
+    padding: var(--container-spacing);
+  }
+
+  .layout-gap-size {
+    gap: var(--layout-gap);
+  }
+
+  /* Comprehensive Size Provider CSS Classes */
+
+  /* Typography Classes */
+  .size-text {
+    font-size: var(--size-text);
+  }
+
+  .size-heading {
+    font-size: var(--size-heading);
+  }
+
+  .size-mainheading {
+    font-size: var(--size-mainheading);
+    font-weight: 700;
+    line-height: var(--line-height-main-heading);
+  }
+
+  .size-subheading {
+    font-size: var(--size-subheading);
+    font-weight: 700;
+    line-height: var(--line-height-sub-heading);
+  }
+
+  .size-heading2 {
+    font-size: var(--size-heading2);
+    font-weight: 700;
+    line-height: var(--line-height-heading-2);
+  }
+
+  .size-small {
+    font-size: var(--size-small);
+  }
+
+  .size-xsmall {
+    font-size: var(--size-xsmall);
+  }
+
+  /* Spacing Classes */
+  .size-padding {
+    padding: var(--size-padding);
+  }
+
+  .size-gap {
+    gap: var(--size-gap);
+  }
+
+  .size-container {
+    padding: var(--size-container);
+  }
+
+  .size-item {
+    padding: var(--size-item);
+  }
+
+  .size-sub-item {
+    padding: var(--size-sub-item);
+  }
+
+  .size-margin-xs {
+    margin-right: var(--size-margin-xs);
+  }
+
+  .size-margin-sm {
+    margin-right: var(--size-margin-sm);
+  }
+
+  .size-space-x {
+    gap: var(--size-space-x);
+  }
+
+  .size-padding-icon-left {
+    padding-left: var(--size-padding-icon-left);
+  }
+
+  .size-margin-start-xs {
+    margin-left: var(--size-margin-start-xs);
+  }
+
+  .size-margin-top-xs {
+    margin-top: var(--size-margin-top-xs);
+  }
+
+  .size-icon-container-padding-start {
+    padding-left: var(--size-icon-container-padding-start);
+  }
+
+  /* Dimension Classes */
+  .size-height {
+    height: var(--size-height);
+  }
+
+  .size-width {
+    width: var(--size-width);
+  }
+
+  .size-icon {
+    width: var(--size-icon);
+    height: var(--size-icon);
+  }
+
+  .size-icon-button {
+    width: var(--size-icon-button);
+    height: var(--size-icon-button);
+  }
+
+  .size-icon-nav {
+    width: var(--size-icon-nav);
+    height: var(--size-icon-nav);
+  }
+
+  .size-icon-hero {
+    width: var(--size-icon-hero);
+    height: var(--size-icon-hero);
+  }
+
+  .size-avatar {
+    width: var(--size-avatar);
+    height: var(--size-avatar);
+  }
+
+  .size-thumbnail {
+    width: var(--size-thumbnail);
+    height: var(--size-thumbnail);
+  }
+
+  .size-logo {
+    height: var(--size-logo);
+  }
+
+  /* Input Component Classes */
+  .size-input-height {
+    height: var(--size-input-height);
+  }
+
+  .size-input-padding {
+    padding: var(--size-input-padding);
+  }
+
+  .size-input-text {
+    font-size: var(--size-input-text);
+  }
+
+  .size-input-with-icon-left-padding {
+    padding-left: var(--size-input-with-icon-left-padding);
+  }
+
+  /* Badge Component Classes */
+  .size-badge-size {
+    width: var(--size-badge-size);
+    height: var(--size-badge-size);
+  }
+
+  .size-badge-text {
+    font-size: var(--size-badge-text);
+  }
+
+  .size-badge-padding {
+    padding: var(--size-badge-padding);
+  }
+
+  /* Card Component Classes */
+  .size-card-padding {
+    padding: var(--size-card-padding);
+  }
+
+  .size-card-title {
+    font-size: var(--size-card-title);
+  }
+
+  .size-card-description {
+    font-size: var(--size-card-description);
+  }
+
+  .size-card-content {
+    padding: var(--size-card-content);
+  }
+
+  .size-card-footer {
+    padding: var(--size-card-footer);
+  }
+
+  /* Navbar Component Classes */
+  .size-navbar-width {
+    width: var(--size-navbar-width);
+  }
+
+  .size-navbar-mobile-width {
+    width: var(--size-navbar-mobile-width);
+  }
+
+  .size-navbar-padding {
+    padding: var(--size-navbar-padding);
+  }
+
+  .size-navbar-fixed-width {
+    width: var(--size-navbar-fixed-width);
+  }
+
+  /* Popover Component Classes */
+  .size-popover-width {
+    width: var(--size-popover-width);
+  }
+
+  /* Layout Classes */
+  .size-card-grid {
+    gap: var(--size-card-grid);
+  }
+
+  .size-section-spacing {
+    margin-bottom: var(--size-section-spacing);
+  }
+
+  .size-max-width {
+    max-width: var(--size-max-width);
+  }
+
+  .size-radius {
+    border-radius: var(--size-radius);
+  }
+
+  /* Grid Classes */
+  .size-grid-departments {
+    display: grid;
+    gap: var(--size-card-grid);
+    grid-template-columns: repeat(var(--size-grid-columns), minmax(0, 1fr));
+  }
+
+  .size-grid-computers {
+    gap: var(--size-grid-computers);
+  }
+
+  .size-grid-settings {
+    gap: var(--size-grid-settings);
+  }
+
+  .size-grid-theme-options {
+    display: grid;
+    gap: var(--size-card-grid);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .size-grid-size-options {
+    display: grid;
+    gap: var(--size-card-grid);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  /* Animation Classes */
+  .size-animation-duration {
+    transition-duration: var(--size-animation-duration);
+  }
+
+  .size-animation-easing {
+    transition-timing-function: var(--size-animation-easing);
+  }
+
+  /* Combined Classes for Common Patterns */
+  .size-input {
+    height: var(--size-input-height);
+    padding: var(--size-input-padding);
+    font-size: var(--size-input-text);
+  }
+
+  .size-input-with-icon {
+    height: var(--size-input-height);
+    padding: var(--size-input-padding);
+    padding-left: var(--size-input-with-icon-left-padding);
+    font-size: var(--size-input-text);
+  }
+
+  .size-badge {
+    width: var(--size-badge-size);
+    height: var(--size-badge-size);
+    font-size: var(--size-badge-text);
+    padding: var(--size-badge-padding);
+  }
+
+  .size-card {
+    padding: var(--size-card-padding);
+    border-radius: var(--size-radius);
+  }
+
+  .size-button {
+    height: var(--size-height);
+    padding: var(--size-padding);
+    font-size: var(--size-text);
+    border-radius: var(--size-radius);
+  }
+
+  .size-navbar {
+    width: var(--size-navbar-width);
+    padding: var(--size-navbar-padding);
+  }
+
+  /* Responsive Grid Utilities */
+  @media (max-width: 640px) {
+    .size-grid-theme-options {
+      grid-template-columns: 1fr;
+    }
+
+    .size-grid-size-options {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .size-navbar {
+      width: var(--size-navbar-mobile-width);
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 768px) {
+    .size-grid-theme-options {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .size-grid-size-options {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .size-grid-size-options {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* Additional Missing Size Classes */
+  .size-spacing-container {
+    padding: var(--size-spacing-container);
+  }
+
+  .size-spacing-container-header {
+    padding: var(--size-spacing-container-header);
+  }
+
+  .size-spacing-container-content {
+    padding: var(--size-spacing-container-content);
+  }
+
+  .size-spacing-container-footer {
+    padding: var(--size-spacing-container-footer);
+  }
+
+  .size-spacing-item {
+    padding: var(--size-spacing-item);
+  }
+
+  .size-toast-padding {
+    padding: var(--size-toast-padding);
+  }
+
+  .size-input-padding-floating {
+    padding: var(--size-input-padding-floating);
+  }
+
+  .size-main-heading {
+    font-size: var(--size-main-heading);
+    font-weight: 700;
+  }
+
+  .size-sub-heading {
+    font-size: var(--size-sub-heading);
+    font-weight: 700;
+  }
+
+  .size-grid-columns {
+    grid-template-columns: repeat(var(--size-grid-columns), minmax(0, 1fr));
+  }
+
+  /* Utility classes for special cases */
+  .size-md {
+    /* Default size class - inherits from current size context */
+  }
+
+  .size-none {
+    /* Reset size class */
   }
 
   /* colors */
@@ -309,9 +736,9 @@
 
   /* Windows 11 Specific Effects */
   .mica {
-    background: rgba(255, 255, 255, 0.60);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.90) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 16px;
     box-shadow:
@@ -630,7 +1057,9 @@
   }
 
   .dark .mica {
-    background: rgba(0, 0, 0, 0.60);
+    background: rgba(0, 0, 0, 0.90) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow:
       0 4px 16px rgba(0, 0, 0, 0.4),
@@ -956,7 +1385,72 @@ input[type="text"]#email.peer {
     backdrop-filter: none !important;
     background: hsl(var(--sidebar-background)) !important;
     border-color: hsl(var(--sidebar-border)) !important;
-    box-shadow: var(--elevation-1) !important;
+    box-shadow: 0 1px 3px hsl(var(--brand-dark-blue-900) / 0.08), 0 1px 2px hsl(var(--brand-dark-blue-900) / 0.05) !important;
+  }
+
+  /* Additional glass effect components accessibility support */
+  [data-reduced-transparency="true"] .glass-overlay,
+  [data-reduced-transparency="true"] .card-hover,
+  [data-reduced-transparency="true"] .wallpaper-selector {
+    backdrop-filter: none !important;
+    background: hsl(var(--card)) !important;
+    border-color: hsl(var(--border)) !important;
+    box-shadow: 0 3px 6px hsl(var(--brand-dark-blue-900) / 0.10), 0 2px 4px hsl(var(--brand-dark-blue-900) / 0.05) !important;
+  }
+
+  /* Dark mode reduced transparency adjustments */
+  .dark [data-reduced-transparency="true"] {
+    background: hsl(var(--sidebar-background)) !important;
+    border-color: hsl(var(--sidebar-border)) !important;
+    box-shadow: 0 1px 3px hsl(var(--brand-dark-blue-900) / 0.05), 0 1px 2px hsl(var(--brand-dark-blue-900) / 0.03) !important;
+  }
+
+  .dark [data-reduced-transparency="true"] .glass-overlay,
+  .dark [data-reduced-transparency="true"] .card-hover,
+  .dark [data-reduced-transparency="true"] .wallpaper-selector {
+    background: hsl(var(--card)) !important;
+    border-color: hsl(var(--border)) !important;
+    box-shadow: 0 3px 6px hsl(var(--brand-dark-blue-900) / 0.06), 0 2px 4px hsl(var(--brand-dark-blue-900) / 0.03) !important;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      --text-high-contrast-primary: 0 0% 0%;
+      --text-high-contrast-secondary: 0 0% 20%;
+      --glass-text-primary: var(--text-high-contrast-primary);
+      --glass-text-secondary: var(--text-high-contrast-secondary);
+    }
+
+    .dark {
+      --text-high-contrast-primary: 0 0% 100%;
+      --text-high-contrast-secondary: 0 0% 90%;
+      --glass-text-primary: var(--text-high-contrast-primary);
+      --glass-text-secondary: var(--text-high-contrast-secondary);
+    }
+
+    /* Force higher contrast ratios for all glass text */
+    .text-glass-text-primary {
+      color: hsl(var(--text-high-contrast-primary)) !important;
+    }
+
+    .text-glass-text-secondary {
+      color: hsl(var(--text-high-contrast-secondary)) !important;
+    }
+
+    /* Remove glass effects entirely in high contrast mode */
+    .glass-subtle,
+    .glass-medium,
+    .glass-strong,
+    .glass-minimal,
+    .mica,
+    .acrylic,
+    .fluent-card {
+      backdrop-filter: none !important;
+      background: hsl(var(--card)) !important;
+      border: 2px solid hsl(var(--border)) !important;
+      box-shadow: 0 3px 6px hsl(var(--brand-dark-blue-900) / 0.10), 0 2px 4px hsl(var(--brand-dark-blue-900) / 0.05) !important;
+    }
   }
 
   /* Z-Index Hierarchy System */
@@ -1048,7 +1542,7 @@ input[type="text"]#email.peer {
   @media (prefers-reduced-motion: reduce) {
     * {
       backdrop-filter: none !important;
-      box-shadow: var(--elevation-1) !important;
+      box-shadow: 0 1px 3px hsl(var(--brand-dark-blue-900) / 0.08), 0 1px 2px hsl(var(--brand-dark-blue-900) / 0.05) !important;
     }
 
     /* Allow glass-minimal to maintain its effect even with reduced motion */
@@ -1066,6 +1560,34 @@ input[type="text"]#email.peer {
 
     .bg-selection {
       background: hsl(var(--selection-bg) / 0.2) !important;
+    }
+
+    /* Ensure glass text maintains readability with reduced motion */
+    .text-glass-text-primary {
+      color: hsl(var(--foreground)) !important;
+    }
+
+    .text-glass-text-secondary {
+      color: hsl(var(--muted-foreground)) !important;
+    }
+  }
+
+  /* Additional accessibility utilities for glass text */
+  .text-glass-text-primary {
+    /* Ensure minimum contrast ratio of 4.5:1 for WCAG AA compliance */
+    text-shadow: 0 0 8px hsl(var(--background) / 0.8);
+  }
+
+  .text-glass-text-secondary {
+    /* Ensure minimum contrast ratio of 3:1 for secondary text */
+    text-shadow: 0 0 6px hsl(var(--background) / 0.6);
+  }
+
+  /* Remove text shadows in high contrast mode for better readability */
+  @media (prefers-contrast: high) {
+    .text-glass-text-primary,
+    .text-glass-text-secondary {
+      text-shadow: none !important;
     }
   }
 }
@@ -1090,4 +1612,111 @@ input[type="text"]#email.peer {
 
   /* Hover Z-Index Utilities */
   .hover\:z-35:hover { z-index: 35; }
+
+  /* Toast Animation Utilities */
+  @keyframes toast-slide-in-right {
+    from {
+      transform: translateX(calc(100% + var(--size-spacing-container, 1rem)));
+      opacity: 0;
+      scale: 0.95;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+      scale: 1;
+    }
+  }
+
+  @keyframes toast-slide-out-right {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+      scale: 1;
+    }
+    to {
+      transform: translateX(calc(100% + var(--size-spacing-container, 1rem)));
+      opacity: 0;
+      scale: 0.95;
+    }
+  }
+
+  @keyframes toast-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes toast-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  .toast-animate-in {
+    animation: toast-slide-in-right 0.3s ease-out forwards;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+  }
+
+  .toast-animate-out {
+    animation: toast-slide-out-right 0.2s ease-in forwards;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+  }
+
+  .toast-fade-in {
+    animation: toast-fade-in 0.3s ease-out forwards;
+  }
+
+  .toast-fade-out {
+    animation: toast-fade-out 0.2s ease-in forwards;
+  }
+
+  /* Time Machine style stacking effects */
+  .toast-stack-container {
+    perspective: 1000px;
+    transform-style: preserve-3d;
+  }
+
+  .toast-stacked {
+    transform-origin: center bottom;
+    backface-visibility: hidden;
+    will-change: transform, opacity, filter;
+  }
+
+  .toast-stacked:not(:first-child) {
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Enhanced glass effect for stacked toasts */
+  .toast-stacked:not(:first-child) {
+    backdrop-filter: blur(8px) saturate(0.8);
+  }
+
+  /* Smooth transitions for stack reordering */
+  .toast-stacked {
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      filter 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      z-index 0s;
+  }
+
+  /* Hover effect to peek at stacked toasts */
+  .toast-stack-container:hover .toast-stacked:nth-child(2) {
+    opacity: 0.9 !important;
+    filter: blur(1px) !important;
+  }
+
+  .toast-stack-container:hover .toast-stacked:nth-child(3) {
+    opacity: 0.8 !important;
+    filter: blur(2px) !important;
+  }
 }

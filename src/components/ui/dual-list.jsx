@@ -21,7 +21,6 @@ import {
   ContextMenuTrigger,
 } from "./context-menu";
 import { ArrowLeftIcon, ArrowRightIcon, MagnifyingGlassIcon, Cross2Icon } from "@radix-ui/react-icons";
-import { sizeVariants } from './size-provider';
 
 const DropZone = ({ id, children, isEmpty, className, emptyClassName }) => {
   const { setNodeRef } = useDroppable({ id });
@@ -64,13 +63,12 @@ const DualList = ({
   const [leftItems, setLeftItems] = useState(initialLeftItems);
   const [rightItems, setRightItems] = useState(initialRightItems);
   const [activeId, setActiveId] = useState(null);
-  const sizes = sizeVariants[size];
 
   // Search input component
   const SearchInput = ({ placeholder, value, onChange, onClear }) => (
     <div className="relative mb-4">
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <MagnifyingGlassIcon className={cn("text-muted-foreground", sizes.icon.size)} />
+        <MagnifyingGlassIcon className={cn("text-muted-foreground", "size-icon")} />
       </div>
       <input
         type="text"
@@ -89,7 +87,7 @@ const DualList = ({
           onClick={onClear}
           className="absolute inset-y-0 right-0 pr-3 flex items-center"
         >
-          <Cross2Icon className={cn("text-muted-foreground hover:text-foreground", sizes.icon.size)} />
+          <Cross2Icon className={cn("text-muted-foreground hover:text-foreground", "size-icon")} />
         </button>
       )}
     </div>
@@ -271,7 +269,7 @@ const DualList = ({
     >
       <div className={cn("flex gap-4", containerClassName)}>
         <div className="flex-1">
-          <h3 className={cn("font-medium mb-4", sizes.heading)}>{leftTitle}</h3>
+          <h3 className={cn("font-medium mb-4", "size-heading")}>{leftTitle}</h3>
           {leftSearch && (
             <SearchInput
               placeholder={leftSearch.placeholder}
@@ -300,7 +298,7 @@ const DualList = ({
           </DropZone>
         </div>
         <div className="flex-1">
-          <h3 className={cn("font-medium mb-4", sizes.heading)}>{rightTitle}</h3>
+          <h3 className={cn("font-medium mb-4", "size-heading")}>{rightTitle}</h3>
           {rightSearch && (
             <SearchInput
               placeholder={rightSearch.placeholder}

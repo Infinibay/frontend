@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,12 @@ import { FaUbuntu, FaWindows } from 'react-icons/fa';
 import { SiFedora } from 'react-icons/si';
 import { Upload, Download, CheckCircle, AlertCircle, Sun, Moon, Monitor, Loader2, Minimize2, Square, Maximize2, Expand, Clock, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getGlassClasses } from "@/utils/glass-effects";
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useAppTheme } from '@/contexts/ThemeProvider';
 import { getSystemTheme } from '@/utils/theme';
 import { applyWallpaperWithTransition, getAvailableWallpapers } from '@/utils/wallpaper';
+import { useSizeContext, sizeVariants, getTypographyClass, getLayoutSpacing, getGridClasses } from '@/components/ui/size-provider';
 import {
   fetchAppSettings,
   updateAppSettings,
@@ -34,6 +36,7 @@ import axios from "axios";
 const SettingMain = () => {
   const { toast } = useToast();
   const dispatch = useDispatch();
+  const { size } = useSizeContext();
 
   // App Settings Redux state
   const appSettings = useSelector(selectAppSettings);
@@ -45,7 +48,7 @@ const SettingMain = () => {
   // Theme provider integration
   const themeContext = useAppTheme();
   const theme = themeContext?.theme || 'system';
-  const setTheme = themeContext?.setTheme || (() => { });
+  const setTheme = useMemo(() => themeContext?.setTheme || (() => { }), [themeContext?.setTheme]);
   const resolvedTheme = themeContext?.resolvedTheme || 'light';
 
   // ISO management state
@@ -86,68 +89,78 @@ const SettingMain = () => {
   // Apply backend theme to ThemeProvider after settings fetch
   useEffect(() => {
     if (appSettingsInitialized && appSettings.theme && appSettings.theme !== theme && !appSettingsLoading?.fetch) {
-      try {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Settings theme sync:', {
-            appSettingsTheme: appSettings.theme,
-            currentTheme: theme,
-            appSettingsInitialized,
-            isLoading: appSettingsLoading?.fetch
-          });
+      // Use setTimeout to defer the setState call to avoid setState during render
+      const timer = setTimeout(() => {
+        try {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Settings theme sync:', {
+              appSettingsTheme: appSettings.theme,
+              currentTheme: theme,
+              appSettingsInitialized,
+              isLoading: appSettingsLoading?.fetch
+            });
+          }
+          setTheme(appSettings.theme);
+        } catch (error) {
+          console.error('Error setting theme:', error);
         }
-        setTheme(appSettings.theme);
-      } catch (error) {
-        console.error('Error setting theme:', error);
-      }
+      }, 0);
+
+      return () => clearTimeout(timer);
     }
   }, [appSettingsInitialized, appSettings.theme, theme, setTheme, appSettingsLoading?.fetch]);
 
   // Apply persisted wallpaper on load and cache wallpapers
   useEffect(() => {
     if (appSettingsInitialized && !appSettingsLoading?.fetch) {
-      const applyWallpaper = async () => {
-        try {
-          const wallpapers = await getAvailableWallpapers();
-          // Wallpapers fetched successfully
+      // Use setTimeout to defer async operations and prevent state updates during render
+      const timer = setTimeout(() => {
+        const applyWallpaper = async () => {
+          try {
+            const wallpapers = await getAvailableWallpapers();
+            // Wallpapers fetched successfully
 
-          // Check if current wallpaper exists in available wallpapers
-          let wallpaperToApply = null;
+            // Check if current wallpaper exists in available wallpapers
+            let wallpaperToApply = null;
 
-          if (appSettings.wallpaper) {
-            wallpaperToApply = wallpapers.find(w => w.id === appSettings.wallpaper);
-          }
-
-          // If no wallpaper is set or current wallpaper not found, use first available
-          if (!wallpaperToApply && wallpapers.length > 0) {
-            wallpaperToApply = wallpapers[0];
-            // Update app settings to reflect the fallback selection
-            try {
-              await dispatch(updateAppSettings({ wallpaper: wallpaperToApply.id })).unwrap();
-            } catch (error) {
-              console.error('Error updating fallback wallpaper setting:', error);
-            }
-          }
-
-          if (wallpaperToApply) {
-            // Check if we need to apply wallpaper (compare with last applied state)
-            const lastApplied = lastAppliedWallpaperRef.current;
-            if (lastApplied.wallpaperId === wallpaperToApply.id && lastApplied.resolvedTheme === resolvedTheme) {
-              return; // Skip re-application if nothing changed
+            if (appSettings.wallpaper) {
+              wallpaperToApply = wallpapers.find(w => w.id === appSettings.wallpaper);
             }
 
-            await applyWallpaperWithTransition(wallpaperToApply.url, resolvedTheme);
-            // Update ref after successful application
-            lastAppliedWallpaperRef.current = {
-              wallpaperId: wallpaperToApply.id,
-              resolvedTheme: resolvedTheme
-            };
-          }
-        } catch (error) {
-          console.error('Error applying wallpaper:', error);
-        }
-      };
+            // If no wallpaper is set or current wallpaper not found, use first available
+            if (!wallpaperToApply && wallpapers.length > 0) {
+              wallpaperToApply = wallpapers[0];
+              // Update app settings to reflect the fallback selection
+              try {
+                await dispatch(updateAppSettings({ wallpaper: wallpaperToApply.id })).unwrap();
+              } catch (error) {
+                console.error('Error updating fallback wallpaper setting:', error);
+              }
+            }
 
-      applyWallpaper();
+            if (wallpaperToApply) {
+              // Check if we need to apply wallpaper (compare with last applied state)
+              const lastApplied = lastAppliedWallpaperRef.current;
+              if (lastApplied.wallpaperId === wallpaperToApply.id && lastApplied.resolvedTheme === resolvedTheme) {
+                return; // Skip re-application if nothing changed
+              }
+
+              await applyWallpaperWithTransition(wallpaperToApply.url, resolvedTheme);
+              // Update ref after successful application
+              lastAppliedWallpaperRef.current = {
+                wallpaperId: wallpaperToApply.id,
+                resolvedTheme: resolvedTheme
+              };
+            }
+          } catch (error) {
+            console.error('Error applying wallpaper:', error);
+          }
+        };
+
+        applyWallpaper();
+      }, 0);
+
+      return () => clearTimeout(timer);
     }
   }, [appSettingsInitialized, appSettings.wallpaper, resolvedTheme, appSettingsLoading?.fetch, dispatch]);
 
@@ -612,8 +625,8 @@ const SettingMain = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-sm text-muted-foreground">Loading settings...</p>
+          <Loader2 className={`${sizeVariants[size].icon.button} animate-spin`} />
+          <p className={`${sizeVariants[size].typography.small} text-muted-foreground`}>Loading settings...</p>
         </div>
       </div>
     );
@@ -624,8 +637,8 @@ const SettingMain = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <AlertCircle className="h-8 w-8 text-destructive" />
-          <p className="text-sm text-muted-foreground">Theme system not available. Please refresh the page.</p>
+          <AlertCircle className={`${sizeVariants[size].icon.button} text-destructive`} />
+          <p className={`${sizeVariants[size].typography.small} text-muted-foreground`}>Theme system not available. Please refresh the page.</p>
         </div>
       </div>
     );
@@ -636,10 +649,10 @@ const SettingMain = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4 max-w-md text-center">
-          <AlertCircle className="h-12 w-12 text-destructive" />
+          <AlertCircle className={`${sizeVariants[size].thumbnail} text-destructive`} />
           <div className="space-y-2">
             <h2 className="text-lg font-semibold">Failed to Load Settings</h2>
-            <p className="text-sm text-muted-foreground">
+            <p className={`${sizeVariants[size].typography.small} text-muted-foreground`}>
               {appSettingsError?.fetch}
             </p>
           </div>
@@ -650,7 +663,7 @@ const SettingMain = () => {
           >
             {appSettingsLoading?.fetch ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className={`${sizeVariants[size].icon.size} animate-spin mr-2`} />
                 Retrying...
               </>
             ) : (
@@ -664,49 +677,42 @@ const SettingMain = () => {
 
   return (
     <div className="min-h-screen settings-container">
-      <div className="container max-w-6xl mx-auto p-6 space-y-8">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your theme preferences, ISO files and system configuration
-          </p>
-        </div>
+      <div className={`container ${sizeVariants[size].layout.maxWidth} mx-auto ${sizeVariants[size].layout.container} pt-6 space-y-8`}>
 
         {/* Theme Settings Section */}
-        <Card className="p-8 relative z-20">
-          <div className="space-y-6">
+        <Card className={`${sizeVariants[size].card.padding} relative z-20`}>
+          <div className={sizeVariants[size].layout.section}>
             <div>
-              <h2 className="text-2xl font-semibold mb-2">Theme Settings</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className={`subheading ${getTypographyClass('subheading', size)} ${sizeVariants[size].layout.sectionSpacing}`}>Theme Settings</h2>
+              <p className={`${sizeVariants[size].typography.text} text-muted-foreground`}>
                 Customize the appearance of the interface. Your theme preference will be saved and applied across all sessions.
               </p>
             </div>
 
             {appSettingsLoading?.fetch ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span className="ml-2 text-sm text-muted-foreground">Loading theme settings...</span>
+                <Loader2 className={`${sizeVariants[size].icon.nav} animate-spin`} />
+                <span className={`ml-2 ${sizeVariants[size].typography.small} text-muted-foreground`}>Loading theme settings...</span>
               </div>
             ) : (
-              <div className="space-y-4">
-                <Label className="text-base font-medium">Choose Theme</Label>
+              <div className={sizeVariants[size].layout.section}>
+                <Label className={`${sizeVariants[size].typography.text} font-medium`}>Choose Theme</Label>
                 <RadioGroup
                   value={theme}
                   onValueChange={handleThemeChange}
-                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                  className={getGridClasses('themeOptions', size)}
                   disabled={appSettingsLoading?.update}
                 >
                   {/* Light Theme Option */}
-                  <div className="flex items-center space-x-3">
+                  <div className={`flex items-center ${sizeVariants[size].spacing.spaceX}`}>
                     <RadioGroupItem value="light" id="light" disabled={appSettingsLoading?.update} />
-                    <Label htmlFor="light" className="flex items-center space-x-3 cursor-pointer">
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700">
-                        <Sun className="h-5 w-5 text-amber-500" />
+                    <Label htmlFor="light" className={`flex items-center ${sizeVariants[size].spacing.spaceX} cursor-pointer`}>
+                      <div className={`flex items-center justify-center ${sizeVariants[size].thumbnail} bg-muted rounded-lg border-2 border`}>
+                        <Sun className={`${sizeVariants[size].icon.size} text-accent`} />
                       </div>
                       <div>
                         <div className="font-medium">Light</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className={`${sizeVariants[size].badge.text} text-muted-foreground`}>
                           Clean and bright interface
                         </div>
                       </div>
@@ -714,15 +720,15 @@ const SettingMain = () => {
                   </div>
 
                   {/* Dark Theme Option */}
-                  <div className="flex items-center space-x-3">
+                  <div className={`flex items-center ${sizeVariants[size].spacing.spaceX}`}>
                     <RadioGroupItem value="dark" id="dark" disabled={appSettingsLoading?.update} />
-                    <Label htmlFor="dark" className="flex items-center space-x-3 cursor-pointer">
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-900 dark:bg-gray-100 rounded-lg border-2 border-gray-700 dark:border-gray-200">
-                        <Moon className="h-5 w-5 text-slate-400 dark:text-slate-600" />
+                    <Label htmlFor="dark" className={`flex items-center ${sizeVariants[size].spacing.spaceX} cursor-pointer`}>
+                      <div className={`flex items-center justify-center ${sizeVariants[size].thumbnail} bg-card rounded-lg border-2 border`}>
+                        <Moon className={`${sizeVariants[size].icon.size} text-muted-foreground`} />
                       </div>
                       <div>
                         <div className="font-medium">Dark</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className={`${sizeVariants[size].badge.text} text-muted-foreground`}>
                           Easier on the eyes in low light
                         </div>
                       </div>
@@ -730,15 +736,15 @@ const SettingMain = () => {
                   </div>
 
                   {/* System Theme Option */}
-                  <div className="flex items-center space-x-3">
+                  <div className={`flex items-center ${sizeVariants[size].spacing.spaceX}`}>
                     <RadioGroupItem value="system" id="system" disabled={appSettingsLoading?.update} />
-                    <Label htmlFor="system" className="flex items-center space-x-3 cursor-pointer">
-                      <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-900 dark:from-gray-900 dark:to-gray-100 rounded-lg border-2 border-gray-300 dark:border-gray-600">
-                        <Monitor className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <Label htmlFor="system" className={`flex items-center ${sizeVariants[size].spacing.spaceX} cursor-pointer`}>
+                      <div className={`flex items-center justify-center ${sizeVariants[size].thumbnail} bg-gradient-to-br from-muted to-card rounded-lg border-2 border`}>
+                        <Monitor className={`${sizeVariants[size].icon.size} text-muted-foreground`} />
                       </div>
                       <div>
                         <div className="font-medium">System</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className={`${sizeVariants[size].badge.text} text-muted-foreground`}>
                           Match your system preference ({theme === 'system' ? resolvedTheme : getSystemTheme()})
                         </div>
                       </div>
@@ -748,16 +754,16 @@ const SettingMain = () => {
 
                 {/* Loading indicator for theme updates */}
                 {appSettingsLoading?.update && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <div className={`flex items-center ${sizeVariants[size].typography.small} text-muted-foreground`}>
+                    <Loader2 className={`${sizeVariants[size].icon.size} animate-spin mr-2`} />
                     Updating theme preferences...
                   </div>
                 )}
 
                 {/* Error display */}
                 {appSettingsError?.update && (
-                  <div className="flex items-center text-sm text-destructive">
-                    <AlertCircle className="h-4 w-4 mr-2" />
+                  <div className={`flex items-center ${sizeVariants[size].typography.small} text-destructive`}>
+                    <AlertCircle className={`${sizeVariants[size].icon.size} mr-2`} />
                     {appSettingsError?.update}
                   </div>
                 )}
@@ -767,39 +773,39 @@ const SettingMain = () => {
         </Card>
 
         {/* Interface Size Settings Section */}
-        <Card className="p-8 relative z-20">
-          <div className="space-y-6">
+        <Card className={`${sizeVariants[size].card.padding} relative z-20`}>
+          <div className={sizeVariants[size].layout.section}>
             <div>
-              <h2 className="text-2xl font-semibold mb-2">Interface Size</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className={`subheading ${getTypographyClass('subheading', size)} ${sizeVariants[size].layout.sectionSpacing}`}>Interface Size</h2>
+              <p className={`${sizeVariants[size].typography.text} text-muted-foreground`}>
                 Adjust the size of interface elements. Your size preference will be applied to all components across the application.
               </p>
             </div>
 
             {appSettingsLoading?.fetch ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span className="ml-2 text-sm text-muted-foreground">Loading size settings...</span>
+                <Loader2 className={`${sizeVariants[size].icon.nav} animate-spin`} />
+                <span className={`ml-2 ${sizeVariants[size].typography.small} text-muted-foreground`}>Loading size settings...</span>
               </div>
             ) : (
-              <div className="space-y-4">
-                <Label className="text-base font-medium">Choose Interface Size</Label>
+              <div className={sizeVariants[size].layout.section}>
+                <Label className={`${sizeVariants[size].typography.text} font-medium`}>Choose Interface Size</Label>
                 <RadioGroup
                   value={interfaceSize}
                   onValueChange={handleSizeChange}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+                  className={getGridClasses('sizeOptions', size)}
                   disabled={appSettingsLoading?.update}
                 >
                   {/* Small Size Option */}
                   <div className="flex items-center space-x-3">
                     <RadioGroupItem value="sm" id="sm" disabled={appSettingsLoading?.update} />
                     <Label htmlFor="sm" className="flex items-center space-x-3 cursor-pointer">
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700">
-                        <Minimize2 className="h-4 w-4 text-blue-500" />
+                      <div className={`flex items-center justify-center ${sizeVariants[size].thumbnail} bg-muted rounded-lg border-2 border`}>
+                        <Minimize2 className={`${sizeVariants[size].icon.size} text-primary`} />
                       </div>
                       <div>
                         <div className="font-medium">Compact</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className={`${sizeVariants[size].badge.text} text-muted-foreground`}>
                           Smaller interface elements
                         </div>
                       </div>
@@ -810,12 +816,12 @@ const SettingMain = () => {
                   <div className="flex items-center space-x-3">
                     <RadioGroupItem value="md" id="md" disabled={appSettingsLoading?.update} />
                     <Label htmlFor="md" className="flex items-center space-x-3 cursor-pointer">
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700">
-                        <Square className="h-5 w-5 text-green-500" />
+                      <div className={`flex items-center justify-center ${sizeVariants[size].thumbnail} bg-muted rounded-lg border-2 border`}>
+                        <Square className={`${sizeVariants[size].icon.size} text-accent`} />
                       </div>
                       <div>
                         <div className="font-medium">Standard</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className={`${sizeVariants[size].badge.text} text-muted-foreground`}>
                           Default interface size
                         </div>
                       </div>
@@ -826,12 +832,12 @@ const SettingMain = () => {
                   <div className="flex items-center space-x-3">
                     <RadioGroupItem value="lg" id="lg" disabled={appSettingsLoading?.update} />
                     <Label htmlFor="lg" className="flex items-center space-x-3 cursor-pointer">
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700">
-                        <Maximize2 className="h-5 w-5 text-orange-500" />
+                      <div className={`flex items-center justify-center ${sizeVariants[size].thumbnail} bg-muted rounded-lg border-2 border`}>
+                        <Maximize2 className={`${sizeVariants[size].icon.size} text-secondary`} />
                       </div>
                       <div>
                         <div className="font-medium">Comfortable</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className={`${sizeVariants[size].badge.text} text-muted-foreground`}>
                           Larger interface elements
                         </div>
                       </div>
@@ -842,12 +848,12 @@ const SettingMain = () => {
                   <div className="flex items-center space-x-3">
                     <RadioGroupItem value="xl" id="xl" disabled={appSettingsLoading?.update} />
                     <Label htmlFor="xl" className="flex items-center space-x-3 cursor-pointer">
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700">
-                        <Expand className="h-6 w-6 text-purple-500" />
+                      <div className={`flex items-center justify-center ${sizeVariants[size].thumbnail} bg-muted rounded-lg border-2 border`}>
+                        <Expand className={`${sizeVariants[size].icon.size} text-primary`} />
                       </div>
                       <div>
                         <div className="font-medium">Spacious</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className={`${sizeVariants[size].badge.text} text-muted-foreground`}>
                           Extra large interface
                         </div>
                       </div>
@@ -857,16 +863,16 @@ const SettingMain = () => {
 
                 {/* Loading indicator for size updates */}
                 {appSettingsLoading?.update && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <div className={`flex items-center ${sizeVariants[size].typography.small} text-muted-foreground`}>
+                    <Loader2 className={`${sizeVariants[size].icon.size} animate-spin mr-2`} />
                     Updating interface size preferences...
                   </div>
                 )}
 
                 {/* Error display */}
                 {appSettingsError?.update && (
-                  <div className="flex items-center text-sm text-destructive">
-                    <AlertCircle className="h-4 w-4 mr-2" />
+                  <div className={`flex items-center ${sizeVariants[size].typography.small} text-destructive`}>
+                    <AlertCircle className={`${sizeVariants[size].icon.size} mr-2`} />
                     {appSettingsError?.update}
                   </div>
                 )}
@@ -883,6 +889,7 @@ const SettingMain = () => {
             loading={wallpaperLoading}
             showLocalLoading={false}
             className="w-full"
+            size={size}
           />
 
           {/* Loading Overlay for Wallpaper Section */}
@@ -890,10 +897,10 @@ const SettingMain = () => {
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-lg z-40 flex items-center justify-center">
               <div className="bg-background border rounded-lg p-6 shadow-lg max-w-sm w-full mx-4">
                 <div className="flex flex-col items-center space-y-4">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <Loader2 className={`${sizeVariants[size].icon.button} animate-spin text-primary`} />
                   <div className="text-center space-y-2">
                     <h3 className="font-medium">Applying Wallpaper</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className={`${sizeVariants[size].typography.small} text-muted-foreground`}>
                       {wallpaperStatus.step || 'Please wait...'}
                     </p>
                     {wallpaperStatus.progress > 0 && (
@@ -904,14 +911,14 @@ const SettingMain = () => {
                             style={{ width: `${wallpaperStatus.progress}%` }}
                           />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className={`${sizeVariants[size].typography.xsmall} text-muted-foreground mt-1`}>
                           {wallpaperStatus.progress}% complete
                         </p>
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
+                  <div className={`flex items-center gap-2 ${sizeVariants[size].typography.xsmall} text-muted-foreground`}>
+                    <Clock className={sizeVariants[size].icon.size} />
                     <span>This may take a moment...</span>
                   </div>
                 </div>
@@ -923,12 +930,12 @@ const SettingMain = () => {
           {wallpaperError && (
             <div className="mt-4 p-4 border border-destructive/20 bg-destructive/5 rounded-lg">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                <AlertCircle className={`${sizeVariants[size].icon.size} text-destructive flex-shrink-0 mt-0.5`} />
                 <div className="flex-1 space-y-2">
-                  <p className="text-sm font-medium text-destructive">
+                  <p className={`${sizeVariants[size].typography.small} font-medium text-destructive`}>
                     Wallpaper Update Failed
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className={`${sizeVariants[size].typography.small} text-muted-foreground`}>
                     {wallpaperError.message}
                   </p>
                   <div className="flex gap-2">
@@ -945,7 +952,7 @@ const SettingMain = () => {
                       }}
                       disabled={wallpaperLoading}
                     >
-                      <RefreshCw className="h-4 w-4 mr-2" />
+                      <RefreshCw className={`${sizeVariants[size].icon.size} mr-2`} />
                       Retry
                     </Button>
                     <Button
@@ -969,20 +976,21 @@ const SettingMain = () => {
           onLogoReset={handleLogoReset}
           loading={logoLoading}
           className="w-full"
+          size={size}
         />
 
         {/* ISO Management Section */}
-        <Card className="p-8 relative z-20">
-          <div className="space-y-6">
+        <Card className={`${sizeVariants[size].card.padding} relative z-20`}>
+          <div className={sizeVariants[size].layout.section}>
             <div>
-              <h2 className="text-2xl font-semibold mb-2">ISO Management</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className={`subheading ${getTypographyClass('subheading', size)} ${sizeVariants[size].layout.sectionSpacing}`}>ISO Management</h2>
+              <p className={`${sizeVariants[size].typography.text} text-muted-foreground`}>
                 Upload ISO files for different operating systems. You can drag and drop files directly onto the OS cards.
               </p>
             </div>
 
             {/* OS Selection Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className={`grid grid-cols-2 lg:grid-cols-4 ${sizeVariants[size].layout.cardGrid}`}>
               {osOptions.map((os) => {
                 const Icon = os.icon;
                 const isSelected = selectedOS === os.value;
@@ -995,9 +1003,9 @@ const SettingMain = () => {
                     className={cn(
                       'relative transition-all duration-300 cursor-pointer',
                       'hover:scale-105 hover:shadow-xl hover:z-30',
-                      isSelected && 'shadow-lg shadow-primary/25 bg-primary/5 border-primary z-25',
+                      isSelected && 'shadow-lg shadow-primary/25 bg-card border-primary z-25',
                       isDraggedOver && 'scale-105 shadow-2xl border-primary border-2 z-35',
-                      hasISO && 'bg-green-50/50 dark:bg-green-900/10 border-green-500/30',
+                      hasISO && 'bg-card border-accent/30',
                       'hover:border-primary/50'
                     )}
                     onClick={() => handleCardClick(os.value)}
@@ -1005,32 +1013,32 @@ const SettingMain = () => {
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, os.value)}
                   >
-                    <div className="p-6">
+                    <div className={sizeVariants[size].card.padding}>
                       {/* Status Badge */}
                       {hasISO && (
-                        <div className="absolute top-2 right-2 flex items-center gap-1 z-30">
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                          <span className="text-xs font-medium text-green-600 dark:text-green-400">ISO Ready</span>
+                        <div className={`absolute top-2 right-2 flex items-center ${sizeVariants[size].gap} z-30`}>
+                          <CheckCircle className={`${sizeVariants[size].icon.size} text-accent`} />
+                          <span className={`${sizeVariants[size].badge.text} font-medium text-accent`}>ISO Ready</span>
                         </div>
                       )}
 
-                      <div className="aspect-square flex items-center justify-center mb-4">
+                      <div className={`aspect-square flex items-center justify-center ${sizeVariants[size].layout.sectionSpacing}`}>
                         <Icon
-                          className="w-20 h-20 transition-transform duration-300"
+                          className={`${sizeVariants[size].icon.hero} transition-transform duration-300`}
                           style={{ color: os.color }}
                         />
                       </div>
 
-                      <div className="text-center space-y-2">
-                        <h3 className="font-semibold text-lg">{os.label}</h3>
-                        <p className="text-xs text-muted-foreground">
+                      <div className={`text-center ${sizeVariants[size].layout.section}`}>
+                        <h3 className={`font-semibold ${getTypographyClass('heading2', size)}`}>{os.label}</h3>
+                        <p className={`${sizeVariants[size].badge.text} text-muted-foreground`}>
                           {hasISO ? 'ISO uploaded - Click to replace' : os.description}
                         </p>
 
                         {/* Drop zone indicator */}
                         {isDraggedOver && (
                           <div className="absolute inset-0 bg-primary/10 rounded-lg flex items-center justify-center z-40">
-                            <Upload className="h-12 w-12 text-primary animate-pulse" />
+                            <Upload className={`${sizeVariants[size].thumbnail} text-primary animate-pulse`} />
                           </div>
                         )}
 
@@ -1038,13 +1046,13 @@ const SettingMain = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 text-xs"
+                            className={`${sizeVariants[size].height} ${sizeVariants[size].typography.xsmall}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               window.open(os.downloadUrl, '_blank');
                             }}
                           >
-                            <Download className="h-3 w-3 mr-1" />
+                            <Download className={`${sizeVariants[size].icon.size} mr-1`} />
                             Download ISO
                           </Button>
                         </div>
@@ -1057,19 +1065,19 @@ const SettingMain = () => {
 
             {/* Upload Section */}
             {(selectedOS || isoFile) && (
-              <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+              <div className={`bg-card rounded-lg border ${sizeVariants[size].card.padding} ${sizeVariants[size].layout.section}`}>
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">
+                  <div className={sizeVariants[size].layout.section}>
+                    <p className={`${sizeVariants[size].typography.text} font-medium`}>
                       {selectedOS && `Selected OS: ${osOptions.find(os => os.value === selectedOS)?.label}`}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className={`${sizeVariants[size].typography.text} text-muted-foreground`}>
                       {isoFile && `File: ${isoFile.name} (${formatSize(isoFile.size)})`}
                     </p>
                     {selectedOS && isOSAvailable(osOptions.find(os => os.value === selectedOS)?.id) && (
-                      <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
-                        <AlertCircle className="h-4 w-4" />
-                        <p className="text-xs font-medium">
+                      <div className={`flex items-center ${sizeVariants[size].gap} text-destructive`}>
+                        <AlertCircle className={sizeVariants[size].icon.size} />
+                        <p className={`${sizeVariants[size].badge.text} font-medium`}>
                           Warning: This will replace the existing ISO file for this OS
                         </p>
                       </div>
@@ -1096,7 +1104,7 @@ const SettingMain = () => {
             />
 
             {/* Instructions */}
-            <div className="text-center text-sm text-muted-foreground">
+            <div className={`text-center ${sizeVariants[size].typography.text} text-muted-foreground`}>
               <p>Click on any OS card to select and upload an ISO file, or drag and drop directly onto the cards</p>
             </div>
           </div>

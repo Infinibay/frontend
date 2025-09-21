@@ -481,8 +481,8 @@ const WallpaperSelector = ({
             className="space-y-4"
           >
           <div className={cn(
-            "grid gap-4 relative z-30",
-            size === 'sm' ? "grid-cols-1" : "grid-cols-2 lg:grid-cols-3"
+            "grid relative z-30 size-gap",
+            "grid-cols-2 lg:grid-cols-3"
           )}>
             {wallpapers.map((wallpaper) => {
               const isSelected = selectedWallpaper === wallpaper.id;

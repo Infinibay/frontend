@@ -5,7 +5,7 @@ import { AppSearchBar } from "./app-search-bar"
 import { CategoryFilter } from "./category-filter"
 import { AppCard } from "./app-card"
 import { SelectedAppsPanel } from "./selected-apps-panel"
-import { useOptionalSizeContext, sizeVariants } from "./size-provider"
+import { useOptionalSizeContext } from "./size-provider"
 
 const AppStoreInstaller = React.forwardRef(({
   apps = [],
@@ -24,7 +24,6 @@ const AppStoreInstaller = React.forwardRef(({
 }, ref) => {
   const sizeContext = useOptionalSizeContext()
   const size = propSize || sizeContext?.size || 'md'
-  const sizes = sizeVariants[size] || sizeVariants.md
 
   const [searchTerm, setSearchTerm] = React.useState("")
   const [selectedCategory, setSelectedCategory] = React.useState("all")
@@ -176,7 +175,7 @@ const AppStoreInstaller = React.forwardRef(({
               </div>
               <h3 className={cn(
                 "font-semibold mb-2",
-                sizes.heading || "text-lg"
+                "size-heading" || "text-lg"
               )}>
                 {searchTerm || selectedCategory !== "all"
                   ? 'No apps found'
@@ -185,7 +184,7 @@ const AppStoreInstaller = React.forwardRef(({
               </h3>
               <p className={cn(
                 "text-muted-foreground max-w-md mx-auto",
-                sizes.text?.base || "text-base"
+                "size-text"?.base || "text-base"
               )}>
                 {searchTerm || selectedCategory !== "all"
                   ? 'Try adjusting your search terms or category filter.'

@@ -1,6 +1,17 @@
 /**
  * Navigation-specific glassmorphism utilities and helper functions
  * Provides Windows 11 Fluent Design patterns for navigation components
+ *
+ * DESIGN GUIDELINES HIERARCHY:
+ * 1. Mica for navigation (primary navigation surfaces)
+ * 2. Acrylic for headers (secondary navigation surfaces and overlays)
+ * 3. Glass-minimal for wallpapers (background surfaces with minimal transparency)
+ *
+ * VALIDATION RULES:
+ * - Main navigation containers should use 'main' variant (maps to mica)
+ * - Sub-navigation and overlays should use 'sub' variant (maps to acrylic)
+ * - Sticky headers should always use acrylic effect
+ * - All functions include backdrop-filter fallback support
  */
 
 /**
@@ -45,12 +56,22 @@ export const getSidebarGlass = (theme, variant = 'main') => {
   // Check if variant is a surface variant or glass effect
   const glassClasses = surfaceVariantMap[variant] || glassEffectMap[variant] || surfaceVariantMap['main'];
 
-  // Add consistent border for minimal variant and don't add radius as it has its own radius defined
+  // Add consistent border and fallback classes
+  const fallbackClasses = [
+    'supports-[not(backdrop-filter:blur(1px))]:bg-sidebar/98',
+    'supports-[not(backdrop-filter:blur(1px))]:border',
+    'supports-[not(backdrop-filter:blur(1px))]:border-sidebar-border',
+    'motion-reduce:backdrop-blur-none',
+    'motion-reduce:bg-sidebar',
+    'motion-reduce:border',
+    'motion-reduce:border-sidebar-border'
+  ].join(' ');
+
   if (variant === 'minimal') {
-    return `${glassClasses} border border-sidebar-border/20`;
+    return `${glassClasses} border border-sidebar-border/20 ${fallbackClasses}`;
   }
 
-  return `${glassClasses} radius-fluent-md`;
+  return `${glassClasses} radius-fluent-md ${fallbackClasses}`;
 };
 
 /**
@@ -84,7 +105,18 @@ export const getThemeAwareHeaderGlass = (resolvedTheme, sticky = false) => {
   const border = 'border-border/20';
   const textColor = 'text-foreground'; // Use foreground token for proper contrast
 
-  return `${baseGlass} ${background} ${border} ${textColor} ${elevation}`;
+  // Add consistent fallback classes
+  const fallbackClasses = [
+    'supports-[not(backdrop-filter:blur(1px))]:bg-background/95',
+    'supports-[not(backdrop-filter:blur(1px))]:border',
+    'supports-[not(backdrop-filter:blur(1px))]:border-border',
+    'motion-reduce:backdrop-blur-none',
+    'motion-reduce:bg-background',
+    'motion-reduce:border',
+    'motion-reduce:border-border'
+  ].join(' ');
+
+  return `${baseGlass} ${background} ${border} ${textColor} ${elevation} ${fallbackClasses}`;
 };
 
 /**
@@ -141,8 +173,8 @@ export const getHoverNavStyle = (theme) => {
  * @returns {string} Mica navigation classes
  */
 export const getMicaNavigation = (theme) => {
-  const background = theme === 'dark' ? 'bg-sidebar/85' : 'bg-sidebar/90';
-  return `mica backdrop-blur-md ${background} border border-sidebar-border/20 elevation-2 text-sidebar-foreground`;
+  const background = theme === 'dark' ? 'bg-sidebar/95' : 'bg-sidebar/98';
+  return `mica backdrop-blur-sm ${background} border border-sidebar-border/20 elevation-2 text-sidebar-foreground`;
 };
 
 /**
@@ -250,7 +282,18 @@ export const getAccessibleNavContrast = (background, theme) => {
  * @returns {string} Fallback classes
  */
 export const getReducedTransparencyFallback = (glassClass) => {
-  return 'data-[reduced-transparency=true]:border-sidebar-border data-[reduced-transparency=true]:shadow-elevation-1 motion-reduce:border-sidebar-border motion-reduce:shadow-elevation-1';
+  return [
+    'data-[reduced-transparency=true]:bg-sidebar/98',
+    'data-[reduced-transparency=true]:border-sidebar-border',
+    'data-[reduced-transparency=true]:shadow-elevation-1',
+    'data-[reduced-transparency=true]:backdrop-blur-none',
+    'motion-reduce:bg-sidebar',
+    'motion-reduce:border-sidebar-border',
+    'motion-reduce:shadow-elevation-1',
+    'motion-reduce:backdrop-blur-none',
+    'supports-[not(backdrop-filter:blur(1px))]:bg-sidebar/98',
+    'supports-[not(backdrop-filter:blur(1px))]:border-sidebar-border'
+  ].join(' ');
 };
 
 /**

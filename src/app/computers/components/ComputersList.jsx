@@ -8,6 +8,7 @@ import { LottieAnimation } from "@/components/ui/lottie-animation";
 import { Button } from "@/components/ui/button";
 import { fetchVms } from "@/state/slices/vms";
 import { countMachines } from "@/app/computers/utils/groupMachines";
+import { getGlassClasses } from "@/utils/glass-effects";
 import {
   DndContext,
   DragOverlay,
@@ -61,8 +62,13 @@ function DroppableDepartment({ departmentId, departmentName, children, isOver })
       )}
       <div
         className={cn(
-          "min-h-[100px] p-4 glass-subtle rounded-xl backdrop-blur-sm transition-all duration-200",
-          isOver ? "glass-medium border-primary/30 bg-primary/10 backdrop-blur-md" : "bg-card/30"
+          "min-h-[100px] p-4 transition-all duration-200",
+          getGlassClasses({
+            glass: isOver ? 'medium' : 'subtle',
+            elevation: isOver ? 3 : 2,
+            radius: 'lg'
+          }),
+          isOver && "border-primary/30 bg-primary/10"
         )}
       >
         {children}
@@ -190,11 +196,18 @@ export function ComputersList({
           loop={true}
           autoplay={true}
         />
-        <div className="text-center space-y-2">
-          <p className="text-lg text-muted-foreground">
+        <div className={cn(
+          "text-center space-y-2 p-6 rounded-lg",
+          getGlassClasses({
+            glass: 'minimal',
+            elevation: 2,
+            radius: 'lg'
+          })
+        )}>
+          <p className="text-lg text-glass-text-primary">
             {noDataLoaded ? 'No data loaded yet' : 'No virtual machines found'}
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-glass-text-secondary">
             {noDataLoaded
               ? 'Data may still be loading or there might be a connection issue'
               : 'Create your first virtual machine to get started'
@@ -256,7 +269,16 @@ export function ComputersList({
                     loop={true}
                     autoplay={true}
                   />
-                  <p className="text-muted-foreground">No machines in this department</p>
+                  <div className={cn(
+                    "text-center p-4 rounded-lg",
+                    getGlassClasses({
+                      glass: 'subtle',
+                      elevation: 1,
+                      radius: 'md'
+                    })
+                  )}>
+                    <p className="text-glass-text-primary">No machines in this department</p>
+                  </div>
                 </div>
               )}
             </div>

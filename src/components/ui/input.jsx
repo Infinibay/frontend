@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { useSizeContext, sizeVariants } from "./size-provider"
+import { useSizeContext } from "./size-provider"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 import {
   getFloatingLabelClasses,
@@ -21,9 +21,8 @@ const Input = React.forwardRef(({
   floatingLabel = false,
   ...props
 }, ref) => {
-  const { size: contextSize } = useSizeContext();
+  const { size: contextSize, getSizeClassName } = useSizeContext();
   const size = propSize || contextSize;
-  const sizes = sizeVariants[size];
   const theme = useSafeResolvedTheme();
 
   const [value, setValue] = React.useState(props.value || props.defaultValue || "");
@@ -74,9 +73,10 @@ const Input = React.forwardRef(({
         getInputStyles(),
         containerClasses,
         // Size variants
-        sizes.input.height,
-        floatingLabel ? "pt-6 pb-2 px-4" : sizes.input.padding,
-        sizes.input.text,
+        "size-input-height",
+        floatingLabel ? "size-input-padding-floating" : "size-input-padding",
+        "size-input-text",
+        propSize && getSizeClassName(propSize),
         className
       )}
       placeholder={floatingLabel ? (isFloated ? placeholder : "") : placeholder}

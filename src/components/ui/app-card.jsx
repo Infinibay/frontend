@@ -6,7 +6,7 @@ import { PlusIcon, CheckIcon, TrashIcon } from "@radix-ui/react-icons"
 import { Card, CardContent } from "./card"
 import { Badge } from "./badge"
 import { Spinner } from "./spinner"
-import { useOptionalSizeContext, sizeVariants } from "./size-provider"
+import { useOptionalSizeContext } from "./size-provider"
 import { createSanitizedSVGMarkup } from "@/utils/svg-sanitizer"
 
 const AppCard = React.forwardRef(({
@@ -22,7 +22,6 @@ const AppCard = React.forwardRef(({
 }, ref) => {
   const sizeContext = useOptionalSizeContext()
   const size = propSize || sizeContext?.size || 'md'
-  const sizes = sizeVariants[size] || sizeVariants.md
 
   const handleClick = () => {
     if (!isProcessing) {

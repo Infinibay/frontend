@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { useSizeContext, sizeVariants } from "./size-provider";
+import { useSizeContext } from "./size-provider";
 
 const speedVariants = {
   slow: "animate-[spin_3s_linear_infinite]",
@@ -41,8 +41,8 @@ const Spinner = React.forwardRef(({
     className
   );
 
-  // Get icon size from sizeVariants for consistent sizing
-  const iconSize = sizeVariants[size]?.icon?.size;
+  // Icon size class for consistent sizing
+  const iconSize = "size-icon";
 
   // Circular Spinner (Default)
   if (style === "circular") {

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { Cross2Icon, TrashIcon } from "@radix-ui/react-icons"
 import { Card, CardHeader, CardTitle, CardContent } from "./card"
 import { Badge } from "./badge"
-import { useOptionalSizeContext, sizeVariants } from "./size-provider"
+import { useOptionalSizeContext } from "./size-provider"
 import { createSanitizedSVGMarkup } from "@/utils/svg-sanitizer"
 
 const SelectedAppsPanel = React.forwardRef(({
@@ -20,7 +20,6 @@ const SelectedAppsPanel = React.forwardRef(({
 }, ref) => {
   const sizeContext = useOptionalSizeContext()
   const size = propSize || sizeContext?.size || 'md'
-  const sizes = sizeVariants[size] || sizeVariants.md
 
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
@@ -127,13 +126,13 @@ const SelectedAppsPanel = React.forwardRef(({
               </div>
               <p className={cn(
                 "text-muted-foreground",
-                sizes.text?.sm || "text-sm"
+                "size-text"?.sm || "text-sm"
               )}>
                 No apps selected
               </p>
               <p className={cn(
                 "text-muted-foreground/70 mt-1",
-                sizes.text?.xs || "text-xs"
+                "size-text"?.xs || "text-xs"
               )}>
                 Select apps to see them here
               </p>
@@ -176,14 +175,14 @@ const SelectedAppsPanel = React.forwardRef(({
                   <div className="flex-1 min-w-0">
                     <h4 className={cn(
                       "font-medium truncate",
-                      sizes.text?.sm || "text-sm"
+                      "size-text"?.sm || "text-sm"
                     )}>
                       {app.name}
                     </h4>
                     {app.category && (
                       <p className={cn(
                         "text-muted-foreground truncate",
-                        sizes.text?.xs || "text-xs"
+                        "size-text"?.xs || "text-xs"
                       )}>
                         {app.category}
                       </p>

@@ -1,6 +1,7 @@
 "use client";
 import { Montserrat } from "next/font/google";
 import "../styles/globals.css";
+import "../styles/auth.css";
 import { NextUIProvider } from "@nextui-org/react";
 import { ApolloProvider } from '@apollo/client';
 import client from '../apollo-client';

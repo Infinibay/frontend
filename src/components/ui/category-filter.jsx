@@ -2,7 +2,7 @@ import * as React from "react"
 import PropTypes from 'prop-types'
 import { cn } from "@/lib/utils"
 import { Badge } from "./badge"
-import { useOptionalSizeContext, sizeVariants } from "./size-provider"
+import { useOptionalSizeContext } from "./size-provider"
 
 const CategoryFilter = React.forwardRef(({
   categories = [],
@@ -16,7 +16,6 @@ const CategoryFilter = React.forwardRef(({
 }, ref) => {
   const sizeContext = useOptionalSizeContext()
   const size = propSize || sizeContext?.size || 'md'
-  const sizes = sizeVariants[size] || sizeVariants.md
 
   const scrollContainerRef = React.useRef(null)
 
@@ -116,7 +115,7 @@ const CategoryFilter = React.forwardRef(({
                   <span
                     className={cn(
                       "text-xs opacity-75",
-                      sizes.text?.xs || "text-xs"
+                      "size-text"?.xs || "text-xs"
                     )}
                   >
                     {category.count}

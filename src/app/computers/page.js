@@ -95,7 +95,7 @@ export default function ComputersPage() {
       <ComputersHeader hasISOs={hasISOs} onRefresh={handleRefresh} />
 
       <section className="flex-1 w-full">
-        <div className="space-y-4">
+        <div className={sizeVariants[size].layout.section}>
           <ComputersList
             loading={loading}
             error={error}

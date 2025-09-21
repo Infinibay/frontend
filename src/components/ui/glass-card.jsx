@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useSizeContext, sizeVariants } from "./size-provider"
+import { useSizeContext } from "./size-provider"
 
 /**
  * GlassCard Component Precedence Rules:
@@ -68,7 +68,7 @@ const GlassCard = React.forwardRef(({
   const { size } = useSizeContext()
 
   // Use size-appropriate radius if not explicitly set
-  const effectiveRadius = radius || sizeVariants[size]?.radius || "rounded-xl"
+  const effectiveRadius = radius || "rounded-xl"
 
   // Generate glow shadow class if glow is specified
   const glowShadowClass = glow !== "none" ? `shadow-glow-${glowColor}-${glow}` : ""
@@ -102,19 +102,12 @@ const GlassCard = React.forwardRef(({
 GlassCard.displayName = "GlassCard"
 
 const GlassCardHeader = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const spacing = sizeVariants[size]?.spacing?.container || "p-6"
-
-  // Extract padding value safely from spacing (e.g., "p-6" -> "6")
-  const pad = spacing.startsWith('p-') ? spacing.slice(2) : '6'
-  const headerPadding = `px-${pad} pt-${pad} pb-0`
-
   return (
     <div
       ref={ref}
       className={cn(
         "flex flex-col space-y-1.5",
-        headerPadding,
+        "size-spacing-container-header",
         className
       )}
       {...props}
@@ -124,15 +117,12 @@ const GlassCardHeader = React.forwardRef(({ className, ...props }, ref) => {
 GlassCardHeader.displayName = "GlassCardHeader"
 
 const GlassCardTitle = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const titleClass = sizeVariants[size]?.heading || "text-xl font-semibold"
-
   return (
     <div
       ref={ref}
       className={cn(
         "leading-none tracking-tight",
-        titleClass,
+        "size-heading",
         className
       )}
       {...props}
@@ -142,15 +132,12 @@ const GlassCardTitle = React.forwardRef(({ className, ...props }, ref) => {
 GlassCardTitle.displayName = "GlassCardTitle"
 
 const GlassCardDescription = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const textClass = sizeVariants[size]?.text || "text-base"
-
   return (
     <div
       ref={ref}
       className={cn(
         "text-foreground",
-        textClass === "text-base" ? "text-sm" : textClass,
+        "size-text",
         className
       )}
       {...props}
@@ -160,18 +147,11 @@ const GlassCardDescription = React.forwardRef(({ className, ...props }, ref) => 
 GlassCardDescription.displayName = "GlassCardDescription"
 
 const GlassCardContent = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const spacing = sizeVariants[size]?.spacing?.container || "p-6"
-
-  // Extract padding value safely from spacing (e.g., "p-6" -> "6")
-  const pad = spacing.startsWith('p-') ? spacing.slice(2) : '6'
-  const contentPadding = `px-${pad} pb-${pad} pt-0`
-
   return (
     <div
       ref={ref}
       className={cn(
-        contentPadding,
+        "size-spacing-container-content",
         className
       )}
       {...props}
@@ -181,19 +161,12 @@ const GlassCardContent = React.forwardRef(({ className, ...props }, ref) => {
 GlassCardContent.displayName = "GlassCardContent"
 
 const GlassCardFooter = React.forwardRef(({ className, ...props }, ref) => {
-  const { size } = useSizeContext()
-  const spacing = sizeVariants[size]?.spacing?.container || "p-6"
-
-  // Extract padding value safely from spacing (e.g., "p-6" -> "6")
-  const pad = spacing.startsWith('p-') ? spacing.slice(2) : '6'
-  const footerPadding = `px-${pad} pb-${pad} pt-0`
-
   return (
     <div
       ref={ref}
       className={cn(
         "flex items-center",
-        footerPadding,
+        "size-spacing-container-footer",
         className
       )}
       {...props}

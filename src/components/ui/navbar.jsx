@@ -26,7 +26,7 @@ import {
   SidebarInset,
   useSidebar,
 } from "./sidebar";
-import { useSizeContext, sizeVariants } from "./size-provider";
+import { useSizeContext } from "./size-provider";
 import {
   getGlassNavContainer,
   getGlassNavItem,
@@ -94,11 +94,10 @@ const AppSidebar = React.forwardRef(({
   const [subSidebarVisible, setSubSidebarVisible] = React.useState(false);
 
   const { size: contextSize } = useSizeContext();
-  const sizes = sizeVariants[contextSize];
   const isMobile = useIsMobile();
-  const sidebarWidth = sizes.navbar.width;
-  const sidebarWidthMobile = sizes.navbar.mobileWidth;
-  const sidebarWidthIcon = sizes.icon.button.replace("w-", "") + "rem";
+  const sidebarWidth = "var(--size-navbar-width)";
+  const sidebarWidthMobile = "var(--size-navbar-mobile-width)";
+  const sidebarWidthIcon = "var(--size-icon-button)";
 
   // Fetch VMs if they're not already loaded
   const vms = useSelector((state) => state.vms.items);
@@ -233,12 +232,15 @@ const AppSidebar = React.forwardRef(({
 
   // Menu item styles based on size
   const menuStyles = {
-    text: sizes.text,
-    icon: sizes.icon.nav,
-    spacing: sizes.spacing,
-    gap: sizes.gap,
-    avatar: sizes.avatar,
-    logo: sizes.logo,
+    text: "size-text",
+    icon: "size-icon-nav",
+    spacing: {
+      item: "size-spacing-item",
+      container: "size-spacing-container"
+    },
+    gap: "size-gap",
+    avatar: "size-avatar",
+    logo: "size-logo",
   };
 
   const navItems = [
@@ -257,7 +259,7 @@ const AppSidebar = React.forwardRef(({
             "text-sidebar-foreground/80 hover:text-sidebar-foreground w-full",
             menuStyles.text,
             menuStyles.spacing.item,
-            isActive(item.href) && "glass-subtle text-sidebar-foreground",
+            isActive(item.href) && getGlassNavItem({ active: true, theme: 'light', size: contextSize }),
             getAccessibleNavContrast('bg-sidebar', 'light'),
             getFocusRingForGlass('light')
           )}
@@ -309,7 +311,7 @@ const AppSidebar = React.forwardRef(({
             <SidebarMenuItem>
               <div className="p-4">
                 <label className="block text-sm text-sidebar-foreground/80 mb-2 font-medium">Department</label>
-                <div className={cn("glass-medium rounded-lg overflow-hidden border border-sidebar-border/20 shadow-lg", getFluentNavCard())}>
+                <div className={cn("rounded-lg overflow-hidden shadow-lg", getFluentNavCard(), getGlassNavContainer({ variant: 'sub', theme: 'light', size: contextSize }))}>
                   <InputSelector
                     items={departments}
                     selectedItem={departments.find(dept => dept.name.toLowerCase() === selectedDepartment.toLowerCase())}
@@ -325,14 +327,14 @@ const AppSidebar = React.forwardRef(({
             </SidebarMenuItem>
 
             <div className="px-4 pt-2 pb-4">
-              <div className={cn("glass-subtle rounded-xl p-3", getFluentNavCard())}>
+              <div className={cn("rounded-xl p-3", getFluentNavCard(), getGlassNavContainer({ variant: 'sub', theme: 'light', size: contextSize }))}>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === "/departments"}
                     className={cn(
                       "text-sidebar-foreground/80 hover:text-sidebar-foreground w-full transition-all hover:bg-sidebar-accent/10 rounded-lg",
-                      pathname === "/departments" ? "glass-subtle text-sidebar-foreground" : "",
+                      pathname === "/departments" ? getGlassNavItem({ active: true, theme: 'light', size: contextSize }) : "",
                       menuStyles.text,
                       menuStyles.spacing.item
                     )}
@@ -353,7 +355,7 @@ const AppSidebar = React.forwardRef(({
                     )}
                   >
                     <div className={cn("flex items-center", menuStyles.gap)}>
-                      <div className={cn("glass-subtle p-1 rounded-md")}>
+                      <div className={cn("p-1 rounded-md", getGlassNavContainer({ variant: 'sub', theme: 'light', size: contextSize }))}>
                         <HiPlus className="w-3 h-3 text-sidebar-foreground" />
                       </div>
                       <span>Create Department</span>
@@ -369,7 +371,7 @@ const AppSidebar = React.forwardRef(({
                 <h3 className="px-3 text-sm font-semibold text-sidebar-foreground/70">Computers</h3>
               </div>
 
-              <div className={cn("glass-subtle rounded-xl p-3", getFluentNavCard())}>
+              <div className={cn("rounded-xl p-3", getFluentNavCard(), getGlassNavContainer({ variant: 'sub', theme: 'light', size: contextSize }))}>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -382,7 +384,7 @@ const AppSidebar = React.forwardRef(({
                     <Link href={selectedDepartment ? `/departments/${selectedDepartment}` : "/departments"} className={cn("flex items-center justify-between", menuStyles.gap)}>
                       <span>All computers</span>
                       {departmentVMs.length > 0 && (
-                        <span className="glass-subtle text-sidebar-foreground text-xs px-2 py-0.5 rounded-full">
+                        <span className={cn("text-sidebar-foreground text-xs px-2 py-0.5 rounded-full", getGlassNavContainer({ variant: 'sub', theme: 'light', size: contextSize }))}>
                           {departmentVMs.length}
                         </span>
                       )}
@@ -408,10 +410,10 @@ const AppSidebar = React.forwardRef(({
             {/* Security section */}
             <div className="px-4 pt-2 pb-4">
               <div className="flex items-center mb-3">
-                <h3 className="px-3 text-sm font-semibold text-sidebar-foreground/70">Security</h3>
+                <h3 className={cn("px-3 font-semibold text-sidebar-foreground/70", menuStyles.text)}>Security</h3>
               </div>
 
-              <div className={cn("glass-subtle rounded-xl p-3", getFluentNavCard())}>
+              <div className={cn("rounded-xl p-3", getFluentNavCard(), getGlassNavContainer({ variant: 'sub', theme: 'light', size: contextSize }))}>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -521,7 +523,7 @@ const AppSidebar = React.forwardRef(({
                     className={cn(
                       "overflow-hidden border-r border-sidebar-border",
                       "h-full",
-                      getGlassNavContainer({ variant: 'minimal', theme: 'light', size: contextSize })
+                      getGlassNavContainer({ variant: 'main', theme: 'light', size: contextSize })
                     )}
                     data-collapsible="sidebar"
                     data-reduced-transparency={reducedTransparency ? 'true' : undefined}
@@ -606,7 +608,7 @@ const AppSidebar = React.forwardRef(({
                     className={cn(
                       "overflow-hidden border-r border-sidebar-border",
                       "h-full",
-                      getGlassNavContainer({ variant: 'minimal', theme: 'light', size: contextSize })
+                      getGlassNavContainer({ variant: 'sub', theme: 'light', size: contextSize })
                     )}
                     data-collapsible="sidebar"
                     data-reduced-transparency={reducedTransparency ? 'true' : undefined}
