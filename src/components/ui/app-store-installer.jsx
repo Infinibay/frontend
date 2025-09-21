@@ -175,7 +175,7 @@ const AppStoreInstaller = React.forwardRef(({
               </div>
               <h3 className={cn(
                 "font-semibold mb-2",
-                "size-heading" || "text-lg"
+                "text-lg"
               )}>
                 {searchTerm || selectedCategory !== "all"
                   ? 'No apps found'
@@ -184,7 +184,7 @@ const AppStoreInstaller = React.forwardRef(({
               </h3>
               <p className={cn(
                 "text-muted-foreground max-w-md mx-auto",
-                "size-text"?.base || "text-base"
+                "text-base"
               )}>
                 {searchTerm || selectedCategory !== "all"
                   ? 'Try adjusting your search terms or category filter.'

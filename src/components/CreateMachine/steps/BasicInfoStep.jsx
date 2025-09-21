@@ -22,6 +22,25 @@ export function BasicInfoStep({ id, departmentId = null }) {
   const isLoading = useSelector(selectDepartmentsLoading);
   const theme = useSafeResolvedTheme();
 
+  // Auto-select department logic
+  React.useEffect(() => {
+    if (departments.length > 0 && !isLoading) {
+      // If a specific departmentId is provided, use it
+      if (departmentId && !stepValues.departmentId) {
+        const targetDept = departments.find(dept => dept.id === departmentId);
+        if (targetDept) {
+          setValue(`${id}.departmentId`, String(departmentId));
+          return;
+        }
+      }
+
+      // Otherwise, auto-select first department if no department is selected
+      if (!stepValues.departmentId) {
+        setValue(`${id}.departmentId`, String(departments[0].id));
+      }
+    }
+  }, [departments, isLoading, stepValues.departmentId, setValue, id, departmentId]);
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -54,26 +73,33 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 </div>
               </div>
               <Select
+                searchable
                 value={stepValues.departmentId || ''}
                 onValueChange={(value) => setValue(`${id}.departmentId`, value)}
                 disabled={isLoading}
+                aria-describedby="Select department for this machine"
               >
-                <SelectTrigger 
-                  id="departmentId" 
-                  className={`bg-background hover:bg-accent/50 transition-colors ${getError('departmentId') ? 'border-red-500' : ''}`}
+                <SelectTrigger
+                  id="departmentId"
+                  placeholder="Type to search departments..."
+                  error={!!getError('departmentId')}
+                  aria-label="Search and select department"
+                  aria-describedby={getError('departmentId') ? 'departmentId-error' : undefined}
                 >
                   <SelectValue placeholder="Select a department" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent loading={isLoading}>
                   {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
+                    <SelectItem key={dept.id} value={String(dept.id)}>
                       {dept.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {getError('departmentId') && (
-                <p className="text-sm text-red-500">{getError('departmentId')}</p>
+                <p id="departmentId-error" className="text-sm text-red-500" role="alert">
+                  {getError('departmentId')}
+                </p>
               )}
             </div>
           </Card>
@@ -111,7 +137,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('name') ? 'border-red-500' : ''}`}
               />
               {getError('name') && (
-                <p className="text-sm text-red-500">{getError('name')}</p>
+                <p className="text-sm text-red-500" role="alert">{getError('name')}</p>
               )}
             </div>
           </div>
@@ -149,7 +175,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('username') ? 'border-red-500' : ''}`}
               />
               {getError('username') && (
-                <p className="text-sm text-red-500">{getError('username')}</p>
+                <p className="text-sm text-red-500" role="alert">{getError('username')}</p>
               )}
             </div>
 
@@ -180,7 +206,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('password') ? 'border-red-500' : ''}`}
               />
               {getError('password') && (
-                <p className="text-sm text-red-500">{getError('password')}</p>
+                <p className="text-sm text-red-500" role="alert">{getError('password')}</p>
               )}
             </div>
           </div>
@@ -218,7 +244,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('productKey') ? 'border-red-500' : ''}`}
               />
               {getError('productKey') && (
-                <p className="text-sm text-red-500">{getError('productKey')}</p>
+                <p className="text-sm text-red-500" role="alert">{getError('productKey')}</p>
               )}
             </div>
           </Card>

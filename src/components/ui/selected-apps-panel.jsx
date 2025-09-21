@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { Cross2Icon, TrashIcon } from "@radix-ui/react-icons"
 import { Card, CardHeader, CardTitle, CardContent } from "./card"
 import { Badge } from "./badge"
-import { useOptionalSizeContext } from "./size-provider"
+import { useOptionalSizeContext, sizeVariants } from "./size-provider"
 import { createSanitizedSVGMarkup } from "@/utils/svg-sanitizer"
 
 const SelectedAppsPanel = React.forwardRef(({
@@ -20,6 +20,7 @@ const SelectedAppsPanel = React.forwardRef(({
 }, ref) => {
   const sizeContext = useOptionalSizeContext()
   const size = propSize || sizeContext?.size || 'md'
+  const sizeStyles = sizeVariants[size] || sizeVariants.md
 
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
@@ -95,7 +96,7 @@ const SelectedAppsPanel = React.forwardRef(({
                 "p-1 rounded-md transition-colors",
                 "hover:bg-destructive/10 text-destructive hover:text-destructive",
                 "focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2",
-                sizes.button?.padding || "p-1"
+"p-1"
               )}
               onClick={(e) => {
                 e.stopPropagation()
@@ -108,7 +109,7 @@ const SelectedAppsPanel = React.forwardRef(({
               title="Clear all selected apps"
               aria-label="Clear all selected apps"
             >
-              <TrashIcon className={cn(sizes.icon?.size || "h-4 w-4")} />
+              <TrashIcon className="h-4 w-4" />
             </button>
           )}
         </div>
@@ -124,16 +125,10 @@ const SelectedAppsPanel = React.forwardRef(({
               )}>
                 📱
               </div>
-              <p className={cn(
-                "text-muted-foreground",
-                "size-text"?.sm || "text-sm"
-              )}>
+              <p className="text-muted-foreground text-sm">
                 No apps selected
               </p>
-              <p className={cn(
-                "text-muted-foreground/70 mt-1",
-                "size-text"?.xs || "text-xs"
-              )}>
+              <p className="text-muted-foreground/70 mt-1 text-xs">
                 Select apps to see them here
               </p>
             </div>
@@ -152,11 +147,11 @@ const SelectedAppsPanel = React.forwardRef(({
                   <div className={cn(
                     "relative flex items-center justify-center rounded-md border bg-background shrink-0",
                     "shadow-sm",
-                    sizes.avatar || "w-8 h-8"
+                    sizeStyles.avatar
                   )}>
                     {app.iconType === 'svg' && app.icon ? (
                       <div
-                        className={cn("flex items-center justify-center overflow-hidden", sizes.icon?.xs || "w-4 h-4")}
+                        className="flex items-center justify-center overflow-hidden w-4 h-4"
                         // NOTE: SVG is sanitized before injecting to mitigate XSS (see src/utils/svg-sanitizer.js)
                         dangerouslySetInnerHTML={createSanitizedSVGMarkup(app.icon)}
                       />
@@ -173,17 +168,11 @@ const SelectedAppsPanel = React.forwardRef(({
 
                   {/* App Info */}
                   <div className="flex-1 min-w-0">
-                    <h4 className={cn(
-                      "font-medium truncate",
-                      "size-text"?.sm || "text-sm"
-                    )}>
+                    <h4 className="font-medium truncate text-sm">
                       {app.name}
                     </h4>
                     {app.category && (
-                      <p className={cn(
-                        "text-muted-foreground truncate",
-                        "size-text"?.xs || "text-xs"
-                      )}>
+                      <p className="text-muted-foreground truncate text-xs">
                         {app.category}
                       </p>
                     )}
@@ -196,14 +185,14 @@ const SelectedAppsPanel = React.forwardRef(({
                       "opacity-60 hover:opacity-100 focus:opacity-100",
                       "hover:bg-destructive/10 text-destructive hover:text-destructive",
                       "focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2",
-                      sizes.button?.padding || "p-1"
+      "p-1"
                     )}
                     onClick={() => handleRemoveApp(app.id || app.name)}
                     onKeyDown={(e) => handleKeyDown(e, 'remove', app.id || app.name)}
                     title={`Remove ${app.name}`}
                     aria-label={`Remove ${app.name} from selection`}
                   >
-                    <Cross2Icon className={cn(sizes.icon?.xs || "h-3 w-3")} />
+                    <Cross2Icon className="h-3 w-3" />
                   </button>
                 </div>
               ))}

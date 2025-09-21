@@ -23,20 +23,20 @@ const AppCard = React.forwardRef(({
   const sizeContext = useOptionalSizeContext()
   const size = propSize || sizeContext?.size || 'md'
 
-  const handleClick = () => {
+  const handleClick = React.useCallback(() => {
     if (!isProcessing) {
       onToggle?.(app.id || app.name, !isSelected)
     }
-  }
+  }, [isProcessing, onToggle, app.id, app.name, isSelected])
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = React.useCallback((e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       handleClick()
     }
-  }
+  }, [handleClick])
 
-  const getIconSize = () => {
+  const iconSize = React.useMemo(() => {
     switch (size) {
       case 'sm': return { width: 24, height: 24 }
       case 'md': return { width: 32, height: 32 }
@@ -44,27 +44,25 @@ const AppCard = React.forwardRef(({
       case 'xl': return { width: 48, height: 48 }
       default: return { width: 32, height: 32 }
     }
-  }
+  }, [size])
 
-  const iconSize = getIconSize()
-
-  const getButtonIcon = () => {
+  const buttonIcon = React.useMemo(() => {
     if (isProcessing) {
       return <Spinner size={size} className="text-current" />
     }
 
     if (isSelected) {
       return variant === "installed" ? (
-        <TrashIcon className={cn("transition-transform duration-200", sizes.icon?.size || "h-4 w-4")} />
+        <TrashIcon className={cn("transition-transform duration-200", "h-4 w-4")} />
       ) : (
-        <CheckIcon className={cn("transition-transform duration-200", sizes.icon?.size || "h-4 w-4")} />
+        <CheckIcon className={cn("transition-transform duration-200", "h-4 w-4")} />
       )
     }
 
-    return <PlusIcon className={cn("transition-transform duration-200", sizes.icon?.size || "h-4 w-4")} />
-  }
+    return <PlusIcon className={cn("transition-transform duration-200", "h-4 w-4")} />
+  }, [isProcessing, isSelected, variant, size])
 
-  const getButtonVariant = () => {
+  const buttonVariant = React.useMemo(() => {
     if (isProcessing) return "secondary"
 
     if (isSelected) {
@@ -72,9 +70,9 @@ const AppCard = React.forwardRef(({
     }
 
     return "outline"
-  }
+  }, [isProcessing, isSelected, variant])
 
-  const getButtonText = () => {
+  const buttonText = React.useMemo(() => {
     if (isProcessing) return "..."
 
     if (isSelected) {
@@ -82,7 +80,7 @@ const AppCard = React.forwardRef(({
     }
 
     return "Add"
-  }
+  }, [isProcessing, isSelected, variant])
 
   return (
     <Card
@@ -107,7 +105,7 @@ const AppCard = React.forwardRef(({
       aria-label={`${isSelected ? 'Remove' : 'Add'} ${app.name}`}
       {...props}
     >
-      <CardContent className={cn("relative", sizes.card?.content || "p-4")}>
+      <CardContent className={cn("relative", "p-4")}>
         {/* Processing Overlay */}
         {isProcessing && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/80 backdrop-blur-sm">
@@ -120,11 +118,11 @@ const AppCard = React.forwardRef(({
           <div className={cn(
             "relative flex items-center justify-center rounded-lg border bg-background/50 shadow-sm",
             "transition-transform duration-200 group-hover:scale-110",
-            sizes.avatar || "w-12 h-12"
+"w-12 h-12"
           )}>
             {app.iconType === 'svg' && app.icon ? (
               <div
-                className={cn("flex items-center justify-center overflow-hidden", sizes.icon?.size || "w-8 h-8")}
+                className={cn("flex items-center justify-center overflow-hidden", "w-8 h-8")}
                 // NOTE: SVG is sanitized before injecting to mitigate XSS (see src/utils/svg-sanitizer.js)
                 dangerouslySetInnerHTML={createSanitizedSVGMarkup(app.icon)}
               />
@@ -144,7 +142,7 @@ const AppCard = React.forwardRef(({
         <div className="text-center mb-4">
           <h3 className={cn(
             "font-semibold truncate mb-1",
-            sizes.card?.title || "text-sm"
+"text-sm"
           )}>
             {app.name}
           </h3>
@@ -152,7 +150,7 @@ const AppCard = React.forwardRef(({
           {app.description && (
             <p className={cn(
               "text-muted-foreground line-clamp-2 mb-2",
-              sizes.card?.description || "text-xs"
+"text-xs"
             )}>
               {app.description}
             </p>
@@ -174,7 +172,7 @@ const AppCard = React.forwardRef(({
           {app.version && (
             <p className={cn(
               "text-muted-foreground font-mono",
-              sizes.card?.description || "text-xs"
+"text-xs"
             )}>
               v{app.version}
             </p>
@@ -188,13 +186,13 @@ const AppCard = React.forwardRef(({
               "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-all duration-200",
               "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
               "px-4 py-2",
-              sizes.button?.text || "text-sm",
+              "text-sm",
 
               // Variant styles
-              getButtonVariant() === "primary" && "bg-primary text-primary-foreground hover:bg-primary/90",
-              getButtonVariant() === "destructive" && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-              getButtonVariant() === "outline" && "border border-input hover:bg-accent/10 hover:border-primary/50",
-              getButtonVariant() === "secondary" && "bg-secondary text-secondary-foreground hover:bg-secondary/90",
+              buttonVariant === "primary" && "bg-primary text-primary-foreground hover:bg-primary/90",
+              buttonVariant === "destructive" && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+              buttonVariant === "outline" && "border border-input hover:bg-accent/10 hover:border-primary/50",
+              buttonVariant === "secondary" && "bg-secondary text-secondary-foreground hover:bg-secondary/90",
 
               // Processing state
               isProcessing && "cursor-not-allowed opacity-75",
@@ -205,10 +203,10 @@ const AppCard = React.forwardRef(({
               e.stopPropagation()
               handleClick()
             }}
-            aria-label={`${getButtonText()} ${app.name}`}
+            aria-label={`${buttonText} ${app.name}`}
           >
-            {getButtonIcon()}
-            <span>{getButtonText()}</span>
+            {buttonIcon}
+            <span>{buttonText}</span>
           </button>
         </div>
       </CardContent>

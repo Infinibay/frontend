@@ -38,11 +38,9 @@ const AppSearchBar = React.forwardRef(({
     onSearchChange?.(debouncedValue)
   }, [debouncedValue, onSearchChange])
 
-  // Update local value when searchTerm prop changes
+  // Update local value when searchTerm prop changes externally
   React.useEffect(() => {
-    if (searchTerm !== localValue) {
-      setLocalValue(searchTerm)
-    }
+    setLocalValue(searchTerm)
   }, [searchTerm])
 
   const handleChange = (e) => {
@@ -70,7 +68,7 @@ const AppSearchBar = React.forwardRef(({
         <MagnifyingGlassIcon
           className={cn(
             "text-foreground/60",
-            sizes.icon?.sm || "h-4 w-4"
+"h-4 w-4"
           )}
         />
       </div>
@@ -108,7 +106,7 @@ const AppSearchBar = React.forwardRef(({
         >
           <Cross2Icon
             className={cn(
-              sizes.icon?.sm || "h-4 w-4"
+  "h-4 w-4"
             )}
           />
         </button>

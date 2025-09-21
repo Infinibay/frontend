@@ -10,6 +10,15 @@ import {
 } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Header, HeaderLeft, HeaderCenter, HeaderRight } from "@/components/ui/header";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Plus, Search, AlertTriangle } from "lucide-react";
 import { useSizeContext, sizeVariants, getTypographyClass, getGridClasses, getLayoutSpacing } from "@/components/ui/size-provider";
 
@@ -84,56 +93,85 @@ const DepartmentsPage = () => {
             </div>
           </div>
         )}
-        
+
         {/* Header */}
-        <div className={`flex flex-col md:flex-row justify-between items-start md:items-center ${sizeVariants[size].layout.sectionSpacing} ${sizeVariants[size].gap}`}>
-          <div>
-            <h1 className={`mainheading ${getTypographyClass('mainheading', size)}`}>Departments</h1>
-            <p className={`text-muted-foreground mt-1 ${sizeVariants[size].typography.text}`}>
+        <Header
+          variant="glass"
+          elevated
+          sticky={true}
+          style={{ top: 0 }}
+          className="z-30"
+        >
+          <HeaderLeft className="w-[200px]">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Departments</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </HeaderLeft>
+          <HeaderCenter>
+            <h1 className="text-lg sm:text-2xl font-medium text-foreground">
+              Departments
+            </h1>
+          </HeaderCenter>
+          <HeaderRight className="w-[200px] flex items-center justify-end space-x-2">
+            <Button onClick={() => setIsCreateDeptDialogOpen(true)}>
+              <Plus className={`${sizeVariants[size].icon.size} ${sizeVariants[size].spacing.marginSm}`} />
+              New Department
+            </Button>
+          </HeaderRight>
+        </Header>
+
+        {/* Content container with glass effect */}
+        <div className="glass-medium rounded-lg border border-white/20 mx-4 my-4 p-6">
+          {/* Subtitle section */}
+          <div className={`${sizeVariants[size].layout.container} pb-6`}>
+            <p className={`text-glass-text-primary ${sizeVariants[size].typography.text} text-left`}>
               Manage your organization's departments and their resources
             </p>
           </div>
 
-          <Button onClick={() => setIsCreateDeptDialogOpen(true)}>
-            <Plus className={`${sizeVariants[size].icon.size} ${sizeVariants[size].spacing.marginSm}`} />
-            New Department
-          </Button>
-        </div>
-        
-        {/* Search */}
-        <div className={`relative ${sizeVariants[size].layout.sectionSpacing} ${sizeVariants[size].layout.maxWidth}`}>
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className={`${sizeVariants[size].icon.size} text-muted-foreground`} />
+          {/* Search */}
+          <div className={`relative ${sizeVariants[size].layout.sectionSpacing} ${sizeVariants[size].layout.maxWidth}`}>
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className={`${sizeVariants[size].icon.size} text-muted-foreground`} />
+            </div>
+            <Input
+              type="text"
+              placeholder="Search departments..."
+              className={sizeVariants[size].input.withIconLeftPadding}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-          <Input
-            type="text"
-            placeholder="Search departments..."
-            className={sizeVariants[size].input.withIconLeftPadding}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+
+          {/* Departments Grid */}
+          {filteredDepartments.length > 0 ? (
+            <div className={getGridClasses('departments', size)}>
+              {filteredDepartments.map((dept) => (
+                <DepartmentCard
+                  key={dept.id}
+                  department={dept}
+                  machineCount={getMachineCount(dept.name)}
+                  colorClass={getDepartmentColor(dept.name)}
+                  size={size}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              searchQuery={searchQuery}
+              onCreateDepartment={() => setIsCreateDeptDialogOpen(true)}
+              size={size}
+            />
+          )}
         </div>
-        
-        {/* Departments Grid */}
-        {filteredDepartments.length > 0 ? (
-          <div className={getGridClasses('departments', size)}>
-            {filteredDepartments.map((dept) => (
-              <DepartmentCard
-                key={dept.id}
-                department={dept}
-                machineCount={getMachineCount(dept.name)}
-                colorClass={getDepartmentColor(dept.name)}
-                size={size}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            searchQuery={searchQuery}
-            onCreateDepartment={() => setIsCreateDeptDialogOpen(true)}
-            size={size}
-          />
-        )}
       </div>
       
       {/* Create Department Dialog */}
