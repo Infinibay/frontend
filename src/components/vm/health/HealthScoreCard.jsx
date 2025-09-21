@@ -84,7 +84,7 @@ const HealthScoreCard = ({ vmId }) => {
     } else if (trend === 'down' || currentScore < previousScore) {
       return <TrendingDown className="w-4 h-4 text-red-600" />;
     }
-    return <Minus className="w-4 h-4 text-gray-500" />;
+    return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
   const formatTimeAgo = (date) => {

@@ -49,11 +49,11 @@ const NetworkInfo = ({ vm, className = '' }) => {
         </CardHeader>
         <CardContent>
           <div className="text-center py-6">
-            <Network className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 mb-2">
+            <Network className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground mb-2">
               Información de red no disponible
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Las direcciones IP se detectarán automáticamente cuando la VM esté en funcionamiento
               y InfiniService esté conectado.
             </p>
@@ -82,7 +82,7 @@ const NetworkInfo = ({ vm, className = '' }) => {
                   ? 'border-green-200 text-green-800 bg-green-50'
                   : connectionStatus === 'connecting'
                   ? 'border-yellow-200 text-yellow-800 bg-yellow-50'
-                  : 'border-gray-200 text-gray-600'
+                  : 'border-border text-muted-foreground'
               }`}
             >
               {connectionStatus === 'connected' && <Wifi className="w-3 h-3 mr-1" />}
@@ -160,11 +160,11 @@ const NetworkInfo = ({ vm, className = '' }) => {
         )}
 
         {/* Network Status Information */}
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">
+        <div className="mt-4 p-3 bg-muted rounded-lg">
+          <h4 className="text-sm font-medium text-foreground mb-2">
             Estado de la Red
           </h4>
-          <div className="space-y-1 text-sm text-gray-600">
+          <div className="space-y-1 text-sm text-muted-foreground">
             <div className="flex justify-between">
               <span>Estado VM:</span>
               <Badge
@@ -178,7 +178,7 @@ const NetworkInfo = ({ vm, className = '' }) => {
               <span>Conectividad:</span>
               <span className={
                 connectionStatus === 'connected' ? 'text-green-600' :
-                connectionStatus === 'connecting' ? 'text-yellow-600' : 'text-gray-500'
+                connectionStatus === 'connecting' ? 'text-yellow-600' : 'text-muted-foreground'
               }>
                 {connectionStatus === 'connected' ? 'Conectado' :
                  connectionStatus === 'connecting' ? 'Conectando...' : 'Sin conexión'}
@@ -186,7 +186,7 @@ const NetworkInfo = ({ vm, className = '' }) => {
             </div>
             <div className="flex justify-between">
               <span>Última actualización:</span>
-              <span className="text-gray-500">
+              <span className="text-muted-foreground">
                 En tiempo real
               </span>
             </div>
@@ -194,7 +194,7 @@ const NetworkInfo = ({ vm, className = '' }) => {
         </div>
 
         {/* Help Text */}
-        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+        <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
           <strong>💡 Información:</strong> Las direcciones IP se detectan automáticamente
           cuando la VM está ejecutándose y el agente InfiniService está activo.
           Los cambios se actualizan en tiempo real.

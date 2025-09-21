@@ -1,7 +1,10 @@
+"use client"
+
 import * as React from "react"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { useSizeContext, sizeVariants } from "./size-provider"
+import { useAppTheme } from "@/contexts/ThemeProvider"
 import {
   getHeaderGlass,
   getMicaNavigation,
@@ -9,11 +12,12 @@ import {
   getNavBrandGlow,
   getSunNavHighlight,
   debounceNavGlassTransition,
-  getReducedTransparencyFallback
+  getReducedTransparencyFallback,
+  getThemeAwareHeaderGlass
 } from "@/utils/navigation-glass"
 
 const headerVariants = cva(
-  "w-full flex items-center justify-between border-b transition-all duration-200",
+  "w-full flex items-center justify-between border-b border-border transition-all duration-200",
   {
     variants: {
       size: {
@@ -23,24 +27,24 @@ const headerVariants = cva(
         xl: cn("h-24", sizeVariants.xl.padding, sizeVariants.xl.gap, sizeVariants.xl.text),
       },
       variant: {
-        default: "bg-background text-foreground border-sidebar-border",
+        default: "bg-background text-foreground border-border",
         primary: "bg-primary text-primary-foreground border-primary/20",
-        secondary: "bg-gray-900 text-white border-gray-800",
+        secondary: "bg-secondary text-secondary-foreground border-secondary/20",
         success: "bg-accent text-accent-foreground border-accent/20",
         error: "bg-destructive text-destructive-foreground border-destructive/20",
         warning: "bg-accent text-accent-foreground border-accent/20",
         info: "bg-primary text-primary-foreground border-primary/20",
-        dark: "bg-gray-950 text-gray-200 border-gray-800",
-        glass: "mica bg-sidebar/90 backdrop-blur-md border-sidebar-border/20 shadow-sm",
-        acrylic: "acrylic bg-sidebar/70 backdrop-blur-lg border-sidebar-border/30 elevation-4",
-        fluent: "fluent-card bg-sidebar/80 backdrop-blur-md border-brand-celeste/20 glow-brand-celeste glow-subtle",
+        dark: "bg-muted text-muted-foreground border-muted/20",
+        glass: "border-border/20",
+        acrylic: "border-border/30",
+        fluent: "border-brand-celeste/20",
         gradient: "bg-gradient-to-r from-primary/90 to-primary text-primary-foreground border-transparent",
-        "gradient-secondary": "bg-gradient-to-r from-sidebar/90 to-sidebar text-sidebar-foreground border-transparent",
+        "gradient-secondary": "bg-gradient-to-r from-secondary/90 to-secondary text-secondary-foreground border-transparent",
         "gradient-success": "bg-gradient-to-r from-accent/90 to-accent text-accent-foreground border-transparent",
         "gradient-error": "bg-gradient-to-r from-destructive/90 to-destructive text-destructive-foreground border-transparent",
-        "brand-primary": "bg-brand-dark-blue text-sidebar-foreground border-brand-dark-blue/20 glow-brand-dark-blue glow-subtle",
-        "brand-secondary": "bg-brand-celeste text-sidebar border-brand-celeste/20 glow-brand-celeste glow-medium",
-        "brand-accent": "bg-brand-sun text-sidebar border-brand-sun/20 glow-brand-sun glow-subtle",
+        "brand-primary": "bg-brand-dark-blue text-primary-foreground border-brand-dark-blue/20 glow-brand-dark-blue glow-subtle",
+        "brand-secondary": "bg-brand-celeste text-primary-foreground border-brand-celeste/20 glow-brand-celeste glow-medium",
+        "brand-accent": "bg-brand-sun text-primary-foreground border-brand-sun/20 glow-brand-sun glow-subtle",
       },
       sticky: {
         true: "sticky z-50 top-0",
@@ -78,13 +82,7 @@ const headerVariants = cva(
       elevated: false,
       bordered: true,
     },
-    compoundVariants: [
-      {
-        variant: "glass",
-        sticky: true,
-        className: "backdrop-blur-lg mica"
-      },
-    ],
+    compoundVariants: [],
   }
 )
 
@@ -102,10 +100,25 @@ const Header = React.forwardRef(({
   ...props
 }, ref) => {
   const { size: contextSize } = useSizeContext()
+  const { resolvedTheme } = useAppTheme()
   const size = sizeProp || contextSize
 
   // If glass prop is provided, override any glass-related variant
   const effectiveVariant = glass ? (variant === 'glass' || variant === 'acrylic' || variant === 'fluent' ? 'default' : variant) : variant
+
+  // Get theme-aware glass classes for glass variants
+  const getThemeAwareGlassClasses = () => {
+    if (variant === 'glass') {
+      return getThemeAwareHeaderGlass(resolvedTheme, sticky)
+    }
+    if (variant === 'acrylic') {
+      return getAcrylicOverlay(resolvedTheme)
+    }
+    if (variant === 'fluent') {
+      return `fluent-card ${getThemeAwareHeaderGlass(resolvedTheme, sticky)} border-brand-celeste/20 glow-brand-celeste glow-subtle`
+    }
+    return ''
+  }
 
   return (
     <header
@@ -120,8 +133,12 @@ const Header = React.forwardRef(({
         glow,
         glass
       }),
-      glass && getReducedTransparencyFallback(),
-      glass && debounceNavGlassTransition(),
+      // Apply theme-aware glass classes for glass variants
+      (variant === 'glass' || variant === 'acrylic' || variant === 'fluent') && getThemeAwareGlassClasses(),
+      // Apply subtle shadow for glass variants when not elevated
+      (variant === 'glass' || variant === 'acrylic' || variant === 'fluent') && !elevated && 'shadow-sm',
+      ((variant === 'glass' || variant === 'acrylic' || variant === 'fluent') || glass) && getReducedTransparencyFallback(),
+      ((variant === 'glass' || variant === 'acrylic' || variant === 'fluent') || glass) && debounceNavGlassTransition(),
       className)}
       style={{
         ...props.style

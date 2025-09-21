@@ -42,12 +42,14 @@ export const useTheme = useAppTheme
  * @param {React.ReactNode} props.children - Child components
  * @param {boolean} [props.enableSystem=true] - Whether to enable system theme detection
  * @param {string} [props.cookieString] - Cookie string for SSR (Next.js)
+ * @param {function} [props.onThemeChange] - Callback function called when theme changes
  */
 export function ThemeProvider({
   defaultTheme = 'system',
   children,
   enableSystem = true,
   cookieString,
+  onThemeChange,
   ...props
 }) {
   // Initialize theme from cookie or default
@@ -99,7 +101,16 @@ export function ThemeProvider({
 
     setThemeState(newTheme)
     setThemeCookie(newTheme)
-  }, [])
+
+    // Call onThemeChange callback if provided
+    if (onThemeChange && typeof onThemeChange === 'function') {
+      try {
+        onThemeChange(newTheme)
+      } catch (error) {
+        console.error('Error in onThemeChange callback:', error)
+      }
+    }
+  }, [onThemeChange])
 
   // Function to toggle between light and dark (ignoring system)
   const toggleTheme = React.useCallback(() => {

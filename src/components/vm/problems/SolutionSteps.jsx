@@ -91,7 +91,7 @@ const SolutionSteps = ({
       [DifficultyLevel.HARD]: 'bg-orange-100 text-orange-800',
       [DifficultyLevel.EXPERT]: 'bg-red-100 text-red-800'
     };
-    return colors[difficulty] || 'bg-gray-100 text-gray-800';
+    return colors[difficulty] || 'bg-muted text-muted-foreground';
   };
 
   // Get step type icon
@@ -116,7 +116,7 @@ const SolutionSteps = ({
             {solution.difficulty}
           </Badge>
         </div>
-        <p className="text-sm text-gray-600">{solution.description}</p>
+        <p className="text-sm text-muted-foreground">{solution.description}</p>
 
         {/* Progress and time info */}
         <div className="space-y-2">
@@ -175,7 +175,7 @@ const SolutionSteps = ({
                   border rounded-lg p-4 transition-all duration-200
                   ${isCompleted ? 'bg-green-50 border-green-200' : ''}
                   ${isCurrent ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-100' : ''}
-                  ${!isAccessible ? 'bg-gray-50 border-gray-200 opacity-60' : ''}
+                  ${!isAccessible ? 'bg-muted border-border opacity-60' : ''}
                 `}
               >
                 <div className="flex items-start space-x-3">
@@ -186,7 +186,7 @@ const SolutionSteps = ({
                     ) : (
                       <div className={`
                         w-6 h-6 rounded-full border-2 flex items-center justify-center text-sm font-medium
-                        ${isCurrent ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-500'}
+                        ${isCurrent ? 'border-blue-500 bg-blue-500 text-white' : 'border-border text-muted-foreground'}
                       `}>
                         {index + 1}
                       </div>
@@ -196,12 +196,12 @@ const SolutionSteps = ({
                   {/* Step content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className={`font-medium ${isCompleted ? 'text-green-800' : 'text-gray-900'}`}>
+                      <h4 className={`font-medium ${isCompleted ? 'text-green-800' : 'text-foreground'}`}>
                         {step.title}
                       </h4>
                       <div className="flex items-center space-x-2">
                         {/* Step type indicator */}
-                        <div className="flex items-center text-xs text-gray-500">
+                        <div className="flex items-center text-xs text-muted-foreground">
                           {getStepTypeIcon(step.type)}
                           <span className="ml-1 capitalize">{step.type.toLowerCase()}</span>
                         </div>
@@ -217,7 +217,7 @@ const SolutionSteps = ({
                       </div>
                     </div>
 
-                    <p className="text-sm text-gray-600 mb-3">{step.description}</p>
+                    <p className="text-sm text-muted-foreground mb-3">{step.description}</p>
 
                     {/* Warning message */}
                     {step.warningMessage && (
@@ -244,7 +244,7 @@ const SolutionSteps = ({
 
                     {/* Expected result */}
                     {step.expectedResult && (
-                      <div className="bg-gray-50 p-3 rounded text-sm mb-3">
+                      <div className="bg-muted p-3 rounded text-sm mb-3">
                         <strong>Resultado esperado:</strong> {step.expectedResult}
                       </div>
                     )}

@@ -67,6 +67,27 @@ export const getHeaderGlass = (theme, sticky = false) => {
 };
 
 /**
+ * Get theme-aware header glass effects that provide proper contrast
+ * @param {string} resolvedTheme - Current resolved theme (light/dark)
+ * @param {boolean} sticky - Whether header is sticky
+ * @returns {string} Theme-aware glass class combination
+ */
+export const getThemeAwareHeaderGlass = (resolvedTheme, sticky = false) => {
+  const baseGlass = sticky ? 'acrylic backdrop-blur-lg' : 'mica backdrop-blur-md';
+  const elevation = sticky ? 'elevation-4' : 'elevation-2';
+
+  // Use semantic tokens that adapt to theme
+  const background = resolvedTheme === 'dark'
+    ? 'bg-background/95 backdrop-saturate-150'
+    : 'bg-background/95 backdrop-saturate-150'; // Use background token for proper theme adaptation
+
+  const border = 'border-border/20';
+  const textColor = 'text-foreground'; // Use foreground token for proper contrast
+
+  return `${baseGlass} ${background} ${border} ${textColor} ${elevation}`;
+};
+
+/**
  * Brand-Colored Navigation Effects
  */
 
@@ -120,7 +141,8 @@ export const getHoverNavStyle = (theme) => {
  * @returns {string} Mica navigation classes
  */
 export const getMicaNavigation = (theme) => {
-  return 'mica backdrop-blur-md border border-sidebar-border/20 elevation-2';
+  const background = theme === 'dark' ? 'bg-sidebar/85' : 'bg-sidebar/90';
+  return `mica backdrop-blur-md ${background} border border-sidebar-border/20 elevation-2 text-sidebar-foreground`;
 };
 
 /**
@@ -129,7 +151,8 @@ export const getMicaNavigation = (theme) => {
  * @returns {string} Acrylic overlay classes
  */
 export const getAcrylicOverlay = (theme) => {
-  return 'acrylic backdrop-blur-lg border border-sidebar-border/30 elevation-4';
+  const background = theme === 'dark' ? 'bg-background/85' : 'bg-background/90';
+  return `acrylic backdrop-blur-lg ${background} border border-border/30 elevation-4 text-foreground`;
 };
 
 /**
@@ -326,6 +349,23 @@ export const getThemeNavColors = (theme) => {
     border: 'border-sidebar-border',
     glass: getMicaNavigation(theme)
   };
+};
+
+/**
+ * Get theme-appropriate header variant implementation
+ * @param {string} variant - Header variant
+ * @param {string} resolvedTheme - Current resolved theme
+ * @returns {string} Theme-appropriate variant classes
+ */
+export const getHeaderVariantForTheme = (variant, resolvedTheme) => {
+  const variantMap = {
+    glass: () => getThemeAwareHeaderGlass(resolvedTheme, false),
+    acrylic: () => getAcrylicOverlay(resolvedTheme),
+    fluent: () => `fluent-card ${getThemeAwareHeaderGlass(resolvedTheme, false)} border-brand-celeste/20 glow-brand-celeste glow-subtle`,
+    mica: () => getMicaNavigation(resolvedTheme)
+  };
+
+  return variantMap[variant] ? variantMap[variant]() : '';
 };
 
 /**

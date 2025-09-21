@@ -43,10 +43,10 @@ const ProblemCard = ({
       [ProblemStatus.NEW]: 'bg-blue-100 text-blue-800',
       [ProblemStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-800',
       [ProblemStatus.RESOLVED]: 'bg-green-100 text-green-800',
-      [ProblemStatus.DISMISSED]: 'bg-gray-100 text-gray-800',
+      [ProblemStatus.DISMISSED]: 'bg-muted text-muted-foreground',
       [ProblemStatus.SCHEDULED]: 'bg-purple-100 text-purple-800'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-muted text-muted-foreground';
   };
 
   // Get status label
@@ -69,7 +69,7 @@ const ProblemCard = ({
       [DifficultyLevel.HARD]: 'text-orange-600',
       [DifficultyLevel.EXPERT]: 'text-red-600'
     };
-    return colors[difficulty] || 'text-gray-600';
+    return colors[difficulty] || 'text-muted-foreground';
   };
 
   // Handle status change
@@ -134,7 +134,7 @@ const ProblemCard = ({
             <CardTitle className="text-lg leading-tight mb-2">
               {problem.title}
             </CardTitle>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               {problem.description}
             </p>
           </div>
@@ -150,7 +150,7 @@ const ProblemCard = ({
         </div>
 
         {/* Quick info */}
-        <div className="flex items-center space-x-4 text-sm text-gray-500">
+        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
           <div className="flex items-center">
             <Clock className="w-4 h-4 mr-1" />
             <span>{formatMinutes(problem.estimatedFixTime)}</span>
@@ -181,9 +181,9 @@ const ProblemCard = ({
       {isExpanded && (
         <CardContent className="pt-0">
           {/* Detailed business impact */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">Impacto en el negocio:</h4>
-            <p className="text-sm text-gray-600 mb-2">{problem.businessImpact.description}</p>
+          <div className="mb-4 p-3 bg-muted rounded-lg">
+            <h4 className="font-medium text-foreground mb-2">Impacto en el negocio:</h4>
+            <p className="text-sm text-muted-foreground mb-2">{problem.businessImpact.description}</p>
             <div className="grid grid-cols-3 gap-2 text-xs">
               <div>
                 <span className="font-medium">Productividad:</span>
@@ -221,7 +221,7 @@ const ProblemCard = ({
           {/* Affected services */}
           {problem.affectedServices && problem.affectedServices.length > 0 && (
             <div className="mb-4">
-              <h4 className="font-medium text-gray-900 mb-2">Servicios afectados:</h4>
+              <h4 className="font-medium text-foreground mb-2">Servicios afectados:</h4>
               <div className="flex flex-wrap gap-1">
                 {problem.affectedServices.map((service, index) => (
                   <Badge key={index} variant="outline" className="text-xs">
@@ -235,7 +235,7 @@ const ProblemCard = ({
           {/* Solutions */}
           {problem.solutions.length > 0 && (
             <div className="mb-4">
-              <h4 className="font-medium text-gray-900 mb-3">Soluciones disponibles:</h4>
+              <h4 className="font-medium text-foreground mb-3">Soluciones disponibles:</h4>
               <div className="space-y-2">
                 {problem.solutions.map((solution, index) => (
                   <div key={solution.id} className="border rounded-lg p-3">
@@ -248,12 +248,12 @@ const ProblemCard = ({
                         >
                           {solution.difficulty}
                         </Badge>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           {formatMinutes(solution.totalEstimatedTime)}
                         </span>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 mb-3">{solution.description}</p>
+                    <p className="text-sm text-muted-foreground mb-3">{solution.description}</p>
                     <Button
                       size="sm"
                       onClick={() => handleSolutionStart(index)}

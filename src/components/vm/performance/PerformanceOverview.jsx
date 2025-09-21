@@ -19,8 +19,8 @@ const PerformanceOverview = ({ status, vmId }) => {
     return (
       <Card className="p-6">
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          <div className="h-6 bg-muted rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-muted rounded w-2/3"></div>
         </div>
       </Card>
     );
@@ -37,7 +37,7 @@ const PerformanceOverview = ({ status, vmId }) => {
       case 'critico':
         return <XCircle className="h-6 w-6 text-red-600" />;
       default:
-        return <Activity className="h-6 w-6 text-gray-600" />;
+        return <Activity className="h-6 w-6 text-muted-foreground" />;
     }
   };
 
@@ -52,7 +52,7 @@ const PerformanceOverview = ({ status, vmId }) => {
       case 'critico':
         return 'bg-red-50 border-red-200 text-red-800';
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
+        return 'bg-muted border-border text-foreground';
     }
   };
 
@@ -67,7 +67,7 @@ const PerformanceOverview = ({ status, vmId }) => {
       case 'critico':
         return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -78,9 +78,9 @@ const PerformanceOverview = ({ status, vmId }) => {
       case 'empeorando':
         return <TrendingDown className="h-4 w-4 text-red-600" />;
       case 'estable':
-        return <Minus className="h-4 w-4 text-gray-600" />;
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
       default:
-        return <Minus className="h-4 w-4 text-gray-600" />;
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 

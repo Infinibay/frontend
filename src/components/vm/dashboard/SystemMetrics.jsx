@@ -103,7 +103,7 @@ const SystemMetrics = ({
     // For now, return neutral
     return {
       direction: 'stable',
-      icon: <Minus className="w-4 h-4 text-gray-400" />,
+      icon: <Minus className="w-4 h-4 text-muted-foreground" />,
       label: 'Estable'
     };
   };
@@ -249,7 +249,7 @@ const SystemMetrics = ({
                         </Badge>
                       </div>
                     )}
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-muted-foreground">
                       {trend.label}
                     </span>
                   </div>
@@ -261,8 +261,8 @@ const SystemMetrics = ({
                     // Custom color based on status
                     />
                   ) : (
-                    <div className="h-2 bg-gray-200 rounded-full">
-                      <div className="h-full bg-gray-400 rounded-full opacity-50" style={{ width: '0%' }}>
+                    <div className="h-2 bg-muted rounded-full">
+                      <div className="h-full bg-foreground/30 rounded-full" style={{ width: '0%' }}>
                         <span className="sr-only">No disponible</span>
                       </div>
                     </div>
@@ -300,32 +300,32 @@ const SystemMetrics = ({
         </div>
 
         {/* Overall System Health Summary */}
-        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <h4 className="font-medium text-gray-900 mb-2">Resumen del Sistema</h4>
+        <div className="mt-6 p-4 bg-muted border border-border rounded-lg">
+          <h4 className="font-medium text-foreground mb-2">Resumen del Sistema</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div className="text-center">
               <div className="text-lg font-semibold text-green-600">
                 {metricsWithStatus.filter(m => m.status.level === 'normal').length}
               </div>
-              <div className="text-gray-600">Normal</div>
+              <div className="text-muted-foreground">Normal</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-semibold text-yellow-600">
                 {metricsWithStatus.filter(m => m.status.level === 'warning').length}
               </div>
-              <div className="text-gray-600">Atención</div>
+              <div className="text-muted-foreground">Atención</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-semibold text-red-600">
                 {metricsWithStatus.filter(m => m.status.level === 'critical').length}
               </div>
-              <div className="text-gray-600">Crítico</div>
+              <div className="text-muted-foreground">Crítico</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-semibold text-blue-600">
                 {metricsWithStatus.filter(m => m.status.level === 'info').length}
               </div>
-              <div className="text-gray-600">Info</div>
+              <div className="text-muted-foreground">Info</div>
             </div>
           </div>
         </div>

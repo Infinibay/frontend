@@ -85,8 +85,8 @@ const Textarea = React.forwardRef(({
         "flex w-full rounded-lg border shadow-sm font-medium text-foreground caret-primary resize-vertical input-focus-glow",
         // Conditional placeholder visibility for floating labels
         floatingLabel
-          ? "placeholder:text-transparent focus:placeholder:text-muted-foreground/50"
-          : "placeholder:text-muted-foreground/70 placeholder:font-normal",
+          ? "placeholder:text-transparent focus:placeholder:text-foreground/50"
+          : "placeholder:text-foreground/60 placeholder:font-normal",
         "focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted/30",
         // Size classes with padding adjustment for floating labels
         sizeClasses[effectiveSize],
@@ -121,6 +121,7 @@ const Textarea = React.forwardRef(({
           "absolute left-4 pointer-events-none cursor-text select-none",
           "transition-all duration-200 ease-smooth origin-left",
           getFloatingLabelClasses(isFloated, error, success),
+          glass && "text-foreground",
           isFloated
             ? "top-2 transform -translate-y-0 scale-75"
             : "top-4 transform -translate-y-0 scale-100"
@@ -132,7 +133,7 @@ const Textarea = React.forwardRef(({
       {props.maxLength && (
         <div className={cn(
           "absolute bottom-2 right-3 text-xs transition-colors duration-200",
-          value.length > props.maxLength * 0.9 ? "text-amber-500" : "text-muted-foreground",
+          value.length > props.maxLength * 0.9 ? "text-amber-500" : "text-foreground/80",
           value.length >= props.maxLength && "text-destructive"
         )}>
           {value.length}/{props.maxLength}
@@ -146,7 +147,7 @@ const Textarea = React.forwardRef(({
       )}
       {/* Success message */}
       {success && (
-        <p className="mt-1 text-sm text-green-600 animate-pulse-once">
+        <p className="mt-1 text-sm animate-pulse-once" style={{color: 'hsl(var(--success))'}}>
           {success}
         </p>
       )}

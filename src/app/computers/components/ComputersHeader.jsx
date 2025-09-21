@@ -5,6 +5,7 @@ import { BsGrid, BsPlusLg } from "react-icons/bs";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
+import { useAppTheme } from "@/contexts/ThemeProvider";
 import {
   Header,
   HeaderLeft,
@@ -30,6 +31,7 @@ import {
 export function ComputersHeader({ hasISOs = true, onRefresh }) {
   const vmsLoading = useSelector((state) => state.vms.loading?.fetch);
   const vmsError = useSelector((state) => state.vms.error?.fetch);
+  const { resolvedTheme } = useAppTheme();
 
   return (
     <Header

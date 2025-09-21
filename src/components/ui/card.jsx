@@ -10,6 +10,7 @@ const cardVariants = cva(
     variants: {
       glass: {
         none: "",
+        minimal: "glass-minimal backdrop-blur-sm",
         subtle: "glass-subtle backdrop-blur-sm",
         medium: "glass-medium backdrop-blur-md",
         strong: "glass-strong backdrop-blur-lg",
@@ -69,7 +70,7 @@ const Card = React.forwardRef(({
   const getResponsiveGlass = (glass) => {
     if (!glass || glass === 'none') return 'none'
     if (size === 'sm') {
-      return glass === 'strong' || glass === 'mica' || glass === 'acrylic' ? 'medium' : glass
+      return glass === 'strong' || glass === 'mica' || glass === 'acrylic' ? 'minimal' : glass
     }
     return glass
   }
@@ -144,7 +145,7 @@ const CardDescription = React.forwardRef(({ className, ...props }, ref) => {
     <div
       ref={ref}
       className={cn(
-        "text-muted-foreground",
+        "text-foreground",
         sizes.card.description,
         className
       )}

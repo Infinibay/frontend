@@ -35,7 +35,7 @@ const RemediationCard = ({ issue, onApply, onDismiss }) => {
       case 'info':
         return <Info className="w-5 h-5 text-blue-600" />;
       default:
-        return <AlertCircle className="w-5 h-5 text-gray-600" />;
+        return <AlertCircle className="w-5 h-5 text-muted-foreground" />;
     }
   };
 

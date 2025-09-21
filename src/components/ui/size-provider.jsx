@@ -1,6 +1,15 @@
 import * as React from "react"
 
-const SizeContext = React.createContext({ size: "md" })
+// Available sizes and their labels
+const AVAILABLE_SIZES = ['sm', 'md', 'lg', 'xl'];
+const SIZE_LABELS = {
+  sm: 'Compact',
+  md: 'Standard',
+  lg: 'Comfortable',
+  xl: 'Spacious'
+};
+
+const SizeContext = React.createContext(null)
 
 export function useSizeContext() {
   const context = React.useContext(SizeContext)
@@ -10,11 +19,82 @@ export function useSizeContext() {
   return context
 }
 
-export function SizeProvider({ 
-  size = "md",
-  children 
+export function useOptionalSizeContext() {
+  const context = React.useContext(SizeContext)
+  return context
+}
+
+/**
+ * Validates if the provided size is a valid size option
+ * @param {string} size - The size to validate
+ * @returns {boolean} - Whether the size is valid
+ */
+export function isValidSize(size) {
+  return AVAILABLE_SIZES.includes(size);
+}
+
+/**
+ * Gets the human-readable label for a size
+ * @param {string} size - The size to get label for
+ * @returns {string} - The human-readable label
+ */
+export function getSizeLabel(size) {
+  return SIZE_LABELS[size] || SIZE_LABELS.md;
+}
+
+/**
+ * Gets the next size in the cycle (for size cycling functionality)
+ * @param {string} currentSize - The current size
+ * @returns {string} - The next size
+ */
+export function getNextSize(currentSize) {
+  const currentIndex = AVAILABLE_SIZES.indexOf(currentSize);
+  const nextIndex = (currentIndex + 1) % AVAILABLE_SIZES.length;
+  return AVAILABLE_SIZES[nextIndex];
+}
+
+/**
+ * Gets the previous size in the cycle (for size cycling functionality)
+ * @param {string} currentSize - The current size
+ * @returns {string} - The previous size
+ */
+export function getPrevSize(currentSize) {
+  const currentIndex = AVAILABLE_SIZES.indexOf(currentSize);
+  const prevIndex = currentIndex === 0 ? AVAILABLE_SIZES.length - 1 : currentIndex - 1;
+  return AVAILABLE_SIZES[prevIndex];
+}
+
+export function SizeProvider({
+  size,
+  defaultSize = "md",
+  children
 }) {
-  const value = React.useMemo(() => ({ size }), [size])
+  // Use state to handle dynamic size changes
+  const [currentSize, setCurrentSize] = React.useState(() => {
+    // Prioritize the size prop, then defaultSize, ensuring it's valid
+    const initialSize = size || defaultSize;
+    return isValidSize(initialSize) ? initialSize : 'md';
+  });
+
+  // Update internal state when size prop changes
+  React.useEffect(() => {
+    if (size && isValidSize(size) && size !== currentSize) {
+      setCurrentSize(size);
+    }
+  }, [size, currentSize]);
+
+  // Enhanced context value with all helper functions
+  const value = React.useMemo(() => ({
+    size: currentSize,
+    setSize: setCurrentSize,
+    availableSizes: AVAILABLE_SIZES,
+    sizeLabels: SIZE_LABELS,
+    getSizeLabel: (sizeToCheck) => getSizeLabel(sizeToCheck || currentSize),
+    getNextSize: () => getNextSize(currentSize),
+    getPrevSize: () => getPrevSize(currentSize),
+    isValidSize
+  }), [currentSize]);
+
   return (
     <SizeContext.Provider value={value}>
       {children}
@@ -70,6 +150,9 @@ export const sizeVariants = {
       description: "text-xs",
       content: "p-3 pt-0",
       footer: "p-3 pt-0",
+    },
+    popover: {
+      width: "w-56",
     }
   },
   md: {
@@ -118,6 +201,9 @@ export const sizeVariants = {
       description: "text-sm",
       content: "p-4 pt-0",
       footer: "p-4 pt-0",
+    },
+    popover: {
+      width: "w-64",
     }
   },
   lg: {
@@ -166,6 +252,9 @@ export const sizeVariants = {
       description: "text-base",
       content: "p-6 pt-0",
       footer: "p-6 pt-0",
+    },
+    popover: {
+      width: "w-72",
     }
   },
   xl: {
@@ -214,6 +303,9 @@ export const sizeVariants = {
       description: "text-lg",
       content: "p-8 pt-0",
       footer: "p-8 pt-0",
+    },
+    popover: {
+      width: "w-80",
     }
   },
 }

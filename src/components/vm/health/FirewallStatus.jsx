@@ -165,7 +165,7 @@ const FirewallStatus = ({ vmId }) => {
         case 'low': return 'text-green-600';
         case 'medium': return 'text-yellow-600';
         case 'high': return 'text-red-600';
-        default: return 'text-gray-600';
+        default: return 'text-muted-foreground';
       }
     };
 
@@ -175,7 +175,7 @@ const FirewallStatus = ({ vmId }) => {
           {service.enabled ? (
             <CheckCircle className="w-5 h-5 text-green-600" />
           ) : (
-            <XCircle className="w-5 h-5 text-gray-400" />
+            <XCircle className="w-5 h-5 text-muted-foreground opacity-60" />
           )}
         </div>
         <div className="flex-1">

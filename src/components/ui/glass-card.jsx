@@ -17,6 +17,7 @@ const glassCardVariants = cva(
   {
     variants: {
       glass: {
+        minimal: "glass-minimal",
         subtle: "glass-subtle",
         medium: "glass-medium",
         strong: "glass-strong",
@@ -46,7 +47,7 @@ const glassCardVariants = cva(
       }
     },
     defaultVariants: {
-      glass: "subtle",
+      glass: "minimal",
       effect: "none",
       elevation: 2,
       radius: "default"
@@ -148,7 +149,7 @@ const GlassCardDescription = React.forwardRef(({ className, ...props }, ref) => 
     <div
       ref={ref}
       className={cn(
-        "text-muted-foreground",
+        "text-foreground",
         textClass === "text-base" ? "text-sm" : textClass,
         className
       )}
@@ -205,7 +206,7 @@ GlassCardFooter.displayName = "GlassCardFooter"
 const GlassDashboardCard = React.forwardRef((props, ref) => (
   <GlassCard
     ref={ref}
-    glass="medium"
+    glass="minimal"
     elevation={3}
     glow="subtle"
     glowColor="celeste"
@@ -230,7 +231,7 @@ GlassModalCard.displayName = "GlassModalCard"
 const GlassHeroCard = React.forwardRef((props, ref) => (
   <GlassCard
     ref={ref}
-    glass="strong"
+    glass="minimal"
     elevation={4}
     glow="strong"
     glowColor="sun"

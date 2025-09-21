@@ -144,7 +144,7 @@
 
   /* Professional Glassmorphism Effects */
   .glass-subtle {
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.55);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -185,7 +185,7 @@
   }
 
   .glass-medium {
-    background: rgba(255, 255, 255, 0.21);
+    background: rgba(255, 255, 255, 0.65);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -226,7 +226,7 @@
   }
 
   .glass-strong {
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(50px);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -309,7 +309,7 @@
 
   /* Windows 11 Specific Effects */
   .mica {
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.60);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.25);
@@ -337,7 +337,7 @@
   }
 
   .acrylic {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.70);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -378,7 +378,7 @@
   }
 
   .fluent-card {
-    background: rgba(255, 255, 255, 0.19);
+    background: rgba(255, 255, 255, 0.68);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -558,7 +558,7 @@
 
   /* Dark mode glass adjustments */
   .dark .glass-subtle {
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.55);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.3),
@@ -582,7 +582,7 @@
   }
 
   .dark .glass-medium {
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.4),
@@ -606,7 +606,7 @@
   }
 
   .dark .glass-strong {
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.5),
@@ -630,7 +630,7 @@
   }
 
   .dark .mica {
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.60);
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow:
       0 4px 16px rgba(0, 0, 0, 0.4),
@@ -647,7 +647,7 @@
   }
 
   .dark .acrylic {
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(0, 0, 0, 0.70);
     border: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow:
       0 12px 40px rgba(0, 0, 0, 0.5),
@@ -671,7 +671,7 @@
   }
 
   .dark .fluent-card {
-    background: rgba(0, 0, 0, 0.42);
+    background: rgba(0, 0, 0, 0.68);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow:
       0 8px 24px rgba(0, 0, 0, 0.4),
@@ -822,12 +822,17 @@ input[type="text"]#email.peer {
     --accent: var(--brand-sun-400);
     --accent-foreground: var(--brand-dark-blue-900);
 
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted: 210 15% 95%;
+    --muted-foreground: 210 10% 40%;
+    --glass-text-primary: 0 0% 3.9%;
+    --glass-text-secondary: 0 0% 25%;
+    --text-high-contrast: 0 0% 3.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
+    --success: 120 60% 45%;
+    --success-foreground: 0 0% 98%;
+    --border: 210 12% 91%;
+    --input: 210 12% 91%;
     --ring: var(--brand-dark-blue-600);
 
     /* Updated chart colors to use brand palette */
@@ -868,12 +873,17 @@ input[type="text"]#email.peer {
     --accent: var(--brand-sun-500);
     --accent-foreground: var(--brand-dark-blue-900);
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 210 15% 18%;
+    --muted-foreground: 210 8% 70%;
+    --glass-text-primary: 0 0% 98%;
+    --glass-text-secondary: 0 0% 85%;
+    --text-high-contrast: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
+    --success: 120 60% 60%;
+    --success-foreground: 0 0% 3.9%;
+    --border: 210 15% 20%;
+    --input: 210 15% 20%;
     --ring: var(--brand-celeste-500);
 
     /* Dark mode chart colors with brand palette */
@@ -901,9 +911,13 @@ input[type="text"]#email.peer {
   :root {
     --selection-bg: var(--brand-celeste-500);
     --selection-text: var(--brand-dark-blue-100);
+
+    /* Dynamic wallpaper URLs */
+    --wallpaper-url: url('/images/wallpapers/wallpaper1.jpg');
+    --wallpaper-url-dark: url('/images/wallpapers/wallpaper1.jpg');
   }
 
-  /* Vector wallpaper background for glass visibility */
+  /* Dynamic wallpaper background for glass visibility */
   body::before {
     content: '';
     position: fixed;
@@ -913,17 +927,19 @@ input[type="text"]#email.peer {
     height: 100%;
     pointer-events: none;
     z-index: 0;
-    background: url('/images/wallpapers/wallpaper1.jpg');
+    background: var(--wallpaper-url);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    transition: background-image 0.3s ease-in-out;
   }
 
   .dark body::before {
-    background: url('/images/wallpapers/wallpaper1.jpg');
+    background: var(--wallpaper-url-dark);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    transition: background-image 0.3s ease-in-out;
   }
 
   /* Ensure main app container is positioned above background pattern */
@@ -943,6 +959,47 @@ input[type="text"]#email.peer {
     box-shadow: var(--elevation-1) !important;
   }
 
+  /* Z-Index Hierarchy System */
+  /*
+   * Z-Index Layering Structure:
+   * 0     - Background wallpaper (body::before)
+   * 1     - Body content base
+   * 2     - App container
+   * 10    - Main content
+   * 20    - Settings container
+   * 30    - Wallpaper selector
+   * 35    - Card hover states
+   * 500   - Dropdowns
+   * 1000  - Modals
+   * 1100  - Toasts
+   */
+
+  .app-container {
+    position: relative;
+    z-index: 2;
+  }
+
+  .main-content {
+    position: relative;
+    z-index: 10;
+  }
+
+  .settings-container {
+    position: relative;
+    z-index: 20;
+  }
+
+  .wallpaper-selector {
+    position: relative;
+    z-index: 30;
+  }
+
+  .card-hover {
+    position: relative;
+    z-index: 35;
+  }
+
+
   /* Allow glass-minimal to override reduced transparency when explicitly requested */
   [data-reduced-transparency="true"].glass-minimal {
     background: rgba(255, 255, 255, 0.95) !important;
@@ -955,10 +1012,22 @@ input[type="text"]#email.peer {
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
   }
 
-  /* Ensure glass-minimal is always visible with high specificity */
-  .glass-minimal[data-reduced-transparency="true"],
-  .glass-minimal[data-reduced-transparency="false"],
+  /* Base glass-minimal styles - allow tinted backgrounds to override */
   .glass-minimal {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .dark .glass-minimal {
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  /* Only force glass-minimal when accessibility is explicitly requested */
+  .glass-minimal[data-reduced-transparency="true"],
+  .glass-minimal[data-reduced-transparency="false"] {
     background: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
@@ -966,8 +1035,7 @@ input[type="text"]#email.peer {
   }
 
   .dark .glass-minimal[data-reduced-transparency="true"],
-  .dark .glass-minimal[data-reduced-transparency="false"],
-  .dark .glass-minimal {
+  .dark .glass-minimal[data-reduced-transparency="false"] {
     background: rgba(0, 0, 0, 0.9) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
   }
@@ -985,15 +1053,15 @@ input[type="text"]#email.peer {
 
     /* Allow glass-minimal to maintain its effect even with reduced motion */
     .glass-minimal {
-      background: rgba(255, 255, 255, 0.95) !important;
-      backdrop-filter: blur(8px) !important;
-      -webkit-backdrop-filter: blur(8px) !important;
-      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .dark .glass-minimal {
-      background: rgba(0, 0, 0, 0.9) !important;
-      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .bg-selection {
@@ -1010,4 +1078,16 @@ input[type="text"]#email.peer {
   body {
     @apply text-foreground;
   }
+}
+
+@layer utilities {
+  /* Custom Z-Index Utilities */
+  .z-25 { z-index: 25; }
+  .z-35 { z-index: 35; }
+  .z-500 { z-index: 500; }
+  .z-1000 { z-index: 1000; }
+  .z-1100 { z-index: 1100; }
+
+  /* Hover Z-Index Utilities */
+  .hover\:z-35:hover { z-index: 35; }
 }

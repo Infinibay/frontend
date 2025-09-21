@@ -38,7 +38,7 @@ const PerformanceRecommendations = ({
         <CardContent>
           <div className="text-center py-8">
             <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               ¡Excelente! Tu máquina virtual está funcionando de manera óptima.
               No hay recomendaciones de mejora en este momento.
             </p>
@@ -57,7 +57,7 @@ const PerformanceRecommendations = ({
       case 'baja':
         return <Star className="h-4 w-4 text-blue-600" />;
       default:
-        return <Lightbulb className="h-4 w-4 text-gray-600" />;
+        return <Lightbulb className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -70,7 +70,7 @@ const PerformanceRecommendations = ({
       case 'baja':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-secondary text-muted-foreground border-border';
     }
   };
 
@@ -83,7 +83,7 @@ const PerformanceRecommendations = ({
       case 'avanzado':
         return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-secondary text-muted-foreground';
     }
   };
 
@@ -98,7 +98,7 @@ const PerformanceRecommendations = ({
       case 'seguridad':
         return <Shield className="h-4 w-4 text-red-600" />;
       default:
-        return <Lightbulb className="h-4 w-4 text-gray-600" />;
+        return <Lightbulb className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -132,7 +132,7 @@ const PerformanceRecommendations = ({
           <Lightbulb className="h-5 w-5 text-yellow-600" />
           <span>Recomendaciones de Mejora</span>
         </CardTitle>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Sugerencias para optimizar el rendimiento de tu máquina virtual
         </p>
       </CardHeader>
@@ -141,7 +141,7 @@ const PerformanceRecommendations = ({
         {recommendations.map((rec, index) => (
           <div
             key={index}
-            className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
+            className="border border-border rounded-lg p-4 hover:shadow-sm transition-shadow"
           >
             {/* Recommendation Header */}
             <div
@@ -155,11 +155,11 @@ const PerformanceRecommendations = ({
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-1">
                     {getPriorityIcon(rec.priority)}
-                    <h4 className="text-sm font-medium text-gray-900">
+                    <h4 className="text-sm font-medium text-foreground">
                       {rec.title}
                     </h4>
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {rec.description}
                   </p>
                   <div className="flex items-center space-x-2 mt-2">
@@ -171,7 +171,7 @@ const PerformanceRecommendations = ({
                         rec.difficulty === 'moderado' ? 'Moderado' : 'Avanzado'}
                     </Badge>
                     {rec.estimatedTime && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         ⏱️ {rec.estimatedTime}
                       </span>
                     )}
@@ -180,25 +180,25 @@ const PerformanceRecommendations = ({
               </div>
               <div className="flex-shrink-0 ml-2">
                 {expandedRec === index ? (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
             </div>
 
             {/* Expanded Content */}
             {expandedRec === index && (
-              <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+              <div className="mt-4 pt-4 border-t border-border space-y-4">
                 {/* Expected Benefits */}
                 {rec.benefits && rec.benefits.length > 0 && (
                   <div>
-                    <h5 className="text-sm font-medium text-gray-900 mb-2">
+                    <h5 className="text-sm font-medium text-foreground mb-2">
                       Beneficios Esperados:
                     </h5>
                     <ul className="space-y-1">
                       {rec.benefits.map((benefit, benefitIndex) => (
-                        <li key={benefitIndex} className="text-sm text-gray-600 flex items-start space-x-2">
+                        <li key={benefitIndex} className="text-sm text-muted-foreground flex items-start space-x-2">
                           <span className="text-green-600 text-xs mt-1">✓</span>
                           <span>{benefit}</span>
                         </li>
@@ -210,12 +210,12 @@ const PerformanceRecommendations = ({
                 {/* Implementation Steps */}
                 {rec.steps && rec.steps.length > 0 && (
                   <div>
-                    <h5 className="text-sm font-medium text-gray-900 mb-2">
+                    <h5 className="text-sm font-medium text-foreground mb-2">
                       Pasos para Implementar:
                     </h5>
                     <ol className="space-y-2">
                       {rec.steps.map((step, stepIndex) => (
-                        <li key={stepIndex} className="text-sm text-gray-600 flex items-start space-x-2">
+                        <li key={stepIndex} className="text-sm text-muted-foreground flex items-start space-x-2">
                           <span className="bg-blue-100 text-blue-800 text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5">
                             {stepIndex + 1}
                           </span>
@@ -272,13 +272,13 @@ const PerformanceRecommendations = ({
                       </button>
                       <button
                         onClick={() => handleSchedule(rec)}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-md hover:bg-gray-200 transition-colors"
+                        className="px-3 py-1 bg-secondary text-secondary-foreground text-xs rounded-md hover:bg-secondary/80 transition-colors"
                       >
                         Programar para Después
                       </button>
                       <button
                         onClick={() => handleMoreInfo(rec)}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-md hover:bg-gray-200 transition-colors"
+                        className="px-3 py-1 bg-secondary text-secondary-foreground text-xs rounded-md hover:bg-secondary/80 transition-colors"
                       >
                         Más Información
                       </button>
@@ -291,14 +291,14 @@ const PerformanceRecommendations = ({
         ))}
 
         {/* Additional Help */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+        <div className="mt-6 p-4 bg-muted rounded-lg">
           <div className="flex items-start space-x-3">
-            <Lightbulb className="h-5 w-5 text-gray-600 mt-0.5" />
+            <Lightbulb className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
-              <h4 className="text-sm font-medium text-gray-900">
+              <h4 className="text-sm font-medium text-foreground">
                 ¿Necesitas Ayuda?
               </h4>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Si no estás seguro de cómo implementar alguna recomendación,
                 nuestro equipo de soporte puede ayudarte. Las recomendaciones
                 se actualizan automáticamente basándose en el uso de tu máquina virtual.

@@ -30,6 +30,34 @@ const CurrentUserDocument = gql`
   }
 `;
 
+const GetAppSettingsDocument = gql`
+  query getAppSettings {
+    getAppSettings {
+      id
+      theme
+      wallpaper
+      logoUrl
+      interfaceSize
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const UpdateAppSettingsDocument = gql`
+  mutation updateAppSettings($input: AppSettingsInput!) {
+    updateAppSettings(input: $input) {
+      id
+      theme
+      wallpaper
+      logoUrl
+      interfaceSize
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 // GraphQL API endpoint (use environment variable)
 const API_URL = process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:4000/graphql';
 
@@ -126,6 +154,37 @@ export const auth = {
     // Here you would typically make a request to your server to validate the token
     // For this example, we'll just check if it exists
     return true;
+  },
+
+  // App Settings functions
+  fetchAppSettings: async () => {
+    try {
+      const { data } = await client.query({
+        query: GetAppSettingsDocument,
+        errorPolicy: 'all'
+      });
+      debug.success('fetchAppSettings', 'App settings fetched successfully');
+      return data?.getAppSettings || {};
+    } catch (error) {
+      debug.error('fetchAppSettings', 'Failed to fetch app settings:', error);
+      // Return empty object if settings don't exist or error occurs
+      // The Redux slice will handle this gracefully with defaults
+      return {};
+    }
+  },
+
+  updateAppSettings: async (input) => {
+    try {
+      const { data } = await client.mutate({
+        mutation: UpdateAppSettingsDocument,
+        variables: { input }
+      });
+      debug.success('updateAppSettings', 'App settings updated successfully:', input);
+      return data.updateAppSettings;
+    } catch (error) {
+      debug.error('updateAppSettings', 'Failed to update app settings:', error);
+      throw new Error('Failed to update app settings');
+    }
   }
 };
 

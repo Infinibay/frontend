@@ -71,7 +71,7 @@ const HealthTrendsChart = ({ vmId }) => {
   const getTrendColor = (trend) => {
     if (trend > 0) return 'text-green-600';
     if (trend < 0) return 'text-red-600';
-    return 'text-gray-600';
+    return 'text-muted-foreground';
   };
 
   const getTrendLabel = (trend) => {

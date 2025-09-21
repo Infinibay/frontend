@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchVms } from "@/state/slices/vms";
+import { selectAppSettings } from "@/state/slices/appSettings";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -102,6 +103,18 @@ const AppSidebar = React.forwardRef(({
   // Fetch VMs if they're not already loaded
   const vms = useSelector((state) => state.vms.items);
   const vmsLoading = useSelector((state) => state.vms.loading.fetch);
+  const appSettings = useSelector(selectAppSettings);
+
+  // Logo state management
+  const defaultLogo = '/images/logo.png';
+  const [logoSrc, setLogoSrc] = useState(appSettings.logoUrl || defaultLogo);
+
+  useEffect(() => {
+    setLogoSrc(appSettings.logoUrl || defaultLogo);
+  }, [appSettings.logoUrl]);
+
+  // Detect external URLs
+  const isExternal = !!appSettings.logoUrl && /^(https?:)?\/\//.test(appSettings.logoUrl);
 
   // Filter VMs by the selected department
   const departmentVMs = React.useMemo(() => {
@@ -518,12 +531,13 @@ const AppSidebar = React.forwardRef(({
                     >
                       <Link href="/">
                         <Image
-                          src="/images/sidebarLogo.png"
+                          src={logoSrc}
                           alt="Logo"
                           width={120}
                           height={40}
                           className={cn("w-auto rounded-none", menuStyles.logo)}
-                          radius="none"
+                          unoptimized={isExternal}
+                          onError={() => setLogoSrc(defaultLogo)}
                         />
                       </Link>
                     </SidebarHeader>

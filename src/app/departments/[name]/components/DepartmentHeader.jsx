@@ -3,11 +3,14 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import { Header, HeaderLeft, HeaderCenter } from '@/components/ui/header';
+import { useAppTheme } from '@/contexts/ThemeProvider';
 
 /**
  * Header component for the department page
  */
 const DepartmentHeader = ({ departmentName }) => {
+  const { resolvedTheme } = useAppTheme();
+
   return (
     <Header variant="glass" elevated sticky style={{ top: 0 }} className="z-30">
       <HeaderLeft>
@@ -18,7 +21,7 @@ const DepartmentHeader = ({ departmentName }) => {
         </Link>
       </HeaderLeft>
       <HeaderCenter>
-        <h1 className="text-2xl font-bold">{departmentName || 'Department'}</h1>
+        <h1 className="text-2xl font-bold text-sidebar-foreground">{departmentName || 'Department'}</h1>
       </HeaderCenter>
     </Header>
   );

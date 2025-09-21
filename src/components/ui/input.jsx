@@ -35,7 +35,7 @@ const Input = React.forwardRef(({
 
   const getInputStyles = () => {
     if (glass) {
-      return "glass-subtle backdrop-blur-sm bg-background/30"
+      return "glass-minimal backdrop-blur-sm bg-background/30"
     }
 
     // Enhanced contrast for better visibility
@@ -67,8 +67,8 @@ const Input = React.forwardRef(({
         "file:border-0 file:bg-transparent file:font-medium file:text-foreground",
         // Conditional placeholder visibility for floating labels
         floatingLabel
-          ? "placeholder:text-transparent focus:placeholder:text-muted-foreground/50"
-          : "placeholder:text-muted-foreground/70 placeholder:font-normal",
+          ? "placeholder:text-transparent focus:placeholder:text-foreground/50"
+          : "placeholder:text-foreground/60 placeholder:font-normal",
         "focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted/30",
         // Dynamic background and animations
         getInputStyles(),
@@ -100,6 +100,7 @@ const Input = React.forwardRef(({
           "absolute left-4 pointer-events-none cursor-text select-none",
           "transition-all duration-200 ease-smooth origin-left",
           getFloatingLabelClasses(isFloated, error, success),
+          glass && "text-foreground",
           isFloated
             ? "top-2 transform -translate-y-0 scale-75"
             : "top-1/2 transform -translate-y-1/2 scale-100"
@@ -115,7 +116,7 @@ const Input = React.forwardRef(({
       )}
       {/* Success message */}
       {success && (
-        <p className="mt-1 text-sm text-green-600 animate-pulse-once">
+        <p className="mt-1 text-sm" style={{color: 'hsl(var(--success))'}}>
           {success}
         </p>
       )}

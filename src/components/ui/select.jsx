@@ -89,7 +89,7 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
       <SelectPrimitive.Icon asChild>
         <div className="flex items-center justify-center transition-all duration-200">
           <ChevronDownIcon className={cn(
-            "text-muted-foreground transition-all duration-200 ease-smooth",
+            "text-foreground/70 transition-all duration-200 ease-smooth",
             "data-[state=open]:rotate-180 data-[state=open]:text-primary",
             isHovered && "scale-110",
             iconSizeClasses[effectiveSize]
@@ -104,7 +104,7 @@ SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
 const SelectScrollUpButton = React.forwardRef(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollUpButton
     ref={ref}
-    className={cn("flex cursor-default items-center justify-center py-1 text-muted-foreground", className)}
+    className={cn("flex cursor-default items-center justify-center py-1 text-foreground/70", className)}
     {...props}>
     <ChevronUpIcon className="h-4 w-4" />
   </SelectPrimitive.ScrollUpButton>
@@ -114,7 +114,7 @@ SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName
 const SelectScrollDownButton = React.forwardRef(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollDownButton
     ref={ref}
-    className={cn("flex cursor-default items-center justify-center py-1 text-muted-foreground", className)}
+    className={cn("flex cursor-default items-center justify-center py-1 text-foreground/70", className)}
     {...props}>
     <ChevronDownIcon className="h-4 w-4" />
   </SelectPrimitive.ScrollDownButton>
@@ -150,8 +150,8 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
           ref={ref}
           className={cn(
             "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl border shadow-2xl",
-            "glass-enhanced text-popover-foreground backdrop-blur-xl",
-            "border-border/30 animate-in fade-in-0 zoom-in-95",
+            glass ? "glass-minimal backdrop-blur-xl" : "bg-popover",
+            "text-popover-foreground border-border/30 animate-in fade-in-0 zoom-in-95",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",

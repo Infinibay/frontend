@@ -131,7 +131,7 @@ class ProblemPriorityService {
       [PriorityLevel.INFORMATIONAL]: 'text-blue-600 bg-blue-50 border-blue-200'
     };
 
-    return colors[priority] || 'text-gray-600 bg-gray-50 border-gray-200';
+    return colors[priority] || 'text-muted-foreground bg-muted border-border';
   }
 
   /**

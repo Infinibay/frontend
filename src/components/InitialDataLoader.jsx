@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchInitialData } from '@/init';
 import { Skeleton } from '@/components/ui/skeleton';
+import { selectAppSettingsInitialized, selectAppSettingsLoading } from '@/state/slices/appSettings';
 
 const LoadingSkeleton = () => {
   return (
@@ -74,6 +75,8 @@ export const InitialDataLoader = ({ children }) => {
   const departmentsLoading = useSelector(state => state.departments.loading?.fetch);
   const vmsLoading = useSelector(state => state.vms.loading?.fetch);
   const applicationsLoading = useSelector(state => state.applications.loading?.fetch);
+  const appSettingsLoading = useSelector(selectAppSettingsLoading);
+  const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
 
   useEffect(() => {
     const initialize = async () => {
@@ -110,7 +113,7 @@ export const InitialDataLoader = ({ children }) => {
 
   // Only wait for critical loading states (exclude VMs to prevent infinite loop)
   // VMs will be loaded by individual pages as needed
-  const isCriticalLoading = authLoading || departmentsLoading;
+  const isCriticalLoading = authLoading || departmentsLoading || appSettingsLoading?.fetch || !appSettingsInitialized;
 
   const handleRetry = () => {
     setError(null);

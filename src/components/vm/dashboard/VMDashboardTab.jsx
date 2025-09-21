@@ -109,10 +109,10 @@ const VMDashboardTab = ({
       {/* Header with Actions */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-foreground">
             Estado de Salud - {vmName}
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Monitoreo y gestión de problemas del sistema
           </p>
         </div>

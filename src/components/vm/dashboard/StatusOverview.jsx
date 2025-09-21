@@ -113,7 +113,7 @@ const StatusOverview = ({
           <CardTitle className="text-lg font-semibold">
             Estado de {vmName}
           </CardTitle>
-          <div className="flex items-center text-sm text-gray-500">
+          <div className="flex items-center text-sm text-muted-foreground">
             <Clock className="w-4 h-4 mr-1" />
             <span>Última revisión: {formatLastCheck(lastCheckTime)}</span>
           </div>
@@ -144,7 +144,7 @@ const StatusOverview = ({
 
             {/* Problem Summary */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-foreground">
                 {getSummaryText()}
               </span>
               

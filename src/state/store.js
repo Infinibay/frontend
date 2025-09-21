@@ -15,6 +15,7 @@ import vmPortsReducer from './slices/vmPorts'
 import securityReducer from './slices/security'
 import isoReducer from './slices/iso'
 import healthReducer from './slices/health'
+import appSettingsReducer from './slices/appSettings'
 
 const persistConfig = {
   key: 'root',
@@ -53,11 +54,18 @@ const persistFiltersConfig = {
   whitelist: ['items', 'selectedFilter'],
 };
 
+const persistAppSettingsConfig = {
+  key: 'appSettings',
+  storage,
+  whitelist: ['settings'] // Only persist the settings object
+};
+
 const persistedAuth = persistReducer(persistAuthConfig, authReducer)
 const persistedDeparments = persistReducer(persistConfigDepartments, departments)
 const persistedSystem = persistReducer(persistSystemConfig, systemReducer)
 const persistedFilterRules = persistReducer(persistFilterRulesConfig, filterRulesReducer);
 const persistedFilters = persistReducer(persistFiltersConfig, filtersReducer);
+const persistedAppSettings = persistReducer(persistAppSettingsConfig, appSettingsReducer);
 
 export const store = configureStore({
   reducer: {
@@ -74,7 +82,8 @@ export const store = configureStore({
     vmPorts: vmPortsReducer,
     security: securityReducer,
     iso: isoReducer,
-    health: healthReducer
+    health: healthReducer,
+    appSettings: persistedAppSettings
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

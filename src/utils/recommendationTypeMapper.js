@@ -189,9 +189,9 @@ export const RECOMMENDATION_MAPPINGS = {
     priority: PRIORITY_LEVELS.LOW,
     category: CATEGORIES.GENERAL,
     icon: Info,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-50',
-    borderColor: 'border-gray-200',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted',
+    borderColor: 'border-border',
     actions: ['Revisar detalles', 'Aplicar recomendación'],
     userFriendlyExplanation: 'El sistema tiene una recomendación general para mejorar el funcionamiento.',
     technicalDetails: 'Recomendación miscelánea del sistema.'
@@ -210,9 +210,9 @@ export const getRecommendationInfo = (type) => {
     priority: PRIORITY_LEVELS.LOW,
     category: CATEGORIES.GENERAL,
     icon: Info,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-50',
-    borderColor: 'border-gray-200',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted',
+    borderColor: 'border-border',
     userFriendlyExplanation: 'El sistema tiene una recomendación para mejorar el funcionamiento.',
     technicalDetails: 'Información técnica no disponible.'
   };
@@ -350,7 +350,7 @@ export const getCategoryInfo = (category) => {
       label: 'General',
       description: 'Recomendaciones generales del sistema',
       icon: Info,
-      color: 'text-gray-600'
+      color: 'text-muted-foreground'
     }
   };
 

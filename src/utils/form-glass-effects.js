@@ -28,14 +28,15 @@ export function getSafeTheme() {
  * @param {string} theme - Current theme: 'light', 'dark'
  * @returns {string} CSS classes for glass effect
  */
-export function getFormGlassEffect(intensity = 'subtle', theme = 'light') {
+export function getFormGlassEffect(intensity = 'minimal', theme = 'light') {
   const baseGlass = {
+    minimal: 'glass-minimal',
     subtle: 'glass-subtle',
     medium: 'glass-medium',
     strong: 'glass-strong'
   };
 
-  const glassClass = baseGlass[intensity] || baseGlass.subtle;
+  const glassClass = baseGlass[intensity] || baseGlass.minimal;
 
   // Add semantic background that adapts to theme with valid supports syntax
   return `${glassClass} bg-background/80 supports-[backdrop-filter:blur(0)]:bg-background/20`;
@@ -51,7 +52,7 @@ export function getFormGlassEffect(intensity = 'subtle', theme = 'light') {
 export function getInputGlass(glass, size = 'md', theme = 'light') {
   if (!glass) return '';
 
-  const intensity = typeof glass === 'string' ? glass : 'subtle';
+  const intensity = typeof glass === 'string' ? glass : 'minimal';
   return getFormGlassEffect(intensity, theme);
 }
 
@@ -64,11 +65,11 @@ export function getInputGlass(glass, size = 'md', theme = 'light') {
 export function getSelectGlass(glass, theme = 'light') {
   if (!glass) return { trigger: '', content: '' };
 
-  const intensity = typeof glass === 'string' ? glass : 'subtle';
+  const intensity = typeof glass === 'string' ? glass : 'minimal';
 
   return {
     trigger: getFormGlassEffect(intensity, theme),
-    content: 'acrylic' // Special acrylic glass for dropdowns
+    content: 'glass-minimal' // Minimal glass for better readability
   };
 }
 
@@ -82,7 +83,7 @@ export function getSelectGlass(glass, theme = 'light') {
 export function getCheckboxGlass(glass, size = 'md', theme = 'light') {
   if (!glass) return '';
 
-  const intensity = typeof glass === 'string' ? glass : 'subtle';
+  const intensity = typeof glass === 'string' ? glass : 'minimal';
   return getFormGlassEffect(intensity, theme);
 }
 
@@ -96,7 +97,7 @@ export function getCheckboxGlass(glass, size = 'md', theme = 'light') {
 export function getSwitchGlass(glass, size = 'md', theme = 'light') {
   if (!glass) return { track: '', thumb: '' };
 
-  const intensity = typeof glass === 'string' ? glass : 'subtle';
+  const intensity = typeof glass === 'string' ? glass : 'minimal';
 
   // Handle mica glass option
   if (intensity === 'mica') {
@@ -110,7 +111,7 @@ export function getSwitchGlass(glass, size = 'md', theme = 'light') {
 
   return {
     track: glassClass,
-    thumb: 'glass-subtle' // Thumb always subtle
+    thumb: 'glass-minimal' // Thumb always minimal for best readability
   };
 }
 
@@ -123,12 +124,12 @@ export function getSwitchGlass(glass, size = 'md', theme = 'light') {
 export function getTableGlass(glass, theme = 'light') {
   if (!glass) return { container: '', header: '', row: '' };
 
-  const intensity = typeof glass === 'string' ? glass : 'subtle';
+  const intensity = typeof glass === 'string' ? glass : 'minimal';
 
   return {
     container: getFormGlassEffect(intensity, theme),
-    header: intensity === 'subtle' ? 'glass-medium' : 'glass-strong',
-    row: 'glass-subtle'
+    header: intensity === 'minimal' ? 'glass-minimal' : 'glass-medium',
+    row: 'glass-minimal'
   };
 }
 
@@ -142,7 +143,7 @@ export function getTableGlass(glass, theme = 'light') {
 export function getBadgeGlass(variant, glass, theme = 'light') {
   if (!glass) return '';
 
-  const intensity = typeof glass === 'string' ? glass : 'subtle';
+  const intensity = typeof glass === 'string' ? glass : 'minimal';
   return getFormGlassEffect(intensity, theme);
 }
 
@@ -156,11 +157,11 @@ export function getBadgeGlass(variant, glass, theme = 'light') {
 export function getProgressGlass(variant, glass, theme = 'light') {
   if (!glass) return { track: '', indicator: '' };
 
-  const intensity = typeof glass === 'string' ? glass : 'subtle';
+  const intensity = typeof glass === 'string' ? glass : 'minimal';
 
   return {
     track: getFormGlassEffect(intensity, theme),
-    indicator: 'glass-subtle'
+    indicator: 'glass-minimal'
   };
 }
 
@@ -174,7 +175,7 @@ export function getProgressGlass(variant, glass, theme = 'light') {
 export function getDataCardGlass(glass, elevation = 1, theme = 'light') {
   if (!glass) return '';
 
-  const intensity = typeof glass === 'string' ? glass : 'medium';
+  const intensity = typeof glass === 'string' ? glass : 'minimal';
   return getFormGlassEffect(intensity, theme);
 }
 
@@ -290,7 +291,7 @@ export function getResponsiveFormBlur(size = 'md') {
 export function getFormGlassForSize(glass, size = 'md') {
   if (!glass) return '';
 
-  const intensity = typeof glass === 'string' ? glass : 'subtle';
+  const intensity = typeof glass === 'string' ? glass : 'minimal';
   const baseGlass = getFormGlassEffect(intensity);
   const sizedGlass = scaleFormGlass(baseGlass, size);
 
@@ -306,8 +307,8 @@ export function getFormGlassForSize(glass, size = 'md') {
 export function getAccessibleFormContrast(background = 'glass', theme = 'light') {
   if (background === 'glass') {
     return theme === 'dark'
-      ? 'text-foreground placeholder:text-muted-foreground'
-      : 'text-foreground placeholder:text-muted-foreground';
+      ? 'text-foreground placeholder:text-foreground/60'
+      : 'text-foreground placeholder:text-foreground/60';
   }
 
   return '';
@@ -350,8 +351,8 @@ export function getTableRowGlass(glass, state = 'default', theme = 'light') {
 
   const states = {
     default: '',
-    hover: 'glass-subtle',
-    selected: 'glass-medium bg-brand-celeste/10'
+    hover: 'glass-minimal',
+    selected: 'glass-minimal bg-brand-celeste/10'
   };
 
   return states[state] || states.default;
@@ -368,12 +369,12 @@ export function getBadgeGlassVariant(variant, glass, theme = 'light') {
   if (!glass) return '';
 
   const glassVariants = {
-    default: 'glass-subtle bg-primary/20 text-primary',
-    secondary: 'glass-subtle bg-secondary/20 text-secondary-foreground',
-    destructive: 'glass-subtle bg-destructive/20 text-destructive',
-    'brand-primary': 'glass-subtle bg-brand-dark-blue/20 text-brand-dark-blue',
-    'brand-celeste': 'glass-subtle bg-brand-celeste/20 text-brand-dark-blue',
-    'brand-sun': 'glass-subtle bg-brand-sun/20 text-brand-dark-blue'
+    default: 'glass-minimal bg-primary/20 text-primary',
+    secondary: 'glass-minimal bg-secondary/20 text-secondary-foreground',
+    destructive: 'glass-minimal bg-destructive/20 text-destructive',
+    'brand-primary': 'glass-minimal bg-brand-dark-blue/20 text-brand-dark-blue',
+    'brand-celeste': 'glass-minimal bg-brand-celeste/20 text-brand-dark-blue',
+    'brand-sun': 'glass-minimal bg-brand-sun/20 text-brand-dark-blue'
   };
 
   return glassVariants[variant] || glassVariants.default;
@@ -389,7 +390,7 @@ export function getBadgeGlassVariant(variant, glass, theme = 'light') {
 export function getProgressGlassTrack(variant, glass, theme = 'light') {
   if (!glass) return '';
 
-  return 'glass-subtle bg-brand-celeste/10';
+  return 'glass-minimal bg-brand-celeste/10';
 }
 
 /**
@@ -406,10 +407,10 @@ export function getProgressGlassIndicator(variant, glass, value = 0, theme = 'li
   const glowIntensity = Math.min(value / 100 * 0.5, 0.5);
 
   const variants = {
-    default: `glass-subtle shadow-glow-brand-dark-blue/${Math.round(glowIntensity * 100)}`,
-    success: `glass-subtle shadow-glow-brand-sun/${Math.round(glowIntensity * 100)}`,
-    warning: `glass-subtle shadow-glow-brand-sun/${Math.round(glowIntensity * 100)}`,
-    error: `glass-subtle shadow-glow-destructive/${Math.round(glowIntensity * 100)}`
+    default: `glass-minimal shadow-glow-brand-dark-blue/${Math.round(glowIntensity * 100)}`,
+    success: `glass-minimal shadow-glow-brand-sun/${Math.round(glowIntensity * 100)}`,
+    warning: `glass-minimal shadow-glow-brand-sun/${Math.round(glowIntensity * 100)}`,
+    error: `glass-minimal shadow-glow-destructive/${Math.round(glowIntensity * 100)}`
   };
 
   return variants[variant] || variants.default;
@@ -449,14 +450,14 @@ export function getFormThemeGlass(theme = 'light', component = 'input') {
   // Use semantic tokens that automatically adapt to theme
   const themeEffects = {
     light: {
-      input: 'glass-subtle bg-background/20',
-      button: 'glass-medium bg-background/30',
-      card: 'glass-medium bg-background/40'
+      input: 'glass-minimal bg-background/20',
+      button: 'glass-minimal bg-background/30',
+      card: 'glass-minimal bg-background/40'
     },
     dark: {
-      input: 'glass-subtle bg-background/20',
-      button: 'glass-medium bg-background/30',
-      card: 'glass-medium bg-background/40'
+      input: 'glass-minimal bg-background/20',
+      button: 'glass-minimal bg-background/30',
+      card: 'glass-minimal bg-background/40'
     }
   };
 
@@ -473,14 +474,14 @@ export function getDataThemeGlass(theme = 'light', component = 'table') {
   // Use semantic tokens that automatically adapt to theme
   const themeEffects = {
     light: {
-      table: 'glass-medium bg-background/30',
-      badge: 'glass-subtle bg-background/20',
-      progress: 'glass-subtle bg-background/25'
+      table: 'glass-minimal bg-background/30',
+      badge: 'glass-minimal bg-background/20',
+      progress: 'glass-minimal bg-background/25'
     },
     dark: {
-      table: 'glass-medium bg-background/30',
-      badge: 'glass-subtle bg-background/20',
-      progress: 'glass-subtle bg-background/25'
+      table: 'glass-minimal bg-background/30',
+      badge: 'glass-minimal bg-background/20',
+      progress: 'glass-minimal bg-background/25'
     }
   };
 
@@ -498,12 +499,38 @@ export function getSemanticFormGlass(semantic, glass, theme = 'light') {
   if (!glass) return '';
 
   const semanticMapping = {
-    primary: 'glass-subtle bg-primary/20',
-    secondary: 'glass-subtle bg-secondary/20',
-    accent: 'glass-subtle bg-accent/20',
-    muted: 'glass-subtle bg-muted/20',
-    destructive: 'glass-subtle bg-destructive/20'
+    primary: 'glass-minimal bg-primary/20',
+    secondary: 'glass-minimal bg-secondary/20',
+    accent: 'glass-minimal bg-accent/20',
+    muted: 'glass-minimal bg-muted/20',
+    destructive: 'glass-minimal bg-destructive/20'
   };
 
   return semanticMapping[semantic] || semanticMapping.primary;
+}
+
+/**
+ * Get high-contrast text colors for glass backgrounds
+ * @param {string} theme - Current theme
+ * @returns {string} CSS classes for high-contrast text
+ */
+export function getGlassTextContrast(theme = 'light') {
+  return theme === 'dark'
+    ? 'text-foreground placeholder:text-foreground/60'
+    : 'text-foreground placeholder:text-foreground/60';
+}
+
+/**
+ * Get optimal glass effect for text readability
+ * @param {string} priority - Priority: 'readability' or 'effect'
+ * @param {string} theme - Current theme
+ * @returns {string} CSS classes for optimal glass effect
+ */
+export function getOptimalGlassEffect(priority = 'readability', theme = 'light') {
+  if (priority === 'readability') {
+    return 'glass-minimal';
+  }
+
+  // For effect priority, use more glass but ensure text remains readable
+  return theme === 'dark' ? 'glass-subtle' : 'glass-minimal';
 }

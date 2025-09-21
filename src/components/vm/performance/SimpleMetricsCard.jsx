@@ -20,8 +20,8 @@ const SimpleMetricsCard = ({ type, data }) => {
     return (
       <Card className="p-4">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-          <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-muted rounded w-1/2 mb-2"></div>
+          <div className="h-6 bg-muted rounded w-3/4"></div>
         </div>
       </Card>
     );
@@ -66,7 +66,7 @@ const SimpleMetricsCard = ({ type, data }) => {
       case 'critico':
         return <XCircle className="h-4 w-4 text-red-600" />;
       default:
-        return <CheckCircle className="h-4 w-4 text-gray-600" />;
+        return <CheckCircle className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -79,7 +79,7 @@ const SimpleMetricsCard = ({ type, data }) => {
       case 'critico':
         return 'text-red-700 bg-red-50 border-red-200';
       default:
-        return 'text-gray-700 bg-gray-50 border-gray-200';
+        return 'text-foreground bg-muted border-border';
     }
   };
 
@@ -92,7 +92,7 @@ const SimpleMetricsCard = ({ type, data }) => {
       case 'critico':
         return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -103,9 +103,9 @@ const SimpleMetricsCard = ({ type, data }) => {
       case 'empeorando':
         return <TrendingDown className="h-3 w-3 text-red-600" />;
       case 'estable':
-        return <Minus className="h-3 w-3 text-gray-600" />;
+        return <Minus className="h-3 w-3 text-muted-foreground" />;
       default:
-        return <Minus className="h-3 w-3 text-gray-600" />;
+        return <Minus className="h-3 w-3 text-muted-foreground" />;
     }
   };
 
@@ -138,7 +138,7 @@ const SimpleMetricsCard = ({ type, data }) => {
           {data.trend && (
             <div className="flex items-center space-x-1">
               {getTrendIcon(data.trend.direction)}
-              <span className="text-xs text-gray-600">
+              <span className="text-xs text-muted-foreground">
                 {data.trend.label}
               </span>
             </div>

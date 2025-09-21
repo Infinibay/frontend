@@ -7,6 +7,7 @@ import { fetchGraphics } from './state/slices/system';
 import { fetchUsers } from './state/slices/users';
 import { fetchFilters } from './state/slices/filters';
 import { fetchFilterRules } from './state/slices/filterRules';
+import { fetchAppSettings } from './state/slices/appSettings';
 
 export const fetchInitialData = createAsyncThunk(
 	'app/fetchInitialData',
@@ -16,6 +17,7 @@ export const fetchInitialData = createAsyncThunk(
 
 			// Fetch all data concurrently
 			await Promise.all([
+				dispatch(fetchAppSettings()),
 				dispatch(fetchCurrentUser()),
 				dispatch(fetchVms()),
 				dispatch(fetchDepartments()),

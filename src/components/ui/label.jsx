@@ -48,7 +48,7 @@ const Label = React.forwardRef(({
         <div>
           <HoverCard>
             <HoverCardTrigger asChild>
-              <HelpCircle className="text-muted-foreground cursor-help" />
+              <HelpCircle className="text-foreground/70 cursor-help" />
             </HoverCardTrigger>
             <HoverCardContent className={cn(
               "text-popover-foreground",

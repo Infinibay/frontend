@@ -32,8 +32,8 @@ const PerformanceTrends = ({ trends, vmId }) => {
     return (
       <Card className="p-6">
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-6 bg-muted rounded w-1/3 mb-4"></div>
+          <div className="h-64 bg-muted rounded"></div>
         </div>
       </Card>
     );
@@ -52,9 +52,9 @@ const PerformanceTrends = ({ trends, vmId }) => {
       case 'empeorando':
         return <TrendingDown className="h-4 w-4 text-red-600" />;
       case 'estable':
-        return <Minus className="h-4 w-4 text-gray-600" />;
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
       default:
-        return <Minus className="h-4 w-4 text-gray-600" />;
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -65,9 +65,9 @@ const PerformanceTrends = ({ trends, vmId }) => {
       case 'empeorando':
         return 'text-red-700 bg-red-50 border-red-200';
       case 'estable':
-        return 'text-gray-700 bg-gray-50 border-gray-200';
+        return 'text-foreground bg-muted border-border';
       default:
-        return 'text-gray-700 bg-gray-50 border-gray-200';
+        return 'text-foreground bg-muted border-border';
     }
   };
 
@@ -95,8 +95,8 @@ const PerformanceTrends = ({ trends, vmId }) => {
       const value = payload[0]?.value;
       const status = getStatusFromValue(value);
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="text-sm font-medium text-gray-900">{label}</p>
+        <div className="bg-background p-3 border border-border rounded-lg shadow-lg">
+          <p className="text-sm font-medium text-foreground">{label}</p>
           <p className="text-sm" style={{ color: getStatusColor(status) }}>
             Estado: {status}
           </p>
@@ -122,7 +122,7 @@ const PerformanceTrends = ({ trends, vmId }) => {
                   onClick={() => setSelectedPeriod(period.key)}
                   className={`px-3 py-1 text-xs rounded-md transition-colors flex items-center space-x-1 ${selectedPeriod === period.key
                     ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                     }`}
                 >
                   <IconComponent className="h-3 w-3" />
@@ -218,19 +218,19 @@ const PerformanceTrends = ({ trends, vmId }) => {
             <div className="flex items-center justify-center space-x-6 text-xs">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded"></div>
-                <span className="text-gray-600">Excelente</span>
+                <span className="text-muted-foreground">Excelente</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                <span className="text-gray-600">Normal</span>
+                <span className="text-muted-foreground">Normal</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                <span className="text-gray-600">Atención</span>
+                <span className="text-muted-foreground">Atención</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-red-500 rounded"></div>
-                <span className="text-gray-600">Crítico</span>
+                <span className="text-muted-foreground">Crítico</span>
               </div>
             </div>
           </div>
@@ -239,19 +239,19 @@ const PerformanceTrends = ({ trends, vmId }) => {
         {/* Performance Patterns */}
         {currentTrend && currentTrend.patterns && currentTrend.patterns.length > 0 && (
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-900">
+            <h4 className="text-sm font-medium text-foreground">
               Patrones Identificados:
             </h4>
             <div className="space-y-2">
               {currentTrend.patterns.map((pattern, index) => (
-                <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                <div key={index} className="p-3 bg-muted rounded-lg">
                   <div className="flex items-start space-x-2">
                     <span className="text-xs mt-1">📊</span>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         {pattern.title}
                       </p>
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {pattern.description}
                       </p>
                       {pattern.businessImpact && (
@@ -270,7 +270,7 @@ const PerformanceTrends = ({ trends, vmId }) => {
         {/* Performance Events */}
         {currentTrend && currentTrend.significantEvents && currentTrend.significantEvents.length > 0 && (
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-900">
+            <h4 className="text-sm font-medium text-foreground">
               Eventos Significativos:
             </h4>
             <div className="space-y-2">
@@ -281,13 +281,13 @@ const PerformanceTrends = ({ trends, vmId }) => {
                       'bg-yellow-500'
                     }`}></div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-foreground">
                       {event.title}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-muted-foreground">
                       {event.description}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {event.timestamp}
                     </p>
                   </div>

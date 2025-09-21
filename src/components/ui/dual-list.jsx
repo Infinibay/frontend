@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { 
-  DndContext, 
-  closestCenter, 
+import {
+  DndContext,
+  closestCenter,
   DragOverlay,
   useDroppable,
   PointerSensor,
@@ -20,7 +20,8 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "./context-menu";
-import { ArrowLeftIcon, ArrowRightIcon } from "@radix-ui/react-icons";
+import { ArrowLeftIcon, ArrowRightIcon, MagnifyingGlassIcon, Cross2Icon } from "@radix-ui/react-icons";
+import { sizeVariants } from './size-provider';
 
 const DropZone = ({ id, children, isEmpty, className, emptyClassName }) => {
   const { setNodeRef } = useDroppable({ id });
@@ -55,11 +56,44 @@ const DualList = ({
   sensors,
   moveRight,
   moveLeft,
-  canDrag = () => true // Add canDrag prop with default function
+  canDrag = () => true, // Add canDrag prop with default function
+  leftSearch,
+  rightSearch,
+  size = "md"
 }) => {
   const [leftItems, setLeftItems] = useState(initialLeftItems);
   const [rightItems, setRightItems] = useState(initialRightItems);
   const [activeId, setActiveId] = useState(null);
+  const sizes = sizeVariants[size];
+
+  // Search input component
+  const SearchInput = ({ placeholder, value, onChange, onClear }) => (
+    <div className="relative mb-4">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <MagnifyingGlassIcon className={cn("text-muted-foreground", sizes.icon.size)} />
+      </div>
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(
+          "w-full pl-10 pr-10 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
+          sizes.input.height,
+          sizes.input.padding,
+          sizes.input.text
+        )}
+      />
+      {value && (
+        <button
+          onClick={onClear}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+        >
+          <Cross2Icon className={cn("text-muted-foreground hover:text-foreground", sizes.icon.size)} />
+        </button>
+      )}
+    </div>
+  );
 
   const handleDragStart = (event) => {
     const item = findItemById(event.active.id);
@@ -237,9 +271,17 @@ const DualList = ({
     >
       <div className={cn("flex gap-4", containerClassName)}>
         <div className="flex-1">
-          <h3 className="text-lg font-medium mb-4">{leftTitle}</h3>
-          <DropZone 
-            id="left" 
+          <h3 className={cn("font-medium mb-4", sizes.heading)}>{leftTitle}</h3>
+          {leftSearch && (
+            <SearchInput
+              placeholder={leftSearch.placeholder}
+              value={leftSearch.value}
+              onChange={leftSearch.onChange}
+              onClear={leftSearch.onClear}
+            />
+          )}
+          <DropZone
+            id="left"
             isEmpty={leftItems.length === 0}
             className={dropZoneClassName}
             emptyClassName={emptyDropZoneClassName}
@@ -258,9 +300,17 @@ const DualList = ({
           </DropZone>
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-medium mb-4">{rightTitle}</h3>
-          <DropZone 
-            id="right" 
+          <h3 className={cn("font-medium mb-4", sizes.heading)}>{rightTitle}</h3>
+          {rightSearch && (
+            <SearchInput
+              placeholder={rightSearch.placeholder}
+              value={rightSearch.value}
+              onChange={rightSearch.onChange}
+              onClear={rightSearch.onClear}
+            />
+          )}
+          <DropZone
+            id="right"
             isEmpty={rightItems.length === 0}
             className={dropZoneClassName}
             emptyClassName={emptyDropZoneClassName}
@@ -309,7 +359,20 @@ DualList.propTypes = {
   sensors: PropTypes.array,
   moveRight: PropTypes.any,
   moveLeft: PropTypes.any,
-  canDrag: PropTypes.func
+  canDrag: PropTypes.func,
+  leftSearch: PropTypes.shape({
+    value: PropTypes.string,
+    onChange: PropTypes.func,
+    placeholder: PropTypes.string,
+    onClear: PropTypes.func
+  }),
+  rightSearch: PropTypes.shape({
+    value: PropTypes.string,
+    onChange: PropTypes.func,
+    placeholder: PropTypes.string,
+    onClear: PropTypes.func
+  }),
+  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl'])
 };
 
 export default DualList;
