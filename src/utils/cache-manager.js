@@ -1,4 +1,7 @@
 import { clearApolloCache, resetApolloCache } from '@/apollo-client';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:utils:cache-manager');
 
 /**
  * Clear all GraphQL-related caches and persisted data
@@ -21,14 +24,14 @@ export const clearAllCaches = async () => {
       
       keysToRemove.forEach(key => {
         localStorage.removeItem(key);
-        console.log(`Removed localStorage key: ${key}`);
+        debug.info('clear', `Removed localStorage key: ${key}`);
       });
     }
     
-    console.log('All caches cleared successfully');
+    debug.success('clear', 'All caches cleared successfully');
     return true;
   } catch (error) {
-    console.error('Error clearing caches:', error);
+    debug.error('clear', 'Error clearing caches:', error);
     return false;
   }
 };
@@ -39,10 +42,10 @@ export const clearAllCaches = async () => {
 export const resetAndRefetch = async () => {
   try {
     await resetApolloCache();
-    console.log('Cache reset and queries refetched');
+    debug.success('reset', 'Cache reset and queries refetched');
     return true;
   } catch (error) {
-    console.error('Error resetting cache:', error);
+    debug.error('reset', 'Error resetting cache:', error);
     return false;
   }
 };
@@ -77,10 +80,10 @@ export const clearISOCache = async (client) => {
     // Garbage collect the cache
     client.cache.gc();
     
-    console.log('ISO cache cleared');
+    debug.success('iso', 'ISO cache cleared');
     return true;
   } catch (error) {
-    console.error('Error clearing ISO cache:', error);
+    debug.error('iso', 'Error clearing ISO cache:', error);
     return false;
   }
 };

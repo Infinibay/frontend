@@ -3,6 +3,9 @@
 import { useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateVmHealth } from '../state/slices/health';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:hooks:useProblemStatus');
 
 /**
  * Custom hook for managing problem status transitions and updates
@@ -77,11 +80,11 @@ export function useProblemStatus() {
         updates: { problemStatus: { [problemId]: newStatus } }
       }));
 
-      console.log(`Problem ${problemId} status updated to ${newStatus}`, statusChange);
+      debug.success('update', `Problem ${problemId} status updated to ${newStatus}`, statusChange);
 
       return { success: true, statusChange };
     } catch (error) {
-      console.error('Error updating problem status:', error);
+      debug.error('update', 'Error updating problem status:', error);
       setUpdateErrors(prev => ({ ...prev, [problemId]: error.message }));
       throw error;
     } finally {
@@ -115,7 +118,7 @@ export function useProblemStatus() {
       const successCount = results.filter(r => r.success).length;
       const errorCount = results.filter(r => !r.success).length;
 
-      console.log(`Bulk update completed: ${successCount} successful, ${errorCount} failed`);
+      debug.info('bulk', `Bulk update completed: ${successCount} successful, ${errorCount} failed`);
 
       return {
         results,
@@ -124,7 +127,7 @@ export function useProblemStatus() {
         hasErrors: errorCount > 0
       };
     } catch (error) {
-      console.error('Error in bulk status update:', error);
+      debug.error('bulk', 'Error in bulk status update:', error);
       throw error;
     } finally {
       setIsUpdating(false);

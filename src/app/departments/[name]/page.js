@@ -2,13 +2,15 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import { useSizeContext } from "@/components/ui/size-provider";
-import { 
+import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
+import {
   ToastProvider,
   ToastViewport,
 } from "@/components/ui/toast";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import dynamic from 'next/dynamic';
+import { getGlassClasses } from '@/utils/glass-effects';
+import { cn } from '@/lib/utils';
 
 // Custom hooks
 import { useDepartmentPage } from "./hooks/useDepartmentPage";
@@ -84,54 +86,75 @@ const DepartmentPage = () => {
   return (
     <ToastProvider>
       <div className="w-full">
-        <DepartmentHeader departmentName={department?.name} />
+        <DepartmentHeader
+          departmentName={department?.name}
+          onNewComputer={handleNewComputer}
+        />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabControls 
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            viewMode={viewMode}
-            onViewModeToggle={toggleViewMode}
-            onNewComputer={handleNewComputer}
-          />
+        {/* Main content container with consistent spacing */}
+        <div className="px-6 py-4 space-y-6">
+          {/* Subtitle section */}
+          <div className={cn(
+            getGlassClasses({ glass: 'subtle', elevation: 1, radius: 'md' }),
+            "size-padding"
+          )}>
+            <p className="text-glass-text-primary">
+              Manage virtual machines and security settings for the {department?.name} department
+            </p>
+          </div>
 
-          <TabsContent value="computers" className="mt-0">
-            {machines.length > 0 ? (
-              <>
-                {viewMode === "grid" ? (
-                  <MachineGrid 
-                    machines={machines}
-                    departmentName={department?.name}
-                    onSelect={handlePcSelect}
-                    onPlay={handlePlayAction}
-                    onPause={handlePauseAction}
-                    onStop={handleStopAction}
-                    onDelete={handleDeleteAction}
-                    size={size}
-                  />
-                ) : (
-                  <MachineTable 
-                    machines={machines}
-                    sortBy={sortBy}
-                    sortDirection={sortDirection}
-                    handleSort={handleSort}
-                    handlePcSelect={handlePcSelect}
-                    handlePlay={handlePlayAction}
-                    handlePause={handlePauseAction}
-                    handleStop={handleStopAction}
-                    handleDelete={handleDeleteAction}
-                  />
-                )}
-              </>
-            ) : (
-              <EmptyState onNewComputer={handleNewComputer} />
-            )}
-          </TabsContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
+            <TabControls
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              viewMode={viewMode}
+              onViewModeToggle={toggleViewMode}
+            />
 
-          <TabsContent value="security" className="mt-0">
-            <SecuritySection departmentId={department?.id} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="computers" className={cn(
+              getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
+              "size-container size-padding mt-0"
+            )}>
+              {machines.length > 0 ? (
+                <>
+                  {viewMode === "grid" ? (
+                    <MachineGrid
+                      machines={machines}
+                      departmentName={department?.name}
+                      onSelect={handlePcSelect}
+                      onPlay={handlePlayAction}
+                      onPause={handlePauseAction}
+                      onStop={handleStopAction}
+                      onDelete={handleDeleteAction}
+                      size={size}
+                    />
+                  ) : (
+                    <MachineTable
+                      machines={machines}
+                      sortBy={sortBy}
+                      sortDirection={sortDirection}
+                      handleSort={handleSort}
+                      handlePcSelect={handlePcSelect}
+                      handlePlay={handlePlayAction}
+                      handlePause={handlePauseAction}
+                      handleStop={handleStopAction}
+                      handleDelete={handleDeleteAction}
+                    />
+                  )}
+                </>
+              ) : (
+                <EmptyState />
+              )}
+            </TabsContent>
+
+            <TabsContent value="security" className={cn(
+              getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
+              "size-container size-padding mt-0"
+            )}>
+              <SecuritySection departmentId={department?.id} />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
 
       <CreateDepartmentDialog 

@@ -12,31 +12,56 @@ import {
 import * as SelectPrimitive from "@radix-ui/react-select"
 
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
-import { getSelectGlass, getFormGlassTransition, getReducedTransparencyForm } from "@/utils/form-glass-effects"
+import { useSizeContext, sizeVariants } from "./size-provider"
+import { getSelectGlass, getReducedTransparencyForm, getFormGlassEffect, getBrandFormGlow, optimizeFormGlassPerformance, getFormGlassForSize, scaleFormGlass, getResponsiveFormBlur } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
-import { useInputStates } from "@/utils/form-animations"
+import { useInputStates, FORM_ANIMATION_CLASSES } from "@/utils/form-animations"
 
-// Glass context for passing glass state to child components
-const SelectGlassContext = React.createContext(false)
+// Internal lightweight context for communication between sub-components
+const SelectInternalContext = React.createContext(null)
 
-// Search context for combobox functionality
-const SelectSearchContext = React.createContext(null)
+// Shared utility for scroll button size mappings to eliminate duplication
+const getScrollButtonSizeClasses = (effectiveSize) => {
+  const variant = sizeVariants[effectiveSize] || sizeVariants.md
 
-// Enhanced Select component with search functionality
-const Select = React.forwardRef(({ searchable = false, onSearch, children, value, onValueChange, open, onOpenChange, ...props }, ref) => {
-  const [searchValue, setSearchValue] = React.useState("")
-  const [internalOpen, setInternalOpen] = React.useState(false)
+  return {
+    button: cn(
+      // Base styling with enhanced positioning
+      "flex cursor-pointer items-center justify-center",
+      "relative group transition-all duration-200 ease-bounce",
+
+      // Brand color theming
+      "text-foreground/70 hover:text-brand-dark-blue",
+      "hover:bg-brand-celeste/10 active:bg-brand-celeste/20",
+
+      // Enhanced interactivity
+      "hover:shadow-glow-brand-celeste/20 hover:scale-110",
+      "focus:outline-none focus:ring-2 focus:ring-brand-dark-blue/30",
+      "focus:bg-brand-dark-blue/5",
+
+      // Disabled state handling
+      "disabled:cursor-not-allowed disabled:opacity-50",
+      "disabled:hover:text-foreground/70 disabled:hover:bg-transparent",
+
+      // Size System integration using sizeVariants
+      variant.spacing.item,
+
+      // Performance optimizations
+      "will-change-transform",
+      FORM_ANIMATION_CLASSES.base
+    ),
+    icon: variant.icon.size
+  }
+}
+
+// Internal hook for managing value and open state
+const useSelectState = ({ value, onValueChange, open, onOpenChange }) => {
   const [internalValue, setInternalValue] = React.useState("")
-  const [selectedLabel, setSelectedLabel] = React.useState("")
-  const [activeDescendant, setActiveDescendant] = React.useState("")
-
-  // Generate unique IDs for accessibility (when searchable)
-  const listboxId = React.useMemo(() => searchable ? `select-listbox-${Math.random().toString(36).substring(2, 11)}` : null, [searchable])
+  const [internalOpen, setInternalOpen] = React.useState(false)
 
   // Determine if we're in controlled mode for value and open state
   const isValueControlled = value !== undefined
-  const isOpenControlled = searchable && open !== undefined
+  const isOpenControlled = open !== undefined
   const currentValue = isValueControlled ? value : internalValue
   const currentOpen = isOpenControlled ? open : internalOpen
 
@@ -50,15 +75,7 @@ const Select = React.forwardRef(({ searchable = false, onSearch, children, value
     if (onValueChange) {
       onValueChange(newValue)
     }
-
-    // Clear search when value changes and close if not controlled
-    if (searchable) {
-      setSearchValue("")
-      if (!isOpenControlled) {
-        setInternalOpen(false)
-      }
-    }
-  }, [onValueChange, searchable, isValueControlled, isOpenControlled])
+  }, [onValueChange, isValueControlled])
 
   const handleOpenChange = React.useCallback((open) => {
     // Update internal state for uncontrolled mode
@@ -70,12 +87,50 @@ const Select = React.forwardRef(({ searchable = false, onSearch, children, value
     if (onOpenChange) {
       onOpenChange(open)
     }
+  }, [onOpenChange, isOpenControlled])
 
-    // Clear search when menu closes
-    if (!open && searchable) {
-      setSearchValue("")
+  const setValue = isValueControlled ? onValueChange : setInternalValue
+  const setOpen = isOpenControlled ? onOpenChange : setInternalOpen
+
+  return {
+    value: currentValue,
+    setValue,
+    open: currentOpen,
+    setOpen,
+    handleValueChange,
+    handleOpenChange
+  }
+}
+
+// Public hook for search functionality
+const useSelectSearch = () => {
+  const context = React.useContext(SelectInternalContext)
+  if (!context) {
+    // Return safe defaults when context is null (outside Select component)
+    return {
+      searchValue: "",
+      setSearchValue: () => {},
+      isSearchable: false,
+      isOpen: false,
+      setIsOpen: () => {},
+      onSearch: undefined,
+      selectedValue: "",
+      setSelectedValue: () => {},
+      selectedLabel: "",
+      setSelectedLabel: () => {},
     }
-  }, [onOpenChange, searchable, isOpenControlled])
+  }
+  return context
+}
+
+// Internal hook for search functionality with debouncing and label derivation
+const useSelectSearchInternal = ({ searchable, onSearch, children, value }) => {
+  const [searchValue, setSearchValue] = React.useState("")
+  const [selectedLabel, setSelectedLabel] = React.useState("")
+  const [activeDescendant, setActiveDescendant] = React.useState("")
+
+  // Generate unique IDs for accessibility (when searchable)
+  const listboxId = React.useMemo(() => searchable ? `select-listbox-${Math.random().toString(36).substring(2, 11)}` : null, [searchable])
 
   // Debounced search functionality
   React.useEffect(() => {
@@ -88,9 +143,9 @@ const Select = React.forwardRef(({ searchable = false, onSearch, children, value
     return () => clearTimeout(timer)
   }, [searchValue, onSearch])
 
-  // Sync selectedLabel when currentValue changes (for controlled mode or initial selection)
+  // Sync selectedLabel when value changes (for controlled mode or initial selection)
   React.useEffect(() => {
-    if (!searchable || !currentValue) return
+    if (!searchable || !value) return
 
     // Derive label from children by scanning SelectItem elements
     const findLabelFromChildren = (childrenToScan) => {
@@ -101,7 +156,7 @@ const Select = React.forwardRef(({ searchable = false, onSearch, children, value
 
         // Check SelectItem directly
         if (child.type?.displayName === 'SelectItem' || child.type === SelectItem) {
-          if (String(child.props.value) === String(currentValue)) {
+          if (String(child.props.value) === String(value)) {
             foundLabel = typeof child.props.children === 'string'
               ? child.props.children
               : String(child.props.value || '')
@@ -121,82 +176,221 @@ const Select = React.forwardRef(({ searchable = false, onSearch, children, value
     const derivedLabel = findLabelFromChildren(children)
     if (derivedLabel && derivedLabel !== selectedLabel) {
       setSelectedLabel(derivedLabel)
+    } else if (!value) {
+      setSelectedLabel("")
+    } else if (!derivedLabel && selectedLabel) {
+      setSelectedLabel("")
     }
-  }, [searchable, currentValue, children, selectedLabel])
+  }, [searchable, value, children, selectedLabel])
 
-  // Memoize stable functions separately to avoid unnecessary re-renders
-  const stableFunctions = React.useMemo(() => ({
-    setSearchValue,
-    setIsOpen: isOpenControlled ? onOpenChange : setInternalOpen,
-    setSelectedValue: setInternalValue,
-    setSelectedLabel,
-  }), [isOpenControlled, onOpenChange])
-
-  const contextValue = React.useMemo(() => ({
+  return {
     searchValue,
-    isSearchable: searchable,
-    isOpen: currentOpen,
-    onSearch,
-    selectedValue: currentValue,
+    setSearchValue,
     selectedLabel,
-    listboxId,
+    setSelectedLabel,
     activeDescendant,
     setActiveDescendant,
-    ...stableFunctions,
-  }), [searchValue, searchable, currentOpen, onSearch, currentValue, selectedLabel, listboxId, activeDescendant, stableFunctions])
+    listboxId
+  }
+}
+
+// Enhanced Select component with simplified architecture
+const Select = React.forwardRef(({ searchable = false, onSearch, children, value, onValueChange, open, onOpenChange, ...props }, ref) => {
+  // Use new utility hooks for clean separation of concerns
+  const selectState = useSelectState({ value, onValueChange, open, onOpenChange })
+  const searchState = useSelectSearchInternal({ searchable, onSearch, children, value: selectState.value })
+
+  // Clear search when value changes or menu closes
+  React.useEffect(() => {
+    if (searchable) {
+      searchState.setSearchValue("")
+    }
+  }, [selectState.value, searchable, searchState])
+
+  React.useEffect(() => {
+    if (!selectState.open && searchable) {
+      searchState.setSearchValue("")
+    }
+  }, [selectState.open, searchable, searchState])
+
+  // Create lightweight context value for sub-components
+  const contextValue = React.useMemo(() => ({
+    // State values
+    searchValue: searchState.searchValue,
+    isSearchable: searchable,
+    isOpen: selectState.open,
+    selectedValue: selectState.value,
+    selectedLabel: searchState.selectedLabel,
+    listboxId: searchState.listboxId,
+    activeDescendant: searchState.activeDescendant,
+    onSearch,
+    // State setters
+    setSearchValue: searchState.setSearchValue,
+    setIsOpen: selectState.setOpen,
+    setSelectedValue: selectState.setValue,
+    setSelectedLabel: searchState.setSelectedLabel,
+    setActiveDescendant: searchState.setActiveDescendant,
+  }), [
+    searchState.searchValue,
+    searchable,
+    selectState.open,
+    selectState.value,
+    searchState.selectedLabel,
+    searchState.listboxId,
+    searchState.activeDescendant,
+    onSearch,
+    searchState.setSearchValue,
+    selectState.setOpen,
+    selectState.setValue,
+    searchState.setSelectedLabel,
+    searchState.setActiveDescendant
+  ])
+
+  // Prepare handlers and props for both searchable and regular modes
+  const { value: _, onValueChange: __, open: ___, onOpenChange: originalOnOpenChange, ...restProps } = props
+
+  // Always define the composed handler to avoid conditional hook usage
+  const composedOpenChange = React.useCallback((nextOpen) => {
+    selectState.handleOpenChange(nextOpen)
+    if (originalOnOpenChange) {
+      originalOnOpenChange(nextOpen)
+    }
+  }, [selectState, originalOnOpenChange])
 
   // For searchable selects, we need to handle open state manually
   if (searchable) {
-    // Destructure conflicting props to prevent override of internal handlers
-    const { value: _, onValueChange: __, open: ___, onOpenChange: ____, ...rootProps } = props
-
     return (
-      <SelectSearchContext.Provider value={contextValue}>
+      <SelectInternalContext.Provider value={contextValue}>
         <SelectPrimitive.Root
           ref={ref}
-          open={currentOpen}
-          onOpenChange={handleOpenChange}
-          value={currentValue}
-          onValueChange={handleValueChange}
-          {...rootProps}
+          open={selectState.open}
+          onOpenChange={selectState.handleOpenChange}
+          value={selectState.value}
+          onValueChange={selectState.handleValueChange}
+          {...restProps}
         >
           {children}
         </SelectPrimitive.Root>
-      </SelectSearchContext.Provider>
+      </SelectInternalContext.Provider>
     )
   }
 
   // For regular selects, let Radix handle everything
-  // Destructure value and onValueChange to prevent props collision
-  const { value: _, onValueChange: __, ...restProps } = props
 
   return (
-    <SelectSearchContext.Provider value={contextValue}>
+    <SelectInternalContext.Provider value={contextValue}>
       <SelectPrimitive.Root
         ref={ref}
-        value={currentValue}
-        onValueChange={handleValueChange}
+        value={selectState.value}
+        onValueChange={selectState.handleValueChange}
+        {...(open !== undefined ? { open: selectState.open } : {})}
+        onOpenChange={composedOpenChange}
         {...restProps}
       >
         {children}
       </SelectPrimitive.Root>
-    </SelectSearchContext.Provider>
+    </SelectInternalContext.Provider>
   )
 })
 Select.displayName = "Select"
 
-const SelectGroup = SelectPrimitive.Group
+/**
+ * SelectGroup - Enhanced group wrapper with proper spacing and documentation
+ *
+ * Features:
+ * - Subtle visual enhancements with proper spacing between groups
+ * - Performance optimizations using optimizeFormGlassPerformance()
+ * - Maintains backward compatibility while improving visual hierarchy
+ * - Proper semantic grouping for accessibility
+ *
+ * @param {React.ReactNode} children - Group content including SelectLabel and SelectItem components
+ * @param {string} className - Additional CSS classes
+ * @param {...object} props - All other props passed to underlying Group component
+ *
+ * @example
+ * ```jsx
+ * <SelectGroup>
+ *   <SelectLabel>Fruits</SelectLabel>
+ *   <SelectItem value="apple">Apple</SelectItem>
+ *   <SelectItem value="banana">Banana</SelectItem>
+ * </SelectGroup>
+ * ```
+ */
+const SelectGroup = React.forwardRef(({ className, ...props }, ref) => {
+  // Memoized classes for performance optimization
+  const groupClasses = React.useMemo(() => {
+    return cn(
+      // Subtle visual enhancements with proper spacing
+      "space-y-1 [&:not(:first-child)]:mt-3",
+
+      // Performance optimizations
+      optimizeFormGlassPerformance(),
+
+      className
+    )
+  }, [className])
+
+  return (
+    <SelectPrimitive.Group
+      ref={ref}
+      className={groupClasses}
+      {...props}
+    />
+  )
+})
 SelectGroup.displayName = SelectPrimitive.Group.displayName
 
-const SelectValue = SelectPrimitive.Value
+/**
+ * SelectValue - Enhanced value display with typography and truncation
+ *
+ * Features:
+ * - Enhanced typography with font-medium and tracking-wide
+ * - Proper text truncation for long values with ellipsis
+ * - Performance optimizations for re-renders
+ * - Maintains compatibility with Radix UI Select
+ * - Accessible placeholder handling
+ *
+ * @param {string} placeholder - Placeholder text when no value is selected
+ * @param {string} className - Additional CSS classes
+ * @param {...object} props - All other props passed to underlying Value component
+ *
+ * @example
+ * ```jsx
+ * <SelectValue placeholder="Choose an option..." />
+ * <SelectValue placeholder="Select item" className="text-brand-dark-blue" />
+ * ```
+ */
+const SelectValue = React.forwardRef(({ className, ...props }, ref) => {
+  // Memoized classes for performance optimization
+  const valueClasses = React.useMemo(() => {
+    return cn(
+      // Enhanced typography
+      "font-medium tracking-wide",
+
+      // Proper text truncation for long values
+      "truncate max-w-full",
+
+      // Performance optimizations
+      optimizeFormGlassPerformance(),
+
+      className
+    )
+  }, [className])
+
+  return (
+    <SelectPrimitive.Value
+      ref={ref}
+      className={valueClasses}
+      {...props}
+    />
+  )
+})
 SelectValue.displayName = SelectPrimitive.Value.displayName
 
 const SelectTrigger = React.forwardRef(({ className, children, size, glass = false, error, success, placeholder, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const theme = useSafeResolvedTheme()
-  const effectiveSize = size || contextSize || 'md'
   const { isHovered, handlers } = useInputStates()
-  const { searchValue, setSearchValue, isSearchable, isOpen, setIsOpen, selectedLabel, listboxId, activeDescendant } = React.useContext(SelectSearchContext) || {}
+  const { searchValue, setSearchValue, isSearchable, isOpen, setIsOpen, selectedLabel, listboxId, activeDescendant } = React.useContext(SelectInternalContext) || {}
   const [isFocused, setIsFocused] = React.useState(false)
   const inputRef = React.useRef(null)
 
@@ -221,47 +415,69 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
     return placeholder
   }, [isSearchable, selectedLabel, searchValue, placeholder])
 
-  const sizeClasses = React.useMemo(() => ({
-    sm: "h-11 px-5 py-3 text-sm",
-    md: "h-13 px-6 py-4 text-sm",
-    lg: "h-15 px-7 py-5 text-base"
-  }), [])
+  // No more JS-based size classes - using CSS utility classes directly
 
-  const iconSizeClasses = React.useMemo(() => ({
-    sm: "h-4 w-4",
-    md: "h-4 w-4",
-    lg: "h-5 w-5"
-  }), [])
+  // 6-tier Glassmorphism Implementation
+  const glassEffect = React.useMemo(() => {
+    if (!glass) return null
 
-  const glassEffect = React.useMemo(() => getSelectGlass(glass, theme), [glass, theme])
-  const transition = React.useMemo(() => getFormGlassTransition(), [])
-  const reducedTransparency = React.useMemo(() => glass ? getReducedTransparencyForm(glassEffect.trigger) : '', [glass, glassEffect.trigger])
+    const intensity = typeof glass === 'string' ? glass : 'minimal'
+    return getFormGlassEffect(intensity, theme)
+  }, [glass, theme])
 
-  const getSelectStyles = () => {
-    if (glass) {
-      return cn(glassEffect.trigger, reducedTransparency, "backdrop-blur-xl")
+  // Glass blur intensity mapping
+  const getGlassBlur = React.useMemo(() => {
+    if (!glass) return ''
+
+    const intensity = typeof glass === 'string' ? glass : 'minimal'
+    const blurMap = {
+      minimal: 'backdrop-blur-sm',
+      subtle: 'backdrop-blur-sm',
+      medium: 'backdrop-blur-md',
+      strong: 'backdrop-blur-lg'
     }
-    return theme === 'dark'
-      ? "bg-background/95 border-border/50"
-      : "bg-background/95 border-border/50"
-  }
 
-  const getSelectStateClasses = () => {
+    return blurMap[intensity] || 'backdrop-blur-sm'
+  }, [glass])
+
+  // Brand Color Integration - Focus on borders/rings/glows to preserve glass background
+  const getBrandColorClasses = () => {
+    // For glass mode, use minimal background tint to preserve glass effect
+    // For non-glass mode, use more prominent background colors
+    const baseClasses = glass
+      ? "border-brand-celeste/20" // Glass mode: border-only accent
+      : "bg-brand-celeste/10 border-brand-celeste/20" // Non-glass mode: background + border
+
     if (error) {
-      return "border-destructive/70 ring-2 ring-destructive/25 text-destructive"
+      return "border-destructive/70 ring-2 ring-destructive/20 text-destructive animate-shake" +
+             (glass ? "" : " bg-destructive/5")
     }
     if (success) {
-      return "border-emerald-500/70 ring-2 ring-emerald-500/25"
+      return "border-brand-sun/30 ring-2 ring-brand-sun/25 animate-pulse-once" +
+             (glass ? "" : " bg-brand-sun/10")
     }
-    return ""
+    if (isFocused) {
+      return "shadow-glow-brand-dark-blue/40 ring-2 ring-brand-dark-blue/30 ring-offset-2 ring-offset-background border-brand-dark-blue/50" +
+             (glass ? "" : " bg-brand-dark-blue/5")
+    }
+
+    return baseClasses
   }
 
+  // Enhanced Visual Feedback States
+  const getStateClasses = () => {
+    const transition = "transition-all duration-200 ease-smooth"
+    const hover = "hover:border-brand-celeste/40 hover:bg-brand-celeste/5 hover:shadow-lg hover:shadow-brand-celeste/10 hover:-translate-y-0.5"
+    const focus = "focus:outline-none focus:ring-2 focus:ring-brand-dark-blue/30 focus:border-brand-dark-blue/60 focus:shadow-glow-brand-dark-blue/40"
+    const disabled = "disabled:cursor-not-allowed disabled:opacity-50"
+
+    return cn(transition, hover, focus, disabled)
+  }
+
+  // Simplified Input Event Handlers
   const handleInputClick = () => {
-    if (isSearchable) {
-      if (!isOpen) {
-        setIsOpen(true)
-      }
-      // Use immediate focus without setTimeout
+    if (isSearchable && !isOpen) {
+      setIsOpen(true)
       inputRef.current?.focus()
     }
   }
@@ -270,14 +486,12 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
     if (isSearchable) {
       const value = e.target.value
       setSearchValue(value)
-      if (!isOpen) {
-        setIsOpen(true)
-      }
+      if (!isOpen) setIsOpen(true)
     }
   }
 
   const handleKeyDown = (e) => {
-    if (!isSearchable) return
+    if (!isSearchable || props.disabled) return
 
     switch (e.key) {
       case 'Escape':
@@ -288,97 +502,82 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
         }
         break
       case 'ArrowDown':
-        // Open menu and allow Radix to handle navigation
-        if (!isOpen) {
-          setIsOpen(true)
-        }
-        // Don't prevent default - let Radix handle the navigation
-        break
       case 'ArrowUp':
-        // Open menu and allow Radix to handle navigation
-        if (!isOpen) {
-          setIsOpen(true)
-        }
-        // Don't prevent default - let Radix handle the navigation
+        if (!isOpen) setIsOpen(true)
         break
       case 'Enter':
-        // If menu is closed, open it
         if (!isOpen) {
           setIsOpen(true)
           e.preventDefault()
         }
-        // If menu is open, let Radix handle the selection
         break
       case 'Tab':
-        // Allow natural tab behavior, close menu if open
-        if (isOpen) {
-          setIsOpen(false)
-        }
+        if (isOpen) setIsOpen(false)
         break
     }
   }
 
   const clearSearch = () => {
     setSearchValue("")
-    // Use setTimeout to ensure the input ref is still valid after clearing
-    setTimeout(() => {
-      inputRef.current?.focus()
-    }, 0)
+    setTimeout(() => inputRef.current?.focus(), 0)
   }
 
+  // Searchable Mode Component
   if (isSearchable) {
-    // Destructure user event handlers to compose with internal handlers
-    const { onClick: userOnClick, ...restProps } = props
-
-    // Compose onClick handlers - internal first, then user callback
+    const { onClick: userOnClick, disabled, ...restProps } = props
     const composedOnClick = (e) => {
+      if (disabled) return
       handleInputClick(e)
-      if (userOnClick) {
-        userOnClick(e)
-      }
+      userOnClick?.(e)
     }
 
-
     return (
-      <SelectPrimitive.Trigger asChild>
+      <SelectPrimitive.Trigger disabled={disabled} asChild>
         <div
           ref={ref}
           className={cn(
-            "relative flex w-full items-center rounded-xl border shadow-sm ring-offset-background group",
-            "transition-all duration-300 ease-out cursor-pointer",
-            // Enhanced glass effect using form glass effects
-            glass ? cn(glassEffect.trigger, reducedTransparency, "backdrop-blur-xl") : getSelectStyles(),
-            // Focus states with glow effect
-            isFocused && "ring-2 ring-primary/30 border-primary/60 shadow-lg shadow-primary/10",
-            // Hover states with elevation
-            "hover:border-border/90 hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5",
-            // State-based styling
-            getSelectStateClasses(),
-            transition,
-            sizeClasses[effectiveSize],
+            // Base styling with Size System
+            "relative flex w-full items-center",
+            "size-radius",
+            "border shadow-sm ring-offset-background group cursor-pointer",
+
+            // Size System classes
+            "size-input",
+
+            // Glassmorphism with 6-tier system
+            glass && glassEffect ? cn(glassEffect, getGlassBlur, "supports-[backdrop-filter:blur(0)]:bg-background/20") : "bg-background/95",
+
+            // Brand colors and state feedback
+            getBrandColorClasses(),
+
+            // Enhanced animations and transitions
+            getStateClasses(),
+
+            // Disabled state
+            disabled && "pointer-events-none",
+
             className
           )}
           aria-invalid={error ? 'true' : 'false'}
+          aria-disabled={disabled ? 'true' : 'false'}
           aria-describedby={error ? `${props.id || 'select'}-error` : props['aria-describedby']}
           onClick={composedOnClick}
           {...handlers}
           {...restProps}
         >
-          {/* Search Icon */}
-          <div className="absolute left-4 flex items-center pointer-events-none z-10">
+          {/* Search Icon with Size System */}
+          <div className={cn("absolute left-4 flex items-center pointer-events-none z-10")}>
             <MagnifyingGlassIcon className={cn(
               "text-muted-foreground transition-colors duration-200",
-              (isFocused || searchValue) && "text-primary",
-              iconSizeClasses[effectiveSize]
+              (isFocused || searchValue) && "text-brand-dark-blue",
+              "size-icon"
             )} />
           </div>
 
           {/* Hidden SelectValue for Radix UI compatibility */}
-          <div className="sr-only">
-            {children}
-          </div>
+          <div className="sr-only">{children}</div>
 
-          {/* Search Input */}
+          {/* Enhanced Search Input */}
           <input
             ref={inputRef}
             type="text"
@@ -386,10 +585,9 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onFocus={(e) => {
+              if (disabled) return
               setIsFocused(true)
-              if (!isOpen) {
-                setIsOpen(true)
-              }
+              if (!isOpen) setIsOpen(true)
               e.stopPropagation()
             }}
             onBlur={(e) => {
@@ -397,10 +595,13 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
               e.stopPropagation()
             }}
             onClick={(e) => {
+              if (disabled) return
               e.stopPropagation()
               handleInputClick()
             }}
             placeholder={placeholderText}
+            disabled={disabled}
+            tabIndex={disabled ? -1 : undefined}
             role="combobox"
             aria-expanded={isOpen}
             aria-haspopup="listbox"
@@ -410,16 +611,16 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
             aria-label={placeholder || "Search and select an option"}
             aria-describedby={error ? `${props.id || 'select'}-error` : props['aria-describedby']}
             className={cn(
-              "flex-1 bg-transparent border-0 outline-none pl-10 pr-16 z-20 relative",
+              "flex-1 bg-transparent border-0 outline-none z-20 relative",
               "placeholder:text-muted-foreground/70 text-foreground font-medium",
-              "selection:bg-primary/20",
-              // Ensure input appears active and ready for typing
-              "caret-primary"
+              "selection:bg-brand-dark-blue/20 caret-brand-dark-blue",
+              "size-input-with-icon-left-padding",
+              "pr-16" // Space for clear and dropdown icons
             )}
           />
 
-          {/* Clear Button */}
-          {searchValue && (
+          {/* Enhanced Clear Button */}
+          {searchValue && !disabled && (
             <button
               type="button"
               onClick={(e) => {
@@ -434,9 +635,10 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
                 }
               }}
               className={cn(
-                "absolute right-12 p-1 rounded-md opacity-100 z-30",
-                "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                "transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                "absolute right-12 p-1 z-30",
+                "size-radius",
+                "text-muted-foreground hover:text-foreground hover:bg-brand-celeste/10",
+                "transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-brand-dark-blue/50"
               )}
               aria-label="Clear search"
             >
@@ -444,14 +646,14 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
             </button>
           )}
 
-          {/* Dropdown Icon */}
+          {/* Enhanced Dropdown Icon */}
           <SelectPrimitive.Icon asChild>
             <div className="absolute right-4 flex items-center pointer-events-none z-10">
               <ChevronDownIcon className={cn(
-                "text-muted-foreground transition-all duration-300 ease-out",
-                isOpen && "rotate-180 text-primary",
+                "text-muted-foreground transition-all duration-300 ease-smooth",
+                isOpen && "rotate-180 text-brand-dark-blue",
                 isHovered && "scale-110",
-                iconSizeClasses[effectiveSize]
+                "size-icon"
               )} />
             </div>
           </SelectPrimitive.Icon>
@@ -460,26 +662,33 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
     )
   }
 
-  // Traditional select trigger (non-searchable)
-  // For non-searchable, no internal onClick to compose, so handlers come from useInputStates
+  // Traditional Select Trigger (Non-searchable)
   return (
     <SelectPrimitive.Trigger
       ref={ref}
       className={cn(
-        "flex w-full items-center justify-between rounded-xl border shadow-sm ring-offset-background",
+        // Base styling with Size System
+        "flex w-full items-center justify-between",
+        "size-radius",
+        "border shadow-sm ring-offset-background",
         "disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-        // Enhanced typography and visual hierarchy
+
+        // Size System classes
+        "size-input",
+
+        // Enhanced typography
         "font-semibold text-foreground tracking-wide",
-        // Advanced focus states with glow
-        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60 focus:shadow-lg focus:shadow-primary/10",
-        // Sophisticated hover effects
-        "hover:border-border/90 hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5 hover:scale-[1.01]",
-        "transition-all duration-300 ease-out",
-        // Size and styling
-        sizeClasses[effectiveSize],
-        glass ? cn(glassEffect.trigger, reducedTransparency, "backdrop-blur-xl") : "bg-background/98 border-border/60 backdrop-blur-sm",
-        getSelectStateClasses(),
-        transition,
+
+        // Glassmorphism with 6-tier system
+        glass && glassEffect ? cn(glassEffect, getGlassBlur, "supports-[backdrop-filter:blur(0)]:bg-background/20") : "bg-background/95",
+
+        // Brand colors and state feedback
+        getBrandColorClasses(),
+
+        // Enhanced animations and transitions
+        getStateClasses(),
+        "hover:scale-[1.01]", // Additional hover scale for non-searchable
+
         className
       )}
       {...handlers}
@@ -489,10 +698,10 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
       <SelectPrimitive.Icon asChild>
         <div className="flex items-center justify-center transition-all duration-300">
           <ChevronDownIcon className={cn(
-            "text-muted-foreground transition-all duration-300 ease-out",
-            "data-[state=open]:rotate-180 data-[state=open]:text-primary",
+            "text-muted-foreground transition-all duration-300 ease-smooth",
+            "data-[state=open]:rotate-180 data-[state=open]:text-brand-dark-blue",
             isHovered && "scale-110",
-            iconSizeClasses[effectiveSize]
+            "size-icon"
           )} />
         </div>
       </SelectPrimitive.Icon>
@@ -501,51 +710,206 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
 })
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
 
-const SelectScrollUpButton = React.forwardRef(({ className, ...props }, ref) => (
-  <SelectPrimitive.ScrollUpButton
-    ref={ref}
-    className={cn("flex cursor-default items-center justify-center py-1 text-foreground/70", className)}
-    {...props}>
-    <ChevronUpIcon className="h-4 w-4" />
-  </SelectPrimitive.ScrollUpButton>
-))
+/**
+ * SelectScrollUpButton - Enhanced scroll up button with Size System and brand color integration
+ *
+ * Features:
+ * - Size System integration for consistent sizing
+ * - Brand color theming with hover/focus states
+ * - Enhanced interactivity with scale animations
+ * - Proper accessibility with focus rings
+ * - Performance optimized with memoization
+ * - Smooth transitions with bounce easing
+ *
+ * @param {string} size - Size variant: 'sm', 'md', 'lg' (inherits from SizeProvider if not specified)
+ * @param {string} className - Additional CSS classes
+ * @param {React.Ref} ref - Forward ref for DOM access
+ * @param {...object} props - All other props passed to underlying ScrollUpButton component
+ *
+ * @example
+ * ```jsx
+ * <SelectScrollUpButton /> // Standard size
+ * <SelectScrollUpButton size="lg" /> // Large variant
+ * <SelectScrollUpButton className="custom-class" /> // With custom styling
+ * ```
+ */
+const SelectScrollUpButton = React.forwardRef(({ className, size, ...props }, ref) => {
+  const contextSize = useSizeContext()
+  const effectiveSize = size || contextSize || 'md'
+
+  // Memoized classes for performance optimization using shared utility
+  const buttonClasses = React.useMemo(() => {
+    const sharedClasses = getScrollButtonSizeClasses(effectiveSize)
+
+    return {
+      button: cn(sharedClasses.button, className),
+      icon: sharedClasses.icon
+    }
+  }, [effectiveSize, className])
+
+  return (
+    <SelectPrimitive.ScrollUpButton
+      ref={ref}
+      className={buttonClasses.button}
+      aria-label="Scroll up to see more options"
+      {...props}
+    >
+      <ChevronUpIcon
+        className={cn(
+          buttonClasses.icon,
+          "transition-all duration-200 ease-bounce",
+          "group-hover:scale-110 group-hover:text-brand-dark-blue"
+        )}
+        aria-hidden="true"
+      />
+    </SelectPrimitive.ScrollUpButton>
+  )
+})
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName
 
-const SelectScrollDownButton = React.forwardRef(({ className, ...props }, ref) => (
-  <SelectPrimitive.ScrollDownButton
-    ref={ref}
-    className={cn("flex cursor-default items-center justify-center py-1 text-foreground/70", className)}
-    {...props}>
-    <ChevronDownIcon className="h-4 w-4" />
-  </SelectPrimitive.ScrollDownButton>
-))
-SelectScrollDownButton.displayName =
-  SelectPrimitive.ScrollDownButton.displayName
+/**
+ * SelectScrollDownButton - Enhanced scroll down button with Size System and brand color integration
+ *
+ * Features:
+ * - Size System integration for consistent sizing
+ * - Brand color theming with hover/focus states
+ * - Enhanced interactivity with scale animations
+ * - Proper accessibility with focus rings and labels
+ * - Performance optimized with memoization
+ * - Smooth transitions with bounce easing
+ * - Consistent styling with SelectScrollUpButton
+ *
+ * @param {string} size - Size variant: 'sm', 'md', 'lg' (inherits from SizeProvider if not specified)
+ * @param {string} className - Additional CSS classes
+ * @param {React.Ref} ref - Forward ref for DOM access
+ * @param {...object} props - All other props passed to underlying ScrollDownButton component
+ *
+ * @example
+ * ```jsx
+ * <SelectScrollDownButton /> // Standard size
+ * <SelectScrollDownButton size="lg" /> // Large variant
+ * <SelectScrollDownButton className="custom-class" /> // With custom styling
+ * ```
+ */
+const SelectScrollDownButton = React.forwardRef(({ className, size, ...props }, ref) => {
+  const contextSize = useSizeContext()
+  const effectiveSize = size || contextSize || 'md'
+
+  // Memoized classes for performance optimization using shared utility
+  const buttonClasses = React.useMemo(() => {
+    const sharedClasses = getScrollButtonSizeClasses(effectiveSize)
+
+    return {
+      button: cn(sharedClasses.button, className),
+      icon: sharedClasses.icon
+    }
+  }, [effectiveSize, className])
+
+  return (
+    <SelectPrimitive.ScrollDownButton
+      ref={ref}
+      className={buttonClasses.button}
+      aria-label="Scroll down to see more options"
+      {...props}
+    >
+      <ChevronDownIcon
+        className={cn(
+          buttonClasses.icon,
+          "transition-all duration-200 ease-bounce",
+          "group-hover:scale-110 group-hover:text-brand-dark-blue"
+        )}
+        aria-hidden="true"
+      />
+    </SelectPrimitive.ScrollDownButton>
+  )
+})
+SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName
 
 const SelectContent = React.forwardRef(({ className, children, position = "popper", size, glass = false, loading = false, ...props }, ref) => {
   const contextSize = useSizeContext()
-  const theme = useSafeResolvedTheme()
   const effectiveSize = size || contextSize || 'md'
-  const { isSearchable, searchValue, listboxId, setActiveDescendant } = React.useContext(SelectSearchContext) || {}
+  const { isSearchable, searchValue, listboxId, setActiveDescendant } = React.useContext(SelectInternalContext) || {}
   const viewportRef = React.useRef(null)
 
+  // Hook to detect if we're inside a dialog for proper z-index layering
+  const [isInDialog, setIsInDialog] = React.useState(false)
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const checkDialogContext = () => {
+      // Check if any dialog is currently open in the document
+      const hasOpenDialog = document.querySelector('[role="dialog"], [data-radix-dialog-content], [data-state="open"][role="dialog"]') !== null
+      setIsInDialog(hasOpenDialog)
+    }
+
+    // Check immediately
+    checkDialogContext()
+
+    // Set up observer for dynamic dialog opening/closing
+    const observer = new MutationObserver((mutations) => {
+      let shouldCheck = false
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' &&
+            (mutation.attributeName === 'data-state' || mutation.attributeName === 'role')) {
+          shouldCheck = true
+          break
+        }
+        if (mutation.type === 'childList') {
+          for (const node of [...mutation.addedNodes, ...mutation.removedNodes]) {
+            if (node.nodeType === Node.ELEMENT_NODE &&
+                (node.matches?.('[role="dialog"], [data-radix-dialog-content]') ||
+                 node.querySelector?.('[role="dialog"], [data-radix-dialog-content]'))) {
+              shouldCheck = true
+              break
+            }
+          }
+        }
+        if (shouldCheck) break
+      }
+      if (shouldCheck) {
+        setTimeout(checkDialogContext, 0) // Defer to next tick
+      }
+    })
+
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['data-state', 'role'],
+      childList: true,
+      subtree: true
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  // Size System classes for consistent scaling
   const sizeClasses = React.useMemo(() => ({
-    sm: "text-sm",
-    md: "text-sm",
-    lg: "text-base"
+    sm: "size-text-sm",
+    md: "size-text-sm",
+    lg: "size-text-base"
   }), [])
 
   const viewportSizeClasses = React.useMemo(() => ({
-    sm: "p-1.5",
-    md: "p-2",
-    lg: "p-2.5"
+    sm: "size-padding-sm",
+    md: "size-padding-md",
+    lg: "size-padding-lg"
   }), [])
 
-  const glassEffect = React.useMemo(() => getSelectGlass(glass, theme), [glass, theme])
-  const transition = React.useMemo(() => getFormGlassTransition(), [])
-  const reducedTransparencyContent = React.useMemo(() => glass ? getReducedTransparencyForm(glassEffect.content) : '', [glass, glassEffect.content])
+  // Enhanced glass effects with proper 6-tier system integration using utilities
+  const contentGlass = React.useMemo(() => getFormGlassForSize(glass, effectiveSize), [glass, effectiveSize])
+  const blur = React.useMemo(() => getResponsiveFormBlur(effectiveSize), [effectiveSize])
 
-  // Helper function to highlight matches in text
+  const glassEffect = React.useMemo(() => {
+    if (!glass) return { content: '' }
+    return {
+      content: `${contentGlass} bg-brand-celeste/5 border-brand-celeste/10 ${blur}`
+    }
+  }, [contentGlass, blur, glass])
+
+  const reducedTransparencyContent = React.useMemo(() => glass ? getReducedTransparencyForm(glassEffect.content) : '', [glass, glassEffect.content])
+  const performanceOptimization = React.useMemo(() => optimizeFormGlassPerformance(), [])
+
+  // Enhanced search result highlighting with brand colors for complex content
   const highlightMatches = React.useCallback((text, searchTerm) => {
     if (!searchTerm || !text) return text
 
@@ -559,7 +923,7 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
         return (
           <mark
             key={index}
-            className="bg-primary/20 text-primary font-medium rounded-sm px-0.5"
+            className={`bg-brand-sun/20 text-brand-dark-blue font-semibold rounded-sm px-0.5 border border-brand-sun/30 ${FORM_ANIMATION_CLASSES.base}`}
           >
             {part}
           </mark>
@@ -568,6 +932,33 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
       return part
     })
   }, [])
+
+  // Helper to highlight text nodes in complex React element trees
+  const highlightTextNodes = React.useCallback((node, searchTerm) => {
+    if (!searchTerm || !node) return node
+
+    // Handle plain text strings
+    if (typeof node === 'string') {
+      return highlightMatches(node, searchTerm)
+    }
+
+    // Handle React elements recursively
+    if (React.isValidElement(node)) {
+      return React.cloneElement(node, {
+        children: React.Children.map(node.props.children, child =>
+          highlightTextNodes(child, searchTerm)
+        )
+      })
+    }
+
+    // Handle arrays of children
+    if (Array.isArray(node)) {
+      return node.map((child) => highlightTextNodes(child, searchTerm))
+    }
+
+    // Return other types as-is (numbers, booleans, etc.)
+    return node
+  }, [highlightMatches])
 
   // Separate filtering logic from transformation
   const filteredChildren = React.useMemo(() => {
@@ -583,7 +974,7 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
     const filterItems = (items) => {
       const filtered = []
 
-      React.Children.forEach(items, (child) => {
+      React.Children.forEach(items, (child, index) => {
         if (!React.isValidElement(child)) {
           return
         }
@@ -599,14 +990,16 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
 
           // Case-insensitive partial match
           if (searchTarget.includes(searchTerm)) {
-            // Clone item with highlighted text
-            const highlightedChildren = typeof child.props.children === 'string'
+            // Clone item with enhanced highlighting for both simple text and complex content
+            const highlightedChildren = React.isValidElement(child.props.children)
+              ? highlightTextNodes(child.props.children, searchTerm)
+              : typeof child.props.children === 'string'
               ? highlightMatches(child.props.children, searchTerm)
               : child.props.children
 
             filtered.push(
               React.cloneElement(child, {
-                key: child.key,
+                key: child.key ?? child.props.value ?? `item-${index}`,
                 children: highlightedChildren
               })
             )
@@ -619,7 +1012,9 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
           const filteredGroupChildren = filterItems(child.props.children)
           if (filteredGroupChildren.length > 0) {
             filtered.push(
-              React.cloneElement(child, { key: child.key }, filteredGroupChildren)
+              React.cloneElement(child, {
+                key: child.key ?? child.props.label ?? `group-${index}`
+              }, filteredGroupChildren)
             )
           }
           return
@@ -630,7 +1025,9 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
             child.type?.displayName === 'SelectSeparator' ||
             child.type === SelectLabel ||
             child.type === SelectSeparator) {
-          filtered.push(child)
+          filtered.push(React.cloneElement(child, {
+            key: child.key ?? `${child.type?.displayName ?? 'element'}-${index}`
+          }))
         }
       })
 
@@ -638,7 +1035,7 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
     }
 
     return filterItems(children)
-  }, [children, isSearchable, searchValue, highlightMatches])
+  }, [children, isSearchable, searchValue, highlightMatches, highlightTextNodes])
 
   // Show "No results" message for searchable selects with no matches
   const showNoResults = React.useMemo(() => {
@@ -713,29 +1110,50 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
     }
   }, [isSearchable, setActiveDescendant])
 
+  // Get current context and create enhanced context value that includes glass state
+  const currentContext = React.useContext(SelectInternalContext)
+  const enhancedContextValue = React.useMemo(() => ({
+    ...(currentContext || {}),
+    contentGlass: glass
+  }), [currentContext, glass])
+
+  // Ensure listboxId is set on the viewport when searchable
+  React.useEffect(() => {
+    if (isSearchable && listboxId && viewportRef.current) {
+      viewportRef.current.setAttribute('id', listboxId)
+    }
+  }, [isSearchable, listboxId])
+
   return (
     <SelectPrimitive.Portal>
-      <SelectGlassContext.Provider value={glass}>
+      <SelectInternalContext.Provider value={enhancedContextValue}>
         <SelectPrimitive.Content
           ref={ref}
           className={cn(
-            "relative z-50 max-h-96 min-w-[12rem] overflow-hidden rounded-2xl border shadow-2xl",
-            // Enhanced glass effect with better depth and blur
-            glass ? cn(glassEffect.content, reducedTransparencyContent, "backdrop-blur-2xl") : "bg-popover/95 backdrop-blur-sm border-border/60",
+            // Dynamic z-index: higher when inside dialogs to ensure proper layering
+            `relative ${isInDialog ? 'z-[1050]' : 'z-50'} size-container max-h-96 min-w-[12rem] overflow-hidden rounded-2xl border shadow-2xl`,
+            // Enhanced 6-tier glassmorphism with brand color integration
+            glass ? cn(
+              glassEffect.content,
+              reducedTransparencyContent,
+              getBrandFormGlow('celeste', 'default')
+            ) : "bg-popover/95 backdrop-blur-sm border-border/60",
             "text-popover-foreground",
-            // Premium animations with spring physics
-            "animate-in fade-in-0 zoom-in-98 duration-300",
+            // Premium animations using form-animations.js utilities
+            FORM_ANIMATION_CLASSES.base,
+            "animate-in fade-in-0 zoom-in-98",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             "data-[state=closed]:zoom-out-98 data-[state=open]:zoom-in-98",
             "data-[state=closed]:duration-200 data-[state=open]:duration-300",
-            // Directional slide animations with enhanced smoothness
+            "data-[state=closed]:ease-smooth data-[state=open]:ease-bounce",
+            // Enhanced directional slide animations with spring physics
             "data-[side=bottom]:slide-in-from-top-3 data-[side=left]:slide-in-from-right-3",
             "data-[side=right]:slide-in-from-left-3 data-[side=top]:slide-in-from-bottom-3",
             position === "popper" &&
               "data-[side=bottom]:translate-y-2 data-[side=left]:-translate-x-2 data-[side=right]:translate-x-2 data-[side=top]:-translate-y-2",
             sizeClasses[effectiveSize],
-            transition,
+            performanceOptimization,
             className
           )}
           position={position}
@@ -756,22 +1174,26 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
             aria-label="Available options">
 
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-8 px-4 text-center" role="status" aria-live="polite">
-                <UpdateIcon className="h-8 w-8 text-muted-foreground/60 mb-3 animate-spin" aria-hidden="true" />
-                <p className="text-sm font-medium text-muted-foreground mb-1">
+              <div className="flex flex-col items-center justify-center size-padding-lg text-center glass-minimal bg-brand-celeste/5" role="status" aria-live="polite">
+                <UpdateIcon className="size-icon-lg text-brand-dark-blue mb-3 animate-spin" aria-hidden="true" style={{
+                  filter: 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.3))'
+                }} />
+                <p className="size-text-lg font-semibold text-brand-dark-blue mb-1 tracking-wide">
                   Loading options...
                 </p>
-                <p className="text-xs text-muted-foreground/70">
+                <p className="size-text-sm text-brand-dark-blue/70">
                   Please wait while we fetch the data
                 </p>
               </div>
             ) : showNoResults ? (
-              <div className="flex flex-col items-center justify-center py-8 px-4 text-center" role="status" aria-live="polite">
-                <MagnifyingGlassIcon className="h-8 w-8 text-muted-foreground/40 mb-3" aria-hidden="true" />
-                <p className="text-sm font-medium text-muted-foreground mb-1">
+              <div className="flex flex-col items-center justify-center size-padding-lg text-center glass-minimal bg-brand-celeste/5" role="status" aria-live="polite">
+                <MagnifyingGlassIcon className="size-icon-lg text-brand-celeste mb-3 animate-pulse-once" aria-hidden="true" style={{
+                  filter: 'drop-shadow(0 0 6px rgba(14, 165, 233, 0.3))'
+                }} />
+                <p className="size-text-lg font-semibold text-brand-celeste mb-1 tracking-wide">
                   No results found
                 </p>
-                <p className="text-xs text-muted-foreground/70">
+                <p className="size-text-sm text-brand-celeste/70">
                   Try a different search term
                 </p>
               </div>
@@ -783,27 +1205,74 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
 
           <SelectScrollDownButton />
         </SelectPrimitive.Content>
-      </SelectGlassContext.Provider>
+      </SelectInternalContext.Provider>
     </SelectPrimitive.Portal>
   )
 })
 SelectContent.displayName = SelectPrimitive.Content.displayName
 
+/**
+ * SelectLabel - Enhanced select label component with Size System integration and brand color theming
+ *
+ * Features:
+ * - Size System integration with consistent typography and spacing
+ * - Brand color theming with subtle glass effects
+ * - Enhanced visual hierarchy with gradient backgrounds
+ * - Performance optimized with memoization
+ * - Full accessibility compliance
+ *
+ * @param {string} size - Size variant: 'sm', 'md', 'lg' (inherits from SizeProvider if not specified)
+ * @param {string} className - Additional CSS classes
+ * @param {React.Ref} ref - Forward ref for DOM access
+ * @param {...object} props - All other props passed to underlying Label component
+ *
+ * @example
+ * ```jsx
+ * <SelectLabel size="md">Choose an option</SelectLabel>
+ * <SelectLabel className="text-brand-dark-blue">Custom styled label</SelectLabel>
+ * ```
+ */
 const SelectLabel = React.forwardRef(({ className, size, ...props }, ref) => {
   const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
 
-  const sizeClasses = {
-    sm: "px-1.5 py-1 text-xs",
-    md: "px-2 py-1.5 text-sm",
-    lg: "px-3 py-2 text-base"
-  }
+  // Memoized classes for performance optimization
+  const labelClasses = React.useMemo(() => {
+    // Size System classes for consistent scaling using sizeVariants
+    const variant = sizeVariants[effectiveSize] || sizeVariants.md
+    const sizeClasses = {
+      sm: `${variant.typography.small} ${variant.spacing.item}`,
+      md: `${variant.typography.text} ${variant.spacing.item}`,
+      lg: `${variant.typography.text} ${variant.spacing.item}`
+    }
+
+    return cn(
+      // Enhanced typography with brand color integration
+      "font-semibold tracking-wide text-brand-dark-blue",
+
+      // Subtle visual enhancements
+      "border-l-2 border-brand-celeste/20 rounded-r-md",
+      "bg-gradient-to-r from-brand-celeste/5 to-transparent",
+
+      // Size System integration using sizeVariants
+      sizeClasses[effectiveSize],
+
+      // Smooth transitions
+      FORM_ANIMATION_CLASSES.base,
+
+      // Performance optimizations
+      optimizeFormGlassPerformance(),
+
+      className
+    )
+  }, [effectiveSize, className])
 
   return (
     <SelectPrimitive.Label
       ref={ref}
-      className={cn("font-semibold", sizeClasses[effectiveSize], className)}
-      {...props} />
+      className={labelClasses}
+      {...props}
+    />
   )
 })
 SelectLabel.displayName = SelectPrimitive.Label.displayName
@@ -811,13 +1280,17 @@ SelectLabel.displayName = SelectPrimitive.Label.displayName
 const SelectItem = React.forwardRef(({ className, children, size, disabled, value, ...props }, ref) => {
   const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
-  const parentGlass = React.useContext(SelectGlassContext)
-  const { isSearchable, setSelectedLabel, setSearchValue, selectedValue, setActiveDescendant } = React.useContext(SelectSearchContext)
+  const { contentGlass: parentGlass } = React.useContext(SelectInternalContext) || {}
+  const { isSearchable, setSelectedLabel, setSearchValue, selectedValue, setActiveDescendant } = React.useContext(SelectInternalContext)
   const [isHovered, setIsHovered] = React.useState(false)
   const isMountedRef = React.useRef(false)
 
-  // Generate unique ID for this item
-  const itemId = React.useMemo(() => `select-option-${String(value).replace(/[^a-zA-Z0-9]/g, '-')}`, [value])
+  // Generate unique ID for this item with random suffix to avoid collisions
+  const uid = React.useMemo(() => Math.random().toString(36).slice(2, 7), [])
+  const itemId = React.useMemo(() => {
+    const sanitized = String(value).replace(/[^a-zA-Z0-9]/g, '-')
+    return `select-option-${sanitized}-${uid}`
+  }, [value, uid])
 
   // Set label when this item matches the selected value
   React.useEffect(() => {
@@ -838,25 +1311,36 @@ const SelectItem = React.forwardRef(({ className, children, size, disabled, valu
     }
   }, [isSearchable, selectedValue, value, children, setSelectedLabel])
 
+  // Size System classes for consistent scaling
   const sizeClasses = {
-    sm: "py-3.5 pl-5 pr-12 text-sm min-h-[44px]",
-    md: "py-4 pl-6 pr-14 text-sm min-h-[48px]",
-    lg: "py-5 pl-7 pr-16 text-base min-h-[52px]"
+    sm: "size-input-height-sm size-padding-sm size-text-sm",
+    md: "size-input-height-md size-padding-md size-text-sm",
+    lg: "size-input-height-lg size-padding-lg size-text-base"
   }
 
   const iconSizeClasses = {
-    sm: "h-4 w-4 right-4",
-    md: "h-4 w-4 right-5",
-    lg: "h-5 w-5 right-6"
+    sm: "size-icon-sm right-4",
+    md: "size-icon-md right-5",
+    lg: "size-icon-lg right-6"
   }
 
   const checkIconSizeClasses = {
-    sm: "h-4 w-4",
-    md: "h-4 w-4",
-    lg: "h-5 w-5"
+    sm: "size-icon-sm",
+    md: "size-icon-md",
+    lg: "size-icon-lg"
   }
 
-  const transition = getFormGlassTransition()
+  // Size-aware glass effects for SelectItem
+  const itemGlass = React.useMemo(() =>
+    getFormGlassForSize(parentGlass || false, effectiveSize),
+    [parentGlass, effectiveSize]
+  )
+
+  const itemBlur = React.useMemo(() =>
+    getResponsiveFormBlur(effectiveSize),
+    [effectiveSize]
+  )
+
 
   const handleSelect = (event) => {
     if (isSearchable) {
@@ -896,103 +1380,280 @@ const SelectItem = React.forwardRef(({ className, children, size, disabled, valu
       aria-selected={String(selectedValue) === String(value)}
       className={cn(
         "relative flex w-full cursor-pointer select-none items-center rounded-xl mx-1 outline-none group",
-        "transition-all duration-200 ease-out",
-        // Enhanced disabled state
+        FORM_ANIMATION_CLASSES.base,
+        // Enhanced disabled state with proper styling
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed",
-        // Sophisticated hover effects with glass morphism
-        "hover:bg-gradient-to-r hover:from-primary/8 hover:to-primary/4",
-        "hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.02] hover:-translate-y-0.5",
-        "hover:border hover:border-primary/20",
-        // Focus states with enhanced visibility
-        "focus:bg-gradient-to-r focus:from-primary/12 focus:to-primary/6 focus:text-foreground",
-        "focus:shadow-lg focus:shadow-primary/10 focus:ring-2 focus:ring-primary/20",
-        // Selected state with premium styling
-        "data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-primary/15 data-[state=checked]:to-primary/8",
-        "data-[state=checked]:text-primary data-[state=checked]:font-semibold",
-        "data-[state=checked]:shadow-lg data-[state=checked]:shadow-primary/10",
-        "data-[state=checked]:border data-[state=checked]:border-primary/30",
-        // Size and layout
+        "disabled:opacity-40 disabled:cursor-not-allowed",
+        // Default state with Celeste tinting and size-aware glass
+        itemGlass,
+        "bg-brand-celeste/5",
+        // Sophisticated hover effects with Dark Blue accents and size-aware blur
+        `hover:${scaleFormGlass(itemGlass, effectiveSize)} hover:${itemBlur}`,
+        "hover:bg-brand-celeste/10 hover:border-brand-celeste/20",
+        "hover:shadow-glow-brand-dark-blue/30 hover:scale-[1.01] hover:-translate-y-0.5",
+        "hover:ease-bounce",
+        // Focus states with enhanced Dark Blue styling and stronger glass
+        `focus:${scaleFormGlass('glass-medium', effectiveSize)} focus:${itemBlur}`,
+        "focus:bg-brand-dark-blue/10 focus:ring-2 focus:ring-brand-dark-blue/40",
+        "focus:shadow-glow-brand-dark-blue/40 focus:text-foreground",
+        // Selected state with Sun highlights and enhanced glass
+        `data-[state=checked]:${scaleFormGlass('glass-medium', effectiveSize)} data-[state=checked]:${itemBlur}`,
+        "data-[state=checked]:bg-brand-sun/15 data-[state=checked]:border-brand-sun/30",
+        "data-[state=checked]:text-brand-dark-blue data-[state=checked]:font-semibold",
+        "data-[state=checked]:shadow-glow-brand-sun/20",
+        // Size and layout with Size System
         sizeClasses[effectiveSize],
-        // Glass-specific enhancements
+        // Glass-specific enhancements with proper parent context and size-aware scaling
         parentGlass && [
-          "hover:bg-gradient-to-r hover:from-white/10 hover:to-white/5",
-          "focus:bg-gradient-to-r focus:from-white/15 focus:to-white/8",
-          "data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-primary/20 data-[state=checked]:to-primary/10"
+          itemGlass,
+          `hover:${scaleFormGlass('glass-subtle', effectiveSize)} hover:${itemBlur}`,
+          `focus:${scaleFormGlass('glass-medium', effectiveSize)} focus:${itemBlur}`,
+          `data-[state=checked]:${scaleFormGlass('glass-medium', effectiveSize)} data-[state=checked]:${itemBlur}`
         ],
-        transition,
+        optimizeFormGlassPerformance(),
         className
       )}
       {...props}>
 
-      {/* Check icon with smooth animations */}
+      {/* Enhanced check icon with brand colors */}
       <span className={cn(
-        "absolute flex items-center justify-center transition-all duration-200",
+        "absolute flex items-center justify-center",
+        FORM_ANIMATION_CLASSES.base,
         iconSizeClasses[effectiveSize]
       )}>
         <SelectPrimitive.ItemIndicator>
           <div className="relative">
             <CheckIcon className={cn(
-              "text-primary transition-all duration-200 ease-out",
+              "text-brand-dark-blue transition-all duration-200 ease-bounce",
               "scale-110 drop-shadow-sm",
+              "group-data-[state=checked]:shadow-glow-brand-dark-blue/40",
               checkIconSizeClasses[effectiveSize]
             )} />
-            {/* Subtle glow effect for selected state */}
-            <div className="absolute inset-0 rounded-full bg-primary/20 blur-sm scale-150 opacity-0 animate-ping" />
+            {/* Enhanced glow effect with Sun color accent */}
+            <div className="absolute inset-0 rounded-full bg-brand-sun/30 blur-sm scale-150 opacity-0 group-data-[state=checked]:animate-pulse-once" />
           </div>
         </SelectPrimitive.ItemIndicator>
       </span>
 
-      {/* Content with enhanced typography */}
+      {/* Enhanced content with Size System typography */}
       <SelectPrimitive.ItemText className={cn(
-        "font-medium tracking-wide transition-all duration-200",
+        "font-medium tracking-wide",
+        FORM_ANIMATION_CLASSES.base,
         "group-hover:text-foreground/90",
-        "group-data-[state=checked]:font-semibold group-data-[state=checked]:tracking-normal",
+        "group-data-[state=checked]:font-semibold group-data-[state=checked]:tracking-normal group-data-[state=checked]:text-brand-dark-blue",
         disabled && "text-muted-foreground/50"
       )}>
         {children}
       </SelectPrimitive.ItemText>
 
-      {/* Hover indicator */}
+      {/* Enhanced hover indicator with brand colors */}
       {isHovered && !disabled && (
-        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-transparent pointer-events-none" />
+        <div className={cn(
+          "absolute inset-0 rounded-xl bg-gradient-to-r from-brand-celeste/8 to-transparent pointer-events-none",
+          FORM_ANIMATION_CLASSES.base
+        )} />
       )}
     </SelectPrimitive.Item>
   )
 })
 SelectItem.displayName = SelectPrimitive.Item.displayName
 
-const SelectSeparator = React.forwardRef(({ className, ...props }, ref) => (
-  <SelectPrimitive.Separator
-    ref={ref}
-    className={cn(
-      "mx-2 my-2 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent",
-      "shadow-sm",
+/**
+ * SelectSeparator - Enhanced separator with 6-tier glassmorphism effects and brand color integration
+ *
+ * Features:
+ * - 6-tier glassmorphism system integration
+ * - Brand color gradients with Celeste accents
+ * - Size-aware spacing and visual weight
+ * - Optional glass overlay effects
+ * - Performance optimized rendering
+ * - Smooth animations and transitions
+ *
+ * @param {string|boolean} glass - Glass effect intensity: false, 'minimal', 'subtle', 'medium', 'strong'
+ * @param {string} size - Size variant for responsive spacing
+ * @param {string} className - Additional CSS classes
+ * @param {React.Ref} ref - Forward ref for DOM access
+ * @param {...object} props - All other props passed to underlying Separator component
+ *
+ * @example
+ * ```jsx
+ * <SelectSeparator /> // Standard separator
+ * <SelectSeparator glass="subtle" /> // With glass effects
+ * <SelectSeparator size="lg" className="my-4" /> // Large with custom spacing
+ * ```
+ */
+const SelectSeparator = React.forwardRef(({ className, glass = false, size, ...props }, ref) => {
+  const contextSize = useSizeContext()
+  const effectiveSize = size || contextSize || 'md'
+
+  // Memoized glass effects for performance
+  const glassEffect = React.useMemo(() => {
+    if (!glass) return null
+    const intensity = typeof glass === 'string' ? glass : 'minimal'
+    return getFormGlassForSize(intensity, effectiveSize)
+  }, [glass, effectiveSize])
+
+  // Size-aware spacing classes using sizeVariants
+  const spacingClasses = React.useMemo(() => {
+    const spacing = {
+      sm: `mx-1 my-1`,
+      md: `mx-2 my-2`,
+      lg: `mx-3 my-3`
+    }
+    return spacing[effectiveSize]
+  }, [effectiveSize])
+
+  // Enhanced separator classes with brand colors and glass effects
+  const separatorClasses = React.useMemo(() => {
+    return cn(
+      // Base styling with brand color gradients
+      "h-px bg-gradient-to-r from-transparent via-brand-celeste/30 to-transparent",
+      "relative overflow-hidden",
+
+      // Size-aware spacing
+      spacingClasses,
+
+      // Glass effects integration
+      glass && glassEffect && cn(
+        glassEffect,
+        "backdrop-blur-sm",
+        "shadow-glow-brand-celeste/10"
+      ),
+
+      // Enhanced shadow and depth
+      "shadow-sm drop-shadow-sm",
+
+      // Smooth transitions
+      FORM_ANIMATION_CLASSES.base,
+
+      // Performance optimizations
+      optimizeFormGlassPerformance(),
+
       className
-    )}
-    {...props} />
-))
+    )
+  }, [spacingClasses, glass, glassEffect, className])
+
+  return (
+    <SelectPrimitive.Separator
+      ref={ref}
+      className={separatorClasses}
+      {...props}
+    >
+      {/* Optional glass overlay effect */}
+      {glass && (
+        <div
+          className={cn(
+            "absolute inset-0 bg-gradient-to-r from-brand-celeste/10 via-brand-celeste/20 to-brand-celeste/10",
+            "animate-pulse-once opacity-50"
+          )}
+          aria-hidden="true"
+        />
+      )}
+    </SelectPrimitive.Separator>
+  )
+})
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName
 
-// Convenient hook for search functionality
-const useSelectSearch = () => {
-  const context = React.useContext(SelectSearchContext)
-  if (!context) {
-    // Return safe defaults when context is null (outside Select component)
-    return {
-      searchValue: "",
-      setSearchValue: () => {},
-      isSearchable: false,
-      isOpen: false,
-      setIsOpen: () => {},
-      onSearch: undefined,
-      selectedValue: "",
-      setSelectedValue: () => {},
-      selectedLabel: "",
-      setSelectedLabel: () => {},
-    }
-  }
-  return context
-}
+
+/**
+ * @fileoverview Enhanced Select Component System with Design Guidelines Integration
+ *
+ * A comprehensive select component system built on Radix UI primitives with extensive
+ * enhancements following the Design Guidelines. Features 6-tier glassmorphism effects,
+ * Size System integration, brand color theming, advanced search capabilities, and
+ * comprehensive accessibility support.
+ *
+ * ## Key Features:
+ *
+ * ### Design System Integration
+ * - **Size System**: Consistent sizing with 'sm', 'md', 'lg' variants
+ * - **6-Tier Glassmorphism**: 'minimal', 'subtle', 'medium', 'strong' glass effects
+ * - **Brand Colors**: Celeste, Dark Blue, and Sun color integration
+ * - **Typography**: Enhanced font weights, tracking, and spacing
+ *
+ * ### Advanced Functionality
+ * - **Searchable Selects**: Built-in search with debouncing and highlighting
+ * - **Glass Effects**: Sophisticated backdrop blur and transparency effects
+ * - **Real-time Filtering**: Dynamic option filtering with search highlighting
+ * - **Keyboard Navigation**: Full keyboard accessibility with ARIA support
+ *
+ * ### Performance Optimizations
+ * - **Memoized Calculations**: Expensive computations cached with React.useMemo
+ * - **Optimized Re-renders**: Strategic use of React.useCallback for event handlers
+ * - **Glass Performance**: Specialized optimizations for backdrop-filter operations
+ * - **Lazy Evaluation**: Size and glass effects computed on-demand
+ *
+ * ### Accessibility Compliance
+ * - **WCAG 2.1 AA**: Full compliance with accessibility standards
+ * - **Screen Reader Support**: Comprehensive ARIA labels and descriptions
+ * - **Keyboard Navigation**: Complete keyboard interaction support
+ * - **Focus Management**: Proper focus rings and visual indicators
+ *
+ * ## Usage Examples:
+ *
+ * ### Basic Select
+ * ```jsx
+ * <Select>
+ *   <SelectTrigger>
+ *     <SelectValue placeholder="Choose option..." />
+ *   </SelectTrigger>
+ *   <SelectContent>
+ *     <SelectItem value="item1">Item 1</SelectItem>
+ *     <SelectItem value="item2">Item 2</SelectItem>
+ *   </SelectContent>
+ * </Select>
+ * ```
+ *
+ * ### Searchable Select with Glass Effects
+ * ```jsx
+ * <Select searchable onSearch={handleSearch}>
+ *   <SelectTrigger glass="medium" size="lg">
+ *     <SelectValue placeholder="Search options..." />
+ *   </SelectTrigger>
+ *   <SelectContent glass="subtle">
+ *     <SelectGroup>
+ *       <SelectLabel>Group 1</SelectLabel>
+ *       <SelectItem value="item1">Item 1</SelectItem>
+ *       <SelectSeparator glass="minimal" />
+ *       <SelectItem value="item2">Item 2</SelectItem>
+ *     </SelectGroup>
+ *   </SelectContent>
+ * </Select>
+ * ```
+ *
+ * ### Size System Integration
+ * ```jsx
+ * <SizeProvider size="lg">
+ *   <Select>
+ *     <SelectTrigger glass="strong">
+ *       <SelectValue placeholder="Large select..." />
+ *     </SelectTrigger>
+ *     <SelectContent>
+ *       <SelectLabel>Large Labels</SelectLabel>
+ *       <SelectItem value="item">Large Item</SelectItem>
+ *     </SelectContent>
+ *   </Select>
+ * </SizeProvider>
+ * ```
+ *
+ * ## Performance Notes:
+ *
+ * - Glass effects are optimized with `optimizeFormGlassPerformance()`
+ * - Size calculations are memoized to prevent unnecessary recalculations
+ * - Event handlers use `React.useCallback` to prevent child re-renders
+ * - Search highlighting uses efficient string matching algorithms
+ *
+ * ## Accessibility Features:
+ *
+ * - Full ARIA labeling with role="combobox" for searchable selects
+ * - Proper focus management with visible focus rings
+ * - Screen reader announcements for state changes
+ * - Keyboard shortcuts for all interactions
+ * - High contrast mode support
+ *
+ * @version 2.0.0
+ * @author Infinibay Design System Team
+ */
 
 export {
   Select,

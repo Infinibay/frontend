@@ -5,6 +5,9 @@ import { AlertTriangle, X, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:components:critical-issues-alert');
 
 const CriticalIssuesAlert = ({ vmId }) => {
   // Mock critical issues - replace with real data
@@ -21,12 +24,12 @@ const CriticalIssuesAlert = ({ vmId }) => {
 
   const handleDismiss = (issueId) => {
     // TODO: Implement dismiss functionality
-    console.log('Dismissing issue:', issueId);
+    debug.log('dismiss', 'Dismissing issue:', issueId);
   };
 
   const handleQuickFix = (issueId) => {
     // TODO: Implement quick fix functionality
-    console.log('Quick fixing issue:', issueId);
+    debug.log('quickfix', 'Quick fixing issue:', issueId);
   };
 
   if (criticalIssues.length === 0) {

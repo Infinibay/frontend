@@ -417,6 +417,24 @@ query listServices($machineId: String!) {
   }
 }
 
+query listSecurityServices {
+  listSecurityServices {
+    id
+    name
+    description
+    category
+    priority
+    riskLevel
+    defaultUseEnabled
+    defaultProvideEnabled
+    ports {
+      number
+      protocol
+      description
+    }
+  }
+}
+
 query getVmServiceStatus($serviceId: ID!, $vmId: ID!) {
   getVmServiceStatus(serviceId: $serviceId, vmId: $vmId) {
     vmId

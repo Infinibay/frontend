@@ -8,6 +8,9 @@ import { Button } from '../../ui/button';
 import { Progress } from '../../ui/progress';
 import { Alert, AlertDescription } from '../../ui/alert';
 import { Badge } from '../../ui/badge';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:components:solution-steps');
 import {
   CheckCircle,
   Circle,
@@ -278,7 +281,7 @@ const SolutionSteps = ({
                             size="sm"
                             onClick={() => {
                               // TODO: Implement automated action
-                              console.log('Execute automated action:', step.automatedAction);
+                              debug.log('automation', 'Execute automated action:', step.automatedAction);
                             }}
                           >
                             <Play className="w-4 h-4 mr-2" />

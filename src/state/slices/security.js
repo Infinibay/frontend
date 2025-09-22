@@ -2,8 +2,11 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
 import { createDebugger } from '@/utils/debug';
 
+const debug = createDebugger('frontend:state:security');
+
 import {
     ListServicesDocument,
+    ListSecurityServicesDocument,
     GetVmServiceStatusDocument,
     GetDepartmentServiceStatusDocument,
     GetGlobalServiceStatusDocument,
@@ -17,9 +20,6 @@ import {
     // ApplyDepartmentServiceToAllDocument,
     // ResetVmServiceOverridesDocument
 } from '@/gql/hooks';
-
-// Create debug instance for security state
-const debug = createDebugger('frontend:state:security');
 
 // Helper functions for GraphQL operations
 const executeGraphQLMutation = async (document, variables = {}) => {
@@ -86,8 +86,8 @@ const executeGraphQLQuery = async (document, variables = {}) => {
 export const fetchServices = createAsyncThunk(
     'security/fetchServices',
     async () => {
-        const data = await executeGraphQLQuery(ListServicesDocument);
-        return data.listServices;
+        const data = await executeGraphQLQuery(ListSecurityServicesDocument);
+        return data.listSecurityServices;
     }
 );
 
@@ -580,16 +580,16 @@ export const selectServicesLoading = (state) => state.security.loading.services;
 export const selectVmServiceStatus = (state, serviceId) => state.security.vmServiceStatus[serviceId] || [];
 export const selectDepartmentServiceStatus = (state, serviceId) => state.security.departmentServiceStatus[serviceId];
 export const selectDepartmentVmsServiceStatus = (state, serviceId) => {
-    console.log("Selecting department VMs for serviceId:", serviceId);
-    console.log("Available VM statuses:", state.security.departmentVmsServiceStatus);
+    debug.log("selectors", "Selecting department VMs for serviceId:", serviceId);
+    debug.log("selectors", "Available VM statuses:", state.security.departmentVmsServiceStatus);
     const result = state.security.departmentVmsServiceStatus[serviceId] || [];
-    console.log("Result:", result);
+    debug.log("selectors", "Result:", result);
     return result;
 };
 export const selectGlobalServiceStatus = (state, serviceId) => state.security.globalServiceStatus[serviceId];
 export const selectServiceStatusSummary = (state) => state.security.serviceStatusSummary;
 export const selectSelectedDepartment = (state) => {
-    console.log("Selected department in state:", state.security.selectedDepartment);
+    debug.log("selectors", "Selected department in state:", state.security.selectedDepartment);
     return state.security.selectedDepartment;
 };
 export const selectServiceLoading = (state) => ({

@@ -3,6 +3,9 @@
  * Use this to check the status of debug panels and clean up duplicates
  */
 
+import { createDebugger } from './debug';
+const debug = createDebugger('frontend:utils:debug-panel-status');
+
 export const getDebugPanelStatus = () => {
   if (typeof window === 'undefined') {
     return { error: 'Not in browser environment' }
@@ -30,12 +33,12 @@ export const getDebugPanelStatus = () => {
 export const cleanupDebugPanels = () => {
   if (typeof window === 'undefined') return
 
-  console.log('🧹 Cleaning up debug panels...')
-  
+  debug.log('cleanup', '🧹 Cleaning up debug panels...')
+
   // Remove all debug panels from DOM
   const panels = document.querySelectorAll('#infinibay-debug-panel')
   panels.forEach((panel, index) => {
-    console.log(`Removing panel ${index + 1}`)
+    debug.log('cleanup', `Removing panel ${index + 1}`)
     panel.remove()
   })
 
@@ -51,18 +54,18 @@ export const cleanupDebugPanels = () => {
     styles.remove()
   }
 
-  console.log('✅ Cleanup complete')
+  debug.success('cleanup', '✅ Cleanup complete')
   return getDebugPanelStatus()
 }
 
 export const reinitializeDebugPanel = () => {
   if (typeof window === 'undefined') return
 
-  console.log('🔄 Reinitializing debug panel...')
-  
+  debug.log('reinit', '🔄 Reinitializing debug panel...')
+
   // Clean up first
   cleanupDebugPanels()
-  
+
   // Wait a bit then reinitialize
   setTimeout(() => {
     const debugConfig = localStorage.getItem('DEBUG')
@@ -80,9 +83,9 @@ if (typeof window !== 'undefined') {
   window.debugPanelStatus = getDebugPanelStatus
   window.cleanupDebugPanels = cleanupDebugPanels
   window.reinitializeDebugPanel = reinitializeDebugPanel
-  
-  console.log('🔧 Debug panel utilities loaded:')
-  console.log('- debugPanelStatus() - Check panel status')
-  console.log('- cleanupDebugPanels() - Remove all panels')
-  console.log('- reinitializeDebugPanel() - Clean and recreate panel')
+
+  debug.info('utilities', '🔧 Debug panel utilities loaded:')
+  debug.info('utilities', '- debugPanelStatus() - Check panel status')
+  debug.info('utilities', '- cleanupDebugPanels() - Remove all panels')
+  debug.info('utilities', '- reinitializeDebugPanel() - Clean and recreate panel')
 }

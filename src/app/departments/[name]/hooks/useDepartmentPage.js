@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:hooks:useDepartmentPage');
 
 // Redux actions
 import { 
@@ -66,10 +69,10 @@ export const useDepartmentPage = (departmentName) => {
           const result = await dispatch(fetchDepartmentByName(departmentName)).unwrap();
           // If the department wasn't found, we'll get null
           if (!result) {
-            console.log(`Department ${departmentName} not found`);
+            debug.warn('fetch', `Department ${departmentName} not found`);
           }
         } catch (error) {
-          console.error(`Error fetching department ${departmentName}:`, error);
+          debug.error('fetch', `Error fetching department ${departmentName}:`, error);
         }
       }
       
@@ -179,7 +182,7 @@ export const useDepartmentPage = (departmentName) => {
       });
       setShowToast(true);
     } catch (error) {
-      console.error("Failed to create department:", error);
+      debug.error('create', 'Failed to create department:', error);
       setToastProps({
         variant: "destructive",
         title: "Error",

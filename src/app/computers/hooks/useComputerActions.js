@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:hooks:useComputerActions');
 import {
   playVm,
   pauseVm,
@@ -70,7 +73,7 @@ export function useComputerActions() {
 
   const handleStop = async (machine) => {
     try {
-      console.log("Stopping machine:", machine);
+      debug.log('stop', 'Stopping machine:', machine);
       await dispatch(stopVm({ id: machine.id })).unwrap();
       setToastProps({
         title: "Success",

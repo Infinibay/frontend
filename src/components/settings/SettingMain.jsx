@@ -20,6 +20,9 @@ import { useAppTheme } from '@/contexts/ThemeProvider';
 import { getSystemTheme } from '@/utils/theme';
 import { applyWallpaperWithTransition, getAvailableWallpapers } from '@/utils/wallpaper';
 import { useSizeContext, sizeVariants, getTypographyClass, getLayoutSpacing, getGridClasses } from '@/components/ui/size-provider';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:components:settings-main');
 import {
   fetchAppSettings,
   updateAppSettings,
@@ -93,7 +96,7 @@ const SettingMain = () => {
       const timer = setTimeout(() => {
         try {
           if (process.env.NODE_ENV === 'development') {
-            console.log('Settings theme sync:', {
+            debug.info('theme', 'Settings theme sync:', {
               appSettingsTheme: appSettings.theme,
               currentTheme: theme,
               appSettingsInitialized,
@@ -102,7 +105,7 @@ const SettingMain = () => {
           }
           setTheme(appSettings.theme);
         } catch (error) {
-          console.error('Error setting theme:', error);
+          debug.error('theme', 'Error setting theme:', error);
         }
       }, 0);
 
@@ -134,7 +137,7 @@ const SettingMain = () => {
               try {
                 await dispatch(updateAppSettings({ wallpaper: wallpaperToApply.id })).unwrap();
               } catch (error) {
-                console.error('Error updating fallback wallpaper setting:', error);
+                debug.error('wallpaper', 'Error updating fallback wallpaper setting:', error);
               }
             }
 
@@ -153,7 +156,7 @@ const SettingMain = () => {
               };
             }
           } catch (error) {
-            console.error('Error applying wallpaper:', error);
+            debug.error('wallpaper', 'Error applying wallpaper:', error);
           }
         };
 
@@ -396,7 +399,7 @@ const SettingMain = () => {
         variant: "success",
       });
     } catch (error) {
-      console.error('Upload error:', error);
+      debug.error('upload', 'Upload error:', error);
       toast({
         title: "Error",
         description: `Failed to upload ISO file: ${error.message}`,
@@ -430,7 +433,7 @@ const SettingMain = () => {
     // Track last attempted wallpaper for retries
     lastAttemptedWallpaperRef.current = wallpaper;
 
-    console.log(`🎨 SettingMain [${opId}]: handleWallpaperSelect started at ${new Date().toISOString()}`, {
+    debug.log('wallpaper', `handleWallpaperSelect started [${opId}] at ${new Date().toISOString()}`, {
       wallpaper: { id: wallpaper?.id, name: wallpaper?.name },
       resolvedTheme,
       retryCount,
@@ -438,7 +441,7 @@ const SettingMain = () => {
     });
 
     if (!wallpaper) {
-      console.error(`🎨 SettingMain [${opId}]: No wallpaper provided`);
+      debug.error('wallpaper', `No wallpaper provided [${opId}]`);
       setWallpaperError('Invalid wallpaper selection');
       return;
     }
@@ -448,18 +451,18 @@ const SettingMain = () => {
     setWallpaperStatus({ step: 'Preparing wallpaper...', progress: 10 });
 
     try {
-      console.log(`🎨 SettingMain [${opId}]: Starting wallpaper application process`);
+      debug.log('wallpaper', `Starting wallpaper application process [${opId}]`);
 
       setWallpaperStatus({ step: 'Applying wallpaper transition...', progress: 30 });
 
       // Apply wallpaper with transition
       const result = await applyWallpaperWithTransition(wallpaper.url, resolvedTheme);
-      console.log(`🎨 SettingMain [${opId}]: Apply wallpaper result:`, result);
+      debug.info('wallpaper', `Apply wallpaper result [${opId}]:`, result);
 
       if (result.success) {
         setWallpaperStatus({ step: 'Saving preferences...', progress: 70 });
 
-        console.log(`🎨 SettingMain [${opId}]: Updating app settings with wallpaper ID: ${wallpaper.id}`);
+        debug.log('wallpaper', `Updating app settings [${opId}] with wallpaper ID: ${wallpaper.id}`);
 
         // Update app settings with timeout
         const updatePromise = dispatch(updateAppSettings({ wallpaper: wallpaper.id })).unwrap();
@@ -478,7 +481,7 @@ const SettingMain = () => {
         setWallpaperStatus({ step: 'Complete', progress: 100 });
 
         const totalTime = performance.now() - startTime;
-        console.log(`🎨 SettingMain [${opId}]: Wallpaper update completed successfully in ${totalTime.toFixed(2)}ms`);
+        debug.success('wallpaper', `Wallpaper update completed successfully [${opId}] in ${totalTime.toFixed(2)}ms`);
 
         toast({
           title: "Wallpaper Updated",
@@ -493,12 +496,12 @@ const SettingMain = () => {
           lastAttemptedWallpaperRef.current = null; // Clear on success
         }, 1500);
       } else {
-        console.error(`🎨 SettingMain [${opId}]: Apply wallpaper failed:`, result.message);
+        debug.error('wallpaper', `Apply wallpaper failed [${opId}]:`, result.message);
         throw new Error(result.message || 'Failed to apply wallpaper');
       }
     } catch (error) {
       const errorTime = performance.now() - startTime;
-      console.error(`🎨 SettingMain [${opId}]: Wallpaper selection failed after ${errorTime.toFixed(2)}ms:`, {
+      debug.error('wallpaper', `Wallpaper selection failed [${opId}] after ${errorTime.toFixed(2)}ms:`, {
         error: error.message,
         stack: error.stack,
         retryCount,
@@ -509,7 +512,7 @@ const SettingMain = () => {
       // Implement retry logic with exponential backoff
       if (retryCount < maxRetries && !error.message.includes('timeout')) {
         const backoffTime = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-        console.log(`🎨 SettingMain [${opId}]: Retrying in ${backoffTime}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        debug.info('wallpaper', `Retrying [${opId}] in ${backoffTime}ms (attempt ${retryCount + 1}/${maxRetries})`);
 
         setWallpaperStatus({ step: `Retrying in ${backoffTime / 1000}s...`, progress: 0 });
 
@@ -585,7 +588,7 @@ const SettingMain = () => {
         variant: "default",
       });
     } catch (error) {
-      console.error('Failed to update logo:', error);
+      debug.error('logo', 'Failed to update logo:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update logo",
@@ -609,7 +612,7 @@ const SettingMain = () => {
         variant: "default",
       });
     } catch (error) {
-      console.error('Failed to reset logo:', error);
+      debug.error('logo', 'Failed to reset logo:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to reset logo",

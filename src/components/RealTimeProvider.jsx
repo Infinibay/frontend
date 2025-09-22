@@ -77,7 +77,7 @@ export function RealTimeProvider({ children }) {
     }
 
     const cleanupRealTime = () => {
-      console.log('🧹 RealTimeProvider: Cleaning up real-time service')
+      debug.info('cleanup', '🧹 RealTimeProvider: Cleaning up real-time service')
       isCleanedUp = true
       
       if (initializationTimeout) {

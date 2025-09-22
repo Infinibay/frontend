@@ -2,6 +2,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:components:performance-overview');
 import {
   CheckCircle,
   AlertTriangle,
@@ -174,7 +177,7 @@ const PerformanceOverview = ({ status, vmId }) => {
                   className="px-3 py-1 text-xs bg-white/70 hover:bg-white/90 rounded-md transition-colors"
                   onClick={() => {
                     // Handle quick action
-                    console.log('Quick action:', action);
+                    debug.log('action', 'Quick action:', action);
                   }}
                 >
                   {action}

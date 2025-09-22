@@ -4,11 +4,14 @@ import { Shield, Monitor, Lock, LockOpen } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from '@/hooks/use-toast';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:components:security-section');
 
 // Import security components
 import SecurityTabs from './security/SecurityTabs';
-import GeneralTab from './security/GeneralTab';
 import OthersTab from './security/OthersTab';
+import DepartmentFirewallTab from './DepartmentFirewallTab';
 
 // Import security slice functions and selectors
 import { 
@@ -35,7 +38,7 @@ const SecuritySection = () => {
   
   // Local state
   const [selectedService, setSelectedService] = useState(null);
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState("firewall");
   const [enableAllToUse, setEnableAllToUse] = useState(false);
   const [enableAllToProvide, setEnableAllToProvide] = useState(false);
   
@@ -57,10 +60,10 @@ const SecuritySection = () => {
   
   // Get department-specific VM status from Redux
   const departmentVms = useSelector(state => {
-    console.log("Selecting VM service status for service:", selectedService);
-    console.log("Current state:", state.security);
+    debug.log("selectors", "Selecting VM service status for service:", selectedService);
+    debug.log("selectors", "Current state:", state.security);
     if (!selectedService) {
-      console.log("No selected service, returning empty array");
+      debug.log("selectors", "No selected service, returning empty array");
       return [];
     }
     return selectDepartmentVmsServiceStatus(state, selectedService);
@@ -72,24 +75,7 @@ const SecuritySection = () => {
   const handleServiceSelection = useCallback((serviceId) => {
     console.log("Setting serviceId to ", serviceId, effectiveDepartment?.id, 'lll');
     setSelectedService(serviceId);
-    
-    // Ensure we fetch data when service changes
-    if (serviceId && effectiveDepartment?.id) {
-      console.log("Fetching department service status for", serviceId, effectiveDepartment.id);
-      dispatch(fetchDepartmentServiceStatus({ 
-        serviceId, 
-        departmentId: effectiveDepartment.id 
-      }));
-      
-      console.log("Fetching VM service status for", serviceId, effectiveDepartment.id);
-      dispatch(fetchDepartmentVmsServiceStatus({
-        serviceId,
-        departmentId: effectiveDepartment.id
-      }));
-    } else {
-      console.log("Cannot fetch data - missing serviceId or departmentId", { serviceId, departmentId: effectiveDepartment?.id });
-    }
-  }, [dispatch, effectiveDepartment]);
+  }, [effectiveDepartment?.id]);
   
   // Fetch department ID by name
   useEffect(() => {
@@ -107,9 +93,18 @@ const SecuritySection = () => {
     console.log("Department changed:", effectiveDepartment);
     if (effectiveDepartment?.id && selectedService) {
       console.log("Department loaded, fetching service status for", selectedService, effectiveDepartment.id);
-      handleServiceSelection(selectedService);
+
+      dispatch(fetchDepartmentServiceStatus({
+        serviceId: selectedService,
+        departmentId: effectiveDepartment.id
+      }));
+
+      dispatch(fetchDepartmentVmsServiceStatus({
+        serviceId: selectedService,
+        departmentId: effectiveDepartment.id
+      }));
     }
-  }, [effectiveDepartment, selectedService, handleServiceSelection]);
+  }, [effectiveDepartment?.id, selectedService, dispatch]);
   
   // Fetch available services from API
   useEffect(() => {
@@ -126,33 +121,6 @@ const SecuritySection = () => {
     }
   }, [services, selectedService]);
   
-  // Update VM service status when service or department changes
-  useEffect(() => {
-    console.log("Service selection or department changed", { selectedService, departmentId: effectiveDepartment?.id });
-    
-    if (selectedService && effectiveDepartment?.id) {
-      console.log("Fetching service status with serviceId:", selectedService, "and departmentId:", effectiveDepartment.id);
-      
-      // Fetch status for the selected service
-      dispatch(fetchDepartmentServiceStatus({ 
-        serviceId: selectedService, 
-        departmentId: effectiveDepartment.id 
-      }));
-      
-      // Fetch VM-level status for the selected service
-      dispatch(fetchDepartmentVmsServiceStatus({
-        serviceId: selectedService,
-        departmentId: effectiveDepartment.id
-      }));
-      
-      // Set global status for the service
-      // setServiceStatusText(getSelectedService()?.statusText || "");
-    } else {
-      console.log("Cannot fetch service status: missing serviceId or departmentId", 
-        selectedService ? "serviceId is present" : "serviceId is missing",
-        effectiveDepartment?.id ? "departmentId is present" : "departmentId is missing");
-    }
-  }, [selectedService, effectiveDepartment, dispatch]);
   
   // Toggle service for VM
   const handleToggleVmService = (vmId, action) => {
@@ -184,14 +152,18 @@ const SecuritySection = () => {
       });
       // Refetch department service status to update the UI
       if (effectiveDepartment?.id) {
-        dispatch(fetchDepartmentServiceStatus({ 
-          serviceId: selectedService, 
-          departmentId: effectiveDepartment.id 
-        }));
+        dispatch(fetchDepartmentServiceStatus({
+          serviceId: selectedService,
+          departmentId: effectiveDepartment.id
+        })).catch(() => {
+          // Already handled by rejected action
+        });
         dispatch(fetchDepartmentVmsServiceStatus({
           serviceId: selectedService,
           departmentId: effectiveDepartment.id
-        }));
+        })).catch(() => {
+          // Already handled by rejected action
+        });
       }
     })
     .catch((error) => {
@@ -229,14 +201,18 @@ const SecuritySection = () => {
       });
       // Refetch department service status to update the UI
       if (effectiveDepartment?.id) {
-        dispatch(fetchDepartmentServiceStatus({ 
-          serviceId: selectedService, 
-          departmentId: effectiveDepartment.id 
-        }));
+        dispatch(fetchDepartmentServiceStatus({
+          serviceId: selectedService,
+          departmentId: effectiveDepartment.id
+        })).catch(() => {
+          // Already handled by rejected action
+        });
         dispatch(fetchDepartmentVmsServiceStatus({
           serviceId: selectedService,
           departmentId: effectiveDepartment.id
-        }));
+        })).catch(() => {
+          // Already handled by rejected action
+        });
       }
     })
     .catch((error) => {
@@ -355,23 +331,10 @@ const SecuritySection = () => {
       
       <div className="mt-6">
         {/* Render the appropriate tab content based on activeTab */}
-        {activeTab === "general" ? (
-          <GeneralTab 
-            selectedService={selectedService}
-            setSelectedService={handleServiceSelection}
-            mockServices={services || []}
-            getSelectedService={getSelectedService}
-            getRiskBadge={getRiskBadge}
-            enableAllToUse={enableAllToUse}
-            setEnableAllToUse={handleToggleAllUse}
-            enableAllToProvide={enableAllToProvide}
-            setEnableAllToProvide={handleToggleAllProvide}
-            mockVms={formatVmData()}
-            isVmEnabledToUse={isVmEnabledToUse}
-            isVmEnabledToProvide={isVmEnabledToProvide}
-            handleToggleUse={handleToggleUse}
-            handleToggleProvide={handleToggleProvide}
-            isLoading={isLoading}
+        {activeTab === "firewall" ? (
+          <DepartmentFirewallTab
+            departmentId={effectiveDepartment?.id}
+            departmentName={effectiveDepartment?.name || name}
           />
         ) : (
           <OthersTab />

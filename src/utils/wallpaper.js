@@ -2,6 +2,10 @@
  * Wallpaper management utilities for dynamic background changes
  */
 
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:utils:wallpaper');
+
 /**
  * Updates CSS custom properties for wallpaper changes
  * @param {string} wallpaperUrl - URL or path to the wallpaper image
@@ -17,7 +21,7 @@ export const updateWallpaperCSS = (wallpaperUrl, theme = 'light') => {
       root.style.setProperty('--wallpaper-url', `url('${wallpaperUrl}')`);
     }
   } catch (error) {
-    console.error('Failed to update wallpaper CSS:', error);
+    debug.error('css', 'Failed to update wallpaper CSS:', error);
   }
 };
 
@@ -32,7 +36,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
  */
 export const fetchAvailableWallpapers = async () => {
   try {
-    console.log('🖼️ fetchAvailableWallpapers: Fetching from /api/wallpapers');
+    debug.log('fetch', 'Fetching from /api/wallpapers');
     const response = await fetch('/api/wallpapers');
 
     if (!response.ok) {
@@ -40,7 +44,7 @@ export const fetchAvailableWallpapers = async () => {
     }
 
     const wallpapers = await response.json();
-    console.log('🖼️ fetchAvailableWallpapers: Received wallpapers:', wallpapers);
+    debug.success('fetch', 'Received wallpapers:', wallpapers);
 
     // Update cache
     wallpaperCache = wallpapers;
@@ -48,7 +52,7 @@ export const fetchAvailableWallpapers = async () => {
 
     return wallpapers;
   } catch (error) {
-    console.error('🖼️ fetchAvailableWallpapers: Failed to fetch wallpapers:', error);
+    debug.error('fetch', 'Failed to fetch wallpapers:', error);
     return [];
   }
 };
@@ -119,15 +123,15 @@ export const validateWallpaperFile = (file) => {
  * @returns {Promise} Promise that resolves when image is loaded
  */
 export const preloadWallpaper = (url) => {
-  console.log('🖼️ preloadWallpaper: Attempting to preload:', url);
+  debug.log('preload', 'Attempting to preload:', url);
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      console.log('🖼️ preloadWallpaper: Successfully loaded:', url);
+      debug.success('preload', 'Successfully loaded:', url);
       resolve(img);
     };
     img.onerror = (error) => {
-      console.error('🖼️ preloadWallpaper: Failed to load:', url, error);
+      debug.error('preload', 'Failed to load:', url, error);
       reject(new Error(`Failed to load wallpaper: ${url}`));
     };
     img.src = url;
@@ -146,7 +150,7 @@ export const resetToDefaultWallpaper = async (theme = 'light') => {
       updateWallpaperCSS(defaultWallpaper.url, theme);
     }
   } catch (error) {
-    console.error('Failed to reset to default wallpaper:', error);
+    debug.error('reset', 'Failed to reset to default wallpaper:', error);
   }
 };
 
@@ -206,7 +210,7 @@ export const applyWallpaperWithTransition = async (wallpaperUrl, theme = 'light'
     // Return success
     return { success: true, message: 'Wallpaper applied successfully' };
   } catch (error) {
-    console.error('Failed to apply wallpaper:', error);
+    debug.error('apply', 'Failed to apply wallpaper:', error);
     return { success: false, message: 'Failed to apply wallpaper' };
   }
 };

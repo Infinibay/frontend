@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
-import { Monitor } from 'lucide-react';
+import Image from 'next/image';
 
 /**
  * OthersTab Component
@@ -8,14 +8,27 @@ import { Monitor } from 'lucide-react';
  */
 const OthersTab = () => {
   return (
-    <Card className="p-6 border-2 border-muted shadow-md">
-      <div className="flex items-center gap-2 mb-4">
-        <Monitor className="h-5 w-5 text-primary" />
-        <h3 className="text-xl font-semibold">Other Security Settings</h3>
+    <Card className="p-12 border-2 border-muted shadow-md">
+      <div className="flex flex-col items-center justify-center text-center space-y-6">
+        <div className="w-48 h-48 flex items-center justify-center">
+          <Image
+            src="/images/under-construction.svg"
+            alt="Under Construction"
+            width={192}
+            height={192}
+            className="w-full h-full object-contain"
+          />
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-2xl font-semibold text-foreground">Under Construction</h3>
+          <p className="text-lg text-muted-foreground max-w-md">
+            This section is currently being developed. New security features will be available here soon.
+          </p>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          Stay tuned for updates!
+        </div>
       </div>
-      <p className="text-sm text-muted-foreground">
-        This section will contain additional security settings in future implementations.
-      </p>
     </Card>
   );
 };

@@ -1,5 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import auth from '@/utils/auth'
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:state:auth');
 
 
 const fetchCurrentUser = createAsyncThunk('auth/fetchCurrentUser', async (_, { getState }) => {
@@ -24,10 +27,10 @@ const getInitialState = () => {
 			const socketNamespace = localStorage.getItem('socketNamespace');
 			
 			// Log for debugging Chrome issue
-			console.log('🔍 Auth initial state from localStorage:', { 
-				hasToken: !!token, 
+			debug.info('init', 'Auth initial state from localStorage:', {
+				hasToken: !!token,
 				hasNamespace: !!socketNamespace,
-				namespace: socketNamespace 
+				namespace: socketNamespace
 			});
 			
 			return {
@@ -51,7 +54,7 @@ const getInitialState = () => {
 				}
 			};
 		} catch (error) {
-			console.error('❌ Error reading from localStorage:', error);
+			debug.error('init', 'Error reading from localStorage:', error);
 			// Fall through to default state
 		}
 	}
@@ -108,7 +111,7 @@ const authSlice = createSlice({
 			// Store in localStorage for persistence
 			if (typeof window !== 'undefined' && action.payload) {
 				localStorage.setItem('socketNamespace', action.payload);
-				console.log('✅ Socket namespace saved to localStorage:', action.payload);
+				debug.success('socket', 'Socket namespace saved to localStorage:', action.payload);
 			}
 		},
 		restoreAuthFromStorage: (state) => {
@@ -121,15 +124,15 @@ const authSlice = createSlice({
 					if (token) {
 						state.token = token;
 						state.isLoggedIn = true;
-						console.log('✅ Token restored from localStorage');
+						debug.success('restore', 'Token restored from localStorage');
 					}
 					
 					if (socketNamespace) {
 						state.socketNamespace = socketNamespace;
-						console.log('✅ Socket namespace restored from localStorage:', socketNamespace);
+						debug.success('restore', 'Socket namespace restored from localStorage:', socketNamespace);
 					}
 				} catch (error) {
-					console.error('❌ Error restoring auth from localStorage:', error);
+					debug.error('restore', 'Error restoring auth from localStorage:', error);
 				}
 			}
 		},
@@ -147,7 +150,7 @@ const authSlice = createSlice({
 
 				// Use namespace from backend response, or generate one if not provided
 				if (action.payload?.namespace) {
-					console.log('🔑 Using namespace from backend:', action.payload.namespace);
+					debug.info('namespace', 'Using namespace from backend:', action.payload.namespace);
 					state.socketNamespace = action.payload.namespace;
 					if (typeof window !== 'undefined') {
 						localStorage.setItem('socketNamespace', action.payload.namespace);
@@ -156,7 +159,7 @@ const authSlice = createSlice({
 					// Fallback: generate namespace using same format as backend
 					// Backend uses: user_${userId.substring(0, 8)}
 					const namespace = `user_${action.payload.id.substring(0, 8)}`;
-					console.log('🔑 Generated fallback namespace:', namespace);
+					debug.info('namespace', 'Generated fallback namespace:', namespace);
 					state.socketNamespace = namespace;
 					if (typeof window !== 'undefined') {
 						localStorage.setItem('socketNamespace', namespace);

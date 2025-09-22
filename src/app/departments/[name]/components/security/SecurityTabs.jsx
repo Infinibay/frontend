@@ -11,19 +11,19 @@ const SecurityTabs = ({ activeTab, setActiveTab }) => {
       <div className="flex">
         <button
           className={`flex items-center px-6 py-3 transition-colors ${
-            activeTab === "general" 
-              ? "bg-blue-900 border-b-2 border-blue-300" 
+            activeTab === "firewall"
+              ? "bg-blue-900 border-b-2 border-blue-300"
               : "bg-blue-700 hover:bg-blue-600"
           }`}
-          onClick={() => setActiveTab("general")}
+          onClick={() => setActiveTab("firewall")}
         >
           <Shield className="w-4 h-4 mr-2" />
-          <span>General</span>
+          <span>Firewall</span>
         </button>
         <button
           className={`flex items-center px-6 py-3 transition-colors ${
-            activeTab === "others" 
-              ? "bg-blue-900 border-b-2 border-blue-300" 
+            activeTab === "others"
+              ? "bg-blue-900 border-b-2 border-blue-300"
               : "bg-blue-700 hover:bg-blue-600"
           }`}
           onClick={() => setActiveTab("others")}

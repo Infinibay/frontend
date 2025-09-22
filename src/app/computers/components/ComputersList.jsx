@@ -8,6 +8,9 @@ import { LottieAnimation } from "@/components/ui/lottie-animation";
 import { Button } from "@/components/ui/button";
 import { fetchVms } from "@/state/slices/vms";
 import { countMachines } from "@/app/computers/utils/groupMachines";
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:components:computers-list');
 import { getGlassClasses } from "@/utils/glass-effects";
 import {
   DndContext,
@@ -125,7 +128,7 @@ export function ComputersList({
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
-    console.log('Drag end:', { active, over });
+    debug.log('drag', 'Drag end:', { active, over });
 
     setActiveId(null);
     setActiveMachine(null);

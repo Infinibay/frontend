@@ -7005,3 +7005,29 @@ export type VmDetailedInfoQueryResult = Apollo.QueryResult<VmDetailedInfoQuery, 
 export function refetchVmDetailedInfoQuery(variables: VmDetailedInfoQueryVariables) {
       return { query: VmDetailedInfoDocument, variables: variables }
     }
+
+// Manual addition for listSecurityServices
+export const ListSecurityServicesDocument = gql`
+    query listSecurityServices {
+  listSecurityServices {
+    id
+    name
+    description
+    riskLevel
+    ports {
+      portStart
+      portEnd
+      protocol
+    }
+  }
+}
+    `;
+
+export function useListSecurityServicesQuery(baseOptions?: Apollo.QueryHookOptions<any, any>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery(ListSecurityServicesDocument, options);
+      }
+
+export function refetchListSecurityServicesQuery() {
+      return { query: ListSecurityServicesDocument, variables: {} }
+    }

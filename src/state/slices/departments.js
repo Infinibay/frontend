@@ -1,5 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:state:departments');
 
 import {
     DepartmentsDocument,
@@ -14,7 +17,7 @@ const executeGraphQLMutation = async (mutation, variables) => {
         const { data } = await client.mutate({ mutation, variables });
         return data;
     } catch (error) {
-        console.error('GraphQL mutation error:', error);
+        debug.error('mutation', 'GraphQL mutation error:', error);
         throw error;
     }
 };
@@ -30,7 +33,7 @@ const executeGraphQLQuery = async (query, variables = {}) => {
         // Check for GraphQL errors in the response
         if (response.errors) {
             const errorMessage = response.errors.map(err => err.message).join(', ');
-            console.error('GraphQL query error:', errorMessage);
+            debug.error('query', 'GraphQL query error:', errorMessage);
             throw new Error(errorMessage);
         }
 
@@ -39,20 +42,20 @@ const executeGraphQLQuery = async (query, variables = {}) => {
 
         // Check if the data exists
         if (response.data[firstKey] === undefined) {
-            console.warn(`GraphQL query returned undefined for ${firstKey}`);
+            debug.warn('query', `GraphQL query returned undefined for ${firstKey}`);
             return { [firstKey]: null };
         }
 
         // Check for errors in the data response
         if (response.data[firstKey]?.errors) {
             const errorMessage = response.data[firstKey].errors.map(err => err.message).join(', ');
-            console.error('GraphQL data error:', errorMessage);
+            debug.error('query', 'GraphQL data error:', errorMessage);
             throw new Error(errorMessage);
         }
 
         return response.data;
     } catch (error) {
-        console.error('GraphQL query error:', error);
+        debug.error('query', 'GraphQL query error:', error);
         // Re-throw the error so it can be handled by the calling function
         throw error;
     }
@@ -81,7 +84,7 @@ export const fetchDepartmentByName = createAsyncThunk(
             const data = await executeGraphQLQuery(FindDepartmentByNameDocument, { name });
             return data.findDepartmentByName;
         } catch (error) {
-            console.error(`Error fetching department by name "${name}":`, error);
+            debug.error('fetchByName', `Error fetching department by name "${name}":`, error);
             return rejectWithValue(error.message);
         }
     }
@@ -130,7 +133,7 @@ const departmentsSlice = createSlice({
             const existingIndex = state.items.findIndex(dept => dept.id === newDepartment.id);
             if (existingIndex === -1) {
                 state.items.push(newDepartment);
-                console.log('✅ Real-time: Department created', newDepartment.name);
+                debug.success('realtime', 'Department created', newDepartment.name);
             }
         },
         realTimeDepartmentUpdated: (state, action) => {
@@ -138,14 +141,14 @@ const departmentsSlice = createSlice({
             const index = state.items.findIndex(dept => dept.id === updatedDepartment.id);
             if (index !== -1) {
                 state.items[index] = updatedDepartment;
-                console.log('✅ Real-time: Department updated', updatedDepartment.name);
+                debug.success('realtime', 'Department updated', updatedDepartment.name);
             }
         },
         realTimeDepartmentDeleted: (state, action) => {
             const deletedDepartment = action.payload;
             const deptId = deletedDepartment.id || deletedDepartment;
             state.items = state.items.filter(dept => dept.id !== deptId);
-            console.log('✅ Real-time: Department deleted', deptId);
+            debug.success('realtime', 'Department deleted', deptId);
         }
     },
     extraReducers: (builder) => {

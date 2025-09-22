@@ -1,5 +1,8 @@
 import { useMemo, useCallback } from 'react';
 import { useQuery } from '@apollo/client';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:hooks:useVMRecommendations');
 
 // Import GraphQL query from shared document
 // This module reads from the actual .graphql file to maintain single source of truth
@@ -183,14 +186,14 @@ const useVMRecommendations = (vmId, options = {}) => {
   // Refresh recommendations with force refresh - triggers new health scan and gets latest snapshot
   const refreshRecommendations = useCallback(async () => {
     try {
-      console.log('Forcing refresh to get latest snapshot recommendations for VM:', vmId);
+      debug.log('refresh', 'Forcing refresh to get latest snapshot recommendations for VM:', vmId);
       await refetch({
         vmId,
         filter,
         refresh: true // This triggers backend to create new health snapshot
       });
     } catch (error) {
-      console.error('Error refreshing recommendations from latest snapshot:', error);
+      debug.error('refresh', 'Error refreshing recommendations from latest snapshot:', error);
     }
   }, [refetch, vmId, filter]);
 

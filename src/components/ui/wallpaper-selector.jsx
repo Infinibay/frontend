@@ -9,6 +9,9 @@ import { cn } from '@/lib/utils';
 import { useSizeContext } from './size-provider';
 import { CheckCircle, Loader2, ImageIcon, RefreshCw, AlertTriangle, RotateCcw, Clock, Shield, Wifi, Server } from 'lucide-react';
 import { getAvailableWallpapers, preloadWallpaper, refreshWallpapers } from '@/utils/wallpaper';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:components:wallpaper-selector');
 
 /**
  * WallpaperSelector Component
@@ -61,7 +64,7 @@ const WallpaperSelector = ({
   const loadWallpapers = async () => {
     // Prevent concurrent fetch operations
     if (inFlightRef.current) {
-      console.log('🖼️ WallpaperSelector: Load operation already in progress, skipping');
+      debug.warn('load', 'Load operation already in progress, skipping');
       return;
     }
 
@@ -71,7 +74,7 @@ const WallpaperSelector = ({
     inFlightRef.current = true;
 
     try {
-      console.log(`🖼️ WallpaperSelector [${opId}]: Loading wallpapers at ${new Date().toISOString()}`);
+      debug.log('load', `Loading wallpapers [${opId}] at ${new Date().toISOString()}`);
       setWallpapersLoading(true);
       setWallpapersError(null);
       setWallpapersErrorType(null);
@@ -82,18 +85,18 @@ const WallpaperSelector = ({
 
       // Check if this operation is still current
       if (currentOperationRef.current !== opId) {
-        console.log(`🖼️ WallpaperSelector [${opId}]: Operation superseded, discarding results`);
+        debug.warn('load', `Operation superseded [${opId}], discarding results`);
         return;
       }
 
-      console.log(`🖼️ WallpaperSelector [${opId}]: Successfully fetched ${fetchedWallpapers.length} wallpapers`);
+      debug.success('load', `Successfully fetched ${fetchedWallpapers.length} wallpapers [${opId}]`);
       setWallpapers(fetchedWallpapers);
 
       setLoadingProgress({ step: 'Complete', progress: 100 });
       const timeoutId = setTimeout(() => setLoadingProgress({ step: '', progress: 0 }), 500);
       timeoutsRef.current.push(timeoutId);
     } catch (error) {
-      console.error(`🖼️ WallpaperSelector [${opId}]: Failed to load wallpapers:`, {
+      debug.error('load', `Failed to load wallpapers [${opId}]:`, {
         error: error.message,
         stack: error.stack,
         timestamp: new Date().toISOString()
@@ -132,7 +135,7 @@ const WallpaperSelector = ({
   const handleRefresh = async (retryCount = 0) => {
     // Prevent concurrent refresh operations
     if (inFlightRef.current && retryCount === 0) {
-      console.log('🔄 WallpaperSelector: Refresh operation already in progress, skipping');
+      debug.warn('refresh', 'Refresh operation already in progress, skipping');
       return;
     }
 
@@ -145,7 +148,7 @@ const WallpaperSelector = ({
     }
 
     try {
-      console.log(`🔄 WallpaperSelector [${opId}]: Refreshing wallpapers (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      debug.log('refresh', `Refreshing wallpapers [${opId}] (attempt ${retryCount + 1}/${maxRetries + 1})`);
       setRefreshing(true);
       setLoadingProgress({ step: 'Refreshing wallpapers...', progress: 25 });
 
@@ -153,7 +156,7 @@ const WallpaperSelector = ({
 
       // Check if this operation is still current
       if (currentOperationRef.current !== opId && retryCount === 0) {
-        console.log(`🔄 WallpaperSelector [${opId}]: Refresh operation superseded, discarding results`);
+        debug.warn('refresh', `Refresh operation superseded [${opId}], discarding results`);
         return;
       }
 
@@ -165,12 +168,12 @@ const WallpaperSelector = ({
       setImageErrors(new Set());
 
       setLoadingProgress({ step: 'Refresh complete', progress: 100 });
-      console.log(`🔄 WallpaperSelector [${opId}]: Successfully refreshed ${fetchedWallpapers.length} wallpapers`);
+      debug.success('refresh', `Successfully refreshed ${fetchedWallpapers.length} wallpapers [${opId}]`);
 
       const refreshTimeoutId = setTimeout(() => setLoadingProgress({ step: '', progress: 0 }), 500);
       timeoutsRef.current.push(refreshTimeoutId);
     } catch (error) {
-      console.error(`🔄 WallpaperSelector [${opId}]: Refresh failed (attempt ${retryCount + 1}):`, {
+      debug.error('refresh', `Refresh failed [${opId}] (attempt ${retryCount + 1}):`, {
         error: error.message,
         retryCount,
         timestamp: new Date().toISOString()
@@ -179,7 +182,7 @@ const WallpaperSelector = ({
       // Implement exponential backoff retry
       if (retryCount < maxRetries) {
         const backoffTime = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-        console.log(`🔄 WallpaperSelector [${opId}]: Retrying in ${backoffTime}ms`);
+        debug.info('refresh', `Retrying [${opId}] in ${backoffTime}ms`);
         const retryTimeoutId = setTimeout(() => handleRefresh(retryCount + 1), backoffTime);
         timeoutsRef.current.push(retryTimeoutId);
         return;
@@ -214,7 +217,7 @@ const WallpaperSelector = ({
     const opId = Date.now().toString();
     const startTime = performance.now();
 
-    console.log(`🎨 WallpaperSelector [${opId}]: Selection started at ${new Date().toISOString()}`, {
+    debug.log('select', `Selection started [${opId}] at ${new Date().toISOString()}`, {
       wallpaperId,
       loading,
       selectedWallpaper,
@@ -222,18 +225,18 @@ const WallpaperSelector = ({
     });
 
     if (loading || wallpaperId === selectedWallpaper) {
-      console.log(`🎨 WallpaperSelector [${opId}]: Early return - ${loading ? 'loading' : 'already selected'}`);
+      debug.warn('select', `Early return [${opId}] - ${loading ? 'loading' : 'already selected'}`);
       return;
     }
 
     const wallpaper = wallpapers.find(w => w.id === wallpaperId);
 
     if (!wallpaper) {
-      console.error(`🎨 WallpaperSelector [${opId}]: Wallpaper not found for ID: ${wallpaperId}`);
+      debug.error('select', `Wallpaper not found [${opId}] for ID: ${wallpaperId}`);
       return;
     }
 
-    console.log(`🎨 WallpaperSelector [${opId}]: Starting selection process for:`, {
+    debug.log('select', `Starting selection process [${opId}] for:`, {
       id: wallpaper.id,
       name: wallpaper.name,
       url: wallpaper.url
@@ -249,11 +252,11 @@ const WallpaperSelector = ({
 
       setLoadingProgress({ step: 'Applying wallpaper...', progress: 75 });
       const preloadTime = performance.now() - startTime;
-      console.log(`🎨 WallpaperSelector [${opId}]: Preload completed in ${preloadTime.toFixed(2)}ms`);
+      debug.info('select', `Preload completed [${opId}] in ${preloadTime.toFixed(2)}ms`);
 
       // Call parent handler
       if (onWallpaperSelect) {
-        console.log(`🎨 WallpaperSelector [${opId}]: Calling parent onWallpaperSelect`);
+        debug.log('select', `Calling parent onWallpaperSelect [${opId}]`);
         await onWallpaperSelect(wallpaper);
 
         setLoadingProgress({ step: 'Complete', progress: 100 });
@@ -264,13 +267,13 @@ const WallpaperSelector = ({
         timeoutsRef.current.push(successTimeoutId);
 
         const totalTime = performance.now() - startTime;
-        console.log(`🎨 WallpaperSelector [${opId}]: Selection completed successfully in ${totalTime.toFixed(2)}ms`);
+        debug.success('select', `Selection completed successfully [${opId}] in ${totalTime.toFixed(2)}ms`);
       } else {
-        console.warn(`🎨 WallpaperSelector [${opId}]: onWallpaperSelect callback not provided!`);
+        debug.warn('select', `onWallpaperSelect callback not provided [${opId}]!`);
       }
     } catch (error) {
       const errorTime = performance.now() - startTime;
-      console.error(`🎨 WallpaperSelector [${opId}]: Selection failed after ${errorTime.toFixed(2)}ms:`, {
+      debug.error('select', `Selection failed [${opId}] after ${errorTime.toFixed(2)}ms:`, {
         error: error.message,
         stack: error.stack,
         wallpaper: { id: wallpaper.id, name: wallpaper.name },
@@ -292,7 +295,7 @@ const WallpaperSelector = ({
    */
   const handleImageError = (wallpaperId, event) => {
     const wallpaper = wallpapers.find(w => w.id === wallpaperId);
-    console.error('🖼️ WallpaperSelector: Image load error:', {
+    debug.error('image', 'Image load error:', {
       wallpaperId,
       wallpaperName: wallpaper?.name,
       wallpaperUrl: wallpaper?.url,
@@ -307,7 +310,7 @@ const WallpaperSelector = ({
    * Retry loading a failed image
    */
   const retryImageLoad = (wallpaperId) => {
-    console.log(`🔄 WallpaperSelector: Retrying image load for ${wallpaperId}`);
+    debug.info('image', `Retrying image load for ${wallpaperId}`);
     setImageErrors(prev => {
       const newSet = new Set(prev);
       newSet.delete(wallpaperId);

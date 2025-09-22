@@ -352,7 +352,7 @@ const vmsSlice = createSlice({
       const deletedVm = action.payload;
       const vmId = deletedVm.id || deletedVm;
       state.items = state.items.filter(vm => vm.id !== vmId);
-      console.log('✅ Real-time: VM deleted', vmId);
+      debug.success('realtime', 'VM deleted', vmId);
 
       // Clear selected machine if it was deleted
       if (state.selectedMachine?.id === vmId) {
@@ -365,7 +365,7 @@ const vmsSlice = createSlice({
       if (index !== -1) {
         // Update the VM with new data, especially status
         state.items[index] = { ...state.items[index], ...vmData };
-        console.log(`✅ Real-time: VM ${statusAction}`, state.items[index].name);
+        debug.success('realtime', `VM ${statusAction}`, state.items[index].name);
 
         // Update selected machine if it's the one being updated
         if (state.selectedMachine?.id === id) {
