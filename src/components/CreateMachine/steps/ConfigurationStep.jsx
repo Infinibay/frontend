@@ -13,8 +13,6 @@ import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { LottieAnimation } from '@/components/ui/lottie-animation';
-import { useSafeResolvedTheme } from '@/utils/safe-theme';
-import { getWizardStepCardClasses } from '@/utils/wizard-glass-helpers';
 
 const osOptions = [
   {
@@ -53,7 +51,6 @@ export function ConfigurationStep({ id }) {
   const { getError } = useFormError();
   const stepValues = values[id] || {};
   const router = useRouter();
-  const theme = useSafeResolvedTheme();
 
   // Check ISO availability - checkOnMount: true handles the initial check
   const {
@@ -87,10 +84,10 @@ export function ConfigurationStep({ id }) {
               return (
                 <Card
                   key={os.id}
-                  glow="none"
+                  glass="subtle"
                   className={cn(
                     'relative transition-all duration-300',
-                    getWizardStepCardClasses(theme),
+                    "glass-subtle border border-border/20",
                     !isDisabled && 'cursor-pointer hover:scale-105 hover:z-10',
                     isDisabled && 'opacity-60 cursor-not-allowed',
                     stepValues.os === os.id && !isDisabled && 'ring-2 ring-primary/50 bg-primary/10',
@@ -149,7 +146,7 @@ export function ConfigurationStep({ id }) {
 
       {/* Informational message if some ISOs are missing */}
       {!loading && osOptions.some(os => !isOSAvailable(os.id)) && (
-        <div className={cn("relative p-4 rounded-lg overflow-visible", getWizardStepCardClasses(theme), "bg-blue-500/10 border-blue-500/20")}>
+        <div className={cn("relative p-4 rounded-lg overflow-visible", "glass-subtle border border-border/20", "bg-blue-500/10 border-blue-500/20")}>
           <div className="space-y-2 pr-40">
             <h4 className="font-medium text-slate-900 dark:text-slate-100">
               What does "ISO Required" mean?
@@ -184,7 +181,7 @@ export function ConfigurationStep({ id }) {
 
       {/* Warning message if no ISOs available */}
       {!loading && !isReady && (
-        <div className={cn("p-4 rounded-lg", getWizardStepCardClasses(theme), "bg-yellow-500/10 border-yellow-500/20")}>
+        <div className={cn("p-4 rounded-lg", "glass-subtle border border-border/20", "bg-yellow-500/10 border-yellow-500/20")}>
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
             <div>

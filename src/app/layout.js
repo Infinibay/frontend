@@ -16,7 +16,6 @@ import auth from '@/utils/auth';
 import { Toast, ToastTitle, ToastDescription, ToastProvider, ToastViewport } from '@/components/ui/toast';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
-import { createDepartment as createDepartmentAction } from '@/state/slices/departments';
 import { selectInterfaceSize, selectAppSettingsInitialized, selectTheme, selectAppSettings } from '@/state/slices/appSettings';
 import { SizeProvider } from "@/components/ui/size-provider";
 import { Toaster } from "@/components/ui/toaster";
@@ -38,29 +37,14 @@ function AppContent({ children, isAuthenticated }) {
   const dispatch = useDispatch();
   const pathname = usePathname();
   const user = useSelector((state) => state.auth.user);
-  const departments = useSelector((state) => state.departments.items);
   const interfaceSize = useSelector(selectInterfaceSize);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
   const [open, setOpen] = useState(false);
   const [toastData, setToastData] = useState({ title: '', description: '', variant: 'default' });
 
-  const handleCreateDepartment = async (name) => {
-    try {
-      await dispatch(createDepartmentAction({ name })).unwrap();
-      setToastData({
-        title: "Success",
-        description: "Department created successfully",
-        variant: "success"
-      });
-      setOpen(true);
-    } catch (error) {
-      setToastData({
-        title: "Error",
-        description: error.message || "Failed to create department",
-        variant: "destructive"
-      });
-      setOpen(true);
-    }
+  const handleLogout = () => {
+    auth.clearToken();
+    window.location.href = '/auth/sign-in';
   };
 
   if (!isAuthenticated || pathname === '/auth/sign-in' || pathname === '/auth/sign-up') {
@@ -79,8 +63,7 @@ function AppContent({ children, isAuthenticated }) {
             role: user.role,
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`,
           } : null}
-          departments={departments || []}
-          onCreateDepartment={handleCreateDepartment}
+          onLogOut={handleLogout}
         />
         <main className="flex-1 px-6 md:px-8 main-content relative z-10">
           {children}

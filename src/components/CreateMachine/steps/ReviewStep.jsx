@@ -6,8 +6,6 @@ import { useWizardContext } from '@/components/ui/wizard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, Package } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import { useSafeResolvedTheme } from '@/utils/safe-theme';
-import { getWizardStepCardClasses, getWizardStepCardStyles } from '@/utils/wizard-glass-helpers';
 import { cn } from '@/lib/utils';
 
 const operatingSystems = {
@@ -30,7 +28,6 @@ export function ReviewStep({ id }) {
   const { values } = useWizardContext();
   const templates = useSelector((state) => state.templates.items);
   const applications = useSelector((state) => state.applications.items);
-  const theme = useSafeResolvedTheme();
 
   const selectedTemplate = templates.find(t => t.id === values.resources?.templateId);
   const selectedApps = values.applications?.applications || [];
@@ -46,7 +43,7 @@ export function ReviewStep({ id }) {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card glow="none" className={cn("p-6 space-y-4", getWizardStepCardClasses(theme))} style={getWizardStepCardStyles(theme)}>
+        <Card glass="subtle" className={cn("p-6 space-y-4", "glass-subtle border border-border/20")} >
           <div>
             <h3 className="font-medium mb-2">Basic Information</h3>
             <dl className="space-y-2">
@@ -71,7 +68,7 @@ export function ReviewStep({ id }) {
                   <dt className="text-sm text-muted-foreground">Configuration</dt>
                   <dd className="text-sm font-medium">Custom Hardware</dd>
                 </div>
-                <div className={cn("rounded-lg p-4 space-y-3", getWizardStepCardClasses(theme), "bg-primary/10 border-primary/20")}>
+                <div className={cn("rounded-lg p-4 space-y-3", "glass-subtle border border-border/20", "bg-primary/10 border-primary/20")}>
                   <div className="text-sm text-muted-foreground">
                     Custom hardware configuration:
                   </div>
@@ -140,7 +137,7 @@ export function ReviewStep({ id }) {
                   <dt className="text-sm text-muted-foreground">Selected Template</dt>
                   <dd className="text-sm font-medium">{selectedTemplate.name}</dd>
                 </div>
-                <div className={cn("rounded-lg p-4 space-y-3", getWizardStepCardClasses(theme), "bg-primary/5")}>
+                <div className={cn("rounded-lg p-4 space-y-3", "glass-subtle border border-border/20", "bg-primary/5")}>
                   <div className="text-sm text-muted-foreground">
                     This template allocates the following resources:
                   </div>
@@ -216,7 +213,7 @@ export function ReviewStep({ id }) {
           </div>
         </Card>
 
-        <Card glow="none" className={cn("p-6 space-y-4", getWizardStepCardClasses(theme))} style={getWizardStepCardStyles(theme)}>
+        <Card glass="subtle" className={cn("p-6 space-y-4", "glass-subtle border border-border/20")} >
           <div>
             <h3 className="font-medium mb-2">System Configuration</h3>
             <dl className="space-y-2">
@@ -234,7 +231,7 @@ export function ReviewStep({ id }) {
               <h3 className="font-medium mb-2">Applications to Install</h3>
               <div className="space-y-3">
                 {selectedAppDetails.map((app) => (
-                  <div key={app.id} className={cn("flex items-start gap-3 rounded-lg p-3", getWizardStepCardClasses(theme), "bg-primary/5")}>
+                  <div key={app.id} className={cn("flex items-start gap-3 rounded-lg p-3", "glass-subtle border border-border/20", "bg-primary/5")}>
                     <Package className="h-5 w-5 text-primary mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm">{app.name}</div>
@@ -254,7 +251,7 @@ export function ReviewStep({ id }) {
             <h3 className="font-medium mb-2">Additional Features</h3>
             <div className="space-y-2">
               {values.configuration?.backup && (
-                <Alert variant="default" className={cn("border-primary/50 bg-primary/10", getWizardStepCardClasses(theme))}>
+                <Alert variant="default" className={cn("border-primary/50 bg-primary/10", "glass-subtle border border-border/20")}>
                   <CheckCircle2 className="h-4 w-4 text-primary" />
                   <AlertTitle>Backup Enabled</AlertTitle>
                   <AlertDescription>
@@ -264,7 +261,7 @@ export function ReviewStep({ id }) {
               )}
               
               {values.configuration?.highAvailability && (
-                <Alert variant="default" className={cn("border-primary/50 bg-primary/10", getWizardStepCardClasses(theme))}>
+                <Alert variant="default" className={cn("border-primary/50 bg-primary/10", "glass-subtle border border-border/20")}>
                   <CheckCircle2 className="h-4 w-4 text-primary" />
                   <AlertTitle>High Availability</AlertTitle>
                   <AlertDescription>
@@ -274,7 +271,7 @@ export function ReviewStep({ id }) {
               )}
 
               {values.configuration?.gpuEnabled && (
-                <Alert variant="default" className={cn("border-primary/50 bg-primary/10", getWizardStepCardClasses(theme))}>
+                <Alert variant="default" className={cn("border-primary/50 bg-primary/10", "glass-subtle border border-border/20")}>
                   <CheckCircle2 className="h-4 w-4 text-primary" />
                   <AlertTitle>GPU Support</AlertTitle>
                   <AlertDescription>

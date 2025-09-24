@@ -45,6 +45,8 @@ const DepartmentPage = () => {
     // State
     isLoading,
     department,
+    departments,
+    departmentsLoading,
     machines,
     showToast,
     toastProps,
@@ -88,6 +90,8 @@ const DepartmentPage = () => {
       <div className="w-full">
         <DepartmentHeader
           departmentName={department?.name}
+          departments={departments}
+          isLoading={departmentsLoading}
           onNewComputer={handleNewComputer}
         />
 

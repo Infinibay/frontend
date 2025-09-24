@@ -50,7 +50,7 @@ export function Toaster() {
               `,
               opacity: stackOpacity,
               filter: stackBlur,
-              zIndex: 100 - stackIndex,
+              zIndex: 9999 - stackIndex,
               position: stackIndex > 0 ? 'absolute' : 'relative',
               top: stackIndex > 0 ? `${stackOffset}px` : 'auto',
               transition: 'all 0.3s ease-out',

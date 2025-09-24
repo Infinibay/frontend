@@ -7,15 +7,12 @@ import { useFormError } from '@/components/ui/form-error-provider';
 import { AppStoreInstaller } from '@/components/ui/app-store-installer';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { useSafeResolvedTheme } from '@/utils/safe-theme';
-import { getWizardStepCardClasses, getWizardStepCardStyles } from '@/utils/wizard-glass-helpers';
 import { cn } from '@/lib/utils';
 
 export function ApplicationsStep({ id }) {
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
   const stepValues = values[id] || {};
-  const theme = useSafeResolvedTheme();
 
   const applications = useSelector((state) => state.applications.items) || [];
   const loading = useSelector((state) => state.applications.loading.fetch);
@@ -52,7 +49,7 @@ export function ApplicationsStep({ id }) {
         </p>
       </div>
 
-        <Card glow="none" className={cn("p-6", getWizardStepCardClasses(theme))} style={getWizardStepCardStyles(theme)}>
+        <Card glass="subtle" className="p-6">
           <Label
             moreInformation="Applications will be automatically added to the installation list during machine creation. You can browse and select applications from the App Store interface. Additional applications can be added later through the machine's management interface."
           >

@@ -10,8 +10,6 @@ import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
 import { selectDepartments, selectDepartmentsLoading } from '@/state/slices/departments';
 import { Building2, User, Lock, KeyRound, Server } from 'lucide-react';
-import { useSafeResolvedTheme } from '@/utils/safe-theme';
-import { getWizardStepCardClasses, getWizardStepCardStyles } from '@/utils/wizard-glass-helpers';
 import { cn } from '@/lib/utils';
 
 export function BasicInfoStep({ id, departmentId = null }) {
@@ -20,7 +18,6 @@ export function BasicInfoStep({ id, departmentId = null }) {
   const stepValues = values[id] || {};
   const departments = useSelector(selectDepartments);
   const isLoading = useSelector(selectDepartmentsLoading);
-  const theme = useSafeResolvedTheme();
 
   // Auto-select department logic
   React.useEffect(() => {
@@ -53,8 +50,8 @@ export function BasicInfoStep({ id, departmentId = null }) {
       <div className="space-y-6">
         {departmentId == null && (
           <Card
-            className={cn("p-6", getWizardStepCardClasses(theme))}
-            style={getWizardStepCardStyles(theme)}
+            glass="subtle"
+            className="p-6"
             glow="none"
           >
             <div className="space-y-4">
@@ -73,7 +70,6 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 </div>
               </div>
               <Select
-                searchable
                 value={stepValues.departmentId || ''}
                 onValueChange={(value) => setValue(`${id}.departmentId`, value)}
                 disabled={isLoading}
@@ -81,14 +77,15 @@ export function BasicInfoStep({ id, departmentId = null }) {
               >
                 <SelectTrigger
                   id="departmentId"
-                  placeholder="Type to search departments..."
+                  glass="subtle"
                   error={!!getError('departmentId')}
-                  aria-label="Search and select department"
+                  aria-label="Select department"
                   aria-describedby={getError('departmentId') ? 'departmentId-error' : undefined}
+                  className="size-input"
                 >
                   <SelectValue placeholder="Select a department" />
                 </SelectTrigger>
-                <SelectContent loading={isLoading}>
+                <SelectContent loading={isLoading} glass="minimal">
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={String(dept.id)}>
                       {dept.name}
@@ -106,8 +103,8 @@ export function BasicInfoStep({ id, departmentId = null }) {
         )}
 
         <Card
-          className={cn("p-6", getWizardStepCardClasses(theme))}
-          style={getWizardStepCardStyles(theme)}
+          glass="subtle"
+          className="p-6"
           glow="none"
         >
           <div className="space-y-6">
@@ -144,8 +141,8 @@ export function BasicInfoStep({ id, departmentId = null }) {
         </Card>
 
         <Card
-          className={cn("p-6", getWizardStepCardClasses(theme))}
-          style={getWizardStepCardStyles(theme)}
+          glass="subtle"
+          className="p-6"
           glow="none"
         >
           <div className="space-y-6">
@@ -214,8 +211,8 @@ export function BasicInfoStep({ id, departmentId = null }) {
 
         {values.configuration?.os?.startsWith('WINDOWS') && (
           <Card
-            className={cn("p-6", getWizardStepCardClasses(theme))}
-            style={getWizardStepCardStyles(theme)}
+            glass="subtle"
+            className="p-6"
             glow="none"
           >
             <div className="space-y-4">

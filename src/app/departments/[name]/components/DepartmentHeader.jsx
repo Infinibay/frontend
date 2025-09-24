@@ -1,6 +1,8 @@
 import React from "react";
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronLeft, Plus } from 'lucide-react';
 import { Header, HeaderLeft, HeaderCenter, HeaderRight } from '@/components/ui/header';
 import { useAppTheme } from '@/contexts/ThemeProvider';
@@ -18,9 +20,14 @@ import {
 /**
  * Header component for the department page
  */
-const DepartmentHeader = ({ departmentName, onNewComputer }) => {
+const DepartmentHeader = ({ departmentName, departments = [], isLoading = false, onNewComputer }) => {
   const { resolvedTheme } = useAppTheme();
   const { size } = useSizeContext();
+  const router = useRouter();
+
+  const handleDepartmentChange = (departmentName) => {
+    router.push(`/departments/${encodeURIComponent(departmentName)}`);
+  };
 
   return (
     <Header variant="glass" elevated sticky style={{ top: 0 }} className="z-30">
@@ -46,8 +53,32 @@ const DepartmentHeader = ({ departmentName, onNewComputer }) => {
           </BreadcrumbList>
         </Breadcrumb>
       </HeaderLeft>
-      <HeaderCenter>
-        <h1 className={cn(getTypographyClass('subheading', size), 'text-glass-text-primary')}>{departmentName || 'Department'}</h1>
+      <HeaderCenter className="flex items-center justify-center">
+        <Select
+          value={departmentName || ''}
+          onValueChange={handleDepartmentChange}
+          disabled={isLoading}
+        >
+          <SelectTrigger
+            glass="subtle"
+            textAlign="center"
+            className={cn(
+              'min-w-[200px] bg-transparent border-none shadow-none',
+              getTypographyClass('subheading', size),
+              'text-glass-text-primary h-auto p-2',
+              'hover:scale-100 hover:transform-none' // Override the default hover scale
+            )}
+          >
+            <SelectValue placeholder="Select Department" />
+          </SelectTrigger>
+          <SelectContent glass="minimal">
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={dept.name}>
+                {dept.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </HeaderCenter>
       <HeaderRight className="w-[200px] flex items-center justify-end">
         <Button

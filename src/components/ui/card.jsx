@@ -59,6 +59,13 @@ const cardVariants = cva(
   }
 )
 
+/**
+ * Card component with responsive glass effects.
+ *
+ * @param {boolean} forceGlass - When true, bypasses responsive glass downgrading.
+ * Useful for components like SelectionCard that need to maintain strong glass effects
+ * on small screens for design consistency.
+ */
 const Card = React.forwardRef(({
   className,
   glass,
@@ -67,6 +74,7 @@ const Card = React.forwardRef(({
   glow,
   glowColor,
   radius,
+  forceGlass = false,
   ...props
 }, ref) => {
   const { size } = useSizeContext()
@@ -74,6 +82,7 @@ const Card = React.forwardRef(({
   // Size-responsive glass and elevation
   const getResponsiveGlass = (glass) => {
     if (!glass || glass === 'none') return 'none'
+    if (forceGlass) return glass // Bypass responsive behavior when forceGlass is true
     if (size === 'sm') {
       return glass === 'strong' ? 'minimal' : glass
     }

@@ -118,6 +118,11 @@ const useSelectSearch = () => {
       setSelectedValue: () => {},
       selectedLabel: "",
       setSelectedLabel: () => {},
+      navigateUp: () => {},
+      navigateDown: () => {},
+      selectHighlighted: () => null,
+      highlightedIndex: -1,
+      availableItems: []
     }
   }
   return context
@@ -128,6 +133,8 @@ const useSelectSearchInternal = ({ searchable, onSearch, children, value }) => {
   const [searchValue, setSearchValue] = React.useState("")
   const [selectedLabel, setSelectedLabel] = React.useState("")
   const [activeDescendant, setActiveDescendant] = React.useState("")
+  const [highlightedIndex, setHighlightedIndex] = React.useState(-1)
+  const [availableItems, setAvailableItems] = React.useState([])
 
   // Generate unique IDs for accessibility (when searchable)
   const listboxId = React.useMemo(() => searchable ? `select-listbox-${Math.random().toString(36).substring(2, 11)}` : null, [searchable])
@@ -183,6 +190,75 @@ const useSelectSearchInternal = ({ searchable, onSearch, children, value }) => {
     }
   }, [searchable, value, children, selectedLabel])
 
+  // Extract available items from children for keyboard navigation
+  React.useEffect(() => {
+    const extractItems = (childrenToScan) => {
+      const items = []
+
+      React.Children.forEach(childrenToScan, (child) => {
+        if (!React.isValidElement(child)) return
+
+        // Handle SelectItem directly
+        if (child.type?.displayName === 'SelectItem' || child.type === SelectItem) {
+          items.push({
+            value: child.props.value,
+            label: typeof child.props.children === 'string'
+              ? child.props.children
+              : String(child.props.value || ''),
+            disabled: child.props.disabled || false
+          })
+          return
+        }
+
+        // Handle SelectGroup recursively
+        if (child.type?.displayName === 'SelectGroup' || child.type === SelectGroup) {
+          items.push(...extractItems(child.props.children))
+        }
+      })
+
+      return items.filter(item => !item.disabled)
+    }
+
+    const items = extractItems(children)
+    setAvailableItems(items)
+  }, [children])
+
+  // Reset highlighted index when items change
+  React.useEffect(() => {
+    setHighlightedIndex(-1)
+  }, [availableItems])
+
+  // Keyboard navigation functions
+  const navigateUp = React.useCallback(() => {
+    setHighlightedIndex(prev => {
+      const newIndex = prev <= 0 ? availableItems.length - 1 : prev - 1
+      const item = availableItems[newIndex]
+      if (item) {
+        setActiveDescendant(`select-option-${String(item.value).replace(/[^a-zA-Z0-9]/g, '-')}`)
+      }
+      return newIndex
+    })
+  }, [availableItems])
+
+  const navigateDown = React.useCallback(() => {
+    setHighlightedIndex(prev => {
+      const newIndex = prev >= availableItems.length - 1 ? 0 : prev + 1
+      const item = availableItems[newIndex]
+      if (item) {
+        setActiveDescendant(`select-option-${String(item.value).replace(/[^a-zA-Z0-9]/g, '-')}`)
+      }
+      return newIndex
+    })
+  }, [availableItems])
+
+  const selectHighlighted = React.useCallback(() => {
+    if (highlightedIndex >= 0 && highlightedIndex < availableItems.length) {
+      const item = availableItems[highlightedIndex]
+      return item.value
+    }
+    return null
+  }, [highlightedIndex, availableItems])
+
   return {
     searchValue,
     setSearchValue,
@@ -190,7 +266,13 @@ const useSelectSearchInternal = ({ searchable, onSearch, children, value }) => {
     setSelectedLabel,
     activeDescendant,
     setActiveDescendant,
-    listboxId
+    listboxId,
+    highlightedIndex,
+    setHighlightedIndex,
+    availableItems,
+    navigateUp,
+    navigateDown,
+    selectHighlighted
   }
 }
 
@@ -223,6 +305,8 @@ const Select = React.forwardRef(({ searchable = false, onSearch, children, value
     selectedLabel: searchState.selectedLabel,
     listboxId: searchState.listboxId,
     activeDescendant: searchState.activeDescendant,
+    highlightedIndex: searchState.highlightedIndex,
+    availableItems: searchState.availableItems,
     onSearch,
     // State setters
     setSearchValue: searchState.setSearchValue,
@@ -230,6 +314,11 @@ const Select = React.forwardRef(({ searchable = false, onSearch, children, value
     setSelectedValue: selectState.setValue,
     setSelectedLabel: searchState.setSelectedLabel,
     setActiveDescendant: searchState.setActiveDescendant,
+    setHighlightedIndex: searchState.setHighlightedIndex,
+    // Navigation functions
+    navigateUp: searchState.navigateUp,
+    navigateDown: searchState.navigateDown,
+    selectHighlighted: searchState.selectHighlighted
   }), [
     searchState.searchValue,
     searchable,
@@ -238,12 +327,18 @@ const Select = React.forwardRef(({ searchable = false, onSearch, children, value
     searchState.selectedLabel,
     searchState.listboxId,
     searchState.activeDescendant,
+    searchState.highlightedIndex,
+    searchState.availableItems,
     onSearch,
     searchState.setSearchValue,
     selectState.setOpen,
     selectState.setValue,
     searchState.setSelectedLabel,
-    searchState.setActiveDescendant
+    searchState.setActiveDescendant,
+    searchState.setHighlightedIndex,
+    searchState.navigateUp,
+    searchState.navigateDown,
+    searchState.selectHighlighted
   ])
 
   // Prepare handlers and props for both searchable and regular modes
@@ -387,10 +482,23 @@ const SelectValue = React.forwardRef(({ className, ...props }, ref) => {
 })
 SelectValue.displayName = SelectPrimitive.Value.displayName
 
-const SelectTrigger = React.forwardRef(({ className, children, size, glass = false, error, success, placeholder, ...props }, ref) => {
+const SelectTrigger = React.forwardRef(({ className, children, size, glass = false, error, success, placeholder, textAlign = 'left', ...props }, ref) => {
   const theme = useSafeResolvedTheme()
   const { isHovered, handlers } = useInputStates()
-  const { searchValue, setSearchValue, isSearchable, isOpen, setIsOpen, selectedLabel, listboxId, activeDescendant } = React.useContext(SelectInternalContext) || {}
+  const {
+    searchValue,
+    setSearchValue,
+    isSearchable,
+    isOpen,
+    setIsOpen,
+    selectedLabel,
+    listboxId,
+    activeDescendant,
+    navigateUp,
+    navigateDown,
+    selectHighlighted,
+    setSelectedValue
+  } = React.useContext(SelectInternalContext) || {}
   const [isFocused, setIsFocused] = React.useState(false)
   const inputRef = React.useRef(null)
 
@@ -464,6 +572,16 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
     return baseClasses
   }
 
+  // Text Alignment Classes
+  const getTextAlignClasses = () => {
+    const alignmentMap = {
+      left: 'text-left justify-start',
+      center: 'text-center justify-center',
+      right: 'text-right justify-end'
+    }
+    return alignmentMap[textAlign] || alignmentMap.left
+  }
+
   // Enhanced Visual Feedback States
   const getStateClasses = () => {
     const transition = "transition-all duration-200 ease-smooth"
@@ -490,7 +608,7 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
     }
   }
 
-  const handleKeyDown = (e) => {
+  const handleSearchableKeyDown = (e) => {
     if (!isSearchable || props.disabled) return
 
     switch (e.key) {
@@ -502,17 +620,80 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
         }
         break
       case 'ArrowDown':
+        e.preventDefault()
+        if (!isOpen) {
+          setIsOpen(true)
+        } else {
+          navigateDown?.()
+        }
+        break
       case 'ArrowUp':
-        if (!isOpen) setIsOpen(true)
+        e.preventDefault()
+        if (!isOpen) {
+          setIsOpen(true)
+        } else {
+          navigateUp?.()
+        }
         break
       case 'Enter':
-        if (!isOpen) {
+        if (isOpen) {
+          const selectedValue = selectHighlighted?.()
+          if (selectedValue !== null) {
+            setSelectedValue?.(selectedValue)
+            setIsOpen?.(false)
+          } else if (!isOpen) {
+            setIsOpen(true)
+            e.preventDefault()
+          }
+        } else {
           setIsOpen(true)
           e.preventDefault()
         }
         break
       case 'Tab':
         if (isOpen) setIsOpen(false)
+        break
+    }
+  }
+
+  const handleTraditionalKeyDown = (e) => {
+    if (props.disabled) return
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        if (!isOpen) {
+          setIsOpen?.(true)
+        } else {
+          navigateDown?.()
+        }
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        if (!isOpen) {
+          setIsOpen?.(true)
+        } else {
+          navigateUp?.()
+        }
+        break
+      case 'Enter':
+      case ' ':
+        e.preventDefault()
+        if (isOpen) {
+          const selectedValue = selectHighlighted?.()
+          if (selectedValue !== null) {
+            setSelectedValue?.(selectedValue)
+            setIsOpen?.(false)
+          }
+        } else {
+          setIsOpen?.(true)
+        }
+        break
+      case 'Escape':
+        if (isOpen) {
+          e.preventDefault()
+          setIsOpen?.(false)
+        }
         break
     }
   }
@@ -538,6 +719,7 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
           className={cn(
             // Base styling with Size System
             "relative flex w-full items-center",
+            textAlign === 'center' ? 'justify-center' : textAlign === 'right' ? 'justify-end' : 'justify-start',
             "size-radius",
             "border shadow-sm ring-offset-background group cursor-pointer",
 
@@ -583,7 +765,7 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
             type="text"
             value={displayValue}
             onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
+            onKeyDown={handleSearchableKeyDown}
             onFocus={(e) => {
               if (disabled) return
               setIsFocused(true)
@@ -615,7 +797,8 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
               "placeholder:text-muted-foreground/70 text-foreground font-medium",
               "selection:bg-brand-dark-blue/20 caret-brand-dark-blue",
               "size-input-with-icon-left-padding",
-              "pr-16" // Space for clear and dropdown icons
+              "pr-16", // Space for clear and dropdown icons
+              getTextAlignClasses().split(' ')[0] // Apply text alignment (text-left, text-center, text-right)
             )}
           />
 
@@ -663,12 +846,15 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
   }
 
   // Traditional Select Trigger (Non-searchable)
+
   return (
     <SelectPrimitive.Trigger
       ref={ref}
+      onKeyDown={handleTraditionalKeyDown}
       className={cn(
         // Base styling with Size System
-        "flex w-full items-center justify-between",
+        "flex w-full items-center",
+        textAlign === 'center' ? 'justify-center' : textAlign === 'right' ? 'justify-end' : 'justify-between',
         "size-radius",
         "border shadow-sm ring-offset-background",
         "disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
@@ -677,10 +863,13 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
         "size-input",
 
         // Enhanced typography
-        "font-semibold text-foreground tracking-wide",
+        "font-medium text-foreground",
+
+        // Text alignment
+        getTextAlignClasses().split(' ')[0], // Apply text alignment (text-left, text-center, text-right)
 
         // Glassmorphism with 6-tier system
-        glass && glassEffect ? cn(glassEffect, getGlassBlur, "supports-[backdrop-filter:blur(0)]:bg-background/20") : "bg-background/95",
+        glass && glassEffect ? cn(glassEffect, getGlassBlur, "supports-[backdrop-filter:blur(0)]:bg-background/20") : "bg-background border-input",
 
         // Brand colors and state feedback
         getBrandColorClasses(),
@@ -1131,14 +1320,14 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
           ref={ref}
           className={cn(
             // Dynamic z-index: higher when inside dialogs to ensure proper layering
-            `relative ${isInDialog ? 'z-[1050]' : 'z-50'} size-container max-h-96 min-w-[12rem] overflow-hidden rounded-2xl border shadow-2xl`,
+            `relative ${isInDialog ? 'z-[1050]' : 'z-50'} size-container max-h-96 min-w-[12rem] overflow-hidden rounded-xl border shadow-lg`,
             // Enhanced 6-tier glassmorphism with brand color integration
             glass ? cn(
               glassEffect.content,
               reducedTransparencyContent,
               getBrandFormGlow('celeste', 'default')
-            ) : "bg-popover/95 backdrop-blur-sm border-border/60",
-            "text-popover-foreground",
+            ) : "glass-medium border-border/20 bg-background/95 backdrop-blur-md",
+            "text-foreground",
             // Premium animations using form-animations.js utilities
             FORM_ANIMATION_CLASSES.base,
             "animate-in fade-in-0 zoom-in-98",
@@ -1148,10 +1337,10 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
             "data-[state=closed]:duration-200 data-[state=open]:duration-300",
             "data-[state=closed]:ease-smooth data-[state=open]:ease-bounce",
             // Enhanced directional slide animations with spring physics
-            "data-[side=bottom]:slide-in-from-top-3 data-[side=left]:slide-in-from-right-3",
-            "data-[side=right]:slide-in-from-left-3 data-[side=top]:slide-in-from-bottom-3",
+            "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
+            "data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
             position === "popper" &&
-              "data-[side=bottom]:translate-y-2 data-[side=left]:-translate-x-2 data-[side=right]:translate-x-2 data-[side=top]:-translate-y-2",
+              "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
             sizeClasses[effectiveSize],
             performanceOptimization,
             className
@@ -1164,7 +1353,7 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
           <SelectPrimitive.Viewport
             ref={viewportRef}
             className={cn(
-              "relative",
+              "relative py-2",
               viewportSizeClasses[effectiveSize],
               position === "popper" &&
                 "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
@@ -1281,7 +1470,16 @@ const SelectItem = React.forwardRef(({ className, children, size, disabled, valu
   const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
   const { contentGlass: parentGlass } = React.useContext(SelectInternalContext) || {}
-  const { isSearchable, setSelectedLabel, setSearchValue, selectedValue, setActiveDescendant } = React.useContext(SelectInternalContext)
+  const {
+    isSearchable,
+    setSelectedLabel,
+    setSearchValue,
+    selectedValue,
+    setActiveDescendant,
+    highlightedIndex,
+    availableItems,
+    setHighlightedIndex
+  } = React.useContext(SelectInternalContext) || {}
   const [isHovered, setIsHovered] = React.useState(false)
   const isMountedRef = React.useRef(false)
 
@@ -1291,6 +1489,13 @@ const SelectItem = React.forwardRef(({ className, children, size, disabled, valu
     const sanitized = String(value).replace(/[^a-zA-Z0-9]/g, '-')
     return `select-option-${sanitized}-${uid}`
   }, [value, uid])
+
+  // Check if this item is currently highlighted
+  const isHighlighted = React.useMemo(() => {
+    if (highlightedIndex === -1 || !availableItems) return false
+    const currentItem = availableItems[highlightedIndex]
+    return currentItem && String(currentItem.value) === String(value)
+  }, [highlightedIndex, availableItems, value])
 
   // Set label when this item matches the selected value
   React.useEffect(() => {
@@ -1363,15 +1568,19 @@ const SelectItem = React.forwardRef(({ className, children, size, disabled, valu
       disabled={disabled}
       onMouseEnter={() => {
         setIsHovered(true)
-        if (isSearchable && setActiveDescendant) {
+        // Update highlighted index when hovering
+        if (availableItems && setHighlightedIndex) {
+          const itemIndex = availableItems.findIndex(item => String(item.value) === String(value))
+          if (itemIndex >= 0) {
+            setHighlightedIndex(itemIndex)
+          }
+        }
+        if (setActiveDescendant) {
           setActiveDescendant(itemId)
         }
       }}
       onMouseLeave={() => {
         setIsHovered(false)
-        if (isSearchable && setActiveDescendant) {
-          setActiveDescendant('')
-        }
       }}
       value={value}
       onSelect={handleSelect}
@@ -1379,80 +1588,47 @@ const SelectItem = React.forwardRef(({ className, children, size, disabled, valu
       role="option"
       aria-selected={String(selectedValue) === String(value)}
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-center rounded-xl mx-1 outline-none group",
+        "relative flex w-full cursor-pointer select-none items-center rounded-lg mx-2 my-0.5 px-3 py-2.5 outline-none group transition-all duration-150 ease-out",
         FORM_ANIMATION_CLASSES.base,
         // Enhanced disabled state with proper styling
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed",
         "disabled:opacity-40 disabled:cursor-not-allowed",
-        // Default state with Celeste tinting and size-aware glass
-        itemGlass,
-        "bg-brand-celeste/5",
-        // Sophisticated hover effects with Dark Blue accents and size-aware blur
-        `hover:${scaleFormGlass(itemGlass, effectiveSize)} hover:${itemBlur}`,
-        "hover:bg-brand-celeste/10 hover:border-brand-celeste/20",
-        "hover:shadow-glow-brand-dark-blue/30 hover:scale-[1.01] hover:-translate-y-0.5",
-        "hover:ease-bounce",
-        // Focus states with enhanced Dark Blue styling and stronger glass
-        `focus:${scaleFormGlass('glass-medium', effectiveSize)} focus:${itemBlur}`,
-        "focus:bg-brand-dark-blue/10 focus:ring-2 focus:ring-brand-dark-blue/40",
-        "focus:shadow-glow-brand-dark-blue/40 focus:text-foreground",
-        // Selected state with Sun highlights and enhanced glass
-        `data-[state=checked]:${scaleFormGlass('glass-medium', effectiveSize)} data-[state=checked]:${itemBlur}`,
-        "data-[state=checked]:bg-brand-sun/15 data-[state=checked]:border-brand-sun/30",
-        "data-[state=checked]:text-brand-dark-blue data-[state=checked]:font-semibold",
-        "data-[state=checked]:shadow-glow-brand-sun/20",
-        // Size and layout with Size System
-        sizeClasses[effectiveSize],
-        // Glass-specific enhancements with proper parent context and size-aware scaling
-        parentGlass && [
-          itemGlass,
-          `hover:${scaleFormGlass('glass-subtle', effectiveSize)} hover:${itemBlur}`,
-          `focus:${scaleFormGlass('glass-medium', effectiveSize)} focus:${itemBlur}`,
-          `data-[state=checked]:${scaleFormGlass('glass-medium', effectiveSize)} data-[state=checked]:${itemBlur}`
-        ],
+        // Default state with subtle background
+        "text-foreground/80",
+        // Sophisticated hover effects
+        "hover:bg-accent hover:text-accent-foreground",
+        "hover:scale-[1.01] hover:shadow-sm",
+        // Focus states
+        "focus:bg-accent focus:text-accent-foreground focus:outline-none",
+        "focus:ring-2 focus:ring-primary/20 focus:ring-offset-1",
+        // Keyboard navigation highlighting
+        isHighlighted && "bg-accent text-accent-foreground ring-2 ring-primary/20 ring-offset-1",
+        // Selected state with primary color highlights
+        "data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary",
+        "data-[state=checked]:font-medium data-[state=checked]:border-l-2 data-[state=checked]:border-primary",
+        // Size and layout improvements
+        "min-h-[2.25rem] text-sm font-medium",
         optimizeFormGlassPerformance(),
         className
       )}
+      data-highlighted={isHighlighted ? "true" : undefined}
       {...props}>
 
-      {/* Enhanced check icon with brand colors */}
-      <span className={cn(
-        "absolute flex items-center justify-center",
-        FORM_ANIMATION_CLASSES.base,
-        iconSizeClasses[effectiveSize]
-      )}>
+      {/* Clean check icon */}
+      <span className="absolute right-3 flex items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <div className="relative">
-            <CheckIcon className={cn(
-              "text-brand-dark-blue transition-all duration-200 ease-bounce",
-              "scale-110 drop-shadow-sm",
-              "group-data-[state=checked]:shadow-glow-brand-dark-blue/40",
-              checkIconSizeClasses[effectiveSize]
-            )} />
-            {/* Enhanced glow effect with Sun color accent */}
-            <div className="absolute inset-0 rounded-full bg-brand-sun/30 blur-sm scale-150 opacity-0 group-data-[state=checked]:animate-pulse-once" />
-          </div>
+          <CheckIcon className="h-4 w-4 text-primary transition-all duration-150" />
         </SelectPrimitive.ItemIndicator>
       </span>
 
-      {/* Enhanced content with Size System typography */}
+      {/* Content text */}
       <SelectPrimitive.ItemText className={cn(
-        "font-medium tracking-wide",
-        FORM_ANIMATION_CLASSES.base,
-        "group-hover:text-foreground/90",
-        "group-data-[state=checked]:font-semibold group-data-[state=checked]:tracking-normal group-data-[state=checked]:text-brand-dark-blue",
+        "flex-1 text-left pr-8",
+        "group-data-[state=checked]:font-medium",
         disabled && "text-muted-foreground/50"
       )}>
         {children}
       </SelectPrimitive.ItemText>
-
-      {/* Enhanced hover indicator with brand colors */}
-      {isHovered && !disabled && (
-        <div className={cn(
-          "absolute inset-0 rounded-xl bg-gradient-to-r from-brand-celeste/8 to-transparent pointer-events-none",
-          FORM_ANIMATION_CLASSES.base
-        )} />
-      )}
     </SelectPrimitive.Item>
   )
 })

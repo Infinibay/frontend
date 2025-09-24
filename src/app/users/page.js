@@ -67,7 +67,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
+import { useSizeContext } from "@/components/ui/size-provider";
 import { Toast, ToastProvider, ToastTitle, ToastDescription, ToastViewport } from "@/components/ui/toast";
 import { Form } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
@@ -215,7 +215,7 @@ const UsersPage = () => {
       )}
       <ToastViewport />
 
-      <Header variant="glass" elevated>
+      <Header className="glass-strong elevation-4">
         <HeaderLeft>
           <Breadcrumb>
             <BreadcrumbList>
@@ -230,27 +230,26 @@ const UsersPage = () => {
           </Breadcrumb>
         </HeaderLeft>
         <HeaderCenter>
-          <h1 className="text-lg sm:text-2xl font-medium text-gray-800">
+          <h1 className="size-mainheading text-glass-text-primary font-semibold">
             Users Management
           </h1>
         </HeaderCenter>
         <HeaderRight>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center size-gap">
             <Button
               onClick={() => setIsCreateUserOpen(true)}
-              variant="primary"
-              className="gap-2"
+              className="size-button gap-2"
             >
               Add User
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <BiSortAlt2 className="h-4 w-4" />
+                <Button variant="outline" className="size-button gap-2">
+                  <BiSortAlt2 className="size-icon" />
                   Sort by
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent className="glass-medium">
                 <DropdownMenuItem>Name (A-Z)</DropdownMenuItem>
                 <DropdownMenuItem>Name (Z-A)</DropdownMenuItem>
                 <DropdownMenuItem>Role</DropdownMenuItem>
@@ -260,112 +259,192 @@ const UsersPage = () => {
         </HeaderRight>
       </Header>
 
-      <div className={cn("p-6", sizeVariants[size].spacing.container)}>
-        <ScrollArea className="h-[calc(100vh-12rem)] w-full rounded-md border">
+      <div className="size-container">
+        {/* Search and Filters */}
+        <div className="size-padding">
+          <div className="glass-medium size-card-padding radius-fluent-md elevation-2">
+            <div className="flex flex-wrap items-center size-gap">
+              <div className="flex-1 min-w-[200px]">
+                <div className="relative">
+                  <Input
+                    placeholder="Search users by name, email..."
+                    className="size-input"
+                  />
+                </div>
+              </div>
+              <Select>
+                <SelectTrigger className="w-[150px] size-input">
+                  <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent className="glass-medium">
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="USER">User</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Users Table */}
+        <div className="size-padding">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <Spinner size="lg" />
+            <div className="glass-medium size-card-padding radius-fluent-lg elevation-2 flex items-center justify-center">
+              <div className="flex items-center size-gap">
+                <Spinner size="lg" />
+                <span className="size-text text-glass-text-secondary">Loading users...</span>
+              </div>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="glass-medium size-card-padding radius-fluent-lg elevation-2 text-center">
+              <div className="size-gap flex flex-col items-center">
+                <div className="size-avatar bg-muted rounded-full flex items-center justify-center">
+                  <Avatar className="size-icon" />
+                </div>
+                <div>
+                  <h3 className="size-heading text-glass-text-primary">No Users Found</h3>
+                  <p className="size-text text-glass-text-secondary">Get started by adding your first user to the system.</p>
+                </div>
+                <Button onClick={() => setIsCreateUserOpen(true)} className="size-button">
+                  Add User
+                </Button>
+              </div>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {columns.map((column) => (
-                    <TableHead key={column.key}>{column.label}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar
-                          fallback={`${user.firstName[0]}${user.lastName[0]}`}
-                        />
-                        <span>{user.email}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{user.firstName}</TableCell>
-                    <TableCell>{user.lastName}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingUser(user);
-                                  setIsEditUserOpen(true);
-                                }}
-                              >
-                                Edit
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Edit User</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600"
-                                onClick={() => {
-                                  setUserToDelete(user);
-                                  setIsDeleteDialogOpen(true);
-                                }}
-                              >
-                                <RiDeleteBin5Line className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Delete User</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </TableCell>
+            <div className="glass-medium radius-fluent-lg elevation-2 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-glass-text-primary/10">
+                    <TableHead className="size-text text-glass-text-primary font-semibold size-padding">User</TableHead>
+                    <TableHead className="size-text text-glass-text-primary font-semibold">Name</TableHead>
+                    <TableHead className="size-text text-glass-text-primary font-semibold">Email</TableHead>
+                    <TableHead className="size-text text-glass-text-primary font-semibold">Role</TableHead>
+                    <TableHead className="size-text text-glass-text-primary font-semibold">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id} className="border-glass-text-primary/10 hover:bg-glass-text-primary/5">
+                      <TableCell className="size-padding">
+                        <div className="flex items-center size-gap">
+                          <Avatar
+                            className="size-avatar"
+                            fallback={`${user.firstName[0]}${user.lastName[0]}`}
+                          />
+                          <div>
+                            <div className="size-text font-medium text-glass-text-primary">{user.email}</div>
+                            <div className="size-small text-glass-text-secondary">@{user.email.split('@')[0]}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="size-text text-glass-text-primary">
+                          {user.firstName} {user.lastName}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="size-text text-glass-text-secondary">{user.email}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className={cn(
+                          "size-badge inline-flex items-center rounded-full font-medium",
+                          user.role === 'ADMIN'
+                            ? "bg-brand-celeste-100 text-brand-celeste-800 border border-brand-celeste-200"
+                            : "bg-muted text-muted-foreground border border-border"
+                        )}>
+                          {user.role}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-3 text-glass-text-secondary hover:text-glass-text-primary hover:bg-glass-text-primary/10"
+                                  onClick={() => {
+                                    setEditingUser(user);
+                                    setIsEditUserOpen(true);
+                                  }}
+                                >
+                                  <span className="text-sm">Edit</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="glass-strong">
+                                <p>Edit User</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => {
+                                    setUserToDelete(user);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <RiDeleteBin5Line className="w-6 h-6" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="glass-strong">
+                                <p>Delete User</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
-        </ScrollArea>
+        </div>
 
         {selectedUsers.size > 0 && (
-          <div className="mt-4 flex justify-end">
-            <Button
-              variant="destructive"
-              onClick={() => setIsDeleteDialogOpen(true)}
-            >
-              Delete Selected ({selectedUsers.size})
-            </Button>
+          <div className="size-padding">
+            <div className="glass-subtle size-card-padding radius-fluent-md elevation-1">
+              <div className="flex items-center justify-between">
+                <span className="size-text text-glass-text-primary">
+                  {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
+                </span>
+                <Button
+                  variant="destructive"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="size-button"
+                >
+                  Delete Selected ({selectedUsers.size})
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
       {/* Create User Sheet */}
       <Sheet open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
-        <SheetContent>
+        <SheetContent className="glass-strong">
           <SheetHeader>
-            <SheetTitle>Create User</SheetTitle>
-            <SheetDescription>
+            <SheetTitle className="size-heading text-glass-text-primary">Create User</SheetTitle>
+            <SheetDescription className="size-text text-glass-text-secondary">
               Add a new user to the system
             </SheetDescription>
           </SheetHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="firstName" className="text-right">
+          <div className="grid size-gap size-padding">
+            <div className="space-y-2">
+              <Label htmlFor="firstName" className="size-text text-glass-text-primary">
                 First Name
               </Label>
               <Input
                 id="firstName"
-                className="col-span-3"
+                className="size-input"
                 value={newUser.firstName}
                 onChange={(e) => setNewUser(prev => ({
                   ...prev,
@@ -374,13 +453,13 @@ const UsersPage = () => {
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="lastName" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="lastName" className="size-text text-glass-text-primary">
                 Last Name
               </Label>
               <Input
                 id="lastName"
-                className="col-span-3"
+                className="size-input"
                 value={newUser.lastName}
                 onChange={(e) => setNewUser(prev => ({
                   ...prev,
@@ -389,14 +468,14 @@ const UsersPage = () => {
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="size-text text-glass-text-primary">
                 Email
               </Label>
               <Input
                 id="email"
                 type="email"
-                className="col-span-3"
+                className="size-input"
                 value={newUser.email}
                 onChange={(e) => setNewUser(prev => ({
                   ...prev,
@@ -405,14 +484,14 @@ const UsersPage = () => {
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="password" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="size-text text-glass-text-primary">
                 Password
               </Label>
               <Input
                 id="password"
                 type="password"
-                className="col-span-3"
+                className="size-input"
                 value={newUser.password}
                 onChange={(e) => setNewUser(prev => ({
                   ...prev,
@@ -421,14 +500,14 @@ const UsersPage = () => {
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="passwordConfirmation" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="passwordConfirmation" className="size-text text-glass-text-primary">
                 Confirm Password
               </Label>
               <Input
                 id="passwordConfirmation"
                 type="password"
-                className="col-span-3"
+                className="size-input"
                 value={newUser.passwordConfirmation}
                 onChange={(e) => setNewUser(prev => ({
                   ...prev,
@@ -437,8 +516,8 @@ const UsersPage = () => {
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="role" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="role" className="size-text text-glass-text-primary">
                 Role
               </Label>
               <Select
@@ -447,12 +526,11 @@ const UsersPage = () => {
                   ...prev,
                   role: value
                 }))}
-                className="col-span-3"
               >
-                <SelectTrigger>
+                <SelectTrigger className="size-input">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="glass-medium">
                   <SelectItem value="ADMIN">Admin</SelectItem>
                   <SelectItem value="USER">User</SelectItem>
                 </SelectContent>
@@ -460,7 +538,7 @@ const UsersPage = () => {
             </div>
           </div>
           <SheetFooter>
-            <Button onClick={() => {
+            <Button className="size-button" onClick={() => {
               if (!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.password || !newUser.passwordConfirmation) {
                 setToastProps({
                   variant: "error",
@@ -499,22 +577,22 @@ const UsersPage = () => {
 
       {/* Edit User Sheet */}
       <Sheet open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
-        <SheetContent>
+        <SheetContent className="glass-strong">
           <SheetHeader>
-            <SheetTitle>Edit User</SheetTitle>
-            <SheetDescription>
+            <SheetTitle className="size-heading text-glass-text-primary">Edit User</SheetTitle>
+            <SheetDescription className="size-text text-glass-text-secondary">
               Make changes to the user's information
             </SheetDescription>
           </SheetHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="firstName" className="text-right">
+          <div className="grid size-gap size-padding">
+            <div className="space-y-2">
+              <Label htmlFor="firstName" className="size-text text-glass-text-primary">
                 First Name
               </Label>
               <Input
                 id="firstName"
                 defaultValue={editingUser?.firstName}
-                className="col-span-3"
+                className="size-input"
                 onChange={(e) => {
                   setEditingUser(prev => ({
                     ...prev,
@@ -523,14 +601,14 @@ const UsersPage = () => {
                 }}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="lastName" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="lastName" className="size-text text-glass-text-primary">
                 Last Name
               </Label>
               <Input
                 id="lastName"
                 defaultValue={editingUser?.lastName}
-                className="col-span-3"
+                className="size-input"
                 onChange={(e) => {
                   setEditingUser(prev => ({
                     ...prev,
@@ -539,14 +617,14 @@ const UsersPage = () => {
                 }}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="password" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="size-text text-glass-text-primary">
                 New Password
               </Label>
               <Input
                 id="password"
                 type="password"
-                className="col-span-3"
+                className="size-input"
                 onChange={(e) => {
                   setEditingUser(prev => ({
                     ...prev,
@@ -555,14 +633,14 @@ const UsersPage = () => {
                 }}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="passwordConfirmation" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="passwordConfirmation" className="size-text text-glass-text-primary">
                 Confirm Password
               </Label>
               <Input
                 id="passwordConfirmation"
                 type="password"
-                className="col-span-3"
+                className="size-input"
                 onChange={(e) => {
                   setEditingUser(prev => ({
                     ...prev,
@@ -571,13 +649,12 @@ const UsersPage = () => {
                 }}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="role" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="role" className="size-text text-glass-text-primary">
                 Role
               </Label>
-              <Select 
+              <Select
                 defaultValue={editingUser?.role}
-                className="col-span-3"
                 onValueChange={(value) => {
                   setEditingUser(prev => ({
                     ...prev,
@@ -585,10 +662,10 @@ const UsersPage = () => {
                   }));
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="size-input">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="glass-medium">
                   <SelectItem value="ADMIN">Admin</SelectItem>
                   <SelectItem value="USER">User</SelectItem>
                 </SelectContent>
@@ -596,7 +673,7 @@ const UsersPage = () => {
             </div>
           </div>
           <SheetFooter>
-            <Button onClick={() => {
+            <Button className="size-button" onClick={() => {
               const userData = {
                 firstName: editingUser.firstName,
                 lastName: editingUser.lastName,
@@ -616,19 +693,20 @@ const UsersPage = () => {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="glass-strong">
           <DialogHeader>
-            <DialogTitle>Delete Confirmation</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="size-heading text-glass-text-primary">Delete Confirmation</DialogTitle>
+            <DialogDescription className="size-text text-glass-text-secondary">
               {userToDelete
                 ? `Are you sure you want to delete ${userToDelete.firstName} ${userToDelete.lastName}?`
                 : `Are you sure you want to delete ${selectedUsers.size} selected users?`}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="size-gap">
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
+              className="size-button"
             >
               Cancel
             </Button>
@@ -639,6 +717,7 @@ const UsersPage = () => {
                   ? handleDeleteUser(userToDelete.id)
                   : handleDeleteSelected()
               }
+              className="size-button"
             >
               Delete
             </Button>

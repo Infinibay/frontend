@@ -10,9 +10,10 @@ import {
   selectMachine, 
   deselectMachine,
 } from "@/state/slices/vms";
-import { 
-  fetchDepartmentByName, 
-  createDepartment 
+import {
+  fetchDepartmentByName,
+  createDepartment,
+  fetchDepartments
 } from "@/state/slices/departments";
 
 // Utils
@@ -51,18 +52,29 @@ export const useDepartmentPage = (departmentName) => {
   // Redux state
   const departments = useSelector((state) => state.departments.items);
   const vms = useSelector((state) => state.vms.items);
-  const departmentsLoading = useSelector((state) => state.departments.loading);
+  const departmentsLoading = useSelector((state) =>
+    state.departments.loading.fetch ||
+    state.departments.loading.fetchByName ||
+    state.departments.loading.create
+  );
   
   // Derived state
   const department = departments.find(d => d.name.toLowerCase() === departmentName?.toLowerCase());
   const machines = filterMachinesByDepartment(vms, departmentName);
   const sortedMachines = getSortedMachines(machines, sortBy, sortDirection);
 
+  // Fetch all departments if not loaded
+  useEffect(() => {
+    if (departments.length === 0 && !departmentsLoading) {
+      dispatch(fetchDepartments());
+    }
+  }, [dispatch, departments.length, departmentsLoading]);
+
   // Initial data fetch
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      
+
       // Fetch specific department data
       if (departmentName) {
         try {
@@ -75,10 +87,10 @@ export const useDepartmentPage = (departmentName) => {
           debug.error('fetch', `Error fetching department ${departmentName}:`, error);
         }
       }
-      
+
       setIsLoading(false);
     };
-    
+
     loadData();
   }, [dispatch, departmentName]);
 
@@ -203,6 +215,8 @@ export const useDepartmentPage = (departmentName) => {
     // State
     isLoading,
     department,
+    departments,
+    departmentsLoading,
     machines: sortedMachines,
     showToast,
     toastProps,
