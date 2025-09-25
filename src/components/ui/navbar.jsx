@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { selectAppSettings } from "@/state/slices/appSettings";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -29,6 +29,20 @@ import {
   getAccessibleNavContrast,
   getFocusRingForGlass
 } from "@/utils/navigation-glass";
+import { getAvatarUrl } from "@/utils/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "./dialog";
+import { AvatarSelector } from "./avatar-selector";
+import { Avatar } from "./avatar";
+import { updateUser } from "@/state/slices/users";
+import { fetchCurrentUser } from "@/state/slices/auth";
+import { useToast } from "@/hooks/use-toast";
 
 // Custom Components
 
@@ -60,6 +74,50 @@ const AppSidebar = React.forwardRef(({
   const isActive = (path) => pathname === path || pathname.startsWith(path + '/');
 
   const { size: contextSize } = useSizeContext();
+  const dispatch = useDispatch();
+  const { toast } = useToast();
+
+  // Profile modal state
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+
+  // Handle avatar update
+  const handleAvatarUpdate = async (avatarPath) => {
+    try {
+      setAvatarLoading(true);
+
+      // Show optimistic UI feedback
+      toast({
+        title: "Updating Avatar",
+        description: "Applying your new avatar...",
+      });
+
+      // Call updateUser mutation with new avatar
+      await dispatch(updateUser({ id: user.id, input: { avatar: avatarPath }})).unwrap();
+
+      // Refresh current user data
+      await dispatch(fetchCurrentUser()).unwrap();
+
+      toast({
+        title: "Avatar Updated",
+        description: "Your profile avatar has been updated successfully.",
+        variant: "success",
+      });
+
+      // Close modal on success
+      setIsProfileModalOpen(false);
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+
+      toast({
+        title: "Error",
+        description: "Failed to update avatar. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
   const isMobile = useIsMobile();
   const sidebarWidth = "var(--size-navbar-width)";
   const sidebarWidthMobile = "var(--size-navbar-mobile-width)";
@@ -170,15 +228,18 @@ const AppSidebar = React.forwardRef(({
                 className={cn("border-t border-sidebar-border relative", menuStyles.spacing.container)}
               >
                 {user && (
-                  <div className={cn("flex items-center px-2 mb-4", menuStyles.gap)}>
-                    <Image
+                  <Button
+                    variant="ghost"
+                    className={cn("flex items-center px-2 mb-4 w-full justify-start hover:bg-sidebar-accent/50 transition-colors", menuStyles.gap)}
+                    onClick={() => setIsProfileModalOpen(true)}
+                  >
+                    <Avatar
                       src={user.avatar}
                       alt={`${user.firstName} ${user.lastName}'s avatar`}
-                      width={40}
-                      height={40}
-                      className={cn("rounded-full bg-sidebar-accent p-1", menuStyles.avatar)}
+                      fallback={`${user.firstName} ${user.lastName}`}
+                      className={cn("w-10 h-10", menuStyles.avatar)}
                     />
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 text-left">
                       <h3 className={cn("text-sidebar-foreground font-medium truncate", menuStyles.text)}>
                         {user.firstName} {user.lastName}
                       </h3>
@@ -186,7 +247,7 @@ const AppSidebar = React.forwardRef(({
                         {user.role}
                       </p>
                     </div>
-                  </div>
+                  </Button>
                 )}
                 <Button
                   variant="ghost"
@@ -205,6 +266,57 @@ const AppSidebar = React.forwardRef(({
             </Sidebar>
           </SidebarWidthContainer>
         </SidebarProvider>
+
+        {/* User Profile Modal */}
+        <Dialog open={isProfileModalOpen} onOpenChange={setIsProfileModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Profile Settings</DialogTitle>
+              <DialogDescription>
+                Update your profile information and avatar.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-col space-y-6 py-4">
+              {/* User Information */}
+              <div className="flex items-center space-x-4">
+                <Avatar
+                  src={user?.avatar}
+                  alt={`${user?.firstName} ${user?.lastName}'s avatar`}
+                  fallback={`${user?.firstName} ${user?.lastName}`}
+                  className="w-15 h-15"
+                />
+                <div>
+                  <h3 className="text-lg font-medium">
+                    {user?.firstName} {user?.lastName}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  <p className="text-xs text-muted-foreground">{user?.role}</p>
+                </div>
+              </div>
+
+              {/* Avatar Selector */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Update Avatar</h4>
+                <AvatarSelector
+                  selectedAvatar={user?.avatar}
+                  onAvatarSelect={handleAvatarUpdate}
+                  loading={avatarLoading}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsProfileModalOpen(false)}
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
   );
 });

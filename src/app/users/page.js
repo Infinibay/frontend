@@ -27,15 +27,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Header, HeaderLeft, HeaderCenter, HeaderRight } from "@/components/ui/header";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-  SheetClose
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -59,7 +51,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar } from "@/components/ui/avatar";
-import { 
+import { AvatarSelector } from "@/components/ui/avatar-selector";
+import {
   Breadcrumb,
   BreadcrumbList,
   BreadcrumbItem,
@@ -73,6 +66,7 @@ import { Form } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { getAvatarUrl, DEFAULT_AVATAR_CANONICAL } from "@/utils/avatar";
 
 const UsersPage = () => {
   const dispatch = useDispatch();
@@ -94,7 +88,8 @@ const UsersPage = () => {
     email: '',
     password: '',
     passwordConfirmation: '',
-    role: 'USER'
+    role: 'USER',
+    avatar: DEFAULT_AVATAR_CANONICAL
   });
 
   useEffect(() => {
@@ -138,6 +133,62 @@ const UsersPage = () => {
         variant: "error",
         title: "Error",
         description: error.message || "Failed to update user."
+      });
+      setShowToast(true);
+    }
+  };
+
+  const handleAvatarUpdate = async (avatarPath) => {
+    console.log('🎯 handleAvatarUpdate called with:', { avatarPath, editingUserId: editingUser?.id });
+
+    if (!editingUser?.id) {
+      console.error('❌ No editing user ID available');
+      setToastProps({
+        variant: "error",
+        title: "Error",
+        description: "No user selected for update."
+      });
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      console.log('🔄 Dispatching updateUser with avatar only...', {
+        userId: editingUser.id,
+        avatarPath,
+        userRole: editingUser.role,
+        fullEditingUser: editingUser
+      });
+
+      // Send ONLY the avatar field, no other user data
+      const avatarOnlyInput = { avatar: avatarPath };
+      console.log('📤 Final input being sent:', { id: editingUser.id, input: avatarOnlyInput });
+
+      await dispatch(updateUser({ id: editingUser.id, input: avatarOnlyInput })).unwrap();
+      console.log('✅ Avatar update successful');
+
+      // Update local state
+      setEditingUser(prev => ({
+        ...prev,
+        avatar: avatarPath
+      }));
+
+      // Show subtle success feedback
+      setToastProps({
+        variant: "success",
+        title: "Avatar Updated",
+        description: "Your profile picture has been updated."
+      });
+      setShowToast(true);
+
+      // Refresh users list to show changes in table
+      dispatch(fetchUsers());
+    } catch (error) {
+      console.error('❌ Avatar update failed:', error);
+      setToastProps({
+        variant: "error",
+        title: "Error",
+        description: error.message || "Failed to update avatar."
       });
       setShowToast(true);
     }
@@ -329,7 +380,8 @@ const UsersPage = () => {
                         <div className="flex items-center size-gap">
                           <Avatar
                             className="size-avatar"
-                            fallback={`${user.firstName[0]}${user.lastName[0]}`}
+                            src={getAvatarUrl(user.avatar)}
+                            fallback={`${user.firstName} ${user.lastName}`}
                           />
                           <div>
                             <div className="size-text font-medium text-glass-text-primary">{user.email}</div>
@@ -536,6 +588,20 @@ const UsersPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label className="size-text text-glass-text-primary">
+                Avatar
+              </Label>
+              <AvatarSelector
+                selectedAvatar={newUser.avatar}
+                onAvatarSelect={(avatarPath) => setNewUser(prev => ({
+                  ...prev,
+                  avatar: avatarPath
+                }))}
+                loading={false}
+                className="w-full"
+              />
+            </div>
           </div>
           <SheetFooter>
             <Button className="size-button" onClick={() => {
@@ -566,7 +632,8 @@ const UsersPage = () => {
                 email: '',
                 password: '',
                 passwordConfirmation: '',
-                role: 'USER'
+                role: 'USER',
+                avatar: DEFAULT_AVATAR_CANONICAL
               });
             }}>
               Create User
@@ -575,15 +642,21 @@ const UsersPage = () => {
         </SheetContent>
       </Sheet>
 
-      {/* Edit User Sheet */}
-      <Sheet open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
-        <SheetContent className="glass-strong">
-          <SheetHeader>
-            <SheetTitle className="size-heading text-glass-text-primary">Edit User</SheetTitle>
-            <SheetDescription className="size-text text-glass-text-secondary">
+      {/* Edit User Dialog */}
+      <Dialog
+        open={isEditUserOpen}
+        onOpenChange={(open) => {
+          setIsEditUserOpen(open);
+          if (!open) setEditingUser(null);
+        }}
+      >
+        <DialogContent className="glass-strong z-1000 max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="size-heading text-glass-text-primary">Edit User</DialogTitle>
+            <DialogDescription className="size-text text-glass-text-secondary">
               Make changes to the user's information
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <div className="grid size-gap size-padding">
             <div className="space-y-2">
               <Label htmlFor="firstName" className="size-text text-glass-text-primary">
@@ -591,7 +664,7 @@ const UsersPage = () => {
               </Label>
               <Input
                 id="firstName"
-                defaultValue={editingUser?.firstName}
+                value={editingUser?.firstName ?? ""}
                 className="size-input"
                 onChange={(e) => {
                   setEditingUser(prev => ({
@@ -607,7 +680,7 @@ const UsersPage = () => {
               </Label>
               <Input
                 id="lastName"
-                defaultValue={editingUser?.lastName}
+                value={editingUser?.lastName ?? ""}
                 className="size-input"
                 onChange={(e) => {
                   setEditingUser(prev => ({
@@ -654,7 +727,7 @@ const UsersPage = () => {
                 Role
               </Label>
               <Select
-                defaultValue={editingUser?.role}
+                value={editingUser?.role ?? "USER"}
                 onValueChange={(value) => {
                   setEditingUser(prev => ({
                     ...prev,
@@ -671,13 +744,36 @@ const UsersPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label className="size-text text-glass-text-primary">
+                Avatar
+              </Label>
+              <AvatarSelector
+                selectedAvatar={editingUser?.avatar}
+                onAvatarSelect={handleAvatarUpdate}
+                loading={false}
+                className="w-full"
+              />
+            </div>
           </div>
-          <SheetFooter>
+          <DialogFooter>
             <Button className="size-button" onClick={() => {
+              if ((editingUser?.password || editingUser?.passwordConfirmation) &&
+                  (!editingUser?.password || !editingUser?.passwordConfirmation)) {
+                setToastProps({ variant: "error", title: "Validation Error", description: "Please fill out both password fields." });
+                setShowToast(true);
+                return;
+              }
+              if (editingUser?.password && editingUser?.passwordConfirmation && editingUser.password !== editingUser.passwordConfirmation) {
+                setToastProps({ variant: "error", title: "Validation Error", description: "Passwords do not match." });
+                setShowToast(true);
+                return;
+              }
               const userData = {
                 firstName: editingUser.firstName,
                 lastName: editingUser.lastName,
                 role: editingUser.role,
+                // Avatar is updated immediately on selection, not in this form
                 ...(editingUser.password && editingUser.passwordConfirmation && {
                   password: editingUser.password,
                   passwordConfirmation: editingUser.passwordConfirmation
@@ -687,9 +783,9 @@ const UsersPage = () => {
             }}>
               Update User
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

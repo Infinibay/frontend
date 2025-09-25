@@ -5,6 +5,7 @@ query currentUser {
     lastName
     role
     email
+    avatar
     createdAt
     namespace
   }
@@ -17,6 +18,7 @@ query user($id: String!) {
     lastName
     role
     email
+    avatar
     createdAt
   }
 }
@@ -28,6 +30,7 @@ query users($pagination: PaginationInputType, $orderBy: UserOrderByInputType) {
     lastName
     role
     email
+    avatar
     createdAt
   }
 }
@@ -102,6 +105,7 @@ query machine($id: String!) {
       lastName
       role
       email
+      avatar
       createdAt
     }
   }
@@ -143,6 +147,7 @@ query machines($orderBy: MachineOrderBy, $pagination: PaginationInputType) {
       lastName
       role
       email
+      avatar
       createdAt
     }
   }

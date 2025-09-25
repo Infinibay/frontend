@@ -43,6 +43,7 @@ const getInitialState = () => {
 					lastName: null,
 					email: null,
 					role: null,
+					avatar: null,
 				},
 				loading: {
 					login: false,
@@ -70,6 +71,7 @@ const getInitialState = () => {
 			lastName: null,
 			email: null,
 			role: null,
+			avatar: null,
 		},
 		loading: {
 			login: false,
@@ -95,6 +97,7 @@ const authSlice = createSlice({
 				lastName: null,
 				email: null,
 				role: null,
+				avatar: null,
 			};
 			state.isLoggedIn = false;
 			state.error.login = null;
@@ -112,6 +115,21 @@ const authSlice = createSlice({
 			if (typeof window !== 'undefined' && action.payload) {
 				localStorage.setItem('socketNamespace', action.payload);
 				debug.success('socket', 'Socket namespace saved to localStorage:', action.payload);
+			}
+		},
+		realTimeCurrentUserUpdated: (state, action) => {
+			const updatedUser = action.payload;
+			// Only update if the updated user is the currently logged-in user
+			if (updatedUser && updatedUser.id === state.user?.id) {
+				state.user = {
+					...state.user,
+					...updatedUser
+				};
+				debug.success('realtime', 'Current user updated via real-time event:', {
+					userId: updatedUser.id,
+					hasAvatar: !!updatedUser.avatar,
+					avatar: updatedUser.avatar
+				});
 			}
 		},
 		restoreAuthFromStorage: (state) => {
@@ -175,6 +193,7 @@ const authSlice = createSlice({
 					lastName: null,
 					email: null,
 					role: null,
+					avatar: null,
 				};
 				state.isLoggedIn = false;
 			})
@@ -203,6 +222,6 @@ const authSlice = createSlice({
 	}
 });
 
-export const { logout, setSocketNamespace, restoreAuthFromStorage } = authSlice.actions;
+export const { logout, setSocketNamespace, restoreAuthFromStorage, realTimeCurrentUserUpdated } = authSlice.actions;
 export { fetchCurrentUser, loginUser };
 export default authSlice.reducer;

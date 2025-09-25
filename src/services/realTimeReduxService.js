@@ -180,6 +180,16 @@ export class RealTimeReduxService {
           type: 'users/realTimeUserUpdated',
           payload: userData
         })
+
+        // Also update the auth slice if this is the current user
+        const currentUserId = this.store.getState().auth.user?.id
+        if (userData.id === currentUserId) {
+          this.debug.info('user-event', 'Updating current user in auth slice via real-time event')
+          this.store.dispatch({
+            type: 'auth/realTimeCurrentUserUpdated',
+            payload: userData
+          })
+        }
         break
 
       case 'delete':

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
 import { UploadProgress } from "@/components/ui/upload-progress";
 import { WallpaperSelector } from "@/components/ui/wallpaper-selector";
+import { AvatarSelector } from "@/components/ui/avatar-selector";
 import { LogoUpload } from "@/components/ui/logo-upload";
 import { FaUbuntu, FaWindows } from 'react-icons/fa';
 import { SiFedora } from 'react-icons/si';
@@ -19,6 +20,7 @@ import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useAppTheme } from '@/contexts/ThemeProvider';
 import { getSystemTheme } from '@/utils/theme';
 import { applyWallpaperWithTransition, getAvailableWallpapers } from '@/utils/wallpaper';
+import { getAvatarUrl, DEFAULT_AVATAR_PATH } from '@/utils/avatar';
 import { useSizeContext, sizeVariants, getTypographyClass, getLayoutSpacing, getGridClasses } from '@/components/ui/size-provider';
 import { createDebugger } from '@/utils/debug';
 
@@ -34,6 +36,8 @@ import {
   setThemePreference,
   setSizePreference
 } from '@/state/slices/appSettings';
+import { updateUser } from '@/state/slices/users';
+import { fetchCurrentUser } from '@/state/slices/auth';
 import axios from "axios";
 
 const SettingMain = () => {
@@ -47,6 +51,9 @@ const SettingMain = () => {
   const appSettingsError = useSelector(selectAppSettingsError);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
   const interfaceSize = useSelector(selectInterfaceSize);
+
+  // Current user state
+  const currentUser = useSelector((state) => state.auth.user);
 
   // Theme provider integration
   const themeContext = useAppTheme();
@@ -78,6 +85,10 @@ const SettingMain = () => {
   const [wallpaperStatus, setWallpaperStatus] = useState({ step: '', progress: 0 });
   const [wallpaperError, setWallpaperError] = useState(null);
   const [logoLoading, setLogoLoading] = useState(false);
+
+  // Avatar state
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarError, setAvatarError] = useState(null);
 
   // Use the same hook as the wizard to check ISO availability
   const { isOSAvailable, checkStatus } = useSystemStatus({ checkOnMount: true });
@@ -228,6 +239,43 @@ const SettingMain = () => {
     }
   };
 
+  // Handle avatar changes
+  const handleAvatarChange = async (avatarPath) => {
+    try {
+      setAvatarLoading(true);
+      setAvatarError(null);
+
+      // Show optimistic UI update immediately
+      toast({
+        title: "Updating Avatar",
+        description: "Applying your new avatar...",
+        variant: "info",
+      });
+
+      // Call updateUser mutation with new avatar
+      await dispatch(updateUser({ id: currentUser.id, input: { avatar: avatarPath }})).unwrap();
+
+      // Refresh current user data
+      await dispatch(fetchCurrentUser()).unwrap();
+
+      toast({
+        title: "Avatar Updated",
+        description: "Your profile avatar has been updated successfully.",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error('Avatar update error:', error);
+      setAvatarError('Failed to update avatar. Please try again.');
+
+      toast({
+        title: "Error",
+        description: "Failed to update avatar. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
 
   const osOptions = [
     {
@@ -877,6 +925,51 @@ const SettingMain = () => {
                   <div className={`flex items-center ${sizeVariants[size].typography.small} text-destructive`}>
                     <AlertCircle className={`${sizeVariants[size].icon.size} mr-2`} />
                     {appSettingsError?.update}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Avatar Settings Section */}
+        <Card className={`${sizeVariants[size].card.padding} relative z-20`}>
+          <div className={sizeVariants[size].layout.section}>
+            <div>
+              <h2 className={`subheading ${getTypographyClass('subheading', size)} ${sizeVariants[size].layout.sectionSpacing}`}>Profile Avatar</h2>
+              <p className={`${sizeVariants[size].typography.text} text-muted-foreground`}>
+                Choose an avatar image to represent your profile. Your avatar will be visible throughout the application.
+              </p>
+            </div>
+
+            {appSettingsLoading?.fetch ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className={`${sizeVariants[size].icon.nav} animate-spin`} />
+                <span className={`ml-2 ${sizeVariants[size].typography.small} text-muted-foreground`}>Loading avatar settings...</span>
+              </div>
+            ) : (
+              <div className={sizeVariants[size].layout.section}>
+                <AvatarSelector
+                  selectedAvatar={currentUser?.avatar}
+                  onAvatarSelect={handleAvatarChange}
+                  loading={avatarLoading}
+                  showLocalLoading={false}
+                  className="w-full"
+                />
+
+                {/* Loading indicator for avatar updates */}
+                {avatarLoading && (
+                  <div className={`flex items-center ${sizeVariants[size].typography.small} text-muted-foreground mt-4`}>
+                    <Loader2 className={`${sizeVariants[size].icon.size} animate-spin mr-2`} />
+                    Updating avatar...
+                  </div>
+                )}
+
+                {/* Error display */}
+                {avatarError && (
+                  <div className={`flex items-center ${sizeVariants[size].typography.small} text-destructive mt-4`}>
+                    <AlertCircle className={`${sizeVariants[size].icon.size} mr-2`} />
+                    {avatarError}
                   </div>
                 )}
               </div>

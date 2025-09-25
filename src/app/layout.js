@@ -61,7 +61,7 @@ function AppContent({ children, isAuthenticated }) {
             firstName: user.firstName,
             lastName: user.lastName,
             role: user.role,
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`,
+            avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`,
           } : null}
           onLogOut={handleLogout}
         />

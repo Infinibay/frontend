@@ -26,6 +26,7 @@ const CurrentUserDocument = gql`
       firstName
       lastName
       role
+      avatar
     }
   }
 `;
