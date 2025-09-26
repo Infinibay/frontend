@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from './card';
+// Card component removed - using transparent div wrapper instead
 import { Button } from './button';
 import { RadioGroup, RadioGroupItem } from './radio-group';
 import { Label } from './label';
@@ -23,6 +23,9 @@ const AvatarSelector = ({
   loading = false,
   showLocalLoading = true,
   className,
+  glass = "subtle",
+  glow = "none",
+  elevation = "2",
   ...props
 }) => {
   const { size } = useSizeContext();
@@ -327,34 +330,32 @@ const AvatarSelector = ({
   };
 
   return (
-    <Card
+    <div
       className={cn(
-        "transition-all duration-200 avatar-selector",
+        "transition-all duration-200 avatar-selector space-y-4",
         className
       )}
-      glass="subtle"
-      elevation="2"
       {...props}
     >
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Profile Avatar
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={avatarsLoading || refreshing}
-            className="h-8 w-8 p-0"
-          >
-            <RefreshCw className={cn("h-4 w-4", (refreshing || avatarsLoading) && "animate-spin")} />
-          </Button>
-        </CardTitle>
-      </CardHeader>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <User className="h-5 w-5" />
+          <h3 className="text-base font-semibold">Profile Avatar</h3>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={avatarsLoading || refreshing}
+          className="h-8 w-8 p-0"
+        >
+          <RefreshCw className={cn("h-4 w-4", (refreshing || avatarsLoading) && "animate-spin")} />
+        </Button>
+      </div>
 
-      <CardContent>
+      {/* Content */}
+      <div>
         {/* Enhanced Loading State */}
         {avatarsLoading && (
           <div className="flex items-center justify-center p-8">
@@ -649,8 +650,8 @@ const AvatarSelector = ({
             Select an avatar to update your profile picture. Changes are applied immediately.
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
