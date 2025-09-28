@@ -7,6 +7,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useFormError } from "@/components/ui/form-error-provider"
+import { createDebugger } from '@/utils/debug'
+
+const debug = createDebugger('frontend:stories:wizard');
 
 const meta = {
   title: "Components/Wizard",
@@ -48,7 +51,7 @@ export function MyWizard() {
         <h1 className="text-3xl font-bold mb-2">Setup Wizard</h1>
         <p className="text-muted-foreground">Complete your setup in a few simple steps</p>
       </div>
-      <Wizard onComplete={(values) => console.log(values)}>
+      <Wizard onComplete={(values) => debug.log('complete', 'Wizard completed with values:', values)}>
         <WizardStep id="personal">
           {/* Personal information step */}
         </WizardStep>
@@ -127,7 +130,7 @@ export default meta
 
 // Simple validation example
 const validatePersonalInfo = (values) => {
-  console.log('Validating personal info:', values)
+  debug.log('validation', 'Validating personal info:', values)
   const errors = {}
   if (!values.firstName) {
     errors.firstName = "First name is required"
@@ -136,14 +139,14 @@ const validatePersonalInfo = (values) => {
     errors.lastName = "Last name is required"
   }
   if (Object.keys(errors).length) {
-    console.log('Personal info validation errors:', errors)
+    debug.log('validation', 'Personal info validation errors:', errors)
     throw errors
   }
-  console.log('Personal info validation passed')
+  debug.log('validation', 'Personal info validation passed')
 }
 
 const validateContactInfo = (values) => {
-  console.log('Validating contact info:', values)
+  debug.log('validation', 'Validating contact info:', values)
   const errors = {}
   if (!values.email) {
     errors.email = "Email is required"
@@ -154,10 +157,10 @@ const validateContactInfo = (values) => {
     errors.phone = "Phone number is required"
   }
   if (Object.keys(errors).length) {
-    console.log('Contact info validation errors:', errors)
+    debug.log('validation', 'Contact info validation errors:', errors)
     throw errors
   }
-  console.log('Contact info validation passed')
+  debug.log('validation', 'Contact info validation passed')
 }
 
 export const SimpleWizard = {
@@ -169,7 +172,7 @@ export const SimpleWizard = {
       </div>
       <Wizard
         onComplete={(values) => {
-          console.log("Wizard completed with values:", values)
+          debug.log('complete', 'Wizard completed with values:', values)
           alert("Setup completed successfully! Check console for details.")
         }}
       >
@@ -289,7 +292,7 @@ Each step includes comprehensive validation and helpful user guidance.
 
 // Complex validation example
 const validateProjectInfo = async (values) => {
-  console.log('Validating project info:', values)
+  debug.log('validation', 'Validating project info:', values)
   const errors = {}
   
   if (!values.projectName?.trim()) {
@@ -307,14 +310,14 @@ const validateProjectInfo = async (values) => {
   }
 
   if (Object.keys(errors).length) {
-    console.log('Project info validation errors:', errors)
+    debug.log('validation', 'Project info validation errors:', errors)
     throw errors
   }
-  console.log('Project info validation passed')
+  debug.log('validation', 'Project info validation passed')
 }
 
 const validateTeamInfo = (values) => {
-  console.log('Validating team info:', values)
+  debug.log('validation', 'Validating team info:', values)
   const errors = {}
   
   if (!values.teamSize) {
@@ -326,14 +329,14 @@ const validateTeamInfo = (values) => {
   }
 
   if (Object.keys(errors).length) {
-    console.log('Team info validation errors:', errors)
+    debug.log('validation', 'Team info validation errors:', errors)
     throw errors
   }
-  console.log('Team info validation passed')
+  debug.log('validation', 'Team info validation passed')
 }
 
 const validateSettings = (values) => {
-  console.log('Validating settings:', values)
+  debug.log('validation', 'Validating settings:', values)
   const errors = {}
   
   if (!values.privacy) {
@@ -341,10 +344,10 @@ const validateSettings = (values) => {
   }
 
   if (Object.keys(errors).length) {
-    console.log('Settings validation errors:', errors)
+    debug.log('validation', 'Settings validation errors:', errors)
     throw errors
   }
-  console.log('Settings validation passed')
+  debug.log('validation', 'Settings validation passed')
 }
 
 const RequiredLabel = ({ children }) => (

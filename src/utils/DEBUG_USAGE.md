@@ -180,7 +180,20 @@ The debug system is currently implemented in:
 
 **Components:**
 - ✅ `src/components/RealTimeProvider.jsx` - Real-time provider (complete)
+- ✅ `src/components/DepartmentFirewall/DepartmentFirewallWizard.jsx` - Firewall wizard (complete)
+- ✅ `src/components/settings/SettingMain.jsx` - Settings component (complete)
 - ✅ `src/hooks/useSocketConnection.js` - Socket connection hook (complete)
+- ✅ `src/hooks/useVMFirewall.js` - VM firewall hook (complete)
+
+**Storybook Stories:**
+- ✅ `src/stories/HealthTrendsChart.stories.jsx` - Chart export functionality (complete)
+- ✅ `src/stories/dual-list.stories.jsx` - Sprint capacity validation (complete)
+- ✅ `src/stories/pc-details.stories.jsx` - PC save functionality (complete)
+- ✅ `src/stories/user-pc.stories.jsx` - PC click interactions (complete)
+- ✅ `src/stories/wizard.stories.jsx` - Wizard completion logging (complete)
+
+**Build Scripts:**
+- ⚠️ `scripts/generate-operations.js` - GraphQL operations generator (console usage intentionally kept for build tool visibility)
 
 **Cleaned Up:**
 - ✅ `src/components/ui/wizard.jsx` - Removed validation debugging logs

@@ -5,6 +5,7 @@ import { Shield, ArrowRight, ArrowDown, Settings, CheckCircle } from 'lucide-rea
 import { Wizard, WizardStep } from '@/components/ui/wizard';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { createDebugger } from '@/utils/debug';
 import {
   useCreateFilterRuleMutation,
   useCreateFilterMutation
@@ -22,6 +23,8 @@ import { CustomizationStep } from './steps/CustomizationStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { getGlassClasses } from '@/utils/glass-effects';
 import { cn } from '@/lib/utils';
+
+const debug = createDebugger('frontend:components:department-firewall-wizard');
 
 /**
  * DepartmentFirewallWizard - User-friendly firewall rule creation wizard
@@ -264,7 +267,7 @@ export default function DepartmentFirewallWizard({
       }
 
     } catch (error) {
-      console.error('Failed to create firewall rule:', error);
+      debug.error('create-rule', 'Failed to create firewall rule:', error);
 
       // Handle GraphQL-specific errors
       let errorMessage = "An error occurred while creating the firewall rule. Please try again.";

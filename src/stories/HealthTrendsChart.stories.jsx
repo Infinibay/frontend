@@ -1,5 +1,8 @@
 import React from 'react';
 import HealthTrendsChart from '@/components/vm/health/HealthTrendsChart';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:stories:health-trends-chart');
 
 export default {
   title: 'VM/Health/HealthTrendsChart',
@@ -253,7 +256,7 @@ export const WithAnnotations = () => (
 // Export functionality
 export const WithExport = () => {
   const handleExport = (format) => {
-    console.log(`Exporting chart as ${format}`);
+    debug.log('export', `Exporting chart as ${format}`);
     // Simulate export
     alert(`Chart exported as ${format}`);
   };

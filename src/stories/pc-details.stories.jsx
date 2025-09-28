@@ -3,6 +3,9 @@ import { PcDetails } from "@/components/ui/pc-details";
 import { UserPc } from "@/components/ui/user-pc";
 import { Button } from "@/components/ui/button";
 import { fn } from '@storybook/test';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:stories:pc-details');
 
 /**
  * A detailed view component for displaying and editing PC specifications.
@@ -17,7 +20,7 @@ import { fn } from '@storybook/test';
  *   return (
  *     <PcDetails
  *       pc={pc}
- *       onSave={(updatedPc) => console.log('PC Updated:', updatedPc)}
+ *       onSave={(updatedPc) => debug.log('save', 'PC Updated:', updatedPc)}
  *     />
  *   )
  * }
@@ -155,10 +158,10 @@ export const SmallSize = () => {
         onOpenChange={setOpen}
         size="sm"
         pc={defaultPc}
-        onPlay={() => console.log('Play clicked')}
-        onPause={() => console.log('Pause clicked')}
-        onStop={() => console.log('Stop clicked')}
-        onFullScreen={() => console.log('Fullscreen clicked')}
+        onPlay={() => debug.log('play', 'Play clicked')}
+        onPause={() => debug.log('pause', 'Pause clicked')}
+        onStop={() => debug.log('stop', 'Stop clicked')}
+        onFullScreen={() => debug.log('fullscreen', 'Fullscreen clicked')}
       />
     </div>
   );
@@ -176,10 +179,10 @@ export const MediumSize = () => {
         onOpenChange={setOpen}
         size="md"
         pc={defaultPc}
-        onPlay={() => console.log('Play clicked')}
-        onPause={() => console.log('Pause clicked')}
-        onStop={() => console.log('Stop clicked')}
-        onFullScreen={() => console.log('Fullscreen clicked')}
+        onPlay={() => debug.log('play', 'Play clicked')}
+        onPause={() => debug.log('pause', 'Pause clicked')}
+        onStop={() => debug.log('stop', 'Stop clicked')}
+        onFullScreen={() => debug.log('fullscreen', 'Fullscreen clicked')}
       />
     </div>
   );
@@ -197,10 +200,10 @@ export const LargeSize = () => {
         onOpenChange={setOpen}
         size="lg"
         pc={defaultPc}
-        onPlay={() => console.log('Play clicked')}
-        onPause={() => console.log('Pause clicked')}
-        onStop={() => console.log('Stop clicked')}
-        onFullScreen={() => console.log('Fullscreen clicked')}
+        onPlay={() => debug.log('play', 'Play clicked')}
+        onPause={() => debug.log('pause', 'Pause clicked')}
+        onStop={() => debug.log('stop', 'Stop clicked')}
+        onFullScreen={() => debug.log('fullscreen', 'Fullscreen clicked')}
       />
     </div>
   );
@@ -217,10 +220,10 @@ export const WithButtonTrigger = () => {
         open={open}
         onOpenChange={setOpen}
         pc={defaultPc}
-        onPlay={() => console.log('Play clicked')}
-        onPause={() => console.log('Pause clicked')}
-        onStop={() => console.log('Stop clicked')}
-        onFullScreen={() => console.log('Fullscreen clicked')}
+        onPlay={() => debug.log('play', 'Play clicked')}
+        onPause={() => debug.log('pause', 'Pause clicked')}
+        onStop={() => debug.log('stop', 'Stop clicked')}
+        onFullScreen={() => debug.log('fullscreen', 'Fullscreen clicked')}
       />
     </div>
   );
@@ -242,10 +245,10 @@ export const WithUserPcTrigger = () => {
         open={open}
         onOpenChange={setOpen}
         pc={defaultPc}
-        onPlay={() => console.log('Play clicked')}
-        onPause={() => console.log('Pause clicked')}
-        onStop={() => console.log('Stop clicked')}
-        onFullScreen={() => console.log('Fullscreen clicked')}
+        onPlay={() => debug.log('play', 'Play clicked')}
+        onPause={() => debug.log('pause', 'Pause clicked')}
+        onStop={() => debug.log('stop', 'Stop clicked')}
+        onFullScreen={() => debug.log('fullscreen', 'Fullscreen clicked')}
       />
     </div>
   );
@@ -308,10 +311,10 @@ export const MultipleUserPcs = () => {
         open={!!selectedPc}
         onOpenChange={(open) => !open && setSelectedPc(null)}
         pc={selectedPc || defaultPc}
-        onPlay={() => console.log('Play clicked')}
-        onPause={() => console.log('Pause clicked')}
-        onStop={() => console.log('Stop clicked')}
-        onFullScreen={() => console.log('Fullscreen clicked')}
+        onPlay={() => debug.log('play', 'Play clicked')}
+        onPause={() => debug.log('pause', 'Pause clicked')}
+        onStop={() => debug.log('stop', 'Stop clicked')}
+        onFullScreen={() => debug.log('fullscreen', 'Fullscreen clicked')}
       />
     </div>
   );

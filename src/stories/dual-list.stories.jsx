@@ -3,6 +3,9 @@ import { cn } from '../lib/utils';
 import DualList from '../components/ui/dual-list';
 import { Card } from '../components/ui/card';
 import { Avatar } from '../components/ui/avatar';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:stories:dual-list');
 
 const meta = {
   title: 'Components/DualList',
@@ -260,7 +263,7 @@ export const TaskPrioritization = {
       
       // If total effort would exceed 8 SP, prevent the change
       if (totalEffort > 8) {
-        console.warn('Sprint capacity exceeded (8 SP maximum)');
+        debug.warn('validation', 'Sprint capacity exceeded (8 SP maximum)');
         return null; // Returning null prevents the change
       }
       

@@ -5,6 +5,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@apollo/client';
 import { gql } from '@apollo/client';
+import { createDebugger } from '@/utils/debug';
 import {
   filterRules,
   normalizeAction,
@@ -71,6 +72,8 @@ const GET_SIMPLIFIED_FIREWALL_RULES = gql`
     }
   }
 `;
+
+const debug = createDebugger('frontend:hooks:vm-firewall');
 
 const useVMFirewall = (vmId) => {
   // Query firewall state
@@ -272,7 +275,7 @@ const useVMFirewall = (vmId) => {
     try {
       await Promise.all(promises);
     } catch (error) {
-      console.error('Error refreshing firewall data:', error);
+      debug.error('refresh', 'Error refreshing firewall data:', error);
       throw error;
     }
   };

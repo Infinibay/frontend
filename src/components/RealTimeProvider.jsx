@@ -69,7 +69,7 @@ export function RealTimeProvider({ children }) {
 
       } catch (error) {
         if (!isCleanedUp) {
-          console.error('❌ RealTimeProvider: Failed to initialize real-time service:', error)
+          debug.error('init', 'Failed to initialize real-time service:', error)
           setError(error.message)
           setConnectionStatus('error')
         }

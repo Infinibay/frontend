@@ -1,6 +1,9 @@
 import * as React from "react";
 import { fn } from '@storybook/test';
 import { UserPc } from "@/components/ui/user-pc";
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:stories:user-pc');
 
 /**
  * A component for displaying user's PC information in a card format with status indicators.
@@ -16,7 +19,7 @@ import { UserPc } from "@/components/ui/user-pc";
  *     <UserPc
  *       name="Gaming PC"
  *       status="idle"
- *       onClick={() => console.log('PC clicked')}
+ *       onClick={() => debug.log('click', 'PC clicked')}
  *     />
  *   )
  * }

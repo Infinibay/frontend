@@ -1,3 +1,11 @@
+/**
+ * GraphQL Operations Generator Script
+ *
+ * Note: This script uses console.log/console.error instead of the frontend debug system
+ * because it's a Node.js build tool that needs immediate, unconditional output visibility.
+ * The createDebugger system is designed for browser-based frontend debugging.
+ */
+
 const { buildSchema, introspectionFromSchema, printSchema } = require('graphql');
 const fs = require('fs');
 const path = require('path');

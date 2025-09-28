@@ -264,7 +264,7 @@ const SettingMain = () => {
         variant: "success",
       });
     } catch (error) {
-      console.error('Avatar update error:', error);
+      debug.error('avatar-update', 'Avatar update error:', error);
       setAvatarError('Failed to update avatar. Please try again.');
 
       toast({
@@ -447,7 +447,7 @@ const SettingMain = () => {
         variant: "success",
       });
     } catch (error) {
-      debug.error('upload', 'Upload error:', error);
+      debug.error('iso-upload', 'Upload error:', error);
       toast({
         title: "Error",
         description: `Failed to upload ISO file: ${error.message}`,
