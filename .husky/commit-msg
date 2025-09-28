@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Check if commit message mentions GraphQL changes when GraphQL files are modified
+changed_files=$(git diff --cached --name-only)
+
+if echo "$changed_files" | grep -q "\.graphql$"; then
+  if ! grep -qi "graphql\|codegen\|schema\|query\|mutation" "$1"; then
+    echo "⚠️  GraphQL files were modified but commit message doesn't mention GraphQL."
+    echo "ℹ️  Consider adding keywords like 'graphql', 'codegen', 'schema', 'query', or 'mutation' to your commit message."
+  fi
+fi
+
+echo "✅ Commit message validation passed!"

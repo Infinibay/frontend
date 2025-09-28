@@ -3,77 +3,23 @@ import { gql } from '@apollo/client';
 import client from '@/apollo-client';
 import { createDebugger } from '@/utils/debug';
 
-// Define GraphQL documents
-const MachinesDocument = gql`
-  query machines {
-    machines {
-      id
-      name
-      status
-      userId
-      departmentId
-    }
-  }
-`;
+import {
+  MachinesDocument,
+  CreateMachineDocument,
+  PowerOnDocument,
+  PowerOffDocument,
+  SuspendDocument,
+  MoveMachineDocument,
+  DestroyMachineDocument,
+} from '@/gql/hooks';
 
-const CreateMachineDocument = gql`
-  mutation createMachine($input: CreateMachineInputType!) {
-    createMachine(input: $input) {
-      id
-      name
-      status
-    }
-  }
-`;
-
-const PowerOnDocument = gql`
-  mutation powerOn($id: String!) {
-    powerOn(id: $id) {
-      success
-      message
-    }
-  }
-`;
-
-const PowerOffDocument = gql`
-  mutation powerOff($id: String!) {
-    powerOff(id: $id) {
-      success
-      message
-    }
-  }
-`;
-
-const SuspendDocument = gql`
-  mutation suspend($id: String!) {
-    suspend(id: $id) {
-      success
-      message
-    }
-  }
-`;
-
-const MoveMachineDocument = gql`
-  mutation moveMachine($id: String!, $departmentId: String!) {
-    moveMachine(id: $id, departmentId: $departmentId) {
-      success
-      message
-    }
-  }
-`;
-
-const DestroyMachineDocument = gql`
-  mutation destroyMachine($id: String!) {
-    destroyMachine(id: $id) {
-      success
-      message
-    }
-  }
-`;
+const debug = createDebugger('vms-slice');
 
 const executeGraphQLMutation = async (mutation, variables) => {
   try {
+    debug('Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables });
     const response = await client.mutate({ mutation, variables });
+    debug('GraphQL mutation response', response);
 
     // Check for GraphQL errors in the response
     if (response.errors) {
@@ -90,6 +36,7 @@ const executeGraphQLMutation = async (mutation, variables) => {
 
     return response.data;
   } catch (error) {
+    debug('GraphQL mutation error', error);
     console.error('GraphQL mutation error:', error);
 
     // Enhanced error categorization for mutations
@@ -110,8 +57,6 @@ const executeGraphQLMutation = async (mutation, variables) => {
   }
 };
 
-// Create debug instance for VMs state
-const debug = createDebugger('frontend:state:vms');
 
 const withBackoff = async (fn, { retries=3, base=500 }={}) => {
   let attempt=0; let lastErr;

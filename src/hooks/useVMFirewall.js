@@ -3,9 +3,12 @@
  */
 
 import { useMemo } from 'react';
-import { useQuery } from '@apollo/client';
-import { gql } from '@apollo/client';
 import { createDebugger } from '@/utils/debug';
+import {
+  useGetVmFirewallStateQuery,
+  useGetAvailableFirewallTemplatesQuery,
+  useGetSimplifiedFirewallRulesQuery,
+} from '@/gql/hooks';
 import {
   filterRules,
   normalizeAction,
@@ -14,66 +17,7 @@ import {
   formatRuleForDisplay
 } from '../utils/firewallHelpers';
 
-// GraphQL Documents
-const GET_VM_FIREWALL_STATE = gql`
-  query getVMFirewallState($machineId: ID!) {
-    getVMFirewallState(machineId: $machineId) {
-      appliedTemplates
-      customRules {
-        id
-        action
-        direction
-        port
-        protocol
-        description
-        sources
-      }
-      effectiveRules {
-        id
-        action
-        direction
-        port
-        protocol
-        description
-        sources
-      }
-      lastSync
-    }
-  }
-`;
-
-const GET_AVAILABLE_FIREWALL_TEMPLATES = gql`
-  query getAvailableFirewallTemplates {
-    getAvailableFirewallTemplates {
-      template
-      name
-      description
-      rules {
-        port
-        protocol
-        direction
-        action
-        description
-      }
-    }
-  }
-`;
-
-const GET_SIMPLIFIED_FIREWALL_RULES = gql`
-  query getSimplifiedFirewallRules($machineId: ID!) {
-    getSimplifiedFirewallRules(machineId: $machineId) {
-      id
-      action
-      direction
-      port
-      protocol
-      description
-      sources
-    }
-  }
-`;
-
-const debug = createDebugger('frontend:hooks:vm-firewall');
+const debug = createDebugger('vm-firewall-hook');
 
 const useVMFirewall = (vmId) => {
   // Query firewall state
@@ -82,7 +26,7 @@ const useVMFirewall = (vmId) => {
     loading: firewallStateLoading,
     error: firewallStateError,
     refetch: refetchFirewallState
-  } = useQuery(GET_VM_FIREWALL_STATE, {
+  } = useGetVmFirewallStateQuery({
     variables: { machineId: vmId },
     skip: !vmId,
     errorPolicy: 'all',
@@ -95,7 +39,7 @@ const useVMFirewall = (vmId) => {
     loading: templatesLoading,
     error: templatesError,
     refetch: refetchTemplates
-  } = useQuery(GET_AVAILABLE_FIREWALL_TEMPLATES, {
+  } = useGetAvailableFirewallTemplatesQuery({
     errorPolicy: 'all',
     fetchPolicy: 'cache-and-network'
   });
@@ -106,7 +50,7 @@ const useVMFirewall = (vmId) => {
     loading: rulesLoading,
     error: rulesError,
     refetch: refetchRules
-  } = useQuery(GET_SIMPLIFIED_FIREWALL_RULES, {
+  } = useGetSimplifiedFirewallRulesQuery({
     variables: { machineId: vmId },
     skip: !vmId,
     errorPolicy: 'all',
@@ -119,10 +63,17 @@ const useVMFirewall = (vmId) => {
   // Combined error state
   const error = firewallStateError || templatesError || rulesError;
 
-  // Extract firewall state data
+  // Extract firewall state data with debugging
   const firewallState = firewallStateData?.getVMFirewallState || null;
   const availableTemplates = templatesData?.getAvailableFirewallTemplates || [];
   const simplifiedRules = rulesData?.getSimplifiedFirewallRules || [];
+
+  debug('Firewall data extracted', {
+    firewallState,
+    availableTemplates: availableTemplates.length,
+    simplifiedRules: simplifiedRules.length,
+    vmId
+  });
 
   // Applied templates
   const appliedTemplates = useMemo(() => {
@@ -266,6 +217,7 @@ const useVMFirewall = (vmId) => {
 
   // Refresh all firewall data
   const refreshData = async () => {
+    debug('Refreshing firewall data');
     const promises = [
       refetchFirewallState(),
       refetchTemplates(),
@@ -274,8 +226,9 @@ const useVMFirewall = (vmId) => {
 
     try {
       await Promise.all(promises);
+      debug('Firewall data refresh completed');
     } catch (error) {
-      debug.error('refresh', 'Error refreshing firewall data:', error);
+      debug('Error refreshing firewall data', error);
       throw error;
     }
   };

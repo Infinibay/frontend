@@ -10,7 +10,15 @@
     "lint:fix": "next lint --fix",
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
-    "codegen": "graphql-codegen --config codegen.ts"
+    "codegen": "graphql-codegen --config codegen.ts",
+    "codegen:check": "graphql-codegen --config codegen.ts --check",
+    "codegen:validate": "graphql-codegen --config codegen.ts --validate",
+    "codegen:clean": "rm -f src/gql/hooks.ts src/gql/graphql.ts src/gql/gql.ts",
+    "graphql:lint": "graphql-eslint --config .graphql-eslintrc.yml src/gql/**/*.graphql",
+    "ci:codegen": "npm run codegen:check && npm run codegen:validate",
+    "build:check-codegen": "npm run codegen:check && npm run build",
+    "postinstall": "husky install",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@apollo/client": "^3.14.0",
@@ -78,6 +86,7 @@
     "@graphql-codegen/typescript": "4.1.4",
     "@graphql-codegen/typescript-operations": "^4.5.0",
     "@graphql-codegen/typescript-react-apollo": "^4.3.2",
+    "@graphql-eslint/eslint-plugin": "^3.20.1",
     "@mdx-js/react": "latest",
     "@storybook/addon-docs": "latest",
     "@storybook/addon-essentials": "^8.4.4",
@@ -93,10 +102,25 @@
     "eslint": "^8",
     "eslint-config-next": "14.0.4",
     "eslint-plugin-storybook": "^0.11.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
     "postcss": "^8.4.32",
     "postcss-loader": "^8.1.1",
     "storybook": "^8.4.4",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.7.3"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "git add"
+    ],
+    "*.graphql": [
+      "npm run graphql:lint",
+      "git add"
+    ],
+    "src/gql/**/*.graphql": [
+      "npm run codegen:validate"
+    ]
   }
 }

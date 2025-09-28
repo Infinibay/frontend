@@ -11,26 +11,31 @@ import {
 import { persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
+// Create debug instance for filter rules state
+const debug = createDebugger('filterRules-slice');
+
 const executeGraphQLMutation = async (mutation, variables) => {
   try {
+    debug('Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables });
     const { data } = await client.mutate({ mutation, variables });
+    debug('GraphQL mutation success', data);
     return data;
   } catch (error) {
+    debug('GraphQL mutation error', error);
     console.error('GraphQL mutation error:', error);
     throw error;
   }
 };
 
-// Create debug instance for filter rules state
-const debug = createDebugger('frontend:state:filterRules');
-
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
+    debug('Executing GraphQL query', { query: query.loc?.source?.body, variables });
     const { data } = await client.query({ query, variables });
-    debug.log('graphql', 'GraphQL query result:', data);
+    debug('GraphQL query success', data);
     return data;
   } catch (error) {
-    debug.error('graphql', 'GraphQL query error:', error);
+    debug('GraphQL query error', error);
+    console.error('GraphQL query error:', error);
     throw error;
   }
 };

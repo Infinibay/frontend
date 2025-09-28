@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
 import { gql } from '@apollo/client';
+import { createDebugger } from '@/utils/debug';
 import {
   ApplicationsDocument,
   ApplicationDocument,
@@ -12,8 +13,9 @@ import {
 import { persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
+const debug = createDebugger('applications-slice');
 
-// TODO: Implement destroyApplication
+// TODO: Implement destroyApplication mutation in backend
 export const DELETE_APPLICATION_MUTATION = gql`
   mutation DeleteApplication($id: String!) {
     destroyApplication(id: $id)
@@ -22,9 +24,12 @@ export const DELETE_APPLICATION_MUTATION = gql`
 
 const executeGraphQLMutation = async (mutation, variables) => {
   try {
+    debug('Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables });
     const { data } = await client.mutate({ mutation, variables });
+    debug('GraphQL mutation success', data);
     return data;
   } catch (error) {
+    debug('GraphQL mutation error', error);
     console.error('GraphQL mutation error:', error);
     throw error;
   }
@@ -32,9 +37,12 @@ const executeGraphQLMutation = async (mutation, variables) => {
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
+    debug('Executing GraphQL query', { query: query.loc?.source?.body, variables });
     const { data } = await client.query({ query, variables });
+    debug('GraphQL query success', data);
     return data;
   } catch (error) {
+    debug('GraphQL query error', error);
     console.error('GraphQL query error:', error);
     throw error;
   }

@@ -385,102 +385,462 @@ const handleVmStatusUpdate = (state, action) => {
 
 ## GraphQL Codegen Workflow
 
-Automated GraphQL hook generation ensures type safety and consistency.
+Our GraphQL codegen workflow is optimized for performance and developer experience with automatic hooks generation, pre-commit validation, and CI integration.
 
-### File Organization
+### Complete Workflow Process
+
+The GraphQL codegen process follows this optimized workflow:
+
+1. **Schema Introspection**: Automatically fetches schema from development/staging environments
+2. **File Organization**: Structured `.graphql` files organized by feature domain
+3. **Hook Generation**: TypeScript hooks with full type safety generated in `src/gql/hooks.ts`
+4. **Pre-commit Validation**: Git hooks ensure generated files are always up-to-date
+5. **CI Integration**: Build process validates GraphQL operations against schema
+
+### File Organization Structure
 
 ```
 src/gql/
 ├── queries/
-│   ├── vm.graphql
-│   ├── user.graphql
-│   └── department.graphql
+│   ├── vmFirewall.graphql      # VM firewall queries
+│   ├── vmDetail.graphql        # VM detailed information
+│   ├── systemResources.graphql # System metrics and resources
+│   └── vmRecommendations.graphql # VM optimization recommendations
 ├── mutations/
-│   ├── createVm.graphql
-│   ├── updateUser.graphql
-│   └── deleteDepartment.graphql
-├── hooks.ts          # Generated hooks
-└── graphql.ts        # Generated types
+│   ├── vmFirewall.graphql      # Firewall rule mutations
+│   ├── vmOperations.graphql    # VM power operations
+│   ├── vmSnapshots.graphql     # Snapshot management
+│   └── vmMaintenance.graphql   # VM maintenance operations
+├── queries.graphql             # Main query definitions
+├── mutations.graphql           # Main mutation definitions
+├── hooks.ts                    # Generated TypeScript hooks
+├── graphql.ts                  # Generated GraphQL types
+└── gql.ts                      # Generated GraphQL documents
 ```
 
-### Writing GraphQL Operations
+### GraphQL Operation Best Practices
+
+#### Naming Conventions
 
 ```graphql
-# src/gql/queries/vm.graphql
-query GetVms($departmentId: ID) {
-  vms(departmentId: $departmentId) {
-    id
-    name
-    status
-    department {
+# ✅ Use descriptive, domain-specific names
+query getVMFirewallState($machineId: ID!) {
+  getVMFirewallState(machineId: $machineId) {
+    appliedTemplates
+    customRules {
       id
-      name
+      action
+      direction
+      port
+      protocol
+      description
+      sources
     }
   }
 }
 
-query GetVmById($id: ID!) {
-  vm(id: $id) {
+# ✅ Mutations should clearly indicate their action
+mutation createSimplifiedFirewallRule($input: CreateSimplifiedFirewallRuleInput!) {
+  createSimplifiedFirewallRule(input: $input) {
+    appliedTemplates
+    lastSync
+    customRules {
+      id
+      action
+      direction
+      port
+      protocol
+    }
+  }
+}
+```
+
+#### Field Selection Strategy
+
+```graphql
+# ✅ Select only needed fields for performance
+query machines {
+  machines {
     id
     name
     status
-    cpu
-    memory
-    disk
+    userId
+    departmentId
+    # Only include nested objects when necessary
+    template {
+      id
+      name
+      cores
+      ram
+      storage
+    }
+  }
+}
+
+# ❌ Avoid deep nesting without purpose
+query machinesWithExcessiveNesting {
+  machines {
+    id
+    name
+    department {
+      id
+      name
+      users {
+        id
+        firstName
+        machines {
+          id
+          name
+          # This creates unnecessary depth
+        }
+      }
+    }
   }
 }
 ```
 
 ### Using Generated Hooks
 
+#### Standard Query Usage
+
 ```javascript
-import { useGetVmsQuery, useGetVmByIdQuery } from '@/gql/hooks';
+import { useGetVmFirewallStateQuery } from '@/gql/hooks';
+import { createDebugger } from '@/utils/debug';
 
-function VmList({ departmentId }) {
-  const debug = createDebugger('frontend:components:VmList');
+function VMFirewallComponent({ vmId }) {
+  const debug = createDebugger('vm-firewall-component');
 
-  const { data, loading, error } = useGetVmsQuery({
-    variables: { departmentId },
-    onCompleted: () => debug.success('VMs loaded successfully'),
-    onError: (error) => debug.error('Failed to load VMs:', error)
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useGetVmFirewallStateQuery({
+    variables: { machineId: vmId },
+    skip: !vmId,
+    errorPolicy: 'all',
+    fetchPolicy: 'cache-and-network',
+    onCompleted: (data) => {
+      debug('Firewall state loaded', data);
+    },
+    onError: (error) => {
+      debug('Firewall state error', error);
+    }
   });
 
-  if (loading) return <VmListSkeleton />;
+  if (loading) return <FirewallStateSkeleton />;
   if (error) return <ErrorMessage error={error} />;
 
   return (
     <div>
-      {data?.vms?.map(vm => (
-        <VmCard key={vm.id} vm={vm} />
-      ))}
+      <h3>Applied Templates: {data?.getVMFirewallState?.appliedTemplates?.length}</h3>
+      {/* Component content */}
     </div>
   );
 }
 ```
 
-### Codegen Commands
-
-```bash
-# Regenerate hooks and types
-npm run codegen
-
-# Watch for changes (not scripted, but available via CLI)
-npx graphql-codegen --config codegen.ts --watch
-```
-
-### **MANDATORY**: Use Generated Hooks
+#### Mutation with Error Handling
 
 ```javascript
-// ❌ NEVER DO THIS
-import { useQuery } from '@apollo/client';
-import { GET_VMS } from './queries';
+import { useCreateSimplifiedFirewallRuleMutation } from '@/gql/hooks';
+import { createDebugger } from '@/utils/debug';
 
-const { data } = useQuery(GET_VMS);
+function CreateFirewallRule({ vmId }) {
+  const debug = createDebugger('create-firewall-rule');
 
-// ✅ ALWAYS DO THIS
-import { useGetVmsQuery } from '@/gql/hooks';
+  const [createRule, {
+    loading: creating,
+    error: createError
+  }] = useCreateSimplifiedFirewallRuleMutation({
+    onCompleted: (data) => {
+      debug('Firewall rule created successfully', data);
+      // Update cache or refetch queries
+    },
+    onError: (error) => {
+      debug('Failed to create firewall rule', error);
+    },
+    // Optimistic updates
+    update: (cache, { data }) => {
+      // Update Apollo cache with new rule
+    }
+  });
 
-const { data } = useGetVmsQuery();
+  const handleCreateRule = async (ruleData) => {
+    try {
+      await createRule({
+        variables: {
+          input: {
+            machineId: vmId,
+            ...ruleData
+          }
+        }
+      });
+    } catch (error) {
+      debug('Mutation error caught', error);
+    }
+  };
+
+  return (
+    <form onSubmit={handleCreateRule}>
+      {/* Form content */}
+      <button disabled={creating}>
+        {creating ? 'Creating...' : 'Create Rule'}
+      </button>
+    </form>
+  );
+}
+```
+
+### Enhanced Codegen Commands
+
+#### Development Commands
+
+```bash
+# Generate hooks and types
+npm run codegen
+
+# Validate generated files are up-to-date
+npm run codegen:check
+
+# Validate GraphQL operations against schema
+npm run codegen:validate
+
+# Clean generated files before regeneration
+npm run codegen:clean
+
+# Lint GraphQL files
+npm run graphql:lint
+
+# CI validation (check + validate)
+npm run ci:codegen
+
+# Build with codegen validation
+npm run build:check-codegen
+```
+
+#### Advanced Usage
+
+```bash
+# Generate with custom schema endpoint
+GRAPHQL_ENDPOINT=https://staging-api.infinibay.com/graphql npm run codegen
+
+# Use environment-based schema URLs
+NEXT_PUBLIC_GRAPHQL_API_URL=https://production-api.infinibay.com/graphql npm run codegen
+```
+
+### Pre-commit Hook Integration
+
+Our pre-commit hooks automatically:
+
+1. **Validate GraphQL Files**: Lint `.graphql` files for syntax errors
+2. **Check Generated Files**: Ensure hooks are up-to-date with GraphQL operations
+3. **Schema Validation**: Verify operations against current schema
+4. **Type Safety**: Prevent commits with outdated TypeScript types
+
+#### Hook Configuration
+
+The pre-commit hook runs automatically and will:
+
+```bash
+# On any .graphql file change, the hook will:
+✅ Lint GraphQL files
+✅ Validate operations against schema
+✅ Check if generated hooks need updating
+❌ Block commit if validation fails
+```
+
+### CI/CD Integration
+
+#### Build Validation
+
+```bash
+# In CI environment, these commands ensure schema consistency:
+npm run ci:codegen          # Validates codegen state
+npm run build:check-codegen # Builds only if codegen is valid
+```
+
+#### Environment-Specific Schema
+
+```bash
+# CI can validate against different environments:
+# Development
+GRAPHQL_ENDPOINT=http://localhost:4000/graphql npm run codegen:validate
+
+# Staging
+GRAPHQL_ENDPOINT=https://staging-api.infinibay.com/graphql npm run codegen:validate
+
+# Production
+GRAPHQL_ENDPOINT=https://api.infinibay.com/graphql npm run codegen:validate
+```
+
+### Migration from Direct Apollo Client
+
+#### Before (❌ Don't Do This)
+
+```javascript
+import { useQuery, useMutation, gql } from '@apollo/client';
+
+const GET_VM_FIREWALL = gql`
+  query getVMFirewallState($machineId: ID!) {
+    getVMFirewallState(machineId: $machineId) {
+      appliedTemplates
+      customRules {
+        id
+        action
+        direction
+        port
+        protocol
+      }
+    }
+  }
+`;
+
+function VMFirewall({ vmId }) {
+  const { data, loading, error } = useQuery(GET_VM_FIREWALL, {
+    variables: { machineId: vmId }
+  });
+
+  // Manual error handling, no type safety
+  return <div>{data?.getVMFirewallState?.appliedTemplates}</div>;
+}
+```
+
+#### After (✅ Always Do This)
+
+```javascript
+import { useGetVmFirewallStateQuery } from '@/gql/hooks';
+
+function VMFirewall({ vmId }) {
+  const { data, loading, error } = useGetVmFirewallStateQuery({
+    variables: { machineId: vmId }
+  });
+
+  // Full type safety, automatic error handling
+  return <div>{data?.getVMFirewallState?.appliedTemplates}</div>;
+}
+```
+
+### Troubleshooting Common Issues
+
+#### Generated Files Out of Date
+
+```bash
+# Error: "GraphQL generated files are out of date!"
+# Solution:
+npm run codegen
+
+# Then commit the updated files
+git add src/gql/hooks.ts src/gql/graphql.ts
+git commit -m "Update GraphQL generated files"
+```
+
+#### Schema Validation Errors
+
+```bash
+# Error: "Cannot query field 'nonExistentField' on type 'Query'"
+# Solution: Check your .graphql files for fields that don't exist in the schema
+
+# Validate specific operations
+npm run codegen:validate
+
+# Check schema introspection
+npm run codegen -- --verbose
+```
+
+#### Hook Import Errors
+
+```javascript
+// ❌ Error: Hook doesn't exist
+import { useNonExistentQuery } from '@/gql/hooks';
+
+// ✅ Solution: Check the generated hooks.ts file for correct hook name
+import { useGetVmFirewallStateQuery } from '@/gql/hooks';
+```
+
+### **MANDATORY**: Always Use Generated Hooks
+
+#### ❌ NEVER Do This
+
+```javascript
+// Direct Apollo Client usage is FORBIDDEN
+import { useQuery, useMutation } from '@apollo/client';
+import { gql } from '@apollo/client';
+
+const GET_VMS = gql`
+  query GetVMs {
+    machines { id name }
+  }
+`;
+
+function VmList() {
+  const { data } = useQuery(GET_VMS); // No type safety
+  return <div>{data?.machines}</div>;
+}
+
+// Manual GraphQL documents are FORBIDDEN
+const client = useApolloClient();
+client.query({ query: GET_VMS }); // No type safety
+```
+
+#### ✅ ALWAYS Do This
+
+```javascript
+// Generated hooks provide full type safety
+import { useMachinesQuery } from '@/gql/hooks';
+
+function VmList() {
+  const { data } = useMachinesQuery(); // Full TypeScript support
+  return <div>{data?.machines}</div>;
+}
+
+// Redux slices should use generated documents
+import { MachinesDocument } from '@/gql/hooks';
+
+export const fetchMachines = createAsyncThunk(
+  'vms/fetchMachines',
+  async () => {
+    const { data } = await client.query({ query: MachinesDocument });
+    return data.machines;
+  }
+);
+```
+
+### Performance Optimizations
+
+#### Query Optimization
+
+```javascript
+// ✅ Use appropriate fetch policies
+const { data } = useGetVmFirewallStateQuery({
+  variables: { machineId: vmId },
+  fetchPolicy: 'cache-and-network', // Faster initial load
+  errorPolicy: 'all', // Handle partial errors
+  notifyOnNetworkStatusChange: true // Loading states
+});
+
+// ✅ Implement proper cache updates
+const [updateRule] = useCreateSimplifiedFirewallRuleMutation({
+  update: (cache, { data }) => {
+    // Update cache to avoid refetch
+    cache.modify({
+      id: cache.identify({ __typename: 'VMFirewallState', /* other fields */ }),
+      fields: {
+        customRules: (existing) => [...existing, data.createSimplifiedFirewallRule.customRules]
+      }
+    });
+  }
+});
+```
+
+#### Bundle Size Management
+
+```javascript
+// ✅ Import only needed hooks to reduce bundle size
+import { useGetVmFirewallStateQuery } from '@/gql/hooks';
+
+// ❌ Don't import entire hooks file
+import * as allHooks from '@/gql/hooks'; // Increases bundle size
 ```
 
 ## Redux State Management

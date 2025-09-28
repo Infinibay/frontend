@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged to check GraphQL files and TypeScript files
+npx lint-staged
+
+# Validate GraphQL codegen is up to date
+npm run codegen:check || {
+  echo "❌ GraphQL generated files are out of date!"
+  echo "ℹ️  Run 'npm run codegen' to update them."
+  exit 1
+}
+
+echo "✅ Pre-commit checks passed!"

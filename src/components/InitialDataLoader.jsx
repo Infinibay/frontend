@@ -166,14 +166,6 @@ export const InitialDataLoader = ({ children }) => {
     return (
       <div className="relative">
         <LoadingSkeleton />
-        {deferredLoading && (
-          <div className="fixed bottom-4 right-4 bg-card border border-border rounded-lg p-3 shadow-lg max-w-sm">
-            <div className="text-sm font-medium mb-2">Loading additional data...</div>
-            <div className="text-xs text-muted-foreground">
-              Core features are ready. Additional features loading in background.
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -245,17 +237,6 @@ export const InitialDataLoader = ({ children }) => {
   return (
     <>
       {children}
-      {deferredLoading && (
-        <div className="fixed bottom-4 right-4 bg-card border border-border rounded-lg p-3 shadow-lg max-w-sm z-50">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-            <div className="text-sm">Loading additional features...</div>
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            {deferredServices.filter(s => s.status === 'pending').length} services remaining
-          </div>
-        </div>
-      )}
     </>
   );
 };
