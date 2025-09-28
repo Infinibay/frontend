@@ -9,8 +9,6 @@ import { Button } from "@/components/ui/button";
 import { fetchVms } from "@/state/slices/vms";
 import { countMachines } from "@/app/computers/utils/groupMachines";
 import { createDebugger } from '@/utils/debug';
-
-const debug = createDebugger('frontend:components:computers-list');
 import { getGlassClasses } from "@/utils/glass-effects";
 import {
   DndContext,
@@ -24,6 +22,8 @@ import {
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SortableItem } from "@/components/ui/sortable-item";
 import { moveMachine } from "@/state/slices/vms";
+
+const debug = createDebugger('frontend:components:computers-list');
 
 function DraggableUserPc({ machine, selected, onSelect, size, onPlay, onPause, onStop, onDelete }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({

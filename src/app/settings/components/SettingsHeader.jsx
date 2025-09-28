@@ -1,23 +1,25 @@
-"use client";
+"use client"
 
-import { cn } from "@/lib/utils";
-import { getGlassClasses } from "@/utils/glass-effects";
-import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
-import { RefreshCw } from "lucide-react";
-import { useAppTheme } from "@/contexts/ThemeProvider";
+import React from "react"
+import { RefreshCw } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { createDebugger } from "@/utils/debug"
+import { getGlassClasses } from "@/utils/glass-effects"
+import { useSizeContext, sizeVariants } from "@/components/ui/size-provider"
+import { useAppTheme } from "@/contexts/ThemeProvider"
 import {
   Header,
   HeaderLeft,
   HeaderCenter,
   HeaderRight,
-} from "@/components/ui/header";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/header"
+import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -25,11 +27,26 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@/components/ui/breadcrumb"
 
+const debug = createDebugger('frontend:components:settings-header')
+
+/**
+ * SettingsHeader component for settings page
+ * Features refresh functionality and breadcrumbs navigation
+ */
 export function SettingsHeader({ onRefresh }) {
   const { resolvedTheme } = useAppTheme();
   const { size } = useSizeContext();
+
+  React.useEffect(() => {
+    debug.log('render', 'SettingsHeader rendered:', { size, resolvedTheme })
+  }, [size, resolvedTheme])
+
+  const handleRefresh = () => {
+    debug.info('action', 'Refresh button clicked')
+    onRefresh?.()
+  }
 
   return (
     <>

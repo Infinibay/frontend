@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { FaPlus, FaPencilAlt, FaTrash } from 'react-icons/fa';
 import { CreateTemplateDialog } from './components/create-template-dialog';
@@ -11,7 +11,7 @@ import { EditCategoryDialog } from './components/edit-category-dialog';
 import { TemplateCard } from './components/template-card';
 import { TemplatesHeader } from './components/TemplatesHeader';
 import { LottieAnimation } from '@/components/ui/lottie-animation';
-import { destroyTemplate, fetchTemplates, selectTemplatesState } from '@/state/slices/templates';
+import { destroyTemplate, fetchTemplates } from '@/state/slices/templates';
 import { destroyTemplateCategory, fetchTemplateCategories } from '@/state/slices/templateCategories';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -20,23 +20,48 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:pages:templates');
 
 export default function TemplatesPage() {
   const dispatch = useDispatch();
   const { toast } = useToast();
-  
-  // Initial data fetch
-  React.useEffect(() => {
-    dispatch(fetchTemplates());
-    dispatch(fetchTemplateCategories());
-  }, [dispatch]);
 
-  // Get data from Redux store
-  const templatesState = useSelector(selectTemplatesState);
-  const templates = templatesState.items || [];
-  const categories = useSelector(state => state.templateCategories.items);
+  // Use optimized data loading for templates and categories
+  const {
+    data: templates,
+    isLoading: templatesLoading,
+    error: templatesError,
+    refresh: refreshTemplates
+  } = useEnsureData('templates', fetchTemplates, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 5 * 60 * 1000, // 5 minutes
+    transform: (data) => data.items || data || []
+  });
+
+  const {
+    data: categories,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+    refresh: refreshCategories
+  } = useEnsureData('templateCategories', fetchTemplateCategories, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 10 * 60 * 1000, // 10 minutes
+    transform: (data) => data.items || data || []
+  });
+
+  debug.info('Templates page state:', {
+    templatesCount: templates?.length || 0,
+    categoriesCount: categories?.length || 0,
+    templatesLoading,
+    categoriesLoading,
+    hasErrors: !!(templatesError || categoriesError)
+  });
 
   const handleDeleteTemplate = async (templateId) => {
+    debug.info('Deleting template:', templateId);
     try {
       await dispatch(destroyTemplate(templateId)).unwrap();
       toast({
@@ -44,9 +69,11 @@ export default function TemplatesPage() {
         title: "Success",
         description: "Template deleted successfully"
       });
-      // Refetch templates after successful deletion
-      dispatch(fetchTemplates());
+      // Refresh templates to get updated list
+      refreshTemplates();
+      debug.info('Template deleted successfully:', templateId);
     } catch (error) {
+      debug.error('Failed to delete template:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -56,6 +83,7 @@ export default function TemplatesPage() {
   };
 
   const handleDeleteCategory = async (categoryId) => {
+    debug.info('Deleting category:', categoryId);
     try {
       await dispatch(destroyTemplateCategory(categoryId)).unwrap();
       toast({
@@ -63,9 +91,11 @@ export default function TemplatesPage() {
         title: "Success",
         description: "Category deleted successfully"
       });
-      // Refetch categories after successful deletion
-      dispatch(fetchTemplateCategories());
+      // Refresh categories to get updated list
+      refreshCategories();
+      debug.info('Category deleted successfully:', categoryId);
     } catch (error) {
+      debug.error('Failed to delete category:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -74,7 +104,7 @@ export default function TemplatesPage() {
     }
   };
 
-  const templatesByCategory = templates.reduce((acc, template) => {
+  const templatesByCategory = (templates || []).reduce((acc, template) => {
     const categoryId = template.categoryId;
     if (!acc[categoryId]) {
       acc[categoryId] = [];
@@ -84,8 +114,9 @@ export default function TemplatesPage() {
   }, {});
 
   const handleRefresh = () => {
-    dispatch(fetchTemplates());
-    dispatch(fetchTemplateCategories());
+    debug.info('Refreshing templates and categories data...');
+    refreshTemplates();
+    refreshCategories();
   };
 
   return (
@@ -109,7 +140,7 @@ export default function TemplatesPage() {
         </div>
 
         <div className="size-gap space-y-8">
-          {categories.map((category) => (
+          {(categories || []).map((category) => (
             <div key={category.id} className="glass-subtle radius-fluent-lg size-padding space-y-4">
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
@@ -215,7 +246,7 @@ export default function TemplatesPage() {
               </div>
           </div>
           ))}
-          {categories.length === 0 && (
+          {(!categories || categories.length === 0) && !(categoriesLoading || templatesLoading) && (
             <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
               <LottieAnimation
                 animationPath="/lottie/not-found.json"

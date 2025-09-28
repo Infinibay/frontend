@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
@@ -60,7 +62,8 @@ const cardVariants = cva(
 )
 
 /**
- * Card component with responsive glass effects.
+ * Card component with glass effects, elevation, and glow variants
+ * Features responsive sizing and supports multiple visual styles
  *
  * @param {boolean} forceGlass - When true, bypasses responsive glass downgrading.
  * Useful for components like SelectionCard that need to maintain strong glass effects
@@ -204,3 +207,4 @@ const CardFooter = React.forwardRef(({ className, ...props }, ref) => {
 CardFooter.displayName = "CardFooter"
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export default Card

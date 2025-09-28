@@ -46,50 +46,118 @@ The Infinibay frontend is built with a modern React ecosystem:
 - **Storybook** for component development and testing
 - **ESLint** and **Prettier** for code formatting
 
-## Init.js Data Loading Strategy
+## Optimized Data Loading Strategy
 
-The `src/init.js` file implements a critical data loading strategy that ensures the application starts with essential data while handling non-critical data gracefully.
+The Infinibay frontend implements an optimized data loading strategy that prioritizes critical services for fast app startup while handling non-critical data through on-demand loading.
 
-### Critical Services
+### Init.js Data Loading Strategy
 
-These services **must** load successfully for the application to function:
+The `src/init.js` file implements a performance-focused initialization strategy with comprehensive monitoring and service categorization.
+
+#### Critical Services (Must Load for App to Start)
+
+These services **must** load successfully before the application can function:
 
 ```javascript
-// From init.js
+// From init.js - SERVICE_CONFIG.critical
 const criticalServices = [
-  'appSettings',    // Application configuration
-  'currentUser'     // User authentication data
+  'appSettings',    // Application configuration and settings
+  'currentUser'     // Current user authentication data
 ];
 ```
 
 **When to add to critical services:**
-- Data required for application navigation
+- Data required for application navigation (navbar, routing)
 - Authentication and authorization data
 - Core application settings
 - Data without which the app cannot function
 
-### Non-Critical Services
+#### Deferred Services (Load in Background)
 
-These services can fail without preventing app startup:
+These services load in the background after critical services complete:
 
 ```javascript
-// From init.js
-const nonCriticalServices = [
-  'departments',
-  'vms',
-  'applications',
-  'vmCategories',
-  'users',
-  'auditLogs',
-  'notifications',
-  'diskImages'
+// From init.js - SERVICE_CONFIG.deferred
+const deferredServices = [
+  'departments',    // Department data for organization
+  'vms',           // Virtual machine inventory
+  'applications',   // Available applications
+  'users'          // User management data
 ];
 ```
 
-**When to add to non-critical services:**
-- Feature-specific data that can be loaded on-demand
-- Data that has fallback mechanisms
-- Secondary information that enhances but doesn't block functionality
+**When to add to deferred services:**
+- Data that pages handle their own fetching for
+- Information that has real-time update capabilities
+- Secondary data that enhances but doesn't block core functionality
+
+#### On-Demand Services (Load When Needed)
+
+These services only load when specifically required:
+
+```javascript
+// From init.js - SERVICE_CONFIG.onDemand
+const onDemandServices = [
+  'graphics',      // Graphics hardware for VM configuration
+  'filters',       // Network filtering rules
+  'filterRules'    // Advanced filtering configuration
+];
+```
+
+**When to add to on-demand services:**
+- Feature-specific data (wizard steps, specific pages)
+- Resource-intensive data that's rarely used
+- Data with high variability
+
+### useEnsureData Hook Pattern
+
+For components that need guaranteed data availability, use the `useEnsureData` hook:
+
+```javascript
+import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { fetchApplications } from '@/state/slices/applications';
+
+function MyComponent() {
+  const {
+    data: applications,
+    isLoading,
+    error,
+    refresh
+  } = useEnsureData('applications', fetchApplications, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 5 * 60 * 1000, // 5 minutes
+  });
+
+  if (isLoading) return <LoadingSkeleton />;
+  if (error) return <ErrorMessage error={error} onRetry={refresh} />;
+
+  return <ApplicationsList applications={applications} />;
+}
+```
+
+#### Loading Strategies
+
+- **IMMEDIATE**: Block render until data loads (use sparingly)
+- **BACKGROUND**: Show skeleton while loading (recommended for most cases)
+- **LAZY**: Load on user interaction
+- **PREFETCH**: Load when component mounts
+
+### Performance Monitoring
+
+The optimized loading strategy includes comprehensive performance tracking:
+
+```javascript
+import { trackDataLoading, getPerformanceReport } from '@/utils/performance';
+
+// Automatic tracking in init.js
+const result = await measureAsync(`init:${service.name}`, async () => {
+  return await dispatch(service.action()).unwrap();
+});
+
+// Get performance insights
+const report = getPerformanceReport();
+console.log('Loading performance:', report);
+```
 
 ### Error Handling Pattern
 
@@ -97,21 +165,36 @@ const nonCriticalServices = [
 // Critical service failure - stops app initialization
 if (!result.success) {
   debug.error(`Critical service ${serviceName} failed:`, result.error);
-  throw new Error(`Failed to initialize critical service: ${serviceName}`);
+  throw result.error; // Critical failure stops app initialization
 }
 
-// Non-critical service failure - logs error and continues
+// Deferred service failure - logs error and continues
 if (!result.success) {
-  debug.warn(`Non-critical service ${serviceName} failed:`, result.error);
+  debug.warn(`Deferred service ${serviceName} failed:`, result.error);
+  // App continues, data will be loaded on-demand
 }
 ```
 
-### Guidelines for Init.js
+### Configuration Options
 
-1. **Keep it minimal** - Only load data that's absolutely necessary for app startup
-2. **Prefer on-demand loading** - Load feature-specific data when the feature is accessed
-3. **Handle failures gracefully** - Distinguish between critical and non-critical failures
-4. **Use debug logging** - Always log initialization progress and errors
+Control loading behavior via environment variables:
+
+```bash
+# Development: Load all services synchronously for testing
+REACT_APP_LOAD_ALL_INIT=true
+
+# Production: Skip deferred loading entirely
+REACT_APP_SKIP_DEFERRED_INIT=true
+```
+
+### Guidelines for Data Loading
+
+1. **Critical services only** - Only appSettings and currentUser should be critical
+2. **On-demand by default** - New services should use useEnsureData pattern
+3. **Performance monitoring** - Track loading times with performance utils
+4. **Real-time compatibility** - Ensure services work with empty initial state
+5. **Graceful degradation** - Handle missing data elegantly
+6. **Debug logging** - Always log initialization progress and errors
 
 ## Debug System Usage
 

@@ -1,6 +1,8 @@
+"use client"
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { cva } from "class-variance-authority";
+import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { useSizeContext } from "./size-provider"
 
@@ -52,6 +54,10 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Button component with multiple variants, sizes, and glass effects
+ * Supports responsive sizing and elevation states
+ */
 const Button = React.forwardRef(({
   className,
   size: sizeProp,
@@ -100,3 +106,4 @@ const Button = React.forwardRef(({
 Button.displayName = "Button"
 
 export { Button, buttonVariants }
+export default Button

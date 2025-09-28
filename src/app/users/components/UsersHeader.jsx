@@ -1,24 +1,26 @@
-"use client";
+"use client"
 
-import { cn } from "@/lib/utils";
-import { BsPlusLg } from "react-icons/bs";
-import { RefreshCw, Users } from "lucide-react";
-import Link from "next/link";
-import { useSelector } from "react-redux";
-import { useAppTheme } from "@/contexts/ThemeProvider";
+import React from "react"
+import Link from "next/link"
+import { useSelector } from "react-redux"
+import { BsPlusLg } from "react-icons/bs"
+import { RefreshCw, Users } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { createDebugger } from "@/utils/debug"
+import { useAppTheme } from "@/contexts/ThemeProvider"
 import {
   Header,
   HeaderLeft,
   HeaderCenter,
   HeaderRight,
-} from "@/components/ui/header";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/header"
+import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -26,12 +28,27 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@/components/ui/breadcrumb"
 
+const debug = createDebugger('frontend:components:users-header')
+
+/**
+ * UsersHeader component for users page
+ * Features refresh functionality, breadcrumbs, and user creation controls
+ */
 export function UsersHeader({ onRefresh }) {
   const usersLoading = useSelector((state) => state.users?.loading?.fetch);
   const usersError = useSelector((state) => state.users?.error?.fetch);
   const { resolvedTheme } = useAppTheme();
+
+  React.useEffect(() => {
+    debug.log('render', 'UsersHeader rendered:', { usersLoading, hasError: !!usersError })
+  }, [usersLoading, usersError])
+
+  const handleRefresh = () => {
+    debug.info('action', 'Refresh button clicked')
+    onRefresh?.()
+  }
 
   return (
     <Header
@@ -92,7 +109,7 @@ export function UsersHeader({ onRefresh }) {
           </TooltipProvider>
 
           {/* New User Button */}
-          <Link href="/users/create">
+          <Link href="/users/create" onClick={() => debug.info('navigation', 'Create user navigation triggered')}>
             <Button className="whitespace-nowrap">
               <BsPlusLg className="mr-2 h-4 w-4" />
               Add User

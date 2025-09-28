@@ -1,23 +1,40 @@
-'use client';
+"use client"
 
-import React from 'react';
-import { useSelector } from 'react-redux';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useWizardContext } from '@/components/ui/wizard';
-import { useFormError } from '@/components/ui/form-error-provider';
-import { selectDepartments, selectDepartmentsLoading } from '@/state/slices/departments';
-import { Building2, User, Lock, KeyRound, Server } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React from "react"
+import { useSelector } from "react-redux"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useWizardContext } from "@/components/ui/wizard"
+import { useFormError } from "@/components/ui/form-error-provider"
+import { selectDepartments, selectDepartmentsLoading } from "@/state/slices/departments"
+import { cn } from "@/lib/utils"
+import { createDebugger } from "@/utils/debug"
+import { Building2, User, Lock, KeyRound, Server } from "lucide-react"
 
+const debug = createDebugger('frontend:components:basic-info-step')
+
+/**
+ * BasicInfoStep component for machine creation wizard
+ * Handles machine name, credentials, and department selection
+ */
 export function BasicInfoStep({ id, departmentId = null }) {
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
   const stepValues = values[id] || {};
   const departments = useSelector(selectDepartments);
   const isLoading = useSelector(selectDepartmentsLoading);
+
+  React.useEffect(() => {
+    debug.log('render', 'BasicInfoStep rendered:', {
+      stepId: id,
+      departmentId,
+      departmentCount: departments.length,
+      isLoading,
+      hasValues: Object.keys(stepValues).length > 0
+    })
+  }, [id, departmentId, departments.length, isLoading, stepValues])
 
   // Auto-select department logic
   React.useEffect(() => {
@@ -26,6 +43,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
       if (departmentId && !stepValues.departmentId) {
         const targetDept = departments.find(dept => dept.id === departmentId);
         if (targetDept) {
+          debug.info('selection', 'Department auto-selected:', { departmentId, departmentName: targetDept.name })
           setValue(`${id}.departmentId`, String(departmentId));
           return;
         }
@@ -33,6 +51,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
 
       // Otherwise, auto-select first department if no department is selected
       if (!stepValues.departmentId) {
+        debug.log('selection', 'First department auto-selected:', departments[0].name)
         setValue(`${id}.departmentId`, String(departments[0].id));
       }
     }
@@ -71,7 +90,10 @@ export function BasicInfoStep({ id, departmentId = null }) {
               </div>
               <Select
                 value={stepValues.departmentId || ''}
-                onValueChange={(value) => setValue(`${id}.departmentId`, value)}
+                onValueChange={(value) => {
+                  debug.info('selection', 'Department manually selected:', { departmentId: value })
+                  setValue(`${id}.departmentId`, value)
+                }}
                 disabled={isLoading}
                 aria-describedby="Select department for this machine"
               >
@@ -130,7 +152,10 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 id="name"
                 placeholder="e.g., dev-server-01, web-app-prod"
                 value={stepValues.name || ''}
-                onChange={(e) => setValue(`${id}.name`, e.target.value)}
+                onChange={(e) => {
+                  debug.log('input', 'Machine name changed:', e.target.value)
+                  setValue(`${id}.name`, e.target.value)
+                }}
                 className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('name') ? 'border-red-500' : ''}`}
               />
               {getError('name') && (
@@ -168,7 +193,10 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 id="username"
                 placeholder="e.g., admin, developer"
                 value={stepValues.username || ''}
-                onChange={(e) => setValue(`${id}.username`, e.target.value)}
+                onChange={(e) => {
+                  debug.log('input', 'Username changed:', e.target.value)
+                  setValue(`${id}.username`, e.target.value)
+                }}
                 className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('username') ? 'border-red-500' : ''}`}
               />
               {getError('username') && (
@@ -199,7 +227,10 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 type="password"
                 placeholder="Enter a secure password"
                 value={stepValues.password || ''}
-                onChange={(e) => setValue(`${id}.password`, e.target.value)}
+                onChange={(e) => {
+                  debug.log('input', 'Password changed:', { hasValue: e.target.value.length > 0 })
+                  setValue(`${id}.password`, e.target.value)
+                }}
                 className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('password') ? 'border-red-500' : ''}`}
               />
               {getError('password') && (

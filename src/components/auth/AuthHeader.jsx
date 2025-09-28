@@ -1,10 +1,19 @@
-import React from "react";
-import { Image } from "@nextui-org/react";
-import { useSizeContext } from "@/components/ui/size-provider";
-import { cn } from "@/lib/utils";
-import { ChevronLeft } from "lucide-react";
-import { getSafeTheme } from "@/utils/form-glass-effects";
+"use client"
 
+import React from "react"
+import { Image } from "@nextui-org/react"
+import { useSizeContext } from "@/components/ui/size-provider"
+import { cn } from "@/lib/utils"
+import { createDebugger } from "@/utils/debug"
+import { ChevronLeft } from "lucide-react"
+import { getSafeTheme } from "@/utils/form-glass-effects"
+
+const debug = createDebugger('frontend:components:auth-header')
+
+/**
+ * AuthHeader component for authentication pages
+ * Features responsive sizing, glass effects, and navigation support
+ */
 const AuthHeader = ({
   text,
   onBack,
@@ -15,6 +24,10 @@ const AuthHeader = ({
 }) => {
   const { size } = useSizeContext();
   const theme = getSafeTheme();
+
+  React.useEffect(() => {
+    debug.log('render', 'AuthHeader rendered:', { text, variant, size, glass, hasBackButton: showBackButton && !!onBack })
+  }, [text, variant, size, glass, showBackButton, onBack])
 
   // Size-responsive classes
   const sizeClasses = {
@@ -62,7 +75,10 @@ const AuthHeader = ({
   // Back button component
   const BackButton = () => (
     <button
-      onClick={onBack}
+      onClick={() => {
+        debug.info('navigation', 'Back button clicked')
+        onBack?.()
+      }}
       className={cn(
         "inline-flex items-center justify-center rounded-md transition-all duration-200",
         "hover:bg-accent/10 focus:bg-accent/20 active:bg-accent/30",

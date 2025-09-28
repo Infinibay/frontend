@@ -1,9 +1,10 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchInitialData } from '@/init';
+import { fetchInitialData, SERVICE_CONFIG } from '@/init';
 import { Skeleton } from '@/components/ui/skeleton';
 import { selectAppSettingsInitialized, selectAppSettingsLoading } from '@/state/slices/appSettings';
+import { createDebugger } from '@/utils/debug';
 
 const LoadingSkeleton = () => {
   return (
@@ -63,12 +64,16 @@ const LoadingSkeleton = () => {
   );
 };
 
+const debug = createDebugger('frontend:components:initial-data-loader');
+
 export const InitialDataLoader = ({ children }) => {
   const dispatch = useDispatch();
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const [hasTimedOut, setHasTimedOut] = useState(false);
+  const [deferredLoading, setDeferredLoading] = useState(false);
+  const [deferredServices, setDeferredServices] = useState([]);
 
   // Only check loading states that are critical for initial app functionality
   const authLoading = useSelector(state => state.auth.loading?.fetchUser);
@@ -77,29 +82,60 @@ export const InitialDataLoader = ({ children }) => {
 
   useEffect(() => {
     const initialize = async () => {
+      debug.info('Starting application initialization...');
+
       try {
         // Set a timeout for the initialization process
         const timeoutId = setTimeout(() => {
+          debug.warn('Initialization timeout reached, proceeding with partial data');
           setHasTimedOut(true);
           setIsInitializing(false);
         }, 15000); // 15 second timeout
 
         // First, restore auth from localStorage if available
+        debug.info('Restoring authentication from storage...');
         const { restoreAuthFromStorage } = await import('@/state/slices/auth');
         dispatch(restoreAuthFromStorage());
 
+        // Track deferred services for status display
+        setDeferredServices(SERVICE_CONFIG.deferred.map(s => ({ name: s.name, status: 'pending', description: s.description })));
+
         // Then fetch initial data with error boundaries
         try {
-          await dispatch(fetchInitialData()).unwrap();
+          debug.info('Fetching critical initial data...');
+          const results = await dispatch(fetchInitialData()).unwrap();
+
+          debug.info('Initial data fetch completed:', {
+            successes: results.successes,
+            failures: results.failures?.map(f => f.service) || []
+          });
+
+          // Update deferred services status based on results
+          if (results.deferred) {
+            setDeferredServices(current =>
+              current.map(service => {
+                const wasSuccessful = results.deferred.successes.includes(service.name);
+                const failed = results.deferred.failures.find(f => f.service === service.name);
+                return {
+                  ...service,
+                  status: failed ? 'failed' : (wasSuccessful ? 'completed' : 'pending')
+                };
+              })
+            );
+            setDeferredLoading(false);
+          } else {
+            // Deferred services are loading in background
+            setDeferredLoading(true);
+          }
         } catch (initError) {
-          console.warn('Initial data fetch failed, continuing with partial data:', initError);
-          // Don't set error here, let individual pages handle their own data fetching
+          debug.warn('Critical data fetch failed, continuing with partial data:', initError);
+          setError(initError);
         }
 
         clearTimeout(timeoutId);
       } catch (err) {
+        debug.error('Failed to initialize application:', err);
         setError(err);
-        console.error('Failed to initialize data:', err);
       } finally {
         setIsInitializing(false);
       }
@@ -108,34 +144,72 @@ export const InitialDataLoader = ({ children }) => {
     initialize();
   }, [dispatch, retryCount]);
 
-  // Only wait for critical loading states (exclude departments and VMs to prevent infinite loop)
-  // Departments and VMs will be loaded by individual pages as needed
+  // Only wait for critical loading states - app can start with just these
   const isCriticalLoading = authLoading || appSettingsLoading?.fetch || !appSettingsInitialized;
 
   const handleRetry = () => {
+    debug.info(`Retrying initialization (attempt ${retryCount + 1})...`);
     setError(null);
     setHasTimedOut(false);
     setIsInitializing(true);
+    setDeferredLoading(false);
     setRetryCount(prev => prev + 1);
   };
 
+  const handleContinueWithLimitedFunctionality = () => {
+    debug.info('User chose to continue with limited functionality');
+    setError(null);
+    setIsInitializing(false);
+  };
+
   if (isCriticalLoading && !hasTimedOut) {
-    return <LoadingSkeleton />;
+    return (
+      <div className="relative">
+        <LoadingSkeleton />
+        {deferredLoading && (
+          <div className="fixed bottom-4 right-4 bg-card border border-border rounded-lg p-3 shadow-lg max-w-sm">
+            <div className="text-sm font-medium mb-2">Loading additional data...</div>
+            <div className="text-xs text-muted-foreground">
+              Core features are ready. Additional features loading in background.
+            </div>
+          </div>
+        )}
+      </div>
+    );
   }
 
   if (error && !hasTimedOut) {
+    const isCriticalError = error?.message?.includes('Critical') ||
+                           SERVICE_CONFIG.critical.some(s => error?.message?.includes(s.name));
+
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 max-w-md">
           <div className="text-xl text-red-500">
-            Failed to load application data.
+            {isCriticalError ? 'Failed to load critical application data' : 'Some features may be limited'}
           </div>
-          <button
-            onClick={handleRetry}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-          >
-            Retry
-          </button>
+          <div className="text-sm text-muted-foreground">
+            {isCriticalError
+              ? 'The application requires certain data to function properly.'
+              : 'Non-essential features failed to load, but you can continue using the app.'
+            }
+          </div>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={handleRetry}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+            >
+              Retry
+            </button>
+            {!isCriticalError && (
+              <button
+                onClick={handleContinueWithLimitedFunctionality}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90"
+              >
+                Continue Anyway
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -144,26 +218,44 @@ export const InitialDataLoader = ({ children }) => {
   if (hasTimedOut) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 max-w-md">
           <div className="text-xl text-yellow-600">
-            Loading is taking longer than usual.
+            Loading is taking longer than usual
           </div>
           <div className="text-sm text-muted-foreground">
-            The application will continue to load in the background.
+            The application will continue to load additional features in the background.
+            You can start using core features now.
           </div>
           <button
             onClick={() => {
+              debug.info('User chose to continue after timeout');
               setHasTimedOut(false);
               setIsInitializing(false);
             }}
             className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90"
           >
-            Continue Anyway
+            Continue to App
           </button>
         </div>
       </div>
     );
   }
 
-  return children;
+  // Show deferred loading indicator if services are still loading in background
+  return (
+    <>
+      {children}
+      {deferredLoading && (
+        <div className="fixed bottom-4 right-4 bg-card border border-border rounded-lg p-3 shadow-lg max-w-sm z-50">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <div className="text-sm">Loading additional features...</div>
+          </div>
+          <div className="mt-2 text-xs text-muted-foreground">
+            {deferredServices.filter(s => s.status === 'pending').length} services remaining
+          </div>
+        </div>
+      )}
+    </>
+  );
 };

@@ -1,28 +1,51 @@
-import React from "react";
-import Link from "next/link";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { 
-  Building2, 
-  Users, 
-  Monitor, 
+"use client"
+
+import React from "react"
+import Link from "next/link"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { createDebugger } from "@/utils/debug"
+import {
+  Building2,
+  Users,
+  Monitor,
   ArrowUpRight,
   Folder
-} from "lucide-react";
+} from "lucide-react"
+
+const debug = createDebugger('frontend:components:department-card')
 
 /**
  * Department Card Component
- * Displays a department as a card with relevant information
+ * Displays a department as a card with relevant information and navigation
  */
-const DepartmentCard = ({ 
-  department, 
-  machineCount, 
-  colorClass 
+const DepartmentCard = ({
+  department,
+  machineCount = 0,
+  colorClass = "bg-primary/10 text-primary"
 }) => {
+  const departmentUrl = `/departments/${department.name.toLowerCase()}`
+
+  React.useEffect(() => {
+    debug.log('render', 'Department card rendered:', {
+      departmentName: department.name,
+      machineCount,
+      colorClass
+    })
+  }, [department.name, machineCount, colorClass])
+
+  const handleCardClick = () => {
+    debug.info('navigation', 'Department card clicked:', {
+      departmentName: department.name,
+      targetUrl: departmentUrl
+    })
+  }
+
   return (
-    <Link 
-      href={`/departments/${department.name.toLowerCase()}`} 
+    <Link
+      href={departmentUrl}
       className="block"
+      onClick={handleCardClick}
     >
       <Card
         elevation="1"

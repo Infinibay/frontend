@@ -1,19 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useState } from "react";
+import { useDispatch } from "react-redux";
 import { cn } from "@/lib/utils";
 import { RiDeleteBin5Line } from "react-icons/ri";
 import { BiSortAlt2 } from "react-icons/bi";
-import { 
-  fetchUsers, 
-  createUser, 
-  updateUser, 
-  deleteUser, 
-  selectUsers, 
-  selectUsersLoading, 
-  selectUsersError 
+import {
+  fetchUsers,
+  createUser,
+  updateUser,
+  deleteUser
 } from "@/state/slices/users";
+import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
+import { createDebugger } from "@/utils/debug";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -68,13 +67,12 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Spinner } from "@/components/ui/spinner";
 import { getAvatarUrl, DEFAULT_AVATAR_CANONICAL } from "@/utils/avatar";
 
+const debug = createDebugger('frontend:pages:users');
+
 const UsersPage = () => {
   const dispatch = useDispatch();
   const { size } = useSizeContext();
   const [selectedUsers, setSelectedUsers] = useState(new Set());
-  const users = useSelector(selectUsers);
-  const loading = useSelector((state) => state.users.loading?.fetch);
-  const error = useSelector(selectUsersError);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [showToast, setShowToast] = useState(false);
@@ -92,11 +90,26 @@ const UsersPage = () => {
     avatar: DEFAULT_AVATAR_CANONICAL
   });
 
-  useEffect(() => {
-    dispatch(fetchUsers());
-  }, [dispatch]);
+  // Use optimized data loading for users
+  const {
+    data: users,
+    isLoading: loading,
+    error,
+    refresh: refreshUsers
+  } = useEnsureData('users', fetchUsers, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 3 * 60 * 1000, // 3 minutes
+  });
+
+  debug.info('Users page state:', {
+    usersCount: users?.length || 0,
+    loading,
+    hasError: !!error,
+    selectedCount: selectedUsers.size
+  });
 
   const handleCreateUser = async (userData) => {
+    debug.info('Creating user:', userData.email);
     try {
       await dispatch(createUser(userData)).unwrap();
       setIsCreateUserOpen(false);
@@ -106,8 +119,10 @@ const UsersPage = () => {
         description: "The user has been successfully created."
       });
       setShowToast(true);
-      dispatch(fetchUsers());
+      refreshUsers();
+      debug.info('User created successfully:', userData.email);
     } catch (error) {
+      debug.error('Failed to create user:', error);
       setToastProps({
         variant: "error",
         title: "Error",
@@ -118,6 +133,7 @@ const UsersPage = () => {
   };
 
   const handleUpdateUser = async (userData) => {
+    debug.info('Updating user:', editingUser.id);
     try {
       await dispatch(updateUser({ id: editingUser.id, input: userData })).unwrap();
       setIsEditUserOpen(false);
@@ -127,8 +143,10 @@ const UsersPage = () => {
         description: "The user has been successfully updated."
       });
       setShowToast(true);
-      dispatch(fetchUsers());
+      refreshUsers();
+      debug.info('User updated successfully:', editingUser.id);
     } catch (error) {
+      debug.error('Failed to update user:', error);
       setToastProps({
         variant: "error",
         title: "Error",
@@ -182,7 +200,7 @@ const UsersPage = () => {
       setShowToast(true);
 
       // Refresh users list to show changes in table
-      dispatch(fetchUsers());
+      refreshUsers();
     } catch (error) {
       console.error('❌ Avatar update failed:', error);
       setToastProps({
@@ -246,11 +264,11 @@ const UsersPage = () => {
     { key: "actions", label: "Actions" }
   ];
 
-  if (error.fetch) {
+  if (error) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-xl text-red-500">
-          {error.fetch}
+          {error.message || 'Failed to load users'}
         </div>
       </div>
     );
@@ -346,7 +364,7 @@ const UsersPage = () => {
                 <span className="size-text text-glass-text-secondary">Loading users...</span>
               </div>
             </div>
-          ) : users.length === 0 ? (
+          ) : !users || users.length === 0 ? (
             <div className="glass-medium size-card-padding radius-fluent-lg elevation-2 text-center">
               <div className="size-gap flex flex-col items-center">
                 <div className="size-avatar bg-muted rounded-full flex items-center justify-center">

@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { useSizeContext } from "./size-provider"
@@ -9,6 +11,10 @@ import {
   useInputStates
 } from "@/utils/form-animations"
 
+/**
+ * Input component with floating label support and glass effects
+ * Features responsive sizing, validation states, and theme integration
+ */
 const Input = React.forwardRef(({
   size: propSize,
   className,
@@ -126,3 +132,4 @@ const Input = React.forwardRef(({
 Input.displayName = "Input"
 
 export { Input }
+export default Input

@@ -1,9 +1,12 @@
-"use client";
+"use client"
 
 // React and hooks
-import { useState, useEffect, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { cn } from "@/lib/utils";
+import React, { useState, useEffect, useRef } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { cn } from "@/lib/utils"
+import { createDebugger } from "@/utils/debug"
+
+const debug = createDebugger('frontend:pages:computers')
 
 // UI Components
 import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
@@ -23,8 +26,14 @@ import { groupMachinesByDepartment } from "./utils/groupMachines";
 
 // Redux actions
 import { fetchVms } from "@/state/slices/vms";
+import { fetchDepartments } from "@/state/slices/departments";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
+import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
 
+/**
+ * ComputersPage component for managing virtual machines
+ * Features data fetching, error handling, and machine operations
+ */
 export default function ComputersPage() {
   // Context and size
   const { size } = useSizeContext();
@@ -32,18 +41,48 @@ export default function ComputersPage() {
   // UI State
   const [grid, setGrid] = useState(false);
   const [byDepartment, setByDepartment] = useState(true);
-  const hasRequested = useRef(false);
 
   // Redux state
   const dispatch = useDispatch();
-  const machines = useSelector((state) => state.vms.items);
-  const departments = useSelector((state) => state.departments.items);
   const selectedPc = useSelector((state) => state.vms.selectedMachine);
-  const loading = useSelector((state) => state.vms.loading?.fetch);
-  const error = useSelector((state) => state.vms.error?.fetch);
-  
+
+  // Use optimized data loading for VMs and departments
+  const {
+    data: machines,
+    isLoading: vmsLoading,
+    error: vmsError,
+    refresh: refreshVms
+  } = useEnsureData('vms', fetchVms, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 2 * 60 * 1000, // 2 minutes
+  });
+
+  const {
+    data: departments,
+    isLoading: departmentsLoading,
+    error: departmentsError
+  } = useEnsureData('departments', fetchDepartments, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 10 * 60 * 1000, // 10 minutes
+  });
+
+  // Combine loading and error states
+  const loading = vmsLoading || departmentsLoading;
+  const error = vmsError || departmentsError;
+
   // Check ISO availability
   const { isReady: hasISOs } = useSystemStatus({ checkOnMount: true });
+
+  React.useEffect(() => {
+    debug.log('render', 'ComputersPage rendered:', {
+      machineCount: machines?.length || 0,
+      departmentCount: departments?.length || 0,
+      loading,
+      hasError: !!error,
+      hasISOs,
+      viewMode: { grid, byDepartment }
+    })
+  }, [machines?.length, departments?.length, loading, error, hasISOs, grid, byDepartment])
 
   // Actions and handlers
   const {
@@ -56,19 +95,16 @@ export default function ComputersPage() {
     handlePause,
     handleStop,
     handleDelete,
-    handleRefresh,
   } = useComputerActions();
 
   // Group machines by department
-  const groupedMachines = groupMachinesByDepartment(byDepartment, machines || [], departments);
+  const groupedMachines = groupMachinesByDepartment(byDepartment, machines || [], departments || []);
 
-  // Fetch VMs data on component mount
-  useEffect(() => {
-    if (!hasRequested.current && (!machines || machines.length === 0) && !loading) {
-      hasRequested.current = true;
-      dispatch(fetchVms());
-    }
-  }, [dispatch, machines, loading]);
+  // Enhanced refresh that uses the new data loading strategy
+  const handleEnhancedRefresh = () => {
+    debug.info('data', 'Refreshing VMs data via optimized loader');
+    refreshVms();
+  };
 
   // Handle Escape key
   useEffect(() => {
@@ -92,7 +128,7 @@ export default function ComputersPage() {
       )}
       <ToastViewport />
 
-      <ComputersHeader hasISOs={hasISOs} onRefresh={handleRefresh} />
+      <ComputersHeader hasISOs={hasISOs} onRefresh={handleEnhancedRefresh} />
 
       <section className="flex-1 w-full">
         <div className={sizeVariants[size].layout.section}>

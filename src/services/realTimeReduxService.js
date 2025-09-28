@@ -1,5 +1,6 @@
 import { getSocketService } from './socketService'
 import { createDebugger } from '@/utils/debug'
+import { trackRealTimeEvent } from '@/utils/performance'
 
 // Normalize backend status values to UI-friendly values
 const normalizeVmStatus = (status) => {
@@ -97,6 +98,7 @@ export class RealTimeReduxService {
 
   // Handle VM real-time events
   handleVmEvent(action, eventData) {
+    const startTime = performance.now()
     this.debug.log('vm-event', `Received VM ${action} event:`, eventData)
 
     if (eventData.status === 'error') {
@@ -108,6 +110,14 @@ export class RealTimeReduxService {
     if (!vmData) {
       this.debug.warn('vm-event', `No data in VM ${action} event`)
       return
+    }
+
+    // Check if VM slice is empty and trigger data loading if needed
+    const currentState = this.store.getState()
+    const vmsSlice = currentState.vms
+    if (!vmsSlice.items || vmsSlice.items.length === 0) {
+      this.debug.info('vm-event', 'VM slice is empty, event might be arriving before initial data load')
+      // Consider triggering initial data load or queuing events
     }
 
     // Dispatch appropriate Redux action based on the event
@@ -149,10 +159,14 @@ export class RealTimeReduxService {
       default:
         this.debug.warn('vm-event', `Unknown VM action: ${action}`)
     }
+
+    const endTime = performance.now()
+    trackRealTimeEvent(`vm:${action}`, endTime - startTime)
   }
 
   // Handle User real-time events
   handleUserEvent(action, eventData) {
+    const startTime = performance.now()
     this.debug.log('user-event', `Received User ${action} event:`, eventData)
 
     if (eventData.status === 'error') {
@@ -164,6 +178,13 @@ export class RealTimeReduxService {
     if (!userData) {
       this.debug.warn('user-event', `No data in User ${action} event`)
       return
+    }
+
+    // Check if users slice is empty and handle accordingly
+    const currentState = this.store.getState()
+    const usersSlice = currentState.users
+    if (!usersSlice.items || usersSlice.items.length === 0) {
+      this.debug.info('user-event', 'Users slice is empty, event might be arriving before initial data load')
     }
 
     // Dispatch appropriate Redux action based on the event
@@ -202,10 +223,14 @@ export class RealTimeReduxService {
       default:
         this.debug.warn('user-event', `Unknown User action: ${action}`)
     }
+
+    const endTime = performance.now()
+    trackRealTimeEvent(`user:${action}`, endTime - startTime)
   }
 
   // Handle Department real-time events
   handleDepartmentEvent(action, eventData) {
+    const startTime = performance.now()
     this.debug.log('dept-event', `Received Department ${action} event:`, eventData)
 
     if (eventData.status === 'error') {
@@ -217,6 +242,13 @@ export class RealTimeReduxService {
     if (!deptData) {
       this.debug.warn('dept-event', `No data in Department ${action} event`)
       return
+    }
+
+    // Check if departments slice is empty and handle accordingly
+    const currentState = this.store.getState()
+    const deptSlice = currentState.departments
+    if (!deptSlice.items || deptSlice.items.length === 0) {
+      this.debug.info('dept-event', 'Departments slice is empty, event might be arriving before initial data load')
     }
 
     // Dispatch appropriate Redux action based on the event
@@ -245,10 +277,14 @@ export class RealTimeReduxService {
       default:
         this.debug.warn('dept-event', `Unknown Department action: ${action}`)
     }
+
+    const endTime = performance.now()
+    trackRealTimeEvent(`department:${action}`, endTime - startTime)
   }
 
   // Handle Application real-time events
   handleApplicationEvent(action, eventData) {
+    const startTime = performance.now()
     this.debug.log('app-event', `Received Application ${action} event:`, eventData)
 
     if (eventData.status === 'error') {
@@ -260,6 +296,13 @@ export class RealTimeReduxService {
     if (!appData) {
       this.debug.warn('app-event', `No data in Application ${action} event`)
       return
+    }
+
+    // Check if applications slice is empty and handle accordingly
+    const currentState = this.store.getState()
+    const appSlice = currentState.applications
+    if (!appSlice.items || appSlice.items.length === 0) {
+      this.debug.info('app-event', 'Applications slice is empty, event might be arriving before initial data load')
     }
 
     // Dispatch appropriate Redux action based on the event
@@ -288,6 +331,9 @@ export class RealTimeReduxService {
       default:
         this.debug.warn('app-event', `Unknown Application action: ${action}`)
     }
+
+    const endTime = performance.now()
+    trackRealTimeEvent(`application:${action}`, endTime - startTime)
   }
 
   // Cleanup subscriptions

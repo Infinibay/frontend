@@ -1,38 +1,44 @@
-"use client";
-import { Montserrat } from "next/font/google";
-import "../styles/globals.css";
-import "../styles/auth.css";
-import { NextUIProvider } from "@nextui-org/react";
-import { ApolloProvider } from '@apollo/client';
-import client from '../apollo-client';
-import { store, persistor } from "../state/store";
-import { Provider } from 'react-redux';
-import { PersistGate } from 'redux-persist/integration/react';
-import { InitialDataLoader } from '@/components/InitialDataLoader';
-import { AppSidebar } from "@/components/ui/navbar";
-import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
-import auth from '@/utils/auth';
-import { Toast, ToastTitle, ToastDescription, ToastProvider, ToastViewport } from '@/components/ui/toast';
-import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
-import { selectInterfaceSize, selectAppSettingsInitialized, selectTheme, selectAppSettings } from '@/state/slices/appSettings';
-import { SizeProvider } from "@/components/ui/size-provider";
-import { Toaster } from "@/components/ui/toaster";
-import { RealTimeProvider } from '@/components/RealTimeProvider';
-import { SocketNamespaceGuard } from '@/components/SocketNamespaceGuard';
-import { createThemeScript } from '@/utils/theme';
-import { ThemeProvider, useAppTheme, useResolvedTheme } from '@/contexts/ThemeProvider';
-import { updateWallpaperCSS } from '@/utils/wallpaper';
-import '@/utils/debugInit'; // Initialize debug panel
-import '@/utils/debugPanelStatus'; // Debug panel utilities
+"use client"
+
+import React, { useState, useEffect } from "react"
+import { usePathname } from "next/navigation"
+import { Montserrat } from "next/font/google"
+import { NextUIProvider } from "@nextui-org/react"
+import { ApolloProvider } from "@apollo/client"
+import { Provider } from "react-redux"
+import { PersistGate } from "redux-persist/integration/react"
+import { useSelector, useDispatch } from "react-redux"
+import "../styles/globals.css"
+import "../styles/auth.css"
+import client from "../apollo-client"
+import { store, persistor } from "../state/store"
+import { createDebugger } from "@/utils/debug"
+import { InitialDataLoader } from "@/components/InitialDataLoader"
+import { AppSidebar } from "@/components/ui/navbar"
+import auth from "@/utils/auth"
+import { Toast, ToastTitle, ToastDescription, ToastProvider, ToastViewport } from "@/components/ui/toast"
+import { selectInterfaceSize, selectAppSettingsInitialized, selectTheme, selectAppSettings } from "@/state/slices/appSettings"
+import { SizeProvider } from "@/components/ui/size-provider"
+import { Toaster } from "@/components/ui/toaster"
+import { RealTimeProvider } from "@/components/RealTimeProvider"
+import { SocketNamespaceGuard } from "@/components/SocketNamespaceGuard"
+import { createThemeScript } from "@/utils/theme"
+import { ThemeProvider, useAppTheme, useResolvedTheme } from "@/contexts/ThemeProvider"
+import { updateWallpaperCSS } from "@/utils/wallpaper"
+import "@/utils/debugInit" // Initialize debug panel
+import "@/utils/debugPanelStatus" // Debug panel utilities
+
+const debug = createDebugger('frontend:layout:root')
 
 const monst = Montserrat({
   subsets: ["latin"],
   display: 'swap'
 });
 
-// Separate component to use Redux hooks after Provider is initialized
+/**
+ * AppContent component with provider management and authentication logic
+ * Handles theme, sizing, real-time updates, and layout state
+ */
 function AppContent({ children, isAuthenticated }) {
   const dispatch = useDispatch();
   const pathname = usePathname();
@@ -42,7 +48,18 @@ function AppContent({ children, isAuthenticated }) {
   const [open, setOpen] = useState(false);
   const [toastData, setToastData] = useState({ title: '', description: '', variant: 'default' });
 
+  React.useEffect(() => {
+    debug.info('layout', 'AppContent rendered:', {
+      isAuthenticated,
+      pathname,
+      hasUser: !!user,
+      interfaceSize,
+      appSettingsInitialized
+    })
+  }, [isAuthenticated, pathname, user, interfaceSize, appSettingsInitialized])
+
   const handleLogout = () => {
+    debug.info('auth', 'Logout initiated')
     auth.clearToken();
     window.location.href = '/auth/sign-in';
   };
@@ -143,16 +160,26 @@ function SizeProviderWrapper({ children }) {
   );
 }
 
+/**
+ * RootLayout component that provides the application root structure
+ * Includes provider hierarchy, authentication, and theme initialization
+ */
 export default function RootLayout({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
+      debug.info('auth', 'Checking authentication status in root layout')
       const isValid = await auth.validateToken();
+      debug.log('auth', 'Authentication check result:', isValid)
       setIsAuthenticated(isValid);
     };
     checkAuth();
   }, []);
+
+  React.useEffect(() => {
+    debug.success('init', 'Root layout initialized:', { isAuthenticated })
+  }, [isAuthenticated])
 
   return (
     <html lang="en" className={monst.className} suppressHydrationWarning>

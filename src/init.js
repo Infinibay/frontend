@@ -10,110 +10,185 @@ import { fetchFilterRules } from './state/slices/filterRules';
 import { fetchAppSettings } from './state/slices/appSettings';
 import { createDebugger } from './utils/debug';
 import { getAvatarUrl } from './utils/avatar';
+import { startTimer, endTimer, measureAsync, trackDataLoading } from './utils/performance';
 
 const debug = createDebugger('frontend:init');
+
+// Service categories for optimized loading
+const SERVICE_CONFIG = {
+	// Critical services required for app navigation and auth
+	critical: [
+		{ name: 'appSettings', action: fetchAppSettings, description: 'App configuration and settings' },
+		{ name: 'currentUser', action: fetchCurrentUser, description: 'Current user authentication' }
+	],
+
+	// Deferred services - load in background after critical services
+	deferred: [
+		{ name: 'departments', action: fetchDepartments, description: 'Department data for organization' },
+		{ name: 'vms', action: fetchVms, description: 'Virtual machine inventory' },
+		{ name: 'applications', action: fetchApplications, description: 'Available applications' },
+		{ name: 'users', action: fetchUsers, description: 'User management data' }
+	],
+
+	// On-demand services - only load when specifically needed
+	onDemand: [
+		{ name: 'graphics', action: fetchGraphics, description: 'Graphics hardware for VM configuration' },
+		{ name: 'filters', action: fetchFilters, description: 'Network filtering rules' },
+		{ name: 'filterRules', action: fetchFilterRules, description: 'Advanced filtering configuration' }
+	]
+};
+
+// Environment configuration for loading behavior
+const LOAD_ALL_SERVICES = process.env.NODE_ENV === 'development' && process.env.REACT_APP_LOAD_ALL_INIT === 'true';
+const SKIP_DEFERRED = process.env.REACT_APP_SKIP_DEFERRED_INIT === 'true';
+
+const executeServiceWithTiming = async (service, dispatch) => {
+	const startTime = performance.now();
+
+	try {
+		const result = await measureAsync(`init:${service.name}`, async () => {
+			return await dispatch(service.action()).unwrap();
+		});
+
+		const endTime = performance.now();
+		trackDataLoading(service.name, startTime, endTime, true);
+
+		debug.info(`${service.name} loaded successfully (${(endTime - startTime).toFixed(2)}ms)`);
+		return { success: true, result };
+	} catch (error) {
+		const endTime = performance.now();
+		trackDataLoading(service.name, startTime, endTime, false);
+
+		debug.error(`${service.name} failed to load (${(endTime - startTime).toFixed(2)}ms):`, error);
+		return { success: false, error };
+	}
+};
+
+const loadDeferredServices = async (dispatch) => {
+	debug.info('Starting deferred services loading in background...');
+
+	const deferredResults = {
+		successes: [],
+		failures: []
+	};
+
+	// Load deferred services in parallel for better performance
+	const deferredPromises = SERVICE_CONFIG.deferred.map(async (service) => {
+		const result = await executeServiceWithTiming(service, dispatch);
+
+		if (result.success) {
+			deferredResults.successes.push(service.name);
+		} else {
+			deferredResults.failures.push({
+				service: service.name,
+				error: result.error,
+				description: service.description
+			});
+		}
+
+		return result;
+	});
+
+	await Promise.allSettled(deferredPromises);
+
+	debug.info('Deferred services loading completed:', {
+		successes: deferredResults.successes,
+		failures: deferredResults.failures.map(f => f.service)
+	});
+
+	return deferredResults;
+};
 
 export const fetchInitialData = createAsyncThunk(
 	'app/fetchInitialData',
 	async (_, { dispatch }) => {
-		debug.log('start', 'Fetching initial data...');
+		const totalStartTime = startTimer('init:total');
+		debug.info('Starting optimized initial data fetch...');
 
 		const results = {
 			successes: [],
-			failures: []
+			failures: [],
+			deferred: null,
+			timing: {
+				start: performance.now(),
+				critical: null,
+				total: null
+			}
 		};
 
-		// Critical services - these failures should throw
-		try {
-			await dispatch(fetchAppSettings()).unwrap();
-			results.successes.push('appSettings');
-		} catch (error) {
-			debug.error('critical', 'App settings fetch failed:', error);
-			results.failures.push({ service: 'appSettings', error });
-			throw error; // Critical failure
-		}
+		// Load critical services first - app cannot start without these
+		debug.info('Loading critical services...');
+		const criticalStartTime = startTimer('init:critical');
 
-		try {
-			const user = await dispatch(fetchCurrentUser()).unwrap();
-			results.successes.push('currentUser');
+		for (const service of SERVICE_CONFIG.critical) {
+			const result = await executeServiceWithTiming(service, dispatch);
 
-			// Process avatar after successful user fetch
-			try {
-				const processedAvatarUrl = getAvatarUrl(user.avatar);
-				await dispatch(setUserAvatar(processedAvatarUrl));
-				debug.success('avatar', 'Avatar processed and updated:', processedAvatarUrl);
-			} catch (avatarError) {
-				debug.warn('avatar', 'Avatar processing failed:', avatarError);
-				// Not critical - continue with app initialization
+			if (result.success) {
+				results.successes.push(service.name);
+
+				// Special handling for currentUser to process avatar
+				if (service.name === 'currentUser') {
+					try {
+						const processedAvatarUrl = getAvatarUrl(result.result.avatar);
+						await dispatch(setUserAvatar(processedAvatarUrl));
+						debug.info('Avatar processed and updated successfully');
+					} catch (avatarError) {
+						debug.warn('Avatar processing failed, continuing with initialization:', avatarError);
+					}
+				}
+			} else {
+				debug.error(`Critical service ${service.name} failed:`, result.error);
+				results.failures.push({
+					service: service.name,
+					error: result.error,
+					description: service.description,
+					critical: true
+				});
+				throw result.error; // Critical failure stops app initialization
 			}
-		} catch (error) {
-			debug.error('critical', 'Current user fetch failed:', error);
-			results.failures.push({ service: 'currentUser', error });
-			throw error; // Critical failure
 		}
 
-		// Non-critical services - these failures are logged but don't throw
-		try {
-			await dispatch(fetchDepartments()).unwrap();
-			results.successes.push('departments');
-		} catch (error) {
-			debug.warn('non-critical', 'Departments fetch failed:', error);
-			results.failures.push({ service: 'departments', error });
+		results.timing.critical = endTimer('init:critical');
+		debug.success('Critical services loaded successfully');
+
+		// Load deferred services in background if not disabled
+		if (!SKIP_DEFERRED) {
+			if (LOAD_ALL_SERVICES) {
+				// In development with LOAD_ALL_SERVICES, wait for deferred services
+				debug.info('Development mode: loading all services synchronously...');
+				results.deferred = await loadDeferredServices(dispatch);
+			} else {
+				// In production, load deferred services asynchronously
+				loadDeferredServices(dispatch).then((deferredResults) => {
+					debug.info('Background loading completed:', deferredResults);
+				}).catch((error) => {
+					debug.warn('Background loading failed:', error);
+				});
+			}
+		} else {
+			debug.info('Deferred service loading disabled by configuration');
 		}
 
-		try {
-			await dispatch(fetchVms()).unwrap();
-			results.successes.push('vms');
-		} catch (error) {
-			debug.warn('non-critical', 'VMs fetch failed:', error);
-			results.failures.push({ service: 'vms', error });
-		}
+		results.timing.end = performance.now();
+		results.timing.total = endTimer('init:total');
 
-		try {
-			await dispatch(fetchApplications()).unwrap();
-			results.successes.push('applications');
-		} catch (error) {
-			debug.warn('non-critical', 'Applications fetch failed:', error);
-			results.failures.push({ service: 'applications', error });
-		}
-
-		try {
-			await dispatch(fetchGraphics()).unwrap();
-			results.successes.push('graphics');
-		} catch (error) {
-			debug.warn('non-critical', 'Graphics fetch failed:', error);
-			results.failures.push({ service: 'graphics', error });
-		}
-
-		try {
-			await dispatch(fetchUsers()).unwrap();
-			results.successes.push('users');
-		} catch (error) {
-			debug.warn('non-critical', 'Users fetch failed:', error);
-			results.failures.push({ service: 'users', error });
-		}
-
-		try {
-			await dispatch(fetchFilters()).unwrap();
-			results.successes.push('filters');
-		} catch (error) {
-			debug.warn('non-critical', 'Filters fetch failed:', error);
-			results.failures.push({ service: 'filters', error });
-		}
-
-		try {
-			await dispatch(fetchFilterRules()).unwrap();
-			results.successes.push('filterRules');
-		} catch (error) {
-			debug.warn('non-critical', 'Filter rules fetch failed:', error);
-			results.failures.push({ service: 'filterRules', error });
-		}
-
-		debug.success('complete', 'Initial data fetch completed:', {
+		debug.success('Initial data fetch completed:', {
 			successes: results.successes,
-			failures: results.failures.map(f => f.service)
+			failures: results.failures.map(f => f.service),
+			timing: {
+				critical: `${results.timing.critical?.toFixed(2)}ms`,
+				total: `${results.timing.total?.toFixed(2)}ms`
+			},
+			config: {
+				loadAll: LOAD_ALL_SERVICES,
+				skipDeferred: SKIP_DEFERRED,
+				environment: process.env.NODE_ENV
+			}
 		});
 
 		return results;
 	}
 );
+
+// Export service configuration for use by other components
+export { SERVICE_CONFIG };

@@ -1,11 +1,15 @@
-"use client";
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { Controller, FormProvider, useFormContext } from "react-hook-form";
+"use client"
 
+import * as React from "react"
+import { Controller, FormProvider, useFormContext } from "react-hook-form"
+import { Slot } from "@radix-ui/react-slot"
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
+/**
+ * Form components for react-hook-form integration
+ * Provides accessible form controls with validation support
+ */
 const Form = FormProvider
 
 const FormFieldContext = React.createContext({})
@@ -132,3 +136,4 @@ export {
   FormMessage,
   FormField,
 }
+export default Form

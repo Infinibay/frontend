@@ -1,30 +1,43 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { fetchGraphics, selectGraphics, selectSystemLoading, selectSystemError } from '@/state/slices/system';
+import { fetchGraphics } from '@/state/slices/system';
 import { cn } from '@/lib/utils';
+import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:components:gpu-selection-step');
 
 export function GpuSelectionStep({ id }) {
-  const dispatch = useDispatch();
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
-  const graphics = useSelector(selectGraphics);
-  const loading = useSelector(selectSystemLoading);
-  const error = useSelector(selectSystemError);
   const stepValues = values[id] || {};
 
-  useEffect(() => {
-    dispatch(fetchGraphics());
-  }, [dispatch]);
+  // Use optimized data loading for graphics cards
+  const {
+    data: graphics,
+    isLoading: loading,
+    error,
+    hasData
+  } = useEnsureData('system', fetchGraphics, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 10 * 60 * 1000, // 10 minutes (graphics don't change often)
+    transform: (data) => data?.graphics || data || []
+  });
 
-  if (loading) return <div>Loading graphics cards...</div>;
-  if (error) return <div>Error loading graphics cards</div>;
+  debug.info('GpuSelectionStep state:', {
+    graphicsCount: graphics?.length || 0,
+    selectedGpu: stepValues.gpuId,
+    loading,
+    hasError: !!error,
+    hasData
+  });
 
   // Add "No GPU" option to the list
   const allOptions = [
@@ -47,6 +60,75 @@ export function GpuSelectionStep({ id }) {
     return `${Math.round(memory)}GB VRAM`;
   };
 
+  const renderLoadingSkeleton = () => (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {[...Array(4)].map((_, index) => (
+        <div key={index} className="relative flex rounded-lg p-4 border space-y-3">
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex items-start justify-between gap-2">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-1/3" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderErrorState = () => (
+    <div className="flex items-center justify-center min-h-[200px]">
+      <div className="text-center space-y-2">
+        <div className="text-red-500">Error loading graphics cards</div>
+        <div className="text-sm text-muted-foreground">
+          {error?.message || 'Failed to load available graphics cards'}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold tracking-tight">Select Graphics Card</h2>
+          <p className="text-sm text-muted-foreground">
+            Choose a graphics card for your virtual machine or select "No GPU" if you don't need one.
+          </p>
+        </div>
+        <Card glass="subtle" className={cn("p-6", "glass-subtle border border-border/20")}>
+          <div className="space-y-4">
+            <Label>Select a Graphics Card</Label>
+            {renderLoadingSkeleton()}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold tracking-tight">Select Graphics Card</h2>
+          <p className="text-sm text-muted-foreground">
+            Choose a graphics card for your virtual machine or select "No GPU" if you don't need one.
+          </p>
+        </div>
+        <Card glass="subtle" className={cn("p-6", "glass-subtle border border-border/20")}>
+          <div className="space-y-4">
+            <Label>Select a Graphics Card</Label>
+            {renderErrorState()}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -66,6 +148,7 @@ export function GpuSelectionStep({ id }) {
           <RadioGroup
             value={stepValues.gpuId}
             onValueChange={(value) => {
+              debug.info('GPU selection changed:', value);
               const selectedGpu = allOptions.find(gpu => gpu.pciBus === value);
               setValue(`${id}.gpuId`, value);
               setValue(`${id}.pciBus`, value === 'no-gpu' ? null : value);

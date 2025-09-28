@@ -1,6 +1,12 @@
+"use client"
+
 import { cn } from "@/lib/utils"
 
-function Skeleton({
+/**
+ * A loading skeleton component that displays a shimmer effect
+ * Used as a placeholder while content is loading
+ */
+export function Skeleton({
   className,
   ...props
 }) {
@@ -15,4 +21,4 @@ function Skeleton({
   );
 }
 
-export { Skeleton }
+export default Skeleton

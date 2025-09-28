@@ -1,24 +1,26 @@
-"use client";
+"use client"
 
-import { cn } from "@/lib/utils";
-import { BsGrid, BsPlusLg } from "react-icons/bs";
-import { AlertCircle, RefreshCw } from "lucide-react";
-import Link from "next/link";
-import { useSelector } from "react-redux";
-import { useAppTheme } from "@/contexts/ThemeProvider";
+import React from "react"
+import Link from "next/link"
+import { useSelector } from "react-redux"
+import { BsGrid, BsPlusLg } from "react-icons/bs"
+import { AlertCircle, RefreshCw } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { createDebugger } from "@/utils/debug"
+import { useAppTheme } from "@/contexts/ThemeProvider"
 import {
   Header,
   HeaderLeft,
   HeaderCenter,
   HeaderRight,
-} from "@/components/ui/header";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/header"
+import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -26,12 +28,27 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@/components/ui/breadcrumb"
 
+const debug = createDebugger('frontend:components:computers-header')
+
+/**
+ * ComputersHeader component for computers page
+ * Features refresh functionality, breadcrumbs, and VM creation controls
+ */
 export function ComputersHeader({ hasISOs = true, onRefresh }) {
   const vmsLoading = useSelector((state) => state.vms.loading?.fetch);
   const vmsError = useSelector((state) => state.vms.error?.fetch);
   const { resolvedTheme } = useAppTheme();
+
+  React.useEffect(() => {
+    debug.log('render', 'ComputersHeader rendered:', { hasISOs, vmsLoading, vmsError })
+  }, [hasISOs, vmsLoading, vmsError])
+
+  const handleRefresh = () => {
+    debug.info('action', 'Refresh button clicked')
+    onRefresh?.()
+  }
 
   return (
     <Header
@@ -68,7 +85,7 @@ export function ComputersHeader({ hasISOs = true, onRefresh }) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onRefresh}
+                  onClick={handleRefresh}
                   disabled={vmsLoading}
                   className={cn(
                     "whitespace-nowrap",
@@ -93,7 +110,7 @@ export function ComputersHeader({ hasISOs = true, onRefresh }) {
 
           {/* New VM Button */}
           {hasISOs ? (
-            <Link href="/computers/create">
+            <Link href="/computers/create" onClick={() => debug.info('navigation', 'Create VM navigation triggered')}>
               <Button className="whitespace-nowrap">
                 <BsPlusLg className="mr-2 h-4 w-4" />
                 New

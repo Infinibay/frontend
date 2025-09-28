@@ -1,9 +1,14 @@
+"use client"
+
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { createDebugger } from "@/utils/debug"
 import { Button } from "./button"
 import { Card } from "./card"
 import { FormErrorProvider, useFormError } from "./form-error-provider"
 import { Check, User, Mail, Settings, Info, Monitor, Cpu, Zap, Package, ClipboardCheck, ArrowRight, Shield } from "lucide-react"
+
+const debug = createDebugger('frontend:components:wizard')
 
 const WizardContext = React.createContext(null)
 
@@ -15,6 +20,10 @@ export function useWizardContext() {
   return context
 }
 
+/**
+ * Wizard component with step management, validation, and progress tracking
+ * Features glass effects, icon indicators, and form error handling
+ */
 function WizardContent({
   children,
   className,
@@ -31,26 +40,46 @@ function WizardContent({
   const isLastStep = currentStep === steps.length - 1
   const currentStepElement = steps[currentStep]
 
+  React.useEffect(() => {
+    debug.info('initialization', 'Wizard initialized:', {
+      stepCount: steps.length,
+      initialValues: Object.keys(initialValues)
+    })
+  }, [])
+
+  React.useEffect(() => {
+    debug.log('navigation', 'Step changed:', {
+      currentStep,
+      stepId: currentStepElement?.props?.id,
+      isLastStep
+    })
+  }, [currentStep])
+
   const next = async () => {
     const stepId = currentStepElement.props.id
+    debug.info('navigation', 'Moving to next step:', { stepId, currentStep, isLastStep })
 
     // Clear all errors before starting validation
     clearAllErrors()
 
     if (currentStepElement.props.validate) {
       setIsValidating(true)
+      debug.log('validation', 'Starting step validation:', stepId)
 
       try {
         // Ensure we always pass an object to validate
         const stepValues = values[stepId] || {}
         await currentStepElement.props.validate(stepValues)
+        debug.success('validation', 'Step validation passed:', stepId)
 
         if (isLastStep) {
+          debug.success('completion', 'Wizard completed successfully:', { totalSteps: steps.length, finalValues: Object.keys(values) })
           onComplete?.(values)
         } else {
           setCurrentStep(prev => prev + 1)
         }
       } catch (error) {
+        debug.warn('validation', 'Step validation failed:', { stepId, error })
         // Handle validation errors
         if (error && typeof error === 'object') {
           Object.entries(error).forEach(([field, message]) => {
@@ -61,7 +90,9 @@ function WizardContent({
         setIsValidating(false)
       }
     } else {
+      debug.log('validation', 'No validation required for step:', stepId)
       if (isLastStep) {
+        debug.success('completion', 'Wizard completed without validation:', Object.keys(values))
         onComplete?.(values)
       } else {
         setCurrentStep(prev => prev + 1)
@@ -70,11 +101,13 @@ function WizardContent({
   }
 
   const previous = () => {
+    debug.info('navigation', 'Moving to previous step:', { from: currentStep, to: Math.max(currentStep - 1, 0) })
     setCurrentStep(s => Math.max(s - 1, 0))
     clearAllErrors() // Clear errors when going back
   }
 
   const setStepValues = React.useCallback((stepId, stepValues) => {
+    debug.log('data', 'Step values updated:', { stepId, keys: Object.keys(stepValues) })
     // Clear errors when values change
     clearAllErrors()
     setValues(prev => ({
@@ -86,6 +119,7 @@ function WizardContent({
   const setValue = React.useCallback((name, value) => {
     const [stepId, ...parts] = name.split('.')
     const fieldName = parts.join('.')
+    debug.log('data', 'Field value changed:', { stepId, fieldName, valueType: typeof value })
 
     // Clear field error when value changes
     clearFieldError(fieldName)
@@ -257,6 +291,8 @@ export function Wizard(props) {
 export function WizardStep({ children }) {
   return children
 }
+
+export default Wizard
 
 // Helper function to get step configuration with icons and descriptions
 function getStepConfig(stepId, index) {
