@@ -181,15 +181,45 @@ export function ResourcesStep({ id }) {
                   </span>
                 </Label>
                 <div className="flex items-center gap-4">
-                  <Input
-                    type="range"
-                    value={customHardware.cores}
-                    onChange={(e) => updateCustomHardware('cores', parseInt(e.target.value))}
-                    min={1}
-                    max={cpuLimit}
-                    step={1}
-                    className="flex-1 accent-blue-500"
-                  />
+                  <div className="flex-1 relative">
+                    {/* Custom styled range slider */}
+                    <div
+                      className="relative h-3 bg-gray-200 rounded-lg cursor-pointer"
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left;
+                        const percentage = Math.min(Math.max(clickX / rect.width, 0), 1);
+                        const newValue = 1 + (percentage * (cpuLimit - 1));
+                        updateCustomHardware('cores', Math.min(Math.max(Math.round(newValue), 1), cpuLimit));
+                      }}
+                    >
+                      {/* Progress track */}
+                      <div
+                        className="absolute left-0 top-0 h-full rounded-lg transition-all duration-200 pointer-events-none bg-blue-500"
+                        style={{
+                          width: `calc(10px + (100% - 20px) * ${(customHardware.cores - 1) / (cpuLimit - 1)})`
+                        }}
+                      />
+                      {/* Native range input (invisible but functional) */}
+                      <input
+                        type="range"
+                        value={customHardware.cores}
+                        onChange={(e) => updateCustomHardware('cores', parseInt(e.target.value))}
+                        min={1}
+                        max={cpuLimit}
+                        step={1}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        style={{ margin: 0, padding: 0 }}
+                      />
+                      {/* Custom thumb */}
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 border-blue-500 rounded-full shadow-md transition-all duration-200 hover:scale-110 pointer-events-none"
+                        style={{
+                          left: `calc(10px + (100% - 20px) * ${(customHardware.cores - 1) / (cpuLimit - 1)} - 10px)`
+                        }}
+                      />
+                    </div>
+                  </div>
                   <Input
                     type="number"
                     value={customHardware.cores}
@@ -212,15 +242,45 @@ export function ResourcesStep({ id }) {
                   </span>
                 </Label>
                 <div className="flex items-center gap-4">
-                  <Input
-                    type="range"
-                    value={customHardware.ram}
-                    onChange={(e) => updateCustomHardware('ram', parseInt(e.target.value))}
-                    min={1}
-                    max={memoryLimit}
-                    step={1}
-                    className="flex-1 accent-green-500"
-                  />
+                  <div className="flex-1 relative">
+                    {/* Custom styled range slider */}
+                    <div
+                      className="relative h-3 bg-gray-200 rounded-lg cursor-pointer"
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left;
+                        const percentage = Math.min(Math.max(clickX / rect.width, 0), 1);
+                        const newValue = 1 + (percentage * (memoryLimit - 1));
+                        updateCustomHardware('ram', Math.min(Math.max(Math.round(newValue), 1), memoryLimit));
+                      }}
+                    >
+                      {/* Progress track */}
+                      <div
+                        className="absolute left-0 top-0 h-full rounded-lg transition-all duration-200 pointer-events-none bg-green-500"
+                        style={{
+                          width: `calc(10px + (100% - 20px) * ${(customHardware.ram - 1) / (memoryLimit - 1)})`
+                        }}
+                      />
+                      {/* Native range input (invisible but functional) */}
+                      <input
+                        type="range"
+                        value={customHardware.ram}
+                        onChange={(e) => updateCustomHardware('ram', parseInt(e.target.value))}
+                        min={1}
+                        max={memoryLimit}
+                        step={1}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        style={{ margin: 0, padding: 0 }}
+                      />
+                      {/* Custom thumb */}
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 border-green-500 rounded-full shadow-md transition-all duration-200 hover:scale-110 pointer-events-none"
+                        style={{
+                          left: `calc(10px + (100% - 20px) * ${(customHardware.ram - 1) / (memoryLimit - 1)} - 10px)`
+                        }}
+                      />
+                    </div>
+                  </div>
                   <Input
                     type="number"
                     value={customHardware.ram}

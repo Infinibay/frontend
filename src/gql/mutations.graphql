@@ -498,54 +498,54 @@ mutation performDiskCleanup($vmId: ID!, $drive: String!, $targets: [String!]) {
   }
 }
 
-mutation executeImmediateMaintenance($input: ExecuteMaintenanceInput!) {
-  executeImmediateMaintenance(input: $input) {
-    success
-    error
-    message
-    execution {
-      id
-      machineId
-      taskType
-      status
-      executedAt
-      duration
-      result
-    }
-  }
-}
+# mutation executeImmediateMaintenance($input: ExecuteMaintenanceInput!) {
+#   executeImmediateMaintenance(input: $input) {
+#     success
+#     error
+#     message
+#     execution {
+#       id
+#       machineId
+#       taskType
+#       status
+#       executedAt
+#       duration
+#       result
+#     }
+#   }
+# }
 
-mutation createMaintenanceTask($input: CreateMaintenanceTaskInput!) {
-  createMaintenanceTask(input: $input) {
-    success
-    error
-    message
-    task {
-      id
-      name
-      description
-      taskType
-      machineId
-      isEnabled
-      isRecurring
-      runAt
-      cronSchedule
-      createdAt
-    }
-  }
-}
+# mutation createMaintenanceTask($input: CreateMaintenanceTaskInput!) {
+#   createMaintenanceTask(input: $input) {
+#     success
+#     error
+#     message
+#     task {
+#       id
+#       name
+#       description
+#       taskType
+#       machineId
+#       isEnabled
+#       isRecurring
+#       runAt
+#       cronSchedule
+#       createdAt
+#     }
+#   }
+# }
 
-mutation controlService($input: ServiceControlInput!) {
-  controlService(input: $input) {
-    success
-    error
-    message
-    service {
-      name
-      displayName
-      status
-      startType
-      description
-    }
-  }
-}
+# mutation controlService($input: ServiceControlInput!) {
+#   controlService(input: $input) {
+#     success
+#     error
+#     message
+#     service {
+#       name
+#       displayName
+#       status
+#       startType
+#       description
+#     }
+#   }
+# }

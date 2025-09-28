@@ -35,11 +35,11 @@ query users($pagination: PaginationInputType, $orderBy: UserOrderByInputType) {
   }
 }
 
-query login($password: String!, $email: String!) {
-  login(password: $password, email: $email) {
-    token
-  }
-}
+# query login($password: String!, $email: String!) {
+#   login(password: $password, email: $email) {
+#     token
+#   }
+# }
 
 query machineTemplate($id: String!) {
   machineTemplate(id: $id) {
@@ -422,23 +422,23 @@ query listServices($machineId: String!) {
   }
 }
 
-query listSecurityServices {
-  listSecurityServices {
-    id
-    name
-    description
-    category
-    priority
-    riskLevel
-    defaultUseEnabled
-    defaultProvideEnabled
-    ports {
-      number
-      protocol
-      description
-    }
-  }
-}
+# query listSecurityServices {
+#   listSecurityServices {
+#     id
+#     name
+#     description
+#     category
+#     priority
+#     riskLevel
+#     defaultUseEnabled
+#     defaultProvideEnabled
+#     ports {
+#       number
+#       protocol
+#       description
+#     }
+#   }
+# }
 
 query getVmServiceStatus($serviceId: ID!, $vmId: ID!) {
   getVmServiceStatus(serviceId: $serviceId, vmId: $vmId) {

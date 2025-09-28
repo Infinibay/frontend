@@ -24,7 +24,7 @@ mutation performDiskCleanup($vmId: ID!, $drive: String!, $targets: [String!]) {
   }
 }
 
-mutation executeImmediateMaintenance($input: ExecuteMaintenanceInput!) {
+mutation executeImmediateMaintenanceFromRecommendations($input: ExecuteMaintenanceInput!) {
   executeImmediateMaintenance(input: $input) {
     success
     error
@@ -41,7 +41,7 @@ mutation executeImmediateMaintenance($input: ExecuteMaintenanceInput!) {
   }
 }
 
-mutation createMaintenanceTask($input: CreateMaintenanceTaskInput!) {
+mutation createMaintenanceTaskFromRecommendations($input: CreateMaintenanceTaskInput!) {
   createMaintenanceTask(input: $input) {
     success
     error
@@ -61,7 +61,7 @@ mutation createMaintenanceTask($input: CreateMaintenanceTaskInput!) {
   }
 }
 
-mutation controlService($input: ServiceControlInput!) {
+mutation controlServiceFromRecommendations($input: ServiceControlInput!) {
   controlService(input: $input) {
     success
     error

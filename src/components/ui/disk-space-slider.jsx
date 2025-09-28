@@ -43,6 +43,16 @@ export function DiskSpaceSlider({
     }
   };
 
+  const handleTrackClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = Math.min(Math.max(clickX / rect.width, 0), 1);
+    const newValue = min + (percentage * (maxSelectable - min));
+    if (onChange) {
+      onChange(Math.min(Math.max(Math.round(newValue / step) * step, min), maxSelectable));
+    }
+  };
+
   const colorVariants = {
     purple: {
       icon: "text-purple-500",
@@ -92,8 +102,8 @@ export function DiskSpaceSlider({
       <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden border">
         {/* Used space (system/other) */}
         {used > 0 && (
-          <div 
-            className={cn("absolute left-0 top-0 h-full flex items-center justify-center", colors.used)}
+          <div
+            className={cn("absolute left-0 top-0 h-full flex items-center justify-center z-10", colors.used)}
             style={{ width: `${usedPercentage}%` }}
             title={`${used} GB used by system`}
           >
@@ -104,14 +114,14 @@ export function DiskSpaceSlider({
             )}
           </div>
         )}
-        
+
         {/* Selected space */}
         {clampedValue > 0 && (
-          <div 
-            className={cn("absolute top-0 h-full flex items-center justify-center transition-all duration-200", colors.selected)}
-            style={{ 
+          <div
+            className={cn("absolute top-0 h-full flex items-center justify-center transition-all duration-200 z-20", colors.selected)}
+            style={{
               left: `${usedPercentage}%`,
-              width: `${selectedPercentage}%` 
+              width: `${selectedPercentage}%`
             }}
             title={`${clampedValue} GB selected`}
           >
@@ -122,13 +132,13 @@ export function DiskSpaceSlider({
             )}
           </div>
         )}
-        
+
         {/* Available but not selected space */}
-        <div 
-          className={cn("absolute top-0 h-full flex items-center justify-center", colors.available)}
-          style={{ 
+        <div
+          className={cn("absolute top-0 h-full flex items-center justify-center z-5", colors.available)}
+          style={{
             left: `${usedPercentage + selectedPercentage}%`,
-            width: `${availablePercentage - selectedPercentage}%` 
+            width: `${Math.max(0, availablePercentage - selectedPercentage)}%`
           }}
           title={`${available - clampedValue} GB remaining available`}
         >
@@ -138,13 +148,13 @@ export function DiskSpaceSlider({
             </span>
           )}
         </div>
-        
+
         {/* Unavailable space (if total > used + available due to reserved space) */}
         {(total - used - available) > 0 && (
-          <div 
-            className={cn("absolute right-0 top-0 h-full", colors.unavailable)}
-            style={{ 
-              width: `${((total - used - available) / total) * 100}%` 
+          <div
+            className={cn("absolute right-0 top-0 h-full z-0", colors.unavailable)}
+            style={{
+              width: `${((total - used - available) / total) * 100}%`
             }}
             title={`${total - used - available} GB reserved/unavailable`}
           >
@@ -155,22 +165,47 @@ export function DiskSpaceSlider({
       
       {/* Slider and input */}
       <div className="flex items-center gap-4">
-        <Input
-          type="range"
-          value={clampedValue}
-          onChange={handleSliderChange}
-          min={min}
-          max={maxSelectable}
-          step={step}
-          className={cn("flex-1", colors.slider)}
-          style={{
-            background: `linear-gradient(to right, 
-              var(--tw-colors-${color}-500) 0%, 
-              var(--tw-colors-${color}-500) ${(clampedValue - min) / (maxSelectable - min) * 100}%, 
-              #e5e7eb ${(clampedValue - min) / (maxSelectable - min) * 100}%, 
-              #e5e7eb 100%)`
-          }}
-        />
+        <div className="flex-1 relative">
+          {/* Custom styled range slider */}
+          <div
+            className="relative h-3 bg-gray-200 rounded-lg cursor-pointer"
+            onClick={handleTrackClick}
+          >
+            {/* Progress track - should end exactly at thumb center */}
+            <div
+              className={cn("absolute left-0 top-0 h-full rounded-lg transition-all duration-200 pointer-events-none",
+                color === 'purple' ? 'bg-purple-500' :
+                color === 'blue' ? 'bg-blue-500' :
+                'bg-green-500'
+              )}
+              style={{
+                width: `calc(10px + (100% - 20px) * ${(clampedValue - min) / (maxSelectable - min)})`
+              }}
+            />
+            {/* Native range input (invisible but functional) */}
+            <input
+              type="range"
+              value={clampedValue}
+              onChange={handleSliderChange}
+              min={min}
+              max={maxSelectable}
+              step={step}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              style={{ margin: 0, padding: 0 }}
+            />
+            {/* Custom thumb - positioned to align with progress track end */}
+            <div
+              className={cn("absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 rounded-full shadow-md transition-all duration-200 hover:scale-110 pointer-events-none",
+                color === 'purple' ? 'border-purple-500' :
+                color === 'blue' ? 'border-blue-500' :
+                'border-green-500'
+              )}
+              style={{
+                left: `calc(10px + (100% - 20px) * ${(clampedValue - min) / (maxSelectable - min)} - 10px)`
+              }}
+            />
+          </div>
+        </div>
         <Input
           type="number"
           value={clampedValue}

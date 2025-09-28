@@ -25,6 +25,15 @@ class FrontendDebugger {
     this.initializeDebugPanel()
   }
 
+  // Static method to emit directly to console without recursion
+  static emitToConsole(timestamp, fullNamespace, color, ...args) {
+    console.log(
+      `%c[${timestamp}] ${fullNamespace}`,
+      `color: ${color}; font-weight: bold;`,
+      ...args
+    )
+  }
+
   isEnabled() {
     if (typeof window === 'undefined') return false
 
@@ -85,14 +94,11 @@ class FrontendDebugger {
       }
     }
 
-    // Only log to console if this namespace is enabled
-    if (!this.isEnabled()) return
+    // Always log to console for internal debug namespaces, otherwise check if enabled
+    const isInternalNamespace = fullNamespace.startsWith('frontend:debug:')
+    if (!isInternalNamespace && !this.isEnabled()) return
 
-    console.log(
-      `%c[${timestamp}] ${fullNamespace}`,
-      `color: ${color}; font-weight: bold;`,
-      ...args
-    )
+    FrontendDebugger.emitToConsole(timestamp, fullNamespace, color, ...args)
   }
 
   // Different log levels with emojis for easy identification
@@ -135,15 +141,11 @@ class FrontendDebugger {
       }
     }
 
-    // Only log to console if this namespace is enabled
-    if (!this.isEnabled()) return
+    // Always log to console for internal debug namespaces, otherwise check if enabled
+    const isInternalNamespace = fullNamespace.startsWith('frontend:debug:')
+    if (!isInternalNamespace && !this.isEnabled()) return
 
-    console.log(
-      `%c[${timestamp}] ${fullNamespace}`,
-      `color: ${color}; font-weight: bold;`,
-      emoji,
-      ...args
-    )
+    FrontendDebugger.emitToConsole(timestamp, fullNamespace, color, emoji, ...args)
   }
 
   // Generate consistent colors for namespaces
@@ -177,7 +179,8 @@ const DebugPanelManager = {
       }
       return this.panel
     } catch (error) {
-      console.warn('Failed to load debug panel:', error)
+      // Always log panel errors to console regardless of debug filters
+      console.warn('⚠️ [frontend:debug:panel] Failed to load debug panel:', error)
       return null
     } finally {
       this.initializing = false

@@ -2,11 +2,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 // Redux actions
-import { 
-  fetchDepartments, 
-  createDepartment 
+import {
+  fetchDepartments,
+  createDepartment
 } from "@/state/slices/departments";
 import { fetchVms } from "@/state/slices/vms";
+import { fetchInitialData } from "@/init";
 
 // Mock data for development fallback
 import { mockDepartments, mockVMs } from "../mock/mockData";
@@ -14,12 +15,6 @@ import { mockDepartments, mockVMs } from "../mock/mockData";
 // Check if we're in development mode
 const isDev = process.env.NODE_ENV === 'development';
 
-// Create a singleton object outside the hook to store persistent data
-const persistentData = {
-  isInitialized: false,
-  isFetchingDepartments: false,
-  isFetchingVMs: false
-};
 
 /**
  * Custom hook for managing departments page state and logic
@@ -30,8 +25,6 @@ export const useDepartmentsPage = () => {
   const dispatch = useDispatch();
   
   // State
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDeptDialogOpen, setIsCreateDeptDialogOpen] = useState(false);
   const [newDepartmentName, setNewDepartmentName] = useState("");
@@ -41,154 +34,51 @@ export const useDepartmentsPage = () => {
   const [localDepartments, setLocalDepartments] = useState([]);
   const [localVMs, setLocalVMs] = useState([]);
   
-  // Mounting ref to track the first mount
-  const isMounted = useRef(false);
   
-  // Redux state selectors using memorization to prevent unnecessary renders
+  // Redux state selectors
   const reduxDepartments = useSelector((state) => state.departments.items || []);
   const reduxVMs = useSelector((state) => state.vms.items || []);
-  const vmsLoading = useSelector((state) => state.vms.loading || {});
+  const departmentsLoading = useSelector((state) => state.departments.loading?.fetch || false);
+  const vmsLoading = useSelector((state) => state.vms.loading?.fetch || false);
   
   // Use either mock data or redux data based on the useMockData flag
   const departments = useMockData ? localDepartments : reduxDepartments;
   const vms = useMockData ? localVMs : reduxVMs;
   
-  // Fetch departments data but only on first mount
+  // Switch from mock data to Redux data when Redux data becomes available
   useEffect(() => {
-    // On first render, check if we need to initialize our data
-    if (!isMounted.current) {
-      isMounted.current = true;
-      
-      // If we've already initialized the data via the persistent object, don't fetch again
-      if (persistentData.isInitialized) {
-        setIsLoading(false);
-        return;
-      }
-      
-      // Start loading data
-      const fetchData = async () => {
-        // Prevent concurrent fetches
-        if (persistentData.isFetchingDepartments) {
-          return;
-        }
-        
-        persistentData.isFetchingDepartments = true;
-        setIsLoading(true);
-        
-        try {
-          const result = await dispatch(fetchDepartments()).unwrap();
-          
-          // Mark as initialized to prevent future fetches
-          persistentData.isInitialized = true;
-          setUseMockData(false);
-          
-          // Now fetch VMs if we've got departments
-          if (result && result.length > 0 && !persistentData.isFetchingVMs) {
-            try {
-              persistentData.isFetchingVMs = true;
-              await dispatch(fetchVms()).unwrap();
-            } catch (vmError) {
-              // Continue anyway, we can at least show departments
-            } finally {
-              persistentData.isFetchingVMs = false;
-            }
-          }
-        } catch (error) {
-          
-          // If in development, use mock data
-          if (isDev) {
-            setLocalDepartments(mockDepartments);
-            setLocalVMs(mockVMs);
-            setUseMockData(true);
-            
-            // Show toast
-            setToastProps({
-              variant: "warning",
-              title: "Using Mock Data",
-              description: "Could not connect to the API. Using mock data for development."
-            });
-            setShowToast(true);
-          } else {
-            // In production, show error
-            setHasError(true);
-            setToastProps({
-              variant: "destructive",
-              title: "Connection Error",
-              description: "Failed to load data. Please check your connection and try again."
-            });
-            setShowToast(true);
-          }
-        } finally {
-          persistentData.isFetchingDepartments = false;
-          setIsLoading(false);
-        }
-      };
-      
-      fetchData();
+    if (useMockData && reduxDepartments.length > 0) {
+      setUseMockData(false);
     }
-  }, [dispatch]); // Include dispatch in dependency array
-  
-  // Memoize retry function to avoid recreating it on every render
-  const retryLoading = useCallback(() => {
-    
-    // Reset flags to allow fetching again
-    persistentData.isInitialized = false;
-    persistentData.isFetchingDepartments = false;
-    persistentData.isFetchingVMs = false;
-    
-    setIsLoading(true);
-    setHasError(false);
-    setUseMockData(false);
-    
-    // Fetch data again
-    const fetchData = async () => {
-      try {
-        const result = await dispatch(fetchDepartments()).unwrap();
-        
-        // Mark as initialized
-        persistentData.isInitialized = true;
-        
-        // Fetch VMs if we have departments
-        if (result && result.length > 0) {
-          try {
-            await dispatch(fetchVms()).unwrap();
-          } catch (vmError) {
-            // Continue anyway
-          }
-        }
-        
-        setHasError(false);
-      } catch (error) {
-        
-        // If in development, use mock data
-        if (isDev) {
+  }, [useMockData, reduxDepartments.length]);
+
+  // Check if we should use mock data (when Redux store is empty and in dev mode)
+  // Add small delay to avoid races at mount
+  useEffect(() => {
+    if (isDev && reduxDepartments.length === 0 && !departmentsLoading && !useMockData) {
+      const timer = setTimeout(() => {
+        // Double-check conditions after delay
+        if (reduxDepartments.length === 0 && !departmentsLoading) {
           setLocalDepartments(mockDepartments);
           setLocalVMs(mockVMs);
           setUseMockData(true);
-          
-          // Show toast
+
           setToastProps({
             variant: "warning",
             title: "Using Mock Data",
-            description: "Could not connect to the API. Using mock data for development."
-          });
-          setShowToast(true);
-        } else {
-          // In production, show error
-          setHasError(true);
-          setToastProps({
-            variant: "destructive",
-            title: "Connection Error",
-            description: "Failed to load data. Please check your connection and try again."
+            description: "No data available from Redux store. Using mock data for development."
           });
           setShowToast(true);
         }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchData();
+      }, 500); // 500ms delay to avoid races
+
+      return () => clearTimeout(timer);
+    }
+  }, [reduxDepartments.length, departmentsLoading, useMockData, isDev]);
+  
+  const retryLoading = useCallback(() => {
+    setUseMockData(false);
+    dispatch(fetchInitialData());
   }, [dispatch]);
   
   // Handle creating a new department
@@ -284,8 +174,8 @@ export const useDepartmentsPage = () => {
   
   return {
     // State
-    isLoading,
-    hasError,
+    isLoading: departmentsLoading,
+    vmsLoading,
     searchQuery,
     isCreateDeptDialogOpen,
     newDepartmentName,
@@ -293,7 +183,7 @@ export const useDepartmentsPage = () => {
     toastProps,
     filteredDepartments,
     useMockData,
-    
+
     // Actions
     retryLoading,
     setSearchQuery,

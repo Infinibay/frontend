@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import auth from '@/utils/auth'
 import { createDebugger } from '@/utils/debug';
+import { getAvatarUrl } from '@/utils/avatar';
 
 const debug = createDebugger('frontend:state:auth');
 
@@ -121,14 +122,21 @@ const authSlice = createSlice({
 			const updatedUser = action.payload;
 			// Only update if the updated user is the currently logged-in user
 			if (updatedUser && updatedUser.id === state.user?.id) {
+				// Normalize avatar if present in the update
+				const normalizedUser = { ...updatedUser };
+				if (updatedUser.avatar !== undefined) {
+					normalizedUser.avatar = getAvatarUrl(updatedUser.avatar);
+				}
+
 				state.user = {
 					...state.user,
-					...updatedUser
+					...normalizedUser
 				};
 				debug.success('realtime', 'Current user updated via real-time event:', {
 					userId: updatedUser.id,
-					hasAvatar: !!updatedUser.avatar,
-					avatar: updatedUser.avatar
+					hasAvatar: !!normalizedUser.avatar,
+					avatar: normalizedUser.avatar,
+					avatarNormalized: updatedUser.avatar !== undefined
 				});
 			}
 		},
@@ -138,13 +146,13 @@ const authSlice = createSlice({
 				try {
 					const token = localStorage.getItem('token');
 					const socketNamespace = localStorage.getItem('socketNamespace');
-					
+
 					if (token) {
 						state.token = token;
 						state.isLoggedIn = true;
 						debug.success('restore', 'Token restored from localStorage');
 					}
-					
+
 					if (socketNamespace) {
 						state.socketNamespace = socketNamespace;
 						debug.success('restore', 'Socket namespace restored from localStorage:', socketNamespace);
@@ -152,6 +160,12 @@ const authSlice = createSlice({
 				} catch (error) {
 					debug.error('restore', 'Error restoring auth from localStorage:', error);
 				}
+			}
+		},
+		setUserAvatar: (state, action) => {
+			if (state.user) {
+				state.user.avatar = action.payload;
+				debug.success('avatar', 'User avatar updated in Redux state:', action.payload);
 			}
 		},
 	},
@@ -222,6 +236,6 @@ const authSlice = createSlice({
 	}
 });
 
-export const { logout, setSocketNamespace, restoreAuthFromStorage, realTimeCurrentUserUpdated } = authSlice.actions;
+export const { logout, setSocketNamespace, restoreAuthFromStorage, realTimeCurrentUserUpdated, setUserAvatar } = authSlice.actions;
 export { fetchCurrentUser, loginUser };
 export default authSlice.reducer;

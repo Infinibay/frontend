@@ -72,9 +72,6 @@ export const InitialDataLoader = ({ children }) => {
 
   // Only check loading states that are critical for initial app functionality
   const authLoading = useSelector(state => state.auth.loading?.fetchUser);
-  const departmentsLoading = useSelector(state => state.departments.loading?.fetch);
-  const vmsLoading = useSelector(state => state.vms.loading?.fetch);
-  const applicationsLoading = useSelector(state => state.applications.loading?.fetch);
   const appSettingsLoading = useSelector(selectAppSettingsLoading);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
 
@@ -85,7 +82,7 @@ export const InitialDataLoader = ({ children }) => {
         const timeoutId = setTimeout(() => {
           setHasTimedOut(true);
           setIsInitializing(false);
-        }, 30000); // 30 second timeout
+        }, 15000); // 15 second timeout
 
         // First, restore auth from localStorage if available
         const { restoreAuthFromStorage } = await import('@/state/slices/auth');
@@ -111,9 +108,9 @@ export const InitialDataLoader = ({ children }) => {
     initialize();
   }, [dispatch, retryCount]);
 
-  // Only wait for critical loading states (exclude VMs to prevent infinite loop)
-  // VMs will be loaded by individual pages as needed
-  const isCriticalLoading = authLoading || departmentsLoading || appSettingsLoading?.fetch || !appSettingsInitialized;
+  // Only wait for critical loading states (exclude departments and VMs to prevent infinite loop)
+  // Departments and VMs will be loaded by individual pages as needed
+  const isCriticalLoading = authLoading || appSettingsLoading?.fetch || !appSettingsInitialized;
 
   const handleRetry = () => {
     setError(null);

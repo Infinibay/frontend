@@ -493,7 +493,48 @@ const DepartmentFirewallRulesSection = ({
             {mode === 'simple' ? (
               <Button
                 size="sm"
-                onClick={() => router.push(`/departments/${encodeURIComponent(departmentName)}/firewall/create`)}
+                onClick={() => {
+                  const route = `/departments/${encodeURIComponent(departmentName)}/firewall/create`;
+                  console.log('[DepartmentFirewallRulesSection] New Rule - Navigation Debug:', {
+                    departmentName,
+                    route,
+                    encodedDepartment: encodeURIComponent(departmentName),
+                    currentUrl: window.location.href,
+                    mode: 'simple',
+                    timestamp: new Date().toISOString()
+                  });
+
+                  // Add navigation success/failure tracking
+                  try {
+                    const navigationPromise = router.push(route);
+
+                    // Only handle as promise if it actually returns one
+                    if (navigationPromise && typeof navigationPromise.then === 'function') {
+                      navigationPromise
+                        .then(() => {
+                          console.log('[DepartmentFirewallRulesSection] New Rule Navigation successful');
+                        })
+                        .catch((error) => {
+                          console.error('[DepartmentFirewallRulesSection] New Rule Navigation failed:', error);
+                        });
+                    } else {
+                      console.log('[DepartmentFirewallRulesSection] New Rule Navigation initiated (sync)');
+                    }
+                  } catch (error) {
+                    console.error('[DepartmentFirewallRulesSection] New Rule Navigation error:', error);
+                  }
+
+                  // Fallback: Check if navigation happened after a delay
+                  setTimeout(() => {
+                    if (window.location.pathname.includes('/firewall/create')) {
+                      console.log('[DepartmentFirewallRulesSection] New Rule Navigation confirmed via URL check');
+                    } else {
+                      console.warn('[DepartmentFirewallRulesSection] New Rule Navigation may have failed - URL unchanged');
+                      console.warn('Current URL:', window.location.href);
+                      console.warn('Expected URL pattern:', route);
+                    }
+                  }, 100);
+                }}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 New Rule
@@ -625,7 +666,47 @@ const DepartmentFirewallRulesSection = ({
                   </p>
                 </div>
                 {!searchTerm && filterBy === 'all' && (
-                  <Button onClick={() => router.push(`/departments/${encodeURIComponent(departmentName)}/firewall/create`)}>
+                  <Button onClick={() => {
+                    const route = `/departments/${encodeURIComponent(departmentName)}/firewall/create`;
+                    console.log('[DepartmentFirewallRulesSection] Create Rule - Navigation Debug:', {
+                      departmentName,
+                      route,
+                      encodedDepartment: encodeURIComponent(departmentName),
+                      currentUrl: window.location.href,
+                      timestamp: new Date().toISOString()
+                    });
+
+                    // Add navigation success/failure tracking
+                    try {
+                      const navigationPromise = router.push(route);
+
+                      // Only handle as promise if it actually returns one
+                      if (navigationPromise && typeof navigationPromise.then === 'function') {
+                        navigationPromise
+                          .then(() => {
+                            console.log('[DepartmentFirewallRulesSection] Navigation successful');
+                          })
+                          .catch((error) => {
+                            console.error('[DepartmentFirewallRulesSection] Navigation failed:', error);
+                          });
+                      } else {
+                        console.log('[DepartmentFirewallRulesSection] Navigation initiated (sync)');
+                      }
+                    } catch (error) {
+                      console.error('[DepartmentFirewallRulesSection] Navigation error:', error);
+                    }
+
+                    // Fallback: Check if navigation happened after a delay
+                    setTimeout(() => {
+                      if (window.location.pathname.includes('/firewall/create')) {
+                        console.log('[DepartmentFirewallRulesSection] Navigation confirmed via URL check');
+                      } else {
+                        console.warn('[DepartmentFirewallRulesSection] Navigation may have failed - URL unchanged');
+                        console.warn('Current URL:', window.location.href);
+                        console.warn('Expected URL pattern:', route);
+                      }
+                    }, 100);
+                  }}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Rule
                   </Button>
