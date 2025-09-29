@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, gql, useMutation } from "@apollo/client";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 
 // Check if IP fields are enabled via environment variable
 const IP_FIELDS_ENABLED = process.env.NEXT_PUBLIC_ENABLE_VM_IP_FIELDS === 'true';
@@ -16,6 +17,9 @@ const vmDetailedInfo = gql`
       templateId
       createdAt
       configuration
+      cpuCores
+      ramGB
+      gpuPciAddress
       ${IP_FIELDS_ENABLED ? `
       localIP
       publicIP
@@ -62,11 +66,100 @@ const POWER_OFF = gql`
   }
 `;
 
+
+const UPDATE_MACHINE_HARDWARE = gql`
+  mutation updateMachineHardware($input: UpdateMachineHardwareInput!) {
+    updateMachineHardware(input: $input) {
+      id
+      name
+      configuration
+      status
+      userId
+      templateId
+      createdAt
+      template {
+        id
+        name
+        description
+        cores
+        ram
+        storage
+        createdAt
+        categoryId
+        totalMachines
+      }
+      department {
+        id
+        name
+        createdAt
+        internetSpeed
+        ipSubnet
+        totalMachines
+      }
+      user {
+        id
+        firstName
+        lastName
+        role
+        email
+        avatar
+        createdAt
+      }
+    }
+  }
+`;
+
+const UPDATE_MACHINE_NAME = gql`
+  mutation updateMachineName($input: UpdateMachineNameInput!) {
+    updateMachineName(input: $input) {
+      id
+      name
+      configuration
+      status
+      userId
+      templateId
+      createdAt
+      template {
+        id
+        name
+        description
+        cores
+        ram
+        storage
+        createdAt
+        categoryId
+        totalMachines
+      }
+      department {
+        id
+        name
+        createdAt
+        internetSpeed
+        ipSubnet
+        totalMachines
+      }
+      user {
+        id
+        firstName
+        lastName
+        role
+        email
+        avatar
+        createdAt
+      }
+    }
+  }
+`;
+
 /**
  * Custom hook for managing VM detail page state and logic
  */
 export const useVMDetail = (vmId) => {
   const router = useRouter();
+
+  // Redux selectors
+  const currentUser = useSelector(state => state.auth.user);
+  const isAdmin = currentUser?.role === 'ADMIN';
 
   // UI State
   const [showToast, setShowToast] = useState(false);
@@ -89,6 +182,8 @@ export const useVMDetail = (vmId) => {
   // GraphQL mutations
   const [powerOnMutation] = useMutation(POWER_ON);
   const [powerOffMutation] = useMutation(POWER_OFF);
+  const [updateMachineHardwareMutation, { loading: hardwareUpdateLoading }] = useMutation(UPDATE_MACHINE_HARDWARE);
+  const [updateMachineNameMutation, { loading: nameUpdateLoading }] = useMutation(UPDATE_MACHINE_NAME);
 
   const vm = data?.machine;
   const error = graphqlError;
@@ -105,15 +200,15 @@ export const useVMDetail = (vmId) => {
       await refetch();
       showToastNotification(
         "success",
-        "Actualizado",
-        "La información de la VM se ha actualizado correctamente."
+        "Updated",
+        "VM information has been updated successfully."
       );
     } catch (error) {
       console.error("Error refreshing VM:", error);
       showToastNotification(
         "destructive",
         "Error",
-        "No se pudo actualizar la información de la VM."
+        "Could not update VM information."
       );
     }
   };
@@ -129,22 +224,22 @@ export const useVMDetail = (vmId) => {
       // Show loading notification
       switch (action) {
         case 'start':
-          actionText = 'iniciar';
-          successText = 'iniciado';
+          actionText = 'start';
+          successText = 'started';
           showToastNotification(
             "default",
-            "Procesando",
-            "Intentando " + actionText + " la máquina virtual..."
+            "Processing",
+            "Attempting to " + actionText + " the virtual machine..."
           );
           await powerOnMutation({ variables: { id: vm.id } });
           break;
         case 'stop':
-          actionText = 'detener';
-          successText = 'detenido';
+          actionText = 'stop';
+          successText = 'stopped';
           showToastNotification(
             "default",
-            "Procesando",
-            "Intentando " + actionText + " la máquina virtual..."
+            "Processing",
+            "Attempting to " + actionText + " the virtual machine..."
           );
           await powerOffMutation({ variables: { id: vm.id } });
           break;
@@ -152,8 +247,8 @@ export const useVMDetail = (vmId) => {
           // Restart functionality is disabled for now
           showToastNotification(
             "default",
-            "Función no disponible",
-            "La función de reinicio no está disponible actualmente."
+            "Function not available",
+            "The restart function is not currently available."
           );
           return;
         default:
@@ -165,17 +260,119 @@ export const useVMDetail = (vmId) => {
 
       showToastNotification(
         "success",
-        "Éxito",
-        "La máquina virtual se ha " + successText + " correctamente."
+        "Success",
+        "The virtual machine has been " + successText + " successfully."
       );
 
     } catch (error) {
       console.error("Error " + action + " VM:", error);
-      const errorAction = action === 'start' ? 'iniciar' : 'detener';
+      const errorAction = action === 'start' ? 'start' : 'stop';
       showToastNotification(
         "destructive",
         "Error",
-        "No se pudo " + errorAction + " la máquina virtual."
+        "Could not " + errorAction + " the virtual machine."
+      );
+    }
+  };
+
+  // Handle hardware update (admin only)
+  const handleHardwareUpdate = async (hardwareUpdate) => {
+    if (!vm || !isAdmin) return;
+
+    // Validate VM is stopped
+    if (vm.status === 'running') {
+      showToastNotification(
+        "destructive",
+        "Error",
+        "VM must be stopped before updating hardware configuration."
+      );
+      return;
+    }
+
+    try {
+      showToastNotification(
+        "default",
+        "Processing",
+        "Updating hardware configuration..."
+      );
+
+      const input = {
+        id: vm.id,
+        ...hardwareUpdate
+      };
+
+      await updateMachineHardwareMutation({
+        variables: { input }
+      });
+
+      await refetch();
+
+      showToastNotification(
+        "success",
+        "Success",
+        "Hardware configuration has been updated successfully."
+      );
+
+    } catch (error) {
+      console.error("Error updating hardware:", error);
+      showToastNotification(
+        "destructive",
+        "Error",
+        "Could not update hardware configuration."
+      );
+    }
+  };
+
+  // Handle name update (admin only)
+  const handleNameUpdate = async (newName) => {
+    if (!vm || !isAdmin) return;
+
+    // Validate name is not empty
+    if (!newName || newName.trim() === '') {
+      showToastNotification(
+        "destructive",
+        "Error",
+        "VM name cannot be empty."
+      );
+      return;
+    }
+
+    // Don't update if name hasn't changed
+    if (newName.trim() === vm.name) {
+      return;
+    }
+
+    try {
+      showToastNotification(
+        "default",
+        "Processing",
+        "Updating VM name..."
+      );
+
+      const input = {
+        id: vm.id,
+        name: newName.trim()
+      };
+
+      await updateMachineNameMutation({
+        variables: { input }
+      });
+
+      await refetch();
+
+      showToastNotification(
+        "success",
+        "Success",
+        "VM name has been updated successfully."
+      );
+
+    } catch (error) {
+      console.error("Error updating name:", error);
+      const errorMessage = error?.graphQLErrors?.[0]?.message || "Could not update VM name.";
+      showToastNotification(
+        "destructive",
+        "Error",
+        errorMessage
       );
     }
   };
@@ -210,12 +407,21 @@ export const useVMDetail = (vmId) => {
     toastProps,
     activeTab,
 
+    // Admin state
+    isAdmin,
+    hardwareUpdateLoading,
+    nameUpdateLoading,
+
     // Actions
     setActiveTab,
     setShowToast,
     refreshVM,
     handlePowerAction,
     handleBackToDepartment,
-    showToastNotification
+    showToastNotification,
+
+    // Admin actions
+    handleHardwareUpdate,
+    handleNameUpdate
   };
 };

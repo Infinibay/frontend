@@ -134,6 +134,87 @@ mutation executeCommand($command: String!, $id: String!) {
   }
 }
 
+
+mutation updateMachineHardware($input: UpdateMachineHardwareInput!) {
+  updateMachineHardware(input: $input) {
+    id
+    name
+    configuration
+    status
+    userId
+    templateId
+    createdAt
+    template {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
+    department {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
+    }
+    user {
+      id
+      firstName
+      lastName
+      role
+      email
+      avatar
+      createdAt
+    }
+  }
+}
+
+mutation updateMachineName($input: UpdateMachineNameInput!) {
+  updateMachineName(input: $input) {
+    id
+    name
+    configuration
+    status
+    userId
+    templateId
+    createdAt
+    template {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
+    department {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
+    }
+    user {
+      id
+      firstName
+      lastName
+      role
+      email
+      avatar
+      createdAt
+    }
+  }
+}
+
 mutation moveMachine($departmentId: String!, $id: String!) {
   moveMachine(departmentId: $departmentId, id: $id) {
     id
