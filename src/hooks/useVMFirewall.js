@@ -68,7 +68,7 @@ const useVMFirewall = (vmId) => {
   const availableTemplates = templatesData?.getAvailableFirewallTemplates || [];
   const simplifiedRules = rulesData?.getSimplifiedFirewallRules || [];
 
-  debug('Firewall data extracted', {
+  debug.log('Firewall data extracted', {
     firewallState,
     availableTemplates: availableTemplates.length,
     simplifiedRules: simplifiedRules.length,
@@ -217,7 +217,7 @@ const useVMFirewall = (vmId) => {
 
   // Refresh all firewall data
   const refreshData = async () => {
-    debug('Refreshing firewall data');
+    debug.log('Refreshing firewall data');
     const promises = [
       refetchFirewallState(),
       refetchTemplates(),
@@ -226,9 +226,9 @@ const useVMFirewall = (vmId) => {
 
     try {
       await Promise.all(promises);
-      debug('Firewall data refresh completed');
+      debug.log('Firewall data refresh completed');
     } catch (error) {
-      debug('Error refreshing firewall data', error);
+      debug.error('Error refreshing firewall data', error);
       throw error;
     }
   };

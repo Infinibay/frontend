@@ -2,6 +2,9 @@ import React from "react";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Lightbulb, Shield } from 'lucide-react';
+import { createDebugger } from '@/utils/debug';
+
+const debug = createDebugger('frontend:components:vm-tab-controls');
 
 /**
  * Tab controls component for the VM detail page
@@ -10,34 +13,39 @@ import { RefreshCw, Lightbulb, Shield } from 'lucide-react';
 const VMTabControls = ({
   onRefresh
 }) => {
+  const handleRefresh = () => {
+    debug.log('VM refresh requested');
+    onRefresh?.();
+  };
+
   return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-2">
-        <TabsList>
+    <div className="flex items-center justify-between my-6 py-2">
+      <div className="flex items-center size-gap">
+        <TabsList className="glass-subtle">
           <TabsTrigger
             value="recommendations"
-            className="flex items-center gap-2"
+            className="flex items-center size-gap size-text"
           >
-            <Lightbulb className="h-4 w-4" />
-            Recomendaciones
+            <Lightbulb className="size-icon" />
+            Recommendations
           </TabsTrigger>
           <TabsTrigger
             value="firewall"
-            className="flex items-center gap-2"
+            className="flex items-center size-gap size-text"
           >
-            <Shield className="h-4 w-4" />
-            Firewall
+            <Shield className="size-icon" />
+            Security
           </TabsTrigger>
         </TabsList>
-        
-        <Button 
-          variant="outline" 
+
+        <Button
+          variant="outline"
           size="sm"
-          className="ml-2"
-          onClick={onRefresh}
+          className="size-button"
+          onClick={handleRefresh}
         >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Actualizar
+          <RefreshCw className="size-icon mr-2" />
+          Refresh
         </Button>
       </div>
     </div>

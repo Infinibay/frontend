@@ -26,7 +26,6 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Header, HeaderLeft, HeaderCenter, HeaderRight } from "@/components/ui/header";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -50,7 +49,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar } from "@/components/ui/avatar";
-import { AvatarSelector } from "@/components/ui/avatar-selector";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -119,8 +117,8 @@ const UsersPage = () => {
         description: "The user has been successfully created."
       });
       setShowToast(true);
-      refreshUsers();
       debug.info('User created successfully:', userData.email);
+      debug.info('List will update automatically via real-time events');
     } catch (error) {
       debug.error('Failed to create user:', error);
       setToastProps({
@@ -143,8 +141,8 @@ const UsersPage = () => {
         description: "The user has been successfully updated."
       });
       setShowToast(true);
-      refreshUsers();
       debug.info('User updated successfully:', editingUser.id);
+      debug.info('List will update automatically via real-time events');
     } catch (error) {
       debug.error('Failed to update user:', error);
       setToastProps({
@@ -199,8 +197,8 @@ const UsersPage = () => {
       });
       setShowToast(true);
 
-      // Refresh users list to show changes in table
-      refreshUsers();
+      // List will update automatically via real-time events
+      debug.info('Avatar updated, list will update via real-time events');
     } catch (error) {
       console.error('❌ Avatar update failed:', error);
       setToastProps({
@@ -498,15 +496,29 @@ const UsersPage = () => {
         )}
       </div>
 
-      {/* Create User Sheet */}
-      <Sheet open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
-        <SheetContent className="glass-strong">
-          <SheetHeader>
-            <SheetTitle className="size-heading text-glass-text-primary">Create User</SheetTitle>
-            <SheetDescription className="size-text text-glass-text-secondary">
-              Add a new user to the system
-            </SheetDescription>
-          </SheetHeader>
+      {/* Create User Dialog */}
+      <Dialog open={isCreateUserOpen} onOpenChange={(open) => {
+        setIsCreateUserOpen(open);
+        if (open) {
+          // Reset form when opening
+          setNewUser({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            passwordConfirmation: '',
+            role: 'USER',
+            avatar: DEFAULT_AVATAR_CANONICAL
+          });
+        }
+      }}>
+        <DialogContent className="glass-strong z-1000 max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="size-heading text-glass-text-primary">Create User</DialogTitle>
+            <DialogDescription className="size-text text-glass-text-secondary">
+              Add a new user to the system. User can set their avatar from their profile later.
+            </DialogDescription>
+          </DialogHeader>
           <div className="grid size-gap size-padding">
             <div className="space-y-2">
               <Label htmlFor="firstName" className="size-text text-glass-text-primary">
@@ -606,59 +618,66 @@ const UsersPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label className="size-text text-glass-text-primary">
-                Avatar
-              </Label>
-              <AvatarSelector
-                selectedAvatar={newUser.avatar}
-                onAvatarSelect={(avatarPath) => setNewUser(prev => ({
-                  ...prev,
-                  avatar: avatarPath
-                }))}
-                loading={false}
-                className="w-full"
-              />
-            </div>
           </div>
-          <SheetFooter>
-            <Button className="size-button" onClick={() => {
-              if (!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.password || !newUser.passwordConfirmation) {
-                setToastProps({
-                  variant: "error",
-                  title: "Validation Error",
-                  description: "Please fill in all required fields."
+          <DialogFooter className="size-gap">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsCreateUserOpen(false);
+                setNewUser({
+                  firstName: '',
+                  lastName: '',
+                  email: '',
+                  password: '',
+                  passwordConfirmation: '',
+                  role: 'USER',
+                  avatar: DEFAULT_AVATAR_CANONICAL
                 });
-                setShowToast(true);
-                return;
-              }
+              }}
+              className="size-button"
+            >
+              Cancel
+            </Button>
+            <Button
+              className="size-button"
+              onClick={() => {
+                if (!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.password || !newUser.passwordConfirmation) {
+                  setToastProps({
+                    variant: "error",
+                    title: "Validation Error",
+                    description: "Please fill in all required fields."
+                  });
+                  setShowToast(true);
+                  return;
+                }
 
-              if (newUser.password !== newUser.passwordConfirmation) {
-                setToastProps({
-                  variant: "error",
-                  title: "Validation Error",
-                  description: "Passwords do not match."
+                if (newUser.password !== newUser.passwordConfirmation) {
+                  setToastProps({
+                    variant: "error",
+                    title: "Validation Error",
+                    description: "Passwords do not match."
+                  });
+                  setShowToast(true);
+                  return;
+                }
+
+                handleCreateUser(newUser);
+                setNewUser({
+                  firstName: '',
+                  lastName: '',
+                  email: '',
+                  password: '',
+                  passwordConfirmation: '',
+                  role: 'USER',
+                  avatar: DEFAULT_AVATAR_CANONICAL
                 });
-                setShowToast(true);
-                return;
-              }
-
-              handleCreateUser(newUser);
-              setNewUser({
-                firstName: '',
-                lastName: '',
-                email: '',
-                password: '',
-                passwordConfirmation: '',
-                role: 'USER',
-                avatar: DEFAULT_AVATAR_CANONICAL
-              });
-            }}>
+              }}
+            >
               Create User
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit User Dialog */}
       <Dialog
@@ -766,12 +785,11 @@ const UsersPage = () => {
               <Label className="size-text text-glass-text-primary">
                 Avatar
               </Label>
-              <AvatarSelector
-                selectedAvatar={editingUser?.avatar}
-                onAvatarSelect={handleAvatarUpdate}
-                loading={false}
-                className="w-full"
-              />
+              <div className="glass-subtle size-card-padding radius-fluent-md">
+                <p className="size-text text-glass-text-secondary">
+                  Avatar can be updated from the user's profile page.
+                </p>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -791,7 +809,7 @@ const UsersPage = () => {
                 firstName: editingUser.firstName,
                 lastName: editingUser.lastName,
                 role: editingUser.role,
-                // Avatar is updated immediately on selection, not in this form
+                // Avatar can be updated from the user's profile page
                 ...(editingUser.password && editingUser.passwordConfirmation && {
                   password: editingUser.password,
                   passwordConfirmation: editingUser.passwordConfirmation

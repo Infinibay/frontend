@@ -1,23 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@apollo/client';
-import { Shield, AlertCircle, RefreshCcw, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Shield, AlertCircle, RefreshCcw, Clock, Server } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
-import { Badge } from '@components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { useVmDetailedInfoQuery } from '@/gql/hooks';
 import useVMFirewall from '@/hooks/useVMFirewall';
 import VMStatusWarning from './VMStatusWarning';
+import VMSecurityTabs from './VMSecurityTabs';
 import FirewallTemplateSection from './FirewallTemplateSection';
 import FirewallRulesSection from './FirewallRulesSection';
 import { getFirewallConcepts } from '@/utils/firewallHelpers';
+import { createDebugger } from '@/utils/debug';
 
-export default function VMFirewallTab({ vmId, vmName }) {
-  const [activeTab, setActiveTab] = useState('overview');
+const debug = createDebugger('frontend:components:vm-firewall-tab');
+
+export default function VMFirewallTab({ vmId, vm, onPowerAction }) {
+  const [activeTab, setActiveTab] = useState('firewall');
   const [lastRefresh, setLastRefresh] = useState(new Date());
+
+  debug.log('VM Firewall Tab mounted', { vmId, vmName: vm?.name });
 
   // Get VM details to check status
   const {
@@ -54,24 +57,27 @@ export default function VMFirewallTab({ vmId, vmName }) {
   // Refresh all data
   const handleRefreshData = async () => {
     try {
+      debug.log('Refreshing VM firewall data');
       await Promise.all([
         refetchVM(),
         refreshFirewallData()
       ]);
       setLastRefresh(new Date());
+      debug.success('VM firewall data refreshed successfully');
     } catch (error) {
-      console.error('Error refreshing data:', error);
+      debug.error('Error refreshing VM firewall data:', error);
     }
   };
 
   // Handle VM stopped event
   const handleVMStopped = () => {
-    // Refresh VM data to update status
+    debug.log('VM stopped, refreshing VM data');
     refetchVM();
   };
 
   // Handle firewall changes
   const handleFirewallChange = () => {
+    debug.log('Firewall changed, refreshing data');
     refreshFirewallData();
   };
 
@@ -83,326 +89,178 @@ export default function VMFirewallTab({ vmId, vmName }) {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Error al cargar la configuración del firewall: {firewallError?.message || vmError?.message}
+            Error loading VM firewall configuration: {firewallError?.message || vmError?.message}
           </AlertDescription>
         </Alert>
         <Button onClick={handleRefreshData} variant="outline">
           <RefreshCcw className="h-4 w-4 mr-2" />
-          Reintentar
+          Retry
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Shield className="h-6 w-6 text-blue-600" />
-          <div>
-            <h2 className="text-xl font-semibold">Configuración de Firewall</h2>
-            <p className="text-sm text-gray-600">
-              Gestione las reglas de seguridad de red para {vmName}
-            </p>
-          </div>
-        </div>
+    <div className="space-y-8">
+      {/* Security Tabs Navigation */}
+      <VMSecurityTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        <div className="flex items-center gap-3">
-          {lastSync && (
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Clock className="h-3 w-3" />
-              Última sincronización: {lastSync.toLocaleTimeString()}
-            </div>
-          )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefreshData}
-            disabled={isLoading}
-          >
-            <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-        </div>
-      </div>
-
-      {/* VM Status Warning */}
-      {isVMRunning && (
-        <VMStatusWarning
-          vmStatus={vmStatus}
-          vmId={vmId}
-          vmName={vmName}
-          onVMStopped={handleVMStopped}
-        />
-      )}
-
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="flex items-center gap-3">
-            <RefreshCcw className="h-5 w-5 animate-spin" />
-            <span>Cargando configuración del firewall...</span>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content */}
-      {!isLoading && (
-        <>
-          {/* Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Plantillas Aplicadas</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {appliedTemplates?.length || 0}
-                    </p>
-                  </div>
-                  <Shield className="h-8 w-8 text-blue-500" />
+      <div className="size-margin-md">
+        {/* Render the appropriate tab content based on activeTab */}
+        {activeTab === "firewall" ? (
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Shield className="h-6 w-6 text-blue-600" />
+                <div className="space-y-2">
+                  <h2 className="size-heading">VM Firewall</h2>
+                  <p className="size-text text-muted-foreground">
+                    Manage network security rules for <strong>{vm?.name}</strong>
+                  </p>
+                  <p className="size-small text-muted-foreground">
+                    VM rules can be overridden by department-level rules
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Reglas Personalizadas</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {customRules?.length || 0}
-                    </p>
+              <div className="flex items-center gap-3">
+                {lastSync && (
+                  <div className="flex items-center gap-1 size-small text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    Last sync: {lastSync.toLocaleTimeString()}
                   </div>
-                  <AlertCircle className="h-8 w-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Reglas Activas</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {rulesSummary?.enabled || 0}
-                    </p>
-                  </div>
-                  <Shield className="h-8 w-8 text-purple-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Conflictos</p>
-                    <p className={`text-2xl font-bold ${
-                      checkRuleConflicts?.length > 0 ? 'text-red-600' : 'text-green-600'
-                    }`}>
-                      {checkRuleConflicts?.length || 0}
-                    </p>
-                  </div>
-                  <AlertCircle className={`h-8 w-8 ${
-                    checkRuleConflicts?.length > 0 ? 'text-red-500' : 'text-green-500'
-                  }`} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Conflicts Alert */}
-          {checkRuleConflicts && checkRuleConflicts.length > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Se detectaron {checkRuleConflicts.length} conflicto(s) en las reglas:</strong>
-                <ul className="mt-2 text-sm">
-                  {checkRuleConflicts.slice(0, 3).map((conflict, index) => (
-                    <li key={index} className="ml-4">• {conflict.issue}</li>
-                  ))}
-                  {checkRuleConflicts.length > 3 && (
-                    <li className="ml-4">• Y {checkRuleConflicts.length - 3} conflicto(s) más...</li>
-                  )}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Main Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Resumen</TabsTrigger>
-              <TabsTrigger value="templates">Plantillas</TabsTrigger>
-              <TabsTrigger value="rules">Reglas</TabsTrigger>
-              <TabsTrigger value="help">Ayuda</TabsTrigger>
-            </TabsList>
-
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
-              <div className="grid gap-6">
-                {/* Quick Stats */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5" />
-                      Estado del Firewall
-                    </CardTitle>
-                    <CardDescription>
-                      Resumen rápido de la configuración actual
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-600">Tráfico Entrante</p>
-                        <p className="font-medium">{rulesSummary?.inbound || 0} reglas</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Tráfico Saliente</p>
-                        <p className="font-medium">{rulesSummary?.outbound || 0} reglas</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Permitir</p>
-                        <p className="font-medium text-green-600">{rulesSummary?.allow || 0} reglas</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Denegar</p>
-                        <p className="font-medium text-red-600">{rulesSummary?.deny || 0} reglas</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Applied Templates Preview */}
-                {appliedTemplates && appliedTemplates.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Plantillas Aplicadas</CardTitle>
-                      <CardDescription>
-                        Plantillas de firewall actualmente activas
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {appliedTemplates.map((templateName) => (
-                          <Badge key={templateName} variant="secondary" className="bg-green-100 text-green-800">
-                            {availableTemplates?.find(t => t.template === templateName)?.name || templateName}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
                 )}
 
-                {/* Recent Activity */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Información del Sistema</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Estado de la VM:</span>
-                      <Badge variant={isVMRunning ? "default" : "secondary"}>
-                        {isVMRunning ? 'Ejecutándose' : 'Detenida'}
-                      </Badge>
-                    </div>
-                    {lastSync && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Última sincronización:</span>
-                        <span>{lastSync.toLocaleString()}</span>
-                      </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshData}
+                  disabled={isLoading}
+                >
+                  <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+            </div>
+
+            {/* VM Priority Notice */}
+            <Alert>
+              <Server className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Important note:</strong> Firewall rules configured at the department level
+                will automatically be applied to this VM and will take priority over
+                rules configured individually on this VM.
+              </AlertDescription>
+            </Alert>
+
+            {/* VM Status Warning */}
+            {isVMRunning && (
+              <VMStatusWarning
+                vmStatus={vmStatus}
+                vmId={vmId}
+                vmName={vm?.name}
+                onVMStopped={handleVMStopped}
+              />
+            )}
+
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="flex items-center gap-3">
+                  <RefreshCcw className="h-5 w-5 animate-spin" />
+                  <span>Loading VM firewall configuration...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Conflicts Alert */}
+            {!isLoading && checkRuleConflicts && checkRuleConflicts.length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>{checkRuleConflicts.length} conflict(s) detected in VM rules:</strong>
+                  <ul className="mt-2 text-sm">
+                    {checkRuleConflicts.slice(0, 3).map((conflict, index) => (
+                      <li key={index} className="ml-4">• {conflict.issue}</li>
+                    ))}
+                    {checkRuleConflicts.length > 3 && (
+                      <li className="ml-4">• And {checkRuleConflicts.length - 3} more conflict(s)...</li>
                     )}
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Plantillas disponibles:</span>
-                      <span>{availableTemplates?.length || 0}</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Main Content - Rules Section */}
+            {!isLoading && (
+              <div className="space-y-8">
+                <FirewallTemplateSection
+                  availableTemplates={availableTemplates}
+                  appliedTemplates={appliedTemplates}
+                  onTemplateChange={handleFirewallChange}
+                  disabled={isVMRunning}
+                  vmId={vmId}
+                />
+
+                <FirewallRulesSection
+                  customRules={customRules}
+                  effectiveRules={effectiveRules}
+                  vmId={vmId}
+                  onRuleChange={handleFirewallChange}
+                  disabled={isVMRunning}
+                />
               </div>
-            </TabsContent>
+            )}
 
-            {/* Templates Tab */}
-            <TabsContent value="templates" className="space-y-6">
-              <FirewallTemplateSection
-                availableTemplates={availableTemplates}
-                appliedTemplates={appliedTemplates}
-                onTemplateChange={handleFirewallChange}
-                disabled={isVMRunning}
-                vmId={vmId}
-              />
-            </TabsContent>
-
-            {/* Rules Tab */}
-            <TabsContent value="rules" className="space-y-6">
-              <FirewallRulesSection
-                customRules={customRules}
-                effectiveRules={effectiveRules}
-                vmId={vmId}
-                onRuleChange={handleFirewallChange}
-                disabled={isVMRunning}
-              />
-            </TabsContent>
-
-            {/* Help Tab */}
-            <TabsContent value="help" className="space-y-6">
-              <div className="grid gap-6">
-                {Object.entries(concepts).map(([key, concept]) => (
-                  <Card key={key}>
-                    <CardHeader>
-                      <CardTitle className="text-base">{concept.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-700">{concept.content}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-
-                {/* Quick Tips */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Consejos Importantes</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="text-sm text-gray-700 space-y-2">
-                      <li>• Las reglas más específicas tienen prioridad sobre las generales</li>
-                      <li>• Las reglas de "Denegar" se procesan antes que las de "Permitir"</li>
-                      <li>• Siempre pruebe los cambios en horarios de menor actividad</li>
-                      <li>• Mantenga un backup de las reglas antes de hacer cambios importantes</li>
-                      <li>• Use plantillas para configuraciones comunes</li>
-                      <li>• Revise periódicamente las reglas para eliminar las innecesarias</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                {/* Contact Support */}
-                <Card className="border-blue-200 bg-blue-50">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-blue-800">¿Necesita ayuda adicional?</h4>
-                        <p className="text-sm text-blue-700 mt-1">
-                          Si tiene dudas sobre la configuración del firewall o necesita
-                          asistencia técnica, contacte al equipo de soporte de TI.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            {/* Last Update Info */}
+            <div className="flex items-center justify-center size-small text-muted-foreground pt-6 mt-8 border-t">
+              <Clock className="h-3 w-3 mr-1" />
+              Last update: {lastRefresh.toLocaleTimeString()}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Security Overview Tab */}
+            <div className="flex items-center gap-4">
+              <Shield className="h-6 w-6 text-blue-600" />
+              <div className="space-y-2">
+                <h2 className="size-heading">Security Overview</h2>
+                <p className="size-text text-muted-foreground">
+                  General security information for <strong>{vm?.name}</strong>
+                </p>
               </div>
-            </TabsContent>
-          </Tabs>
-        </>
-      )}
+            </div>
 
-      {/* Last Update Info */}
-      <div className="flex items-center justify-center text-xs text-gray-500 pt-4 border-t">
-        <Clock className="h-3 w-3 mr-1" />
-        Última actualización: {lastRefresh.toLocaleTimeString()}
+            <Card glass="medium" elevation="2">
+              <CardHeader>
+                <CardTitle>Security Status</CardTitle>
+                <CardDescription>
+                  Overview of security settings and status for this VM
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 size-text">
+                  <div>
+                    <p className="text-muted-foreground">VM Status:</p>
+                    <p className="font-medium">{isVMRunning ? 'Running' : 'Stopped'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Firewall Rules:</p>
+                    <p className="font-medium">{(appliedTemplates?.length || 0) + (customRules?.length || 0)} active</p>
+                  </div>
+                </div>
+
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    For detailed firewall configuration, switch to the <strong>Firewall</strong> tab.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

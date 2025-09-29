@@ -7,6 +7,18 @@ import { useSelector } from "react-redux";
 const IP_FIELDS_ENABLED = process.env.NEXT_PUBLIC_ENABLE_VM_IP_FIELDS === 'true';
 
 // GraphQL queries - using inline gql instead of separate file import
+const allUsers = gql`
+  query allUsers($orderBy: UserOrderByInputType, $pagination: PaginationInputType) {
+    users(orderBy: $orderBy, pagination: $pagination) {
+      id
+      firstName
+      lastName
+      email
+      role
+    }
+  }
+`;
+
 const vmDetailedInfo = gql`
   query vmDetailedInfo($id: String!) {
     machine(id: $id) {
@@ -151,6 +163,48 @@ const UPDATE_MACHINE_NAME = gql`
   }
 `;
 
+const UPDATE_MACHINE_USER = gql`
+  mutation updateMachineUser($input: UpdateMachineUserInput!) {
+    updateMachineUser(input: $input) {
+      id
+      name
+      configuration
+      status
+      userId
+      templateId
+      createdAt
+      template {
+        id
+        name
+        description
+        cores
+        ram
+        storage
+        createdAt
+        categoryId
+        totalMachines
+      }
+      department {
+        id
+        name
+        createdAt
+        internetSpeed
+        ipSubnet
+        totalMachines
+      }
+      user {
+        id
+        firstName
+        lastName
+        role
+        email
+        avatar
+        createdAt
+      }
+    }
+  }
+`;
+
 /**
  * Custom hook for managing VM detail page state and logic
  */
@@ -179,13 +233,36 @@ export const useVMDetail = (vmId) => {
     errorPolicy: 'all'
   });
 
+  // GraphQL query for users (admin only)
+  const {
+    data: usersData,
+    loading: usersLoading,
+    error: usersError
+  } = useQuery(allUsers, {
+    variables: {
+      orderBy: {
+        fieldName: 'FIRST_NAME',
+        direction: 'ASC'
+      },
+      pagination: {
+        take: 100,
+        skip: 0
+      }
+    },
+    skip: !isAdmin,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all'
+  });
+
   // GraphQL mutations
   const [powerOnMutation] = useMutation(POWER_ON);
   const [powerOffMutation] = useMutation(POWER_OFF);
   const [updateMachineHardwareMutation, { loading: hardwareUpdateLoading }] = useMutation(UPDATE_MACHINE_HARDWARE);
   const [updateMachineNameMutation, { loading: nameUpdateLoading }] = useMutation(UPDATE_MACHINE_NAME);
+  const [updateMachineUserMutation, { loading: userUpdateLoading }] = useMutation(UPDATE_MACHINE_USER);
 
   const vm = data?.machine;
+  const users = usersData?.users || [];
   const error = graphqlError;
 
   // Show toast notification
@@ -377,6 +454,55 @@ export const useVMDetail = (vmId) => {
     }
   };
 
+  // Handle user assignment update (admin only)
+  const handleUserUpdate = async (newUserId) => {
+    if (!vm || !isAdmin) return;
+
+    // Don't update if user hasn't changed
+    const currentUserId = vm.userId || null;
+    if (newUserId === currentUserId) {
+      return;
+    }
+
+    try {
+      showToastNotification(
+        "default",
+        "Processing",
+        "Updating user assignment..."
+      );
+
+      const input = {
+        id: vm.id,
+        userId: newUserId
+      };
+
+      await updateMachineUserMutation({
+        variables: { input }
+      });
+
+      await refetch();
+
+      const message = newUserId
+        ? "User assignment has been updated successfully."
+        : "User has been unassigned successfully.";
+
+      showToastNotification(
+        "success",
+        "Success",
+        message
+      );
+
+    } catch (error) {
+      console.error("Error updating user assignment:", error);
+      const errorMessage = error?.graphQLErrors?.[0]?.message || "Could not update user assignment.";
+      showToastNotification(
+        "destructive",
+        "Error",
+        errorMessage
+      );
+    }
+  };
+
   // Handle navigation back to department
   const handleBackToDepartment = () => {
     if (vm?.department?.name) {
@@ -411,6 +537,10 @@ export const useVMDetail = (vmId) => {
     isAdmin,
     hardwareUpdateLoading,
     nameUpdateLoading,
+    userUpdateLoading,
+    users,
+    usersLoading,
+    usersError,
 
     // Actions
     setActiveTab,
@@ -422,6 +552,7 @@ export const useVMDetail = (vmId) => {
 
     // Admin actions
     handleHardwareUpdate,
-    handleNameUpdate
+    handleNameUpdate,
+    handleUserUpdate
   };
 };

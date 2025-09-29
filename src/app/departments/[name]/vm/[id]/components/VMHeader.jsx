@@ -5,6 +5,19 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Header, HeaderLeft, HeaderRight } from '@/components/ui/header';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
   Breadcrumb,
   BreadcrumbList,
   BreadcrumbItem,
@@ -13,7 +26,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ChevronLeft, Play, Square, RotateCcw, Network, Globe, Home, Copy, Check, Cpu, MemoryStick, HardDrive, Edit3, X } from 'lucide-react';
+import { ChevronLeft, Play, Square, RotateCcw, Network, Globe, Home, Copy, Check, Cpu, MemoryStick, HardDrive, Edit3, X, ChevronDown, User, UserX } from 'lucide-react';
 import { useVMNetworkRealTime } from '@/components/vm/hooks/useVMNetworkRealTime';
 import { createDebugger } from '@/utils/debug';
 
@@ -30,8 +43,13 @@ const VMHeader = ({
   isAdmin = false,
   onHardwareUpdate,
   onNameUpdate,
+  onUserUpdate,
   hardwareUpdateLoading = false,
-  nameUpdateLoading = false
+  nameUpdateLoading = false,
+  userUpdateLoading = false,
+  users = [],
+  usersLoading = false,
+  usersError = null
 }) => {
   if (!vm) {
     debug.warn('VMHeader rendered without VM data');
@@ -43,6 +61,7 @@ const VMHeader = ({
   // State for inline editing
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [userSelectorOpen, setUserSelectorOpen] = useState(false);
 
   // Get status badge variant
   const getStatusVariant = (status) => {
@@ -116,6 +135,7 @@ const VMHeader = ({
   const cancelEditing = () => {
     setEditingField(null);
     setEditValue('');
+    setUserSelectorOpen(false);
   };
 
   const saveEdit = () => {
@@ -146,6 +166,51 @@ const VMHeader = ({
       cancelEditing();
     }
   };
+
+  // Handle user selection
+  const handleUserSelection = (userId) => {
+    const finalUserId = userId === 'unassign' ? null : userId;
+    onUserUpdate && onUserUpdate(finalUserId);
+    setUserSelectorOpen(false);
+    cancelEditing();
+  };
+
+  // Get current user display
+  const getCurrentUserDisplay = () => {
+    if (vm.user) {
+      return {
+        avatar: vm.user.avatar,
+        initials: `${vm.user.firstName?.[0] || ''}${vm.user.lastName?.[0] || ''}`,
+        name: `${vm.user.firstName || ''} ${vm.user.lastName || ''}`.trim(),
+        hasUser: true
+      };
+    }
+    return {
+      avatar: null,
+      initials: '?',
+      name: 'Not assigned',
+      hasUser: false
+    };
+  };
+
+  const currentUserDisplay = getCurrentUserDisplay();
+
+  // Debug users loading
+  debug.log('Users data', { users, usersLoading, usersError, isAdmin });
+
+  if (usersLoading && isAdmin) {
+    debug.log('Loading users...');
+  }
+
+  if (usersError && isAdmin) {
+    debug.error('Users error:', usersError);
+  }
+
+  if (users.length > 0) {
+    debug.log('Users loaded:', users.length);
+  } else if (isAdmin && !usersLoading && !usersError) {
+    debug.warn('No users loaded or available');
+  }
 
 
   const isRunning = vm.status?.toLowerCase() === 'running';
@@ -243,21 +308,122 @@ const VMHeader = ({
                 <div className="space-y-1">
                   <span className="text-muted-foreground">User:</span>
                   <div className="flex items-center gap-2">
-                    {vm.user ? (
-                      <>
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={vm.user.avatar} alt={`${vm.user.firstName} ${vm.user.lastName}`} />
-                          <AvatarFallback>
-                            {vm.user.firstName?.[0]}{vm.user.lastName?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">
-                          {vm.user.firstName} {vm.user.lastName}
-                        </span>
-                        {/* TODO: User assignment requires backend updateMachineUser mutation */}
-                      </>
+                    {isAdmin ? (
+                      <Popover open={userSelectorOpen} onOpenChange={setUserSelectorOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className={`h-auto p-2 justify-start gap-2 ${
+                              userUpdateLoading ? 'pointer-events-none' : 'hover:bg-accent/50'
+                            }`}
+                            disabled={userUpdateLoading || usersLoading}
+                          >
+                            {currentUserDisplay.hasUser ? (
+                              <>
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage
+                                    src={currentUserDisplay.avatar}
+                                    alt={currentUserDisplay.name}
+                                  />
+                                  <AvatarFallback>
+                                    {currentUserDisplay.initials}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="font-medium">{currentUserDisplay.name}</span>
+                              </>
+                            ) : (
+                              <>
+                                <User className="h-6 w-6 text-muted-foreground" />
+                                <span className="font-medium text-muted-foreground">{currentUserDisplay.name}</span>
+                              </>
+                            )}
+                            {userUpdateLoading ? (
+                              <div className="animate-spin h-3 w-3 border border-brand-dark-blue border-t-transparent rounded-full ml-1"></div>
+                            ) : (
+                              <ChevronDown className="h-3 w-3 ml-auto opacity-50" />
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search users..." />
+                            <CommandList>
+                              {usersLoading ? (
+                                <div className="p-4 text-center text-sm text-muted-foreground">
+                                  Loading users...
+                                </div>
+                              ) : users.length === 0 ? (
+                                <CommandEmpty>No users available.</CommandEmpty>
+                              ) : (
+                                <>
+                                  <CommandEmpty>No users found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {/* Unassign option */}
+                                    <CommandItem
+                                      onSelect={() => handleUserSelection('unassign')}
+                                      className="cursor-pointer"
+                                    >
+                                      <div className="flex items-center gap-2 w-full">
+                                        <div className="flex items-center justify-center h-4 w-4">
+                                          <UserX className="h-4 w-4 text-muted-foreground" />
+                                        </div>
+                                        <span className="text-muted-foreground">Unassign user</span>
+                                      </div>
+                                    </CommandItem>
+
+                                    {/* User options */}
+                                    {users.map((user) => (
+                                      <CommandItem
+                                        key={user.id}
+                                        onSelect={() => handleUserSelection(user.id)}
+                                        className="cursor-pointer"
+                                      >
+                                        <div className="flex items-center gap-2 w-full">
+                                          <Avatar className="h-4 w-4">
+                                            <AvatarFallback className="text-xs">
+                                              {user.firstName?.[0]}{user.lastName?.[0]}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <div className="flex flex-col">
+                                            <span className="font-medium">
+                                              {user.firstName} {user.lastName}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                              {user.email}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </>
+                              )}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     ) : (
-                      <span className="font-medium text-muted-foreground">Not assigned</span>
+                      <div className="flex items-center gap-2">
+                        {currentUserDisplay.hasUser ? (
+                          <>
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage
+                                src={currentUserDisplay.avatar}
+                                alt={currentUserDisplay.name}
+                              />
+                              <AvatarFallback>
+                                {currentUserDisplay.initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{currentUserDisplay.name}</span>
+                          </>
+                        ) : (
+                          <>
+                            <User className="h-6 w-6 text-muted-foreground" />
+                            <span className="font-medium text-muted-foreground">{currentUserDisplay.name}</span>
+                          </>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import {
   Shield,
   Plus,
@@ -30,33 +31,15 @@ import {
   TableHeader,
   TableRow,
 } from '@components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@components/ui/dialog';
-import { Textarea } from '@components/ui/textarea';
 import { Switch } from '@components/ui/switch';
 import {
-  useCreateSimplifiedFirewallRuleMutation,
   useRemoveSimplifiedFirewallRuleMutation
 } from '@/gql/hooks';
 import {
   formatRuleForDisplay,
-  validateRule,
   calculateRiskLevel,
   sortRulesByPriority,
-  filterRules,
-  denormalizeAction,
-  denormalizeDirection,
-  COMMON_SERVICES,
-  ACTIONS,
-  DIRECTIONS,
-  PROTOCOLS
+  filterRules
 } from '@/utils/firewallHelpers';
 
 const FirewallRulesSection = ({
@@ -70,27 +53,12 @@ const FirewallRulesSection = ({
   const [filterBy, setFilterBy] = useState('all');
   const [sortBy, setSortBy] = useState('priority');
   const [showAll, setShowAll] = useState(false);
-  const [editingRule, setEditingRule] = useState(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState('');
+  const router = useRouter();
+  const params = useParams();
 
-  // Form state for rule creation/editing
-  const [ruleForm, setRuleForm] = useState({
-    name: '',
-    direction: 'inbound',
-    action: 'allow',
-    protocol: 'tcp',
-    port: '',
-    sourceIp: '',
-    destinationIp: '',
-    description: '',
-    enabled: true
-  });
-
-  const [createRule, { loading: createLoading }] = useCreateSimplifiedFirewallRuleMutation();
   const [deleteRule, { loading: deleteLoading }] = useRemoveSimplifiedFirewallRuleMutation();
 
-  const isLoading = createLoading || deleteLoading;
+  const isLoading = deleteLoading;
 
   // Determine which rules to display
   const displayRules = showAll ? effectiveRules : customRules;
@@ -125,69 +93,15 @@ const FirewallRulesSection = ({
     return filtered;
   }, [displayRules, searchTerm, filterBy, sortBy]);
 
-  const resetForm = () => {
-    setRuleForm({
-      name: '',
-      direction: 'inbound',
-      action: 'allow',
-      protocol: 'tcp',
-      port: '',
-      sourceIp: '',
-      destinationIp: '',
-      description: '',
-      enabled: true
-    });
-    setSelectedService('');
-  };
-
-  const handleServiceSelect = (serviceKey) => {
-    const service = COMMON_SERVICES[serviceKey];
-    if (service) {
-      const firstPort = service.ports[0];
-      setRuleForm(prev => ({
-        ...prev,
-        name: `${service.name} - ${firstPort.name}`,
-        port: firstPort.port,
-        protocol: firstPort.protocol,
-        description: service.description
-      }));
-    }
-    setSelectedService(serviceKey);
-  };
-
-  const handleCreateRule = async () => {
-    const validation = validateRule(ruleForm);
-    if (!validation.isValid) {
-      alert(`Error de validación:\n${validation.errors.join('\n')}`);
-      return;
-    }
-
-    try {
-      await createRule({
-        variables: {
-          input: {
-            machineId: vmId,
-            action: denormalizeAction(ruleForm.action),
-            direction: denormalizeDirection(ruleForm.direction),
-            protocol: ruleForm.protocol,
-            port: ruleForm.port || 'all',
-            description: ruleForm.description || null
-          }
-        }
-      });
-
-      setIsCreateDialogOpen(false);
-      resetForm();
-      if (onRuleChange) onRuleChange();
-    } catch (error) {
-      console.error('Error creating rule:', error);
-    }
+  const handleCreateRule = () => {
+    const { name: departmentName } = params;
+    router.push(`/departments/${departmentName}/vm/${vmId}/firewall/create`);
   };
 
   // Edit functionality disabled - backend doesn't support updateSimplifiedFirewallRule
   const handleEditRule = (rule) => {
     // Editing is not supported yet
-    alert('La edición de reglas no está disponible actualmente. Puede eliminar la regla y crear una nueva con los cambios deseados.');
+    alert('Rule editing is not currently available. You can delete the rule and create a new one with the desired changes.');
   };
 
   const handleDeleteRule = async (rule) => {
@@ -266,152 +180,10 @@ const FirewallRulesSection = ({
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" onClick={resetForm}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nueva Regla
-                  </Button>
-                </DialogTrigger>
-
-                <DialogContent className="sm:max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>Crear Nueva Regla de Firewall</DialogTitle>
-                    <DialogDescription>
-                      Configure una nueva regla personalizada para controlar el tráfico de red.
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <div className="space-y-4">
-                    {/* Service Template Selection */}
-                    <div>
-                      <Label>Plantilla de Servicio (Opcional)</Label>
-                      <Select value={selectedService} onValueChange={handleServiceSelect}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccione un servicio común..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(COMMON_SERVICES).map(([key, service]) => (
-                            <SelectItem key={key} value={key}>
-                              {service.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Rule Configuration */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="rule-name">Nombre de la Regla *</Label>
-                        <Input
-                          id="rule-name"
-                          value={ruleForm.name}
-                          onChange={(e) => setRuleForm(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="Ej: Permitir HTTP"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="rule-direction">Dirección *</Label>
-                        <Select value={ruleForm.direction} onValueChange={(value) => setRuleForm(prev => ({ ...prev, direction: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(DIRECTIONS).map(([key, dir]) => (
-                              <SelectItem key={key} value={key}>
-                                {dir.icon} {dir.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="rule-action">Acción *</Label>
-                        <Select value={ruleForm.action} onValueChange={(value) => setRuleForm(prev => ({ ...prev, action: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(ACTIONS).map(([key, action]) => (
-                              <SelectItem key={key} value={key}>
-                                {action.icon} {action.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="rule-protocol">Protocolo *</Label>
-                        <Select value={ruleForm.protocol} onValueChange={(value) => setRuleForm(prev => ({ ...prev, protocol: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(PROTOCOLS).map(([key, protocol]) => (
-                              <SelectItem key={key} value={key}>
-                                {protocol.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="rule-port">Puerto</Label>
-                        <Input
-                          id="rule-port"
-                          value={ruleForm.port}
-                          onChange={(e) => setRuleForm(prev => ({ ...prev, port: e.target.value }))}
-                          placeholder="Ej: 80, 80-90, 80,443"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="rule-source">IP Origen</Label>
-                        <Input
-                          id="rule-source"
-                          value={ruleForm.sourceIp}
-                          onChange={(e) => setRuleForm(prev => ({ ...prev, sourceIp: e.target.value }))}
-                          placeholder="Ej: 192.168.1.0/24"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="rule-description">Descripción</Label>
-                      <Textarea
-                        id="rule-description"
-                        value={ruleForm.description}
-                        onChange={(e) => setRuleForm(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Descripción opcional de la regla..."
-                        rows={2}
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id="rule-enabled"
-                        checked={ruleForm.enabled}
-                        onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, enabled: checked }))}
-                      />
-                      <Label htmlFor="rule-enabled">Regla habilitada</Label>
-                    </div>
-                  </div>
-
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleCreateRule} disabled={isLoading}>
-                      {createLoading ? 'Creando...' : 'Crear Regla'}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button size="sm" onClick={handleCreateRule}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Regla
+              </Button>
             )}
           </div>
         </div>
@@ -437,15 +209,15 @@ const FirewallRulesSection = ({
                   <SelectValue placeholder="Filtrar por..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="enabled">Habilitadas</SelectItem>
-                  <SelectItem value="disabled">Deshabilitadas</SelectItem>
-                  <SelectItem value="inbound">Entrantes</SelectItem>
-                  <SelectItem value="outbound">Salientes</SelectItem>
-                  <SelectItem value="allow">Permitir</SelectItem>
-                  <SelectItem value="deny">Denegar</SelectItem>
-                  <SelectItem value="custom">Personalizadas</SelectItem>
-                  <SelectItem value="template">De Plantillas</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="enabled">Enabled</SelectItem>
+                  <SelectItem value="disabled">Disabled</SelectItem>
+                  <SelectItem value="inbound">Inbound</SelectItem>
+                  <SelectItem value="outbound">Outbound</SelectItem>
+                  <SelectItem value="allow">Allow</SelectItem>
+                  <SelectItem value="deny">Deny</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                  <SelectItem value="template">From Templates</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -473,13 +245,13 @@ const FirewallRulesSection = ({
                   <p className="text-gray-500 font-medium">No hay reglas que mostrar</p>
                   <p className="text-sm text-gray-400">
                     {searchTerm || filterBy !== 'all'
-                      ? 'Intente ajustar los filtros de búsqueda'
+                      ? 'Try adjusting the search filters'
                       : 'Cree su primera regla de firewall personalizada'
                     }
                   </p>
                 </div>
                 {!disabled && !searchTerm && filterBy === 'all' && (
-                  <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Button onClick={handleCreateRule}>
                     <Plus className="h-4 w-4 mr-2" />
                     Crear Primera Regla
                   </Button>
@@ -596,7 +368,7 @@ const FirewallRulesSection = ({
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                Edición no disponible. Elimine y cree una nueva regla para hacer cambios.
+                                Editing not available. Delete and create a new rule to make changes.
                               </TooltipContent>
                             </Tooltip>
 
@@ -639,7 +411,7 @@ const FirewallRulesSection = ({
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Activas</p>
+                <p className="text-sm text-gray-600">Active</p>
                 <p className="text-2xl font-bold text-green-600">
                   {processedRules.filter(r => formatRuleForDisplay(r).enabled).length}
                 </p>
@@ -651,7 +423,7 @@ const FirewallRulesSection = ({
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Entrantes</p>
+                <p className="text-sm text-gray-600">Inbound</p>
                 <p className="text-2xl font-bold text-blue-600">
                   {processedRules.filter(r => formatRuleForDisplay(r).normalizedDirection === 'inbound').length}
                 </p>
@@ -663,7 +435,7 @@ const FirewallRulesSection = ({
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Alto Riesgo</p>
+                <p className="text-sm text-gray-600">High Risk</p>
                 <p className="text-2xl font-bold text-red-600">
                   {processedRules.filter(r => calculateRiskLevel(r).level === 'high').length}
                 </p>

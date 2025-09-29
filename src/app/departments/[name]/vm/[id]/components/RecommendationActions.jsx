@@ -37,104 +37,104 @@ const RecommendationActions = ({
       // Security actions
       DEFENDER_DISABLED: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
       FIREWALL_DISABLED: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
       ANTIVIRUS_OUTDATED: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
 
       // Performance actions
       HIGH_CPU_APP: {
         actions: [
-          { label: 'Ver Procesos', icon: Activity, variant: 'default', action: 'processes' }
+          { label: 'View Processes', icon: Activity, variant: 'default', action: 'processes' }
         ]
       },
       HIGH_RAM_APP: {
         actions: [
-          { label: 'Ver Procesos', icon: Activity, variant: 'default', action: 'processes' }
+          { label: 'View Processes', icon: Activity, variant: 'default', action: 'processes' }
         ]
       },
       SLOW_DISK_PERFORMANCE: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
 
       // Storage actions
       DISK_SPACE_LOW: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
       TEMP_FILES_CLEANUP: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
       LOG_FILES_LARGE: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
 
       // Update actions
       APP_UPDATE_AVAILABLE: {
         actions: [
-          { label: 'Ver Lista', icon: List, variant: 'default', action: 'list' }
+          { label: 'View List', icon: List, variant: 'default', action: 'list' }
         ]
       },
       SYSTEM_UPDATE_AVAILABLE: {
         actions: [
-          { label: 'Ver Lista', icon: List, variant: 'default', action: 'list' }
+          { label: 'View List', icon: List, variant: 'default', action: 'list' }
         ]
       },
       DRIVER_UPDATE_AVAILABLE: {
         actions: [
-          { label: 'Ver Lista', icon: List, variant: 'default', action: 'list' }
+          { label: 'View List', icon: List, variant: 'default', action: 'list' }
         ]
       },
 
       // Resource optimization
       OVER_PROVISIONED: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
       UNDER_PROVISIONED: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
 
       // Network
       PORT_BLOCKED: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
 
       // Maintenance actions
       SCHEDULED_RESTART: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
       BACKUP_RECOMMENDED: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       },
       MAINTENANCE_WINDOW: {
         actions: [
-          { label: 'Ver Detalles', icon: Info, variant: 'default', action: 'info' }
+          { label: 'View Details', icon: Info, variant: 'default', action: 'info' }
         ]
       }
     };
@@ -164,7 +164,7 @@ const RecommendationActions = ({
         const items = getRecommendationItems(recommendation.type);
         setDialogContent({
           title: `Lista de elementos: ${info.label}`,
-          description: `Se encontraron ${items?.length || 0} elementos disponibles`,
+          description: `Found ${items?.length || 0} available items`,
           items: items || []
         });
         setShowListDialog(true);
@@ -173,7 +173,7 @@ const RecommendationActions = ({
       case 'configure':
         toast({
           title: "Configuración",
-          description: "Las opciones de configuración se mostrarán en una versión futura",
+          description: "Configuration options will be shown in a future version",
           variant: "default"
         });
         break;
@@ -205,8 +205,8 @@ const RecommendationActions = ({
         { name: 'Adobe Acrobat Reader', version: '23.008.20470', size: '156 MB' }
       ],
       'SYSTEM_UPDATE_AVAILABLE': [
-        { name: 'Actualización de seguridad para Windows', kb: 'KB5034441', size: '45.2 MB', type: 'Security' },
-        { name: 'Actualización acumulativa', kb: 'KB5034203', size: '127 MB', type: 'Quality' }
+        { name: 'Windows Security Update', kb: 'KB5034441', size: '45.2 MB', type: 'Security' },
+        { name: 'Cumulative Update', kb: 'KB5034203', size: '127 MB', type: 'Quality' }
       ],
       'DRIVER_UPDATE_AVAILABLE': [
         { name: 'Intel Graphics Driver', version: '31.0.101.3430', size: '425 MB' },
@@ -325,7 +325,7 @@ const RecommendationActions = ({
                   <div>
                     <h4 className="font-medium text-sm">{item.name}</h4>
                     {item.version && (
-                      <p className="text-xs text-gray-600">Versión: {item.version}</p>
+                      <p className="text-xs text-gray-600">Version: {item.version}</p>
                     )}
                     {item.kb && (
                       <p className="text-xs text-gray-600">KB: {item.kb}</p>

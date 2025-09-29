@@ -215,6 +215,46 @@ mutation updateMachineName($input: UpdateMachineNameInput!) {
   }
 }
 
+mutation updateMachineUser($input: UpdateMachineUserInput!) {
+  updateMachineUser(input: $input) {
+    id
+    name
+    configuration
+    status
+    userId
+    templateId
+    createdAt
+    template {
+      id
+      name
+      description
+      cores
+      ram
+      storage
+      createdAt
+      categoryId
+      totalMachines
+    }
+    department {
+      id
+      name
+      createdAt
+      internetSpeed
+      ipSubnet
+      totalMachines
+    }
+    user {
+      id
+      firstName
+      lastName
+      role
+      email
+      avatar
+      createdAt
+    }
+  }
+}
+
 mutation moveMachine($departmentId: String!, $id: String!) {
   moveMachine(departmentId: $departmentId, id: $id) {
     id

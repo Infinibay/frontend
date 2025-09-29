@@ -50,20 +50,20 @@ const VMStatusWarning = ({
         <AlertTriangle className="h-4 w-4 text-yellow-600" />
         <AlertDescription className="space-y-3">
           <div className="font-medium text-yellow-800">
-            La máquina virtual debe estar apagada para modificar la configuración del firewall
+            The virtual machine must be turned off to modify the firewall configuration
           </div>
 
           <div className="text-sm text-yellow-700 space-y-2">
             <p>
-              <strong>¿Por qué es necesario?</strong> Las reglas de firewall se aplican durante el
-              arranque de la máquina virtual. Los cambios realizados mientras está funcionando
-              no tendrán efecto hasta el próximo reinicio.
+              <strong>Why is this necessary?</strong> Firewall rules are applied during
+              virtual machine startup. Changes made while it is running
+              will not take effect until the next restart.
             </p>
 
             <div className="flex items-center gap-2 text-xs">
               <Badge variant="outline" className="text-yellow-700 border-yellow-300">
                 <Power className="h-3 w-3 mr-1" />
-                Estado actual: Funcionando
+                Current status: Running
               </Badge>
             </div>
           </div>
@@ -78,7 +78,7 @@ const VMStatusWarning = ({
                   disabled={poweringOff}
                 >
                   <Power className="h-4 w-4 mr-2" />
-                  {poweringOff ? 'Apagando...' : 'Apagar Máquina Virtual'}
+                  {poweringOff ? 'Shutting down...' : 'Shutdown Virtual Machine'}
                 </Button>
               </DialogTrigger>
 
@@ -86,28 +86,28 @@ const VMStatusWarning = ({
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                    Confirmar apagado de la máquina virtual
+                    Confirm virtual machine shutdown
                   </DialogTitle>
                   <DialogDescription className="space-y-3 text-sm">
                     <p>
-                      Está a punto de apagar la máquina virtual <strong>{vmName}</strong>.
+                      You are about to shut down the virtual machine <strong>{vmName}</strong>.
                     </p>
 
                     <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                       <h4 className="font-medium text-yellow-800 mb-2">
-                        ⚠️ Precauciones importantes:
+                        ⚠️ Important precautions:
                       </h4>
                       <ul className="text-yellow-700 space-y-1 text-xs">
-                        <li>• Asegúrese de haber guardado todo su trabajo</li>
-                        <li>• Cierre todas las aplicaciones importantes</li>
-                        <li>• Este proceso puede tardar 1-2 minutos</li>
-                        <li>• La VM se apagará de forma segura</li>
+                        <li>• Make sure you have saved all your work</li>
+                        <li>• Close all important applications</li>
+                        <li>• This process may take 1-2 minutes</li>
+                        <li>• The VM will shut down safely</li>
                       </ul>
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-gray-600">
                       <Clock className="h-3 w-3" />
-                      Tiempo estimado: 30-120 segundos
+                      Estimated time: 30-120 seconds
                     </div>
                   </DialogDescription>
                 </DialogHeader>
@@ -118,7 +118,7 @@ const VMStatusWarning = ({
                     onClick={() => setIsConfirmOpen(false)}
                     disabled={poweringOff}
                   >
-                    Cancelar
+                    Cancel
                   </Button>
                   <Button
                     variant="destructive"
@@ -126,7 +126,7 @@ const VMStatusWarning = ({
                     disabled={poweringOff}
                   >
                     <Power className="h-4 w-4 mr-2" />
-                    {poweringOff ? 'Apagando...' : 'Apagar Ahora'}
+                    {poweringOff ? 'Shutting down...' : 'Shutdown Now'}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -141,14 +141,14 @@ const VMStatusWarning = ({
           <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
           <div className="text-sm space-y-2">
             <h4 className="font-medium text-blue-800">
-              Recomendaciones para cambios de firewall
+              Recommendations for firewall changes
             </h4>
             <ul className="text-blue-700 space-y-1 text-xs">
-              <li>• Realice los cambios durante ventanas de mantenimiento</li>
-              <li>• Planifique los cambios durante horas de menor actividad</li>
-              <li>• Pruebe las reglas en un entorno de desarrollo primero</li>
-              <li>• Documente todos los cambios realizados</li>
-              <li>• Tenga un plan de rollback preparado</li>
+              <li>• Make changes during maintenance windows</li>
+              <li>• Plan changes during off-peak hours</li>
+              <li>• Test rules in a development environment first</li>
+              <li>• Document all changes made</li>
+              <li>• Have a rollback plan ready</li>
             </ul>
           </div>
         </div>
@@ -158,9 +158,9 @@ const VMStatusWarning = ({
       <Alert className="border-gray-200 bg-gray-50">
         <Clock className="h-4 w-4 text-gray-500" />
         <AlertDescription className="text-sm text-gray-600">
-          <strong>Impacto en rendimiento:</strong> Los cambios de firewall requieren un
-          reinicio temporal para aplicarse correctamente. Esto es una limitación del
-          sistema de virtualización libvirt para garantizar la seguridad.
+          <strong>Performance impact:</strong> Firewall changes require a
+          temporary restart to apply correctly. This is a limitation of the
+          libvirt virtualization system to ensure security.
         </AlertDescription>
       </Alert>
     </div>

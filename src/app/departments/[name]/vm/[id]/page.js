@@ -58,6 +58,10 @@ const VMDetailPage = () => {
     isAdmin,
     hardwareUpdateLoading,
     nameUpdateLoading,
+    userUpdateLoading,
+    users,
+    usersLoading,
+    usersError,
 
     // Actions
     setActiveTab,
@@ -67,7 +71,8 @@ const VMDetailPage = () => {
 
     // Admin actions
     handleHardwareUpdate,
-    handleNameUpdate
+    handleNameUpdate,
+    handleUserUpdate
   } = useVMDetail(vmId);
 
   // Loading state
@@ -95,8 +100,13 @@ const VMDetailPage = () => {
           isAdmin={isAdmin}
           onHardwareUpdate={handleHardwareUpdate}
           onNameUpdate={handleNameUpdate}
+          onUserUpdate={handleUserUpdate}
           hardwareUpdateLoading={hardwareUpdateLoading}
           nameUpdateLoading={nameUpdateLoading}
+          userUpdateLoading={userUpdateLoading}
+          users={users}
+          usersLoading={usersLoading}
+          usersError={usersError}
         />
 
         <div className="size-margin-sm">

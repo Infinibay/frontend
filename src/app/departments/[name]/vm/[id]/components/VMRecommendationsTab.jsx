@@ -137,10 +137,10 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
 
                   <div className="flex items-center gap-2 mb-2">
                     <Badge className={priorityColors.badge}>
-                      {info.priority === PRIORITY_LEVELS.CRITICAL && 'Crítico'}
-                      {info.priority === PRIORITY_LEVELS.HIGH && 'Alto'}
-                      {info.priority === PRIORITY_LEVELS.MEDIUM && 'Medio'}
-                      {info.priority === PRIORITY_LEVELS.LOW && 'Bajo'}
+                      {info.priority === PRIORITY_LEVELS.CRITICAL && 'Critical'}
+                      {info.priority === PRIORITY_LEVELS.HIGH && 'High'}
+                      {info.priority === PRIORITY_LEVELS.MEDIUM && 'Medium'}
+                      {info.priority === PRIORITY_LEVELS.LOW && 'Low'}
                     </Badge>
 
                     <Badge variant="outline" className="text-xs">
@@ -172,12 +172,12 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                       {isExpanded ? (
                         <>
                           <ChevronDown className="h-4 w-4" />
-                          Menos detalles
+                          Less details
                         </>
                       ) : (
                         <>
                           <ChevronRight className="h-4 w-4" />
-                          Más detalles
+                          More details
                         </>
                       )}
                     </Button>
@@ -213,7 +213,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
             <div className="flex items-center justify-center py-12">
               <div className="flex items-center gap-3">
                 <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
-                <span className="text-sm text-gray-600">Cargando recomendaciones del último escaneo...</span>
+                <span className="text-sm text-gray-600">Loading recommendations from last scan...</span>
               </div>
             </div>
           </CardContent>
@@ -232,14 +232,14 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
             <div className="text-center py-12">
               <AlertTriangle className="h-12 w-12 text-red-600 mx-auto mb-3" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Error al cargar recomendaciones
+                Error loading recommendations
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                No se pudieron cargar las recomendaciones del último escaneo de salud para esta VM.
+                Could not load recommendations from the last health scan for this VM.
               </p>
               <Button onClick={refreshRecommendations} className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4" />
-                Reintentar
+                Retry
               </Button>
             </div>
           </CardContent>
@@ -258,11 +258,11 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
             <div className="text-center py-12">
               <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                ¡Excelente! Su VM está optimizada
+                Excellent! Your VM is optimized
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                No hay recomendaciones de mejora en este momento.
-                Su máquina virtual está funcionando de manera óptima.
+                No improvement recommendations at this time.
+                Your virtual machine is running optimally.
               </p>
               <div className="flex justify-center">
                 <Button
@@ -271,7 +271,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  {isRefreshing ? 'Escaneando...' : 'Ejecutar nuevo escaneo'}
+                  {isRefreshing ? 'Scanning...' : 'Run new scan'}
                 </Button>
               </div>
             </div>
@@ -293,16 +293,16 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
             <div>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Lightbulb className="h-5 w-5 text-yellow-600" />
-                Recomendaciones de la VM
+                VM Recommendations
                 {requiresImmediateAttention && (
                   <AlertTriangle className="h-5 w-5 text-red-600" />
                 )}
               </CardTitle>
               <p className="text-sm text-gray-600 mt-1">
-                {summary.total} recomendaciones del último escaneo
+                {summary.total} recommendations from last scan
                 {summary.highPriority > 0 && (
                   <span className="text-red-600 font-medium">
-                    {' '}• {summary.highPriority} de alta prioridad
+                    {' '}• {summary.highPriority} high priority
                   </span>
                 )}
               </p>
@@ -316,7 +316,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                 className="flex items-center gap-1"
               >
                 <Filter className="h-4 w-4" />
-                Filtros
+                Filters
               </Button>
 
               <Button
@@ -326,7 +326,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                 className="flex items-center gap-1"
               >
                 <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? 'Escaneando...' : 'Buscar nuevas recomendaciones'}
+                {isRefreshing ? 'Scanning...' : 'Search for new recommendations'}
               </Button>
             </div>
           </div>
@@ -334,7 +334,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
           {/* Last update info */}
           {lastUpdateTime && (
             <p className="text-xs text-gray-500">
-              Última recomendación recibida: {lastUpdateTime.toLocaleString('es-ES')}
+              Last recommendation received: {lastUpdateTime.toLocaleString('en-US')}
             </p>
           )}
         </CardHeader>
@@ -348,7 +348,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                 <div className="relative">
                   <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <Input
-                    placeholder="Buscar recomendaciones..."
+                    placeholder="Search recommendations..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9"
@@ -358,10 +358,10 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                 {/* Category filter */}
                 <Select value={filterCategory} onValueChange={setFilterCategory}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Todas las categorías" />
+                    <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todas las categorías</SelectItem>
+                    <SelectItem value="all">All categories</SelectItem>
                     {Object.values(CATEGORIES).map(category => {
                       const categoryInfo = getCategoryInfo(category);
                       return (
@@ -376,14 +376,14 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                 {/* Priority filter */}
                 <Select value={filterPriority} onValueChange={setFilterPriority}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Todas las prioridades" />
+                    <SelectValue placeholder="All priorities" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todas las prioridades</SelectItem>
-                    <SelectItem value={PRIORITY_LEVELS.CRITICAL}>Crítica</SelectItem>
-                    <SelectItem value={PRIORITY_LEVELS.HIGH}>Alta</SelectItem>
-                    <SelectItem value={PRIORITY_LEVELS.MEDIUM}>Media</SelectItem>
-                    <SelectItem value={PRIORITY_LEVELS.LOW}>Baja</SelectItem>
+                    <SelectItem value="all">All priorities</SelectItem>
+                    <SelectItem value={PRIORITY_LEVELS.CRITICAL}>Critical</SelectItem>
+                    <SelectItem value={PRIORITY_LEVELS.HIGH}>High</SelectItem>
+                    <SelectItem value={PRIORITY_LEVELS.MEDIUM}>Medium</SelectItem>
+                    <SelectItem value={PRIORITY_LEVELS.LOW}>Low</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -399,7 +399,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
               <div className="text-center py-8">
                 <Search className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600">
-                  No se encontraron recomendaciones que coincidan con los filtros aplicados.
+                  No recommendations found matching the applied filters.
                 </p>
               </div>
             )}

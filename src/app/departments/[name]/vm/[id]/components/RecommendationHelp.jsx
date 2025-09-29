@@ -41,10 +41,10 @@ const RecommendationHelp = ({
         <AlertTriangle className="h-4 w-4 text-red-600" />
       )}
       <Badge className={priorityColors.badge}>
-        {info.priority === 'critical' && 'Crítico'}
-        {info.priority === 'high' && 'Alto'}
-        {info.priority === 'medium' && 'Medio'}
-        {info.priority === 'low' && 'Bajo'}
+        {info.priority === 'critical' && 'Critical'}
+        {info.priority === 'high' && 'High'}
+        {info.priority === 'medium' && 'Medium'}
+        {info.priority === 'low' && 'Low'}
       </Badge>
     </div>
   );
@@ -82,7 +82,7 @@ const RecommendationHelp = ({
           <div className="flex items-start gap-2">
             <Info className={`h-4 w-4 mt-0.5 ${priorityColors.text}`} />
             <div>
-              <h4 className="font-medium text-sm mb-1">¿Qué significa esto?</h4>
+              <h4 className="font-medium text-sm mb-1">What does this mean?</h4>
               <p className="text-sm text-gray-700">
                 {info.userFriendlyExplanation}
               </p>
@@ -93,7 +93,7 @@ const RecommendationHelp = ({
         {/* Actions section */}
         {info.actions && info.actions.length > 0 && (
           <div>
-            <h4 className="font-medium text-sm mb-2">¿Qué puedo hacer?</h4>
+            <h4 className="font-medium text-sm mb-2">What can I do?</h4>
             <ul className="space-y-1">
               {info.actions.map((action, index) => (
                 <li key={index} className="flex items-start gap-2 text-sm">
@@ -108,7 +108,7 @@ const RecommendationHelp = ({
         {/* Additional recommendation data */}
         {recommendation?.data && (
           <div>
-            <h4 className="font-medium text-sm mb-2">Información adicional</h4>
+            <h4 className="font-medium text-sm mb-2">Additional information</h4>
             <div className="bg-gray-50 p-3 rounded-lg">
               <pre className="text-xs text-gray-600 whitespace-pre-wrap">
                 {typeof recommendation.data === 'string'
@@ -128,12 +128,12 @@ const RecommendationHelp = ({
             ) : (
               <ChevronDown className="h-4 w-4" />
             )}
-            Ver detalles técnicos
+            View technical details
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-2">
             <div className="bg-gray-50 p-3 rounded-lg">
               <p className="text-sm text-gray-700 mb-2">
-                <strong>Descripción técnica:</strong>
+                <strong>Technical description:</strong>
               </p>
               <p className="text-sm text-gray-600 mb-3">
                 {info.detailedDescription}
@@ -141,7 +141,7 @@ const RecommendationHelp = ({
               {info.technicalDetails && (
                 <>
                   <p className="text-sm text-gray-700 mb-2">
-                    <strong>Detalles adicionales:</strong>
+                    <strong>Additional details:</strong>
                   </p>
                   <p className="text-sm text-gray-600">
                     {info.technicalDetails}
@@ -155,7 +155,7 @@ const RecommendationHelp = ({
         {/* Creation time if available */}
         {recommendation?.createdAt && (
           <div className="text-xs text-gray-500 pt-2 border-t">
-            Detectado: {new Date(recommendation.createdAt).toLocaleString('es-ES')}
+            Detected: {new Date(recommendation.createdAt).toLocaleString('en-US')}
           </div>
         )}
       </CardContent>
@@ -177,7 +177,7 @@ export const RecommendationsGeneralHelp = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <HelpCircle className="h-5 w-5 text-blue-600" />
-                <CardTitle className="text-lg">¿Qué son las recomendaciones?</CardTitle>
+                <CardTitle className="text-lg">What are recommendations?</CardTitle>
               </div>
               {isOpen ? (
                 <ChevronUp className="h-4 w-4 text-gray-400" />
@@ -192,49 +192,49 @@ export const RecommendationsGeneralHelp = () => {
           <CardContent className="pt-0">
             <div className="space-y-4 text-sm">
               <p className="text-gray-700">
-                Las recomendaciones son sugerencias automáticas para mantener su máquina virtual
-                funcionando de manera óptima, segura y eficiente.
+                Recommendations are automatic suggestions to keep your virtual machine
+                running optimally, securely and efficiently.
               </p>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900">Tipos de recomendaciones:</h4>
+                  <h4 className="font-medium text-gray-900">Recommendation types:</h4>
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
-                      <span><strong>Críticas:</strong> Requieren atención inmediata</span>
+                      <span><strong>Critical:</strong> Require immediate attention</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-orange-100 border border-orange-200 rounded"></div>
-                      <span><strong>Importantes:</strong> Deben resolverse pronto</span>
+                      <span><strong>Important:</strong> Should be resolved soon</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
-                      <span><strong>Medias:</strong> Mejoran el rendimiento</span>
+                      <span><strong>Medium:</strong> Improve performance</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-blue-100 border border-blue-200 rounded"></div>
-                      <span><strong>Bajas:</strong> Optimizaciones opcionales</span>
+                      <span><strong>Low:</strong> Optional optimizations</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900">Categorías:</h4>
+                  <h4 className="font-medium text-gray-900">Categories:</h4>
                   <ul className="space-y-2">
-                    <li>🛡️ <strong>Seguridad:</strong> Protección y antivirus</li>
-                    <li>⚡ <strong>Rendimiento:</strong> Velocidad del sistema</li>
-                    <li>💾 <strong>Almacenamiento:</strong> Espacio en disco</li>
-                    <li>🔄 <strong>Actualizaciones:</strong> Software actualizado</li>
-                    <li>🔧 <strong>Mantenimiento:</strong> Cuidado preventivo</li>
+                    <li>🛡️ <strong>Security:</strong> Protection and antivirus</li>
+                    <li>⚡ <strong>Performance:</strong> System speed</li>
+                    <li>💾 <strong>Storage:</strong> Disk space</li>
+                    <li>🔄 <strong>Updates:</strong> Software updates</li>
+                    <li>🔧 <strong>Maintenance:</strong> Preventive care</li>
                   </ul>
                 </div>
               </div>
 
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="text-blue-800 text-sm">
-                  <strong>Consejo:</strong> Las recomendaciones se actualizan automáticamente.
-                  Revise esta sección regularmente para mantener su VM en óptimas condiciones.
+                  <strong>Tip:</strong> Recommendations are updated automatically.
+                  Check this section regularly to keep your VM in optimal condition.
                 </p>
               </div>
             </div>

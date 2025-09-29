@@ -20,12 +20,12 @@ export const DELETE_USER_MUTATION = gql`
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
-    debug('Executing GraphQL query', { query: query.loc?.source?.body, variables });
+    debug.log('query', 'Executing GraphQL query', { query: query.loc?.source?.body, variables });
     const { data } = await client.query({ query, variables });
-    debug('GraphQL query success', data);
+    debug.log('query', 'GraphQL query success', data);
     return data;
   } catch (error) {
-    debug('GraphQL query error', error);
+    debug.error('query', 'GraphQL query error', error);
     console.error('GraphQL query error:', error);
     throw error;
   }
@@ -33,12 +33,12 @@ const executeGraphQLQuery = async (query, variables = {}) => {
 
 const executeGraphQLMutation = async (mutation, variables = {}) => {
   try {
-    debug('Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables });
+    debug.log('mutation', 'Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables });
     const { data } = await client.mutate({ mutation, variables });
-    debug('GraphQL mutation success', data);
+    debug.log('mutation', 'GraphQL mutation success', data);
     return data;
   } catch (error) {
-    debug('GraphQL mutation error', error);
+    debug.error('mutation', 'GraphQL mutation error', error);
     console.error('GraphQL mutation error:', error);
     throw error;
   }

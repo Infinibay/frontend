@@ -4,9 +4,8 @@ import { createDebugger } from '@/utils/debug';
 
 const debug = createDebugger('frontend:hooks:useVMRecommendations');
 
-// Import GraphQL query from shared document
-// This module reads from the actual .graphql file to maintain single source of truth
-import { GET_VM_RECOMMENDATIONS_QUERY } from '@/gql/queries/vmRecommendationsQuery';
+// Import GraphQL query from generated hooks
+import { GetVmRecommendationsDocument } from '@/gql/hooks';
 import {
   getRecommendationInfo,
   getRecommendationPriority,
@@ -27,6 +26,8 @@ import {
  * @returns {Object} Hook state and utility functions
  */
 const useVMRecommendations = (vmId, options = {}) => {
+  debug.log('useVMRecommendations hook initialized', { vmId, options });
+
   const {
     types = null,
     limit = null,
@@ -55,7 +56,7 @@ const useVMRecommendations = (vmId, options = {}) => {
     error,
     refetch,
     networkStatus
-  } = useQuery(GET_VM_RECOMMENDATIONS_QUERY, {
+  } = useQuery(GetVmRecommendationsDocument, {
     variables: {
       vmId,
       filter,

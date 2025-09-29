@@ -17,9 +17,9 @@ const debug = createDebugger('vms-slice');
 
 const executeGraphQLMutation = async (mutation, variables) => {
   try {
-    debug('Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables });
+    debug.log('mutation', 'Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables });
     const response = await client.mutate({ mutation, variables });
-    debug('GraphQL mutation response', response);
+    debug.log('mutation', 'GraphQL mutation response', response);
 
     // Check for GraphQL errors in the response
     if (response.errors) {
@@ -36,7 +36,7 @@ const executeGraphQLMutation = async (mutation, variables) => {
 
     return response.data;
   } catch (error) {
-    debug('GraphQL mutation error', error);
+    debug.error('mutation', 'GraphQL mutation error', error);
     console.error('GraphQL mutation error:', error);
 
     // Enhanced error categorization for mutations

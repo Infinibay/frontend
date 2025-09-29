@@ -11,11 +11,14 @@
 // Main wizard component
 export { default as DepartmentFirewallWizard } from './DepartmentFirewallWizard';
 
-// Individual step components for the wizard
-export { DirectionStep } from './steps/DirectionStep';
-export { ServiceStep } from './steps/ServiceStep';
-export { CustomizationStep } from './steps/CustomizationStep';
-export { ReviewStep } from './steps/ReviewStep';
+// Individual step components are now available from the shared FirewallRuleWizard
+// Re-export them here for backward compatibility
+export {
+  DirectionStep,
+  ServiceStep,
+  CustomizationStep,
+  ReviewStep
+} from '@/components/FirewallRuleWizard';
 
 /**
  * DepartmentFirewallWizard - Main wizard component
