@@ -62,6 +62,7 @@ const VMHeader = ({
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [userSelectorOpen, setUserSelectorOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
 
   // Get status badge variant
   const getStatusVariant = (status) => {
@@ -136,6 +137,7 @@ const VMHeader = ({
     setEditingField(null);
     setEditValue('');
     setUserSelectorOpen(false);
+    setUserSearchQuery('');
   };
 
   const saveEdit = () => {
@@ -172,8 +174,19 @@ const VMHeader = ({
     const finalUserId = userId === 'unassign' ? null : userId;
     onUserUpdate && onUserUpdate(finalUserId);
     setUserSelectorOpen(false);
+    setUserSearchQuery('');
     cancelEditing();
   };
+
+  // Filter users based on search query
+  const filteredUsers = userSearchQuery.trim() === ''
+    ? users
+    : users.filter(user => {
+        const searchLower = userSearchQuery.toLowerCase();
+        const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+        const email = user.email.toLowerCase();
+        return fullName.includes(searchLower) || email.includes(searchLower);
+      });
 
   // Get current user display
   const getCurrentUserDisplay = () => {
@@ -197,6 +210,13 @@ const VMHeader = ({
 
   // Debug users loading
   debug.log('Users data', { users, usersLoading, usersError, isAdmin });
+  console.log('🔍 VMHeader Debug:', {
+    usersCount: users.length,
+    usersLoading,
+    usersError,
+    isAdmin,
+    users: users.map(u => ({ id: u.id, name: `${u.firstName} ${u.lastName}`, email: u.email }))
+  });
 
   if (usersLoading && isAdmin) {
     debug.log('Loading users...');
@@ -345,8 +365,12 @@ const VMHeader = ({
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-64 p-0" align="start">
-                          <Command>
-                            <CommandInput placeholder="Search users..." />
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Search users..."
+                              value={userSearchQuery}
+                              onValueChange={setUserSearchQuery}
+                            />
                             <CommandList>
                               {usersLoading ? (
                                 <div className="p-4 text-center text-sm text-muted-foreground">
@@ -354,49 +378,50 @@ const VMHeader = ({
                                 </div>
                               ) : users.length === 0 ? (
                                 <CommandEmpty>No users available.</CommandEmpty>
+                              ) : filteredUsers.length === 0 ? (
+                                <CommandEmpty>No users found.</CommandEmpty>
                               ) : (
-                                <>
-                                  <CommandEmpty>No users found.</CommandEmpty>
-                                  <CommandGroup>
-                                    {/* Unassign option */}
+                                <CommandGroup>
+                                  {/* Unassign option */}
+                                  <CommandItem
+                                    onSelect={() => handleUserSelection('unassign')}
+                                    className="cursor-pointer hover:bg-accent"
+                                  >
+                                    <div className="flex items-center gap-2 w-full">
+                                      <div className="flex items-center justify-center h-4 w-4">
+                                        <UserX className="h-4 w-4 text-muted-foreground" />
+                                      </div>
+                                      <span className="text-muted-foreground">Unassign user</span>
+                                    </div>
+                                  </CommandItem>
+
+                                  {/* User options */}
+                                  {filteredUsers.map((user) => (
                                     <CommandItem
-                                      onSelect={() => handleUserSelection('unassign')}
-                                      className="cursor-pointer"
+                                      key={user.id}
+                                      value={`${user.firstName} ${user.lastName} ${user.email}`}
+                                      onSelect={() => handleUserSelection(user.id)}
+                                      className="cursor-pointer hover:bg-accent !opacity-100"
+                                      style={{ opacity: 1 }}
                                     >
                                       <div className="flex items-center gap-2 w-full">
-                                        <div className="flex items-center justify-center h-4 w-4">
-                                          <UserX className="h-4 w-4 text-muted-foreground" />
+                                        <Avatar className="h-4 w-4">
+                                          <AvatarFallback className="text-xs">
+                                            {user.firstName?.[0]}{user.lastName?.[0]}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex flex-col">
+                                          <span className="font-medium text-foreground" style={{ opacity: 1 }}>
+                                            {user.firstName} {user.lastName}
+                                          </span>
+                                          <span className="text-xs text-muted-foreground" style={{ opacity: 1 }}>
+                                            {user.email}
+                                          </span>
                                         </div>
-                                        <span className="text-muted-foreground">Unassign user</span>
                                       </div>
                                     </CommandItem>
-
-                                    {/* User options */}
-                                    {users.map((user) => (
-                                      <CommandItem
-                                        key={user.id}
-                                        onSelect={() => handleUserSelection(user.id)}
-                                        className="cursor-pointer"
-                                      >
-                                        <div className="flex items-center gap-2 w-full">
-                                          <Avatar className="h-4 w-4">
-                                            <AvatarFallback className="text-xs">
-                                              {user.firstName?.[0]}{user.lastName?.[0]}
-                                            </AvatarFallback>
-                                          </Avatar>
-                                          <div className="flex flex-col">
-                                            <span className="font-medium">
-                                              {user.firstName} {user.lastName}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                              {user.email}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </>
+                                  ))}
+                                </CommandGroup>
                               )}
                             </CommandList>
                           </Command>

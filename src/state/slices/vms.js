@@ -317,6 +317,22 @@ const vmsSlice = createSlice({
           state.selectedMachine = { ...state.selectedMachine, ...vmData };
         }
       }
+    },
+    realTimeDepartmentNameUpdated: (state, action) => {
+      const { departmentId, newName } = action.payload;
+      // Update all VMs that belong to this department
+      state.items.forEach((vm, index) => {
+        if (vm.department?.id === departmentId) {
+          state.items[index] = {
+            ...vm,
+            department: {
+              ...vm.department,
+              name: newName
+            }
+          };
+        }
+      });
+      debug.success('realtime', `Updated department name in VMs to: ${newName}`);
     }
   },
   extraReducers: (builder) => {
@@ -462,7 +478,8 @@ export const {
   realTimeVmCreated,
   realTimeVmUpdated,
   realTimeVmDeleted,
-  realTimeVmStatusChanged
+  realTimeVmStatusChanged,
+  realTimeDepartmentNameUpdated
 } = vmsSlice.actions;
 
 // Selectors

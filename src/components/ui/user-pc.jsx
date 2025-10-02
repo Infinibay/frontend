@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { 
-  PlayIcon, 
+import {
+  PlayIcon,
   PauseIcon,
   Trash2Icon,
   MonitorIcon,
@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
+import { getAvatarUrl } from "@/utils/avatar"
 
 const UserPc = React.forwardRef(({
   className,
@@ -54,8 +55,9 @@ const UserPc = React.forwardRef(({
   // Extract name and status from pc object if provided
   const displayName = pc?.name || name;
   const displayStatus = pc?.status || status;
-  const displayUsername = pc?.user?.name || username;
-  
+  const displayUsername = pc?.user ? `${pc.user.firstName} ${pc.user.lastName}` : username;
+  const displayAvatar = pc?.user?.avatar ? getAvatarUrl(pc.user.avatar) : getAvatarUrl('images/default-avatar.svg');
+
   // State for connection dialog
   const [connectionDialogOpen, setConnectionDialogOpen] = React.useState(false);
   const [getGraphicConnection, { data: connectionData, loading: connectionLoading, error: connectionError }] = useGraphicConnectionLazyQuery();
@@ -301,7 +303,7 @@ const UserPc = React.forwardRef(({
             {/* User Avatar */}
             <div className="absolute -bottom-1.5 -right-2">
               <Image
-                src={avatar}
+                src={displayAvatar}
                 alt="User Avatar"
                 width={48}
                 height={48}
@@ -468,7 +470,7 @@ const UserPc = React.forwardRef(({
         </td>
         <td className="py-3 px-4">
           <div className="flex items-center gap-2">
-            <Image src={avatar} alt={displayUsername} width={24} height={24} className="w-6 h-6 rounded-full" />
+            <Image src={displayAvatar} alt={displayUsername} width={24} height={24} className="w-6 h-6 rounded-full" />
             <span>{displayUsername}</span>
           </div>
         </td>

@@ -261,10 +261,27 @@ export class RealTimeReduxService {
         break
 
       case 'update':
+        // Get the old department data before updating
+        const currentState = this.store.getState()
+        const oldDepartment = currentState.departments.items.find(d => d.id === deptData.id)
+
+        // Update the department
         this.store.dispatch({
           type: 'departments/realTimeDepartmentUpdated',
           payload: deptData
         })
+
+        // If the department name changed, update all VMs
+        if (oldDepartment && oldDepartment.name !== deptData.name) {
+          this.debug.info('dept-event', `Department name changed from "${oldDepartment.name}" to "${deptData.name}", updating VMs`)
+          this.store.dispatch({
+            type: 'vms/realTimeDepartmentNameUpdated',
+            payload: {
+              departmentId: deptData.id,
+              newName: deptData.name
+            }
+          })
+        }
         break
 
       case 'delete':

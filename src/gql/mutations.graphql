@@ -323,6 +323,17 @@ mutation destroyDepartment($id: String!) {
   }
 }
 
+mutation updateDepartmentName($input: UpdateDepartmentNameInput!) {
+  updateDepartmentName(input: $input) {
+    id
+    name
+    createdAt
+    internetSpeed
+    ipSubnet
+    totalMachines
+  }
+}
+
 mutation createMachineTemplateCategory($input: MachineTemplateCategoryInputType!) {
   createMachineTemplateCategory(input: $input) {
     id

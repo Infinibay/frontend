@@ -13,7 +13,8 @@ import {
 import {
   fetchDepartmentByName,
   createDepartment,
-  fetchDepartments
+  fetchDepartments,
+  updateDepartmentName
 } from "@/state/slices/departments";
 
 // Utils
@@ -34,7 +35,11 @@ import {
 export const useDepartmentPage = (departmentName) => {
   const dispatch = useDispatch();
   const router = useRouter();
-  
+
+  // Get current user and check admin status
+  const currentUser = useSelector((state) => state.auth.user);
+  const isAdmin = currentUser?.role === 'ADMIN';
+
   // UI State
   const [showToast, setShowToast] = useState(false);
   const [toastProps, setToastProps] = useState({});
@@ -57,6 +62,7 @@ export const useDepartmentPage = (departmentName) => {
     state.departments.loading.fetchByName ||
     state.departments.loading.create
   );
+  const nameUpdateLoading = useSelector((state) => state.departments.loading.updateName);
   
   // Derived state
   const department = departments.find(d => d.name.toLowerCase() === departmentName?.toLowerCase());
@@ -211,6 +217,65 @@ export const useDepartmentPage = (departmentName) => {
     router.push(`/departments/${departmentName}/new`);
   };
 
+  const handleDepartmentNameUpdate = async (newName) => {
+    if (!department || !isAdmin) return;
+
+    // Validate name is not empty
+    if (!newName || newName.trim() === '') {
+      setToastProps({
+        variant: "destructive",
+        title: "Error",
+        description: "Department name cannot be empty."
+      });
+      setShowToast(true);
+      return;
+    }
+
+    // Don't update if name hasn't changed
+    if (newName.trim() === department.name) {
+      return;
+    }
+
+    try {
+      setToastProps({
+        variant: "default",
+        title: "Processing",
+        description: "Updating department name..."
+      });
+      setShowToast(true);
+
+      const input = {
+        id: department.id,
+        name: newName.trim()
+      };
+
+      await dispatch(updateDepartmentName(input)).unwrap();
+
+      // Refresh departments list
+      await dispatch(fetchDepartments());
+
+      setToastProps({
+        variant: "success",
+        title: "Success",
+        description: "Department name has been updated successfully."
+      });
+      setShowToast(true);
+
+      // Navigate to the new department URL
+      router.push(`/departments/${encodeURIComponent(newName.trim())}`);
+
+    } catch (error) {
+      debug.error('updateName', 'Failed to update department name:', error);
+      const errorMessage = error?.message || "Could not update department name.";
+      setToastProps({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage
+      });
+      setShowToast(true);
+    }
+  };
+
   return {
     // State
     isLoading,
@@ -227,7 +292,9 @@ export const useDepartmentPage = (departmentName) => {
     isCreateDeptDialogOpen,
     newDepartmentName,
     selectedPc,
-    
+    isAdmin,
+    nameUpdateLoading,
+
     // Actions
     setActiveTab,
     setShowToast,
@@ -243,6 +310,7 @@ export const useDepartmentPage = (departmentName) => {
     toggleViewMode,
     handleSort,
     handleCreateDepartment,
-    handleNewComputer
+    handleNewComputer,
+    handleDepartmentNameUpdate
   };
 };

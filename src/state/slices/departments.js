@@ -9,7 +9,8 @@ import {
     DepartmentDocument,
     FindDepartmentByNameDocument,
     CreateDepartmentDocument,
-    DestroyDepartmentDocument
+    DestroyDepartmentDocument,
+    UpdateDepartmentNameDocument
 } from '@/gql/hooks';
 
 const executeGraphQLMutation = async (mutation, variables) => {
@@ -106,6 +107,14 @@ export const deleteDepartment = createAsyncThunk(
     }
 );
 
+export const updateDepartmentName = createAsyncThunk(
+    'departments/updateDepartmentName',
+    async (input) => {
+        const data = await executeGraphQLMutation(UpdateDepartmentNameDocument, { input });
+        return data.updateDepartmentName;
+    }
+);
+
 const departmentsSlice = createSlice({
     name: 'departments',
     initialState: {
@@ -115,14 +124,16 @@ const departmentsSlice = createSlice({
             fetchOne: false,
             fetchByName: false,
             create: false,
-            delete: false
+            delete: false,
+            updateName: false
         },
         error: {
             fetch: null,
             fetchOne: null,
             fetchByName: null,
             create: null,
-            delete: null
+            delete: null,
+            updateName: null
         }
     },
     reducers: {
@@ -140,8 +151,16 @@ const departmentsSlice = createSlice({
             const updatedDepartment = action.payload;
             const index = state.items.findIndex(dept => dept.id === updatedDepartment.id);
             if (index !== -1) {
+                // Store old department data for VM updates
+                const oldDepartment = state.items[index];
                 state.items[index] = updatedDepartment;
                 debug.success('realtime', 'Department updated', updatedDepartment.name);
+
+                // If the department name changed, we need to update VMs too
+                // This will be handled by a separate action to the VMs slice
+                if (oldDepartment.name !== updatedDepartment.name) {
+                    debug.info('realtime', 'Department name changed, VMs will be updated separately');
+                }
             }
         },
         realTimeDepartmentDeleted: (state, action) => {
@@ -236,6 +255,23 @@ const departmentsSlice = createSlice({
             .addCase(deleteDepartment.rejected, (state, action) => {
                 state.loading.delete = false;
                 state.error.delete = action.error.message;
+            })
+
+            // Update Department Name
+            .addCase(updateDepartmentName.pending, (state) => {
+                state.loading.updateName = true;
+                state.error.updateName = null;
+            })
+            .addCase(updateDepartmentName.fulfilled, (state, action) => {
+                state.loading.updateName = false;
+                const index = state.items.findIndex((dept) => dept.id === action.payload.id);
+                if (index !== -1) {
+                    state.items[index] = action.payload;
+                }
+            })
+            .addCase(updateDepartmentName.rejected, (state, action) => {
+                state.loading.updateName = false;
+                state.error.updateName = action.error.message;
             });
     },
 });

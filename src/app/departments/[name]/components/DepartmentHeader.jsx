@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, Plus } from 'lucide-react';
+import { ChevronLeft, Plus, Edit3, X } from 'lucide-react';
 import { Header, HeaderLeft, HeaderCenter, HeaderRight } from '@/components/ui/header';
 import { useAppTheme } from '@/contexts/ThemeProvider';
 import { useSizeContext, sizeVariants, getTypographyClass } from '@/components/ui/size-provider';
@@ -20,13 +19,59 @@ import {
 /**
  * Header component for the department page
  */
-const DepartmentHeader = ({ departmentName, departments = [], isLoading = false, onNewComputer }) => {
+const DepartmentHeader = ({
+  departmentName,
+  isLoading = false,
+  onNewComputer,
+  isAdmin = false,
+  onNameUpdate,
+  nameUpdateLoading = false
+}) => {
   const { resolvedTheme } = useAppTheme();
   const { size } = useSizeContext();
   const router = useRouter();
 
-  const handleDepartmentChange = (departmentName) => {
-    router.push(`/departments/${encodeURIComponent(departmentName)}`);
+  // State for inline editing
+  const [editingName, setEditingName] = useState(false);
+  const [editValue, setEditValue] = useState('');
+  const [cancellingEdit, setCancellingEdit] = useState(false);
+
+  // Helper functions for inline editing
+  const startEditing = () => {
+    if (!isAdmin) return;
+    setEditingName(true);
+    setEditValue(departmentName);
+  };
+
+  const cancelEditing = () => {
+    setEditingName(false);
+    setEditValue('');
+    setCancellingEdit(false);
+  };
+
+  const saveEdit = () => {
+    // Don't save if we're cancelling
+    if (cancellingEdit) {
+      cancelEditing();
+      return;
+    }
+    if (!editValue.trim()) return;
+    if (onNameUpdate) {
+      onNameUpdate(editValue.trim());
+    }
+    cancelEditing();
+  };
+
+  const handleCancelMouseDown = () => {
+    setCancellingEdit(true);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      saveEdit();
+    } else if (e.key === 'Escape') {
+      cancelEditing();
+    }
   };
 
   return (
@@ -54,31 +99,50 @@ const DepartmentHeader = ({ departmentName, departments = [], isLoading = false,
         </Breadcrumb>
       </HeaderLeft>
       <HeaderCenter className="flex items-center justify-center">
-        <Select
-          value={departmentName || ''}
-          onValueChange={handleDepartmentChange}
-          disabled={isLoading}
-        >
-          <SelectTrigger
-            glass="subtle"
-            textAlign="center"
+        {isAdmin && editingName ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={saveEdit}
+              className={cn(
+                getTypographyClass('subheading', size),
+                'px-2 py-1 border border-border rounded bg-background text-center min-w-[200px]'
+              )}
+              autoFocus
+              maxLength={100}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onMouseDown={handleCancelMouseDown}
+              onClick={cancelEditing}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div
             className={cn(
-              'min-w-[200px] bg-transparent border-none shadow-none',
+              'flex items-center gap-2',
               getTypographyClass('subheading', size),
-              'text-glass-text-primary h-auto p-2',
-              'hover:scale-100 hover:transform-none' // Override the default hover scale
+              'text-glass-text-primary',
+              isAdmin ? 'cursor-pointer hover:bg-accent/50 px-2 py-1 rounded' : ''
             )}
+            onClick={() => isAdmin && startEditing()}
+            title={isAdmin ? 'Click to edit department name' : undefined}
           >
-            <SelectValue placeholder="Select Department" />
-          </SelectTrigger>
-          <SelectContent glass="minimal">
-            {departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.name}>
-                {dept.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <span>{departmentName || 'Department'}</span>
+            {isAdmin && nameUpdateLoading ? (
+              <div className="animate-spin h-4 w-4 border border-brand-dark-blue border-t-transparent rounded-full ml-1"></div>
+            ) : isAdmin ? (
+              <Edit3 className="h-4 w-4 ml-1 opacity-50" />
+            ) : null}
+          </div>
+        )}
       </HeaderCenter>
       <HeaderRight className="w-[200px] flex items-center justify-end">
         <Button

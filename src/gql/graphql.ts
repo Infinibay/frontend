@@ -267,6 +267,8 @@ export type CreateSnapshotInput = {
 };
 
 export type CreateUserInputType = {
+  /** User avatar image path */
+  avatar?: InputMaybe<Scalars['String']['input']>;
   email?: Scalars['String']['input'];
   firstName?: Scalars['String']['input'];
   lastName?: Scalars['String']['input'];
@@ -892,11 +894,14 @@ export type Mutation = {
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
   updateDepartmentFirewallRule: FwRule;
+  updateDepartmentName: DepartmentType;
   updateFilter: GenericFilter;
   updateFilterRule: FwRule;
   updateMachineHardware: Machine;
+  updateMachineName: Machine;
   updateMachineTemplate: MachineTemplateType;
   updateMachineTemplateCategory: MachineTemplateCategoryType;
+  updateMachineUser: Machine;
   updateMaintenanceTask: MaintenanceTaskResponse;
   /** Update a package on a virtual machine (legacy compatibility) */
   updatePackage: CommandResult;
@@ -1298,6 +1303,11 @@ export type MutationUpdateDepartmentFirewallRuleArgs = {
 };
 
 
+export type MutationUpdateDepartmentNameArgs = {
+  input: UpdateDepartmentNameInput;
+};
+
+
 export type MutationUpdateFilterArgs = {
   id: Scalars['ID']['input'];
   input: UpdateFilterInput;
@@ -1315,6 +1325,11 @@ export type MutationUpdateMachineHardwareArgs = {
 };
 
 
+export type MutationUpdateMachineNameArgs = {
+  input: UpdateMachineNameInput;
+};
+
+
 export type MutationUpdateMachineTemplateArgs = {
   id: Scalars['String']['input'];
   input: MachineTemplateInputType;
@@ -1324,6 +1339,11 @@ export type MutationUpdateMachineTemplateArgs = {
 export type MutationUpdateMachineTemplateCategoryArgs = {
   id: Scalars['String']['input'];
   input: MachineTemplateCategoryInputType;
+};
+
+
+export type MutationUpdateMachineUserArgs = {
+  input: UpdateMachineUserInput;
 };
 
 
@@ -2158,6 +2178,11 @@ export type ToggleVmServiceInput = {
   vmId: Scalars['ID']['input'];
 };
 
+export type UpdateDepartmentNameInput = {
+  id?: Scalars['ID']['input'];
+  name?: Scalars['String']['input'];
+};
+
 export type UpdateFilterInput = {
   chain?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
@@ -2187,6 +2212,18 @@ export type UpdateMachineHardwareInput = {
   id?: Scalars['ID']['input'];
   /** New RAM in GB */
   ramGB?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type UpdateMachineNameInput = {
+  id?: Scalars['ID']['input'];
+  /** New name for the machine */
+  name?: Scalars['String']['input'];
+};
+
+export type UpdateMachineUserInput = {
+  id?: Scalars['ID']['input'];
+  /** User ID to assign to the machine. Set to null to unassign. */
+  userId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateMaintenanceTaskInput = {

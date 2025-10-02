@@ -57,7 +57,9 @@ const DepartmentPage = () => {
     isCreateDeptDialogOpen,
     newDepartmentName,
     selectedPc,
-    
+    isAdmin,
+    nameUpdateLoading,
+
     // Actions
     setActiveTab,
     setShowToast,
@@ -72,7 +74,8 @@ const DepartmentPage = () => {
     toggleViewMode,
     handleSort,
     handleCreateDepartment,
-    handleNewComputer
+    handleNewComputer,
+    handleDepartmentNameUpdate
   } = useDepartmentPage(departmentName);
 
   // Loading state
@@ -90,9 +93,11 @@ const DepartmentPage = () => {
       <div className="w-full">
         <DepartmentHeader
           departmentName={department?.name}
-          departments={departments}
           isLoading={departmentsLoading}
           onNewComputer={handleNewComputer}
+          isAdmin={isAdmin}
+          onNameUpdate={handleDepartmentNameUpdate}
+          nameUpdateLoading={nameUpdateLoading}
         />
 
         {/* Main content container with consistent spacing */}
