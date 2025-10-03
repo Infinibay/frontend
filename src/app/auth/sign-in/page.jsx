@@ -54,14 +54,24 @@ const Page = () => {
   return (
     <SizeProvider defaultSize="md">
       <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
-        {/* Background with gradient - adapts to theme */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-background -z-10" />
+        {/* Solid background that overrides wallpaper */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900" style={{ zIndex: -20 }} />
 
-        {/* Animated background orbs */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-1/4 -left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 -right-1/4 w-96 h-96 bg-brand-celeste-400/5 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-dark-blue-600/3 rounded-full blur-3xl animate-pulse" style={{animationDelay: '4s'}} />
+        {/* Subtle decorative pattern */}
+        <div className="fixed inset-0" style={{ zIndex: -19 }}>
+          <div className="absolute inset-0 opacity-30" style={{
+            backgroundImage: `radial-gradient(circle at 25% 25%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+                             radial-gradient(circle at 75% 75%, hsl(var(--brand-celeste-400) / 0.08) 0%, transparent 50%)`,
+            backgroundSize: '600px 600px, 400px 400px',
+            backgroundPosition: '0 0, 100px 100px'
+          }} />
+        </div>
+
+        {/* Animated background orbs - subtle */}
+        <div className="fixed inset-0 overflow-hidden" style={{ zIndex: -18 }}>
+          <div className="absolute top-1/4 -left-1/4 w-96 h-96 bg-primary/10 dark:bg-primary/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 -right-1/4 w-96 h-96 bg-brand-celeste-400/10 dark:bg-brand-celeste-400/5 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-dark-blue-600/8 dark:bg-brand-dark-blue-600/5 rounded-full blur-3xl animate-pulse" style={{animationDelay: '4s'}} />
         </div>
 
         {/* Main content grid */}
@@ -74,7 +84,7 @@ const Page = () => {
                 <div className="inline-flex items-center justify-center">
                   <Image
                     alt="Infinibay logo"
-                    src="/images/logo_1.png"
+                    src="/images/logo.png"
                     className="h-20 w-auto drop-shadow-2xl"
                   />
                 </div>
@@ -89,12 +99,12 @@ const Page = () => {
               </div>
 
               {/* Hero image */}
-              <div className="relative w-full max-w-lg">
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent rounded-2xl" />
+              <div className="relative w-full max-w-lg p-8 bg-gradient-to-br from-white/10 to-white/5 dark:from-white/5 dark:to-white/2 rounded-3xl backdrop-blur-sm border border-white/10">
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent rounded-3xl" />
                 <Image
                   alt="Infinibay platform"
                   src="/images/auth/authPc.png"
-                  className="w-full h-auto drop-shadow-2xl transition-transform duration-500 hover:scale-105"
+                  className="w-full h-auto relative z-10 drop-shadow-2xl transition-transform duration-500 hover:scale-105"
                 />
               </div>
             </div>
@@ -106,7 +116,7 @@ const Page = () => {
                 <div className="lg:hidden flex justify-center mb-8">
                   <Image
                     alt="Infinibay logo"
-                    src="/images/logo_1.png"
+                    src="/images/logo.png"
                     className="h-16 w-auto"
                   />
                 </div>
