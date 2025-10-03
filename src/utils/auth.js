@@ -147,14 +147,22 @@ export const auth = {
     return null;
   },
 
-  // Optionally, add a method to check if the token is still valid
+  // Validate token by fetching current user
   validateToken: async () => {
     const token = auth.getToken();
     if (!token) return false;
 
-    // Here you would typically make a request to your server to validate the token
-    // For this example, we'll just check if it exists
-    return true;
+    try {
+      const { data } = await client.query({
+        query: CurrentUserDocument,
+        fetchPolicy: 'network-only', // Always fetch from network to validate
+      });
+      debug.success('validateToken', 'Token is valid, user:', data.currentUser?.email);
+      return !!data.currentUser;
+    } catch (error) {
+      debug.error('validateToken', 'Token validation failed:', error);
+      return false;
+    }
   },
 
   // App Settings functions

@@ -15,7 +15,7 @@ const LoadingSkeleton = () => {
         <div className="mb-8">
           <Skeleton className="h-8 w-32" />
         </div>
-        
+
         {/* Navigation items */}
         <div className="space-y-4">
           <Skeleton className="h-10 w-full" />
@@ -35,7 +35,7 @@ const LoadingSkeleton = () => {
               <span>/</span>
               <Skeleton className="h-6 w-32" />
             </div>
-            
+
             {/* User menu */}
             <Skeleton className="h-10 w-10 rounded-full" />
           </div>
@@ -171,8 +171,24 @@ export const InitialDataLoader = ({ children }) => {
   }
 
   if (error && !hasTimedOut) {
+    // Don't show error modal for authentication errors - let the auth flow handle it
+    const isAuthError = error?.message?.toLowerCase().includes('not authorized') ||
+                       error?.message?.toLowerCase().includes('unauthorized') ||
+                       error?.message?.toLowerCase().includes('401') ||
+                       error?.message?.toLowerCase().includes('403') ||
+                       error?.graphQLErrors?.some(e =>
+                         e.message?.toLowerCase().includes('not authorized') ||
+                         e.message?.toLowerCase().includes('unauthorized')
+                       );
+
+    if (isAuthError) {
+      debug.info('Authentication error detected, skipping error modal and continuing to auth flow');
+      // Continue to children to allow auth redirect to happen
+      return children;
+    }
+
     const isCriticalError = error?.message?.includes('Critical') ||
-                           SERVICE_CONFIG.critical.some(s => error?.message?.includes(s.name));
+      SERVICE_CONFIG.critical.some(s => error?.message?.includes(s.name));
 
     return (
       <div className="flex items-center justify-center h-screen">
@@ -185,6 +201,7 @@ export const InitialDataLoader = ({ children }) => {
               ? 'The application requires certain data to function properly.'
               : 'Non-essential features failed to load, but you can continue using the app.'
             }
+            {error?.message}
           </div>
           <div className="flex gap-2 justify-center">
             <button
