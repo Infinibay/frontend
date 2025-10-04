@@ -1,0 +1,103 @@
+query getGenericFilters {
+  getGenericFilters {
+    id
+    name
+    description
+    type
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
+    createdAt
+    updatedAt
+  }
+}
+
+query getVMAssignedGenericFilters($vmId: ID!) {
+  getVMAssignedGenericFilters(vmId: $vmId) {
+    filter {
+      id
+      name
+      description
+      type
+      rules {
+        id
+        protocol
+        direction
+        action
+        priority
+        ipVersion
+        srcMacAddr
+        srcIpAddr
+        srcIpMask
+        dstIpAddr
+        dstIpMask
+        srcPortStart
+        srcPortEnd
+        dstPortStart
+        dstPortEnd
+        state
+        comment
+        createdAt
+        updatedAt
+      }
+      references
+      createdAt
+      updatedAt
+    }
+    isInherited
+    inheritedFrom
+    inheritedFromId
+  }
+}
+
+query getDepartmentAssignedGenericFilters($departmentId: ID!) {
+  getDepartmentAssignedGenericFilters(departmentId: $departmentId) {
+    id
+    name
+    description
+    type
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
+    createdAt
+    updatedAt
+  }
+}

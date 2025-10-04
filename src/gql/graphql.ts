@@ -125,6 +125,14 @@ export type ApplyFirewallTemplateInput = {
   template: FirewallTemplate;
 };
 
+export type AssignedGenericFilter = {
+  __typename?: 'AssignedGenericFilter';
+  filter: GenericFilter;
+  inheritedFrom?: Maybe<Scalars['String']['output']>;
+  inheritedFromId?: Maybe<Scalars['ID']['output']>;
+  isInherited: Scalars['Boolean']['output'];
+};
+
 export type BackgroundHealthServiceStatus = {
   __typename?: 'BackgroundHealthServiceStatus';
   activeQueues: Scalars['Int']['output'];
@@ -803,6 +811,8 @@ export type Mutation = {
   addFilterReference: Scalars['Boolean']['output'];
   applyDepartmentFirewallTemplate: Scalars['Boolean']['output'];
   applyFirewallTemplate: VmFirewallState;
+  assignGenericFilterToDepartment: Scalars['Boolean']['output'];
+  assignGenericFilterToVM: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
   /** Control a service on a virtual machine */
@@ -891,6 +901,8 @@ export type Mutation = {
   toggleMaintenanceTask: MaintenanceTaskResponse;
   toggleVmService: VmServiceStatus;
   triggerHealthCheckRound: HealthCheckRoundResult;
+  unassignGenericFilterFromDepartment: Scalars['Boolean']['output'];
+  unassignGenericFilterFromVM: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
   updateDepartmentFirewallRule: FwRule;
@@ -924,6 +936,18 @@ export type MutationApplyDepartmentFirewallTemplateArgs = {
 
 export type MutationApplyFirewallTemplateArgs = {
   input: ApplyFirewallTemplateInput;
+};
+
+
+export type MutationAssignGenericFilterToDepartmentArgs = {
+  departmentId: Scalars['ID']['input'];
+  genericFilterId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignGenericFilterToVmArgs = {
+  genericFilterId: Scalars['ID']['input'];
+  vmId: Scalars['ID']['input'];
 };
 
 
@@ -1286,6 +1310,18 @@ export type MutationToggleVmServiceArgs = {
 };
 
 
+export type MutationUnassignGenericFilterFromDepartmentArgs = {
+  departmentId: Scalars['ID']['input'];
+  genericFilterId: Scalars['ID']['input'];
+};
+
+
+export type MutationUnassignGenericFilterFromVmArgs = {
+  genericFilterId: Scalars['ID']['input'];
+  vmId: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateAppSettingsArgs = {
   input: AppSettingsInput;
 };
@@ -1533,11 +1569,13 @@ export type Query = {
   getAppSettings: AppSettings;
   getAvailableFirewallTemplates: Array<FirewallTemplateInfo>;
   getAvailableTemplatesForDepartment: Array<GenericFilter>;
+  getDepartmentAssignedGenericFilters: Array<GenericFilter>;
   getDepartmentFirewallRules: Array<FwRule>;
   getDepartmentFirewallState: DepartmentFirewallState;
   getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
   getFilter?: Maybe<GenericFilter>;
   getFirewallTemplateInfo?: Maybe<FirewallTemplateInfo>;
+  getGenericFilters: Array<GenericFilter>;
   getGlobalServiceStatus: Array<GlobalServiceStatus>;
   getGraphics: Array<Gpu>;
   getLatestVMHealth?: Maybe<VmHealthSnapshotType>;
@@ -1548,6 +1586,7 @@ export type Query = {
   getSystemResources: SystemResources;
   /** Get installed applications inventory for a VM */
   getVMApplicationInventory: ApplicationInventory;
+  getVMAssignedGenericFilters: Array<AssignedGenericFilter>;
   getVMFirewallState: VmFirewallState;
   /** Get comprehensive health check status for a VM */
   getVMHealthStatus: HealthCheckStatus;
@@ -1660,6 +1699,11 @@ export type QueryGetAvailableTemplatesForDepartmentArgs = {
 };
 
 
+export type QueryGetDepartmentAssignedGenericFiltersArgs = {
+  departmentId: Scalars['ID']['input'];
+};
+
+
 export type QueryGetDepartmentFirewallRulesArgs = {
   departmentId: Scalars['ID']['input'];
 };
@@ -1702,6 +1746,11 @@ export type QueryGetSimplifiedFirewallRulesArgs = {
 
 
 export type QueryGetVmApplicationInventoryArgs = {
+  vmId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetVmAssignedGenericFiltersArgs = {
   vmId: Scalars['ID']['input'];
 };
 

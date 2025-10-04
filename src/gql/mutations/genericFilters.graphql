@@ -1,0 +1,15 @@
+mutation assignGenericFilterToVM($vmId: ID!, $genericFilterId: ID!) {
+  assignGenericFilterToVM(vmId: $vmId, genericFilterId: $genericFilterId)
+}
+
+mutation unassignGenericFilterFromVM($vmId: ID!, $genericFilterId: ID!) {
+  unassignGenericFilterFromVM(vmId: $vmId, genericFilterId: $genericFilterId)
+}
+
+mutation assignGenericFilterToDepartment($departmentId: ID!, $genericFilterId: ID!) {
+  assignGenericFilterToDepartment(departmentId: $departmentId, genericFilterId: $genericFilterId)
+}
+
+mutation unassignGenericFilterFromDepartment($departmentId: ID!, $genericFilterId: ID!) {
+  unassignGenericFilterFromDepartment(departmentId: $departmentId, genericFilterId: $genericFilterId)
+}

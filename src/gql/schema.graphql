@@ -3,6 +3,52 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+input AdvancedPortInput {
+  """Description of the port configuration"""
+  description: String
+
+  """Type of port configuration"""
+  type: PortInputType!
+
+  """Port specification string"""
+  value: String!
+}
+
+type AppSettings {
+  createdAt: DateTimeISO!
+  id: ID!
+  interfaceSize: String!
+  logoUrl: String
+  theme: String!
+  updatedAt: DateTimeISO!
+  wallpaper: String!
+}
+
+input AppSettingsInput {
+  interfaceSize: String
+  logoUrl: String
+  theme: String
+  wallpaper: String
+}
+
+type ApplicationInfo {
+  installDate: DateTimeISO
+  installLocation: String
+  name: String!
+  publisher: String
+  sizeInMB: Float
+  version: String
+}
+
+type ApplicationInventory {
+  applications: [ApplicationInfo!]!
+  error: String
+  success: Boolean!
+  timestamp: DateTimeISO!
+  totalCount: Int!
+  vmId: ID!
+}
+
 type ApplicationType {
   createdAt: DateTimeISO!
   description: String
@@ -12,6 +58,69 @@ type ApplicationType {
   name: String!
   os: [String!]!
   parameters: JSONObject
+}
+
+type ApplicationUpdateInfo {
+  applicationName: String!
+  availableVersion: String!
+  canUpdate: Boolean!
+  currentVersion: String!
+  downloadUrl: String
+  installDate: DateTimeISO
+  installLocation: String
+  installType: String
+  isSecurityUpdate: Boolean!
+  lastUpdateCheck: DateTimeISO
+  registryKey: String
+  releaseDate: DateTimeISO
+  sizeInMB: Float
+  updateSizeBytes: Float
+  updateSource: String
+  updateType: String
+  vendor: String
+}
+
+type ApplicationUpdates {
+  availableUpdates: [ApplicationUpdateInfo!]!
+  error: String
+  executionTimeMs: Int
+  microsoftStoreUpdatesCount: Int
+  success: Boolean!
+  summary: String
+  timestamp: DateTimeISO!
+  totalUpdatesCount: Int!
+  vmId: ID!
+  windowsUpdatesCount: Int
+}
+
+input ApplyDepartmentTemplateInput {
+  departmentId: ID! = ""
+  templateFilterId: ID! = ""
+}
+
+input ApplyFirewallTemplateInput {
+  """Virtual machine ID"""
+  machineId: ID!
+
+  """Firewall template to apply"""
+  template: FirewallTemplate!
+}
+
+type AssignedGenericFilter {
+  filter: GenericFilter!
+  inheritedFrom: String
+  inheritedFromId: ID
+  isInherited: Boolean!
+}
+
+type BackgroundHealthServiceStatus {
+  activeQueues: Int!
+  cronActive: Boolean!
+  isRunning: Boolean!
+  lastRun: DateTimeISO!
+  nextRun: DateTimeISO
+  pendingChecks: Int!
+  totalVMsMonitored: Int!
 }
 
 input BridgeNameInput {
@@ -25,6 +134,44 @@ type CommandExecutionResponseType {
   success: Boolean!
 }
 
+"""Generic command execution result"""
+type CommandResult {
+  """Error message if command failed"""
+  error: String
+
+  """Command output"""
+  output: String
+
+  """Standard error"""
+  stderr: String
+
+  """Standard output"""
+  stdout: String
+
+  """Whether the command was successful"""
+  success: Boolean!
+}
+
+input CreateAdvancedFirewallRuleInput {
+  """Firewall action (accept, drop, reject)"""
+  action: String! = "accept"
+
+  """Optional rule description"""
+  description: String
+
+  """Traffic direction (in, out, inout)"""
+  direction: String! = "in"
+
+  """Virtual machine ID"""
+  machineId: ID!
+
+  """Advanced port configuration"""
+  ports: AdvancedPortInput!
+
+  """Network protocol (tcp, udp, icmp)"""
+  protocol: String! = "tcp"
+}
+
 input CreateApplicationInputType {
   description: String
   installCommand: JSONObject!
@@ -35,6 +182,7 @@ input CreateApplicationInputType {
 
 input CreateFilterInput {
   chain: String = "root"
+  departmentId: ID
   description: String! = ""
   name: String! = ""
   type: FilterType = GENERIC
@@ -70,6 +218,18 @@ input CreateMachineInputType {
   username: String! = ""
 }
 
+input CreateMaintenanceTaskInput {
+  cronSchedule: String
+  description: String
+  isEnabled: Boolean! = true
+  isRecurring: Boolean! = false
+  machineId: ID!
+  name: String!
+  parameters: JSONObject
+  runAt: DateTimeISO
+  taskType: MaintenanceTaskType!
+}
+
 input CreateNetworkInput {
   bridgeName: String! = ""
   description: String! = ""
@@ -79,7 +239,35 @@ input CreateNetworkInput {
   name: String! = ""
 }
 
+input CreateSimplifiedFirewallRuleInput {
+  """Firewall action (accept, drop, reject)"""
+  action: String! = "accept"
+
+  """Optional rule description"""
+  description: String
+
+  """Traffic direction (in, out, inout)"""
+  direction: String! = "in"
+
+  """Virtual machine ID"""
+  machineId: ID!
+
+  """Port specification (e.g., "80", "443", "all")"""
+  port: String!
+
+  """Network protocol (tcp, udp, icmp)"""
+  protocol: String! = "tcp"
+}
+
+input CreateSnapshotInput {
+  description: String
+  machineId: String!
+  name: String!
+}
+
 input CreateUserInputType {
+  """User avatar image path"""
+  avatar: String
   email: String! = ""
   firstName: String! = ""
   lastName: String! = ""
@@ -93,8 +281,33 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTimeISO
 
+type DefenderScanResult {
+  error: String
+  filesScanned: Int!
+  scanDuration: Float!
+  scanType: String!
+  success: Boolean!
+  threatsFound: Int!
+  timestamp: DateTimeISO!
+  vmId: ID!
+}
+
 input DeleteNetworkInput {
   name: String!
+}
+
+input DeleteSnapshotInput {
+  machineId: String!
+  snapshotName: String!
+}
+
+type DepartmentFirewallState {
+  appliedTemplates: [String!]!
+  customRules: [FWRule!]!
+  departmentId: ID!
+  effectiveRules: [FWRule!]!
+  lastSync: DateTimeISO!
+  vmCount: Int!
 }
 
 type DepartmentServiceStatus {
@@ -132,8 +345,45 @@ type DepartmentType {
   totalMachines: Float
 }
 
+type DiskCleanupResult {
+  drive: String!
+  error: String
+  filesDeleted: Int!
+  spaceClearedMB: Float!
+  success: Boolean!
+  targetsProcessed: [String!]!
+  timestamp: DateTimeISO!
+  vmId: ID!
+}
+
+type DiskDriveInfo {
+  drive: String!
+  freeGB: Float!
+  label: String!
+  status: HealthCheckSeverity!
+  totalGB: Float!
+  usedGB: Float!
+  usedPercent: Float!
+}
+
+type DiskSpaceInfo {
+  criticalThreshold: Float
+  drives: [DiskDriveInfo!]!
+  error: String
+  success: Boolean!
+  timestamp: DateTimeISO!
+  vmId: ID!
+  warningThreshold: Float
+}
+
 type DyummyType {
   value: String!
+}
+
+input ExecuteMaintenanceInput {
+  machineId: ID!
+  parameters: JSONObject
+  taskType: MaintenanceTaskType!
 }
 
 type FWRule {
@@ -165,6 +415,28 @@ enum FilterType {
   VM
 }
 
+"""Predefined firewall template configurations for common use cases"""
+enum FirewallTemplate {
+  DATABASE
+  DESKTOP
+  DEVELOPMENT
+  WEB_SERVER
+}
+
+type FirewallTemplateInfo {
+  """Human-readable template description"""
+  description: String!
+
+  """Template name identifier"""
+  name: String!
+
+  """List of rules included in this template"""
+  rules: [SimplifiedFirewallRule!]!
+
+  """Template identifier (e.g., WEB_SERVER, DATABASE)"""
+  template: String!
+}
+
 type GPU {
   memory: Float!
   model: String!
@@ -181,6 +453,17 @@ type GenericFilter {
   rules: [FWRule!]
   type: FilterType!
   updatedAt: DateTimeISO!
+}
+
+type GenericHealthCheckResponse {
+  checkName: String!
+  details: String
+  error: String
+  message: String!
+  severity: HealthCheckSeverity!
+  success: Boolean!
+  timestamp: DateTimeISO!
+  vmId: ID!
 }
 
 type GlobalServiceStatus {
@@ -201,6 +484,64 @@ type GraphicConfigurationType {
   link: String!
   password: String!
   protocol: String!
+}
+
+"""Available health check types that can be executed individually"""
+enum HealthCheckName {
+  APPLICATION_HEALTH
+  BOOT_TIME
+  CPU_USAGE
+  CRITICAL_SERVICES
+  DISK_FRAGMENTATION
+  DISK_HEALTH
+  DISK_SPACE
+  EVENT_LOG_ERRORS
+  FIREWALL_STATUS
+  MEMORY_USAGE
+  NETWORK_CONNECTIVITY
+  PERFORMANCE_COUNTERS
+  REGISTRY_HEALTH
+  RESOURCE_OPTIMIZATION
+  SECURITY_UPDATES
+  STARTUP_PROGRAMS
+  SYSTEM_FILES
+  SYSTEM_TEMPERATURE
+  UPDATE_SERVICES
+  WINDOWS_DEFENDER
+  WINDOWS_UPDATES
+}
+
+type HealthCheckResult {
+  checkName: String!
+  details: String
+  message: String!
+  severity: HealthCheckSeverity!
+  timestamp: DateTimeISO!
+}
+
+type HealthCheckRoundResult {
+  error: String
+  message: String!
+  success: Boolean!
+  taskId: String!
+  timestamp: DateTimeISO!
+}
+
+"""Severity level of health check results"""
+enum HealthCheckSeverity {
+  FAILED
+  INFO
+  PASSED
+  WARNING
+}
+
+type HealthCheckStatus {
+  checks: [HealthCheckResult!]!
+  error: String
+  overallScore: Float!
+  success: Boolean!
+  timestamp: DateTimeISO!
+  vmId: ID!
 }
 
 type ISO {
@@ -247,14 +588,26 @@ The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](
 """
 scalar JSONObject
 
+"""Login response with user data and token"""
+type LoginResponse {
+  token: String!
+  user: UserType!
+}
+
 type Machine {
   configuration: JSONObject
   cpuCores: Int
   createdAt: DateTimeISO
   department: DepartmentType
+  departmentId: String
+  diskSizeGB: Int
   gpuPciAddress: String
   id: ID!
+  internalName: String!
+  localIP: String
   name: String!
+  os: String!
+  publicIP: String
   ramGB: Int
   status: String!
   template: MachineTemplateType
@@ -266,7 +619,7 @@ type Machine {
 input MachineApplicationInputType {
   applicationId: String! = ""
   machineId: String! = ""
-  parameters: JSONObject = null
+  parameters: JSONObject
 }
 
 input MachineOrderBy {
@@ -353,39 +706,215 @@ type MachineTemplateType {
   totalMachines: Int
 }
 
+type MaintenanceExecutionResponse {
+  error: String
+  execution: MaintenanceHistory
+  message: String
+  success: Boolean!
+}
+
+type MaintenanceHistory {
+  duration: Float
+  error: String
+  executedAt: DateTimeISO!
+  executedByUserId: ID
+  id: ID!
+  machineId: ID!
+  parameters: JSONObject
+  result: JSONObject
+  status: MaintenanceStatus!
+  taskId: ID
+  taskType: MaintenanceTaskType!
+  triggeredBy: MaintenanceTrigger!
+}
+
+type MaintenanceStats {
+  enabledTasks: Float!
+  failedExecutions: Float!
+  lastExecutionDate: DateTimeISO
+  machineId: ID!
+  pendingTasks: Float!
+  recurringTasks: Float!
+  successfulExecutions: Float!
+  totalExecutions: Float!
+  totalTasks: Float!
+}
+
+"""Status of maintenance task execution"""
+enum MaintenanceStatus {
+  CANCELLED
+  FAILED
+  RUNNING
+  SUCCESS
+  TIMEOUT
+}
+
+type MaintenanceTask {
+  createdAt: DateTimeISO!
+  createdByUserId: ID!
+  cronSchedule: String
+  description: String
+  executionStatus: String!
+  id: ID!
+  isEnabled: Boolean!
+  isRecurring: Boolean!
+  lastRunAt: DateTimeISO
+  machineId: ID!
+  name: String!
+  nextRunAt: DateTimeISO
+  parameters: JSONObject
+  runAt: DateTimeISO
+  taskType: MaintenanceTaskType!
+  updatedAt: DateTimeISO!
+}
+
+type MaintenanceTaskResponse {
+  error: String
+  message: String
+  success: Boolean!
+  task: MaintenanceTask
+}
+
+"""Types of maintenance tasks that can be performed"""
+enum MaintenanceTaskType {
+  CUSTOM_SCRIPT
+  DEFENDER_SCAN
+  DEFRAG
+  DISK_CHECK
+  DISK_CLEANUP
+  REGISTRY_CLEANUP
+  SYSTEM_FILE_CHECK
+  WINDOWS_UPDATES
+}
+
+"""What triggered the maintenance task execution"""
+enum MaintenanceTrigger {
+  MANUAL
+  SCHEDULED
+}
+
 type Mutation {
+  """Add a filter reference for template application"""
+  addFilterReference(sourceFilterId: ID!, targetFilterId: ID!): Boolean!
+  applyDepartmentFirewallTemplate(input: ApplyDepartmentTemplateInput!): Boolean!
+  applyFirewallTemplate(input: ApplyFirewallTemplateInput!): VMFirewallState!
+  assignGenericFilterToDepartment(departmentId: ID!, genericFilterId: ID!): Boolean!
+  assignGenericFilterToVM(genericFilterId: ID!, vmId: ID!): Boolean!
+
   """Calculate ISO checksum"""
   calculateISOChecksum(isoId: String!): String!
+
+  """Control a service on a virtual machine"""
+  controlService(input: ServiceControlInput!): ServiceStatusType!
+
+  """Create advanced firewall rule with flexible port configuration"""
+  createAdvancedFirewallRule(
+    """Advanced firewall rule configuration"""
+    input: CreateAdvancedFirewallRuleInput!
+  ): VMFirewallState!
   createApplication(input: CreateApplicationInputType!): ApplicationType!
   createDepartment(name: String!): DepartmentType!
+  createDepartmentFirewallRule(departmentId: ID!, input: CreateFilterRuleInput!): FWRule!
   createFilter(input: CreateFilterInput!): GenericFilter!
   createFilterRule(filterId: ID!, input: CreateFilterRuleInput!): FWRule!
   createMachine(input: CreateMachineInputType!): Machine!
   createMachineTemplate(input: MachineTemplateInputType!): MachineTemplateType!
   createMachineTemplateCategory(input: MachineTemplateCategoryInputType!): MachineTemplateCategoryType!
+  createMaintenanceTask(input: CreateMaintenanceTaskInput!): MaintenanceTaskResponse!
   createNetwork(input: CreateNetworkInput!): Boolean!
+
+  """Create firewall rule for a specific port range"""
+  createPortRangeRule(
+    """Firewall action: accept, drop, or reject"""
+    action: String! = "accept"
+
+    """Optional description for the rule"""
+    description: String
+
+    """Traffic direction: in, out, or inout"""
+    direction: String! = "in"
+
+    """Ending port number (1-65535)"""
+    endPort: Int!
+
+    """ID of the virtual machine to configure"""
+    machineId: ID!
+
+    """Network protocol: tcp, udp, or icmp"""
+    protocol: String! = "tcp"
+
+    """Starting port number (1-65535)"""
+    startPort: Int!
+  ): VMFirewallState!
+  createSimplifiedFirewallRule(input: CreateSimplifiedFirewallRuleInput!): VMFirewallState!
+
+  """Create a snapshot of a virtual machine"""
+  createSnapshot(input: CreateSnapshotInput!): SnapshotResult!
   createUser(input: CreateUserInputType!): UserType!
   deleteApplication(id: String!): Boolean!
+  deleteDepartmentFirewallRule(ruleId: ID!): Boolean!
   deleteFilter(id: ID!): Boolean!
   deleteFilterRule(id: ID!): Boolean!
+  deleteMaintenanceTask(id: ID!): MaintenanceTaskResponse!
   deleteNetwork(input: DeleteNetworkInput!): Boolean!
+
+  """Delete a snapshot from a virtual machine"""
+  deleteSnapshot(input: DeleteSnapshotInput!): SuccessType!
   destroyDepartment(id: String!): DepartmentType!
   destroyMachine(id: String!): SuccessType!
   destroyMachineTemplate(id: String!): Boolean!
   destroyMachineTemplateCategory(id: String!): Boolean!
   executeCommand(command: String!, id: String!): CommandExecutionResponseType!
+  executeImmediateMaintenance(input: ExecuteMaintenanceInput!): MaintenanceExecutionResponse!
+  executeMaintenanceTask(taskId: ID!): MaintenanceExecutionResponse!
+  flushDepartmentFirewall(departmentId: ID!): Boolean!
 
   """Apply a network filter inmediatly"""
   flushFilter(filterId: ID!): Boolean!
+  forcePowerOff(id: String!): SuccessType!
+
+  """Force power off and restore snapshot (emergency recovery)"""
+  forceRestoreSnapshot(input: RestoreSnapshotInput!): SuccessType!
+
+  """Install a package on a virtual machine (legacy compatibility)"""
+  installPackage(machineId: ID!, packageName: String!): CommandResult!
+  killProcess(force: Boolean! = false, machineId: String!, pid: Int!): ProcessControlResult!
+  killProcesses(force: Boolean! = false, machineId: String!, pids: [Int!]!): [ProcessControlResult!]!
+  login(email: String!, password: String!): LoginResponse
+
+  """Install, remove, or update a package on a virtual machine"""
+  managePackage(input: PackageManagementInput!): PackageManagementResult!
   moveMachine(departmentId: String!, id: String!): Machine!
+
+  """Perform disk cleanup on a VM"""
+  performDiskCleanup(drive: String!, targets: [String!], vmId: ID!): DiskCleanupResult!
   powerOff(id: String!): SuccessType!
   powerOn(id: String!): SuccessType!
+  queueAllVMHealthChecks: HealthCheckRoundResult!
+  refreshDepartmentVMFilters(departmentId: ID!): Boolean!
 
   """Register uploaded ISO"""
   registerISO(filename: String!, os: String!, path: String!, size: Float!): ISO!
+  removeDepartmentFirewallTemplate(departmentId: ID!, templateFilterId: ID!): Boolean!
+
+  """Remove a filter reference"""
+  removeFilterReference(sourceFilterId: ID!, targetFilterId: ID!): Boolean!
+  removeFirewallTemplate(machineId: ID!, template: FirewallTemplate!): VMFirewallState!
 
   """Remove ISO file"""
   removeISO(isoId: String!): Boolean!
+
+  """Remove a package from a virtual machine (legacy compatibility)"""
+  removePackage(machineId: ID!, packageName: String!): CommandResult!
+  removeSimplifiedFirewallRule(machineId: ID!, ruleId: ID!): VMFirewallState!
+  resetMachine(id: String!): SuccessType!
+  restartMachine(id: String!): SuccessType!
+
+  """Restore a virtual machine to a snapshot"""
+  restoreSnapshot(input: RestoreSnapshotInput!): SuccessType!
+
+  """Run Windows Defender quick scan on a VM"""
+  runDefenderQuickScan(vmId: ID!): DefenderScanResult!
   setNetworkBridgeName(input: BridgeNameInput!): Boolean!
   setNetworkIp(input: NetworkIpInput!): Boolean!
   setNetworkIpRange(input: IpRangeInput!): Boolean!
@@ -394,15 +923,30 @@ type Mutation {
 
   """Sync ISOs with filesystem"""
   syncISOs: Boolean!
+  toggleDepartmentFirewallTemplate(departmentId: ID!, templateFilterId: ID!): Boolean!
   toggleDepartmentService(input: ToggleDepartmentServiceInput!): DepartmentServiceStatus!
+  toggleFirewallTemplate(machineId: ID!, template: FirewallTemplate!): VMFirewallState!
   toggleGlobalService(input: ToggleServiceInput!): GlobalServiceStatus!
+  toggleMaintenanceTask(enabled: Boolean!, id: ID!): MaintenanceTaskResponse!
   toggleVmService(input: ToggleVmServiceInput!): VmServiceStatus!
+  triggerHealthCheckRound: HealthCheckRoundResult!
+  unassignGenericFilterFromDepartment(departmentId: ID!, genericFilterId: ID!): Boolean!
+  unassignGenericFilterFromVM(genericFilterId: ID!, vmId: ID!): Boolean!
+  updateAppSettings(input: AppSettingsInput!): AppSettings!
   updateApplication(id: String!, input: CreateApplicationInputType!): ApplicationType!
+  updateDepartmentFirewallRule(input: UpdateFilterRuleInput!, ruleId: ID!): FWRule!
+  updateDepartmentName(input: UpdateDepartmentNameInput!): DepartmentType!
   updateFilter(id: ID!, input: UpdateFilterInput!): GenericFilter!
   updateFilterRule(id: ID!, input: UpdateFilterRuleInput!): FWRule!
   updateMachineHardware(input: UpdateMachineHardwareInput!): Machine!
+  updateMachineName(input: UpdateMachineNameInput!): Machine!
   updateMachineTemplate(id: String!, input: MachineTemplateInputType!): MachineTemplateType!
   updateMachineTemplateCategory(id: String!, input: MachineTemplateCategoryInputType!): MachineTemplateCategoryType!
+  updateMachineUser(input: UpdateMachineUserInput!): Machine!
+  updateMaintenanceTask(input: UpdateMaintenanceTaskInput!): MaintenanceTaskResponse!
+
+  """Update a package on a virtual machine (legacy compatibility)"""
+  updatePackage(machineId: ID!, packageName: String!): CommandResult!
   updateUser(id: String!, input: UpdateUserInputType!): UserType!
 
   """Validate ISO file integrity"""
@@ -460,9 +1004,86 @@ enum OrderByDirection {
   DESC
 }
 
+"""Available package management actions"""
+enum PackageAction {
+  INSTALL
+  REMOVE
+  UPDATE
+}
+
+"""Information about a software package"""
+type PackageInfo {
+  """Package description"""
+  description: String
+
+  """Whether the package is installed"""
+  installed: Boolean!
+
+  """Package name"""
+  name: String!
+
+  """Package publisher or vendor"""
+  publisher: String
+
+  """Package source or repository"""
+  source: String
+
+  """Package version"""
+  version: String!
+}
+
+"""Input for package management operations"""
+input PackageManagementInput {
+  """Action to perform on the package"""
+  action: PackageAction! = INSTALL
+
+  """ID of the target machine"""
+  machineId: ID! = ""
+
+  """Name of the package to manage"""
+  packageName: String! = ""
+}
+
+"""Result of a package management operation"""
+type PackageManagementResult {
+  """Error message if operation failed"""
+  error: String
+
+  """Human-readable message about the operation"""
+  message: String!
+
+  """List of packages (for list operations)"""
+  packages: [PackageInfo!]
+
+  """Standard error from the command"""
+  stderr: String
+
+  """Standard output from the command"""
+  stdout: String
+
+  """Whether the operation was successful"""
+  success: Boolean!
+}
+
 input PaginationInputType {
   skip: Int = 0
   take: Int = 20
+}
+
+"""Types of port configurations supported in advanced firewall rules"""
+enum PortInputType {
+  ALL
+  MULTIPLE
+  RANGE
+  SINGLE
+}
+
+type ProcessControlResult {
+  error: String
+  message: String!
+  pid: Int
+  processName: String
+  success: Boolean!
 }
 
 type Query {
@@ -473,57 +1094,264 @@ type Query {
 
   """Get all available ISOs"""
   availableISOs: [ISO!]!
+  backgroundHealthServiceStatus: BackgroundHealthServiceStatus!
+
+  """Check for application updates on a VM"""
+  checkApplicationUpdates(vmId: ID!): ApplicationUpdates!
 
   """Check if ISO is available for specific OS"""
   checkISOStatus(os: String!): ISOStatus!
 
   """Check availability for multiple OS types"""
   checkMultipleOSAvailability(osList: [String!]!): [ISOAvailabilityMap!]!
+
+  """Check resource optimization opportunities for a VM"""
+  checkResourceOptimization(evaluationWindowDays: Float, vmId: ID!): ResourceOptimizationInfo!
   checkSetupStatus: DyummyType!
 
   """Check overall system readiness"""
   checkSystemReadiness: SystemReadiness!
+
+  """Check disk space status for a VM"""
+  checkVMDiskSpace(criticalThreshold: Float, vmId: ID!, warningThreshold: Float): DiskSpaceInfo!
+
+  """Check Windows Defender status for a VM"""
+  checkWindowsDefender(vmId: ID!): WindowsDefenderStatus!
+
+  """Check Windows Updates status for a VM"""
+  checkWindowsUpdates(vmId: ID!): WindowsUpdateInfo!
+
+  """Get the current snapshot of a virtual machine"""
+  currentSnapshot(machineId: String!): Snapshot
   currentUser: UserType
   department(id: String!): DepartmentType
   departments: [DepartmentType!]!
+  dueMaintenanceTasks: [MaintenanceTask!]!
   findDepartmentByName(name: String!): DepartmentType
+  getAppSettings: AppSettings!
+  getAvailableFirewallTemplates: [FirewallTemplateInfo!]!
+  getAvailableTemplatesForDepartment(departmentId: ID!): [GenericFilter!]!
+  getDepartmentAssignedGenericFilters(departmentId: ID!): [GenericFilter!]!
+  getDepartmentFirewallRules(departmentId: ID!): [FWRule!]!
+  getDepartmentFirewallState(departmentId: ID!): DepartmentFirewallState!
   getDepartmentServiceStatus(departmentId: ID!, serviceId: ID): [DepartmentServiceStatus!]!
   getFilter(id: ID!): GenericFilter
+  getFirewallTemplateInfo(template: FirewallTemplate!): FirewallTemplateInfo
+  getGenericFilters: [GenericFilter!]!
   getGlobalServiceStatus(serviceId: ID): [GlobalServiceStatus!]!
   getGraphics: [GPU!]!
+  getLatestVMHealth(machineId: ID!): VMHealthSnapshotType
   getServiceStatusSummary: [ServiceStatusSummary!]!
+  getSimplifiedFirewallRules(machineId: ID!): [SimplifiedFirewallRule!]!
 
   """Get supported OS types"""
   getSupportedOSTypes: [String!]!
   getSystemResources: SystemResources!
+
+  """Get installed applications inventory for a VM"""
+  getVMApplicationInventory(vmId: ID!): ApplicationInventory!
+  getVMAssignedGenericFilters(vmId: ID!): [AssignedGenericFilter!]!
+  getVMFirewallState(machineId: ID!): VMFirewallState!
+
+  """Get comprehensive health check status for a VM"""
+  getVMHealthStatus(vmId: ID!): HealthCheckStatus!
+
+  """
+  Get automated recommendations for VM optimization, security, and maintenance based on system analysis. Returns up to 20 recommendations by default to prevent over-fetch. Use pagination for more results.
+  """
+  getVMRecommendations(
+    """
+    Optional filters to limit recommendations by type, date range, or count
+    """
+    filter: RecommendationFilterInput
+
+    """
+    If true, regenerate recommendations from latest health data instead of returning cached results
+    """
+    refresh: Boolean = false
+
+    """ID of the virtual machine to get recommendations for"""
+    vmId: ID!
+  ): [VMRecommendationType!]!
   getVmServiceStatus(serviceId: ID, vmId: ID!): [VmServiceStatus!]!
+
+  """Get Windows Update history for a VM"""
+  getWindowsUpdateHistory(days: Float, vmId: ID!): WindowsUpdateHistory!
   graphicConnection(id: String!): GraphicConfigurationType
+  healthCheckQueueStats: QueueStatsType!
+  healthQueueStatistics: QueueStatistics!
+  latestVMHealthSnapshot(machineId: ID!): VMHealthSnapshotType
   listFilterRules(filterId: ID): [FWRule!]!
   listFilters(departmentId: ID, vmId: ID): [GenericFilter!]!
-  listServices: [ServiceDefinition!]!
-  login(email: String!, password: String!): UserToken!
+
+  """List all installed packages on a virtual machine"""
+  listInstalledPackages(machineId: ID!): [PackageInfo!]!
+  listSecurityServices: [ServiceDefinition!]!
+
+  """List all services running on a virtual machine"""
+  listServices(machineId: String!): [ServiceInfo!]!
   machine(id: String!): Machine
+
+  """List all snapshots for a virtual machine"""
+  machineSnapshots(machineId: String!): SnapshotListResult!
   machineTemplate(id: String!): MachineTemplateType
   machineTemplateCategories: [MachineTemplateCategoryType!]!
   machineTemplateCategory(id: String!): MachineTemplateCategoryType
   machineTemplates(orderBy: MachineTemplateOrderBy, pagination: PaginationInputType): [MachineTemplateType!]!
   machines(orderBy: MachineOrderBy, pagination: PaginationInputType): [Machine!]!
+  maintenanceHistory(limit: Float = 50, machineId: ID!, status: MaintenanceStatus, taskType: MaintenanceTaskType): [MaintenanceHistory!]!
+  maintenanceStats(machineId: ID!): MaintenanceStats!
+  maintenanceTask(id: ID!): MaintenanceTask
+  maintenanceTasks(machineId: ID!, status: String): [MaintenanceTask!]!
   network(name: String!): Network!
   networks: [Network!]!
+
+  """Run a specific health check on a VM"""
+  runHealthCheck(checkName: HealthCheckName!, vmId: ID!): GenericHealthCheckResponse!
+
+  """Search for available packages on a virtual machine"""
+  searchPackages(machineId: ID!, query: String!): [PackageInfo!]!
 
   """Get current socket connection statistics for all VMs"""
   socketConnectionStats: SocketConnectionStats
   user(id: String!): UserType!
   users(orderBy: UserOrderByInputType, pagination: PaginationInputType): [UserType!]!
+  vmHealthCheckQueue(limit: Int = 20, machineId: ID, offset: Int = 0, status: String): [VMHealthCheckQueueType!]!
+  vmHealthHistory(limit: Int = 20, machineId: ID!, offset: Int = 0): [VMHealthSnapshotType!]!
+  vmHealthStats(machineId: ID!): VMHealthStatsType!
 
   """Get comprehensive diagnostics for VM socket connection issues"""
   vmSocketDiagnostics(vmId: String!): VmDiagnostics!
+}
+
+type QueueStatistics {
+  activeChecks: Int!
+  completedToday: Int!
+  failedToday: Int!
+  pendingTasks: Int!
+  totalQueues: Int!
+}
+
+type QueueStatsType {
+  completed: Int!
+  failed: Int!
+  pending: Int!
+  retryScheduled: Int!
+  running: Int!
+  totalToday: Int!
+}
+
+"""Filters for querying VM recommendations with specific criteria"""
+input RecommendationFilterInput {
+  """Only return recommendations created after this date/time"""
+  createdAfter: DateTimeISO
+
+  """Only return recommendations created before this date/time"""
+  createdBefore: DateTimeISO
+
+  """
+  Maximum number of recommendations to return (for pagination, defaults to 20, max 100)
+  """
+  limit: Float
+
+  """
+  Filter by specific recommendation types (e.g., only security or storage recommendations)
+  """
+  types: [RecommendationType!]
+}
+
+"""
+Types of VM recommendations that can be generated by the system based on health checks and system analysis
+"""
+enum RecommendationType {
+  """
+  Generated when application updates, especially security updates, are available
+  """
+  APP_UPDATE_AVAILABLE
+
+  """
+  Generated when Windows Defender antivirus or real-time protection is disabled
+  """
+  DEFENDER_DISABLED
+
+  """
+  Generated when Windows Defender has detected active threats or quarantined items
+  """
+  DEFENDER_THREAT
+
+  """
+  Generated when disk space usage exceeds warning thresholds (typically 80-90%)
+  """
+  DISK_SPACE_LOW
+
+  """
+  Generated when specific applications are consuming excessive CPU resources
+  """
+  HIGH_CPU_APP
+
+  """
+  Generated when specific applications are consuming excessive memory resources
+  """
+  HIGH_RAM_APP
+
+  """Generated when critical or security Windows updates are available"""
+  OS_UPDATE_AVAILABLE
+
+  """
+  Generated for miscellaneous recommendations that do not fit other categories
+  """
+  OTHER
+
+  """
+  Generated when VM resources (CPU/RAM) are consistently underutilized over time
+  """
+  OVER_PROVISIONED
+
+  """
+  Generated when firewall rules are blocking ports that applications are trying to use
+  """
+  PORT_BLOCKED
+
+  """
+  Generated when VM resources are consistently over-utilized and affecting performance
+  """
+  UNDER_PROVISIONED
+}
+
+type ResourceOptimizationInfo {
+  error: String
+  evaluationWindowDays: Float
+  overallStatus: HealthCheckSeverity!
+  recommendations: [ResourceRecommendation!]!
+  success: Boolean!
+  timestamp: DateTimeISO!
+  vmId: ID!
+}
+
+type ResourceRecommendation {
+  currentValue: Float!
+  potentialSavingsPercent: Float
+  reason: String!
+  recommendedValue: Float!
+  resource: String!
+  unit: String!
+}
+
+input RestoreSnapshotInput {
+  machineId: String!
+  snapshotName: String!
 }
 
 """Service action type (USE for outbound, PROVIDE for inbound)"""
 enum ServiceAction {
   PROVIDE
   USE
+}
+
+input ServiceControlInput {
+  action: VMServiceAction!
+  machineId: String!
+  serviceName: String!
 }
 
 type ServiceDefinition {
@@ -549,6 +1377,15 @@ type ServiceDefinition {
   riskLevel: ServiceRiskLevel!
 }
 
+type ServiceInfo {
+  description: String
+  displayName: String
+  name: String!
+  pid: Float
+  startType: ServiceStartType
+  status: ServiceStatus!
+}
+
 type ServicePort {
   """Ending port number"""
   portEnd: Float!
@@ -567,6 +1404,22 @@ enum ServiceRiskLevel {
   MEDIUM
 }
 
+"""The startup type of a system service"""
+enum ServiceStartType {
+  AUTOMATIC
+  DISABLED
+  MANUAL
+  UNKNOWN
+}
+
+"""The current status of a system service"""
+enum ServiceStatus {
+  DISABLED
+  RUNNING
+  STOPPED
+  UNKNOWN
+}
+
 type ServiceStatusSummary {
   """Number of VMs with this service enabled"""
   enabledVms: Float!
@@ -582,6 +1435,61 @@ type ServiceStatusSummary {
 
   """Total number of VMs"""
   totalVms: Float!
+}
+
+type ServiceStatusType {
+  error: String
+  message: String!
+  service: ServiceInfo
+  success: Boolean!
+}
+
+type SimplifiedFirewallRule {
+  """Firewall action (accept, drop, reject)"""
+  action: String!
+
+  """Rule description"""
+  description: String
+
+  """Traffic direction (in, out, inout)"""
+  direction: String!
+
+  """Unique rule identifier"""
+  id: ID
+
+  """Port specification (e.g., "80", "80-90", "all")"""
+  port: String!
+
+  """Network protocol (tcp, udp, icmp)"""
+  protocol: String!
+
+  """Rule sources (templates or custom)"""
+  sources: [String!]
+}
+
+type Snapshot {
+  createdAt: DateTimeISO!
+  description: String
+  hasMetadata: Boolean!
+  id: ID!
+  isCurrent: Boolean!
+  name: String!
+  parentId: String
+  state: String!
+  vmId: String!
+  vmName: String!
+}
+
+type SnapshotListResult {
+  message: String!
+  snapshots: [Snapshot!]!
+  success: Boolean!
+}
+
+type SnapshotResult {
+  message: String!
+  snapshot: Snapshot
+  success: Boolean!
 }
 
 type SocketConnectionStats {
@@ -665,6 +1573,11 @@ input ToggleVmServiceInput {
   vmId: ID!
 }
 
+input UpdateDepartmentNameInput {
+  id: ID! = ""
+  name: String! = ""
+}
+
 input UpdateFilterInput {
   chain: String
   description: String
@@ -698,12 +1611,42 @@ input UpdateMachineHardwareInput {
   ramGB: Int
 }
 
+input UpdateMachineNameInput {
+  id: ID! = ""
+
+  """New name for the machine"""
+  name: String! = ""
+}
+
+input UpdateMachineUserInput {
+  id: ID! = ""
+
+  """User ID to assign to the machine. Set to null to unassign."""
+  userId: String = null
+}
+
+input UpdateMaintenanceTaskInput {
+  cronSchedule: String
+  description: String
+  id: ID!
+  isEnabled: Boolean
+  isRecurring: Boolean
+  name: String
+  parameters: JSONObject
+  runAt: DateTimeISO
+}
+
 input UpdateUserInputType {
-  firstName: String = ""
-  lastName: String = ""
-  password: String = ""
-  passwordConfirmation: String = ""
-  role: UserRole = USER
+  """User avatar image path"""
+  avatar: String
+
+  """Current password required when updating password"""
+  currentPassword: String
+  firstName: String
+  lastName: String
+  password: String
+  passwordConfirmation: String
+  role: UserRole
 }
 
 """The field to order users by"""
@@ -725,16 +1668,14 @@ input UserOrderByInputType {
 """The basic roles of users"""
 enum UserRole {
   ADMIN
+  SUPER_ADMIN
   USER
-}
-
-"""Token used to log in"""
-type UserToken {
-  token: String!
 }
 
 """User model"""
 type UserType {
+  """User avatar image path"""
+  avatar: String
   createdAt: DateTimeISO!
   email: String!
   firstName: String!
@@ -744,6 +1685,111 @@ type UserType {
   """User namespace for real-time events"""
   namespace: String
   role: String!
+}
+
+type VMFirewallState {
+  """Applied firewall templates"""
+  appliedTemplates: [String!]!
+
+  """Custom firewall rules"""
+  customRules: [SimplifiedFirewallRule!]!
+
+  """All effective firewall rules"""
+  effectiveRules: [SimplifiedFirewallRule!]!
+
+  """Last sync with hypervisor"""
+  lastSync: DateTimeISO
+}
+
+type VMHealthCheckQueueType {
+  attempts: Int!
+  checkType: String!
+  completedAt: DateTimeISO
+  createdAt: DateTimeISO!
+  error: String
+  executedAt: DateTimeISO
+  executionTimeMs: Int
+  id: ID!
+  machineId: ID!
+  maxAttempts: Int!
+  payload: JSONObject
+  priority: String!
+  result: JSONObject
+  scheduledFor: DateTimeISO!
+  status: String!
+  updatedAt: DateTimeISO!
+}
+
+type VMHealthSnapshotType {
+  applicationInventory: JSONObject
+  checksCompleted: Int!
+  checksFailed: Int!
+  createdAt: DateTimeISO!
+  customCheckResults: JSONObject
+  defenderStatus: JSONObject
+  diskSpaceInfo: JSONObject
+  errorSummary: String
+  executionTimeMs: Int
+  id: ID!
+  machineId: ID!
+  osType: String
+  overallStatus: String!
+  resourceOptInfo: JSONObject
+  snapshotDate: DateTimeISO!
+  updatedAt: DateTimeISO!
+  windowsUpdateInfo: JSONObject
+}
+
+type VMHealthStatsType {
+  errorSnapshots: Int!
+  healthySnapshots: Int!
+  lastHealthCheck: DateTimeISO
+  lastHealthStatus: String
+  totalSnapshots: Int!
+  warningSnapshots: Int!
+}
+
+"""
+Represents an automated recommendation for VM optimization, security, or maintenance
+"""
+type VMRecommendationType {
+  """Suggested action to address the recommendation"""
+  actionText: String!
+
+  """Timestamp when this recommendation was generated"""
+  createdAt: DateTimeISO!
+
+  """
+  Additional structured data specific to this recommendation type (metrics, thresholds, affected resources)
+  """
+  data: JSONObject
+
+  """Unique identifier for the recommendation"""
+  id: ID!
+
+  """ID of the VM this recommendation applies to"""
+  machineId: ID!
+
+  """
+  ID of the health snapshot that generated this recommendation, if applicable
+  """
+  snapshotId: ID
+
+  """Human-readable description of the issue or opportunity identified"""
+  text: String!
+
+  """Category of recommendation (storage, performance, security, etc.)"""
+  type: RecommendationType!
+}
+
+"""Actions that can be performed on a VM service"""
+enum VMServiceAction {
+  DISABLE
+  ENABLE
+  RESTART
+  START
+  STATUS
+  STOP
 }
 
 type VmConnectionInfo {
@@ -789,4 +1835,61 @@ type VmServiceStatus {
 
   """Name of the VM"""
   vmName: String!
+}
+
+type WindowsDefenderStatus {
+  antispywareEnabled: Boolean!
+  antivirusEnabled: Boolean!
+  antivirusSignatureLastUpdated: DateTimeISO!
+  antivirusSignatureVersion: String!
+  error: String
+  lastFullScanTime: DateTimeISO
+  lastQuickScanTime: DateTimeISO
+  overallStatus: HealthCheckSeverity!
+  realTimeProtectionEnabled: Boolean!
+  success: Boolean!
+  threatsDetected: Int!
+  threatsQuarantined: Int!
+  timestamp: DateTimeISO!
+  vmId: ID!
+}
+
+type WindowsUpdateHistory {
+  daysIncluded: Float
+  error: String
+  success: Boolean!
+  timestamp: DateTimeISO!
+  totalCount: Int!
+  updates: [WindowsUpdateHistoryItem!]!
+  vmId: ID!
+}
+
+type WindowsUpdateHistoryItem {
+  description: String
+  installDate: DateTimeISO!
+  kbArticle: String
+  resultCode: String
+  status: String!
+  title: String!
+}
+
+type WindowsUpdateInfo {
+  criticalUpdatesCount: Int!
+  error: String
+  lastCheckTime: DateTimeISO
+  lastInstallTime: DateTimeISO
+  pendingUpdates: [WindowsUpdateItem!]!
+  pendingUpdatesCount: Int!
+  securityUpdatesCount: Int!
+  success: Boolean!
+  timestamp: DateTimeISO!
+  vmId: ID!
+}
+
+type WindowsUpdateItem {
+  description: String
+  kbArticle: String
+  severity: String!
+  sizeInMB: Float!
+  title: String!
 }

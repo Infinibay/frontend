@@ -16,7 +16,9 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
+  /** A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format. */
   DateTimeISO: { input: string; output: string; }
+  /** The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
   JSONObject: { input: { [key: string]: any }; output: { [key: string]: any }; }
 };
 
@@ -124,6 +126,14 @@ export type ApplyFirewallTemplateInput = {
   machineId: Scalars['ID']['input'];
   /** Firewall template to apply */
   template: FirewallTemplate;
+};
+
+export type AssignedGenericFilter = {
+  __typename?: 'AssignedGenericFilter';
+  filter: GenericFilter;
+  inheritedFrom: Maybe<Scalars['String']['output']>;
+  inheritedFromId: Maybe<Scalars['ID']['output']>;
+  isInherited: Scalars['Boolean']['output'];
 };
 
 export type BackgroundHealthServiceStatus = {
@@ -804,6 +814,8 @@ export type Mutation = {
   addFilterReference: Scalars['Boolean']['output'];
   applyDepartmentFirewallTemplate: Scalars['Boolean']['output'];
   applyFirewallTemplate: VmFirewallState;
+  assignGenericFilterToDepartment: Scalars['Boolean']['output'];
+  assignGenericFilterToVM: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
   /** Control a service on a virtual machine */
@@ -892,6 +904,8 @@ export type Mutation = {
   toggleMaintenanceTask: MaintenanceTaskResponse;
   toggleVmService: VmServiceStatus;
   triggerHealthCheckRound: HealthCheckRoundResult;
+  unassignGenericFilterFromDepartment: Scalars['Boolean']['output'];
+  unassignGenericFilterFromVM: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
   updateDepartmentFirewallRule: FwRule;
@@ -925,6 +939,18 @@ export type MutationApplyDepartmentFirewallTemplateArgs = {
 
 export type MutationApplyFirewallTemplateArgs = {
   input: ApplyFirewallTemplateInput;
+};
+
+
+export type MutationAssignGenericFilterToDepartmentArgs = {
+  departmentId: Scalars['ID']['input'];
+  genericFilterId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignGenericFilterToVmArgs = {
+  genericFilterId: Scalars['ID']['input'];
+  vmId: Scalars['ID']['input'];
 };
 
 
@@ -1287,6 +1313,18 @@ export type MutationToggleVmServiceArgs = {
 };
 
 
+export type MutationUnassignGenericFilterFromDepartmentArgs = {
+  departmentId: Scalars['ID']['input'];
+  genericFilterId: Scalars['ID']['input'];
+};
+
+
+export type MutationUnassignGenericFilterFromVmArgs = {
+  genericFilterId: Scalars['ID']['input'];
+  vmId: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateAppSettingsArgs = {
   input: AppSettingsInput;
 };
@@ -1534,11 +1572,13 @@ export type Query = {
   getAppSettings: AppSettings;
   getAvailableFirewallTemplates: Array<FirewallTemplateInfo>;
   getAvailableTemplatesForDepartment: Array<GenericFilter>;
+  getDepartmentAssignedGenericFilters: Array<GenericFilter>;
   getDepartmentFirewallRules: Array<FwRule>;
   getDepartmentFirewallState: DepartmentFirewallState;
   getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
   getFilter: Maybe<GenericFilter>;
   getFirewallTemplateInfo: Maybe<FirewallTemplateInfo>;
+  getGenericFilters: Array<GenericFilter>;
   getGlobalServiceStatus: Array<GlobalServiceStatus>;
   getGraphics: Array<Gpu>;
   getLatestVMHealth: Maybe<VmHealthSnapshotType>;
@@ -1549,6 +1589,7 @@ export type Query = {
   getSystemResources: SystemResources;
   /** Get installed applications inventory for a VM */
   getVMApplicationInventory: ApplicationInventory;
+  getVMAssignedGenericFilters: Array<AssignedGenericFilter>;
   getVMFirewallState: VmFirewallState;
   /** Get comprehensive health check status for a VM */
   getVMHealthStatus: HealthCheckStatus;
@@ -1661,6 +1702,11 @@ export type QueryGetAvailableTemplatesForDepartmentArgs = {
 };
 
 
+export type QueryGetDepartmentAssignedGenericFiltersArgs = {
+  departmentId: Scalars['ID']['input'];
+};
+
+
 export type QueryGetDepartmentFirewallRulesArgs = {
   departmentId: Scalars['ID']['input'];
 };
@@ -1703,6 +1749,11 @@ export type QueryGetSimplifiedFirewallRulesArgs = {
 
 
 export type QueryGetVmApplicationInventoryArgs = {
+  vmId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetVmAssignedGenericFiltersArgs = {
   vmId: Scalars['ID']['input'];
 };
 
@@ -2796,6 +2847,38 @@ export type PerformDiskCleanupMutationVariables = Exact<{
 
 export type PerformDiskCleanupMutation = { __typename?: 'Mutation', performDiskCleanup: { __typename?: 'DiskCleanupResult', success: boolean, error: string | null, vmId: string, drive: string, spaceClearedMB: number, filesDeleted: number, targetsProcessed: Array<string>, timestamp: string } };
 
+export type AssignGenericFilterToVmMutationVariables = Exact<{
+  vmId: Scalars['ID']['input'];
+  genericFilterId: Scalars['ID']['input'];
+}>;
+
+
+export type AssignGenericFilterToVmMutation = { __typename?: 'Mutation', assignGenericFilterToVM: boolean };
+
+export type UnassignGenericFilterFromVmMutationVariables = Exact<{
+  vmId: Scalars['ID']['input'];
+  genericFilterId: Scalars['ID']['input'];
+}>;
+
+
+export type UnassignGenericFilterFromVmMutation = { __typename?: 'Mutation', unassignGenericFilterFromVM: boolean };
+
+export type AssignGenericFilterToDepartmentMutationVariables = Exact<{
+  departmentId: Scalars['ID']['input'];
+  genericFilterId: Scalars['ID']['input'];
+}>;
+
+
+export type AssignGenericFilterToDepartmentMutation = { __typename?: 'Mutation', assignGenericFilterToDepartment: boolean };
+
+export type UnassignGenericFilterFromDepartmentMutationVariables = Exact<{
+  departmentId: Scalars['ID']['input'];
+  genericFilterId: Scalars['ID']['input'];
+}>;
+
+
+export type UnassignGenericFilterFromDepartmentMutation = { __typename?: 'Mutation', unassignGenericFilterFromDepartment: boolean };
+
 export type ApplyFirewallTemplateMutationVariables = Exact<{
   input: ApplyFirewallTemplateInput;
 }>;
@@ -3185,6 +3268,25 @@ export type GetServiceStatusSummaryQueryVariables = Exact<{ [key: string]: never
 
 
 export type GetServiceStatusSummaryQuery = { __typename?: 'Query', getServiceStatusSummary: Array<{ __typename?: 'ServiceStatusSummary', serviceId: string, serviceName: string, totalVms: number, runningVms: number, enabledVms: number }> };
+
+export type GetGenericFiltersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetGenericFiltersQuery = { __typename?: 'Query', getGenericFilters: Array<{ __typename?: 'GenericFilter', id: string, name: string, description: string | null, type: FilterType, references: Array<string>, createdAt: string, updatedAt: string, rules: Array<{ __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion: string | null, srcMacAddr: string | null, srcIpAddr: string | null, srcIpMask: string | null, dstIpAddr: string | null, dstIpMask: string | null, srcPortStart: number | null, srcPortEnd: number | null, dstPortStart: number | null, dstPortEnd: number | null, state: { [key: string]: any } | null, comment: string | null, createdAt: string | null, updatedAt: string | null }> | null }> };
+
+export type GetVmAssignedGenericFiltersQueryVariables = Exact<{
+  vmId: Scalars['ID']['input'];
+}>;
+
+
+export type GetVmAssignedGenericFiltersQuery = { __typename?: 'Query', getVMAssignedGenericFilters: Array<{ __typename?: 'AssignedGenericFilter', isInherited: boolean, inheritedFrom: string | null, inheritedFromId: string | null, filter: { __typename?: 'GenericFilter', id: string, name: string, description: string | null, type: FilterType, references: Array<string>, createdAt: string, updatedAt: string, rules: Array<{ __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion: string | null, srcMacAddr: string | null, srcIpAddr: string | null, srcIpMask: string | null, dstIpAddr: string | null, dstIpMask: string | null, srcPortStart: number | null, srcPortEnd: number | null, dstPortStart: number | null, dstPortEnd: number | null, state: { [key: string]: any } | null, comment: string | null, createdAt: string | null, updatedAt: string | null }> | null } }> };
+
+export type GetDepartmentAssignedGenericFiltersQueryVariables = Exact<{
+  departmentId: Scalars['ID']['input'];
+}>;
+
+
+export type GetDepartmentAssignedGenericFiltersQuery = { __typename?: 'Query', getDepartmentAssignedGenericFilters: Array<{ __typename?: 'GenericFilter', id: string, name: string, description: string | null, type: FilterType, references: Array<string>, createdAt: string, updatedAt: string, rules: Array<{ __typename?: 'FWRule', id: string, protocol: string, direction: string, action: string, priority: number, ipVersion: string | null, srcMacAddr: string | null, srcIpAddr: string | null, srcIpMask: string | null, dstIpAddr: string | null, dstIpMask: string | null, srcPortStart: number | null, srcPortEnd: number | null, dstPortStart: number | null, dstPortEnd: number | null, state: { [key: string]: any } | null, comment: string | null, createdAt: string | null, updatedAt: string | null }> | null }> };
 
 export type VmDetailedInfoQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -4972,6 +5074,140 @@ export function usePerformDiskCleanupMutation(baseOptions?: ApolloReactHooks.Mut
 export type PerformDiskCleanupMutationHookResult = ReturnType<typeof usePerformDiskCleanupMutation>;
 export type PerformDiskCleanupMutationResult = ApolloReactCommon.MutationResult<PerformDiskCleanupMutation>;
 export type PerformDiskCleanupMutationOptions = ApolloReactCommon.BaseMutationOptions<PerformDiskCleanupMutation, PerformDiskCleanupMutationVariables>;
+export const AssignGenericFilterToVmDocument = gql`
+    mutation assignGenericFilterToVM($vmId: ID!, $genericFilterId: ID!) {
+  assignGenericFilterToVM(vmId: $vmId, genericFilterId: $genericFilterId)
+}
+    `;
+export type AssignGenericFilterToVmMutationFn = ApolloReactCommon.MutationFunction<AssignGenericFilterToVmMutation, AssignGenericFilterToVmMutationVariables>;
+
+/**
+ * __useAssignGenericFilterToVmMutation__
+ *
+ * To run a mutation, you first call `useAssignGenericFilterToVmMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAssignGenericFilterToVmMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [assignGenericFilterToVmMutation, { data, loading, error }] = useAssignGenericFilterToVmMutation({
+ *   variables: {
+ *      vmId: // value for 'vmId'
+ *      genericFilterId: // value for 'genericFilterId'
+ *   },
+ * });
+ */
+export function useAssignGenericFilterToVmMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssignGenericFilterToVmMutation, AssignGenericFilterToVmMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AssignGenericFilterToVmMutation, AssignGenericFilterToVmMutationVariables>(AssignGenericFilterToVmDocument, options);
+      }
+export type AssignGenericFilterToVmMutationHookResult = ReturnType<typeof useAssignGenericFilterToVmMutation>;
+export type AssignGenericFilterToVmMutationResult = ApolloReactCommon.MutationResult<AssignGenericFilterToVmMutation>;
+export type AssignGenericFilterToVmMutationOptions = ApolloReactCommon.BaseMutationOptions<AssignGenericFilterToVmMutation, AssignGenericFilterToVmMutationVariables>;
+export const UnassignGenericFilterFromVmDocument = gql`
+    mutation unassignGenericFilterFromVM($vmId: ID!, $genericFilterId: ID!) {
+  unassignGenericFilterFromVM(vmId: $vmId, genericFilterId: $genericFilterId)
+}
+    `;
+export type UnassignGenericFilterFromVmMutationFn = ApolloReactCommon.MutationFunction<UnassignGenericFilterFromVmMutation, UnassignGenericFilterFromVmMutationVariables>;
+
+/**
+ * __useUnassignGenericFilterFromVmMutation__
+ *
+ * To run a mutation, you first call `useUnassignGenericFilterFromVmMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnassignGenericFilterFromVmMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unassignGenericFilterFromVmMutation, { data, loading, error }] = useUnassignGenericFilterFromVmMutation({
+ *   variables: {
+ *      vmId: // value for 'vmId'
+ *      genericFilterId: // value for 'genericFilterId'
+ *   },
+ * });
+ */
+export function useUnassignGenericFilterFromVmMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UnassignGenericFilterFromVmMutation, UnassignGenericFilterFromVmMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UnassignGenericFilterFromVmMutation, UnassignGenericFilterFromVmMutationVariables>(UnassignGenericFilterFromVmDocument, options);
+      }
+export type UnassignGenericFilterFromVmMutationHookResult = ReturnType<typeof useUnassignGenericFilterFromVmMutation>;
+export type UnassignGenericFilterFromVmMutationResult = ApolloReactCommon.MutationResult<UnassignGenericFilterFromVmMutation>;
+export type UnassignGenericFilterFromVmMutationOptions = ApolloReactCommon.BaseMutationOptions<UnassignGenericFilterFromVmMutation, UnassignGenericFilterFromVmMutationVariables>;
+export const AssignGenericFilterToDepartmentDocument = gql`
+    mutation assignGenericFilterToDepartment($departmentId: ID!, $genericFilterId: ID!) {
+  assignGenericFilterToDepartment(
+    departmentId: $departmentId
+    genericFilterId: $genericFilterId
+  )
+}
+    `;
+export type AssignGenericFilterToDepartmentMutationFn = ApolloReactCommon.MutationFunction<AssignGenericFilterToDepartmentMutation, AssignGenericFilterToDepartmentMutationVariables>;
+
+/**
+ * __useAssignGenericFilterToDepartmentMutation__
+ *
+ * To run a mutation, you first call `useAssignGenericFilterToDepartmentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAssignGenericFilterToDepartmentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [assignGenericFilterToDepartmentMutation, { data, loading, error }] = useAssignGenericFilterToDepartmentMutation({
+ *   variables: {
+ *      departmentId: // value for 'departmentId'
+ *      genericFilterId: // value for 'genericFilterId'
+ *   },
+ * });
+ */
+export function useAssignGenericFilterToDepartmentMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssignGenericFilterToDepartmentMutation, AssignGenericFilterToDepartmentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AssignGenericFilterToDepartmentMutation, AssignGenericFilterToDepartmentMutationVariables>(AssignGenericFilterToDepartmentDocument, options);
+      }
+export type AssignGenericFilterToDepartmentMutationHookResult = ReturnType<typeof useAssignGenericFilterToDepartmentMutation>;
+export type AssignGenericFilterToDepartmentMutationResult = ApolloReactCommon.MutationResult<AssignGenericFilterToDepartmentMutation>;
+export type AssignGenericFilterToDepartmentMutationOptions = ApolloReactCommon.BaseMutationOptions<AssignGenericFilterToDepartmentMutation, AssignGenericFilterToDepartmentMutationVariables>;
+export const UnassignGenericFilterFromDepartmentDocument = gql`
+    mutation unassignGenericFilterFromDepartment($departmentId: ID!, $genericFilterId: ID!) {
+  unassignGenericFilterFromDepartment(
+    departmentId: $departmentId
+    genericFilterId: $genericFilterId
+  )
+}
+    `;
+export type UnassignGenericFilterFromDepartmentMutationFn = ApolloReactCommon.MutationFunction<UnassignGenericFilterFromDepartmentMutation, UnassignGenericFilterFromDepartmentMutationVariables>;
+
+/**
+ * __useUnassignGenericFilterFromDepartmentMutation__
+ *
+ * To run a mutation, you first call `useUnassignGenericFilterFromDepartmentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnassignGenericFilterFromDepartmentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unassignGenericFilterFromDepartmentMutation, { data, loading, error }] = useUnassignGenericFilterFromDepartmentMutation({
+ *   variables: {
+ *      departmentId: // value for 'departmentId'
+ *      genericFilterId: // value for 'genericFilterId'
+ *   },
+ * });
+ */
+export function useUnassignGenericFilterFromDepartmentMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UnassignGenericFilterFromDepartmentMutation, UnassignGenericFilterFromDepartmentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UnassignGenericFilterFromDepartmentMutation, UnassignGenericFilterFromDepartmentMutationVariables>(UnassignGenericFilterFromDepartmentDocument, options);
+      }
+export type UnassignGenericFilterFromDepartmentMutationHookResult = ReturnType<typeof useUnassignGenericFilterFromDepartmentMutation>;
+export type UnassignGenericFilterFromDepartmentMutationResult = ApolloReactCommon.MutationResult<UnassignGenericFilterFromDepartmentMutation>;
+export type UnassignGenericFilterFromDepartmentMutationOptions = ApolloReactCommon.BaseMutationOptions<UnassignGenericFilterFromDepartmentMutation, UnassignGenericFilterFromDepartmentMutationVariables>;
 export const ApplyFirewallTemplateDocument = gql`
     mutation applyFirewallTemplate($input: ApplyFirewallTemplateInput!) {
   applyFirewallTemplate(input: $input) {
@@ -7667,6 +7903,220 @@ export type GetServiceStatusSummarySuspenseQueryHookResult = ReturnType<typeof u
 export type GetServiceStatusSummaryQueryResult = ApolloReactCommon.QueryResult<GetServiceStatusSummaryQuery, GetServiceStatusSummaryQueryVariables>;
 export function refetchGetServiceStatusSummaryQuery(variables?: GetServiceStatusSummaryQueryVariables) {
       return { query: GetServiceStatusSummaryDocument, variables: variables }
+    }
+export const GetGenericFiltersDocument = gql`
+    query getGenericFilters {
+  getGenericFilters {
+    id
+    name
+    description
+    type
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetGenericFiltersQuery__
+ *
+ * To run a query within a React component, call `useGetGenericFiltersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetGenericFiltersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetGenericFiltersQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetGenericFiltersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetGenericFiltersQuery, GetGenericFiltersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetGenericFiltersQuery, GetGenericFiltersQueryVariables>(GetGenericFiltersDocument, options);
+      }
+export function useGetGenericFiltersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetGenericFiltersQuery, GetGenericFiltersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetGenericFiltersQuery, GetGenericFiltersQueryVariables>(GetGenericFiltersDocument, options);
+        }
+export function useGetGenericFiltersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetGenericFiltersQuery, GetGenericFiltersQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetGenericFiltersQuery, GetGenericFiltersQueryVariables>(GetGenericFiltersDocument, options);
+        }
+export type GetGenericFiltersQueryHookResult = ReturnType<typeof useGetGenericFiltersQuery>;
+export type GetGenericFiltersLazyQueryHookResult = ReturnType<typeof useGetGenericFiltersLazyQuery>;
+export type GetGenericFiltersSuspenseQueryHookResult = ReturnType<typeof useGetGenericFiltersSuspenseQuery>;
+export type GetGenericFiltersQueryResult = ApolloReactCommon.QueryResult<GetGenericFiltersQuery, GetGenericFiltersQueryVariables>;
+export function refetchGetGenericFiltersQuery(variables?: GetGenericFiltersQueryVariables) {
+      return { query: GetGenericFiltersDocument, variables: variables }
+    }
+export const GetVmAssignedGenericFiltersDocument = gql`
+    query getVMAssignedGenericFilters($vmId: ID!) {
+  getVMAssignedGenericFilters(vmId: $vmId) {
+    filter {
+      id
+      name
+      description
+      type
+      rules {
+        id
+        protocol
+        direction
+        action
+        priority
+        ipVersion
+        srcMacAddr
+        srcIpAddr
+        srcIpMask
+        dstIpAddr
+        dstIpMask
+        srcPortStart
+        srcPortEnd
+        dstPortStart
+        dstPortEnd
+        state
+        comment
+        createdAt
+        updatedAt
+      }
+      references
+      createdAt
+      updatedAt
+    }
+    isInherited
+    inheritedFrom
+    inheritedFromId
+  }
+}
+    `;
+
+/**
+ * __useGetVmAssignedGenericFiltersQuery__
+ *
+ * To run a query within a React component, call `useGetVmAssignedGenericFiltersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetVmAssignedGenericFiltersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetVmAssignedGenericFiltersQuery({
+ *   variables: {
+ *      vmId: // value for 'vmId'
+ *   },
+ * });
+ */
+export function useGetVmAssignedGenericFiltersQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetVmAssignedGenericFiltersQuery, GetVmAssignedGenericFiltersQueryVariables> & ({ variables: GetVmAssignedGenericFiltersQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetVmAssignedGenericFiltersQuery, GetVmAssignedGenericFiltersQueryVariables>(GetVmAssignedGenericFiltersDocument, options);
+      }
+export function useGetVmAssignedGenericFiltersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetVmAssignedGenericFiltersQuery, GetVmAssignedGenericFiltersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetVmAssignedGenericFiltersQuery, GetVmAssignedGenericFiltersQueryVariables>(GetVmAssignedGenericFiltersDocument, options);
+        }
+export function useGetVmAssignedGenericFiltersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetVmAssignedGenericFiltersQuery, GetVmAssignedGenericFiltersQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetVmAssignedGenericFiltersQuery, GetVmAssignedGenericFiltersQueryVariables>(GetVmAssignedGenericFiltersDocument, options);
+        }
+export type GetVmAssignedGenericFiltersQueryHookResult = ReturnType<typeof useGetVmAssignedGenericFiltersQuery>;
+export type GetVmAssignedGenericFiltersLazyQueryHookResult = ReturnType<typeof useGetVmAssignedGenericFiltersLazyQuery>;
+export type GetVmAssignedGenericFiltersSuspenseQueryHookResult = ReturnType<typeof useGetVmAssignedGenericFiltersSuspenseQuery>;
+export type GetVmAssignedGenericFiltersQueryResult = ApolloReactCommon.QueryResult<GetVmAssignedGenericFiltersQuery, GetVmAssignedGenericFiltersQueryVariables>;
+export function refetchGetVmAssignedGenericFiltersQuery(variables: GetVmAssignedGenericFiltersQueryVariables) {
+      return { query: GetVmAssignedGenericFiltersDocument, variables: variables }
+    }
+export const GetDepartmentAssignedGenericFiltersDocument = gql`
+    query getDepartmentAssignedGenericFilters($departmentId: ID!) {
+  getDepartmentAssignedGenericFilters(departmentId: $departmentId) {
+    id
+    name
+    description
+    type
+    rules {
+      id
+      protocol
+      direction
+      action
+      priority
+      ipVersion
+      srcMacAddr
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      state
+      comment
+      createdAt
+      updatedAt
+    }
+    references
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetDepartmentAssignedGenericFiltersQuery__
+ *
+ * To run a query within a React component, call `useGetDepartmentAssignedGenericFiltersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDepartmentAssignedGenericFiltersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDepartmentAssignedGenericFiltersQuery({
+ *   variables: {
+ *      departmentId: // value for 'departmentId'
+ *   },
+ * });
+ */
+export function useGetDepartmentAssignedGenericFiltersQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetDepartmentAssignedGenericFiltersQuery, GetDepartmentAssignedGenericFiltersQueryVariables> & ({ variables: GetDepartmentAssignedGenericFiltersQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetDepartmentAssignedGenericFiltersQuery, GetDepartmentAssignedGenericFiltersQueryVariables>(GetDepartmentAssignedGenericFiltersDocument, options);
+      }
+export function useGetDepartmentAssignedGenericFiltersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetDepartmentAssignedGenericFiltersQuery, GetDepartmentAssignedGenericFiltersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetDepartmentAssignedGenericFiltersQuery, GetDepartmentAssignedGenericFiltersQueryVariables>(GetDepartmentAssignedGenericFiltersDocument, options);
+        }
+export function useGetDepartmentAssignedGenericFiltersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetDepartmentAssignedGenericFiltersQuery, GetDepartmentAssignedGenericFiltersQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetDepartmentAssignedGenericFiltersQuery, GetDepartmentAssignedGenericFiltersQueryVariables>(GetDepartmentAssignedGenericFiltersDocument, options);
+        }
+export type GetDepartmentAssignedGenericFiltersQueryHookResult = ReturnType<typeof useGetDepartmentAssignedGenericFiltersQuery>;
+export type GetDepartmentAssignedGenericFiltersLazyQueryHookResult = ReturnType<typeof useGetDepartmentAssignedGenericFiltersLazyQuery>;
+export type GetDepartmentAssignedGenericFiltersSuspenseQueryHookResult = ReturnType<typeof useGetDepartmentAssignedGenericFiltersSuspenseQuery>;
+export type GetDepartmentAssignedGenericFiltersQueryResult = ApolloReactCommon.QueryResult<GetDepartmentAssignedGenericFiltersQuery, GetDepartmentAssignedGenericFiltersQueryVariables>;
+export function refetchGetDepartmentAssignedGenericFiltersQuery(variables: GetDepartmentAssignedGenericFiltersQueryVariables) {
+      return { query: GetDepartmentAssignedGenericFiltersDocument, variables: variables }
     }
 export const VmDetailedInfoDocument = gql`
     query vmDetailedInfo($id: String!) {

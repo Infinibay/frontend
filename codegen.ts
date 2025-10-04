@@ -2,7 +2,7 @@ import type { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: process.env.GRAPHQL_ENDPOINT || process.env.NEXT_PUBLIC_GRAPHQL_API_URL || "http://localhost:4000/graphql",
+  schema: "src/gql/schema.graphql",
   documents: [
     "src/gql/mutations.graphql",
     "src/gql/queries.graphql",

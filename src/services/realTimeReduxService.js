@@ -93,6 +93,13 @@ export class RealTimeReduxService {
       })
     )
 
+    // Subscribe to Firewall generic filter events
+    this.subscriptions.push(
+      this.socketService.subscribeToAllResourceEvents('firewall', (action, data) => {
+        this.handleFirewallEvent(action, data)
+      }, ['generic:assigned', 'generic:unassigned', 'generic:assigned:department', 'generic:unassigned:department'])
+    )
+
     this.debug.success('subscribe', `Subscribed to ${this.subscriptions.length} real-time event groups`)
   }
 
@@ -351,6 +358,58 @@ export class RealTimeReduxService {
 
     const endTime = performance.now()
     trackRealTimeEvent(`application:${action}`, endTime - startTime)
+  }
+
+  // Handle Firewall generic filter events
+  handleFirewallEvent(action, eventData) {
+    const startTime = performance.now()
+    this.debug.log('firewall-event', `Received Firewall ${action} event:`, eventData)
+
+    if (eventData.status === 'error') {
+      this.debug.error('firewall-event', `Firewall ${action} error:`, eventData.error)
+      return
+    }
+
+    const firewallData = eventData.data
+    if (!firewallData) {
+      this.debug.warn('firewall-event', `No data in Firewall ${action} event`)
+      return
+    }
+
+    // Dispatch Redux action to trigger firewall refresh
+    switch (action) {
+      case 'generic:assigned':
+      case 'generic:unassigned':
+        this.store.dispatch({
+          type: 'firewall/realTimeGenericFilterChanged',
+          payload: {
+            vmId: firewallData.vmId,
+            filterId: firewallData.filterId,
+            filterName: firewallData.filterName,
+            action: action
+          }
+        })
+        break
+
+      case 'generic:assigned:department':
+      case 'generic:unassigned:department':
+        this.store.dispatch({
+          type: 'firewall/realTimeGenericFilterChanged',
+          payload: {
+            departmentId: firewallData.departmentId,
+            filterId: firewallData.filterId,
+            filterName: firewallData.filterName,
+            action: action
+          }
+        })
+        break
+
+      default:
+        this.debug.warn('firewall-event', `Unknown Firewall action: ${action}`)
+    }
+
+    const endTime = performance.now()
+    trackRealTimeEvent(`firewall:${action}`, endTime - startTime)
   }
 
   // Cleanup subscriptions
