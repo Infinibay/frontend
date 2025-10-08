@@ -3,21 +3,22 @@ import Image from 'next/image';
 import { cn } from "@/lib/utils";
 import PropTypes from 'prop-types';
 import { useOptionalSizeContext } from './size-provider';
-import { getAvatarUrl, DEFAULT_AVATAR_URL } from '@/utils/avatar';
+import { getGravatarUrl } from '@/utils/gravatar';
 import { Loader2 } from 'lucide-react';
 
 /**
  * Avatar Component
- * Enhanced avatar component that displays an image with fallback behavior and loading states
+ * Displays user avatar using Gravatar based on email address
  */
 export const Avatar = ({
-  src,
+  email,
   alt,
   className,
   size,
   fallback,
   loading = false,
-  onClick
+  onClick,
+  gravatarOptions = {}
 }) => {
   const sizeContext = useOptionalSizeContext();
   const globalSize = sizeContext?.size;
@@ -27,32 +28,24 @@ export const Avatar = ({
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
 
-  // Process the avatar URL through our utility function
-  const processedSrc = src ? getAvatarUrl(src) : DEFAULT_AVATAR_URL;
+  // Generate Gravatar URL from email
+  const gravatarUrl = getGravatarUrl(email, {
+    size: 200,
+    default: 'identicon',
+    ...gravatarOptions
+  });
 
-  // Handle image load error with better fallback behavior
+  // Handle image load error
   const handleImageError = (e) => {
-    console.warn('Avatar image failed to load:', {
-      src: processedSrc,
-      originalSrc: src,
-      alt,
-      error: e?.target?.error
-    });
-
     setImageError(true);
     setImageLoading(false);
-
-    // Try fallback to default avatar if original src wasn't already default
-    if (processedSrc !== DEFAULT_AVATAR_URL) {
-      e.target.src = DEFAULT_AVATAR_URL;
-      setImageError(false); // Give default avatar a chance
-    }
   };
 
   // Generate better alt text
   const getAltText = () => {
     if (alt) return alt;
     if (fallback) return `Avatar for ${fallback}`;
+    if (email) return `Avatar for ${email}`;
     return 'User avatar';
   };
 
@@ -69,6 +62,9 @@ export const Avatar = ({
     }
     if (alt) {
       return alt.charAt(0).toUpperCase();
+    }
+    if (email) {
+      return email.charAt(0).toUpperCase();
     }
     return '?';
   };
@@ -98,7 +94,7 @@ export const Avatar = ({
       {/* Avatar Image */}
       {!imageError ? (
         <Image
-          src={processedSrc}
+          src={gravatarUrl}
           alt={getAltText()}
           fill
           className={cn(
@@ -124,13 +120,14 @@ export const Avatar = ({
 };
 
 Avatar.propTypes = {
-  src: PropTypes.string,
+  email: PropTypes.string,
   alt: PropTypes.string,
   className: PropTypes.string,
   size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl']),
   fallback: PropTypes.string,
   loading: PropTypes.bool,
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
+  gravatarOptions: PropTypes.object
 };
 
 

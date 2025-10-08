@@ -1,27 +1,25 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
-import authReducer from './slices/auth'
-import vmsReducer from './slices/vms'
-import departments from './slices/departments'
-import persistedApplicaitonReducer from './slices/applications'
-import templatesReducer from './slices/templates'
-import templateCategoriesReducer from './slices/templateCategories'
-import systemReducer from './slices/system'
-import usersReducer from './slices/users'
-import filtersReducer from './slices/filters'
-import filterRulesReducer from './slices/filterRules'
-import vmPortsReducer from './slices/vmPorts'
-import securityReducer from './slices/security'
-import isoReducer from './slices/iso'
-import healthReducer from './slices/health'
 import appSettingsReducer from './slices/appSettings'
+import authReducer from './slices/auth'
+import departments from './slices/departments'
+import firewallReducer from './slices/firewall'
+import healthReducer from './slices/health'
+import isoReducer from './slices/iso'
+import persistedApplicaitonReducer from './slices/applications'
+import systemReducer from './slices/system'
+import templateCategoriesReducer from './slices/templateCategories'
+import templatesReducer from './slices/templates'
+import usersReducer from './slices/users'
+import vmPortsReducer from './slices/vmPorts'
+import vmsReducer from './slices/vms'
 
 const persistConfig = {
   key: 'root',
   version: 1,
   storage,
-  blacklist: ['vms', 'templates', 'templateCategories', 'users', 'vmPorts'] // Don't persist these reducers
+  blacklist: ['vms', 'templates', 'templateCategories', 'users', 'vmPorts', 'firewall'] // Don't persist these reducers
 };
 
 const persistAuthConfig = {
@@ -42,18 +40,6 @@ const persistSystemConfig = {
   whitelist: ['graphics'] // Only persist the graphics array
 };
 
-const persistFilterRulesConfig = {
-  key: 'filterRules',
-  storage,
-  whitelist: ['items'],
-};
-
-const persistFiltersConfig = {
-  key: 'filters',
-  storage,
-  whitelist: ['items', 'selectedFilter'],
-};
-
 const persistAppSettingsConfig = {
   key: 'appSettings',
   storage,
@@ -63,27 +49,23 @@ const persistAppSettingsConfig = {
 const persistedAuth = persistReducer(persistAuthConfig, authReducer)
 const persistedDeparments = persistReducer(persistConfigDepartments, departments)
 const persistedSystem = persistReducer(persistSystemConfig, systemReducer)
-const persistedFilterRules = persistReducer(persistFilterRulesConfig, filterRulesReducer);
-const persistedFilters = persistReducer(persistFiltersConfig, filtersReducer);
 const persistedAppSettings = persistReducer(persistAppSettingsConfig, appSettingsReducer);
 
 export const store = configureStore({
   reducer: {
-    auth: persistedAuth,
-    vms: vmsReducer,
-    departments: persistedDeparments,
+    appSettings: persistedAppSettings,
     applications: persistedApplicaitonReducer,
-    templates: templatesReducer,
-    templateCategories: templateCategoriesReducer,
-    system: persistedSystem,
-    users: usersReducer,
-    filters: persistedFilters,
-    filterRules: persistedFilterRules,
-    vmPorts: vmPortsReducer,
-    security: securityReducer,
-    iso: isoReducer,
+    auth: persistedAuth,
+    departments: persistedDeparments,
+    firewall: firewallReducer,
     health: healthReducer,
-    appSettings: persistedAppSettings
+    iso: isoReducer,
+    system: persistedSystem,
+    templateCategories: templateCategoriesReducer,
+    templates: templatesReducer,
+    users: usersReducer,
+    vmPorts: vmPortsReducer,
+    vms: vmsReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

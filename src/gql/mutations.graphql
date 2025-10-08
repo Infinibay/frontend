@@ -404,166 +404,41 @@ mutation deleteNetwork($input: DeleteNetworkInput!) {
   deleteNetwork(input: $input)
 }
 
-mutation createFilter($input: CreateFilterInput!) {
-  createFilter(input: $input) {
-    id
-    name
-    description
-    type
-    rules {
-      id
-      protocol
-      direction
-      action
-      priority
-      ipVersion
-      srcMacAddr
-      srcIpAddr
-      srcIpMask
-      dstIpAddr
-      dstIpMask
-      srcPortStart
-      srcPortEnd
-      dstPortStart
-      dstPortEnd
-      state
-      comment
-      createdAt
-      updatedAt
-    }
-    references
-    createdAt
-    updatedAt
-  }
-}
+# DEPRECATED - Service mutations not implemented yet
+# mutation toggleVmService($vmId: ID!, $serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
+#   toggleVmService(input: { vmId: $vmId, serviceId: $serviceId, enabled: $enabled, action: $action }) {
+#     vmId
+#     vmName
+#     serviceId
+#     serviceName
+#     useEnabled
+#     provideEnabled
+#     running
+#     lastSeen
+#   }
+# }
 
-mutation updateFilter($input: UpdateFilterInput!, $id: ID!) {
-  updateFilter(input: $input, id: $id) {
-    id
-    name
-    description
-    type
-    rules {
-      id
-      protocol
-      direction
-      action
-      priority
-      ipVersion
-      srcMacAddr
-      srcIpAddr
-      srcIpMask
-      dstIpAddr
-      dstIpMask
-      srcPortStart
-      srcPortEnd
-      dstPortStart
-      dstPortEnd
-      state
-      comment
-      createdAt
-      updatedAt
-    }
-    references
-    createdAt
-    updatedAt
-  }
-}
+# mutation toggleDepartmentService($departmentId: ID!, $serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
+#   toggleDepartmentService(input: { departmentId: $departmentId, serviceId: $serviceId, enabled: $enabled, action: $action }) {
+#     departmentId
+#     departmentName
+#     serviceId
+#     serviceName
+#     useEnabled
+#     provideEnabled
+#     vmCount
+#     enabledVmCount
+#   }
+# }
 
-mutation deleteFilter($id: ID!) {
-  deleteFilter(id: $id)
-}
-
-mutation createFilterRule($input: CreateFilterRuleInput!, $filterId: ID!) {
-  createFilterRule(input: $input, filterId: $filterId) {
-    id
-    protocol
-    direction
-    action
-    priority
-    ipVersion
-    srcMacAddr
-    srcIpAddr
-    srcIpMask
-    dstIpAddr
-    dstIpMask
-    srcPortStart
-    srcPortEnd
-    dstPortStart
-    dstPortEnd
-    state
-    comment
-    createdAt
-    updatedAt
-  }
-}
-
-mutation updateFilterRule($input: UpdateFilterRuleInput!, $id: ID!) {
-  updateFilterRule(input: $input, id: $id) {
-    id
-    protocol
-    direction
-    action
-    priority
-    ipVersion
-    srcMacAddr
-    srcIpAddr
-    srcIpMask
-    dstIpAddr
-    dstIpMask
-    srcPortStart
-    srcPortEnd
-    dstPortStart
-    dstPortEnd
-    state
-    comment
-    createdAt
-    updatedAt
-  }
-}
-
-mutation deleteFilterRule($id: ID!) {
-  deleteFilterRule(id: $id)
-}
-
-mutation flushFilter($filterId: ID!) {
-  flushFilter(filterId: $filterId)
-}
-
-mutation toggleVmService($vmId: ID!, $serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
-  toggleVmService(input: { vmId: $vmId, serviceId: $serviceId, enabled: $enabled, action: $action }) {
-    vmId
-    vmName
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-    running
-    lastSeen
-  }
-}
-
-mutation toggleDepartmentService($departmentId: ID!, $serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
-  toggleDepartmentService(input: { departmentId: $departmentId, serviceId: $serviceId, enabled: $enabled, action: $action }) {
-    departmentId
-    departmentName
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-    vmCount
-    enabledVmCount
-  }
-}
-
-mutation toggleGlobalService($serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
-  toggleGlobalService(input: { serviceId: $serviceId, enabled: $enabled, action: $action }) {
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-  }
-}
+# mutation toggleGlobalService($serviceId: ID!, $enabled: Boolean!, $action: ServiceAction!) {
+#   toggleGlobalService(input: { serviceId: $serviceId, enabled: $enabled, action: $action }) {
+#     serviceId
+#     serviceName
+#     useEnabled
+#     provideEnabled
+#   }
+# }
 
 
 # Clear overrides in a VM (optionally only one service)
@@ -681,3 +556,119 @@ mutation performDiskCleanup($vmId: ID!, $drive: String!, $targets: [String!]) {
 #     }
 #   }
 # }
+
+# ==================== FIREWALL MUTATIONS ====================
+
+# Create firewall rule for a department
+mutation CreateDepartmentFirewallRule($departmentId: ID!, $input: CreateFirewallRuleInput!) {
+  createDepartmentFirewallRule(departmentId: $departmentId, input: $input) {
+    id
+    ruleSetId
+    name
+    description
+    action
+    direction
+    priority
+    protocol
+    srcPortStart
+    srcPortEnd
+    dstPortStart
+    dstPortEnd
+    srcIpAddr
+    srcIpMask
+    dstIpAddr
+    dstIpMask
+    connectionState
+    overridesDept
+    createdAt
+    updatedAt
+  }
+}
+
+# Create firewall rule for a VM
+mutation CreateVMFirewallRule($vmId: ID!, $input: CreateFirewallRuleInput!) {
+  createVMFirewallRule(vmId: $vmId, input: $input) {
+    id
+    ruleSetId
+    name
+    description
+    action
+    direction
+    priority
+    protocol
+    srcPortStart
+    srcPortEnd
+    dstPortStart
+    dstPortEnd
+    srcIpAddr
+    srcIpMask
+    dstIpAddr
+    dstIpMask
+    connectionState
+    overridesDept
+    createdAt
+    updatedAt
+  }
+}
+
+# Update firewall rule
+mutation UpdateFirewallRule($ruleId: ID!, $input: UpdateFirewallRuleInput!) {
+  updateFirewallRule(ruleId: $ruleId, input: $input) {
+    id
+    ruleSetId
+    name
+    description
+    action
+    direction
+    priority
+    protocol
+    srcPortStart
+    srcPortEnd
+    dstPortStart
+    dstPortEnd
+    srcIpAddr
+    srcIpMask
+    dstIpAddr
+    dstIpMask
+    connectionState
+    overridesDept
+    createdAt
+    updatedAt
+  }
+}
+
+# Delete firewall rule
+mutation DeleteFirewallRule($ruleId: ID!) {
+  deleteFirewallRule(ruleId: $ruleId)
+}
+
+# Apply firewall rules to VM immediately (flush)
+mutation FlushFirewallRules($vmId: ID!) {
+  flushFirewallRules(vmId: $vmId) {
+    success
+    vmId
+    rulesApplied
+    libvirtFilterName
+    timestamp
+  }
+}
+
+# Sync all firewall configurations to libvirt
+mutation SyncFirewallToLibvirt {
+  syncFirewallToLibvirt {
+    success
+    filtersCreated
+    filtersUpdated
+    vmsUpdated
+    errors
+  }
+}
+
+# Clean up all Infinibay firewall filters (for uninstall)
+mutation CleanupInfinibayFirewall {
+  cleanupInfinibayFirewall {
+    success
+    filtersRemoved
+    filterNames
+  }
+}

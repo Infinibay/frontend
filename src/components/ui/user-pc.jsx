@@ -28,7 +28,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
-import { getAvatarUrl } from "@/utils/avatar"
+import { getGravatarUrl } from "@/utils/gravatar"
 
 const UserPc = React.forwardRef(({
   className,
@@ -56,7 +56,7 @@ const UserPc = React.forwardRef(({
   const displayName = pc?.name || name;
   const displayStatus = pc?.status || status;
   const displayUsername = pc?.user ? `${pc.user.firstName} ${pc.user.lastName}` : username;
-  const displayAvatar = pc?.user?.avatar ? getAvatarUrl(pc.user.avatar) : getAvatarUrl('images/default-avatar.svg');
+  const displayAvatar = pc?.user?.email ? getGravatarUrl(pc.user.email, { size: 80, default: 'identicon' }) : getGravatarUrl(null, { size: 80, default: 'identicon' });
 
   // State for connection dialog
   const [connectionDialogOpen, setConnectionDialogOpen] = React.useState(false);

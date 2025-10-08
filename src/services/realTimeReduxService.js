@@ -93,11 +93,22 @@ export class RealTimeReduxService {
       })
     )
 
-    // Subscribe to Firewall generic filter events
+    // Subscribe to Firewall events (generic filters + rule changes)
     this.subscriptions.push(
       this.socketService.subscribeToAllResourceEvents('firewall', (action, data) => {
         this.handleFirewallEvent(action, data)
-      }, ['generic:assigned', 'generic:unassigned', 'generic:assigned:department', 'generic:unassigned:department'])
+      }, [
+        'generic:assigned',
+        'generic:unassigned',
+        'generic:assigned:department',
+        'generic:unassigned:department',
+        'rule:created',
+        'rule:updated',
+        'rule:deleted',
+        'rule:created:department',
+        'rule:updated:department',
+        'rule:deleted:department'
+      ])
     )
 
     this.debug.success('subscribe', `Subscribed to ${this.subscriptions.length} real-time event groups`)
@@ -360,7 +371,7 @@ export class RealTimeReduxService {
     trackRealTimeEvent(`application:${action}`, endTime - startTime)
   }
 
-  // Handle Firewall generic filter events
+  // Handle Firewall events (generic filters + rule changes)
   handleFirewallEvent(action, eventData) {
     const startTime = performance.now()
     this.debug.log('firewall-event', `Received Firewall ${action} event:`, eventData)
@@ -399,6 +410,34 @@ export class RealTimeReduxService {
             departmentId: firewallData.departmentId,
             filterId: firewallData.filterId,
             filterName: firewallData.filterName,
+            action: action
+          }
+        })
+        break
+
+      case 'rule:created':
+      case 'rule:updated':
+      case 'rule:deleted':
+        this.store.dispatch({
+          type: 'firewall/realTimeVMRuleChanged',
+          payload: {
+            vmId: firewallData.vmId,
+            ruleId: firewallData.ruleId,
+            ruleName: firewallData.ruleName,
+            action: action
+          }
+        })
+        break
+
+      case 'rule:created:department':
+      case 'rule:updated:department':
+      case 'rule:deleted:department':
+        this.store.dispatch({
+          type: 'firewall/realTimeDepartmentRuleChanged',
+          payload: {
+            departmentId: firewallData.departmentId,
+            ruleId: firewallData.ruleId,
+            ruleName: firewallData.ruleName,
             action: action
           }
         })

@@ -25,7 +25,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar } from '@/components/ui/avatar';
 import { ChevronLeft, Play, Square, RotateCcw, Network, Globe, Home, Copy, Check, Cpu, MemoryStick, HardDrive, Edit3, X, ChevronDown, User, UserX } from 'lucide-react';
 import { useVMNetworkRealTime } from '@/components/vm/hooks/useVMNetworkRealTime';
 import { createDebugger } from '@/utils/debug';
@@ -51,18 +51,18 @@ const VMHeader = ({
   usersLoading = false,
   usersError = null
 }) => {
+  // State for inline editing (hooks must be called before early returns)
+  const [editingField, setEditingField] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [userSelectorOpen, setUserSelectorOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+
   if (!vm) {
     debug.warn('VMHeader rendered without VM data');
     return null;
   }
 
   debug.log('VMHeader rendered', { vmName: vm.name, status: vm.status });
-
-  // State for inline editing
-  const [editingField, setEditingField] = useState(null);
-  const [editValue, setEditValue] = useState('');
-  const [userSelectorOpen, setUserSelectorOpen] = useState(false);
-  const [userSearchQuery, setUserSearchQuery] = useState('');
 
   // Get status badge variant
   const getStatusVariant = (status) => {
@@ -192,14 +192,14 @@ const VMHeader = ({
   const getCurrentUserDisplay = () => {
     if (vm.user) {
       return {
-        avatar: vm.user.avatar,
+        email: vm.user.email,
         initials: `${vm.user.firstName?.[0] || ''}${vm.user.lastName?.[0] || ''}`,
         name: `${vm.user.firstName || ''} ${vm.user.lastName || ''}`.trim(),
         hasUser: true
       };
     }
     return {
-      avatar: null,
+      email: null,
       initials: '?',
       name: 'Not assigned',
       hasUser: false
@@ -340,15 +340,12 @@ const VMHeader = ({
                           >
                             {currentUserDisplay.hasUser ? (
                               <>
-                                <Avatar className="h-6 w-6">
-                                  <AvatarImage
-                                    src={currentUserDisplay.avatar}
-                                    alt={currentUserDisplay.name}
-                                  />
-                                  <AvatarFallback>
-                                    {currentUserDisplay.initials}
-                                  </AvatarFallback>
-                                </Avatar>
+                                <Avatar
+                                  className="h-6 w-6"
+                                  email={currentUserDisplay.email}
+                                  fallback={currentUserDisplay.initials}
+                                  size="sm"
+                                />
                                 <span className="font-medium">{currentUserDisplay.name}</span>
                               </>
                             ) : (
@@ -405,11 +402,12 @@ const VMHeader = ({
                                       style={{ opacity: 1 }}
                                     >
                                       <div className="flex items-center gap-2 w-full">
-                                        <Avatar className="h-4 w-4">
-                                          <AvatarFallback className="text-xs">
-                                            {user.firstName?.[0]}{user.lastName?.[0]}
-                                          </AvatarFallback>
-                                        </Avatar>
+                                        <Avatar
+                                          className="h-4 w-4"
+                                          email={user.email}
+                                          fallback={`${user.firstName?.[0]}${user.lastName?.[0]}`}
+                                          size="sm"
+                                        />
                                         <div className="flex flex-col">
                                           <span className="font-medium text-foreground" style={{ opacity: 1 }}>
                                             {user.firstName} {user.lastName}
@@ -431,15 +429,12 @@ const VMHeader = ({
                       <div className="flex items-center gap-2">
                         {currentUserDisplay.hasUser ? (
                           <>
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage
-                                src={currentUserDisplay.avatar}
-                                alt={currentUserDisplay.name}
-                              />
-                              <AvatarFallback>
-                                {currentUserDisplay.initials}
-                              </AvatarFallback>
-                            </Avatar>
+                            <Avatar
+                              className="h-6 w-6"
+                              email={currentUserDisplay.email}
+                              fallback={currentUserDisplay.initials}
+                              size="sm"
+                            />
                             <span className="font-medium">{currentUserDisplay.name}</span>
                           </>
                         ) : (

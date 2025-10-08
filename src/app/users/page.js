@@ -63,7 +63,6 @@ import { Form } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { getAvatarUrl, DEFAULT_AVATAR_CANONICAL } from "@/utils/avatar";
 
 const debug = createDebugger('frontend:pages:users');
 
@@ -84,8 +83,7 @@ const UsersPage = () => {
     email: '',
     password: '',
     passwordConfirmation: '',
-    role: 'USER',
-    avatar: DEFAULT_AVATAR_CANONICAL
+    role: 'USER'
   });
 
   // Use optimized data loading for users
@@ -396,7 +394,7 @@ const UsersPage = () => {
                         <div className="flex items-center size-gap">
                           <Avatar
                             className="size-avatar"
-                            src={getAvatarUrl(user.avatar)}
+                            email={user.email}
                             fallback={`${user.firstName} ${user.lastName}`}
                           />
                           <div>
@@ -507,8 +505,7 @@ const UsersPage = () => {
             email: '',
             password: '',
             passwordConfirmation: '',
-            role: 'USER',
-            avatar: DEFAULT_AVATAR_CANONICAL
+            role: 'USER'
           });
         }
       }}>
@@ -630,8 +627,7 @@ const UsersPage = () => {
                   email: '',
                   password: '',
                   passwordConfirmation: '',
-                  role: 'USER',
-                  avatar: DEFAULT_AVATAR_CANONICAL
+                  role: 'USER'
                 });
               }}
               className="size-button"
@@ -668,8 +664,7 @@ const UsersPage = () => {
                   email: '',
                   password: '',
                   passwordConfirmation: '',
-                  role: 'USER',
-                  avatar: DEFAULT_AVATAR_CANONICAL
+                  role: 'USER'
                 });
               }}
             >

@@ -24,7 +24,12 @@ export function useComputerActions() {
 
   const handlePcSelect = (machine) => {
     // Navigate to VM view instead of opening the deprecated panel
-    router.push(`/departments/${machine.departmentId}/vm/${machine.id}`);
+    const departmentName = machine.department?.name;
+    if (!departmentName) {
+      debug.error('navigation', 'Cannot navigate to VM: department name is missing', machine);
+      return;
+    }
+    router.push(`/departments/${encodeURIComponent(departmentName)}/vm/${machine.id}`);
   };
 
   const handleDetailsClose = (open) => {

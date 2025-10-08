@@ -8,7 +8,8 @@ import { ResourcesStep } from '@/components/CreateMachine/steps/ResourcesStep';
 import { ApplicationsStep } from '@/components/CreateMachine/steps/ApplicationsStep';
 import { ReviewStep } from '@/components/CreateMachine/steps/ReviewStep';
 import { GpuSelectionStep } from '@/components/CreateMachine/steps/GpuSelectionStep';
-import { WizardStepAnimation, LottieAnimation } from '@/components/ui/lottie-animation';
+import { SimpleIllustration } from '@/components/ui/undraw-illustration';
+import { CloudDownload, Shield, Settings, BarChart3, Search, Laptop, UserCircle } from 'lucide-react';
 import vmsReducer from '@/state/slices/vms';
 import departmentsReducer from '@/state/slices/departments';
 import templatesReducer from '@/state/slices/templates';
@@ -82,7 +83,7 @@ const createMockStore = (initialState = {}) => {
 };
 
 export default {
-  title: 'Infinibay/Wizard with Animations',
+  title: 'Infinibay/Wizard with Illustrations',
   component: CreateMachineWizard,
   parameters: {
     layout: 'padded',
@@ -98,44 +99,43 @@ export default {
   ],
 };
 
-// Story showcasing all animations
-export const AnimationShowcase = () => {
-  const animations = [
-    { path: '/lottie/signin-security.json', name: 'Security (Basic Info Step)' },
-    { path: '/lottie/system-update.json', name: 'System Update (Configuration Step)' },
-    { path: '/lottie/data-analysis.json', name: 'Data Analysis (Resources Step)' },
-    { path: '/lottie/web-upgrade.json', name: 'Web Upgrade (GPU Selection Step)' },
-    { path: '/lottie/data-search.json', name: 'Data Search (Applications Step)' },
-    { path: '/lottie/man-is-working-on-a-laptop.json', name: 'Working (Review Step)' },
-    { path: '/lottie/user-login.json', name: 'User Login (Alternative)' },
+// Story showcasing all illustrations
+export const IllustrationShowcase = () => {
+  const illustrations = [
+    { icon: Shield, name: 'Security (Basic Info Step)' },
+    { icon: Settings, name: 'Configuration Step' },
+    { icon: BarChart3, name: 'Resources Analysis' },
+    { icon: CloudDownload, name: 'Downloads' },
+    { icon: Search, name: 'Search/Applications' },
+    { icon: Laptop, name: 'Working/Review' },
+    { icon: UserCircle, name: 'User/Account' },
   ];
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-4">Lottie Animation Showcase</h1>
+        <h1 className="text-3xl font-bold mb-4">Icon Illustration Showcase</h1>
         <p className="text-muted-foreground mb-8">
-          All available Lottie animations used in the VM creation wizard
+          Simple icon-based illustrations used in the VM creation wizard
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {animations.map((animation, index) => (
+        {illustrations.map((illustration, index) => (
           <div
             key={index}
             className="bg-card border rounded-lg p-6 space-y-4"
           >
-            <h3 className="font-semibold text-lg">{animation.name}</h3>
+            <h3 className="font-semibold text-lg">{illustration.name}</h3>
             <div className="h-48 flex items-center justify-center bg-muted/20 rounded">
-              <LottieAnimation
-                animationPath={animation.path}
-                className="w-40 h-40"
-                loop={true}
-                autoplay={true}
+              <SimpleIllustration
+                icon={illustration.icon}
+                size="medium"
+                opacity={20}
               />
             </div>
             <p className="text-sm text-muted-foreground">
-              Path: {animation.path}
+              Using lucide-react icons for clean, accessible illustrations
             </p>
           </div>
         ))}
@@ -144,40 +144,18 @@ export const AnimationShowcase = () => {
   );
 };
 
-// Story showing different animation positions
-export const AnimationPositions = () => {
-  const positions = ['top-right', 'top-left', 'center-top', 'background'];
+// Story showing different illustration sizes and opacity
+export const IllustrationVariations = () => {
   const sizes = ['small', 'medium', 'large'];
+  const opacities = [10, 20, 40, 80];
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-4">Animation Positioning Options</h1>
+        <h1 className="text-3xl font-bold mb-4">Illustration Size & Opacity Options</h1>
         <p className="text-muted-foreground mb-8">
-          Different positioning and sizing options for wizard step animations
+          Different sizing and opacity options for icon illustrations
         </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {positions.map((position) => (
-          <div
-            key={position}
-            className="bg-card border rounded-lg p-8 h-64 relative overflow-hidden"
-          >
-            <WizardStepAnimation
-              animationPath="/lottie/signin-security.json"
-              position={position}
-              size="medium"
-              opacity={position === 'background' ? 1 : 0.6}
-            />
-            <div className={position === 'background' ? 'relative z-10' : ''}>
-              <h3 className="font-semibold text-lg mb-2">Position: {position}</h3>
-              <p className="text-sm text-muted-foreground">
-                This demonstrates the "{position}" positioning option for animations.
-              </p>
-            </div>
-          </div>
-        ))}
       </div>
 
       <div>
@@ -188,13 +166,31 @@ export const AnimationPositions = () => {
               key={size}
               className="bg-card border rounded-lg p-8 flex flex-col items-center justify-center space-y-4"
             >
-              <WizardStepAnimation
-                animationPath="/lottie/data-analysis.json"
-                position="center-top"
+              <SimpleIllustration
+                icon={BarChart3}
                 size={size}
-                opacity={0.8}
+                opacity={20}
               />
               <h3 className="font-semibold">Size: {size}</h3>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-semibold mb-4">Opacity Variations</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {opacities.map((opacity) => (
+            <div
+              key={opacity}
+              className="bg-card border rounded-lg p-8 flex flex-col items-center justify-center space-y-4"
+            >
+              <SimpleIllustration
+                icon={CloudDownload}
+                size="medium"
+                opacity={opacity}
+              />
+              <h3 className="font-semibold">Opacity: {opacity}%</h3>
             </div>
           ))}
         </div>
@@ -203,14 +199,14 @@ export const AnimationPositions = () => {
   );
 };
 
-// The complete wizard with animations
-export const CompleteWizardWithAnimations = () => {
+// The complete wizard
+export const CompleteWizard = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">Create Virtual Machine</h1>
         <p className="text-muted-foreground">
-          Complete wizard with Lottie animations enhancing each step
+          Complete wizard with simple icon illustrations
         </p>
       </div>
       <CreateMachineWizard />
@@ -219,74 +215,32 @@ export const CompleteWizardWithAnimations = () => {
 };
 
 // Individual step stories for testing
-export const BasicInfoStepWithAnimation = () => (
+export const BasicInfoStep_ = () => (
   <div className="max-w-2xl mx-auto p-8 bg-card rounded-lg border">
     <BasicInfoStep id="basicInfo" />
   </div>
 );
 
-export const ConfigurationStepWithAnimation = () => (
+export const ConfigurationStep_ = () => (
   <div className="max-w-2xl mx-auto p-8 bg-card rounded-lg border">
     <ConfigurationStep id="configuration" />
   </div>
 );
 
-export const ResourcesStepWithAnimation = () => (
+export const ResourcesStep_ = () => (
   <div className="max-w-2xl mx-auto p-8 bg-card rounded-lg border">
     <ResourcesStep id="resources" />
   </div>
 );
 
-export const ApplicationsStepWithAnimation = () => (
+export const ApplicationsStep_ = () => (
   <div className="max-w-2xl mx-auto p-8 bg-card rounded-lg border">
     <ApplicationsStep id="applications" />
   </div>
 );
 
-export const ReviewStepWithAnimation = () => (
+export const ReviewStep_ = () => (
   <div className="max-w-2xl mx-auto p-8 bg-card rounded-lg border">
     <ReviewStep id="review" />
   </div>
 );
-
-// Animation performance test
-export const PerformanceTest = () => {
-  const [count, setCount] = React.useState(1);
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <h2 className="text-2xl font-semibold">Performance Test</h2>
-        <button
-          onClick={() => setCount(c => Math.min(c + 1, 10))}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded"
-        >
-          Add Animation
-        </button>
-        <button
-          onClick={() => setCount(c => Math.max(c - 1, 1))}
-          className="px-4 py-2 bg-secondary text-secondary-foreground rounded"
-        >
-          Remove Animation
-        </button>
-        <span className="text-muted-foreground">Count: {count}</span>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {Array.from({ length: count }, (_, i) => (
-          <LottieAnimation
-            key={i}
-            animationPath="/lottie/data-analysis.json"
-            className="w-32 h-32"
-            loop={true}
-            autoplay={true}
-          />
-        ))}
-      </div>
-
-      <p className="text-sm text-muted-foreground">
-        Test multiple animations running simultaneously to check performance impact
-      </p>
-    </div>
-  );
-};

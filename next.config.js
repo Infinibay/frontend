@@ -18,7 +18,7 @@ const nextConfig = {
     NEXT_PUBLIC_GRAPHQL_API_URL: process.env.NEXT_PUBLIC_GRAPHQL_API_URL,
   },
   images: {
-    domains: ["i.pravatar.cc", "api.dicebear.com", "cdn.simpleicons.org"],
+    domains: ["api.dicebear.com", "cdn.simpleicons.org", "i.pravatar.cc", "www.gravatar.com"],
   },
   transpilePackages: [
     "@nextui-org/react",

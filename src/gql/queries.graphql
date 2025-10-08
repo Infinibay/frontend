@@ -321,106 +321,17 @@ query network($name: String!) {
   }
 }
 
-query listFilters($vmId: ID, $departmentId: ID) {
-  listFilters(vmId: $vmId, departmentId: $departmentId) {
-    id
-    name
-    description
-    type
-    rules {
-      id
-      protocol
-      direction
-      action
-      priority
-      ipVersion
-      srcMacAddr
-      srcIpAddr
-      srcIpMask
-      dstIpAddr
-      dstIpMask
-      srcPortStart
-      srcPortEnd
-      dstPortStart
-      dstPortEnd
-      state
-      comment
-      createdAt
-      updatedAt
-    }
-    references
-    createdAt
-    updatedAt
-  }
-}
-
-query getFilter($id: ID!) {
-  getFilter(id: $id) {
-    id
-    name
-    description
-    type
-    rules {
-      id
-      protocol
-      direction
-      action
-      priority
-      ipVersion
-      srcMacAddr
-      srcIpAddr
-      srcIpMask
-      dstIpAddr
-      dstIpMask
-      srcPortStart
-      srcPortEnd
-      dstPortStart
-      dstPortEnd
-      state
-      comment
-      createdAt
-      updatedAt
-    }
-    references
-    createdAt
-    updatedAt
-  }
-}
-
-query listFilterRules($filterId: ID) {
-  listFilterRules(filterId: $filterId) {
-    id
-    protocol
-    direction
-    action
-    priority
-    ipVersion
-    srcMacAddr
-    srcIpAddr
-    srcIpMask
-    dstIpAddr
-    dstIpMask
-    srcPortStart
-    srcPortEnd
-    dstPortStart
-    dstPortEnd
-    state
-    comment
-    createdAt
-    updatedAt
-  }
-}
-
-query listServices($machineId: String!) {
-  listServices(machineId: $machineId) {
-    name
-    displayName
-    status
-    startType
-    pid
-    description
-  }
-}
+# DEPRECATED - Service queries not implemented in backend yet
+# query listServices($machineId: String!) {
+#   listServices(machineId: $machineId) {
+#     name
+#     displayName
+#     status
+#     startType
+#     pid
+#     description
+#   }
+# }
 
 # query listSecurityServices {
 #   listSecurityServices {
@@ -440,18 +351,18 @@ query listServices($machineId: String!) {
 #   }
 # }
 
-query getVmServiceStatus($serviceId: ID!, $vmId: ID!) {
-  getVmServiceStatus(serviceId: $serviceId, vmId: $vmId) {
-    vmId
-    vmName
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-    running
-    lastSeen
-  }
-}
+# query getVmServiceStatus($serviceId: ID!, $vmId: ID!) {
+#   getVmServiceStatus(serviceId: $serviceId, vmId: $vmId) {
+#     vmId
+#     vmName
+#     serviceId
+#     serviceName
+#     useEnabled
+#     provideEnabled
+#     running
+#     lastSeen
+#   }
+# }
 
 # query getDepartmentVmsServiceStatus($serviceId: ID!, $departmentId: ID!) {
 #   getDepartmentVmsServiceStatus(serviceId: $serviceId, departmentId: $departmentId) {
@@ -466,36 +377,211 @@ query getVmServiceStatus($serviceId: ID!, $vmId: ID!) {
 #   }
 # }
 
-query getDepartmentServiceStatus($serviceId: ID!, $departmentId: ID!) {
-  getDepartmentServiceStatus(serviceId: $serviceId, departmentId: $departmentId) {
-    departmentId
-    departmentName
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
-    vmCount
-    enabledVmCount
+# query getDepartmentServiceStatus($serviceId: ID!, $departmentId: ID!) {
+#   getDepartmentServiceStatus(serviceId: $serviceId, departmentId: $departmentId) {
+#     departmentId
+#     departmentName
+#     serviceId
+#     serviceName
+#     useEnabled
+#     provideEnabled
+#     vmCount
+#     enabledVmCount
+#   }
+# }
+
+# query getGlobalServiceStatus($serviceId: ID!) {
+#   getGlobalServiceStatus(serviceId: $serviceId) {
+#     serviceId
+#     serviceName
+#     useEnabled
+#     provideEnabled
+#   }
+# }
+
+# query getServiceStatusSummary {
+#   getServiceStatusSummary {
+#     serviceId
+#     serviceName
+#     totalVms
+#     runningVms
+#     enabledVms
+#   }
+# }
+
+# ==================== FIREWALL QUERIES ====================
+
+# Get firewall rules for a department
+query GetDepartmentFirewallRules($departmentId: ID!) {
+  getDepartmentFirewallRules(departmentId: $departmentId) {
+    id
+    name
+    internalName
+    entityType
+    entityId
+    priority
+    isActive
+    libvirtUuid
+    lastSyncedAt
+    createdAt
+    updatedAt
+    rules {
+      id
+      ruleSetId
+      name
+      description
+      action
+      direction
+      priority
+      protocol
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      connectionState
+      overridesDept
+      createdAt
+      updatedAt
+    }
   }
 }
 
-query getGlobalServiceStatus($serviceId: ID!) {
-  getGlobalServiceStatus(serviceId: $serviceId) {
-    serviceId
-    serviceName
-    useEnabled
-    provideEnabled
+# Get firewall rules for a VM
+query GetVMFirewallRules($vmId: ID!) {
+  getVMFirewallRules(vmId: $vmId) {
+    id
+    name
+    internalName
+    entityType
+    entityId
+    priority
+    isActive
+    libvirtUuid
+    lastSyncedAt
+    createdAt
+    updatedAt
+    rules {
+      id
+      ruleSetId
+      name
+      description
+      action
+      direction
+      priority
+      protocol
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      connectionState
+      overridesDept
+      createdAt
+      updatedAt
+    }
   }
 }
 
-query getServiceStatusSummary {
-  getServiceStatusSummary {
-    serviceId
-    serviceName
-    totalVms
-    runningVms
-    enabledVms
+# Get effective firewall rules for a VM (department + VM merged)
+query GetEffectiveFirewallRules($vmId: ID!) {
+  getEffectiveFirewallRules(vmId: $vmId) {
+    vmId
+    departmentRules {
+      id
+      ruleSetId
+      name
+      description
+      action
+      direction
+      priority
+      protocol
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      connectionState
+      overridesDept
+      createdAt
+      updatedAt
+    }
+    vmRules {
+      id
+      ruleSetId
+      name
+      description
+      action
+      direction
+      priority
+      protocol
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      connectionState
+      overridesDept
+      createdAt
+      updatedAt
+    }
+    effectiveRules {
+      id
+      ruleSetId
+      name
+      description
+      action
+      direction
+      priority
+      protocol
+      srcPortStart
+      srcPortEnd
+      dstPortStart
+      dstPortEnd
+      srcIpAddr
+      srcIpMask
+      dstIpAddr
+      dstIpMask
+      connectionState
+      overridesDept
+      createdAt
+      updatedAt
+    }
+    conflicts {
+      type
+      message
+      affectedRules {
+        id
+        name
+        description
+        action
+        direction
+        priority
+        protocol
+        dstPortStart
+        dstPortEnd
+      }
+    }
   }
 }
 
-  
+# List all Infinibay filters in libvirt
+query ListInfinibayFilters {
+  listInfinibayFilters {
+    name
+    uuid
+  }
+}
+

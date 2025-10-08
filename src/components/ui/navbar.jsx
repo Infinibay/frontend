@@ -29,7 +29,6 @@ import {
   getAccessibleNavContrast,
   getFocusRingForGlass
 } from "@/utils/navigation-glass";
-import { getAvatarUrl } from "@/utils/avatar";
 import { Avatar } from "./avatar";
 
 // Custom Components
@@ -177,7 +176,7 @@ const AppSidebar = React.forwardRef(({
                     className={cn("flex items-center px-2 mb-4 w-full justify-start hover:bg-sidebar-accent/50 transition-colors rounded-md", menuStyles.gap)}
                   >
                     <Avatar
-                      src={user.avatar}
+                      email={user.email}
                       alt={`${user.firstName} ${user.lastName}'s avatar`}
                       fallback={`${user.firstName} ${user.lastName}`}
                       className={cn("w-10 h-10", menuStyles.avatar)}

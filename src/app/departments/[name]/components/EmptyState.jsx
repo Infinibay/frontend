@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { LottieAnimation } from '@/components/ui/lottie-animation';
+import { SimpleIllustration } from '@/components/ui/undraw-illustration';
 import { getGlassClasses } from '@/utils/glass-effects';
 
 /**
@@ -10,11 +10,11 @@ import { getGlassClasses } from '@/utils/glass-effects';
 const EmptyState = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-      <LottieAnimation
-        animationPath="/lottie/not-found.json"
-        className="w-64 h-64 opacity-80 mb-4"
-        loop={true}
-        autoplay={true}
+      <SimpleIllustration
+        name="not-found"
+        size="large"
+        opacity={80}
+        className="mb-4"
       />
       <div className={`text-center p-6 ${getGlassClasses({ glass: 'minimal', elevation: 2, radius: 'lg' })}`}>
         <h2 className="text-xl font-semibold mb-2 text-glass-text-primary">No computers found</h2>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { cn } from "@/lib/utils";
 import { UserPc } from "@/components/ui/user-pc";
-import { LottieAnimation } from "@/components/ui/lottie-animation";
+import { SimpleIllustration } from "@/components/ui/undraw-illustration";
 import { Button } from "@/components/ui/button";
 import { fetchVms } from "@/state/slices/vms";
 import { countMachines } from "@/app/computers/utils/groupMachines";
@@ -158,11 +158,11 @@ export function ComputersList({
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-        <LottieAnimation
-          animationPath="/lottie/error.json"
-          className="w-32 h-32 opacity-80 mb-4"
-          loop={true}
-          autoplay={true}
+        <SimpleIllustration
+          name="error"
+          size="small"
+          opacity={80}
+          className="mb-4"
         />
         <div className="text-center space-y-4">
           <h3 className="text-lg font-semibold text-destructive">
@@ -193,11 +193,11 @@ export function ComputersList({
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-        <LottieAnimation
-          animationPath="/lottie/not-found.json"
-          className="w-64 h-64 opacity-80 mb-4"
-          loop={true}
-          autoplay={true}
+        <SimpleIllustration
+          name="not-found"
+          size="large"
+          opacity={80}
+          className="mb-4"
         />
         <div className={cn(
           "text-center space-y-2 p-6 rounded-lg",
@@ -266,11 +266,11 @@ export function ComputersList({
               ))}
               {byDepartment && (!departmentData.machines || departmentData.machines.length === 0) && (
                 <div className="flex flex-col items-center justify-center min-h-[300px] p-8 col-span-full">
-                  <LottieAnimation
-                    animationPath="/lottie/not-found.json"
-                    className="w-48 h-48 opacity-80 mb-4"
-                    loop={true}
-                    autoplay={true}
+                  <SimpleIllustration
+                    name="not-found"
+                    size="medium"
+                    opacity={80}
+                    className="mb-4"
                   />
                   <div className={cn(
                     "text-center p-4 rounded-lg",

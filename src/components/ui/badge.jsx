@@ -9,7 +9,7 @@ import { getBadgeGlass, getBadgeGlassVariant, getDataGlassAnimation, getReducedT
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
 const badgeVariants = cva(
-  "inline-flex items-center radius-fluent-sm border font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shadow-elevation-1",
+  "inline-flex items-center radius-fluent-sm border font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shadow-elevation-1 px-2.5 py-0.5",
   {
     variants: {
       variant: {

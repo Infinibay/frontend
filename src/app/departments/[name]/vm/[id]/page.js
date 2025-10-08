@@ -29,14 +29,14 @@ const VMRecommendationsTab = dynamic(() => import('./components/VMRecommendation
   loading: () => <div className="p-4">Loading recommendations...</div>
 });
 
-const VMFirewallTab = dynamic(() => import('./components/VMFirewallTab'), {
+const VMSecurityTab = dynamic(() => import('./components/security/VMSecurityTab'), {
   ssr: false,
-  loading: () => <div className="p-4">Loading firewall configuration...</div>
+  loading: () => <div className="p-4">Loading security...</div>
 });
 
 /**
  * VM Detail Page Component
- * Displays VM information, dashboard, recommendations, and firewall settings
+ * Displays VM information, dashboard, and recommendations
  */
 const VMDetailPage = () => {
   const params = useParams();
@@ -120,7 +120,12 @@ const VMDetailPage = () => {
             </TabsContent>
 
             <TabsContent value="firewall" className="mt-2">
-              <VMFirewallTab vmId={vmId} vm={vm} onPowerAction={handlePowerAction} />
+              <VMSecurityTab
+                vmId={vmId}
+                vmStatus={vm?.status}
+                vmOs={vm?.configuration?.os}
+                departmentId={vm?.department?.id}
+              />
             </TabsContent>
           </Tabs>
         </div>

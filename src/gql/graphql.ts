@@ -19,15 +19,6 @@ export type Scalars = {
   JSONObject: { input: any; output: any; }
 };
 
-export type AdvancedPortInput = {
-  /** Description of the port configuration */
-  description?: InputMaybe<Scalars['String']['input']>;
-  /** Type of port configuration */
-  type: PortInputType;
-  /** Port specification string */
-  value: Scalars['String']['input'];
-};
-
 export type AppSettings = {
   __typename?: 'AppSettings';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -113,26 +104,6 @@ export type ApplicationUpdates = {
   windowsUpdatesCount?: Maybe<Scalars['Int']['output']>;
 };
 
-export type ApplyDepartmentTemplateInput = {
-  departmentId?: Scalars['ID']['input'];
-  templateFilterId?: Scalars['ID']['input'];
-};
-
-export type ApplyFirewallTemplateInput = {
-  /** Virtual machine ID */
-  machineId: Scalars['ID']['input'];
-  /** Firewall template to apply */
-  template: FirewallTemplate;
-};
-
-export type AssignedGenericFilter = {
-  __typename?: 'AssignedGenericFilter';
-  filter: GenericFilter;
-  inheritedFrom?: Maybe<Scalars['String']['output']>;
-  inheritedFromId?: Maybe<Scalars['ID']['output']>;
-  isInherited: Scalars['Boolean']['output'];
-};
-
 export type BackgroundHealthServiceStatus = {
   __typename?: 'BackgroundHealthServiceStatus';
   activeQueues: Scalars['Int']['output'];
@@ -147,6 +118,13 @@ export type BackgroundHealthServiceStatus = {
 export type BridgeNameInput = {
   bridgeName?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
+};
+
+export type CleanupResult = {
+  __typename?: 'CleanupResult';
+  filterNames: Array<Scalars['String']['output']>;
+  filtersRemoved: Scalars['Int']['output'];
+  success: Scalars['Boolean']['output'];
 };
 
 export type CommandExecutionResponseType = {
@@ -171,20 +149,12 @@ export type CommandResult = {
   success: Scalars['Boolean']['output'];
 };
 
-export type CreateAdvancedFirewallRuleInput = {
-  /** Firewall action (accept, drop, reject) */
-  action?: Scalars['String']['input'];
-  /** Optional rule description */
-  description?: InputMaybe<Scalars['String']['input']>;
-  /** Traffic direction (in, out, inout) */
-  direction?: Scalars['String']['input'];
-  /** Virtual machine ID */
-  machineId: Scalars['ID']['input'];
-  /** Advanced port configuration */
-  ports: AdvancedPortInput;
-  /** Network protocol (tcp, udp, icmp) */
-  protocol?: Scalars['String']['input'];
-};
+export enum ConflictType {
+  Contradictory = 'CONTRADICTORY',
+  Duplicate = 'DUPLICATE',
+  PortOverlap = 'PORT_OVERLAP',
+  PriorityConflict = 'PRIORITY_CONFLICT'
+}
 
 export type CreateApplicationInputType = {
   description?: InputMaybe<Scalars['String']['input']>;
@@ -194,27 +164,23 @@ export type CreateApplicationInputType = {
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
 };
 
-export type CreateFilterInput = {
-  chain?: InputMaybe<Scalars['String']['input']>;
-  departmentId?: InputMaybe<Scalars['ID']['input']>;
-  description?: Scalars['String']['input'];
-  name?: Scalars['String']['input'];
-  type?: InputMaybe<FilterType>;
-};
-
-export type CreateFilterRuleInput = {
-  action?: Scalars['String']['input'];
-  comment?: InputMaybe<Scalars['String']['input']>;
-  direction?: Scalars['String']['input'];
+export type CreateFirewallRuleInput = {
+  action: RuleAction;
+  connectionState?: InputMaybe<Scalars['JSONObject']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  direction: RuleDirection;
+  dstIpAddr?: InputMaybe<Scalars['String']['input']>;
+  dstIpMask?: InputMaybe<Scalars['String']['input']>;
   dstPortEnd?: InputMaybe<Scalars['Int']['input']>;
   dstPortStart?: InputMaybe<Scalars['Int']['input']>;
-  filterId?: Scalars['String']['input'];
-  ipVersion?: InputMaybe<Scalars['String']['input']>;
-  priority?: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  overridesDept?: InputMaybe<Scalars['Boolean']['input']>;
+  priority: Scalars['Int']['input'];
   protocol?: InputMaybe<Scalars['String']['input']>;
+  srcIpAddr?: InputMaybe<Scalars['String']['input']>;
+  srcIpMask?: InputMaybe<Scalars['String']['input']>;
   srcPortEnd?: InputMaybe<Scalars['Int']['input']>;
   srcPortStart?: InputMaybe<Scalars['Int']['input']>;
-  state?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateMachineInputType = {
@@ -253,21 +219,6 @@ export type CreateNetworkInput = {
   name?: Scalars['String']['input'];
 };
 
-export type CreateSimplifiedFirewallRuleInput = {
-  /** Firewall action (accept, drop, reject) */
-  action?: Scalars['String']['input'];
-  /** Optional rule description */
-  description?: InputMaybe<Scalars['String']['input']>;
-  /** Traffic direction (in, out, inout) */
-  direction?: Scalars['String']['input'];
-  /** Virtual machine ID */
-  machineId: Scalars['ID']['input'];
-  /** Port specification (e.g., "80", "443", "all") */
-  port: Scalars['String']['input'];
-  /** Network protocol (tcp, udp, icmp) */
-  protocol?: Scalars['String']['input'];
-};
-
 export type CreateSnapshotInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   machineId: Scalars['String']['input'];
@@ -304,36 +255,6 @@ export type DeleteNetworkInput = {
 export type DeleteSnapshotInput = {
   machineId: Scalars['String']['input'];
   snapshotName: Scalars['String']['input'];
-};
-
-export type DepartmentFirewallState = {
-  __typename?: 'DepartmentFirewallState';
-  appliedTemplates: Array<Scalars['String']['output']>;
-  customRules: Array<FwRule>;
-  departmentId: Scalars['ID']['output'];
-  effectiveRules: Array<FwRule>;
-  lastSync: Scalars['DateTimeISO']['output'];
-  vmCount: Scalars['Int']['output'];
-};
-
-export type DepartmentServiceStatus = {
-  __typename?: 'DepartmentServiceStatus';
-  /** Unique identifier for the department */
-  departmentId: Scalars['ID']['output'];
-  /** Name of the department */
-  departmentName: Scalars['String']['output'];
-  /** Number of VMs in the department with this service enabled */
-  enabledVmCount: Scalars['Float']['output'];
-  /** Whether the service is enabled for inbound traffic */
-  provideEnabled: Scalars['Boolean']['output'];
-  /** Unique identifier for the service */
-  serviceId: Scalars['ID']['output'];
-  /** Name of the service */
-  serviceName: Scalars['String']['output'];
-  /** Whether the service is enabled for outbound traffic */
-  useEnabled: Scalars['Boolean']['output'];
-  /** Total number of VMs in the department */
-  vmCount: Scalars['Float']['output'];
 };
 
 export type DepartmentType = {
@@ -385,60 +306,69 @@ export type DyummyType = {
   value: Scalars['String']['output'];
 };
 
+export type EffectiveRuleSet = {
+  __typename?: 'EffectiveRuleSet';
+  conflicts: Array<RuleConflict>;
+  departmentRules: Array<FirewallRule>;
+  effectiveRules: Array<FirewallRule>;
+  vmId: Scalars['ID']['output'];
+  vmRules: Array<FirewallRule>;
+};
+
 export type ExecuteMaintenanceInput = {
   machineId: Scalars['ID']['input'];
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
   taskType: MaintenanceTaskType;
 };
 
-export type FwRule = {
-  __typename?: 'FWRule';
-  action: Scalars['String']['output'];
-  comment?: Maybe<Scalars['String']['output']>;
-  createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
-  direction: Scalars['String']['output'];
+export type FirewallRule = {
+  __typename?: 'FirewallRule';
+  action: RuleAction;
+  connectionState?: Maybe<Scalars['JSONObject']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  direction: RuleDirection;
   dstIpAddr?: Maybe<Scalars['String']['output']>;
   dstIpMask?: Maybe<Scalars['String']['output']>;
   dstPortEnd?: Maybe<Scalars['Int']['output']>;
   dstPortStart?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
-  ipVersion?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  overridesDept: Scalars['Boolean']['output'];
   priority: Scalars['Int']['output'];
   protocol: Scalars['String']['output'];
+  ruleSetId: Scalars['ID']['output'];
   srcIpAddr?: Maybe<Scalars['String']['output']>;
   srcIpMask?: Maybe<Scalars['String']['output']>;
-  srcMacAddr?: Maybe<Scalars['String']['output']>;
   srcPortEnd?: Maybe<Scalars['Int']['output']>;
   srcPortStart?: Maybe<Scalars['Int']['output']>;
-  state?: Maybe<Scalars['JSONObject']['output']>;
-  updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  updatedAt: Scalars['DateTimeISO']['output'];
 };
 
-/** Type of network filter */
-export enum FilterType {
-  Department = 'DEPARTMENT',
-  Generic = 'GENERIC',
-  Vm = 'VM'
-}
-
-/** Predefined firewall template configurations for common use cases */
-export enum FirewallTemplate {
-  Database = 'DATABASE',
-  Desktop = 'DESKTOP',
-  Development = 'DEVELOPMENT',
-  WebServer = 'WEB_SERVER'
-}
-
-export type FirewallTemplateInfo = {
-  __typename?: 'FirewallTemplateInfo';
-  /** Human-readable template description */
-  description: Scalars['String']['output'];
-  /** Template name identifier */
+export type FirewallRuleSet = {
+  __typename?: 'FirewallRuleSet';
+  createdAt: Scalars['DateTimeISO']['output'];
+  entityId: Scalars['ID']['output'];
+  entityType: RuleSetType;
+  id: Scalars['ID']['output'];
+  internalName: Scalars['String']['output'];
+  isActive: Scalars['Boolean']['output'];
+  lastSyncedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  libvirtUuid?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
-  /** List of rules included in this template */
-  rules: Array<SimplifiedFirewallRule>;
-  /** Template identifier (e.g., WEB_SERVER, DATABASE) */
-  template: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  rules: Array<FirewallRule>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+  xmlContent?: Maybe<Scalars['String']['output']>;
+};
+
+export type FlushResult = {
+  __typename?: 'FlushResult';
+  libvirtFilterName: Scalars['String']['output'];
+  rulesApplied: Scalars['Int']['output'];
+  success: Scalars['Boolean']['output'];
+  timestamp: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['ID']['output'];
 };
 
 export type Gpu = {
@@ -447,18 +377,6 @@ export type Gpu = {
   model: Scalars['String']['output'];
   pciBus: Scalars['String']['output'];
   vendor: Scalars['String']['output'];
-};
-
-export type GenericFilter = {
-  __typename?: 'GenericFilter';
-  createdAt: Scalars['DateTimeISO']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  references: Array<Scalars['String']['output']>;
-  rules?: Maybe<Array<FwRule>>;
-  type: FilterType;
-  updatedAt: Scalars['DateTimeISO']['output'];
 };
 
 export type GenericHealthCheckResponse = {
@@ -471,18 +389,6 @@ export type GenericHealthCheckResponse = {
   success: Scalars['Boolean']['output'];
   timestamp: Scalars['DateTimeISO']['output'];
   vmId: Scalars['ID']['output'];
-};
-
-export type GlobalServiceStatus = {
-  __typename?: 'GlobalServiceStatus';
-  /** Whether the service is enabled for inbound traffic */
-  provideEnabled: Scalars['Boolean']['output'];
-  /** Unique identifier for the service */
-  serviceId: Scalars['ID']['output'];
-  /** Name of the service */
-  serviceName: Scalars['String']['output'];
-  /** Whether the service is enabled for outbound traffic */
-  useEnabled: Scalars['Boolean']['output'];
 };
 
 export type GraphicConfigurationType = {
@@ -594,6 +500,12 @@ export type IpRangeInput = {
   end?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
   start?: Scalars['String']['input'];
+};
+
+export type LibvirtFilterInfo = {
+  __typename?: 'LibvirtFilterInfo';
+  name: Scalars['String']['output'];
+  uuid?: Maybe<Scalars['String']['output']>;
 };
 
 /** Login response with user data and token */
@@ -807,38 +719,27 @@ export enum MaintenanceTrigger {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  /** Add a filter reference for template application */
-  addFilterReference: Scalars['Boolean']['output'];
-  applyDepartmentFirewallTemplate: Scalars['Boolean']['output'];
-  applyFirewallTemplate: VmFirewallState;
-  assignGenericFilterToDepartment: Scalars['Boolean']['output'];
-  assignGenericFilterToVM: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
-  /** Control a service on a virtual machine */
-  controlService: ServiceStatusType;
-  /** Create advanced firewall rule with flexible port configuration */
-  createAdvancedFirewallRule: VmFirewallState;
+  /** Clean up all Infinibay firewall filters (for uninstall) */
+  cleanupInfinibayFirewall: CleanupResult;
   createApplication: ApplicationType;
   createDepartment: DepartmentType;
-  createDepartmentFirewallRule: FwRule;
-  createFilter: GenericFilter;
-  createFilterRule: FwRule;
+  /** Create firewall rule for a department */
+  createDepartmentFirewallRule: FirewallRule;
   createMachine: Machine;
   createMachineTemplate: MachineTemplateType;
   createMachineTemplateCategory: MachineTemplateCategoryType;
   createMaintenanceTask: MaintenanceTaskResponse;
   createNetwork: Scalars['Boolean']['output'];
-  /** Create firewall rule for a specific port range */
-  createPortRangeRule: VmFirewallState;
-  createSimplifiedFirewallRule: VmFirewallState;
   /** Create a snapshot of a virtual machine */
   createSnapshot: SnapshotResult;
   createUser: UserType;
+  /** Create firewall rule for a VM */
+  createVMFirewallRule: FirewallRule;
   deleteApplication: Scalars['Boolean']['output'];
-  deleteDepartmentFirewallRule: Scalars['Boolean']['output'];
-  deleteFilter: Scalars['Boolean']['output'];
-  deleteFilterRule: Scalars['Boolean']['output'];
+  /** Delete firewall rule */
+  deleteFirewallRule: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
   /** Delete a snapshot from a virtual machine */
@@ -850,9 +751,8 @@ export type Mutation = {
   executeCommand: CommandExecutionResponseType;
   executeImmediateMaintenance: MaintenanceExecutionResponse;
   executeMaintenanceTask: MaintenanceExecutionResponse;
-  flushDepartmentFirewall: Scalars['Boolean']['output'];
-  /** Apply a network filter inmediatly */
-  flushFilter: Scalars['Boolean']['output'];
+  /** Apply firewall rules to VM immediately (flush) */
+  flushFirewallRules: FlushResult;
   forcePowerOff: SuccessType;
   /** Force power off and restore snapshot (emergency recovery) */
   forceRestoreSnapshot: SuccessType;
@@ -869,18 +769,12 @@ export type Mutation = {
   powerOff: SuccessType;
   powerOn: SuccessType;
   queueAllVMHealthChecks: HealthCheckRoundResult;
-  refreshDepartmentVMFilters: Scalars['Boolean']['output'];
   /** Register uploaded ISO */
   registerISO: Iso;
-  removeDepartmentFirewallTemplate: Scalars['Boolean']['output'];
-  /** Remove a filter reference */
-  removeFilterReference: Scalars['Boolean']['output'];
-  removeFirewallTemplate: VmFirewallState;
   /** Remove ISO file */
   removeISO: Scalars['Boolean']['output'];
   /** Remove a package from a virtual machine (legacy compatibility) */
   removePackage: CommandResult;
-  removeSimplifiedFirewallRule: VmFirewallState;
   resetMachine: SuccessType;
   restartMachine: SuccessType;
   /** Restore a virtual machine to a snapshot */
@@ -892,23 +786,17 @@ export type Mutation = {
   setNetworkIpRange: Scalars['Boolean']['output'];
   setupNode: DyummyType;
   suspend: SuccessType;
+  /** Sync all firewall configurations to libvirt */
+  syncFirewallToLibvirt: SyncResult;
   /** Sync ISOs with filesystem */
   syncISOs: Scalars['Boolean']['output'];
-  toggleDepartmentFirewallTemplate: Scalars['Boolean']['output'];
-  toggleDepartmentService: DepartmentServiceStatus;
-  toggleFirewallTemplate: VmFirewallState;
-  toggleGlobalService: GlobalServiceStatus;
   toggleMaintenanceTask: MaintenanceTaskResponse;
-  toggleVmService: VmServiceStatus;
   triggerHealthCheckRound: HealthCheckRoundResult;
-  unassignGenericFilterFromDepartment: Scalars['Boolean']['output'];
-  unassignGenericFilterFromVM: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
-  updateDepartmentFirewallRule: FwRule;
   updateDepartmentName: DepartmentType;
-  updateFilter: GenericFilter;
-  updateFilterRule: FwRule;
+  /** Update firewall rule */
+  updateFirewallRule: FirewallRule;
   updateMachineHardware: Machine;
   updateMachineName: Machine;
   updateMachineTemplate: MachineTemplateType;
@@ -923,46 +811,8 @@ export type Mutation = {
 };
 
 
-export type MutationAddFilterReferenceArgs = {
-  sourceFilterId: Scalars['ID']['input'];
-  targetFilterId: Scalars['ID']['input'];
-};
-
-
-export type MutationApplyDepartmentFirewallTemplateArgs = {
-  input: ApplyDepartmentTemplateInput;
-};
-
-
-export type MutationApplyFirewallTemplateArgs = {
-  input: ApplyFirewallTemplateInput;
-};
-
-
-export type MutationAssignGenericFilterToDepartmentArgs = {
-  departmentId: Scalars['ID']['input'];
-  genericFilterId: Scalars['ID']['input'];
-};
-
-
-export type MutationAssignGenericFilterToVmArgs = {
-  genericFilterId: Scalars['ID']['input'];
-  vmId: Scalars['ID']['input'];
-};
-
-
 export type MutationCalculateIsoChecksumArgs = {
   isoId: Scalars['String']['input'];
-};
-
-
-export type MutationControlServiceArgs = {
-  input: ServiceControlInput;
-};
-
-
-export type MutationCreateAdvancedFirewallRuleArgs = {
-  input: CreateAdvancedFirewallRuleInput;
 };
 
 
@@ -978,18 +828,7 @@ export type MutationCreateDepartmentArgs = {
 
 export type MutationCreateDepartmentFirewallRuleArgs = {
   departmentId: Scalars['ID']['input'];
-  input: CreateFilterRuleInput;
-};
-
-
-export type MutationCreateFilterArgs = {
-  input: CreateFilterInput;
-};
-
-
-export type MutationCreateFilterRuleArgs = {
-  filterId: Scalars['ID']['input'];
-  input: CreateFilterRuleInput;
+  input: CreateFirewallRuleInput;
 };
 
 
@@ -1018,22 +857,6 @@ export type MutationCreateNetworkArgs = {
 };
 
 
-export type MutationCreatePortRangeRuleArgs = {
-  action?: Scalars['String']['input'];
-  description?: InputMaybe<Scalars['String']['input']>;
-  direction?: Scalars['String']['input'];
-  endPort: Scalars['Int']['input'];
-  machineId: Scalars['ID']['input'];
-  protocol?: Scalars['String']['input'];
-  startPort: Scalars['Int']['input'];
-};
-
-
-export type MutationCreateSimplifiedFirewallRuleArgs = {
-  input: CreateSimplifiedFirewallRuleInput;
-};
-
-
 export type MutationCreateSnapshotArgs = {
   input: CreateSnapshotInput;
 };
@@ -1044,23 +867,19 @@ export type MutationCreateUserArgs = {
 };
 
 
+export type MutationCreateVmFirewallRuleArgs = {
+  input: CreateFirewallRuleInput;
+  vmId: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteApplicationArgs = {
   id: Scalars['String']['input'];
 };
 
 
-export type MutationDeleteDepartmentFirewallRuleArgs = {
+export type MutationDeleteFirewallRuleArgs = {
   ruleId: Scalars['ID']['input'];
-};
-
-
-export type MutationDeleteFilterArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type MutationDeleteFilterRuleArgs = {
-  id: Scalars['ID']['input'];
 };
 
 
@@ -1115,13 +934,8 @@ export type MutationExecuteMaintenanceTaskArgs = {
 };
 
 
-export type MutationFlushDepartmentFirewallArgs = {
-  departmentId: Scalars['ID']['input'];
-};
-
-
-export type MutationFlushFilterArgs = {
-  filterId: Scalars['ID']['input'];
+export type MutationFlushFirewallRulesArgs = {
+  vmId: Scalars['ID']['input'];
 };
 
 
@@ -1189,34 +1003,11 @@ export type MutationPowerOnArgs = {
 };
 
 
-export type MutationRefreshDepartmentVmFiltersArgs = {
-  departmentId: Scalars['ID']['input'];
-};
-
-
 export type MutationRegisterIsoArgs = {
   filename: Scalars['String']['input'];
   os: Scalars['String']['input'];
   path: Scalars['String']['input'];
   size: Scalars['Float']['input'];
-};
-
-
-export type MutationRemoveDepartmentFirewallTemplateArgs = {
-  departmentId: Scalars['ID']['input'];
-  templateFilterId: Scalars['ID']['input'];
-};
-
-
-export type MutationRemoveFilterReferenceArgs = {
-  sourceFilterId: Scalars['ID']['input'];
-  targetFilterId: Scalars['ID']['input'];
-};
-
-
-export type MutationRemoveFirewallTemplateArgs = {
-  machineId: Scalars['ID']['input'];
-  template: FirewallTemplate;
 };
 
 
@@ -1228,12 +1019,6 @@ export type MutationRemoveIsoArgs = {
 export type MutationRemovePackageArgs = {
   machineId: Scalars['ID']['input'];
   packageName: Scalars['String']['input'];
-};
-
-
-export type MutationRemoveSimplifiedFirewallRuleArgs = {
-  machineId: Scalars['ID']['input'];
-  ruleId: Scalars['ID']['input'];
 };
 
 
@@ -1277,48 +1062,9 @@ export type MutationSuspendArgs = {
 };
 
 
-export type MutationToggleDepartmentFirewallTemplateArgs = {
-  departmentId: Scalars['ID']['input'];
-  templateFilterId: Scalars['ID']['input'];
-};
-
-
-export type MutationToggleDepartmentServiceArgs = {
-  input: ToggleDepartmentServiceInput;
-};
-
-
-export type MutationToggleFirewallTemplateArgs = {
-  machineId: Scalars['ID']['input'];
-  template: FirewallTemplate;
-};
-
-
-export type MutationToggleGlobalServiceArgs = {
-  input: ToggleServiceInput;
-};
-
-
 export type MutationToggleMaintenanceTaskArgs = {
   enabled: Scalars['Boolean']['input'];
   id: Scalars['ID']['input'];
-};
-
-
-export type MutationToggleVmServiceArgs = {
-  input: ToggleVmServiceInput;
-};
-
-
-export type MutationUnassignGenericFilterFromDepartmentArgs = {
-  departmentId: Scalars['ID']['input'];
-  genericFilterId: Scalars['ID']['input'];
-};
-
-
-export type MutationUnassignGenericFilterFromVmArgs = {
-  genericFilterId: Scalars['ID']['input'];
-  vmId: Scalars['ID']['input'];
 };
 
 
@@ -1333,26 +1079,14 @@ export type MutationUpdateApplicationArgs = {
 };
 
 
-export type MutationUpdateDepartmentFirewallRuleArgs = {
-  input: UpdateFilterRuleInput;
-  ruleId: Scalars['ID']['input'];
-};
-
-
 export type MutationUpdateDepartmentNameArgs = {
   input: UpdateDepartmentNameInput;
 };
 
 
-export type MutationUpdateFilterArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateFilterInput;
-};
-
-
-export type MutationUpdateFilterRuleArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateFilterRuleInput;
+export type MutationUpdateFirewallRuleArgs = {
+  input: UpdateFirewallRuleInput;
+  ruleId: Scalars['ID']['input'];
 };
 
 
@@ -1516,14 +1250,6 @@ export type PaginationInputType = {
   take?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/** Types of port configurations supported in advanced firewall rules */
-export enum PortInputType {
-  All = 'ALL',
-  Multiple = 'MULTIPLE',
-  Range = 'RANGE',
-  Single = 'SINGLE'
-}
-
 export type ProcessControlResult = {
   __typename?: 'ProcessControlResult';
   error?: Maybe<Scalars['String']['output']>;
@@ -1567,45 +1293,33 @@ export type Query = {
   dueMaintenanceTasks: Array<MaintenanceTask>;
   findDepartmentByName?: Maybe<DepartmentType>;
   getAppSettings: AppSettings;
-  getAvailableFirewallTemplates: Array<FirewallTemplateInfo>;
-  getAvailableTemplatesForDepartment: Array<GenericFilter>;
-  getDepartmentAssignedGenericFilters: Array<GenericFilter>;
-  getDepartmentFirewallRules: Array<FwRule>;
-  getDepartmentFirewallState: DepartmentFirewallState;
-  getDepartmentServiceStatus: Array<DepartmentServiceStatus>;
-  getFilter?: Maybe<GenericFilter>;
-  getFirewallTemplateInfo?: Maybe<FirewallTemplateInfo>;
-  getGenericFilters: Array<GenericFilter>;
-  getGlobalServiceStatus: Array<GlobalServiceStatus>;
+  /** Get firewall rules for a department */
+  getDepartmentFirewallRules?: Maybe<FirewallRuleSet>;
+  /** Get effective firewall rules for a VM (department + VM merged) */
+  getEffectiveFirewallRules: EffectiveRuleSet;
   getGraphics: Array<Gpu>;
   getLatestVMHealth?: Maybe<VmHealthSnapshotType>;
-  getServiceStatusSummary: Array<ServiceStatusSummary>;
-  getSimplifiedFirewallRules: Array<SimplifiedFirewallRule>;
   /** Get supported OS types */
   getSupportedOSTypes: Array<Scalars['String']['output']>;
   getSystemResources: SystemResources;
   /** Get installed applications inventory for a VM */
   getVMApplicationInventory: ApplicationInventory;
-  getVMAssignedGenericFilters: Array<AssignedGenericFilter>;
-  getVMFirewallState: VmFirewallState;
+  /** Get firewall rules for a VM */
+  getVMFirewallRules?: Maybe<FirewallRuleSet>;
   /** Get comprehensive health check status for a VM */
   getVMHealthStatus: HealthCheckStatus;
   /** Get automated recommendations for VM optimization, security, and maintenance based on system analysis. Returns up to 20 recommendations by default to prevent over-fetch. Use pagination for more results. */
   getVMRecommendations: Array<VmRecommendationType>;
-  getVmServiceStatus: Array<VmServiceStatus>;
   /** Get Windows Update history for a VM */
   getWindowsUpdateHistory: WindowsUpdateHistory;
   graphicConnection?: Maybe<GraphicConfigurationType>;
   healthCheckQueueStats: QueueStatsType;
   healthQueueStatistics: QueueStatistics;
   latestVMHealthSnapshot?: Maybe<VmHealthSnapshotType>;
-  listFilterRules: Array<FwRule>;
-  listFilters: Array<GenericFilter>;
+  /** List all Infinibay filters in libvirt */
+  listInfinibayFilters: Array<LibvirtFilterInfo>;
   /** List all installed packages on a virtual machine */
   listInstalledPackages: Array<PackageInfo>;
-  listSecurityServices: Array<ServiceDefinition>;
-  /** List all services running on a virtual machine */
-  listServices: Array<ServiceInfo>;
   machine?: Maybe<Machine>;
   /** List all snapshots for a virtual machine */
   machineSnapshots: SnapshotListResult;
@@ -1628,6 +1342,8 @@ export type Query = {
   socketConnectionStats?: Maybe<SocketConnectionStats>;
   user: UserType;
   users: Array<UserType>;
+  /** Validate firewall rule before creating */
+  validateFirewallRule: ValidationResult;
   vmHealthCheckQueue: Array<VmHealthCheckQueueType>;
   vmHealthHistory: Array<VmHealthSnapshotType>;
   vmHealthStats: VmHealthStatsType;
@@ -1694,53 +1410,17 @@ export type QueryFindDepartmentByNameArgs = {
 };
 
 
-export type QueryGetAvailableTemplatesForDepartmentArgs = {
-  departmentId: Scalars['ID']['input'];
-};
-
-
-export type QueryGetDepartmentAssignedGenericFiltersArgs = {
-  departmentId: Scalars['ID']['input'];
-};
-
-
 export type QueryGetDepartmentFirewallRulesArgs = {
   departmentId: Scalars['ID']['input'];
 };
 
 
-export type QueryGetDepartmentFirewallStateArgs = {
-  departmentId: Scalars['ID']['input'];
-};
-
-
-export type QueryGetDepartmentServiceStatusArgs = {
-  departmentId: Scalars['ID']['input'];
-  serviceId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type QueryGetFilterArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QueryGetFirewallTemplateInfoArgs = {
-  template: FirewallTemplate;
-};
-
-
-export type QueryGetGlobalServiceStatusArgs = {
-  serviceId?: InputMaybe<Scalars['ID']['input']>;
+export type QueryGetEffectiveFirewallRulesArgs = {
+  vmId: Scalars['ID']['input'];
 };
 
 
 export type QueryGetLatestVmHealthArgs = {
-  machineId: Scalars['ID']['input'];
-};
-
-
-export type QueryGetSimplifiedFirewallRulesArgs = {
   machineId: Scalars['ID']['input'];
 };
 
@@ -1750,13 +1430,8 @@ export type QueryGetVmApplicationInventoryArgs = {
 };
 
 
-export type QueryGetVmAssignedGenericFiltersArgs = {
+export type QueryGetVmFirewallRulesArgs = {
   vmId: Scalars['ID']['input'];
-};
-
-
-export type QueryGetVmFirewallStateArgs = {
-  machineId: Scalars['ID']['input'];
 };
 
 
@@ -1768,12 +1443,6 @@ export type QueryGetVmHealthStatusArgs = {
 export type QueryGetVmRecommendationsArgs = {
   filter?: InputMaybe<RecommendationFilterInput>;
   refresh?: InputMaybe<Scalars['Boolean']['input']>;
-  vmId: Scalars['ID']['input'];
-};
-
-
-export type QueryGetVmServiceStatusArgs = {
-  serviceId?: InputMaybe<Scalars['ID']['input']>;
   vmId: Scalars['ID']['input'];
 };
 
@@ -1794,24 +1463,8 @@ export type QueryLatestVmHealthSnapshotArgs = {
 };
 
 
-export type QueryListFilterRulesArgs = {
-  filterId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type QueryListFiltersArgs = {
-  departmentId?: InputMaybe<Scalars['ID']['input']>;
-  vmId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
 export type QueryListInstalledPackagesArgs = {
   machineId: Scalars['ID']['input'];
-};
-
-
-export type QueryListServicesArgs = {
-  machineId: Scalars['String']['input'];
 };
 
 
@@ -1896,6 +1549,11 @@ export type QueryUserArgs = {
 export type QueryUsersArgs = {
   orderBy?: InputMaybe<UserOrderByInputType>;
   pagination?: InputMaybe<PaginationInputType>;
+};
+
+
+export type QueryValidateFirewallRuleArgs = {
+  input: CreateFirewallRuleInput;
 };
 
 
@@ -2006,118 +1664,29 @@ export type RestoreSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
-/** Service action type (USE for outbound, PROVIDE for inbound) */
-export enum ServiceAction {
-  Provide = 'PROVIDE',
-  Use = 'USE'
+export enum RuleAction {
+  Accept = 'ACCEPT',
+  Drop = 'DROP',
+  Reject = 'REJECT'
 }
 
-export type ServiceControlInput = {
-  action: VmServiceAction;
-  machineId: Scalars['String']['input'];
-  serviceName: Scalars['String']['input'];
-};
-
-export type ServiceDefinition = {
-  __typename?: 'ServiceDefinition';
-  /** Description of the service */
-  description: Scalars['String']['output'];
-  /** Human-readable name of the service */
-  displayName: Scalars['String']['output'];
-  /** Unique identifier for the service */
-  id: Scalars['ID']['output'];
-  /** Internal name of the service */
-  name: Scalars['String']['output'];
-  /** Port configurations for the service */
-  ports: Array<ServicePort>;
-  /** Description of the risk */
-  riskDescription: Scalars['String']['output'];
-  /** Risk level of the service */
-  riskLevel: ServiceRiskLevel;
-};
-
-export type ServiceInfo = {
-  __typename?: 'ServiceInfo';
-  description?: Maybe<Scalars['String']['output']>;
-  displayName?: Maybe<Scalars['String']['output']>;
-  name: Scalars['String']['output'];
-  pid?: Maybe<Scalars['Float']['output']>;
-  startType?: Maybe<ServiceStartType>;
-  status: ServiceStatus;
-};
-
-export type ServicePort = {
-  __typename?: 'ServicePort';
-  /** Ending port number */
-  portEnd: Scalars['Float']['output'];
-  /** Starting port number */
-  portStart: Scalars['Float']['output'];
-  /** Protocol (TCP or UDP) */
-  protocol: Scalars['String']['output'];
-};
-
-/** Risk level of a service */
-export enum ServiceRiskLevel {
-  High = 'HIGH',
-  Low = 'LOW',
-  Medium = 'MEDIUM'
-}
-
-/** The startup type of a system service */
-export enum ServiceStartType {
-  Automatic = 'AUTOMATIC',
-  Disabled = 'DISABLED',
-  Manual = 'MANUAL',
-  Unknown = 'UNKNOWN'
-}
-
-/** The current status of a system service */
-export enum ServiceStatus {
-  Disabled = 'DISABLED',
-  Running = 'RUNNING',
-  Stopped = 'STOPPED',
-  Unknown = 'UNKNOWN'
-}
-
-export type ServiceStatusSummary = {
-  __typename?: 'ServiceStatusSummary';
-  /** Number of VMs with this service enabled */
-  enabledVms: Scalars['Float']['output'];
-  /** Number of VMs with this service running */
-  runningVms: Scalars['Float']['output'];
-  /** Unique identifier for the service */
-  serviceId: Scalars['ID']['output'];
-  /** Name of the service */
-  serviceName: Scalars['String']['output'];
-  /** Total number of VMs */
-  totalVms: Scalars['Float']['output'];
-};
-
-export type ServiceStatusType = {
-  __typename?: 'ServiceStatusType';
-  error?: Maybe<Scalars['String']['output']>;
+export type RuleConflict = {
+  __typename?: 'RuleConflict';
+  affectedRules: Array<FirewallRule>;
   message: Scalars['String']['output'];
-  service?: Maybe<ServiceInfo>;
-  success: Scalars['Boolean']['output'];
+  type: ConflictType;
 };
 
-export type SimplifiedFirewallRule = {
-  __typename?: 'SimplifiedFirewallRule';
-  /** Firewall action (accept, drop, reject) */
-  action: Scalars['String']['output'];
-  /** Rule description */
-  description?: Maybe<Scalars['String']['output']>;
-  /** Traffic direction (in, out, inout) */
-  direction: Scalars['String']['output'];
-  /** Unique rule identifier */
-  id?: Maybe<Scalars['ID']['output']>;
-  /** Port specification (e.g., "80", "80-90", "all") */
-  port: Scalars['String']['output'];
-  /** Network protocol (tcp, udp, icmp) */
-  protocol: Scalars['String']['output'];
-  /** Rule sources (templates or custom) */
-  sources?: Maybe<Array<Scalars['String']['output']>>;
-};
+export enum RuleDirection {
+  In = 'IN',
+  Inout = 'INOUT',
+  Out = 'OUT'
+}
+
+export enum RuleSetType {
+  Department = 'DEPARTMENT',
+  Vm = 'VM'
+}
 
 export type Snapshot = {
   __typename?: 'Snapshot';
@@ -2163,6 +1732,15 @@ export type SuccessType = {
   success: Scalars['Boolean']['output'];
 };
 
+export type SyncResult = {
+  __typename?: 'SyncResult';
+  errors: Array<Scalars['String']['output']>;
+  filtersCreated: Scalars['Int']['output'];
+  filtersUpdated: Scalars['Int']['output'];
+  success: Scalars['Boolean']['output'];
+  vmsUpdated: Scalars['Int']['output'];
+};
+
 export type SystemReadiness = {
   __typename?: 'SystemReadiness';
   availableOS: Array<Scalars['String']['output']>;
@@ -2196,61 +1774,28 @@ export type SystemResources = {
   memory: SystemResourceMemory;
 };
 
-export type ToggleDepartmentServiceInput = {
-  /** Service action (USE for outbound, PROVIDE for inbound) */
-  action: ServiceAction;
-  /** Unique identifier of the department */
-  departmentId: Scalars['ID']['input'];
-  /** Whether to enable or disable the service */
-  enabled: Scalars['Boolean']['input'];
-  /** Unique identifier of the service to toggle */
-  serviceId: Scalars['ID']['input'];
-};
-
-export type ToggleServiceInput = {
-  /** Service action (USE for outbound, PROVIDE for inbound) */
-  action: ServiceAction;
-  /** Whether to enable or disable the service */
-  enabled: Scalars['Boolean']['input'];
-  /** Unique identifier of the service to toggle */
-  serviceId: Scalars['ID']['input'];
-};
-
-export type ToggleVmServiceInput = {
-  /** Service action (USE for outbound, PROVIDE for inbound) */
-  action: ServiceAction;
-  /** Whether to enable or disable the service */
-  enabled: Scalars['Boolean']['input'];
-  /** Unique identifier of the service to toggle */
-  serviceId: Scalars['ID']['input'];
-  /** Unique identifier of the VM */
-  vmId: Scalars['ID']['input'];
-};
-
 export type UpdateDepartmentNameInput = {
   id?: Scalars['ID']['input'];
   name?: Scalars['String']['input'];
 };
 
-export type UpdateFilterInput = {
-  chain?: InputMaybe<Scalars['String']['input']>;
+export type UpdateFirewallRuleInput = {
+  action?: InputMaybe<RuleAction>;
+  connectionState?: InputMaybe<Scalars['JSONObject']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  type?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type UpdateFilterRuleInput = {
-  action?: Scalars['String']['input'];
-  comment?: InputMaybe<Scalars['String']['input']>;
-  direction?: Scalars['String']['input'];
+  direction?: InputMaybe<RuleDirection>;
+  dstIpAddr?: InputMaybe<Scalars['String']['input']>;
+  dstIpMask?: InputMaybe<Scalars['String']['input']>;
   dstPortEnd?: InputMaybe<Scalars['Int']['input']>;
   dstPortStart?: InputMaybe<Scalars['Int']['input']>;
-  ipVersion?: InputMaybe<Scalars['String']['input']>;
-  priority?: Scalars['Int']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  overridesDept?: InputMaybe<Scalars['Boolean']['input']>;
+  priority?: InputMaybe<Scalars['Int']['input']>;
   protocol?: InputMaybe<Scalars['String']['input']>;
+  srcIpAddr?: InputMaybe<Scalars['String']['input']>;
+  srcIpMask?: InputMaybe<Scalars['String']['input']>;
   srcPortEnd?: InputMaybe<Scalars['Int']['input']>;
   srcPortStart?: InputMaybe<Scalars['Int']['input']>;
-  state?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateMachineHardwareInput = {
@@ -2336,18 +1881,6 @@ export type UserType = {
   role: Scalars['String']['output'];
 };
 
-export type VmFirewallState = {
-  __typename?: 'VMFirewallState';
-  /** Applied firewall templates */
-  appliedTemplates: Array<Scalars['String']['output']>;
-  /** Custom firewall rules */
-  customRules: Array<SimplifiedFirewallRule>;
-  /** All effective firewall rules */
-  effectiveRules: Array<SimplifiedFirewallRule>;
-  /** Last sync with hypervisor */
-  lastSync?: Maybe<Scalars['DateTimeISO']['output']>;
-};
-
 export type VmHealthCheckQueueType = {
   __typename?: 'VMHealthCheckQueueType';
   attempts: Scalars['Int']['output'];
@@ -2420,15 +1953,12 @@ export type VmRecommendationType = {
   type: RecommendationType;
 };
 
-/** Actions that can be performed on a VM service */
-export enum VmServiceAction {
-  Disable = 'DISABLE',
-  Enable = 'ENABLE',
-  Restart = 'RESTART',
-  Start = 'START',
-  Status = 'STATUS',
-  Stop = 'STOP'
-}
+export type ValidationResult = {
+  __typename?: 'ValidationResult';
+  conflicts: Array<RuleConflict>;
+  isValid: Scalars['Boolean']['output'];
+  warnings: Array<Scalars['String']['output']>;
+};
 
 export type VmConnectionInfo = {
   __typename?: 'VmConnectionInfo';
@@ -2449,26 +1979,6 @@ export type VmDiagnostics = {
   vmId: Scalars['String']['output'];
   vmName: Scalars['String']['output'];
   vmStatus: Scalars['String']['output'];
-};
-
-export type VmServiceStatus = {
-  __typename?: 'VmServiceStatus';
-  /** When the service was last seen running */
-  lastSeen?: Maybe<Scalars['DateTimeISO']['output']>;
-  /** Whether the service is enabled for inbound traffic */
-  provideEnabled: Scalars['Boolean']['output'];
-  /** Whether the service is currently running */
-  running: Scalars['Boolean']['output'];
-  /** Unique identifier for the service */
-  serviceId: Scalars['ID']['output'];
-  /** Name of the service */
-  serviceName: Scalars['String']['output'];
-  /** Whether the service is enabled for outbound traffic */
-  useEnabled: Scalars['Boolean']['output'];
-  /** Unique identifier for the VM */
-  vmId: Scalars['ID']['output'];
-  /** Name of the VM */
-  vmName: Scalars['String']['output'];
 };
 
 export type WindowsDefenderStatus = {

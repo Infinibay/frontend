@@ -12,7 +12,8 @@ import { AlertCircle, Upload } from 'lucide-react';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LottieAnimation } from '@/components/ui/lottie-animation';
+import { SimpleIllustration } from '@/components/ui/undraw-illustration';
+import { CloudDownload } from 'lucide-react';
 
 const osOptions = [
   {
@@ -165,15 +166,13 @@ export function ConfigurationStep({ id }) {
               </button> to upload multiple ISO files at once. Once uploaded, the operating system will become available for selection.
             </p>
           </div>
-          {/* Animation emerging from the right side, bottom aligned with text */}
+          {/* Illustration emerging from the right side, bottom aligned with text */}
           <div className="absolute -right-8 bottom-0">
-            <LottieAnimation
-              animationPath="/lottie/man-downloading-from-cloud.json"
+            <SimpleIllustration
+              icon={CloudDownload}
+              size="large"
+              opacity={15}
               className="w-60 h-60"
-              loop={true}
-              autoplay={true}
-              speed={0.8}
-              ariaLabel="Download animation"
             />
           </div>
         </div>

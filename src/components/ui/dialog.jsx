@@ -29,10 +29,12 @@ const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => {
         blurClass,
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-        "data-[state=closed]:backdrop-blur-none",
-        "transition-all duration-200",
         className
       )}
+      style={{
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)'
+      }}
       {...props} />
   )
 })

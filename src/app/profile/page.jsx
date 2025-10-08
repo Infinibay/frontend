@@ -24,7 +24,8 @@ import { SizeProvider } from '@/components/ui/size-provider';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { AvatarSelector } from '@/components/ui/avatar-selector';
+import { Avatar } from '@/components/ui/avatar';
+import { ExternalLink } from 'lucide-react';
 import { UpdateUserDocument } from '@/gql/hooks';
 import { realTimeCurrentUserUpdated } from '@/state/slices/auth';
 import { User, Lock } from 'lucide-react';
@@ -121,20 +122,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleAvatarUpdate = async (avatarPath) => {
-    try {
-      await runUpdateUser({
-        variables: {
-          id: user.id,
-          input: {
-            avatar: avatarPath,
-          },
-        },
-      });
-    } catch (error) {
-      console.error('Avatar update error:', error);
-    }
-  };
 
   const newPassword = watch('newPassword');
 
@@ -423,7 +410,7 @@ export default function ProfilePage() {
             </div>
           </form>
 
-          {/* Profile Avatar Section */}
+          {/* Profile Avatar Section - Gravatar */}
           <Card className="glass-strong glow-subtle p-6 mt-6" forceGlass={true}>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -433,18 +420,52 @@ export default function ProfilePage() {
                 <div>
                   <h2 className="text-base font-semibold">Profile Avatar</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Choose your profile picture. Changes are applied immediately.
+                    Your avatar is managed through Gravatar based on your email address
                   </p>
                 </div>
               </div>
-              <AvatarSelector
-                selectedAvatar={user.avatar}
-                onAvatarSelect={handleAvatarUpdate}
-                loading={updateLoading}
-                glass="none"
-                glow="none"
-                elevation="0"
-              />
+
+              <div className="flex items-start gap-6 p-4 rounded-lg bg-muted/30">
+                {/* Current Avatar Preview */}
+                <div className="flex-shrink-0">
+                  <Avatar
+                    email={user.email}
+                    fallback={`${user.firstName} ${user.lastName}`}
+                    size="lg"
+                    className="w-24 h-24"
+                  />
+                </div>
+
+                {/* Gravatar Information */}
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">About Your Avatar</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your profile picture is automatically generated from your email address ({user.email}) using Gravatar.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Change Your Avatar</h4>
+                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                      <li>Visit Gravatar.com and create a free account</li>
+                      <li>Upload your desired profile picture</li>
+                      <li>Associate it with your email: {user.email}</li>
+                      <li>Your new avatar will appear automatically here</li>
+                    </ol>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open('https://gravatar.com', '_blank')}
+                    className="mt-2"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Manage Avatar on Gravatar
+                  </Button>
+                </div>
+              </div>
             </div>
           </Card>
         </div>

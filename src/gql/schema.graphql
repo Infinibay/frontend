@@ -3,17 +3,6 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
-input AdvancedPortInput {
-  """Description of the port configuration"""
-  description: String
-
-  """Type of port configuration"""
-  type: PortInputType!
-
-  """Port specification string"""
-  value: String!
-}
-
 type AppSettings {
   createdAt: DateTimeISO!
   id: ID!
@@ -93,26 +82,6 @@ type ApplicationUpdates {
   windowsUpdatesCount: Int
 }
 
-input ApplyDepartmentTemplateInput {
-  departmentId: ID! = ""
-  templateFilterId: ID! = ""
-}
-
-input ApplyFirewallTemplateInput {
-  """Virtual machine ID"""
-  machineId: ID!
-
-  """Firewall template to apply"""
-  template: FirewallTemplate!
-}
-
-type AssignedGenericFilter {
-  filter: GenericFilter!
-  inheritedFrom: String
-  inheritedFromId: ID
-  isInherited: Boolean!
-}
-
 type BackgroundHealthServiceStatus {
   activeQueues: Int!
   cronActive: Boolean!
@@ -152,55 +121,12 @@ type CommandResult {
   success: Boolean!
 }
 
-input CreateAdvancedFirewallRuleInput {
-  """Firewall action (accept, drop, reject)"""
-  action: String! = "accept"
-
-  """Optional rule description"""
-  description: String
-
-  """Traffic direction (in, out, inout)"""
-  direction: String! = "in"
-
-  """Virtual machine ID"""
-  machineId: ID!
-
-  """Advanced port configuration"""
-  ports: AdvancedPortInput!
-
-  """Network protocol (tcp, udp, icmp)"""
-  protocol: String! = "tcp"
-}
-
 input CreateApplicationInputType {
   description: String
   installCommand: JSONObject!
   name: String! = ""
   os: [String!]! = []
   parameters: JSONObject = null
-}
-
-input CreateFilterInput {
-  chain: String = "root"
-  departmentId: ID
-  description: String! = ""
-  name: String! = ""
-  type: FilterType = GENERIC
-}
-
-input CreateFilterRuleInput {
-  action: String! = ""
-  comment: String
-  direction: String! = ""
-  dstPortEnd: Int
-  dstPortStart: Int
-  filterId: String! = ""
-  ipVersion: String
-  priority: Int! = 0
-  protocol: String
-  srcPortEnd: Int
-  srcPortStart: Int
-  state: String
 }
 
 input CreateMachineInputType {
@@ -237,26 +163,6 @@ input CreateNetworkInput {
   enabledServices: [String!]
   ipConfig: NetworkIpConfigInput
   name: String! = ""
-}
-
-input CreateSimplifiedFirewallRuleInput {
-  """Firewall action (accept, drop, reject)"""
-  action: String! = "accept"
-
-  """Optional rule description"""
-  description: String
-
-  """Traffic direction (in, out, inout)"""
-  direction: String! = "in"
-
-  """Virtual machine ID"""
-  machineId: ID!
-
-  """Port specification (e.g., "80", "443", "all")"""
-  port: String!
-
-  """Network protocol (tcp, udp, icmp)"""
-  protocol: String! = "tcp"
 }
 
 input CreateSnapshotInput {
@@ -299,41 +205,6 @@ input DeleteNetworkInput {
 input DeleteSnapshotInput {
   machineId: String!
   snapshotName: String!
-}
-
-type DepartmentFirewallState {
-  appliedTemplates: [String!]!
-  customRules: [FWRule!]!
-  departmentId: ID!
-  effectiveRules: [FWRule!]!
-  lastSync: DateTimeISO!
-  vmCount: Int!
-}
-
-type DepartmentServiceStatus {
-  """Unique identifier for the department"""
-  departmentId: ID!
-
-  """Name of the department"""
-  departmentName: String!
-
-  """Number of VMs in the department with this service enabled"""
-  enabledVmCount: Float!
-
-  """Whether the service is enabled for inbound traffic"""
-  provideEnabled: Boolean!
-
-  """Unique identifier for the service"""
-  serviceId: ID!
-
-  """Name of the service"""
-  serviceName: String!
-
-  """Whether the service is enabled for outbound traffic"""
-  useEnabled: Boolean!
-
-  """Total number of VMs in the department"""
-  vmCount: Float!
 }
 
 type DepartmentType {
@@ -386,73 +257,11 @@ input ExecuteMaintenanceInput {
   taskType: MaintenanceTaskType!
 }
 
-type FWRule {
-  action: String!
-  comment: String
-  createdAt: DateTimeISO
-  direction: String!
-  dstIpAddr: String
-  dstIpMask: String
-  dstPortEnd: Int
-  dstPortStart: Int
-  id: ID!
-  ipVersion: String
-  priority: Int!
-  protocol: String!
-  srcIpAddr: String
-  srcIpMask: String
-  srcMacAddr: String
-  srcPortEnd: Int
-  srcPortStart: Int
-  state: JSONObject
-  updatedAt: DateTimeISO
-}
-
-"""Type of network filter"""
-enum FilterType {
-  DEPARTMENT
-  GENERIC
-  VM
-}
-
-"""Predefined firewall template configurations for common use cases"""
-enum FirewallTemplate {
-  DATABASE
-  DESKTOP
-  DEVELOPMENT
-  WEB_SERVER
-}
-
-type FirewallTemplateInfo {
-  """Human-readable template description"""
-  description: String!
-
-  """Template name identifier"""
-  name: String!
-
-  """List of rules included in this template"""
-  rules: [SimplifiedFirewallRule!]!
-
-  """Template identifier (e.g., WEB_SERVER, DATABASE)"""
-  template: String!
-}
-
 type GPU {
   memory: Float!
   model: String!
   pciBus: String!
   vendor: String!
-}
-
-type GenericFilter {
-  createdAt: DateTimeISO!
-  description: String
-  id: ID!
-  name: String!
-  references: [String!]!
-  rules: [FWRule!]
-  type: FilterType!
-  updatedAt: DateTimeISO!
 }
 
 type GenericHealthCheckResponse {
@@ -464,20 +273,6 @@ type GenericHealthCheckResponse {
   success: Boolean!
   timestamp: DateTimeISO!
   vmId: ID!
-}
-
-type GlobalServiceStatus {
-  """Whether the service is enabled for inbound traffic"""
-  provideEnabled: Boolean!
-
-  """Unique identifier for the service"""
-  serviceId: ID!
-
-  """Name of the service"""
-  serviceName: String!
-
-  """Whether the service is enabled for outbound traffic"""
-  useEnabled: Boolean!
 }
 
 type GraphicConfigurationType {
@@ -794,67 +589,20 @@ enum MaintenanceTrigger {
 }
 
 type Mutation {
-  """Add a filter reference for template application"""
-  addFilterReference(sourceFilterId: ID!, targetFilterId: ID!): Boolean!
-  applyDepartmentFirewallTemplate(input: ApplyDepartmentTemplateInput!): Boolean!
-  applyFirewallTemplate(input: ApplyFirewallTemplateInput!): VMFirewallState!
-  assignGenericFilterToDepartment(departmentId: ID!, genericFilterId: ID!): Boolean!
-  assignGenericFilterToVM(genericFilterId: ID!, vmId: ID!): Boolean!
-
   """Calculate ISO checksum"""
   calculateISOChecksum(isoId: String!): String!
-
-  """Control a service on a virtual machine"""
-  controlService(input: ServiceControlInput!): ServiceStatusType!
-
-  """Create advanced firewall rule with flexible port configuration"""
-  createAdvancedFirewallRule(
-    """Advanced firewall rule configuration"""
-    input: CreateAdvancedFirewallRuleInput!
-  ): VMFirewallState!
   createApplication(input: CreateApplicationInputType!): ApplicationType!
   createDepartment(name: String!): DepartmentType!
-  createDepartmentFirewallRule(departmentId: ID!, input: CreateFilterRuleInput!): FWRule!
-  createFilter(input: CreateFilterInput!): GenericFilter!
-  createFilterRule(filterId: ID!, input: CreateFilterRuleInput!): FWRule!
   createMachine(input: CreateMachineInputType!): Machine!
   createMachineTemplate(input: MachineTemplateInputType!): MachineTemplateType!
   createMachineTemplateCategory(input: MachineTemplateCategoryInputType!): MachineTemplateCategoryType!
   createMaintenanceTask(input: CreateMaintenanceTaskInput!): MaintenanceTaskResponse!
   createNetwork(input: CreateNetworkInput!): Boolean!
 
-  """Create firewall rule for a specific port range"""
-  createPortRangeRule(
-    """Firewall action: accept, drop, or reject"""
-    action: String! = "accept"
-
-    """Optional description for the rule"""
-    description: String
-
-    """Traffic direction: in, out, or inout"""
-    direction: String! = "in"
-
-    """Ending port number (1-65535)"""
-    endPort: Int!
-
-    """ID of the virtual machine to configure"""
-    machineId: ID!
-
-    """Network protocol: tcp, udp, or icmp"""
-    protocol: String! = "tcp"
-
-    """Starting port number (1-65535)"""
-    startPort: Int!
-  ): VMFirewallState!
-  createSimplifiedFirewallRule(input: CreateSimplifiedFirewallRuleInput!): VMFirewallState!
-
   """Create a snapshot of a virtual machine"""
   createSnapshot(input: CreateSnapshotInput!): SnapshotResult!
   createUser(input: CreateUserInputType!): UserType!
   deleteApplication(id: String!): Boolean!
-  deleteDepartmentFirewallRule(ruleId: ID!): Boolean!
-  deleteFilter(id: ID!): Boolean!
-  deleteFilterRule(id: ID!): Boolean!
   deleteMaintenanceTask(id: ID!): MaintenanceTaskResponse!
   deleteNetwork(input: DeleteNetworkInput!): Boolean!
 
@@ -867,10 +615,6 @@ type Mutation {
   executeCommand(command: String!, id: String!): CommandExecutionResponseType!
   executeImmediateMaintenance(input: ExecuteMaintenanceInput!): MaintenanceExecutionResponse!
   executeMaintenanceTask(taskId: ID!): MaintenanceExecutionResponse!
-  flushDepartmentFirewall(departmentId: ID!): Boolean!
-
-  """Apply a network filter inmediatly"""
-  flushFilter(filterId: ID!): Boolean!
   forcePowerOff(id: String!): SuccessType!
 
   """Force power off and restore snapshot (emergency recovery)"""
@@ -891,22 +635,15 @@ type Mutation {
   powerOff(id: String!): SuccessType!
   powerOn(id: String!): SuccessType!
   queueAllVMHealthChecks: HealthCheckRoundResult!
-  refreshDepartmentVMFilters(departmentId: ID!): Boolean!
 
   """Register uploaded ISO"""
   registerISO(filename: String!, os: String!, path: String!, size: Float!): ISO!
-  removeDepartmentFirewallTemplate(departmentId: ID!, templateFilterId: ID!): Boolean!
-
-  """Remove a filter reference"""
-  removeFilterReference(sourceFilterId: ID!, targetFilterId: ID!): Boolean!
-  removeFirewallTemplate(machineId: ID!, template: FirewallTemplate!): VMFirewallState!
 
   """Remove ISO file"""
   removeISO(isoId: String!): Boolean!
 
   """Remove a package from a virtual machine (legacy compatibility)"""
   removePackage(machineId: ID!, packageName: String!): CommandResult!
-  removeSimplifiedFirewallRule(machineId: ID!, ruleId: ID!): VMFirewallState!
   resetMachine(id: String!): SuccessType!
   restartMachine(id: String!): SuccessType!
 
@@ -923,21 +660,11 @@ type Mutation {
 
   """Sync ISOs with filesystem"""
   syncISOs: Boolean!
-  toggleDepartmentFirewallTemplate(departmentId: ID!, templateFilterId: ID!): Boolean!
-  toggleDepartmentService(input: ToggleDepartmentServiceInput!): DepartmentServiceStatus!
-  toggleFirewallTemplate(machineId: ID!, template: FirewallTemplate!): VMFirewallState!
-  toggleGlobalService(input: ToggleServiceInput!): GlobalServiceStatus!
   toggleMaintenanceTask(enabled: Boolean!, id: ID!): MaintenanceTaskResponse!
-  toggleVmService(input: ToggleVmServiceInput!): VmServiceStatus!
   triggerHealthCheckRound: HealthCheckRoundResult!
-  unassignGenericFilterFromDepartment(departmentId: ID!, genericFilterId: ID!): Boolean!
-  unassignGenericFilterFromVM(genericFilterId: ID!, vmId: ID!): Boolean!
   updateAppSettings(input: AppSettingsInput!): AppSettings!
   updateApplication(id: String!, input: CreateApplicationInputType!): ApplicationType!
-  updateDepartmentFirewallRule(input: UpdateFilterRuleInput!, ruleId: ID!): FWRule!
   updateDepartmentName(input: UpdateDepartmentNameInput!): DepartmentType!
-  updateFilter(id: ID!, input: UpdateFilterInput!): GenericFilter!
-  updateFilterRule(id: ID!, input: UpdateFilterRuleInput!): FWRule!
   updateMachineHardware(input: UpdateMachineHardwareInput!): Machine!
   updateMachineName(input: UpdateMachineNameInput!): Machine!
   updateMachineTemplate(id: String!, input: MachineTemplateInputType!): MachineTemplateType!
@@ -951,6 +678,27 @@ type Mutation {
 
   """Validate ISO file integrity"""
   validateISO(isoId: String!): Boolean!
+
+  """Create firewall rule for a department"""
+  createDepartmentFirewallRule(departmentId: ID!, input: CreateFirewallRuleInput!): FirewallRule!
+
+  """Create firewall rule for a VM"""
+  createVMFirewallRule(vmId: ID!, input: CreateFirewallRuleInput!): FirewallRule!
+
+  """Update firewall rule"""
+  updateFirewallRule(ruleId: ID!, input: UpdateFirewallRuleInput!): FirewallRule!
+
+  """Delete firewall rule"""
+  deleteFirewallRule(ruleId: ID!): Boolean!
+
+  """Apply firewall rules to VM immediately (flush)"""
+  flushFirewallRules(vmId: ID!): FlushResult!
+
+  """Sync all firewall configurations to libvirt"""
+  syncFirewallToLibvirt: SyncResult!
+
+  """Clean up all Infinibay firewall filters (for uninstall)"""
+  cleanupInfinibayFirewall: CleanupResult!
 }
 
 type Network {
@@ -1070,14 +818,6 @@ input PaginationInputType {
   take: Int = 20
 }
 
-"""Types of port configurations supported in advanced firewall rules"""
-enum PortInputType {
-  ALL
-  MULTIPLE
-  RANGE
-  SINGLE
-}
-
 type ProcessControlResult {
   error: String
   message: String!
@@ -1129,20 +869,8 @@ type Query {
   dueMaintenanceTasks: [MaintenanceTask!]!
   findDepartmentByName(name: String!): DepartmentType
   getAppSettings: AppSettings!
-  getAvailableFirewallTemplates: [FirewallTemplateInfo!]!
-  getAvailableTemplatesForDepartment(departmentId: ID!): [GenericFilter!]!
-  getDepartmentAssignedGenericFilters(departmentId: ID!): [GenericFilter!]!
-  getDepartmentFirewallRules(departmentId: ID!): [FWRule!]!
-  getDepartmentFirewallState(departmentId: ID!): DepartmentFirewallState!
-  getDepartmentServiceStatus(departmentId: ID!, serviceId: ID): [DepartmentServiceStatus!]!
-  getFilter(id: ID!): GenericFilter
-  getFirewallTemplateInfo(template: FirewallTemplate!): FirewallTemplateInfo
-  getGenericFilters: [GenericFilter!]!
-  getGlobalServiceStatus(serviceId: ID): [GlobalServiceStatus!]!
   getGraphics: [GPU!]!
   getLatestVMHealth(machineId: ID!): VMHealthSnapshotType
-  getServiceStatusSummary: [ServiceStatusSummary!]!
-  getSimplifiedFirewallRules(machineId: ID!): [SimplifiedFirewallRule!]!
 
   """Get supported OS types"""
   getSupportedOSTypes: [String!]!
@@ -1150,8 +878,6 @@ type Query {
 
   """Get installed applications inventory for a VM"""
   getVMApplicationInventory(vmId: ID!): ApplicationInventory!
-  getVMAssignedGenericFilters(vmId: ID!): [AssignedGenericFilter!]!
-  getVMFirewallState(machineId: ID!): VMFirewallState!
 
   """Get comprehensive health check status for a VM"""
   getVMHealthStatus(vmId: ID!): HealthCheckStatus!
@@ -1173,7 +899,6 @@ type Query {
     """ID of the virtual machine to get recommendations for"""
     vmId: ID!
   ): [VMRecommendationType!]!
-  getVmServiceStatus(serviceId: ID, vmId: ID!): [VmServiceStatus!]!
 
   """Get Windows Update history for a VM"""
   getWindowsUpdateHistory(days: Float, vmId: ID!): WindowsUpdateHistory!
@@ -1181,15 +906,9 @@ type Query {
   healthCheckQueueStats: QueueStatsType!
   healthQueueStatistics: QueueStatistics!
   latestVMHealthSnapshot(machineId: ID!): VMHealthSnapshotType
-  listFilterRules(filterId: ID): [FWRule!]!
-  listFilters(departmentId: ID, vmId: ID): [GenericFilter!]!
 
   """List all installed packages on a virtual machine"""
   listInstalledPackages(machineId: ID!): [PackageInfo!]!
-  listSecurityServices: [ServiceDefinition!]!
-
-  """List all services running on a virtual machine"""
-  listServices(machineId: String!): [ServiceInfo!]!
   machine(id: String!): Machine
 
   """List all snapshots for a virtual machine"""
@@ -1222,6 +941,21 @@ type Query {
 
   """Get comprehensive diagnostics for VM socket connection issues"""
   vmSocketDiagnostics(vmId: String!): VmDiagnostics!
+
+  """Get firewall rules for a department"""
+  getDepartmentFirewallRules(departmentId: ID!): FirewallRuleSet
+
+  """Get firewall rules for a VM"""
+  getVMFirewallRules(vmId: ID!): FirewallRuleSet
+
+  """Get effective firewall rules for a VM (department + VM merged)"""
+  getEffectiveFirewallRules(vmId: ID!): EffectiveRuleSet!
+
+  """Validate firewall rule before creating"""
+  validateFirewallRule(input: CreateFirewallRuleInput!): ValidationResult!
+
+  """List all Infinibay filters in libvirt"""
+  listInfinibayFilters: [LibvirtFilterInfo!]!
 }
 
 type QueueStatistics {
@@ -1342,131 +1076,6 @@ input RestoreSnapshotInput {
   snapshotName: String!
 }
 
-"""Service action type (USE for outbound, PROVIDE for inbound)"""
-enum ServiceAction {
-  PROVIDE
-  USE
-}
-
-input ServiceControlInput {
-  action: VMServiceAction!
-  machineId: String!
-  serviceName: String!
-}
-
-type ServiceDefinition {
-  """Description of the service"""
-  description: String!
-
-  """Human-readable name of the service"""
-  displayName: String!
-
-  """Unique identifier for the service"""
-  id: ID!
-
-  """Internal name of the service"""
-  name: String!
-
-  """Port configurations for the service"""
-  ports: [ServicePort!]!
-
-  """Description of the risk"""
-  riskDescription: String!
-
-  """Risk level of the service"""
-  riskLevel: ServiceRiskLevel!
-}
-
-type ServiceInfo {
-  description: String
-  displayName: String
-  name: String!
-  pid: Float
-  startType: ServiceStartType
-  status: ServiceStatus!
-}
-
-type ServicePort {
-  """Ending port number"""
-  portEnd: Float!
-
-  """Starting port number"""
-  portStart: Float!
-
-  """Protocol (TCP or UDP)"""
-  protocol: String!
-}
-
-"""Risk level of a service"""
-enum ServiceRiskLevel {
-  HIGH
-  LOW
-  MEDIUM
-}
-
-"""The startup type of a system service"""
-enum ServiceStartType {
-  AUTOMATIC
-  DISABLED
-  MANUAL
-  UNKNOWN
-}
-
-"""The current status of a system service"""
-enum ServiceStatus {
-  DISABLED
-  RUNNING
-  STOPPED
-  UNKNOWN
-}
-
-type ServiceStatusSummary {
-  """Number of VMs with this service enabled"""
-  enabledVms: Float!
-
-  """Number of VMs with this service running"""
-  runningVms: Float!
-
-  """Unique identifier for the service"""
-  serviceId: ID!
-
-  """Name of the service"""
-  serviceName: String!
-
-  """Total number of VMs"""
-  totalVms: Float!
-}
-
-type ServiceStatusType {
-  error: String
-  message: String!
-  service: ServiceInfo
-  success: Boolean!
-}
-
-type SimplifiedFirewallRule {
-  """Firewall action (accept, drop, reject)"""
-  action: String!
-
-  """Rule description"""
-  description: String
-
-  """Traffic direction (in, out, inout)"""
-  direction: String!
-
-  """Unique rule identifier"""
-  id: ID
-
-  """Port specification (e.g., "80", "80-90", "all")"""
-  port: String!
-
-  """Network protocol (tcp, udp, icmp)"""
-  protocol: String!
-
-  """Rule sources (templates or custom)"""
-  sources: [String!]
-}
-
 type Snapshot {
   createdAt: DateTimeISO!
   description: String
@@ -1534,69 +1143,9 @@ type SystemResources {
   memory: SystemResourceMemory!
 }
 
-input ToggleDepartmentServiceInput {
-  """Service action (USE for outbound, PROVIDE for inbound)"""
-  action: ServiceAction!
-
-  """Unique identifier of the department"""
-  departmentId: ID!
-
-  """Whether to enable or disable the service"""
-  enabled: Boolean!
-
-  """Unique identifier of the service to toggle"""
-  serviceId: ID!
-}
-
-input ToggleServiceInput {
-  """Service action (USE for outbound, PROVIDE for inbound)"""
-  action: ServiceAction!
-
-  """Whether to enable or disable the service"""
-  enabled: Boolean!
-
-  """Unique identifier of the service to toggle"""
-  serviceId: ID!
-}
-
-input ToggleVmServiceInput {
-  """Service action (USE for outbound, PROVIDE for inbound)"""
-  action: ServiceAction!
-
-  """Whether to enable or disable the service"""
-  enabled: Boolean!
-
-  """Unique identifier of the service to toggle"""
-  serviceId: ID!
-
-  """Unique identifier of the VM"""
-  vmId: ID!
-}
-
 input UpdateDepartmentNameInput {
   id: ID! = ""
   name: String! = ""
-}
-
-input UpdateFilterInput {
-  chain: String
-  description: String
-  name: String
-  type: String
-}
-
-input UpdateFilterRuleInput {
-  action: String! = ""
-  comment: String
-  direction: String! = ""
-  dstPortEnd: Int
-  dstPortStart: Int
-  ipVersion: String
-  priority: Int! = 0
-  protocol: String
-  srcPortEnd: Int
-  srcPortStart: Int
-  state: String
 }
 
 input UpdateMachineHardwareInput {
@@ -1687,20 +1236,6 @@ type UserType {
   role: String!
 }
 
-type VMFirewallState {
-  """Applied firewall templates"""
-  appliedTemplates: [String!]!
-
-  """Custom firewall rules"""
-  customRules: [SimplifiedFirewallRule!]!
-
-  """All effective firewall rules"""
-  effectiveRules: [SimplifiedFirewallRule!]!
-
-  """Last sync with hypervisor"""
-  lastSync: DateTimeISO
-}
-
 type VMHealthCheckQueueType {
   attempts: Int!
   checkType: String!
@@ -1782,16 +1317,6 @@ type VMRecommendationType {
   type: RecommendationType!
 }
 
-"""Actions that can be performed on a VM service"""
-enum VMServiceAction {
-  DISABLE
-  ENABLE
-  RESTART
-  START
-  STATUS
-  STOP
-}
-
 type VmConnectionInfo {
   isConnected: Boolean!
   lastMessageTime: String!
@@ -1809,32 +1334,6 @@ type VmDiagnostics {
   vmId: String!
   vmName: String!
   vmStatus: String!
-}
-
-type VmServiceStatus {
-  """When the service was last seen running"""
-  lastSeen: DateTimeISO
-
-  """Whether the service is enabled for inbound traffic"""
-  provideEnabled: Boolean!
-
-  """Whether the service is currently running"""
-  running: Boolean!
-
-  """Unique identifier for the service"""
-  serviceId: ID!
-
-  """Name of the service"""
-  serviceName: String!
-
-  """Whether the service is enabled for outbound traffic"""
-  useEnabled: Boolean!
-
-  """Unique identifier for the VM"""
-  vmId: ID!
-
-  """Name of the VM"""
-  vmName: String!
 }
 
 type WindowsDefenderStatus {
@@ -1892,4 +1391,156 @@ type WindowsUpdateItem {
   severity: String!
   sizeInMB: Float!
   title: String!
+}
+
+# =====================================================
+# Firewall Types
+# =====================================================
+
+type FirewallRuleSet {
+  id: ID!
+  name: String!
+  internalName: String!
+  entityType: RuleSetType!
+  entityId: ID!
+  priority: Int!
+  isActive: Boolean!
+  libvirtUuid: String
+  xmlContent: String
+  lastSyncedAt: DateTimeISO
+  createdAt: DateTimeISO!
+  updatedAt: DateTimeISO!
+  rules: [FirewallRule!]!
+}
+
+type FirewallRule {
+  id: ID!
+  ruleSetId: ID!
+  name: String!
+  description: String
+  action: RuleAction!
+  direction: RuleDirection!
+  priority: Int!
+  protocol: String!
+  srcPortStart: Int
+  srcPortEnd: Int
+  dstPortStart: Int
+  dstPortEnd: Int
+  srcIpAddr: String
+  srcIpMask: String
+  dstIpAddr: String
+  dstIpMask: String
+  connectionState: JSONObject
+  overridesDept: Boolean!
+  createdAt: DateTimeISO!
+  updatedAt: DateTimeISO!
+}
+
+type EffectiveRuleSet {
+  vmId: ID!
+  departmentRules: [FirewallRule!]!
+  vmRules: [FirewallRule!]!
+  effectiveRules: [FirewallRule!]!
+  conflicts: [RuleConflict!]!
+}
+
+type ValidationResult {
+  isValid: Boolean!
+  conflicts: [RuleConflict!]!
+  warnings: [String!]!
+}
+
+type RuleConflict {
+  type: ConflictType!
+  message: String!
+  affectedRules: [FirewallRule!]!
+}
+
+type FlushResult {
+  success: Boolean!
+  vmId: ID!
+  rulesApplied: Int!
+  libvirtFilterName: String!
+  timestamp: DateTimeISO!
+}
+
+type SyncResult {
+  success: Boolean!
+  filtersCreated: Int!
+  filtersUpdated: Int!
+  vmsUpdated: Int!
+  errors: [String!]!
+}
+
+type CleanupResult {
+  success: Boolean!
+  filtersRemoved: Int!
+  filterNames: [String!]!
+}
+
+type LibvirtFilterInfo {
+  name: String!
+  uuid: String
+}
+
+enum RuleSetType {
+  DEPARTMENT
+  VM
+}
+
+enum RuleAction {
+  ACCEPT
+  DROP
+  REJECT
+}
+
+enum RuleDirection {
+  IN
+  OUT
+  INOUT
+}
+
+enum ConflictType {
+  DUPLICATE
+  CONTRADICTORY
+  PORT_OVERLAP
+  PRIORITY_CONFLICT
+}
+
+input CreateFirewallRuleInput {
+  name: String!
+  description: String
+  action: RuleAction!
+  direction: RuleDirection!
+  priority: Int!
+  protocol: String
+  srcPortStart: Int
+  srcPortEnd: Int
+  dstPortStart: Int
+  dstPortEnd: Int
+  srcIpAddr: String
+  srcIpMask: String
+  dstIpAddr: String
+  dstIpMask: String
+  connectionState: JSONObject
+  overridesDept: Boolean
+}
+
+input UpdateFirewallRuleInput {
+  name: String
+  description: String
+  action: RuleAction
+  direction: RuleDirection
+  priority: Int
+  protocol: String
+  srcPortStart: Int
+  srcPortEnd: Int
+  dstPortStart: Int
+  dstPortEnd: Int
+  srcIpAddr: String
+  srcIpMask: String
+  dstIpAddr: String
+  dstIpMask: String
+  connectionState: JSONObject
+  overridesDept: Boolean
 }

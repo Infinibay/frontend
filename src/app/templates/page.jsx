@@ -10,7 +10,7 @@ import { EditTemplateDialog } from './components/edit-template-dialog';
 import { EditCategoryDialog } from './components/edit-category-dialog';
 import { TemplateCard } from './components/template-card';
 import { TemplatesHeader } from './components/TemplatesHeader';
-import { LottieAnimation } from '@/components/ui/lottie-animation';
+import { SimpleIllustration } from '@/components/ui/undraw-illustration';
 import { destroyTemplate, fetchTemplates } from '@/state/slices/templates';
 import { destroyTemplateCategory, fetchTemplateCategories } from '@/state/slices/templateCategories';
 import { useToast } from '@/hooks/use-toast';
@@ -227,11 +227,11 @@ export default function TemplatesPage() {
                 ))}
                 {(!templatesByCategory[category.id] || templatesByCategory[category.id].length === 0) && (
                   <div className="col-span-full flex flex-col items-center justify-center min-h-[300px] p-8">
-                    <LottieAnimation
-                      animationPath="/lottie/not-found.json"
-                      className="w-48 h-48 opacity-80 mb-4"
-                      loop={true}
-                      autoplay={true}
+                    <SimpleIllustration
+                      name="not-found"
+                      size="medium"
+                      opacity={80}
+                      className="mb-4"
                     />
                     <div className="text-center">
                       <p className="size-text text-glass-text-primary">
@@ -248,11 +248,11 @@ export default function TemplatesPage() {
           ))}
           {(!categories || categories.length === 0) && !(categoriesLoading || templatesLoading) && (
             <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-              <LottieAnimation
-                animationPath="/lottie/not-found.json"
-                className="w-64 h-64 opacity-80 mb-4"
-                loop={true}
-                autoplay={true}
+              <SimpleIllustration
+                name="not-found"
+                size="large"
+                opacity={80}
+                className="mb-4"
               />
               <div className="text-center">
                 <h3 className="size-heading text-glass-text-primary mb-2">No categories available</h3>

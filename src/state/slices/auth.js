@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import auth from '@/utils/auth'
 import { createDebugger } from '@/utils/debug';
-import { getAvatarUrl } from '@/utils/avatar';
 
 const debug = createDebugger('frontend:state:auth');
 
@@ -122,21 +121,13 @@ const authSlice = createSlice({
 			const updatedUser = action.payload;
 			// Only update if the updated user is the currently logged-in user
 			if (updatedUser && updatedUser.id === state.user?.id) {
-				// Normalize avatar if present in the update
-				const normalizedUser = { ...updatedUser };
-				if (updatedUser.avatar !== undefined) {
-					normalizedUser.avatar = getAvatarUrl(updatedUser.avatar);
-				}
-
+				// Update user data (avatar processing removed - using Gravatar)
 				state.user = {
 					...state.user,
-					...normalizedUser
+					...updatedUser
 				};
 				debug.success('realtime', 'Current user updated via real-time event:', {
-					userId: updatedUser.id,
-					hasAvatar: !!normalizedUser.avatar,
-					avatar: normalizedUser.avatar,
-					avatarNormalized: updatedUser.avatar !== undefined
+					userId: updatedUser.id
 				});
 			}
 		},
@@ -160,12 +151,6 @@ const authSlice = createSlice({
 				} catch (error) {
 					debug.error('restore', 'Error restoring auth from localStorage:', error);
 				}
-			}
-		},
-		setUserAvatar: (state, action) => {
-			if (state.user) {
-				state.user.avatar = action.payload;
-				debug.success('avatar', 'User avatar updated in Redux state:', action.payload);
 			}
 		},
 	},
@@ -236,6 +221,6 @@ const authSlice = createSlice({
 	}
 });
 
-export const { logout, setSocketNamespace, restoreAuthFromStorage, realTimeCurrentUserUpdated, setUserAvatar } = authSlice.actions;
+export const { logout, setSocketNamespace, restoreAuthFromStorage, realTimeCurrentUserUpdated } = authSlice.actions;
 export { fetchCurrentUser, loginUser };
 export default authSlice.reducer;

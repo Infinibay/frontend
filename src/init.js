@@ -1,15 +1,12 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchCurrentUser, setUserAvatar } from '@/state/slices/auth';
+import { fetchCurrentUser } from '@/state/slices/auth';
 import { fetchVms } from '@/state/slices/vms';
 import { fetchDepartments } from '@/state/slices/departments';
 import { fetchApplications } from './state/slices/applications';
 import { fetchGraphics } from './state/slices/system';
 import { fetchUsers } from './state/slices/users';
-import { fetchFilters } from './state/slices/filters';
-import { fetchFilterRules } from './state/slices/filterRules';
 import { fetchAppSettings } from './state/slices/appSettings';
 import { createDebugger } from './utils/debug';
-import { getAvatarUrl } from './utils/avatar';
 import { startTimer, endTimer, measureAsync, trackDataLoading } from './utils/performance';
 
 const debug = createDebugger('frontend:init');
@@ -32,9 +29,7 @@ const SERVICE_CONFIG = {
 
 	// On-demand services - only load when specifically needed
 	onDemand: [
-		{ name: 'graphics', action: fetchGraphics, description: 'Graphics hardware for VM configuration' },
-		{ name: 'filters', action: fetchFilters, description: 'Network filtering rules' },
-		{ name: 'filterRules', action: fetchFilterRules, description: 'Advanced filtering configuration' }
+		{ name: 'graphics', action: fetchGraphics, description: 'Graphics hardware for VM configuration' }
 	]
 };
 
@@ -126,16 +121,7 @@ export const fetchInitialData = createAsyncThunk(
 			if (result.success) {
 				results.successes.push(service.name);
 
-				// Special handling for currentUser to process avatar
-				if (service.name === 'currentUser') {
-					try {
-						const processedAvatarUrl = getAvatarUrl(result.result.avatar);
-						await dispatch(setUserAvatar(processedAvatarUrl));
-						debug.info('Avatar processed and updated successfully');
-					} catch (avatarError) {
-						debug.warn('Avatar processing failed, continuing with initialization:', avatarError);
-					}
-				}
+				// Avatar processing removed - now using Gravatar
 			} else {
 				debug.error(`Critical service ${service.name} failed:`, result.error);
 				results.failures.push({
