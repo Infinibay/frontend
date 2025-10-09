@@ -36,17 +36,43 @@ import { SERVICE_PRESETS } from '@/config/servicePresets';
 
 const debug = createDebugger('frontend:components:create-firewall-rule-dialog');
 
+/**
+ * Parses validation error messages from backend into structured objects
+ * Handles both single and multiple error messages separated by ". Port overlap:"
+ */
+const parseValidationErrors = (errorMessage) => {
+  if (!errorMessage) return [];
+
+  // Split by ". Port overlap:" or ". Destination port" to handle multiple errors
+  const errorParts = errorMessage.split(/\. (?=Port overlap:|Destination port|Source port|Priority |Protocol )/);
+
+  return errorParts.map((part, index) => {
+    const isOverlap = part.includes('Port overlap:');
+    const suggestsOverride = part.includes('overridesDept=true');
+    const suggestsConsolidate = part.includes('consolidating');
+
+    return {
+      id: `error-${index}`,
+      message: part.trim(),
+      type: isOverlap ? 'overlap' : 'validation',
+      canOverride: suggestsOverride,
+      canConsolidate: suggestsConsolidate
+    };
+  });
+};
+
 const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, existingRules }) => {
   const [mode, setMode] = useState('simple'); // 'simple' or 'advanced'
   const [errors, setErrors] = useState({});
   const [conflicts, setConflicts] = useState([]);
+  const [validationErrors, setValidationErrors] = useState([]); // Array of parsed validation errors
 
   // Form state
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     action: 'ACCEPT',
-    direction: 'INBOUND',
+    direction: 'IN',
     priorityLabel: 'MEDIUM',
     customPriority: '',
     protocol: 'TCP',
@@ -64,6 +90,7 @@ const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, exis
   // Simple mode: service preset selection
   const [selectedPreset, setSelectedPreset] = useState('');
 
+  // Mutation without refetchQueries - real-time events handle updates
   const [createRule, { loading }] = useCreateVmFirewallRuleMutation();
 
   const handleFieldChange = (field, value) => {
@@ -76,6 +103,10 @@ const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, exis
         return newErrors;
       });
     }
+    // Clear validation errors when user makes changes
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
   };
 
   const handlePresetChange = (presetId) => {
@@ -87,11 +118,11 @@ const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, exis
         ...prev,
         name: `Allow ${preset.displayName}`,
         description: preset.description,
-        action: firstRule.action,
+        action: 'ACCEPT',
         direction: firstRule.direction,
-        protocol: firstRule.protocol,
-        dstPortStart: firstRule.dstPortStart?.toString() || '',
-        dstPortEnd: firstRule.dstPortEnd?.toString() || '',
+        protocol: firstRule.protocol.toUpperCase(),
+        dstPortStart: firstRule.port?.toString() || firstRule.portRange?.start?.toString() || '',
+        dstPortEnd: firstRule.port?.toString() || firstRule.portRange?.end?.toString() || '',
         srcPortStart: '',
         srcPortEnd: '',
         srcIpAddr: '',
@@ -179,7 +210,26 @@ const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, exis
       resetForm();
     } catch (error) {
       debug.error('Failed to create rule:', error);
-      toast.error(`Failed to create rule: ${error.message}`);
+
+      const errorMessage = error.message || '';
+
+      // Check if it's a validation/overlap error
+      if (errorMessage.includes('Port overlap:') || errorMessage.includes('overridesDept=true')) {
+        // Parse validation errors into structured format
+        const parsedErrors = parseValidationErrors(errorMessage);
+        setValidationErrors(parsedErrors);
+
+        // Show toast with count of conflicts
+        const overlapCount = parsedErrors.filter(e => e.type === 'overlap').length;
+        if (overlapCount === 1) {
+          toast.error('Rule conflicts with existing rule');
+        } else {
+          toast.error(`${overlapCount} rule conflicts detected`);
+        }
+      } else {
+        // Generic error (port validation, IP validation, etc.)
+        toast.error(`Failed to create rule: ${errorMessage}`);
+      }
     }
   };
 
@@ -188,7 +238,7 @@ const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, exis
       name: '',
       description: '',
       action: 'ACCEPT',
-      direction: 'INBOUND',
+      direction: 'IN',
       priorityLabel: 'MEDIUM',
       customPriority: '',
       protocol: 'TCP',
@@ -205,6 +255,7 @@ const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, exis
     setSelectedPreset('');
     setErrors({});
     setConflicts([]);
+    setValidationErrors([]);
     setMode('simple');
   };
 
@@ -212,6 +263,21 @@ const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, exis
     resetForm();
     onClose();
   };
+
+  const handleOverrideAndRetry = () => {
+    debug.log('User chose to override department rule');
+    // Set overridesDept to true and retry submission
+    setFormData(prev => ({ ...prev, overridesDept: true }));
+    setValidationErrors([]);
+    // Automatically retry submission
+    setTimeout(() => {
+      handleSubmit();
+    }, 100);
+  };
+
+  // Check if any errors can be resolved with override
+  const canOverrideErrors = validationErrors.some(e => e.canOverride);
+  const hasConsolidationSuggestions = validationErrors.some(e => e.canConsolidate);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -225,6 +291,55 @@ const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, exis
             Add a new firewall rule to control network traffic for this VM
           </DialogDescription>
         </DialogHeader>
+
+        {/* Validation Errors Banner */}
+        {validationErrors.length > 0 && (
+          <div className="rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950 p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-sm text-orange-800 dark:text-orange-200 mb-2">
+                    {validationErrors.length === 1 ? 'Rule Conflict Detected' : `${validationErrors.length} Rule Conflicts Detected`}
+                  </h4>
+                  <div className="space-y-2">
+                    {validationErrors.map((error) => (
+                      <div key={error.id} className="text-sm text-orange-700 dark:text-orange-300 pl-3 border-l-2 border-orange-300 dark:border-orange-700">
+                        {error.message}
+                      </div>
+                    ))}
+                  </div>
+                  {hasConsolidationSuggestions && (
+                    <div className="mt-3 p-2 rounded bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        💡 <strong>Tip:</strong> Some rules have the same action. Consider consolidating them to simplify your firewall configuration.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setValidationErrors([])}
+                    className="border-orange-300 dark:border-orange-700"
+                  >
+                    Cancel
+                  </Button>
+                  {canOverrideErrors && (
+                    <Button
+                      size="sm"
+                      onClick={handleOverrideAndRetry}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                    >
+                      Override Department Rules
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Tabs value={mode} onValueChange={setMode} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -359,8 +474,9 @@ const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, exis
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="INBOUND">⬇️ Inbound (Incoming)</SelectItem>
-                    <SelectItem value="OUTBOUND">⬆️ Outbound (Outgoing)</SelectItem>
+                    <SelectItem value="IN">⬇️ Inbound (Incoming)</SelectItem>
+                    <SelectItem value="OUT">⬆️ Outbound (Outgoing)</SelectItem>
+                    <SelectItem value="INOUT">↔️ Bidirectional</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
