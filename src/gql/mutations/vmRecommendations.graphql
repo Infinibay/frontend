@@ -61,17 +61,18 @@ mutation createMaintenanceTaskFromRecommendations($input: CreateMaintenanceTaskI
   }
 }
 
-mutation controlServiceFromRecommendations($input: ServiceControlInput!) {
-  controlService(input: $input) {
-    success
-    error
-    message
-    service {
-      name
-      displayName
-      status
-      startType
-      description
-    }
-  }
-}
+# TODO: Backend mutation not implemented yet
+# mutation controlServiceFromRecommendations($input: ServiceControlInput!) {
+#   controlService(input: $input) {
+#     success
+#     error
+#     message
+#     service {
+#       name
+#       displayName
+#       status
+#       startType
+#       description
+#     }
+#   }
+# }

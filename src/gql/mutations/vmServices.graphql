@@ -1,15 +1,16 @@
-mutation controlService($input: ServiceControlInput!) {
-  controlService(input: $input) {
-    success
-    message
-    error
-    service {
-      name
-      displayName
-      status
-      startType
-      description
-      pid
-    }
-  }
-}
+# TODO: Backend mutation not implemented yet
+# mutation controlService($input: ServiceControlInput!) {
+#   controlService(input: $input) {
+#     success
+#     message
+#     error
+#     service {
+#       name
+#       displayName
+#       status
+#       startType
+#       description
+#       pid
+#     }
+#   }
+# }
