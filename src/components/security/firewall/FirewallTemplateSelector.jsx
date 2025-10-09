@@ -25,7 +25,7 @@ const debug = createDebugger('frontend:components:firewall-template-selector');
  * Works for both Department and VM based on entityType
  * Based on department implementation which works correctly
  */
-const FirewallTemplateSelector = ({ entityType, entityId, existingRules, onRefetch }) => {
+const FirewallTemplateSelector = ({ entityType, entityId, existingRules }) => {
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [applyingTemplateId, setApplyingTemplateId] = useState(null);
 
@@ -81,7 +81,7 @@ const FirewallTemplateSelector = ({ entityType, entityId, existingRules, onRefet
 
       toast.success(`Applied ${rules.length} rule${rules.length !== 1 ? 's' : ''} from "${template.displayName}"`);
       debug.success(`Applied template ${template.id} to ${entityType}`);
-      onRefetch();
+      // Real-time events will automatically update the UI via Redux
     } catch (error) {
       debug.error('Failed to apply template:', error);
       toast.error(`Failed to apply template: ${error.message}`);

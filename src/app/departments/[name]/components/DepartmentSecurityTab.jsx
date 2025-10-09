@@ -50,7 +50,7 @@ const DepartmentSecurityTab = ({ departmentId }) => {
   const handleRuleCreated = () => {
     debug.success('Rule created, closing dialog');
     setIsCreateDialogOpen(false);
-    handleRefresh();
+    // Real-time events will automatically update the UI via Redux
   };
 
   const handleApplyDesktopSecure = async () => {
@@ -94,7 +94,7 @@ const DepartmentSecurityTab = ({ departmentId }) => {
 
       toast.success(`Desktop Secure template applied to department (${templateRules.length} rules created)`);
       debug.success('Desktop Secure template applied to department');
-      await handleRefresh();
+      // Real-time events will automatically update the UI via Redux
     } catch (error) {
       debug.error('Failed to apply Desktop Secure template to department:', error);
       toast.error(`Failed to apply template: ${error.message}`);
@@ -168,7 +168,6 @@ const DepartmentSecurityTab = ({ departmentId }) => {
           entityType={ENTITY_TYPES.DEPARTMENT}
           entityId={departmentId}
           existingRules={rules}
-          onRefetch={handleRefresh}
         />
       </section>
 
@@ -196,7 +195,6 @@ const DepartmentSecurityTab = ({ departmentId }) => {
           entityType={ENTITY_TYPES.DEPARTMENT}
           entityId={departmentId}
           rules={rules}
-          onRefetch={handleRefresh}
         />
       </section>
 

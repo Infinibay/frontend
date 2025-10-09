@@ -178,7 +178,7 @@ const CreateDepartmentFirewallRuleDialog = ({ departmentId, isOpen, onClose, onS
     name: '',
     description: '',
     action: 'ACCEPT',
-    direction: 'INBOUND',
+    direction: 'IN',
     priorityLabel: 'MEDIUM',
     customPriority: '',
     protocol: 'TCP',
@@ -193,6 +193,7 @@ const CreateDepartmentFirewallRuleDialog = ({ departmentId, isOpen, onClose, onS
   });
 
   const [selectedPreset, setSelectedPreset] = useState('');
+  // Mutation without refetchQueries - real-time events handle updates
   const [createRule, { loading }] = useCreateDepartmentFirewallRuleMutation();
 
   const handleFieldChange = (field, value) => {
@@ -215,11 +216,11 @@ const CreateDepartmentFirewallRuleDialog = ({ departmentId, isOpen, onClose, onS
         ...prev,
         name: `Allow ${preset.displayName}`,
         description: preset.description,
-        action: firstRule.action,
+        action: 'ACCEPT',
         direction: firstRule.direction,
-        protocol: firstRule.protocol,
-        dstPortStart: firstRule.dstPortStart?.toString() || '',
-        dstPortEnd: firstRule.dstPortEnd?.toString() || '',
+        protocol: firstRule.protocol.toUpperCase(),
+        dstPortStart: firstRule.port?.toString() || firstRule.portRange?.start?.toString() || '',
+        dstPortEnd: firstRule.port?.toString() || firstRule.portRange?.end?.toString() || '',
         srcPortStart: '',
         srcPortEnd: '',
         srcIpAddr: '',
@@ -312,7 +313,7 @@ const CreateDepartmentFirewallRuleDialog = ({ departmentId, isOpen, onClose, onS
       name: '',
       description: '',
       action: 'ACCEPT',
-      direction: 'INBOUND',
+      direction: 'IN',
       priorityLabel: 'MEDIUM',
       customPriority: '',
       protocol: 'TCP',
@@ -453,8 +454,9 @@ const CreateDepartmentFirewallRuleDialog = ({ departmentId, isOpen, onClose, onS
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="INBOUND">⬇️ Inbound</SelectItem>
-                    <SelectItem value="OUTBOUND">⬆️ Outbound</SelectItem>
+                    <SelectItem value="IN">⬇️ Inbound</SelectItem>
+                    <SelectItem value="OUT">⬆️ Outbound</SelectItem>
+                    <SelectItem value="INOUT">↔️ Bidirectional</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

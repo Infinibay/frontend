@@ -2451,6 +2451,20 @@ export type KillProcessesMutationVariables = Exact<{
 
 export type KillProcessesMutation = { __typename?: 'Mutation', killProcesses: Array<{ __typename?: 'ProcessControlResult', success: boolean, message: string, pid: number | null, processName: string | null, error: string | null }> };
 
+export type ExecuteImmediateMaintenanceFromRecommendationsMutationVariables = Exact<{
+  input: ExecuteMaintenanceInput;
+}>;
+
+
+export type ExecuteImmediateMaintenanceFromRecommendationsMutation = { __typename?: 'Mutation', executeImmediateMaintenance: { __typename?: 'MaintenanceExecutionResponse', success: boolean, error: string | null, message: string | null, execution: { __typename?: 'MaintenanceHistory', id: string, machineId: string, taskType: MaintenanceTaskType, status: MaintenanceStatus, executedAt: string, duration: number | null, result: { [key: string]: any } | null } | null } };
+
+export type CreateMaintenanceTaskFromRecommendationsMutationVariables = Exact<{
+  input: CreateMaintenanceTaskInput;
+}>;
+
+
+export type CreateMaintenanceTaskFromRecommendationsMutation = { __typename?: 'Mutation', createMaintenanceTask: { __typename?: 'MaintenanceTaskResponse', success: boolean, error: string | null, message: string | null, task: { __typename?: 'MaintenanceTask', id: string, name: string, description: string | null, taskType: MaintenanceTaskType, machineId: string, isEnabled: boolean, isRecurring: boolean, runAt: string | null, cronSchedule: string | null, createdAt: string } | null } };
+
 export type CreateSnapshotMutationVariables = Exact<{
   input: CreateSnapshotInput;
 }>;
@@ -4941,6 +4955,97 @@ export function useKillProcessesMutation(baseOptions?: ApolloReactHooks.Mutation
 export type KillProcessesMutationHookResult = ReturnType<typeof useKillProcessesMutation>;
 export type KillProcessesMutationResult = ApolloReactCommon.MutationResult<KillProcessesMutation>;
 export type KillProcessesMutationOptions = ApolloReactCommon.BaseMutationOptions<KillProcessesMutation, KillProcessesMutationVariables>;
+export const ExecuteImmediateMaintenanceFromRecommendationsDocument = gql`
+    mutation executeImmediateMaintenanceFromRecommendations($input: ExecuteMaintenanceInput!) {
+  executeImmediateMaintenance(input: $input) {
+    success
+    error
+    message
+    execution {
+      id
+      machineId
+      taskType
+      status
+      executedAt
+      duration
+      result
+    }
+  }
+}
+    `;
+export type ExecuteImmediateMaintenanceFromRecommendationsMutationFn = ApolloReactCommon.MutationFunction<ExecuteImmediateMaintenanceFromRecommendationsMutation, ExecuteImmediateMaintenanceFromRecommendationsMutationVariables>;
+
+/**
+ * __useExecuteImmediateMaintenanceFromRecommendationsMutation__
+ *
+ * To run a mutation, you first call `useExecuteImmediateMaintenanceFromRecommendationsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useExecuteImmediateMaintenanceFromRecommendationsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [executeImmediateMaintenanceFromRecommendationsMutation, { data, loading, error }] = useExecuteImmediateMaintenanceFromRecommendationsMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useExecuteImmediateMaintenanceFromRecommendationsMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ExecuteImmediateMaintenanceFromRecommendationsMutation, ExecuteImmediateMaintenanceFromRecommendationsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ExecuteImmediateMaintenanceFromRecommendationsMutation, ExecuteImmediateMaintenanceFromRecommendationsMutationVariables>(ExecuteImmediateMaintenanceFromRecommendationsDocument, options);
+      }
+export type ExecuteImmediateMaintenanceFromRecommendationsMutationHookResult = ReturnType<typeof useExecuteImmediateMaintenanceFromRecommendationsMutation>;
+export type ExecuteImmediateMaintenanceFromRecommendationsMutationResult = ApolloReactCommon.MutationResult<ExecuteImmediateMaintenanceFromRecommendationsMutation>;
+export type ExecuteImmediateMaintenanceFromRecommendationsMutationOptions = ApolloReactCommon.BaseMutationOptions<ExecuteImmediateMaintenanceFromRecommendationsMutation, ExecuteImmediateMaintenanceFromRecommendationsMutationVariables>;
+export const CreateMaintenanceTaskFromRecommendationsDocument = gql`
+    mutation createMaintenanceTaskFromRecommendations($input: CreateMaintenanceTaskInput!) {
+  createMaintenanceTask(input: $input) {
+    success
+    error
+    message
+    task {
+      id
+      name
+      description
+      taskType
+      machineId
+      isEnabled
+      isRecurring
+      runAt
+      cronSchedule
+      createdAt
+    }
+  }
+}
+    `;
+export type CreateMaintenanceTaskFromRecommendationsMutationFn = ApolloReactCommon.MutationFunction<CreateMaintenanceTaskFromRecommendationsMutation, CreateMaintenanceTaskFromRecommendationsMutationVariables>;
+
+/**
+ * __useCreateMaintenanceTaskFromRecommendationsMutation__
+ *
+ * To run a mutation, you first call `useCreateMaintenanceTaskFromRecommendationsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateMaintenanceTaskFromRecommendationsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createMaintenanceTaskFromRecommendationsMutation, { data, loading, error }] = useCreateMaintenanceTaskFromRecommendationsMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateMaintenanceTaskFromRecommendationsMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateMaintenanceTaskFromRecommendationsMutation, CreateMaintenanceTaskFromRecommendationsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateMaintenanceTaskFromRecommendationsMutation, CreateMaintenanceTaskFromRecommendationsMutationVariables>(CreateMaintenanceTaskFromRecommendationsDocument, options);
+      }
+export type CreateMaintenanceTaskFromRecommendationsMutationHookResult = ReturnType<typeof useCreateMaintenanceTaskFromRecommendationsMutation>;
+export type CreateMaintenanceTaskFromRecommendationsMutationResult = ApolloReactCommon.MutationResult<CreateMaintenanceTaskFromRecommendationsMutation>;
+export type CreateMaintenanceTaskFromRecommendationsMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateMaintenanceTaskFromRecommendationsMutation, CreateMaintenanceTaskFromRecommendationsMutationVariables>;
 export const CreateSnapshotDocument = gql`
     mutation createSnapshot($input: CreateSnapshotInput!) {
   createSnapshot(input: $input) {

@@ -19,6 +19,7 @@ const FirewallTemplateSelector = ({ vmId, existingRules, onRefetch }) => {
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [applyingTemplateId, setApplyingTemplateId] = useState(null);
 
+  // Mutation without refetchQueries - real-time events handle updates
   const [createRule] = useCreateVmFirewallRuleMutation();
 
   const templateIcons = {

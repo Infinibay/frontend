@@ -53,7 +53,7 @@ const VMSecurityTab = ({ vmId, vmStatus, vmOs, departmentId }) => {
   const handleRuleCreated = () => {
     debug.success('VM rule created, closing dialog');
     setIsCreateDialogOpen(false);
-    handleRefresh();
+    // Real-time events will automatically update the UI via Redux
   };
 
   const handleApplyDesktopSecure = async () => {
@@ -97,7 +97,7 @@ const VMSecurityTab = ({ vmId, vmStatus, vmOs, departmentId }) => {
 
       toast.success(`Desktop Secure template applied to VM (${rules.length} rules created)`);
       debug.success('Desktop Secure template applied to VM');
-      await handleRefresh();
+      // Real-time events will automatically update the UI via Redux
     } catch (error) {
       debug.error('Failed to apply Desktop Secure template to VM:', error);
       toast.error(`Failed to apply template: ${error.message}`);
@@ -173,7 +173,6 @@ const VMSecurityTab = ({ vmId, vmStatus, vmOs, departmentId }) => {
           entityType={ENTITY_TYPES.VM}
           entityId={vmId}
           existingRules={vmRules}
-          onRefetch={handleRefresh}
         />
       </section>
 
@@ -202,7 +201,6 @@ const VMSecurityTab = ({ vmId, vmStatus, vmOs, departmentId }) => {
           entityId={vmId}
           rules={vmRules}
           departmentRules={departmentRules}
-          onRefetch={handleRefresh}
         />
       </section>
 

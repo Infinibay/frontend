@@ -47,8 +47,7 @@ const FirewallRulesList = ({
   entityType,
   entityId,
   rules,
-  departmentRules = [],
-  onRefetch
+  departmentRules = []
 }) => {
   const [deleteRuleId, setDeleteRuleId] = useState(null);
   const [selectedRules, setSelectedRules] = useState([]);
@@ -85,7 +84,7 @@ const FirewallRulesList = ({
       });
       toast.success('Firewall rule deleted');
       setDeleteRuleId(null);
-      onRefetch();
+      // Real-time events will automatically update the UI via Redux
     } catch (error) {
       debug.error('Failed to delete rule:', error);
       toast.error(`Failed to delete rule: ${error.message}`);
@@ -109,7 +108,7 @@ const FirewallRulesList = ({
       toast.success(`Deleted ${selectedRules.length} firewall rule${selectedRules.length !== 1 ? 's' : ''}`);
       setSelectedRules([]);
       setShowBulkDeleteDialog(false);
-      onRefetch();
+      // Real-time events will automatically update the UI via Redux
     } catch (error) {
       debug.error('Failed to bulk delete rules:', error);
       toast.error(`Failed to delete rules: ${error.message}`);
@@ -441,22 +440,20 @@ const FirewallRulesList = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {isDepartment ? 'Department ' : ''}Firewall Rule?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <p>
-                This will permanently delete this {isDepartment ? 'department-level ' : ''}firewall rule.
-                This action cannot be undone.
-              </p>
-              {isDepartment && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
-                  <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-orange-700 dark:text-orange-300">
-                    <strong>Warning:</strong> This rule is inherited by all VMs in this department.
-                    Deleting it will affect network traffic for all VMs.
-                  </p>
-                </div>
-              )}
+            <AlertDialogDescription>
+              This will permanently delete this {isDepartment ? 'department-level ' : ''}firewall rule.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {isDepartment && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
+              <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-orange-700 dark:text-orange-300">
+                <strong>Warning:</strong> This rule is inherited by all VMs in this department.
+                Deleting it will affect network traffic for all VMs.
+              </p>
+            </div>
+          )}
           <AlertDialogFooter className="mt-6">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -474,22 +471,20 @@ const FirewallRulesList = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedRules.length} {isDepartment ? 'Department ' : ''}Firewall Rules?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <p>
-                This will permanently delete {selectedRules.length} {isDepartment ? 'department-level ' : ''}firewall rule{selectedRules.length !== 1 ? 's' : ''}.
-                This action cannot be undone.
-              </p>
-              {isDepartment && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
-                  <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-orange-700 dark:text-orange-300">
-                    <strong>Warning:</strong> These rules are inherited by all VMs in this department.
-                    Deleting them will affect network traffic for all VMs.
-                  </p>
-                </div>
-              )}
+            <AlertDialogDescription>
+              This will permanently delete {selectedRules.length} {isDepartment ? 'department-level ' : ''}firewall rule{selectedRules.length !== 1 ? 's' : ''}.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {isDepartment && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
+              <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-orange-700 dark:text-orange-300">
+                <strong>Warning:</strong> These rules are inherited by all VMs in this department.
+                Deleting them will affect network traffic for all VMs.
+              </p>
+            </div>
+          )}
           <AlertDialogFooter className="mt-6">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction

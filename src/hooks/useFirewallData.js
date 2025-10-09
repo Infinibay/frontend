@@ -43,21 +43,26 @@ export const useFirewallData = ({ entityType, entityId, departmentId }) => {
   // Select appropriate query based on entity type
   const primaryQuery = entityType === ENTITY_TYPES.DEPARTMENT ? departmentQuery : vmQuery;
 
-  // Mutations
+  // Mutations - NO refetchQueries here, real-time events handle updates
   const [createDeptRule] = useCreateDepartmentFirewallRuleMutation();
   const [createVmRule] = useCreateVmFirewallRuleMutation();
   const [deleteRule] = useDeleteFirewallRuleMutation();
 
   const createRule = entityType === ENTITY_TYPES.DEPARTMENT ? createDeptRule : createVmRule;
 
-  // Auto-refetch on WebSocket events
+  // Auto-refetch on WebSocket events - queries refetch automatically
   const refetchFilter = entityType === ENTITY_TYPES.DEPARTMENT
     ? { departmentId: entityId }
     : { vmId: entityId };
 
+  // Refetch both queries when firewall events occur
   useRefetchOnFirewallEvent(() => {
-    primaryQuery.refetch();
-    if (effectiveQuery.refetch) effectiveQuery.refetch();
+    if (primaryQuery.refetch) {
+      primaryQuery.refetch();
+    }
+    if (effectiveQuery.refetch) {
+      effectiveQuery.refetch();
+    }
   }, refetchFilter);
 
   // Extract data
