@@ -3,19 +3,15 @@
 import React, { useState } from 'react';
 import { AlertCircle, Info, Shield } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { createDebugger } from '@/utils/debug';
 import { toast } from 'sonner';
-import {
-  useCreateDepartmentFirewallRuleMutation,
-  useGetDepartmentFirewallRulesQuery
-} from '@/gql/hooks';
-import { useRefetchOnFirewallEvent } from '@/hooks/useRefetchOnFirewallEvent';
+import { ENTITY_TYPES } from '@/config/firewallEntityConfig';
+import { useFirewallData } from '@/hooks/useFirewallData';
 import { expandTemplateToRules, getFirewallTemplate } from '@/config/firewallTemplates';
 
-import DepartmentFirewallStatusHeader from './security/DepartmentFirewallStatusHeader';
-import DepartmentFirewallTemplateSelector from './security/DepartmentFirewallTemplateSelector';
-import DepartmentFirewallRulesList from './security/DepartmentFirewallRulesList';
+import FirewallRulesList from '@/components/security/firewall/FirewallRulesList';
+import FirewallStatusHeader from '@/components/security/firewall/FirewallStatusHeader';
+import FirewallTemplateSelector from '@/components/security/firewall/FirewallTemplateSelector';
 import CreateDepartmentFirewallRuleDialog from './security/CreateDepartmentFirewallRuleDialog';
 import NoFirewallRulesWarning from '@/components/security/NoFirewallRulesWarning';
 
@@ -24,33 +20,22 @@ const debug = createDebugger('frontend:components:department-security-tab');
 /**
  * DepartmentSecurityTab - Department-level firewall management
  * These rules are inherited by all VMs in the department
+ * Updated to use shared components
  */
 const DepartmentSecurityTab = ({ departmentId }) => {
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  // Mutations
-  const [createRule] = useCreateDepartmentFirewallRuleMutation();
-
-  // Fetch department firewall rules
   const {
-    data: rulesData,
+    rules,
     loading,
     error,
+    createRule,
     refetch
-  } = useGetDepartmentFirewallRulesQuery({
-    variables: { departmentId },
-    skip: !departmentId,
-    onCompleted: (data) => {
-      debug.log('Department firewall rules loaded:', data);
-    },
-    onError: (error) => {
-      debug.error('Failed to load department firewall rules:', error);
-    }
+  } = useFirewallData({
+    entityType: ENTITY_TYPES.DEPARTMENT,
+    entityId: departmentId
   });
-
-  // Auto-refetch when firewall rules change via WebSocket
-  useRefetchOnFirewallEvent(refetch, { departmentId });
 
   const handleRefresh = async () => {
     debug.log('Refreshing department firewall data');
@@ -68,31 +53,6 @@ const DepartmentSecurityTab = ({ departmentId }) => {
     handleRefresh();
   };
 
-  // Loading state
-  if (loading) {
-    return <DepartmentSecurityTabSkeleton />;
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="glass-minimal p-6 rounded-lg text-center">
-        <p className="text-red-600 mb-4">Failed to load department firewall configuration</p>
-        <button
-          onClick={handleRefresh}
-          className="size-button bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  const rules = rulesData?.getDepartmentFirewallRules?.rules || [];
-
-  // Check if there are no rules configured
-  const hasNoRules = rules.length === 0;
-
   const handleApplyDesktopSecure = async () => {
     debug.log('Applying Desktop Secure template to department from warning');
     setIsApplyingTemplate(true);
@@ -103,11 +63,11 @@ const DepartmentSecurityTab = ({ departmentId }) => {
         throw new Error('Desktop Secure template not found');
       }
 
-      const rules = expandTemplateToRules(template);
-      debug.log(`Applying ${rules.length} rules from Desktop Secure template to department`);
+      const templateRules = expandTemplateToRules(template);
+      debug.log(`Applying ${templateRules.length} rules from Desktop Secure template to department`);
 
       // Create each rule from the template
-      for (const rule of rules) {
+      for (const rule of templateRules) {
         await createRule({
           variables: {
             departmentId,
@@ -132,7 +92,7 @@ const DepartmentSecurityTab = ({ departmentId }) => {
         });
       }
 
-      toast.success(`Desktop Secure template applied to department (${rules.length} rules created)`);
+      toast.success(`Desktop Secure template applied to department (${templateRules.length} rules created)`);
       debug.success('Desktop Secure template applied to department');
       await handleRefresh();
     } catch (error) {
@@ -142,6 +102,29 @@ const DepartmentSecurityTab = ({ departmentId }) => {
       setIsApplyingTemplate(false);
     }
   };
+
+  // Loading state
+  if (loading) {
+    return <DepartmentSecurityTabSkeleton />;
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="glass-minimal p-6 rounded-lg text-center">
+        <p className="text-red-600 mb-4">Failed to load department firewall configuration</p>
+        <button
+          onClick={handleRefresh}
+          className="size-button bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Check if there are no rules configured
+  const hasNoRules = rules.length === 0;
 
   return (
     <div className="space-y-6">
@@ -166,21 +149,24 @@ const DepartmentSecurityTab = ({ departmentId }) => {
         </div>
       </div>
 
-      {/* Status Header */}
-      <DepartmentFirewallStatusHeader
+      {/* Status Header - Now using shared component */}
+      <FirewallStatusHeader
+        entityType={ENTITY_TYPES.DEPARTMENT}
         rules={rules}
+        conflicts={[]}
         onRefresh={handleRefresh}
         onCreateRule={handleCreateRule}
       />
 
-      {/* Templates Section */}
+      {/* Templates Section - Now using shared component */}
       <section className="glass-medium p-6 rounded-lg" data-templates-section>
         <h3 className="size-heading mb-4">🚀 Quick Security Profiles</h3>
         <p className="text-sm text-muted-foreground mb-4">
           Apply pre-configured security templates to set baseline protection for all VMs in this department.
         </p>
-        <DepartmentFirewallTemplateSelector
-          departmentId={departmentId}
+        <FirewallTemplateSelector
+          entityType={ENTITY_TYPES.DEPARTMENT}
+          entityId={departmentId}
           existingRules={rules}
           onRefetch={handleRefresh}
         />
@@ -206,8 +192,9 @@ const DepartmentSecurityTab = ({ departmentId }) => {
           </button>
         </div>
 
-        <DepartmentFirewallRulesList
-          departmentId={departmentId}
+        <FirewallRulesList
+          entityType={ENTITY_TYPES.DEPARTMENT}
+          entityId={departmentId}
           rules={rules}
           onRefetch={handleRefresh}
         />

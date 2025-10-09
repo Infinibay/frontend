@@ -23,8 +23,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ENTITY_TYPES } from '@/config/firewallEntityConfig';
 import { useDeleteFirewallRuleMutation } from '@/gql/hooks';
 import { createDebugger } from '@/utils/debug';
+import { playErrorTone } from '@/utils/audioFeedback';
 import { toast } from 'sonner';
 import {
   getActionInfo,
@@ -33,26 +35,42 @@ import {
   getPriorityLabel
 } from '@/utils/firewallHelpers';
 
-const debug = createDebugger('frontend:components:firewall-custom-rules');
+const debug = createDebugger('frontend:components:firewall-rules-list');
 
 /**
- * FirewallCustomRules - Shows ALL rules (department + custom) in unified list
- * Redesigned to match DepartmentFirewallRulesList visual layout
- * Single simple table like department view
+ * Unified FirewallRulesList component
+ * Works for both Department and VM based on entityType
+ * For Department: shows only department rules
+ * For VM: shows inherited department rules + custom VM rules in one unified list
  */
-const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) => {
+const FirewallRulesList = ({
+  entityType,
+  entityId,
+  rules,
+  departmentRules = [],
+  onRefetch
+}) => {
   const [deleteRuleId, setDeleteRuleId] = useState(null);
   const [selectedRules, setSelectedRules] = useState([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [shakeRuleId, setShakeRuleId] = useState(null);
+  const [hasShownInheritedToast, setHasShownInheritedToast] = useState(false);
   const [deleteRule] = useDeleteFirewallRuleMutation();
 
-  // Combine all rules into one array
+  const isDepartment = entityType === ENTITY_TYPES.DEPARTMENT;
+
+  // For VM: combine department rules (inherited) + VM custom rules
+  // For Department: just use rules
   const allRules = useMemo(() => {
+    if (isDepartment) {
+      return rules.map(r => ({ ...r, isInherited: false }));
+    }
+    // VM: mark which rules are inherited
     const deptWithFlag = departmentRules.map(r => ({ ...r, isInherited: true }));
-    const customWithFlag = customRules.map(r => ({ ...r, isInherited: false }));
+    const customWithFlag = rules.map(r => ({ ...r, isInherited: false }));
     return [...deptWithFlag, ...customWithFlag];
-  }, [departmentRules, customRules]);
+  }, [isDepartment, rules, departmentRules]);
 
   const handleDeleteClick = (ruleId) => {
     debug.log('Delete clicked for rule:', ruleId);
@@ -107,8 +125,11 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
   };
 
   const toggleAllRules = () => {
-    // Only select custom rules (not inherited)
-    const selectableRules = customRules.map(r => r.id);
+    // Only select custom/editable rules (not inherited for VM)
+    const selectableRules = allRules
+      .filter(r => !r.isInherited)
+      .map(r => r.id);
+
     if (selectedRules.length === selectableRules.length) {
       setSelectedRules([]);
     } else {
@@ -122,6 +143,26 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
       direction = 'desc';
     }
     setSortConfig({ key, direction });
+  };
+
+  const handleInheritedRuleClick = (ruleId) => {
+    debug.log('Attempted to select inherited rule:', ruleId);
+
+    // Trigger shake animation
+    setShakeRuleId(ruleId);
+    setTimeout(() => setShakeRuleId(null), 500);
+
+    // Show toast only once per session
+    if (!hasShownInheritedToast) {
+      toast.info('Inherited rules are read-only', {
+        description: 'Department rules cannot be deleted from VM view. Edit them in the department settings.',
+        duration: 4000,
+      });
+      setHasShownInheritedToast(true);
+    }
+
+    // Play subtle low-frequency error tone
+    playErrorTone();
   };
 
   const sortedRules = useMemo(() => {
@@ -165,10 +206,29 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
     const portLabel = getPortLabel(rule.dstPortStart, rule.dstPortEnd, rule.protocol);
     const isSelected = selectedRules.includes(rule.id);
     const isInherited = rule.isInherited;
+    const isShaking = shakeRuleId === rule.id;
+
+    const handleRowClick = () => {
+      if (isInherited) {
+        handleInheritedRuleClick(rule.id);
+      } else {
+        toggleRuleSelection(rule.id);
+      }
+    };
 
     return (
-      <TableRow key={rule.id} className={isSelected ? 'bg-primary/5' : ''}>
-        <TableCell>
+      <TableRow
+        key={rule.id}
+        className={`
+          ${isSelected ? 'bg-primary/5' : ''}
+          ${!isInherited ? 'cursor-pointer hover:bg-muted/20' : 'cursor-not-allowed opacity-60'}
+          ${isShaking ? 'animate-shake' : ''}
+          transition-all duration-200
+        `}
+        onClick={handleRowClick}
+        title={isInherited ? 'Inherited from Department - Read only' : 'Click to select'}
+      >
+        <TableCell onClick={(e) => e.stopPropagation()}>
           {!isInherited && (
             <Checkbox
               checked={isSelected}
@@ -176,10 +236,7 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
             />
           )}
         </TableCell>
-        <TableCell
-          onClick={() => !isInherited && toggleRuleSelection(rule.id)}
-          className={!isInherited ? 'cursor-pointer' : ''}
-        >
+        <TableCell>
           <div className="flex items-start gap-2">
             <Shield className="size-icon text-purple-600 dark:text-purple-400 mt-0.5" />
             <div>
@@ -189,17 +246,24 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
                   {rule.description}
                 </div>
               )}
+              {/* Badge showing rule type */}
               <Badge
                 variant="outline"
                 className={`mt-1 text-xs ${
-                  isInherited
+                  isDepartment
+                    ? 'bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
+                    : isInherited
                     ? 'bg-muted text-muted-foreground border-border'
                     : 'bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
                 }`}
               >
-                {isInherited ? 'Inherited from Department' : 'VM-specific'}
+                {isDepartment
+                  ? 'Department-wide'
+                  : isInherited
+                  ? 'Inherited from Department'
+                  : 'VM-specific'}
               </Badge>
-              {rule.overridesDept && (
+              {rule.overridesDept && !isDepartment && (
                 <Badge className="mt-1 text-xs bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800 border ml-1">
                   <AlertCircle className="size-icon mr-1" />
                   Overrides Department
@@ -234,7 +298,7 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
             ({rule.priority})
           </div>
         </TableCell>
-        <TableCell>
+        <TableCell onClick={(e) => e.stopPropagation()}>
           {!isInherited ? (
             <div className="flex items-center gap-1">
               <Button
@@ -255,16 +319,18 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
     );
   };
 
-  const allSelected = customRules.length > 0 && selectedRules.length === customRules.length;
-  const someSelected = selectedRules.length > 0 && selectedRules.length < customRules.length;
+  const allSelected = allRules.filter(r => !r.isInherited).length > 0 &&
+                      selectedRules.length === allRules.filter(r => !r.isInherited).length;
+  const someSelected = selectedRules.length > 0 &&
+                       selectedRules.length < allRules.filter(r => !r.isInherited).length;
 
   if (allRules.length === 0) {
     return (
       <div className="text-center py-12 glass-subtle rounded-lg border border-border/20">
         <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="size-heading mb-2">No Firewall Rules</h3>
+        <h3 className="size-heading mb-2">No {isDepartment ? 'Department' : 'Firewall'} Rules</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Start by applying a security template or create custom rules
+          Start by applying a security template or create custom {isDepartment ? 'department-wide ' : ''}rules
         </p>
       </div>
     );
@@ -374,12 +440,21 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
       <AlertDialog open={!!deleteRuleId} onOpenChange={() => setDeleteRuleId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Firewall Rule?</AlertDialogTitle>
+            <AlertDialogTitle>Delete {isDepartment ? 'Department ' : ''}Firewall Rule?</AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
               <p>
-                This will permanently delete this firewall rule. This action cannot be undone.
-                The VM's network traffic will no longer match this rule.
+                This will permanently delete this {isDepartment ? 'department-level ' : ''}firewall rule.
+                This action cannot be undone.
               </p>
+              {isDepartment && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
+                  <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    <strong>Warning:</strong> This rule is inherited by all VMs in this department.
+                    Deleting it will affect network traffic for all VMs.
+                  </p>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6">
@@ -398,18 +473,21 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selectedRules.length} Firewall Rules?</AlertDialogTitle>
+            <AlertDialogTitle>Delete {selectedRules.length} {isDepartment ? 'Department ' : ''}Firewall Rules?</AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
               <p>
-                This will permanently delete {selectedRules.length} firewall rule{selectedRules.length !== 1 ? 's' : ''}.
+                This will permanently delete {selectedRules.length} {isDepartment ? 'department-level ' : ''}firewall rule{selectedRules.length !== 1 ? 's' : ''}.
                 This action cannot be undone.
               </p>
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
-                <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-orange-700 dark:text-orange-300">
-                  <strong>Warning:</strong> The VM's network traffic will no longer match these rules.
-                </p>
-              </div>
+              {isDepartment && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
+                  <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    <strong>Warning:</strong> These rules are inherited by all VMs in this department.
+                    Deleting them will affect network traffic for all VMs.
+                  </p>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6">
@@ -427,4 +505,4 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
   );
 };
 
-export default FirewallCustomRules;
+export default FirewallRulesList;
