@@ -36,7 +36,7 @@ export const useFirewallData = ({ entityType, entityId, departmentId }) => {
   });
 
   const effectiveQuery = useGetEffectiveFirewallRulesQuery({
-    variables: { vmId: entityId },
+    variables: { vmId: entityType === ENTITY_TYPES.VM ? entityId : '' },
     skip: entityType !== ENTITY_TYPES.VM || !entityId || !config.showEffectiveRules,
   });
 
