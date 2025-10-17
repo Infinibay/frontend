@@ -23,6 +23,38 @@ export const CATEGORIES = {
   GENERAL: 'general'
 };
 
+// Urgency badge configuration
+export const URGENCY_BADGES = {
+  IMMEDIATE: {
+    text: 'URGENTE',
+    color: 'bg-red-600 text-white',
+    borderColor: 'border-red-600',
+    icon: AlertTriangle,
+    animate: true
+  },
+  URGENT: {
+    text: 'ALTA PRIORIDAD',
+    color: 'bg-orange-500 text-white',
+    borderColor: 'border-orange-500',
+    icon: AlertTriangle,
+    animate: false
+  },
+  SOON: {
+    text: 'ATENCIÓN REQUERIDA',
+    color: 'bg-yellow-500 text-white',
+    borderColor: 'border-yellow-500',
+    icon: Clock,
+    animate: false
+  },
+  NORMAL: {
+    text: 'NORMAL',
+    color: 'bg-blue-500 text-white',
+    borderColor: 'border-blue-500',
+    icon: Info,
+    animate: false
+  }
+};
+
 // Recommendation type mappings - aligned with backend schema
 export const RECOMMENDATION_MAPPINGS = {
   // Security recommendations
@@ -52,7 +84,13 @@ export const RECOMMENDATION_MAPPINGS = {
     bgColor: 'bg-red-50',
     borderColor: 'border-red-200',
     actions: ['Revisar amenazas detectadas', 'Ejecutar análisis completo', 'Limpiar elementos en cuarentena'],
-    userFriendlyExplanation: 'Su antivirus encontró virus o amenazas en su computadora. Debe revisarlas y limpiarlas inmediatamente.',
+    userFriendlyExplanation: (recommendation) => {
+      const metadata = extractRecommendationMetadata(recommendation);
+      if (metadata?.threatCount > 0) {
+        return `Su antivirus encontró ${metadata.threatCount} amenaza(s) en su computadora. Debe revisarlas y limpiarlas inmediatamente.`;
+      }
+      return 'Su antivirus encontró virus o amenazas en su computadora. Debe revisarlas y limpiarlas inmediatamente.';
+    },
     technicalDetails: 'Windows Defender ha detectado malware, spyware u otras amenazas que están activas o en cuarentena.'
   },
 
@@ -108,14 +146,23 @@ export const RECOMMENDATION_MAPPINGS = {
     label: 'Actualizaciones de Aplicaciones Disponibles',
     description: 'Hay actualizaciones disponibles para algunas aplicaciones instaladas.',
     detailedDescription: 'Las actualizaciones de aplicaciones incluyen mejoras de seguridad, corrección de errores y nuevas funcionalidades.',
-    priority: PRIORITY_LEVELS.MEDIUM,
+    priority: (recommendation) => {
+      const metadata = extractRecommendationMetadata(recommendation);
+      return metadata?.securityUpdateCount > 0 ? PRIORITY_LEVELS.HIGH : PRIORITY_LEVELS.MEDIUM;
+    },
     category: CATEGORIES.UPDATES,
     icon: Download,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
     actions: ['Revisar actualizaciones disponibles', 'Instalar actualizaciones de seguridad', 'Programar actualizaciones automáticas'],
-    userFriendlyExplanation: 'Algunos de sus programas tienen versiones nuevas disponibles. Es como actualizar aplicaciones en su teléfono - mejora la seguridad y funciones.',
+    userFriendlyExplanation: (recommendation) => {
+      const metadata = extractRecommendationMetadata(recommendation);
+      if (metadata?.securityUpdateCount > 0) {
+        return `Tiene ${metadata.securityUpdateCount} actualización(es) de seguridad importante(s). Es como actualizar aplicaciones en su teléfono - mejora la seguridad y funciones.`;
+      }
+      return 'Algunos de sus programas tienen versiones nuevas disponibles. Es como actualizar aplicaciones en su teléfono - mejora la seguridad y funciones.';
+    },
     technicalDetails: 'Las actualizaciones de aplicaciones incluyen parches de seguridad críticos y mejoras de funcionalidad.'
   },
 
@@ -123,14 +170,25 @@ export const RECOMMENDATION_MAPPINGS = {
     label: 'Actualizaciones del Sistema Disponibles',
     description: 'Hay actualizaciones críticas o de seguridad de Windows disponibles.',
     detailedDescription: 'Las actualizaciones del sistema incluyen parches de seguridad críticos y mejoras de estabilidad que son esenciales para la seguridad.',
-    priority: PRIORITY_LEVELS.HIGH,
+    priority: (recommendation) => {
+      const metadata = extractRecommendationMetadata(recommendation);
+      return metadata?.rebootDays >= 7 ? PRIORITY_LEVELS.CRITICAL : PRIORITY_LEVELS.HIGH;
+    },
     category: CATEGORIES.UPDATES,
     icon: Download,
     color: 'text-orange-600',
     bgColor: 'bg-orange-50',
     borderColor: 'border-orange-200',
     actions: ['Instalar actualizaciones de Windows', 'Programar reinicio', 'Revisar actualizaciones automáticas'],
-    userFriendlyExplanation: 'Windows tiene actualizaciones importantes esperando. Es como vacunarse - protege su computadora de problemas nuevos. Debe instalarlas.',
+    userFriendlyExplanation: (recommendation) => {
+      const metadata = extractRecommendationMetadata(recommendation);
+      if (metadata?.rebootDays >= 7) {
+        return `URGENTE - Su sistema lleva ${metadata.rebootDays} días esperando reinicio. Windows tiene actualizaciones importantes esperando. Es como vacunarse - protege su computadora de problemas nuevos. Debe instalarlas y reiniciar inmediatamente.`;
+      } else if (metadata?.rebootDays >= 3) {
+        return `Su sistema lleva ${metadata.rebootDays} días esperando reinicio. Windows tiene actualizaciones importantes esperando. Debe instalarlas y reiniciar pronto.`;
+      }
+      return 'Windows tiene actualizaciones importantes esperando. Es como vacunarse - protege su computadora de problemas nuevos. Debe instalarlas.';
+    },
     technicalDetails: 'Windows Update incluye parches de seguridad críticos que protegen contra vulnerabilidades conocidas.'
   },
 
@@ -177,7 +235,14 @@ export const RECOMMENDATION_MAPPINGS = {
     bgColor: 'bg-yellow-50',
     borderColor: 'border-yellow-200',
     actions: ['Revisar reglas de firewall', 'Configurar excepciones', 'Verificar aplicaciones afectadas'],
-    userFriendlyExplanation: 'Algunos programas no pueden comunicarse porque el firewall los está bloqueando. Puede que necesite ajustar la configuración.',
+    userFriendlyExplanation: (recommendation) => {
+      const metadata = extractRecommendationMetadata(recommendation);
+      if (metadata?.blockedPorts && metadata.blockedPorts.length > 0) {
+        const port = metadata.blockedPorts[0];
+        return `El programa '${port.processName || 'Unknown'}' no puede comunicarse en el puerto ${port.port} porque el firewall lo está bloqueando. Puede que necesite ajustar la configuración.`;
+      }
+      return 'Algunos programas no pueden comunicarse porque el firewall los está bloqueando. Puede que necesite ajustar la configuración.';
+    },
     technicalDetails: 'Las reglas de firewall están impidiendo el tráfico de red legítimo de aplicaciones específicas.'
   },
 
@@ -198,13 +263,17 @@ export const RECOMMENDATION_MAPPINGS = {
   }
 };
 
+// Type aliases for backend compatibility
+RECOMMENDATION_MAPPINGS.SYSTEM_UPDATE_AVAILABLE = RECOMMENDATION_MAPPINGS.OS_UPDATE_AVAILABLE;
+
 /**
  * Get recommendation display information
  * @param {string} type - Recommendation type
+ * @param {Object} recommendation - Optional full recommendation object with data
  * @returns {Object} Display information object
  */
-export const getRecommendationInfo = (type) => {
-  return RECOMMENDATION_MAPPINGS[type] || {
+export const getRecommendationInfo = (type, recommendation = null) => {
+  const mapping = RECOMMENDATION_MAPPINGS[type] || {
     label: type,
     description: 'Recomendación del sistema',
     priority: PRIORITY_LEVELS.LOW,
@@ -216,6 +285,33 @@ export const getRecommendationInfo = (type) => {
     userFriendlyExplanation: 'El sistema tiene una recomendación para mejorar el funcionamiento.',
     technicalDetails: 'Información técnica no disponible.'
   };
+
+  // Resolve dynamic properties if recommendation is provided
+  if (recommendation) {
+    const resolved = { ...mapping };
+
+    // Resolve dynamic priority
+    if (typeof mapping.priority === 'function') {
+      resolved.priority = mapping.priority(recommendation);
+    }
+
+    // Resolve dynamic userFriendlyExplanation
+    if (typeof mapping.userFriendlyExplanation === 'function') {
+      resolved.userFriendlyExplanation = mapping.userFriendlyExplanation(recommendation);
+    }
+
+    // Extract metadata and attach enhanced info
+    const metadata = extractRecommendationMetadata(recommendation);
+    if (metadata) {
+      resolved.urgencyBadge = getUrgencyBadge(type, metadata);
+      resolved.dataPreview = getDataPreview(type, metadata);
+      resolved.affectedCount = getAffectedCount(type, metadata);
+    }
+
+    return resolved;
+  }
+
+  return mapping;
 };
 
 /**
@@ -355,4 +451,189 @@ export const getCategoryInfo = (category) => {
   };
 
   return categoryMap[category] || categoryMap[CATEGORIES.GENERAL];
+};
+
+/**
+ * Extract recommendation metadata from data field
+ * @param {Object} recommendation - Full recommendation object
+ * @returns {Object} Extracted metadata
+ */
+export const extractRecommendationMetadata = (recommendation) => {
+  if (!recommendation || !recommendation.data) {
+    return null;
+  }
+
+  let data;
+  try {
+    data = typeof recommendation.data === 'string'
+      ? JSON.parse(recommendation.data)
+      : recommendation.data;
+  } catch (error) {
+    console.error('Failed to parse recommendation data:', error);
+    return null;
+  }
+
+  const metadata = {};
+
+  // OS_UPDATE_AVAILABLE or SYSTEM_UPDATE_AVAILABLE metadata
+  if (recommendation.type === 'OS_UPDATE_AVAILABLE' || recommendation.type === 'SYSTEM_UPDATE_AVAILABLE') {
+    metadata.rebootDays = data.rebootPendingDays || null;
+    metadata.rebootUrgent = data.rebootUrgent || false;
+    metadata.rebootRequiredSince = data.rebootRequiredSince || null;
+    metadata.totalUpdates = data.totalUpdates || 0;
+    metadata.criticalCount = data.criticalCount || 0;
+    metadata.securityCount = data.securityCount || 0;
+    metadata.importantCount = data.importantCount || 0;
+    metadata.updateTitles = data.updateTitles || [];
+    metadata.updates = data.updates || [];
+  }
+
+  // APP_UPDATE_AVAILABLE metadata
+  if (recommendation.type === 'APP_UPDATE_AVAILABLE') {
+    metadata.securityUpdateCount = data.security_updates || data.securityCount || 0;
+    metadata.totalUpdateCount = data.total_updates || data.totalUpdates || 0;
+    metadata.affectedApps = data.applications || data.apps || [];
+  }
+
+  // PORT_BLOCKED metadata
+  if (recommendation.type === 'PORT_BLOCKED') {
+    const blockedPorts = [];
+
+    // Handle array of ports
+    if (Array.isArray(data.ports)) {
+      data.ports.forEach(portData => {
+        blockedPorts.push({
+          port: portData.port,
+          protocol: portData.protocol,
+          processName: portData.processName || 'Unknown',
+          processId: portData.processId || null,
+          ruleName: portData.ruleName || null,
+          ruleAction: portData.ruleAction || null,
+          blockReason: portData.blockReason || null,
+          attemptCount: portData.attemptCount || 1,
+          lastAttempt: portData.lastAttempt || null
+        });
+      });
+    }
+    // Handle single port (legacy format)
+    else if (data.port && data.protocol) {
+      blockedPorts.push({
+        port: data.port,
+        protocol: data.protocol,
+        processName: data.processName || 'Unknown',
+        processId: data.processId || null,
+        ruleName: data.ruleName || null,
+        ruleAction: data.ruleAction || null,
+        blockReason: data.blockReason || null,
+        attemptCount: data.attemptCount || 1,
+        lastAttempt: data.lastAttempt || null
+      });
+    }
+
+    metadata.blockedPorts = blockedPorts;
+  }
+
+  // DEFENDER_THREAT metadata
+  if (recommendation.type === 'DEFENDER_THREAT') {
+    metadata.activeThreats = data.active_threats || data.activeThreats || 0;
+    metadata.quarantinedThreats = data.quarantined_threats || data.quarantinedThreats || 0;
+    metadata.threatCount = (metadata.activeThreats || 0) + (metadata.quarantinedThreats || 0);
+    metadata.lastScanTime = data.last_scan_time || data.lastScanTime || null;
+  }
+
+  // UNDER_PROVISIONED/OVER_PROVISIONED metadata
+  if (recommendation.type === 'UNDER_PROVISIONED' || recommendation.type === 'OVER_PROVISIONED') {
+    metadata.currentCPU = data.currentCPU || null;
+    metadata.recommendedCPU = data.recommendedCPU || null;
+    metadata.currentRAM = data.currentRAM || null;
+    metadata.recommendedRAM = data.recommendedRAM || null;
+    metadata.usagePattern = data.usagePattern || null;
+  }
+
+  return metadata;
+};
+
+/**
+ * Get urgency badge for a recommendation
+ * @param {string} type - Recommendation type
+ * @param {Object} metadata - Extracted metadata
+ * @returns {string|null} Urgency level or null
+ */
+const getUrgencyBadge = (type, metadata) => {
+  if ((type === 'OS_UPDATE_AVAILABLE' || type === 'SYSTEM_UPDATE_AVAILABLE') && metadata.rebootDays >= 7) {
+    return 'IMMEDIATE';
+  }
+  if ((type === 'OS_UPDATE_AVAILABLE' || type === 'SYSTEM_UPDATE_AVAILABLE') && metadata.rebootDays >= 3) {
+    return 'URGENT';
+  }
+  if (type === 'DEFENDER_THREAT' && metadata.activeThreats > 0) {
+    return 'IMMEDIATE';
+  }
+  if (type === 'APP_UPDATE_AVAILABLE' && metadata.securityUpdateCount > 0) {
+    return 'URGENT';
+  }
+  if (type === 'PORT_BLOCKED') {
+    return 'SOON';
+  }
+  return null;
+};
+
+/**
+ * Get data preview text for a recommendation
+ * @param {string} type - Recommendation type
+ * @param {Object} metadata - Extracted metadata
+ * @returns {string|null} Preview text or null
+ */
+const getDataPreview = (type, metadata) => {
+  if ((type === 'OS_UPDATE_AVAILABLE' || type === 'SYSTEM_UPDATE_AVAILABLE') && metadata.rebootDays) {
+    return `Reinicio pendiente ${metadata.rebootDays} días`;
+  }
+  if (type === 'APP_UPDATE_AVAILABLE' && metadata.securityUpdateCount > 0) {
+    return `${metadata.securityUpdateCount} actualizaciones de seguridad`;
+  }
+  if (type === 'DEFENDER_THREAT' && metadata.threatCount > 0) {
+    return `${metadata.threatCount} amenaza(s) detectada(s)`;
+  }
+  if (type === 'PORT_BLOCKED' && metadata.blockedPorts?.length > 0) {
+    return `Puerto ${metadata.blockedPorts[0].port} bloqueado`;
+  }
+  return null;
+};
+
+/**
+ * Get affected count for a recommendation
+ * @param {string} type - Recommendation type
+ * @param {Object} metadata - Extracted metadata
+ * @returns {number|null} Count or null
+ */
+const getAffectedCount = (type, metadata) => {
+  if (type === 'OS_UPDATE_AVAILABLE' || type === 'SYSTEM_UPDATE_AVAILABLE') {
+    return metadata.totalUpdates || null;
+  }
+  if (type === 'APP_UPDATE_AVAILABLE') {
+    return metadata.totalUpdateCount || null;
+  }
+  if (type === 'DEFENDER_THREAT') {
+    return metadata.threatCount || null;
+  }
+  if (type === 'PORT_BLOCKED') {
+    return metadata.blockedPorts?.length || null;
+  }
+  return null;
+};
+
+/**
+ * Get reboot urgency text helper
+ * @param {number} days - Days since reboot required
+ * @returns {string} Urgency text
+ */
+export const getRebootUrgencyText = (days) => {
+  if (days >= 7) {
+    return `urgente - pendiente ${days} días`;
+  } else if (days >= 3) {
+    return `atención requerida - pendiente ${days} días`;
+  } else if (days > 0) {
+    return `pendiente ${days} día(s)`;
+  }
+  return '';
 };

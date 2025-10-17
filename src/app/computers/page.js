@@ -17,6 +17,16 @@ import {
   ToastProvider,
   ToastViewport,
 } from "@/components/ui/toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
 
 // Local components and hooks
 import { ComputersHeader } from "./components/ComputersHeader";
@@ -95,6 +105,9 @@ export default function ComputersPage() {
     handlePause,
     handleStop,
     handleDelete,
+    deleteConfirmation,
+    confirmDelete,
+    cancelDelete,
   } = useComputerActions();
 
   // Group machines by department
@@ -149,6 +162,36 @@ export default function ComputersPage() {
         </div>
 
       </section>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteConfirmation.isOpen} onOpenChange={cancelDelete}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <DialogTitle>Delete Virtual Machine</DialogTitle>
+            </div>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{deleteConfirmation.machine?.name}</strong>?
+              This action cannot be undone and all data associated with this virtual machine will be permanently removed.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 sm:gap-0 mt-6">
+            <Button variant="outline" onClick={cancelDelete}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ToastProvider>
   );
 }

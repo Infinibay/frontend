@@ -120,8 +120,8 @@ export type BridgeNameInput = {
   networkName?: Scalars['String']['input'];
 };
 
-export type CleanupResult = {
-  __typename?: 'CleanupResult';
+export type CleanupResultType = {
+  __typename?: 'CleanupResultType';
   filterNames: Array<Scalars['String']['output']>;
   filtersRemoved: Scalars['Int']['output'];
   success: Scalars['Boolean']['output'];
@@ -149,6 +149,7 @@ export type CommandResult = {
   success: Scalars['Boolean']['output'];
 };
 
+/** Type of rule conflict */
 export enum ConflictType {
   Contradictory = 'CONTRADICTORY',
   Duplicate = 'DUPLICATE',
@@ -306,13 +307,13 @@ export type DyummyType = {
   value: Scalars['String']['output'];
 };
 
-export type EffectiveRuleSet = {
-  __typename?: 'EffectiveRuleSet';
-  conflicts: Array<RuleConflict>;
-  departmentRules: Array<FirewallRule>;
-  effectiveRules: Array<FirewallRule>;
+export type EffectiveRuleSetType = {
+  __typename?: 'EffectiveRuleSetType';
+  conflicts: Array<RuleConflictType>;
+  departmentRules: Array<FirewallRuleType>;
+  effectiveRules: Array<FirewallRuleType>;
   vmId: Scalars['ID']['output'];
-  vmRules: Array<FirewallRule>;
+  vmRules: Array<FirewallRuleType>;
 };
 
 export type ExecuteMaintenanceInput = {
@@ -321,8 +322,25 @@ export type ExecuteMaintenanceInput = {
   taskType: MaintenanceTaskType;
 };
 
-export type FirewallRule = {
-  __typename?: 'FirewallRule';
+export type FirewallRuleSetType = {
+  __typename?: 'FirewallRuleSetType';
+  createdAt: Scalars['DateTimeISO']['output'];
+  entityId: Scalars['String']['output'];
+  entityType: RuleSetType;
+  id: Scalars['ID']['output'];
+  internalName: Scalars['String']['output'];
+  isActive: Scalars['Boolean']['output'];
+  lastSyncedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  libvirtUuid?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  rules: Array<FirewallRuleType>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+  xmlContent?: Maybe<Scalars['String']['output']>;
+};
+
+export type FirewallRuleType = {
+  __typename?: 'FirewallRuleType';
   action: RuleAction;
   connectionState?: Maybe<Scalars['JSONObject']['output']>;
   createdAt: Scalars['DateTimeISO']['output'];
@@ -337,7 +355,7 @@ export type FirewallRule = {
   overridesDept: Scalars['Boolean']['output'];
   priority: Scalars['Int']['output'];
   protocol: Scalars['String']['output'];
-  ruleSetId: Scalars['ID']['output'];
+  ruleSetId: Scalars['String']['output'];
   srcIpAddr?: Maybe<Scalars['String']['output']>;
   srcIpMask?: Maybe<Scalars['String']['output']>;
   srcPortEnd?: Maybe<Scalars['Int']['output']>;
@@ -345,25 +363,8 @@ export type FirewallRule = {
   updatedAt: Scalars['DateTimeISO']['output'];
 };
 
-export type FirewallRuleSet = {
-  __typename?: 'FirewallRuleSet';
-  createdAt: Scalars['DateTimeISO']['output'];
-  entityId: Scalars['ID']['output'];
-  entityType: RuleSetType;
-  id: Scalars['ID']['output'];
-  internalName: Scalars['String']['output'];
-  isActive: Scalars['Boolean']['output'];
-  lastSyncedAt?: Maybe<Scalars['DateTimeISO']['output']>;
-  libvirtUuid?: Maybe<Scalars['String']['output']>;
-  name: Scalars['String']['output'];
-  priority: Scalars['Int']['output'];
-  rules: Array<FirewallRule>;
-  updatedAt: Scalars['DateTimeISO']['output'];
-  xmlContent?: Maybe<Scalars['String']['output']>;
-};
-
-export type FlushResult = {
-  __typename?: 'FlushResult';
+export type FlushResultType = {
+  __typename?: 'FlushResultType';
   libvirtFilterName: Scalars['String']['output'];
   rulesApplied: Scalars['Int']['output'];
   success: Scalars['Boolean']['output'];
@@ -502,8 +503,31 @@ export type IpRangeInput = {
   start?: Scalars['String']['input'];
 };
 
-export type LibvirtFilterInfo = {
-  __typename?: 'LibvirtFilterInfo';
+/** Keep-alive heartbeat metrics for a VM connection */
+export type KeepAliveMetrics = {
+  __typename?: 'KeepAliveMetrics';
+  /** Average round-trip time in milliseconds */
+  averageRtt: Scalars['Float']['output'];
+  /** Consecutive failures (resets on success) */
+  consecutiveFailures: Scalars['Int']['output'];
+  /** Total keep-alive failures (cumulative) */
+  failureCount: Scalars['Int']['output'];
+  /** Timestamp of last keep-alive failure */
+  lastFailure?: Maybe<Scalars['String']['output']>;
+  /** Timestamp of last keep-alive response received */
+  lastReceived?: Maybe<Scalars['String']['output']>;
+  /** Timestamp of last keep-alive request sent */
+  lastSent?: Maybe<Scalars['String']['output']>;
+  /** Total keep-alive responses received */
+  receivedCount: Scalars['Int']['output'];
+  /** Total keep-alive requests sent */
+  sentCount: Scalars['Int']['output'];
+  /** Keep-alive success rate as percentage (e.g., "95.5%" or "N/A") */
+  successRate: Scalars['String']['output'];
+};
+
+export type LibvirtFilterInfoType = {
+  __typename?: 'LibvirtFilterInfoType';
   name: Scalars['String']['output'];
   uuid?: Maybe<Scalars['String']['output']>;
 };
@@ -721,12 +745,10 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
-  /** Clean up all Infinibay firewall filters (for uninstall) */
-  cleanupInfinibayFirewall: CleanupResult;
+  cleanupInfinibayFirewall: CleanupResultType;
   createApplication: ApplicationType;
   createDepartment: DepartmentType;
-  /** Create firewall rule for a department */
-  createDepartmentFirewallRule: FirewallRule;
+  createDepartmentFirewallRule: FirewallRuleType;
   createMachine: Machine;
   createMachineTemplate: MachineTemplateType;
   createMachineTemplateCategory: MachineTemplateCategoryType;
@@ -735,10 +757,8 @@ export type Mutation = {
   /** Create a snapshot of a virtual machine */
   createSnapshot: SnapshotResult;
   createUser: UserType;
-  /** Create firewall rule for a VM */
-  createVMFirewallRule: FirewallRule;
+  createVMFirewallRule: FirewallRuleType;
   deleteApplication: Scalars['Boolean']['output'];
-  /** Delete firewall rule */
   deleteFirewallRule: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
@@ -751,8 +771,7 @@ export type Mutation = {
   executeCommand: CommandExecutionResponseType;
   executeImmediateMaintenance: MaintenanceExecutionResponse;
   executeMaintenanceTask: MaintenanceExecutionResponse;
-  /** Apply firewall rules to VM immediately (flush) */
-  flushFirewallRules: FlushResult;
+  flushFirewallRules: FlushResultType;
   forcePowerOff: SuccessType;
   /** Force power off and restore snapshot (emergency recovery) */
   forceRestoreSnapshot: SuccessType;
@@ -786,8 +805,7 @@ export type Mutation = {
   setNetworkIpRange: Scalars['Boolean']['output'];
   setupNode: DyummyType;
   suspend: SuccessType;
-  /** Sync all firewall configurations to libvirt */
-  syncFirewallToLibvirt: SyncResult;
+  syncFirewallToLibvirt: SyncResultType;
   /** Sync ISOs with filesystem */
   syncISOs: Scalars['Boolean']['output'];
   toggleMaintenanceTask: MaintenanceTaskResponse;
@@ -795,8 +813,7 @@ export type Mutation = {
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
   updateDepartmentName: DepartmentType;
-  /** Update firewall rule */
-  updateFirewallRule: FirewallRule;
+  updateFirewallRule: FirewallRuleType;
   updateMachineHardware: Machine;
   updateMachineName: Machine;
   updateMachineTemplate: MachineTemplateType;
@@ -1293,10 +1310,8 @@ export type Query = {
   dueMaintenanceTasks: Array<MaintenanceTask>;
   findDepartmentByName?: Maybe<DepartmentType>;
   getAppSettings: AppSettings;
-  /** Get firewall rules for a department */
-  getDepartmentFirewallRules?: Maybe<FirewallRuleSet>;
-  /** Get effective firewall rules for a VM (department + VM merged) */
-  getEffectiveFirewallRules: EffectiveRuleSet;
+  getDepartmentFirewallRules?: Maybe<FirewallRuleSetType>;
+  getEffectiveFirewallRules: EffectiveRuleSetType;
   getGraphics: Array<Gpu>;
   getLatestVMHealth?: Maybe<VmHealthSnapshotType>;
   /** Get supported OS types */
@@ -1304,8 +1319,7 @@ export type Query = {
   getSystemResources: SystemResources;
   /** Get installed applications inventory for a VM */
   getVMApplicationInventory: ApplicationInventory;
-  /** Get firewall rules for a VM */
-  getVMFirewallRules?: Maybe<FirewallRuleSet>;
+  getVMFirewallRules?: Maybe<FirewallRuleSetType>;
   /** Get comprehensive health check status for a VM */
   getVMHealthStatus: HealthCheckStatus;
   /** Get automated recommendations for VM optimization, security, and maintenance based on system analysis. Returns up to 20 recommendations by default to prevent over-fetch. Use pagination for more results. */
@@ -1316,8 +1330,7 @@ export type Query = {
   healthCheckQueueStats: QueueStatsType;
   healthQueueStatistics: QueueStatistics;
   latestVMHealthSnapshot?: Maybe<VmHealthSnapshotType>;
-  /** List all Infinibay filters in libvirt */
-  listInfinibayFilters: Array<LibvirtFilterInfo>;
+  listInfinibayFilters: Array<LibvirtFilterInfoType>;
   /** List all installed packages on a virtual machine */
   listInstalledPackages: Array<PackageInfo>;
   machine?: Maybe<Machine>;
@@ -1342,8 +1355,7 @@ export type Query = {
   socketConnectionStats?: Maybe<SocketConnectionStats>;
   user: UserType;
   users: Array<UserType>;
-  /** Validate firewall rule before creating */
-  validateFirewallRule: ValidationResult;
+  validateFirewallRule: ValidationResultType;
   vmHealthCheckQueue: Array<VmHealthCheckQueueType>;
   vmHealthHistory: Array<VmHealthSnapshotType>;
   vmHealthStats: VmHealthStatsType;
@@ -1664,25 +1676,28 @@ export type RestoreSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
+/** Action to take on matched traffic */
 export enum RuleAction {
   Accept = 'ACCEPT',
   Drop = 'DROP',
   Reject = 'REJECT'
 }
 
-export type RuleConflict = {
-  __typename?: 'RuleConflict';
-  affectedRules: Array<FirewallRule>;
+export type RuleConflictType = {
+  __typename?: 'RuleConflictType';
+  affectedRules: Array<FirewallRuleType>;
   message: Scalars['String']['output'];
   type: ConflictType;
 };
 
+/** Direction of network traffic */
 export enum RuleDirection {
   In = 'IN',
   Inout = 'INOUT',
   Out = 'OUT'
 }
 
+/** Type of firewall rule set (Department or VM) */
 export enum RuleSetType {
   Department = 'DEPARTMENT',
   Vm = 'VM'
@@ -1732,8 +1747,8 @@ export type SuccessType = {
   success: Scalars['Boolean']['output'];
 };
 
-export type SyncResult = {
-  __typename?: 'SyncResult';
+export type SyncResultType = {
+  __typename?: 'SyncResultType';
   errors: Array<Scalars['String']['output']>;
   filtersCreated: Scalars['Int']['output'];
   filtersUpdated: Scalars['Int']['output'];
@@ -1953,9 +1968,9 @@ export type VmRecommendationType = {
   type: RecommendationType;
 };
 
-export type ValidationResult = {
-  __typename?: 'ValidationResult';
-  conflicts: Array<RuleConflict>;
+export type ValidationResultType = {
+  __typename?: 'ValidationResultType';
+  conflicts: Array<RuleConflictType>;
   isValid: Scalars['Boolean']['output'];
   warnings: Array<Scalars['String']['output']>;
 };
@@ -1963,6 +1978,8 @@ export type ValidationResult = {
 export type VmConnectionInfo = {
   __typename?: 'VmConnectionInfo';
   isConnected: Scalars['Boolean']['output'];
+  /** Keep-alive heartbeat metrics */
+  keepAlive?: Maybe<KeepAliveMetrics>;
   lastMessageTime: Scalars['String']['output'];
   reconnectAttempts: Scalars['Float']['output'];
   vmId: Scalars['String']['output'];
@@ -1970,7 +1987,7 @@ export type VmConnectionInfo = {
 
 export type VmDiagnostics = {
   __typename?: 'VmDiagnostics';
-  connectionStats?: Maybe<SocketConnectionStats>;
+  connectionStats?: Maybe<VmConnectionInfo>;
   diagnostics: Array<Scalars['String']['output']>;
   infiniService: InfiniServiceStatus;
   manualCommands: Array<Scalars['String']['output']>;

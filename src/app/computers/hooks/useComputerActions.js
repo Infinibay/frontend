@@ -21,6 +21,10 @@ export function useComputerActions() {
   const router = useRouter();
   const [showToast, setShowToast] = useState(false);
   const [toastProps, setToastProps] = useState({});
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    isOpen: false,
+    machine: null,
+  });
 
   const handlePcSelect = (machine) => {
     // Navigate to VM view instead of opening the deprecated panel
@@ -95,7 +99,18 @@ export function useComputerActions() {
     setShowToast(true);
   };
 
-  const handleDelete = async (machine) => {
+  const handleDelete = (machine) => {
+    // Open confirmation modal instead of deleting immediately
+    setDeleteConfirmation({
+      isOpen: true,
+      machine: machine,
+    });
+  };
+
+  const confirmDelete = async () => {
+    const machine = deleteConfirmation.machine;
+    if (!machine) return;
+
     try {
       await dispatch(deleteVm({ id: machine.id })).unwrap();
       handleDetailsClose(false);
@@ -112,6 +127,11 @@ export function useComputerActions() {
       });
     }
     setShowToast(true);
+    setDeleteConfirmation({ isOpen: false, machine: null });
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmation({ isOpen: false, machine: null });
   };
 
   const handleRefresh = async () => {
@@ -145,5 +165,8 @@ export function useComputerActions() {
     handleStop,
     handleDelete,
     handleRefresh,
+    deleteConfirmation,
+    confirmDelete,
+    cancelDelete,
   };
 }

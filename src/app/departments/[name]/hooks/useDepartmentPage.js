@@ -50,6 +50,10 @@ export const useDepartmentPage = (departmentName) => {
   const [isCreateDeptDialogOpen, setIsCreateDeptDialogOpen] = useState(false);
   const [newDepartmentName, setNewDepartmentName] = useState("");
   const [selectedPc, setSelectedPc] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    isOpen: false,
+    vm: null,
+  });
   
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
@@ -142,10 +146,21 @@ export const useDepartmentPage = (departmentName) => {
     await handleStop(dispatch, pc || selectedPc);
   };
 
-  const handleDeleteAction = async (vmId) => {
+  const handleDeleteAction = (vm) => {
+    // Open confirmation modal instead of deleting immediately
+    setDeleteConfirmation({
+      isOpen: true,
+      vm: vm,
+    });
+  };
+
+  const confirmDelete = async () => {
+    const vm = deleteConfirmation.vm;
+    if (!vm) return;
+
     await handleDelete(
-      dispatch, 
-      vmId, 
+      dispatch,
+      vm.id,
       () => {
         setSelectedPc(null);
         setToastProps({
@@ -164,6 +179,12 @@ export const useDepartmentPage = (departmentName) => {
         setShowToast(true);
       }
     );
+
+    setDeleteConfirmation({ isOpen: false, vm: null });
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmation({ isOpen: false, vm: null });
   };
 
   // Toggle view mode
@@ -294,6 +315,7 @@ export const useDepartmentPage = (departmentName) => {
     selectedPc,
     isAdmin,
     nameUpdateLoading,
+    deleteConfirmation,
 
     // Actions
     setActiveTab,
@@ -311,6 +333,8 @@ export const useDepartmentPage = (departmentName) => {
     handleSort,
     handleCreateDepartment,
     handleNewComputer,
-    handleDepartmentNameUpdate
+    handleDepartmentNameUpdate,
+    confirmDelete,
+    cancelDelete,
   };
 };

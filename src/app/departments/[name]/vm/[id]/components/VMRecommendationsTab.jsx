@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { RefreshCw, Search, Filter, CheckCircle, AlertTriangle, Clock, Lightbulb } from 'lucide-react';
+import { RefreshCw, Search, Filter, CheckCircle, AlertTriangle, Clock, Lightbulb, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,9 @@ import {
   getPriorityColors,
   getCategoryInfo,
   isFallbackType,
+  extractRecommendationMetadata,
+  getRebootUrgencyText,
+  URGENCY_BADGES,
   PRIORITY_LEVELS,
   CATEGORIES
 } from '@/utils/recommendationTypeMapper';
@@ -100,14 +103,21 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
 
   // Render recommendation card
   const renderRecommendationCard = (recommendation) => {
-    const info = getRecommendationInfo(recommendation.type);
+    const metadata = extractRecommendationMetadata(recommendation);
+    const info = getRecommendationInfo(recommendation.type, recommendation);
     const priorityColors = getPriorityColors(info.priority);
     const isExpanded = expandedRec === recommendation.id;
+
+    // Determine urgency styling
+    const isUrgent = info.urgencyBadge === 'IMMEDIATE' || info.urgencyBadge === 'URGENT';
+    const urgencyBadgeConfig = info.urgencyBadge ? URGENCY_BADGES[info.urgencyBadge] : null;
+    const urgentBorderClass = urgencyBadgeConfig ? `border-l-4 ${urgencyBadgeConfig.borderColor} shadow-lg` : '';
+    const urgentAnimateClass = urgencyBadgeConfig?.animate ? 'animate-pulse' : '';
 
     return (
       <div
         key={recommendation.id}
-        className={`border rounded-lg hover:shadow-sm transition-all ${priorityColors.border}`}
+        className={`border rounded-lg hover:shadow-sm transition-all ${priorityColors.border} ${urgentBorderClass} ${urgentAnimateClass}`}
       >
         {/* Card Header */}
         <div className="p-4">
@@ -135,7 +145,91 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                     {recommendation.text || info.description}
                   </p>
 
+                  {/* Enhanced data display for OS_UPDATE_AVAILABLE or SYSTEM_UPDATE_AVAILABLE */}
+                  {(recommendation.type === 'OS_UPDATE_AVAILABLE' || recommendation.type === 'SYSTEM_UPDATE_AVAILABLE') && metadata?.rebootDays && (
+                    <div className={`mb-3 p-3 rounded-lg flex items-center gap-2 ${
+                      metadata.rebootDays >= 7 ? 'bg-red-50 border border-red-200' :
+                      metadata.rebootDays >= 3 ? 'bg-orange-50 border border-orange-200' :
+                      'bg-yellow-50 border border-yellow-200'
+                    }`}>
+                      <AlertTriangle className={`h-5 w-5 ${
+                        metadata.rebootDays >= 7 ? 'text-red-600' :
+                        metadata.rebootDays >= 3 ? 'text-orange-600' :
+                        'text-yellow-600'
+                      }`} />
+                      <div className="flex-1">
+                        <p className={`text-sm font-medium ${
+                          metadata.rebootDays >= 7 ? 'text-red-900' :
+                          metadata.rebootDays >= 3 ? 'text-orange-900' :
+                          'text-yellow-900'
+                        }`}>
+                          ⚠️ Sistema esperando reinicio por {metadata.rebootDays} días
+                        </p>
+                        {metadata.rebootDays >= 7 && (
+                          <p className="text-xs text-red-700 mt-1">
+                            URGENTE: Reinicio inmediato requerido para aplicar actualizaciones de seguridad
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Enhanced data display for APP_UPDATE_AVAILABLE */}
+                  {recommendation.type === 'APP_UPDATE_AVAILABLE' && metadata?.securityUpdateCount > 0 && (
+                    <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-orange-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-orange-900">
+                          🛡️ {metadata.securityUpdateCount} actualización(es) de seguridad
+                        </p>
+                        {metadata.totalUpdateCount > metadata.securityUpdateCount && (
+                          <p className="text-xs text-orange-700 mt-1">
+                            Total: {metadata.totalUpdateCount} actualizaciones disponibles
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Enhanced data display for PORT_BLOCKED */}
+                  {recommendation.type === 'PORT_BLOCKED' && metadata?.blockedPorts?.length > 0 && (
+                    <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      {metadata.blockedPorts.map((port, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm text-yellow-900">
+                          <Shield className="h-4 w-4 text-yellow-600" />
+                          <span className="font-medium">
+                            Puerto {port.port} ({port.protocol}) - {port.processName}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Enhanced data display for DEFENDER_THREAT */}
+                  {recommendation.type === 'DEFENDER_THREAT' && metadata?.threatCount > 0 && (
+                    <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-red-900">
+                          ⚠️ {metadata.threatCount} amenaza(s) detectada(s)
+                        </p>
+                        {metadata.activeThreats > 0 && (
+                          <p className="text-xs text-red-700 mt-1">
+                            {metadata.activeThreats} activa(s) • {metadata.quarantinedThreats || 0} en cuarentena
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 mb-2">
+                    {/* Urgency badge */}
+                    {urgencyBadgeConfig && (
+                      <Badge className={urgencyBadgeConfig.color}>
+                        {urgencyBadgeConfig.text}
+                      </Badge>
+                    )}
+
                     <Badge className={priorityColors.badge}>
                       {info.priority === PRIORITY_LEVELS.CRITICAL && 'Critical'}
                       {info.priority === PRIORITY_LEVELS.HIGH && 'High'}
@@ -298,14 +392,39 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                   <AlertTriangle className="h-5 w-5 text-red-600" />
                 )}
               </CardTitle>
-              <p className="text-sm text-gray-600 mt-1">
-                {summary.total} recommendations from last scan
-                {summary.highPriority > 0 && (
-                  <span className="text-red-600 font-medium">
-                    {' '}• {summary.highPriority} high priority
+              <div className="text-sm text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
+                <span>{summary.total} recommendations from last scan</span>
+                {summary.urgent > 0 && (
+                  <span className="flex items-center gap-1 text-red-600 font-medium">
+                    <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+                    {summary.urgent} urgent
                   </span>
                 )}
-              </p>
+                {summary.rebootPending > 0 && (
+                  <span className="flex items-center gap-1 text-orange-600 font-medium">
+                    <span className="w-2 h-2 bg-orange-600 rounded-full"></span>
+                    {summary.rebootPending} reboot pending
+                  </span>
+                )}
+                {summary.securityUpdates > 0 && (
+                  <span className="flex items-center gap-1 text-orange-600 font-medium">
+                    <span className="w-2 h-2 bg-orange-600 rounded-full"></span>
+                    {summary.securityUpdates} security updates
+                  </span>
+                )}
+                {summary.activeThreats > 0 && (
+                  <span className="flex items-center gap-1 text-red-600 font-bold">
+                    <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
+                    {summary.activeThreats} active threats
+                  </span>
+                )}
+                {summary.blockedPorts > 0 && (
+                  <span className="flex items-center gap-1 text-yellow-600">
+                    <span className="w-2 h-2 bg-yellow-600 rounded-full"></span>
+                    {summary.blockedPorts} blocked ports
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-2">

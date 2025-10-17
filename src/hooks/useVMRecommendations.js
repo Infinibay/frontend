@@ -10,9 +10,60 @@ import {
   getRecommendationInfo,
   getRecommendationPriority,
   getRecommendationCategory,
+  extractRecommendationMetadata,
   PRIORITY_LEVELS,
   requiresImmediateAction
 } from '@/utils/recommendationTypeMapper';
+
+/**
+ * Calculate urgency level for a recommendation
+ * @param {Object} recommendation - Recommendation object
+ * @returns {string} Urgency level: 'immediate', 'urgent', 'soon', 'normal'
+ */
+export const calculateUrgency = (recommendation) => {
+  const metadata = extractRecommendationMetadata(recommendation);
+  const priority = getRecommendationPriority(recommendation.type);
+
+  // OS_UPDATE_AVAILABLE or SYSTEM_UPDATE_AVAILABLE with reboot pending >= 7 days
+  if ((recommendation.type === 'OS_UPDATE_AVAILABLE' || recommendation.type === 'SYSTEM_UPDATE_AVAILABLE') && metadata?.rebootDays >= 7) {
+    return 'immediate';
+  }
+
+  // DEFENDER_THREAT with active threats
+  if (recommendation.type === 'DEFENDER_THREAT' && metadata?.activeThreats > 0) {
+    return 'immediate';
+  }
+
+  // APP_UPDATE_AVAILABLE with security updates
+  if (recommendation.type === 'APP_UPDATE_AVAILABLE' && metadata?.securityUpdateCount > 0) {
+    return 'urgent';
+  }
+
+  // OS_UPDATE_AVAILABLE or SYSTEM_UPDATE_AVAILABLE with reboot pending >= 3 days
+  if ((recommendation.type === 'OS_UPDATE_AVAILABLE' || recommendation.type === 'SYSTEM_UPDATE_AVAILABLE') && metadata?.rebootDays >= 3) {
+    return 'urgent';
+  }
+
+  // PORT_BLOCKED
+  if (recommendation.type === 'PORT_BLOCKED') {
+    return 'soon';
+  }
+
+  // Based on priority
+  if (priority === PRIORITY_LEVELS.CRITICAL) {
+    return 'urgent';
+  }
+
+  if (priority === PRIORITY_LEVELS.HIGH) {
+    return 'urgent';
+  }
+
+  if (priority === PRIORITY_LEVELS.MEDIUM) {
+    return 'soon';
+  }
+
+  return 'normal';
+};
 
 /**
  * Custom hook for managing VM recommendations data
@@ -106,9 +157,29 @@ const useVMRecommendations = (vmId, options = {}) => {
     return categories;
   }, [recommendations]);
 
-  // Sort recommendations by priority and creation date using unified mapper
+  // Sort recommendations by urgency, priority, and creation date with metadata attachment
   const sortedRecommendations = useMemo(() => {
-    return [...recommendations].sort((a, b) => {
+    return [...recommendations].map(rec => {
+      // Attach metadata as a non-enumerable property to avoid affecting serialization
+      const metadata = extractRecommendationMetadata(rec);
+      if (metadata) {
+        Object.defineProperty(rec, '_metadata', {
+          value: metadata,
+          writable: false,
+          enumerable: false,
+          configurable: true
+        });
+      }
+      return rec;
+    }).sort((a, b) => {
+      // Define urgency value mapping
+      const urgencyValues = {
+        immediate: 4,
+        urgent: 3,
+        soon: 2,
+        normal: 1
+      };
+
       // Define priority value mapping
       const priorityValues = {
         [PRIORITY_LEVELS.CRITICAL]: 4,
@@ -117,10 +188,19 @@ const useVMRecommendations = (vmId, options = {}) => {
         [PRIORITY_LEVELS.LOW]: 1
       };
 
-      const aPriority = priorityValues[getRecommendationPriority(a.type)] || 0;
-      const bPriority = priorityValues[getRecommendationPriority(b.type)] || 0;
+      const aUrgency = urgencyValues[calculateUrgency(a)] || 0;
+      const bUrgency = urgencyValues[calculateUrgency(b)] || 0;
 
-      // Sort by priority first, then by creation date
+      const aInfo = getRecommendationInfo(a.type, a);
+      const bInfo = getRecommendationInfo(b.type, b);
+      const aPriority = priorityValues[aInfo.priority] || 0;
+      const bPriority = priorityValues[bInfo.priority] || 0;
+
+      // Sort by urgency first, then priority, then creation date
+      if (aUrgency !== bUrgency) {
+        return bUrgency - aUrgency;
+      }
+
       if (aPriority !== bPriority) {
         return bPriority - aPriority;
       }
@@ -129,11 +209,36 @@ const useVMRecommendations = (vmId, options = {}) => {
     });
   }, [recommendations]);
 
-  // Get high priority recommendations using unified mapper
+  // Get high priority recommendations using dynamic priority resolution
   const highPriorityRecommendations = useMemo(() => {
     return recommendations.filter(rec => {
-      const priority = getRecommendationPriority(rec.type);
-      return priority === PRIORITY_LEVELS.CRITICAL || priority === PRIORITY_LEVELS.HIGH;
+      const info = getRecommendationInfo(rec.type, rec);
+      return info.priority === PRIORITY_LEVELS.CRITICAL || info.priority === PRIORITY_LEVELS.HIGH;
+    });
+  }, [recommendations]);
+
+  // Get urgent recommendations that require immediate attention
+  const urgentRecommendations = useMemo(() => {
+    return recommendations.filter(rec => {
+      const urgency = calculateUrgency(rec);
+      const metadata = extractRecommendationMetadata(rec);
+
+      // OS_UPDATE_AVAILABLE or SYSTEM_UPDATE_AVAILABLE with reboot >= 7 days
+      if ((rec.type === 'OS_UPDATE_AVAILABLE' || rec.type === 'SYSTEM_UPDATE_AVAILABLE') && metadata?.rebootDays >= 7) {
+        return true;
+      }
+
+      // DEFENDER_THREAT with active threats
+      if (rec.type === 'DEFENDER_THREAT' && metadata?.activeThreats > 0) {
+        return true;
+      }
+
+      // APP_UPDATE_AVAILABLE with security updates
+      if (rec.type === 'APP_UPDATE_AVAILABLE' && metadata?.securityUpdateCount > 0) {
+        return true;
+      }
+
+      return urgency === 'immediate';
     });
   }, [recommendations]);
 
@@ -148,6 +253,12 @@ const useVMRecommendations = (vmId, options = {}) => {
     return recommendations.filter(rec => typesList.includes(rec.type));
   }, [recommendations]);
 
+  // Filter recommendations by urgency level
+  const filterByUrgency = useCallback((urgencyLevel) => {
+    if (!urgencyLevel) return recommendations;
+    return recommendations.filter(rec => calculateUrgency(rec) === urgencyLevel);
+  }, [recommendations]);
+
   // Get recommendations count by category
   const categoryStats = useMemo(() => {
     return Object.keys(categorizedRecommendations).reduce((stats, category) => {
@@ -156,11 +267,33 @@ const useVMRecommendations = (vmId, options = {}) => {
     }, {});
   }, [categorizedRecommendations]);
 
-  // Summary statistics
+  // Summary statistics with urgency-based counts
   const summary = useMemo(() => {
+    const urgent = urgentRecommendations.length;
+    const rebootPending = recommendations.filter(rec => rec.type === 'OS_UPDATE_AVAILABLE' || rec.type === 'SYSTEM_UPDATE_AVAILABLE').length;
+    const securityUpdates = recommendations.filter(rec => {
+      const metadata = extractRecommendationMetadata(rec);
+      return rec.type === 'APP_UPDATE_AVAILABLE' && metadata?.securityUpdateCount > 0;
+    }).length;
+    const activeThreats = recommendations.filter(rec => {
+      const metadata = extractRecommendationMetadata(rec);
+      return rec.type === 'DEFENDER_THREAT' && metadata?.activeThreats > 0;
+    }).length;
+    const blockedPorts = recommendations.filter(rec => rec.type === 'PORT_BLOCKED').length;
+    const critical = recommendations.filter(rec => {
+      const info = getRecommendationInfo(rec.type, rec);
+      return info.priority === PRIORITY_LEVELS.CRITICAL;
+    }).length;
+
     return {
       total: recommendations.length,
       highPriority: highPriorityRecommendations.length,
+      urgent,
+      rebootPending,
+      securityUpdates,
+      activeThreats,
+      blockedPorts,
+      critical,
       security: categoryStats.security,
       performance: categoryStats.performance,
       maintenance: categoryStats.maintenance,
@@ -168,11 +301,11 @@ const useVMRecommendations = (vmId, options = {}) => {
       updates: categoryStats.updates,
       general: categoryStats.general
     };
-  }, [recommendations.length, highPriorityRecommendations.length, categoryStats]);
+  }, [recommendations, highPriorityRecommendations.length, urgentRecommendations.length, categoryStats]);
 
-  // Check if requires immediate attention using unified mapper
+  // Check if requires immediate attention using dynamic urgency calculation
   const requiresImmediateAttentionFlag = useMemo(() => {
-    return recommendations.some(rec => requiresImmediateAction(rec.type));
+    return recommendations.some(rec => calculateUrgency(rec) === 'immediate');
   }, [recommendations]);
 
   // Get last update time
@@ -207,6 +340,7 @@ const useVMRecommendations = (vmId, options = {}) => {
     rawRecommendations: recommendations,
     categorizedRecommendations,
     highPriorityRecommendations,
+    urgentRecommendations,
 
     // Summary and statistics
     summary,
@@ -222,6 +356,8 @@ const useVMRecommendations = (vmId, options = {}) => {
     // Utility functions
     getRecommendationsByCategory,
     filterByTypes,
+    filterByUrgency,
+    calculateUrgency,
     refreshRecommendations,
 
     // Apollo query state
