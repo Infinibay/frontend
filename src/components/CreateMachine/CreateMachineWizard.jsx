@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ResourcesStep } from './steps/ResourcesStep';
 import { ConfigurationStep } from './steps/ConfigurationStep';
-import { ApplicationsStep } from './steps/ApplicationsStep';
+import { ApplicationsScriptsStep } from './steps/ApplicationsScriptsStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { GpuSelectionStep } from './steps/GpuSelectionStep';
 import { fetchDepartments, selectDepartments } from '@/state/slices/departments';
@@ -24,17 +24,30 @@ export default function CreateMachineWizard({ departmentId }) {
   const departments = useSelector(selectDepartments);
   const [initialValues, setInitialValues] = useState(null);
 
-  // Load departments and set initial values once
-  // useEffect(() => {
-  //   dispatch(fetchDepartments());
-  // }, [dispatch]);
-
-  // Set initial values once departments are loaded
+  // Load departments on mount
   useEffect(() => {
-    if (departments.length > 0 && !initialValues) {
+    dispatch(fetchDepartments());
+  }, [dispatch]);
+
+  // Set initial values once departments are loaded or if departmentId is provided
+  useEffect(() => {
+    // If departmentId is provided, we can set initial values immediately
+    if (departmentId && !initialValues) {
       setInitialValues({
         basicInfo: {
-          departmentId: departmentId || departments[0].id
+          departmentId: departmentId
+        },
+        gpu: {
+          gpuId: 'no-gpu',
+          pciBus: null,
+          gpuInfo: null
+        }
+      });
+    } else if (departments.length > 0 && !initialValues) {
+      // Otherwise, wait for departments to be loaded
+      setInitialValues({
+        basicInfo: {
+          departmentId: departments[0].id
         },
         gpu: {
           gpuId: 'no-gpu',
@@ -59,6 +72,10 @@ export default function CreateMachineWizard({ departmentId }) {
         applications: (values.applications?.applications || []).map(appId => ({
           applicationId: appId,
           parameters: {} // Add any necessary parameters here
+        })),
+        firstBootScripts: (values.applications?.scripts || []).map(script => ({
+          scriptId: script.scriptId,
+          inputValues: script.inputValues
         }))
       };
 
@@ -161,7 +178,7 @@ export default function CreateMachineWizard({ departmentId }) {
           id="gpu"
           className="glass-strong"
         />
-        <ApplicationsStep
+        <ApplicationsScriptsStep
           id="applications"
           className="glass-strong"
         />

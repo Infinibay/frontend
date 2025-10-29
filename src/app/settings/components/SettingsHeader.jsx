@@ -111,7 +111,7 @@ export function SettingsHeader({ onRefresh }) {
           })
         )}>
           <p className={`text-glass-text-primary ${sizeVariants[size].typography.text}`}>
-            Manage your theme preferences, ISO files and system configuration
+            Manage your theme preferences, scripts, ISO files and system configuration
           </p>
         </div>
       </div>

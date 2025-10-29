@@ -672,3 +672,114 @@ mutation CleanupInfinibayFirewall {
     filterNames
   }
 }
+
+# ==================== SCRIPT MUTATIONS ====================
+
+# Create a new script
+mutation CreateScript($input: CreateScriptInput!) {
+  createScript(input: $input) {
+    success
+    message
+    error
+    script {
+      id
+      name
+      description
+      fileName
+      category
+      tags
+      os
+      shell
+      hasInputs
+      inputCount
+      createdAt
+      updatedAt
+      createdBy {
+        id
+        firstName
+        lastName
+      }
+    }
+  }
+}
+
+# Update an existing script
+mutation UpdateScript($input: UpdateScriptInput!) {
+  updateScript(input: $input) {
+    success
+    message
+    error
+    script {
+      id
+      name
+      description
+      fileName
+      category
+      tags
+      os
+      shell
+      hasInputs
+      inputCount
+      createdAt
+      updatedAt
+    }
+  }
+}
+
+# Delete a script
+mutation DeleteScript($id: ID!) {
+  deleteScript(id: $id) {
+    success
+    message
+    error
+  }
+}
+
+# Assign script to department
+mutation AssignScriptToDepartment($scriptId: ID!, $departmentId: ID!) {
+  assignScriptToDepartment(scriptId: $scriptId, departmentId: $departmentId)
+}
+
+# Unassign script from department
+mutation UnassignScriptFromDepartment($scriptId: ID!, $departmentId: ID!) {
+  unassignScriptFromDepartment(scriptId: $scriptId, departmentId: $departmentId)
+}
+
+# Execute script on a VM
+mutation ExecuteScript($input: ExecuteScriptInput!) {
+  executeScript(input: $input) {
+    success
+    message
+    error
+    execution {
+      id
+      script {
+        id
+        name
+      }
+      machine {
+        id
+        name
+      }
+      executionType
+      status
+      inputValues
+      createdAt
+    }
+  }
+}
+
+# Cancel script execution
+mutation CancelScriptExecution($id: ID!) {
+  cancelScriptExecution(id: $id) {
+    success
+    message
+    error
+    execution {
+      id
+      status
+      completedAt
+      error
+    }
+  }
+}

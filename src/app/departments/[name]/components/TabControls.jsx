@@ -1,7 +1,7 @@
 import React from "react";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
-import { List, LayoutGrid } from 'lucide-react';
+import { List, LayoutGrid, FileCode } from 'lucide-react';
 import { getGlassClasses } from '@/utils/glass-effects';
 import { useSizeContext, sizeVariants } from '@/components/ui/size-provider';
 import { cn } from '@/lib/utils';
@@ -42,6 +42,17 @@ const TabControls = ({
           )}
         >
           Security
+        </TabsTrigger>
+        <TabsTrigger
+          value="scripts"
+          className={cn(
+            "data-[state=active]:text-glass-text-primary",
+            "data-[state=inactive]:text-glass-text-secondary",
+            "px-4 py-2"
+          )}
+        >
+          <FileCode className="h-4 w-4 mr-2" />
+          Scripts
         </TabsTrigger>
       </TabsList>
 

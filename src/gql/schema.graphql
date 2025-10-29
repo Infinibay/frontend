@@ -168,6 +168,7 @@ input CreateMachineInputType {
   customRam: Int
   customStorage: Int
   departmentId: ID = ""
+  firstBootScripts: [FirstBootScriptInputType!]! = []
   name: String! = ""
   os: MachineOs! = WINDOWS10
   password: String! = ""
@@ -196,6 +197,15 @@ input CreateNetworkInput {
   enabledServices: [String!]
   ipConfig: NetworkIpConfigInput
   name: String! = ""
+}
+
+input CreateScriptInput {
+  category: String
+  content: String!
+  description: String
+  format: ScriptFormat!
+  name: String!
+  tags: [String!]
 }
 
 input CreateSnapshotInput {
@@ -298,6 +308,30 @@ input ExecuteMaintenanceInput {
   taskType: MaintenanceTaskType!
 }
 
+input ExecuteScriptInput {
+  inputValues: JSON!
+  machineId: ID!
+  runAs: String
+  scriptId: ID!
+}
+
+"""Script execution status"""
+enum ExecutionStatus {
+  CANCELLED
+  FAILED
+  PENDING
+  RUNNING
+  SUCCESS
+  TIMEOUT
+}
+
+"""Script execution trigger type"""
+enum ExecutionType {
+  FIRST_BOOT
+  ON_DEMAND
+  SCHEDULED
+}
+
 type FirewallRuleSetType {
   createdAt: DateTimeISO!
   entityId: String!
@@ -335,6 +369,11 @@ type FirewallRuleType {
   srcPortEnd: Int
   srcPortStart: Int
   updatedAt: DateTimeISO!
+}
+
+input FirstBootScriptInputType {
+  inputValues: JSONObject!
+  scriptId: String! = ""
 }
 
 type FlushResultType {
@@ -460,11 +499,21 @@ type InfiniServiceStatus {
   running: Boolean!
 }
 
+type InputOptionType {
+  label: String!
+  value: String!
+}
+
 input IpRangeInput {
   end: String! = ""
   networkName: String! = ""
   start: String! = ""
 }
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
 
 """
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
@@ -624,6 +673,13 @@ type MachineTemplateType {
   totalMachines: Int
 }
 
+type MachineType {
+  id: ID!
+  name: String!
+  os: String!
+  status: String!
+}
+
 type MaintenanceExecutionResponse {
   error: String
   execution: MaintenanceHistory
@@ -712,8 +768,11 @@ enum MaintenanceTrigger {
 }
 
 type Mutation {
+  assignScriptToDepartment(departmentId: ID!, scriptId: ID!): Boolean!
+
   """Calculate ISO checksum"""
   calculateISOChecksum(isoId: String!): String!
+  cancelScriptExecution(id: ID!): ScriptExecutionResponseType!
   cleanupInfinibayFirewall: CleanupResultType!
   createApplication(input: CreateApplicationInputType!): ApplicationType!
   createDepartment(name: String!): DepartmentType!
@@ -723,6 +782,7 @@ type Mutation {
   createMachineTemplateCategory(input: MachineTemplateCategoryInputType!): MachineTemplateCategoryType!
   createMaintenanceTask(input: CreateMaintenanceTaskInput!): MaintenanceTaskResponse!
   createNetwork(input: CreateNetworkInput!): Boolean!
+  createScript(input: CreateScriptInput!): ScriptResponseType!
 
   """Create a snapshot of a virtual machine"""
   createSnapshot(input: CreateSnapshotInput!): SnapshotResult!
@@ -732,6 +792,7 @@ type Mutation {
   deleteFirewallRule(ruleId: ID!): Boolean!
   deleteMaintenanceTask(id: ID!): MaintenanceTaskResponse!
   deleteNetwork(input: DeleteNetworkInput!): Boolean!
+  deleteScript(id: ID!): ScriptResponseType!
 
   """Delete a snapshot from a virtual machine"""
   deleteSnapshot(input: DeleteSnapshotInput!): SuccessType!
@@ -742,6 +803,7 @@ type Mutation {
   executeCommand(command: String!, id: String!): CommandExecutionResponseType!
   executeImmediateMaintenance(input: ExecuteMaintenanceInput!): MaintenanceExecutionResponse!
   executeMaintenanceTask(taskId: ID!): MaintenanceExecutionResponse!
+  executeScript(input: ExecuteScriptInput!): ScriptExecutionResponseType!
   flushFirewallRules(vmId: ID!): FlushResultType!
   forcePowerOff(id: String!): SuccessType!
 
@@ -791,6 +853,7 @@ type Mutation {
   syncISOs: Boolean!
   toggleMaintenanceTask(enabled: Boolean!, id: ID!): MaintenanceTaskResponse!
   triggerHealthCheckRound: HealthCheckRoundResult!
+  unassignScriptFromDepartment(departmentId: ID!, scriptId: ID!): Boolean!
   updateAppSettings(input: AppSettingsInput!): AppSettings!
   updateApplication(id: String!, input: CreateApplicationInputType!): ApplicationType!
   updateDepartmentName(input: UpdateDepartmentNameInput!): DepartmentType!
@@ -804,6 +867,7 @@ type Mutation {
 
   """Update a package on a virtual machine (legacy compatibility)"""
   updatePackage(machineId: ID!, packageName: String!): CommandResult!
+  updateScript(input: UpdateScriptInput!): ScriptResponseType!
   updateUser(id: String!, input: UpdateUserInputType!): UserType!
 
   """Validate ISO file integrity"""
@@ -854,6 +918,12 @@ input NetworkIpInput {
   address: String! = ""
   netmask: String! = ""
   networkName: String! = ""
+}
+
+"""Operating system"""
+enum OS {
+  LINUX
+  WINDOWS
 }
 
 enum OrderByDirection {
@@ -974,6 +1044,7 @@ type Query {
   currentSnapshot(machineId: String!): Snapshot
   currentUser: UserType
   department(id: String!): DepartmentType
+  departmentScripts(departmentId: ID!): [ScriptType!]!
   departments: [DepartmentType!]!
   dueMaintenanceTasks: [MaintenanceTask!]!
   findDepartmentByName(name: String!): DepartmentType
@@ -1040,6 +1111,10 @@ type Query {
 
   """Run a specific health check on a VM"""
   runHealthCheck(checkName: HealthCheckName!, vmId: ID!): GenericHealthCheckResponse!
+  script(id: ID!): ScriptType
+  scriptExecution(id: ID!): ScriptExecutionType
+  scriptExecutions(limit: Int = 50, machineId: ID!, status: ExecutionStatus): [ScriptExecutionType!]!
+  scripts(filters: ScriptFiltersInput): [ScriptType!]!
 
   """Search for available packages on a virtual machine"""
   searchPackages(machineId: ID!, query: String!): [PackageInfo!]!
@@ -1055,6 +1130,7 @@ type Query {
 
   """Get comprehensive diagnostics for VM socket connection issues"""
   vmSocketDiagnostics(vmId: String!): VmDiagnostics!
+  vmUsers(machineId: ID!): [String!]!
 }
 
 type QueueStatistics {
@@ -1201,6 +1277,90 @@ enum RuleSetType {
   VM
 }
 
+type ScriptExecutionResponseType {
+  error: String
+  execution: ScriptExecutionType
+  message: String
+  success: Boolean!
+}
+
+type ScriptExecutionType {
+  completedAt: DateTimeISO
+  createdAt: DateTimeISO!
+  error: String
+  executedAs: String
+  executionType: ExecutionType!
+  exitCode: Int
+  id: ID!
+  inputValues: JSON!
+  machine: MachineType!
+  script: ScriptType!
+  startedAt: DateTimeISO
+  status: ExecutionStatus!
+  stderr: String
+  stdout: String
+  triggeredBy: UserType
+}
+
+input ScriptFiltersInput {
+  category: String
+  os: OS
+  search: String
+  tags: [String!]
+}
+
+"""Script file format"""
+enum ScriptFormat {
+  JSON
+  YAML
+}
+
+type ScriptInputType {
+  default: JSON
+  description: String
+  label: String!
+  name: String!
+  options: [InputOptionType!]
+  required: Boolean!
+  type: String!
+  validation: JSON
+}
+
+type ScriptResponseType {
+  error: String
+  message: String
+  script: ScriptType
+  success: Boolean!
+}
+
+type ScriptType {
+  category: String
+  content: String
+  createdAt: DateTimeISO!
+  createdBy: UserType
+  departmentCount: Int
+  description: String
+  executionCount: Int
+  fileName: String!
+  hasInputs: Boolean!
+  id: ID!
+  inputCount: Int!
+  name: String!
+  os: [OS!]!
+  parsedInputs: [ScriptInputType!]!
+  shell: ShellType!
+  tags: [String!]!
+  updatedAt: DateTimeISO!
+}
+
+"""Shell type for script execution"""
+enum ShellType {
+  BASH
+  CMD
+  POWERSHELL
+  SH
+}
+
 type Snapshot {
   createdAt: DateTimeISO!
   description: String
@@ -1335,6 +1495,15 @@ input UpdateMaintenanceTaskInput {
   name: String
   parameters: JSONObject
   runAt: DateTimeISO
+}
+
+input UpdateScriptInput {
+  category: String
+  content: String
+  description: String
+  id: ID!
+  name: String
+  tags: [String!]
 }
 
 input UpdateUserInputType {

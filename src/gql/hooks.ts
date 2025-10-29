@@ -18,6 +18,8 @@ export type Scalars = {
   Float: { input: number; output: number; }
   /** A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format. */
   DateTimeISO: { input: string; output: string; }
+  /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
+  JSON: { input: any; output: any; }
   /** The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
   JSONObject: { input: { [key: string]: any }; output: { [key: string]: any }; }
 };
@@ -193,6 +195,7 @@ export type CreateMachineInputType = {
   customRam: InputMaybe<Scalars['Int']['input']>;
   customStorage: InputMaybe<Scalars['Int']['input']>;
   departmentId: InputMaybe<Scalars['ID']['input']>;
+  firstBootScripts: Array<FirstBootScriptInputType>;
   name: Scalars['String']['input'];
   os: MachineOs;
   password: Scalars['String']['input'];
@@ -221,6 +224,15 @@ export type CreateNetworkInput = {
   enabledServices: InputMaybe<Array<Scalars['String']['input']>>;
   ipConfig: InputMaybe<NetworkIpConfigInput>;
   name: Scalars['String']['input'];
+};
+
+export type CreateScriptInput = {
+  category: InputMaybe<Scalars['String']['input']>;
+  content: Scalars['String']['input'];
+  description: InputMaybe<Scalars['String']['input']>;
+  format: ScriptFormat;
+  name: Scalars['String']['input'];
+  tags: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type CreateSnapshotInput = {
@@ -325,6 +337,30 @@ export type ExecuteMaintenanceInput = {
   taskType: MaintenanceTaskType;
 };
 
+export type ExecuteScriptInput = {
+  inputValues: Scalars['JSON']['input'];
+  machineId: Scalars['ID']['input'];
+  runAs: InputMaybe<Scalars['String']['input']>;
+  scriptId: Scalars['ID']['input'];
+};
+
+/** Script execution status */
+export enum ExecutionStatus {
+  Cancelled = 'CANCELLED',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  Running = 'RUNNING',
+  Success = 'SUCCESS',
+  Timeout = 'TIMEOUT'
+}
+
+/** Script execution trigger type */
+export enum ExecutionType {
+  FirstBoot = 'FIRST_BOOT',
+  OnDemand = 'ON_DEMAND',
+  Scheduled = 'SCHEDULED'
+}
+
 export type FirewallRuleSetType = {
   __typename?: 'FirewallRuleSetType';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -364,6 +400,11 @@ export type FirewallRuleType = {
   srcPortEnd: Maybe<Scalars['Int']['output']>;
   srcPortStart: Maybe<Scalars['Int']['output']>;
   updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type FirstBootScriptInputType = {
+  inputValues: Scalars['JSONObject']['input'];
+  scriptId: Scalars['String']['input'];
 };
 
 export type FlushResultType = {
@@ -498,6 +539,12 @@ export type InfiniServiceStatus = {
   error: Maybe<Scalars['String']['output']>;
   installed: Scalars['Boolean']['output'];
   running: Scalars['Boolean']['output'];
+};
+
+export type InputOptionType = {
+  __typename?: 'InputOptionType';
+  label: Scalars['String']['output'];
+  value: Scalars['String']['output'];
 };
 
 export type IpRangeInput = {
@@ -652,6 +699,14 @@ export type MachineTemplateType = {
   totalMachines: Maybe<Scalars['Int']['output']>;
 };
 
+export type MachineType = {
+  __typename?: 'MachineType';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  os: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+};
+
 export type MaintenanceExecutionResponse = {
   __typename?: 'MaintenanceExecutionResponse';
   error: Maybe<Scalars['String']['output']>;
@@ -746,8 +801,10 @@ export enum MaintenanceTrigger {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  assignScriptToDepartment: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
+  cancelScriptExecution: ScriptExecutionResponseType;
   cleanupInfinibayFirewall: CleanupResultType;
   createApplication: ApplicationType;
   createDepartment: DepartmentType;
@@ -757,6 +814,7 @@ export type Mutation = {
   createMachineTemplateCategory: MachineTemplateCategoryType;
   createMaintenanceTask: MaintenanceTaskResponse;
   createNetwork: Scalars['Boolean']['output'];
+  createScript: ScriptResponseType;
   /** Create a snapshot of a virtual machine */
   createSnapshot: SnapshotResult;
   createUser: UserType;
@@ -765,6 +823,7 @@ export type Mutation = {
   deleteFirewallRule: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
+  deleteScript: ScriptResponseType;
   /** Delete a snapshot from a virtual machine */
   deleteSnapshot: SuccessType;
   destroyDepartment: DepartmentType;
@@ -774,6 +833,7 @@ export type Mutation = {
   executeCommand: CommandExecutionResponseType;
   executeImmediateMaintenance: MaintenanceExecutionResponse;
   executeMaintenanceTask: MaintenanceExecutionResponse;
+  executeScript: ScriptExecutionResponseType;
   flushFirewallRules: FlushResultType;
   forcePowerOff: SuccessType;
   /** Force power off and restore snapshot (emergency recovery) */
@@ -813,6 +873,7 @@ export type Mutation = {
   syncISOs: Scalars['Boolean']['output'];
   toggleMaintenanceTask: MaintenanceTaskResponse;
   triggerHealthCheckRound: HealthCheckRoundResult;
+  unassignScriptFromDepartment: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
   updateDepartmentName: DepartmentType;
@@ -825,14 +886,26 @@ export type Mutation = {
   updateMaintenanceTask: MaintenanceTaskResponse;
   /** Update a package on a virtual machine (legacy compatibility) */
   updatePackage: CommandResult;
+  updateScript: ScriptResponseType;
   updateUser: UserType;
   /** Validate ISO file integrity */
   validateISO: Scalars['Boolean']['output'];
 };
 
 
+export type MutationAssignScriptToDepartmentArgs = {
+  departmentId: Scalars['ID']['input'];
+  scriptId: Scalars['ID']['input'];
+};
+
+
 export type MutationCalculateIsoChecksumArgs = {
   isoId: Scalars['String']['input'];
+};
+
+
+export type MutationCancelScriptExecutionArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -877,6 +950,11 @@ export type MutationCreateNetworkArgs = {
 };
 
 
+export type MutationCreateScriptArgs = {
+  input: CreateScriptInput;
+};
+
+
 export type MutationCreateSnapshotArgs = {
   input: CreateSnapshotInput;
 };
@@ -910,6 +988,11 @@ export type MutationDeleteMaintenanceTaskArgs = {
 
 export type MutationDeleteNetworkArgs = {
   input: DeleteNetworkInput;
+};
+
+
+export type MutationDeleteScriptArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -951,6 +1034,11 @@ export type MutationExecuteImmediateMaintenanceArgs = {
 
 export type MutationExecuteMaintenanceTaskArgs = {
   taskId: Scalars['ID']['input'];
+};
+
+
+export type MutationExecuteScriptArgs = {
+  input: ExecuteScriptInput;
 };
 
 
@@ -1088,6 +1176,12 @@ export type MutationToggleMaintenanceTaskArgs = {
 };
 
 
+export type MutationUnassignScriptFromDepartmentArgs = {
+  departmentId: Scalars['ID']['input'];
+  scriptId: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateAppSettingsArgs = {
   input: AppSettingsInput;
 };
@@ -1145,6 +1239,11 @@ export type MutationUpdateMaintenanceTaskArgs = {
 export type MutationUpdatePackageArgs = {
   machineId: Scalars['ID']['input'];
   packageName: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateScriptArgs = {
+  input: UpdateScriptInput;
 };
 
 
@@ -1208,6 +1307,12 @@ export type NetworkIpInput = {
   netmask: Scalars['String']['input'];
   networkName: Scalars['String']['input'];
 };
+
+/** Operating system */
+export enum Os {
+  Linux = 'LINUX',
+  Windows = 'WINDOWS'
+}
 
 export enum OrderByDirection {
   Asc = 'ASC',
@@ -1309,6 +1414,7 @@ export type Query = {
   currentSnapshot: Maybe<Snapshot>;
   currentUser: Maybe<UserType>;
   department: Maybe<DepartmentType>;
+  departmentScripts: Array<ScriptType>;
   departments: Array<DepartmentType>;
   dueMaintenanceTasks: Array<MaintenanceTask>;
   findDepartmentByName: Maybe<DepartmentType>;
@@ -1352,6 +1458,10 @@ export type Query = {
   networks: Array<Network>;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
+  script: Maybe<ScriptType>;
+  scriptExecution: Maybe<ScriptExecutionType>;
+  scriptExecutions: Array<ScriptExecutionType>;
+  scripts: Array<ScriptType>;
   /** Search for available packages on a virtual machine */
   searchPackages: Array<PackageInfo>;
   /** Get current socket connection statistics for all VMs */
@@ -1364,6 +1474,7 @@ export type Query = {
   vmHealthStats: VmHealthStatsType;
   /** Get comprehensive diagnostics for VM socket connection issues */
   vmSocketDiagnostics: VmDiagnostics;
+  vmUsers: Array<Scalars['String']['output']>;
 };
 
 
@@ -1417,6 +1528,11 @@ export type QueryCurrentSnapshotArgs = {
 
 export type QueryDepartmentArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryDepartmentScriptsArgs = {
+  departmentId: Scalars['ID']['input'];
 };
 
 
@@ -1550,6 +1666,28 @@ export type QueryRunHealthCheckArgs = {
 };
 
 
+export type QueryScriptArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryScriptExecutionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryScriptExecutionsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  machineId: Scalars['ID']['input'];
+  status: InputMaybe<ExecutionStatus>;
+};
+
+
+export type QueryScriptsArgs = {
+  filters: InputMaybe<ScriptFiltersInput>;
+};
+
+
 export type QuerySearchPackagesArgs = {
   machineId: Scalars['ID']['input'];
   query: Scalars['String']['input'];
@@ -1594,6 +1732,11 @@ export type QueryVmHealthStatsArgs = {
 
 export type QueryVmSocketDiagnosticsArgs = {
   vmId: Scalars['String']['input'];
+};
+
+
+export type QueryVmUsersArgs = {
+  machineId: Scalars['ID']['input'];
 };
 
 export type QueueStatistics = {
@@ -1704,6 +1847,95 @@ export enum RuleDirection {
 export enum RuleSetType {
   Department = 'DEPARTMENT',
   Vm = 'VM'
+}
+
+export type ScriptExecutionResponseType = {
+  __typename?: 'ScriptExecutionResponseType';
+  error: Maybe<Scalars['String']['output']>;
+  execution: Maybe<ScriptExecutionType>;
+  message: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type ScriptExecutionType = {
+  __typename?: 'ScriptExecutionType';
+  completedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  error: Maybe<Scalars['String']['output']>;
+  executedAs: Maybe<Scalars['String']['output']>;
+  executionType: ExecutionType;
+  exitCode: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  inputValues: Scalars['JSON']['output'];
+  machine: MachineType;
+  script: ScriptType;
+  startedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  status: ExecutionStatus;
+  stderr: Maybe<Scalars['String']['output']>;
+  stdout: Maybe<Scalars['String']['output']>;
+  triggeredBy: Maybe<UserType>;
+};
+
+export type ScriptFiltersInput = {
+  category: InputMaybe<Scalars['String']['input']>;
+  os: InputMaybe<Os>;
+  search: InputMaybe<Scalars['String']['input']>;
+  tags: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+/** Script file format */
+export enum ScriptFormat {
+  Json = 'JSON',
+  Yaml = 'YAML'
+}
+
+export type ScriptInputType = {
+  __typename?: 'ScriptInputType';
+  default: Maybe<Scalars['JSON']['output']>;
+  description: Maybe<Scalars['String']['output']>;
+  label: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  options: Maybe<Array<InputOptionType>>;
+  required: Scalars['Boolean']['output'];
+  type: Scalars['String']['output'];
+  validation: Maybe<Scalars['JSON']['output']>;
+};
+
+export type ScriptResponseType = {
+  __typename?: 'ScriptResponseType';
+  error: Maybe<Scalars['String']['output']>;
+  message: Maybe<Scalars['String']['output']>;
+  script: Maybe<ScriptType>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type ScriptType = {
+  __typename?: 'ScriptType';
+  category: Maybe<Scalars['String']['output']>;
+  content: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  createdBy: Maybe<UserType>;
+  departmentCount: Maybe<Scalars['Int']['output']>;
+  description: Maybe<Scalars['String']['output']>;
+  executionCount: Maybe<Scalars['Int']['output']>;
+  fileName: Scalars['String']['output'];
+  hasInputs: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  inputCount: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
+  os: Array<Os>;
+  parsedInputs: Array<ScriptInputType>;
+  shell: ShellType;
+  tags: Array<Scalars['String']['output']>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+/** Shell type for script execution */
+export enum ShellType {
+  Bash = 'BASH',
+  Cmd = 'CMD',
+  Powershell = 'POWERSHELL',
+  Sh = 'SH'
 }
 
 export type Snapshot = {
@@ -1847,6 +2079,15 @@ export type UpdateMaintenanceTaskInput = {
   name: InputMaybe<Scalars['String']['input']>;
   parameters: InputMaybe<Scalars['JSONObject']['input']>;
   runAt: InputMaybe<Scalars['DateTimeISO']['input']>;
+};
+
+export type UpdateScriptInput = {
+  category: InputMaybe<Scalars['String']['input']>;
+  content: InputMaybe<Scalars['String']['input']>;
+  description: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  name: InputMaybe<Scalars['String']['input']>;
+  tags: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type UpdateUserInputType = {
@@ -2341,6 +2582,57 @@ export type CleanupInfinibayFirewallMutationVariables = Exact<{ [key: string]: n
 
 export type CleanupInfinibayFirewallMutation = { __typename?: 'Mutation', cleanupInfinibayFirewall: { __typename?: 'CleanupResultType', success: boolean, filtersRemoved: number, filterNames: Array<string> } };
 
+export type CreateScriptMutationVariables = Exact<{
+  input: CreateScriptInput;
+}>;
+
+
+export type CreateScriptMutation = { __typename?: 'Mutation', createScript: { __typename?: 'ScriptResponseType', success: boolean, message: string | null, error: string | null, script: { __typename?: 'ScriptType', id: string, name: string, description: string | null, fileName: string, category: string | null, tags: Array<string>, os: Array<Os>, shell: ShellType, hasInputs: boolean, inputCount: number, createdAt: string, updatedAt: string, createdBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string } | null } | null } };
+
+export type UpdateScriptMutationVariables = Exact<{
+  input: UpdateScriptInput;
+}>;
+
+
+export type UpdateScriptMutation = { __typename?: 'Mutation', updateScript: { __typename?: 'ScriptResponseType', success: boolean, message: string | null, error: string | null, script: { __typename?: 'ScriptType', id: string, name: string, description: string | null, fileName: string, category: string | null, tags: Array<string>, os: Array<Os>, shell: ShellType, hasInputs: boolean, inputCount: number, createdAt: string, updatedAt: string } | null } };
+
+export type DeleteScriptMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteScriptMutation = { __typename?: 'Mutation', deleteScript: { __typename?: 'ScriptResponseType', success: boolean, message: string | null, error: string | null } };
+
+export type AssignScriptToDepartmentMutationVariables = Exact<{
+  scriptId: Scalars['ID']['input'];
+  departmentId: Scalars['ID']['input'];
+}>;
+
+
+export type AssignScriptToDepartmentMutation = { __typename?: 'Mutation', assignScriptToDepartment: boolean };
+
+export type UnassignScriptFromDepartmentMutationVariables = Exact<{
+  scriptId: Scalars['ID']['input'];
+  departmentId: Scalars['ID']['input'];
+}>;
+
+
+export type UnassignScriptFromDepartmentMutation = { __typename?: 'Mutation', unassignScriptFromDepartment: boolean };
+
+export type ExecuteScriptMutationVariables = Exact<{
+  input: ExecuteScriptInput;
+}>;
+
+
+export type ExecuteScriptMutation = { __typename?: 'Mutation', executeScript: { __typename?: 'ScriptExecutionResponseType', success: boolean, message: string | null, error: string | null, execution: { __typename?: 'ScriptExecutionType', id: string, executionType: ExecutionType, status: ExecutionStatus, inputValues: any, createdAt: string, script: { __typename?: 'ScriptType', id: string, name: string }, machine: { __typename?: 'MachineType', id: string, name: string } } | null } };
+
+export type CancelScriptExecutionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type CancelScriptExecutionMutation = { __typename?: 'Mutation', cancelScriptExecution: { __typename?: 'ScriptExecutionResponseType', success: boolean, message: string | null, error: string | null, execution: { __typename?: 'ScriptExecutionType', id: string, status: ExecutionStatus, completedAt: string | null, error: string | null } | null } };
+
 export type CreateMaintenanceTaskMutationVariables = Exact<{
   input: CreateMaintenanceTaskInput;
 }>;
@@ -2655,6 +2947,50 @@ export type ListInfinibayFiltersQueryVariables = Exact<{ [key: string]: never; }
 
 
 export type ListInfinibayFiltersQuery = { __typename?: 'Query', listInfinibayFilters: Array<{ __typename?: 'LibvirtFilterInfoType', name: string, uuid: string | null }> };
+
+export type ScriptsQueryVariables = Exact<{
+  filters: InputMaybe<ScriptFiltersInput>;
+}>;
+
+
+export type ScriptsQuery = { __typename?: 'Query', scripts: Array<{ __typename?: 'ScriptType', id: string, name: string, description: string | null, fileName: string, category: string | null, tags: Array<string>, os: Array<Os>, shell: ShellType, hasInputs: boolean, inputCount: number, createdAt: string, updatedAt: string, createdBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string, email: string } | null }> };
+
+export type ScriptQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ScriptQuery = { __typename?: 'Query', script: { __typename?: 'ScriptType', id: string, name: string, description: string | null, fileName: string, category: string | null, tags: Array<string>, os: Array<Os>, shell: ShellType, hasInputs: boolean, inputCount: number, content: string | null, createdAt: string, updatedAt: string, parsedInputs: Array<{ __typename?: 'ScriptInputType', name: string, type: string, label: string, description: string | null, default: any | null, required: boolean, validation: any | null, options: Array<{ __typename?: 'InputOptionType', label: string, value: string }> | null }>, createdBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string, email: string } | null } | null };
+
+export type DepartmentScriptsQueryVariables = Exact<{
+  departmentId: Scalars['ID']['input'];
+}>;
+
+
+export type DepartmentScriptsQuery = { __typename?: 'Query', departmentScripts: Array<{ __typename?: 'ScriptType', id: string, name: string, description: string | null, fileName: string, category: string | null, tags: Array<string>, os: Array<Os>, shell: ShellType, hasInputs: boolean, inputCount: number, createdAt: string, updatedAt: string, createdBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string, email: string } | null }> };
+
+export type ScriptExecutionsQueryVariables = Exact<{
+  machineId: Scalars['ID']['input'];
+  status: InputMaybe<ExecutionStatus>;
+  limit: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type ScriptExecutionsQuery = { __typename?: 'Query', scriptExecutions: Array<{ __typename?: 'ScriptExecutionType', id: string, executionType: ExecutionType, inputValues: any, status: ExecutionStatus, startedAt: string | null, completedAt: string | null, exitCode: number | null, stdout: string | null, stderr: string | null, error: string | null, executedAs: string | null, createdAt: string, script: { __typename?: 'ScriptType', id: string, name: string, description: string | null }, machine: { __typename?: 'MachineType', id: string, name: string }, triggeredBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string } | null }> };
+
+export type ScriptExecutionQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ScriptExecutionQuery = { __typename?: 'Query', scriptExecution: { __typename?: 'ScriptExecutionType', id: string, executionType: ExecutionType, inputValues: any, status: ExecutionStatus, startedAt: string | null, completedAt: string | null, exitCode: number | null, stdout: string | null, stderr: string | null, error: string | null, executedAs: string | null, createdAt: string, script: { __typename?: 'ScriptType', id: string, name: string, description: string | null }, machine: { __typename?: 'MachineType', id: string, name: string }, triggeredBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string } | null } | null };
+
+export type VmUsersQueryVariables = Exact<{
+  machineId: Scalars['ID']['input'];
+}>;
+
+
+export type VmUsersQuery = { __typename?: 'Query', vmUsers: Array<string> };
 
 export type VmDetailedInfoQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -4272,6 +4608,299 @@ export function useCleanupInfinibayFirewallMutation(baseOptions?: ApolloReactHoo
 export type CleanupInfinibayFirewallMutationHookResult = ReturnType<typeof useCleanupInfinibayFirewallMutation>;
 export type CleanupInfinibayFirewallMutationResult = ApolloReactCommon.MutationResult<CleanupInfinibayFirewallMutation>;
 export type CleanupInfinibayFirewallMutationOptions = ApolloReactCommon.BaseMutationOptions<CleanupInfinibayFirewallMutation, CleanupInfinibayFirewallMutationVariables>;
+export const CreateScriptDocument = gql`
+    mutation CreateScript($input: CreateScriptInput!) {
+  createScript(input: $input) {
+    success
+    message
+    error
+    script {
+      id
+      name
+      description
+      fileName
+      category
+      tags
+      os
+      shell
+      hasInputs
+      inputCount
+      createdAt
+      updatedAt
+      createdBy {
+        id
+        firstName
+        lastName
+      }
+    }
+  }
+}
+    `;
+export type CreateScriptMutationFn = ApolloReactCommon.MutationFunction<CreateScriptMutation, CreateScriptMutationVariables>;
+
+/**
+ * __useCreateScriptMutation__
+ *
+ * To run a mutation, you first call `useCreateScriptMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateScriptMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createScriptMutation, { data, loading, error }] = useCreateScriptMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateScriptMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateScriptMutation, CreateScriptMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateScriptMutation, CreateScriptMutationVariables>(CreateScriptDocument, options);
+      }
+export type CreateScriptMutationHookResult = ReturnType<typeof useCreateScriptMutation>;
+export type CreateScriptMutationResult = ApolloReactCommon.MutationResult<CreateScriptMutation>;
+export type CreateScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateScriptMutation, CreateScriptMutationVariables>;
+export const UpdateScriptDocument = gql`
+    mutation UpdateScript($input: UpdateScriptInput!) {
+  updateScript(input: $input) {
+    success
+    message
+    error
+    script {
+      id
+      name
+      description
+      fileName
+      category
+      tags
+      os
+      shell
+      hasInputs
+      inputCount
+      createdAt
+      updatedAt
+    }
+  }
+}
+    `;
+export type UpdateScriptMutationFn = ApolloReactCommon.MutationFunction<UpdateScriptMutation, UpdateScriptMutationVariables>;
+
+/**
+ * __useUpdateScriptMutation__
+ *
+ * To run a mutation, you first call `useUpdateScriptMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateScriptMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateScriptMutation, { data, loading, error }] = useUpdateScriptMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateScriptMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateScriptMutation, UpdateScriptMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateScriptMutation, UpdateScriptMutationVariables>(UpdateScriptDocument, options);
+      }
+export type UpdateScriptMutationHookResult = ReturnType<typeof useUpdateScriptMutation>;
+export type UpdateScriptMutationResult = ApolloReactCommon.MutationResult<UpdateScriptMutation>;
+export type UpdateScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateScriptMutation, UpdateScriptMutationVariables>;
+export const DeleteScriptDocument = gql`
+    mutation DeleteScript($id: ID!) {
+  deleteScript(id: $id) {
+    success
+    message
+    error
+  }
+}
+    `;
+export type DeleteScriptMutationFn = ApolloReactCommon.MutationFunction<DeleteScriptMutation, DeleteScriptMutationVariables>;
+
+/**
+ * __useDeleteScriptMutation__
+ *
+ * To run a mutation, you first call `useDeleteScriptMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteScriptMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteScriptMutation, { data, loading, error }] = useDeleteScriptMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteScriptMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteScriptMutation, DeleteScriptMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteScriptMutation, DeleteScriptMutationVariables>(DeleteScriptDocument, options);
+      }
+export type DeleteScriptMutationHookResult = ReturnType<typeof useDeleteScriptMutation>;
+export type DeleteScriptMutationResult = ApolloReactCommon.MutationResult<DeleteScriptMutation>;
+export type DeleteScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteScriptMutation, DeleteScriptMutationVariables>;
+export const AssignScriptToDepartmentDocument = gql`
+    mutation AssignScriptToDepartment($scriptId: ID!, $departmentId: ID!) {
+  assignScriptToDepartment(scriptId: $scriptId, departmentId: $departmentId)
+}
+    `;
+export type AssignScriptToDepartmentMutationFn = ApolloReactCommon.MutationFunction<AssignScriptToDepartmentMutation, AssignScriptToDepartmentMutationVariables>;
+
+/**
+ * __useAssignScriptToDepartmentMutation__
+ *
+ * To run a mutation, you first call `useAssignScriptToDepartmentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAssignScriptToDepartmentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [assignScriptToDepartmentMutation, { data, loading, error }] = useAssignScriptToDepartmentMutation({
+ *   variables: {
+ *      scriptId: // value for 'scriptId'
+ *      departmentId: // value for 'departmentId'
+ *   },
+ * });
+ */
+export function useAssignScriptToDepartmentMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssignScriptToDepartmentMutation, AssignScriptToDepartmentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AssignScriptToDepartmentMutation, AssignScriptToDepartmentMutationVariables>(AssignScriptToDepartmentDocument, options);
+      }
+export type AssignScriptToDepartmentMutationHookResult = ReturnType<typeof useAssignScriptToDepartmentMutation>;
+export type AssignScriptToDepartmentMutationResult = ApolloReactCommon.MutationResult<AssignScriptToDepartmentMutation>;
+export type AssignScriptToDepartmentMutationOptions = ApolloReactCommon.BaseMutationOptions<AssignScriptToDepartmentMutation, AssignScriptToDepartmentMutationVariables>;
+export const UnassignScriptFromDepartmentDocument = gql`
+    mutation UnassignScriptFromDepartment($scriptId: ID!, $departmentId: ID!) {
+  unassignScriptFromDepartment(scriptId: $scriptId, departmentId: $departmentId)
+}
+    `;
+export type UnassignScriptFromDepartmentMutationFn = ApolloReactCommon.MutationFunction<UnassignScriptFromDepartmentMutation, UnassignScriptFromDepartmentMutationVariables>;
+
+/**
+ * __useUnassignScriptFromDepartmentMutation__
+ *
+ * To run a mutation, you first call `useUnassignScriptFromDepartmentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnassignScriptFromDepartmentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unassignScriptFromDepartmentMutation, { data, loading, error }] = useUnassignScriptFromDepartmentMutation({
+ *   variables: {
+ *      scriptId: // value for 'scriptId'
+ *      departmentId: // value for 'departmentId'
+ *   },
+ * });
+ */
+export function useUnassignScriptFromDepartmentMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UnassignScriptFromDepartmentMutation, UnassignScriptFromDepartmentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UnassignScriptFromDepartmentMutation, UnassignScriptFromDepartmentMutationVariables>(UnassignScriptFromDepartmentDocument, options);
+      }
+export type UnassignScriptFromDepartmentMutationHookResult = ReturnType<typeof useUnassignScriptFromDepartmentMutation>;
+export type UnassignScriptFromDepartmentMutationResult = ApolloReactCommon.MutationResult<UnassignScriptFromDepartmentMutation>;
+export type UnassignScriptFromDepartmentMutationOptions = ApolloReactCommon.BaseMutationOptions<UnassignScriptFromDepartmentMutation, UnassignScriptFromDepartmentMutationVariables>;
+export const ExecuteScriptDocument = gql`
+    mutation ExecuteScript($input: ExecuteScriptInput!) {
+  executeScript(input: $input) {
+    success
+    message
+    error
+    execution {
+      id
+      script {
+        id
+        name
+      }
+      machine {
+        id
+        name
+      }
+      executionType
+      status
+      inputValues
+      createdAt
+    }
+  }
+}
+    `;
+export type ExecuteScriptMutationFn = ApolloReactCommon.MutationFunction<ExecuteScriptMutation, ExecuteScriptMutationVariables>;
+
+/**
+ * __useExecuteScriptMutation__
+ *
+ * To run a mutation, you first call `useExecuteScriptMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useExecuteScriptMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [executeScriptMutation, { data, loading, error }] = useExecuteScriptMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useExecuteScriptMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ExecuteScriptMutation, ExecuteScriptMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ExecuteScriptMutation, ExecuteScriptMutationVariables>(ExecuteScriptDocument, options);
+      }
+export type ExecuteScriptMutationHookResult = ReturnType<typeof useExecuteScriptMutation>;
+export type ExecuteScriptMutationResult = ApolloReactCommon.MutationResult<ExecuteScriptMutation>;
+export type ExecuteScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<ExecuteScriptMutation, ExecuteScriptMutationVariables>;
+export const CancelScriptExecutionDocument = gql`
+    mutation CancelScriptExecution($id: ID!) {
+  cancelScriptExecution(id: $id) {
+    success
+    message
+    error
+    execution {
+      id
+      status
+      completedAt
+      error
+    }
+  }
+}
+    `;
+export type CancelScriptExecutionMutationFn = ApolloReactCommon.MutationFunction<CancelScriptExecutionMutation, CancelScriptExecutionMutationVariables>;
+
+/**
+ * __useCancelScriptExecutionMutation__
+ *
+ * To run a mutation, you first call `useCancelScriptExecutionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCancelScriptExecutionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [cancelScriptExecutionMutation, { data, loading, error }] = useCancelScriptExecutionMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useCancelScriptExecutionMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CancelScriptExecutionMutation, CancelScriptExecutionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CancelScriptExecutionMutation, CancelScriptExecutionMutationVariables>(CancelScriptExecutionDocument, options);
+      }
+export type CancelScriptExecutionMutationHookResult = ReturnType<typeof useCancelScriptExecutionMutation>;
+export type CancelScriptExecutionMutationResult = ApolloReactCommon.MutationResult<CancelScriptExecutionMutation>;
+export type CancelScriptExecutionMutationOptions = ApolloReactCommon.BaseMutationOptions<CancelScriptExecutionMutation, CancelScriptExecutionMutationVariables>;
 export const CreateMaintenanceTaskDocument = gql`
     mutation createMaintenanceTask($input: CreateMaintenanceTaskInput!) {
   createMaintenanceTask(input: $input) {
@@ -6545,6 +7174,379 @@ export type ListInfinibayFiltersSuspenseQueryHookResult = ReturnType<typeof useL
 export type ListInfinibayFiltersQueryResult = ApolloReactCommon.QueryResult<ListInfinibayFiltersQuery, ListInfinibayFiltersQueryVariables>;
 export function refetchListInfinibayFiltersQuery(variables?: ListInfinibayFiltersQueryVariables) {
       return { query: ListInfinibayFiltersDocument, variables: variables }
+    }
+export const ScriptsDocument = gql`
+    query Scripts($filters: ScriptFiltersInput) {
+  scripts(filters: $filters) {
+    id
+    name
+    description
+    fileName
+    category
+    tags
+    os
+    shell
+    hasInputs
+    inputCount
+    createdAt
+    updatedAt
+    createdBy {
+      id
+      firstName
+      lastName
+      email
+    }
+  }
+}
+    `;
+
+/**
+ * __useScriptsQuery__
+ *
+ * To run a query within a React component, call `useScriptsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScriptsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useScriptsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *   },
+ * });
+ */
+export function useScriptsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ScriptsQuery, ScriptsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ScriptsQuery, ScriptsQueryVariables>(ScriptsDocument, options);
+      }
+export function useScriptsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ScriptsQuery, ScriptsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ScriptsQuery, ScriptsQueryVariables>(ScriptsDocument, options);
+        }
+export function useScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptsQuery, ScriptsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<ScriptsQuery, ScriptsQueryVariables>(ScriptsDocument, options);
+        }
+export type ScriptsQueryHookResult = ReturnType<typeof useScriptsQuery>;
+export type ScriptsLazyQueryHookResult = ReturnType<typeof useScriptsLazyQuery>;
+export type ScriptsSuspenseQueryHookResult = ReturnType<typeof useScriptsSuspenseQuery>;
+export type ScriptsQueryResult = ApolloReactCommon.QueryResult<ScriptsQuery, ScriptsQueryVariables>;
+export function refetchScriptsQuery(variables?: ScriptsQueryVariables) {
+      return { query: ScriptsDocument, variables: variables }
+    }
+export const ScriptDocument = gql`
+    query Script($id: ID!) {
+  script(id: $id) {
+    id
+    name
+    description
+    fileName
+    category
+    tags
+    os
+    shell
+    hasInputs
+    inputCount
+    content
+    parsedInputs {
+      name
+      type
+      label
+      description
+      default
+      required
+      validation
+      options {
+        label
+        value
+      }
+    }
+    createdAt
+    updatedAt
+    createdBy {
+      id
+      firstName
+      lastName
+      email
+    }
+  }
+}
+    `;
+
+/**
+ * __useScriptQuery__
+ *
+ * To run a query within a React component, call `useScriptQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScriptQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useScriptQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useScriptQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ScriptQuery, ScriptQueryVariables> & ({ variables: ScriptQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ScriptQuery, ScriptQueryVariables>(ScriptDocument, options);
+      }
+export function useScriptLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ScriptQuery, ScriptQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ScriptQuery, ScriptQueryVariables>(ScriptDocument, options);
+        }
+export function useScriptSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptQuery, ScriptQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<ScriptQuery, ScriptQueryVariables>(ScriptDocument, options);
+        }
+export type ScriptQueryHookResult = ReturnType<typeof useScriptQuery>;
+export type ScriptLazyQueryHookResult = ReturnType<typeof useScriptLazyQuery>;
+export type ScriptSuspenseQueryHookResult = ReturnType<typeof useScriptSuspenseQuery>;
+export type ScriptQueryResult = ApolloReactCommon.QueryResult<ScriptQuery, ScriptQueryVariables>;
+export function refetchScriptQuery(variables: ScriptQueryVariables) {
+      return { query: ScriptDocument, variables: variables }
+    }
+export const DepartmentScriptsDocument = gql`
+    query DepartmentScripts($departmentId: ID!) {
+  departmentScripts(departmentId: $departmentId) {
+    id
+    name
+    description
+    fileName
+    category
+    tags
+    os
+    shell
+    hasInputs
+    inputCount
+    createdAt
+    updatedAt
+    createdBy {
+      id
+      firstName
+      lastName
+      email
+    }
+  }
+}
+    `;
+
+/**
+ * __useDepartmentScriptsQuery__
+ *
+ * To run a query within a React component, call `useDepartmentScriptsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDepartmentScriptsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDepartmentScriptsQuery({
+ *   variables: {
+ *      departmentId: // value for 'departmentId'
+ *   },
+ * });
+ */
+export function useDepartmentScriptsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DepartmentScriptsQuery, DepartmentScriptsQueryVariables> & ({ variables: DepartmentScriptsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>(DepartmentScriptsDocument, options);
+      }
+export function useDepartmentScriptsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>(DepartmentScriptsDocument, options);
+        }
+export function useDepartmentScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>(DepartmentScriptsDocument, options);
+        }
+export type DepartmentScriptsQueryHookResult = ReturnType<typeof useDepartmentScriptsQuery>;
+export type DepartmentScriptsLazyQueryHookResult = ReturnType<typeof useDepartmentScriptsLazyQuery>;
+export type DepartmentScriptsSuspenseQueryHookResult = ReturnType<typeof useDepartmentScriptsSuspenseQuery>;
+export type DepartmentScriptsQueryResult = ApolloReactCommon.QueryResult<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>;
+export function refetchDepartmentScriptsQuery(variables: DepartmentScriptsQueryVariables) {
+      return { query: DepartmentScriptsDocument, variables: variables }
+    }
+export const ScriptExecutionsDocument = gql`
+    query ScriptExecutions($machineId: ID!, $status: ExecutionStatus, $limit: Int) {
+  scriptExecutions(machineId: $machineId, status: $status, limit: $limit) {
+    id
+    script {
+      id
+      name
+      description
+    }
+    machine {
+      id
+      name
+    }
+    executionType
+    triggeredBy {
+      id
+      firstName
+      lastName
+    }
+    inputValues
+    status
+    startedAt
+    completedAt
+    exitCode
+    stdout
+    stderr
+    error
+    executedAs
+    createdAt
+  }
+}
+    `;
+
+/**
+ * __useScriptExecutionsQuery__
+ *
+ * To run a query within a React component, call `useScriptExecutionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScriptExecutionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useScriptExecutionsQuery({
+ *   variables: {
+ *      machineId: // value for 'machineId'
+ *      status: // value for 'status'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useScriptExecutionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ScriptExecutionsQuery, ScriptExecutionsQueryVariables> & ({ variables: ScriptExecutionsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>(ScriptExecutionsDocument, options);
+      }
+export function useScriptExecutionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>(ScriptExecutionsDocument, options);
+        }
+export function useScriptExecutionsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>(ScriptExecutionsDocument, options);
+        }
+export type ScriptExecutionsQueryHookResult = ReturnType<typeof useScriptExecutionsQuery>;
+export type ScriptExecutionsLazyQueryHookResult = ReturnType<typeof useScriptExecutionsLazyQuery>;
+export type ScriptExecutionsSuspenseQueryHookResult = ReturnType<typeof useScriptExecutionsSuspenseQuery>;
+export type ScriptExecutionsQueryResult = ApolloReactCommon.QueryResult<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>;
+export function refetchScriptExecutionsQuery(variables: ScriptExecutionsQueryVariables) {
+      return { query: ScriptExecutionsDocument, variables: variables }
+    }
+export const ScriptExecutionDocument = gql`
+    query ScriptExecution($id: ID!) {
+  scriptExecution(id: $id) {
+    id
+    script {
+      id
+      name
+      description
+    }
+    machine {
+      id
+      name
+    }
+    executionType
+    triggeredBy {
+      id
+      firstName
+      lastName
+    }
+    inputValues
+    status
+    startedAt
+    completedAt
+    exitCode
+    stdout
+    stderr
+    error
+    executedAs
+    createdAt
+  }
+}
+    `;
+
+/**
+ * __useScriptExecutionQuery__
+ *
+ * To run a query within a React component, call `useScriptExecutionQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScriptExecutionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useScriptExecutionQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useScriptExecutionQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ScriptExecutionQuery, ScriptExecutionQueryVariables> & ({ variables: ScriptExecutionQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ScriptExecutionQuery, ScriptExecutionQueryVariables>(ScriptExecutionDocument, options);
+      }
+export function useScriptExecutionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ScriptExecutionQuery, ScriptExecutionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ScriptExecutionQuery, ScriptExecutionQueryVariables>(ScriptExecutionDocument, options);
+        }
+export function useScriptExecutionSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionQuery, ScriptExecutionQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<ScriptExecutionQuery, ScriptExecutionQueryVariables>(ScriptExecutionDocument, options);
+        }
+export type ScriptExecutionQueryHookResult = ReturnType<typeof useScriptExecutionQuery>;
+export type ScriptExecutionLazyQueryHookResult = ReturnType<typeof useScriptExecutionLazyQuery>;
+export type ScriptExecutionSuspenseQueryHookResult = ReturnType<typeof useScriptExecutionSuspenseQuery>;
+export type ScriptExecutionQueryResult = ApolloReactCommon.QueryResult<ScriptExecutionQuery, ScriptExecutionQueryVariables>;
+export function refetchScriptExecutionQuery(variables: ScriptExecutionQueryVariables) {
+      return { query: ScriptExecutionDocument, variables: variables }
+    }
+export const VmUsersDocument = gql`
+    query VmUsers($machineId: ID!) {
+  vmUsers(machineId: $machineId)
+}
+    `;
+
+/**
+ * __useVmUsersQuery__
+ *
+ * To run a query within a React component, call `useVmUsersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useVmUsersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useVmUsersQuery({
+ *   variables: {
+ *      machineId: // value for 'machineId'
+ *   },
+ * });
+ */
+export function useVmUsersQuery(baseOptions: ApolloReactHooks.QueryHookOptions<VmUsersQuery, VmUsersQueryVariables> & ({ variables: VmUsersQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<VmUsersQuery, VmUsersQueryVariables>(VmUsersDocument, options);
+      }
+export function useVmUsersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<VmUsersQuery, VmUsersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<VmUsersQuery, VmUsersQueryVariables>(VmUsersDocument, options);
+        }
+export function useVmUsersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<VmUsersQuery, VmUsersQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<VmUsersQuery, VmUsersQueryVariables>(VmUsersDocument, options);
+        }
+export type VmUsersQueryHookResult = ReturnType<typeof useVmUsersQuery>;
+export type VmUsersLazyQueryHookResult = ReturnType<typeof useVmUsersLazyQuery>;
+export type VmUsersSuspenseQueryHookResult = ReturnType<typeof useVmUsersSuspenseQuery>;
+export type VmUsersQueryResult = ApolloReactCommon.QueryResult<VmUsersQuery, VmUsersQueryVariables>;
+export function refetchVmUsersQuery(variables: VmUsersQueryVariables) {
+      return { query: VmUsersDocument, variables: variables }
     }
 export const VmDetailedInfoDocument = gql`
     query vmDetailedInfo($id: String!) {

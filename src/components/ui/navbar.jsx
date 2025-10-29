@@ -34,7 +34,7 @@ import { Avatar } from "./avatar";
 // Custom Components
 
 // Icons
-import { RiDashboardLine, RiSettings4Line } from "react-icons/ri";
+import { RiDashboardLine, RiSettings4Line, RiCodeSSlashLine } from "react-icons/ri";
 import { FiUsers } from "react-icons/fi";
 import { BiLogOut, BiBuildings } from "react-icons/bi";
 import { ImInsertTemplate } from "react-icons/im";
@@ -58,7 +58,18 @@ const AppSidebar = React.forwardRef(({
 }, ref) => {
   const pathname = usePathname();
   const router = useRouter();
-  const isActive = (path) => pathname === path || pathname.startsWith(path + '/');
+  const isActive = (path) => {
+    // Exact match
+    if (pathname === path) return true;
+
+    // For Settings, only match /settings and its sub-paths
+    if (path === '/settings') {
+      return pathname.startsWith('/settings/');
+    }
+
+    // For other paths, match path and its sub-paths
+    return pathname.startsWith(path + '/');
+  };
 
   const { size: contextSize } = useSizeContext();
   const isMobile = useIsMobile();
@@ -97,6 +108,7 @@ const AppSidebar = React.forwardRef(({
     { id: "departments", href: "/departments", icon: BiBuildings, label: "Departments" },
     { id: "templates", href: "/templates", icon: ImInsertTemplate, label: "Templates" },
     { id: "users", href: "/users", icon: FiUsers, label: "Users" },
+    { id: "scripts", href: "/scripts", icon: RiCodeSSlashLine, label: "Scripts" },
     { id: "settings", href: "/settings", icon: RiSettings4Line, label: "Settings" }
   ];
 

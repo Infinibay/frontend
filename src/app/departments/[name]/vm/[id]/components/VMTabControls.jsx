@@ -1,7 +1,7 @@
 import React from "react";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Lightbulb, Shield } from 'lucide-react';
+import { RefreshCw, Lightbulb, Shield, FileCode } from 'lucide-react';
 import { createDebugger } from '@/utils/debug';
 
 const debug = createDebugger('frontend:components:vm-tab-controls');
@@ -35,6 +35,13 @@ const VMTabControls = ({
           >
             <Shield className="size-icon" />
             Security
+          </TabsTrigger>
+          <TabsTrigger
+            value="scripts"
+            className="flex items-center size-gap size-text"
+          >
+            <FileCode className="size-icon" />
+            Scripts
           </TabsTrigger>
         </TabsList>
 

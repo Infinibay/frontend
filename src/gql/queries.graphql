@@ -585,3 +585,160 @@ query ListInfinibayFilters {
   }
 }
 
+# ==================== SCRIPT QUERIES ====================
+
+# Get all scripts with optional filtering
+query Scripts($filters: ScriptFiltersInput) {
+  scripts(filters: $filters) {
+    id
+    name
+    description
+    fileName
+    category
+    tags
+    os
+    shell
+    hasInputs
+    inputCount
+    createdAt
+    updatedAt
+    createdBy {
+      id
+      firstName
+      lastName
+      email
+    }
+  }
+}
+
+# Get single script with full content and parsed inputs
+query Script($id: ID!) {
+  script(id: $id) {
+    id
+    name
+    description
+    fileName
+    category
+    tags
+    os
+    shell
+    hasInputs
+    inputCount
+    content
+    parsedInputs {
+      name
+      type
+      label
+      description
+      default
+      required
+      validation
+      options {
+        label
+        value
+      }
+    }
+    createdAt
+    updatedAt
+    createdBy {
+      id
+      firstName
+      lastName
+      email
+    }
+  }
+}
+
+# Get scripts assigned to a department
+query DepartmentScripts($departmentId: ID!) {
+  departmentScripts(departmentId: $departmentId) {
+    id
+    name
+    description
+    fileName
+    category
+    tags
+    os
+    shell
+    hasInputs
+    inputCount
+    createdAt
+    updatedAt
+    createdBy {
+      id
+      firstName
+      lastName
+      email
+    }
+  }
+}
+
+# Get script execution history for a VM
+query ScriptExecutions($machineId: ID!, $status: ExecutionStatus, $limit: Int) {
+  scriptExecutions(machineId: $machineId, status: $status, limit: $limit) {
+    id
+    script {
+      id
+      name
+      description
+    }
+    machine {
+      id
+      name
+    }
+    executionType
+    triggeredBy {
+      id
+      firstName
+      lastName
+    }
+    inputValues
+    status
+    startedAt
+    completedAt
+    exitCode
+    stdout
+    stderr
+    error
+    executedAs
+    createdAt
+  }
+}
+
+# Get single script execution details
+query ScriptExecution($id: ID!) {
+  scriptExecution(id: $id) {
+    id
+    script {
+      id
+      name
+      description
+    }
+    machine {
+      id
+      name
+    }
+    executionType
+    triggeredBy {
+      id
+      firstName
+      lastName
+    }
+    inputValues
+    status
+    startedAt
+    completedAt
+    exitCode
+    stdout
+    stderr
+    error
+    executedAs
+    createdAt
+  }
+}
+
+# Get list of users on a VM for "Run As" selection
+query VmUsers($machineId: ID!) {
+  vmUsers(machineId: $machineId)
+}
+

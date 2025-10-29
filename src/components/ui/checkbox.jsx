@@ -6,48 +6,54 @@ import { CheckIcon } from "@radix-ui/react-icons"
 
 import { cn } from "@/lib/utils"
 import { useSizeContext } from "./size-provider"
-import { getCheckboxGlass, getFormFocusRing, getFormGlassTransition, getReducedTransparencyForm } from "@/utils/form-glass-effects"
-import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
-const Checkbox = React.forwardRef(({ className, size, glass = false, ...props }, ref) => {
+const Checkbox = React.forwardRef(({ className, size, ...props }, ref) => {
   const contextSize = useSizeContext()
-  const theme = useSafeResolvedTheme()
   const effectiveSize = size || contextSize || 'md'
 
   const sizeClasses = {
-    sm: "h-3 w-3",
-    md: "h-4 w-4",
-    lg: "h-5 w-5"
+    sm: "h-5 w-5 min-h-5 min-w-5",
+    md: "h-5 w-5 min-h-5 min-w-5",
+    lg: "h-6 w-6 min-h-6 min-w-6"
   }
 
   const iconSizeClasses = {
     sm: "h-3 w-3",
-    md: "h-4 w-4",
-    lg: "h-5 w-5"
+    md: "h-3 w-3",
+    lg: "h-4 w-4"
   }
-
-  const glassClasses = getCheckboxGlass(glass, effectiveSize, theme)
-  const focusRing = getFormFocusRing(theme, glass)
-  const transition = getFormGlassTransition()
-  const reducedTransparency = glass ? getReducedTransparencyForm(glassClasses) : ''
 
   return (
     <CheckboxPrimitive.Root
       ref={ref}
       className={cn(
-        "peer shrink-0 radius-fluent-sm border border-primary shadow-elevation-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:shadow-glow-subtle",
+        "group peer shrink-0 relative inline-flex items-center justify-center rounded-full transition-all duration-200",
+        // Unchecked state
+        "bg-muted/50 border-2 border-muted-foreground/30",
+        // Checked state
+        "data-[state=checked]:bg-primary data-[state=checked]:border-primary",
+        // Hover states
+        "hover:border-muted-foreground/50 data-[state=checked]:hover:bg-primary/90",
+        // Focus
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        // Disabled
+        "disabled:cursor-not-allowed disabled:opacity-50",
         sizeClasses[effectiveSize],
-        glassClasses,
-        reducedTransparency,
-        focusRing,
-        transition,
-        "focus-visible:outline-none",
         className
       )}
-      {...props}>
-      <CheckboxPrimitive.Indicator className={cn("flex items-center justify-center text-current")}>
-        <CheckIcon className={iconSizeClasses[effectiveSize]} />
-      </CheckboxPrimitive.Indicator>
+      {...props}
+    >
+      {/* Always render icon with fixed size, control visibility with group-data pattern */}
+      <CheckIcon
+        className={cn(
+          "text-primary-foreground transition-opacity duration-200",
+          // Hidden when unchecked, visible when checked using group-data pattern
+          "opacity-0 group-data-[state=checked]:opacity-100",
+          iconSizeClasses[effectiveSize]
+        )}
+      />
+      {/* Keep Indicator for accessibility but hide it visually */}
+      <CheckboxPrimitive.Indicator className="hidden" />
     </CheckboxPrimitive.Root>
   )
 })

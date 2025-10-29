@@ -34,6 +34,11 @@ const VMSecurityTab = dynamic(() => import('./components/security/VMSecurityTab'
   loading: () => <div className="p-4">Loading security...</div>
 });
 
+const VMScriptsTab = dynamic(() => import('./components/VMScriptsTab'), {
+  ssr: false,
+  loading: () => <div className="p-4">Loading scripts...</div>
+});
+
 /**
  * VM Detail Page Component
  * Displays VM information, dashboard, and recommendations
@@ -124,6 +129,14 @@ const VMDetailPage = () => {
                 vmId={vmId}
                 vmStatus={vm?.status}
                 vmOs={vm?.configuration?.os}
+                departmentId={vm?.department?.id}
+              />
+            </TabsContent>
+
+            <TabsContent value="scripts" className="mt-2">
+              <VMScriptsTab
+                vmId={vmId}
+                vmStatus={vm?.status}
                 departmentId={vm?.department?.id}
               />
             </TabsContent>

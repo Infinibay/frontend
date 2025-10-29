@@ -15,6 +15,8 @@ export type Scalars = {
   Float: { input: number; output: number; }
   /** A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format. */
   DateTimeISO: { input: any; output: any; }
+  /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
+  JSON: { input: any; output: any; }
   /** The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
   JSONObject: { input: any; output: any; }
 };
@@ -190,6 +192,7 @@ export type CreateMachineInputType = {
   customRam?: InputMaybe<Scalars['Int']['input']>;
   customStorage?: InputMaybe<Scalars['Int']['input']>;
   departmentId?: InputMaybe<Scalars['ID']['input']>;
+  firstBootScripts?: Array<FirstBootScriptInputType>;
   name?: Scalars['String']['input'];
   os?: MachineOs;
   password?: Scalars['String']['input'];
@@ -218,6 +221,15 @@ export type CreateNetworkInput = {
   enabledServices?: InputMaybe<Array<Scalars['String']['input']>>;
   ipConfig?: InputMaybe<NetworkIpConfigInput>;
   name?: Scalars['String']['input'];
+};
+
+export type CreateScriptInput = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  content: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  format: ScriptFormat;
+  name: Scalars['String']['input'];
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type CreateSnapshotInput = {
@@ -322,6 +334,30 @@ export type ExecuteMaintenanceInput = {
   taskType: MaintenanceTaskType;
 };
 
+export type ExecuteScriptInput = {
+  inputValues: Scalars['JSON']['input'];
+  machineId: Scalars['ID']['input'];
+  runAs?: InputMaybe<Scalars['String']['input']>;
+  scriptId: Scalars['ID']['input'];
+};
+
+/** Script execution status */
+export enum ExecutionStatus {
+  Cancelled = 'CANCELLED',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  Running = 'RUNNING',
+  Success = 'SUCCESS',
+  Timeout = 'TIMEOUT'
+}
+
+/** Script execution trigger type */
+export enum ExecutionType {
+  FirstBoot = 'FIRST_BOOT',
+  OnDemand = 'ON_DEMAND',
+  Scheduled = 'SCHEDULED'
+}
+
 export type FirewallRuleSetType = {
   __typename?: 'FirewallRuleSetType';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -361,6 +397,11 @@ export type FirewallRuleType = {
   srcPortEnd?: Maybe<Scalars['Int']['output']>;
   srcPortStart?: Maybe<Scalars['Int']['output']>;
   updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type FirstBootScriptInputType = {
+  inputValues: Scalars['JSONObject']['input'];
+  scriptId?: Scalars['String']['input'];
 };
 
 export type FlushResultType = {
@@ -495,6 +536,12 @@ export type InfiniServiceStatus = {
   error?: Maybe<Scalars['String']['output']>;
   installed: Scalars['Boolean']['output'];
   running: Scalars['Boolean']['output'];
+};
+
+export type InputOptionType = {
+  __typename?: 'InputOptionType';
+  label: Scalars['String']['output'];
+  value: Scalars['String']['output'];
 };
 
 export type IpRangeInput = {
@@ -649,6 +696,14 @@ export type MachineTemplateType = {
   totalMachines?: Maybe<Scalars['Int']['output']>;
 };
 
+export type MachineType = {
+  __typename?: 'MachineType';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  os: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+};
+
 export type MaintenanceExecutionResponse = {
   __typename?: 'MaintenanceExecutionResponse';
   error?: Maybe<Scalars['String']['output']>;
@@ -743,8 +798,10 @@ export enum MaintenanceTrigger {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  assignScriptToDepartment: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
+  cancelScriptExecution: ScriptExecutionResponseType;
   cleanupInfinibayFirewall: CleanupResultType;
   createApplication: ApplicationType;
   createDepartment: DepartmentType;
@@ -754,6 +811,7 @@ export type Mutation = {
   createMachineTemplateCategory: MachineTemplateCategoryType;
   createMaintenanceTask: MaintenanceTaskResponse;
   createNetwork: Scalars['Boolean']['output'];
+  createScript: ScriptResponseType;
   /** Create a snapshot of a virtual machine */
   createSnapshot: SnapshotResult;
   createUser: UserType;
@@ -762,6 +820,7 @@ export type Mutation = {
   deleteFirewallRule: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
+  deleteScript: ScriptResponseType;
   /** Delete a snapshot from a virtual machine */
   deleteSnapshot: SuccessType;
   destroyDepartment: DepartmentType;
@@ -771,6 +830,7 @@ export type Mutation = {
   executeCommand: CommandExecutionResponseType;
   executeImmediateMaintenance: MaintenanceExecutionResponse;
   executeMaintenanceTask: MaintenanceExecutionResponse;
+  executeScript: ScriptExecutionResponseType;
   flushFirewallRules: FlushResultType;
   forcePowerOff: SuccessType;
   /** Force power off and restore snapshot (emergency recovery) */
@@ -810,6 +870,7 @@ export type Mutation = {
   syncISOs: Scalars['Boolean']['output'];
   toggleMaintenanceTask: MaintenanceTaskResponse;
   triggerHealthCheckRound: HealthCheckRoundResult;
+  unassignScriptFromDepartment: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
   updateDepartmentName: DepartmentType;
@@ -822,14 +883,26 @@ export type Mutation = {
   updateMaintenanceTask: MaintenanceTaskResponse;
   /** Update a package on a virtual machine (legacy compatibility) */
   updatePackage: CommandResult;
+  updateScript: ScriptResponseType;
   updateUser: UserType;
   /** Validate ISO file integrity */
   validateISO: Scalars['Boolean']['output'];
 };
 
 
+export type MutationAssignScriptToDepartmentArgs = {
+  departmentId: Scalars['ID']['input'];
+  scriptId: Scalars['ID']['input'];
+};
+
+
 export type MutationCalculateIsoChecksumArgs = {
   isoId: Scalars['String']['input'];
+};
+
+
+export type MutationCancelScriptExecutionArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -874,6 +947,11 @@ export type MutationCreateNetworkArgs = {
 };
 
 
+export type MutationCreateScriptArgs = {
+  input: CreateScriptInput;
+};
+
+
 export type MutationCreateSnapshotArgs = {
   input: CreateSnapshotInput;
 };
@@ -907,6 +985,11 @@ export type MutationDeleteMaintenanceTaskArgs = {
 
 export type MutationDeleteNetworkArgs = {
   input: DeleteNetworkInput;
+};
+
+
+export type MutationDeleteScriptArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -948,6 +1031,11 @@ export type MutationExecuteImmediateMaintenanceArgs = {
 
 export type MutationExecuteMaintenanceTaskArgs = {
   taskId: Scalars['ID']['input'];
+};
+
+
+export type MutationExecuteScriptArgs = {
+  input: ExecuteScriptInput;
 };
 
 
@@ -1085,6 +1173,12 @@ export type MutationToggleMaintenanceTaskArgs = {
 };
 
 
+export type MutationUnassignScriptFromDepartmentArgs = {
+  departmentId: Scalars['ID']['input'];
+  scriptId: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateAppSettingsArgs = {
   input: AppSettingsInput;
 };
@@ -1142,6 +1236,11 @@ export type MutationUpdateMaintenanceTaskArgs = {
 export type MutationUpdatePackageArgs = {
   machineId: Scalars['ID']['input'];
   packageName: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateScriptArgs = {
+  input: UpdateScriptInput;
 };
 
 
@@ -1205,6 +1304,12 @@ export type NetworkIpInput = {
   netmask?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
 };
+
+/** Operating system */
+export enum Os {
+  Linux = 'LINUX',
+  Windows = 'WINDOWS'
+}
 
 export enum OrderByDirection {
   Asc = 'ASC',
@@ -1306,6 +1411,7 @@ export type Query = {
   currentSnapshot?: Maybe<Snapshot>;
   currentUser?: Maybe<UserType>;
   department?: Maybe<DepartmentType>;
+  departmentScripts: Array<ScriptType>;
   departments: Array<DepartmentType>;
   dueMaintenanceTasks: Array<MaintenanceTask>;
   findDepartmentByName?: Maybe<DepartmentType>;
@@ -1349,6 +1455,10 @@ export type Query = {
   networks: Array<Network>;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
+  script?: Maybe<ScriptType>;
+  scriptExecution?: Maybe<ScriptExecutionType>;
+  scriptExecutions: Array<ScriptExecutionType>;
+  scripts: Array<ScriptType>;
   /** Search for available packages on a virtual machine */
   searchPackages: Array<PackageInfo>;
   /** Get current socket connection statistics for all VMs */
@@ -1361,6 +1471,7 @@ export type Query = {
   vmHealthStats: VmHealthStatsType;
   /** Get comprehensive diagnostics for VM socket connection issues */
   vmSocketDiagnostics: VmDiagnostics;
+  vmUsers: Array<Scalars['String']['output']>;
 };
 
 
@@ -1414,6 +1525,11 @@ export type QueryCurrentSnapshotArgs = {
 
 export type QueryDepartmentArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryDepartmentScriptsArgs = {
+  departmentId: Scalars['ID']['input'];
 };
 
 
@@ -1547,6 +1663,28 @@ export type QueryRunHealthCheckArgs = {
 };
 
 
+export type QueryScriptArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryScriptExecutionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryScriptExecutionsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  machineId: Scalars['ID']['input'];
+  status?: InputMaybe<ExecutionStatus>;
+};
+
+
+export type QueryScriptsArgs = {
+  filters?: InputMaybe<ScriptFiltersInput>;
+};
+
+
 export type QuerySearchPackagesArgs = {
   machineId: Scalars['ID']['input'];
   query: Scalars['String']['input'];
@@ -1591,6 +1729,11 @@ export type QueryVmHealthStatsArgs = {
 
 export type QueryVmSocketDiagnosticsArgs = {
   vmId: Scalars['String']['input'];
+};
+
+
+export type QueryVmUsersArgs = {
+  machineId: Scalars['ID']['input'];
 };
 
 export type QueueStatistics = {
@@ -1701,6 +1844,95 @@ export enum RuleDirection {
 export enum RuleSetType {
   Department = 'DEPARTMENT',
   Vm = 'VM'
+}
+
+export type ScriptExecutionResponseType = {
+  __typename?: 'ScriptExecutionResponseType';
+  error?: Maybe<Scalars['String']['output']>;
+  execution?: Maybe<ScriptExecutionType>;
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type ScriptExecutionType = {
+  __typename?: 'ScriptExecutionType';
+  completedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  executedAs?: Maybe<Scalars['String']['output']>;
+  executionType: ExecutionType;
+  exitCode?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  inputValues: Scalars['JSON']['output'];
+  machine: MachineType;
+  script: ScriptType;
+  startedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  status: ExecutionStatus;
+  stderr?: Maybe<Scalars['String']['output']>;
+  stdout?: Maybe<Scalars['String']['output']>;
+  triggeredBy?: Maybe<UserType>;
+};
+
+export type ScriptFiltersInput = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  os?: InputMaybe<Os>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+/** Script file format */
+export enum ScriptFormat {
+  Json = 'JSON',
+  Yaml = 'YAML'
+}
+
+export type ScriptInputType = {
+  __typename?: 'ScriptInputType';
+  default?: Maybe<Scalars['JSON']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  label: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  options?: Maybe<Array<InputOptionType>>;
+  required: Scalars['Boolean']['output'];
+  type: Scalars['String']['output'];
+  validation?: Maybe<Scalars['JSON']['output']>;
+};
+
+export type ScriptResponseType = {
+  __typename?: 'ScriptResponseType';
+  error?: Maybe<Scalars['String']['output']>;
+  message?: Maybe<Scalars['String']['output']>;
+  script?: Maybe<ScriptType>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type ScriptType = {
+  __typename?: 'ScriptType';
+  category?: Maybe<Scalars['String']['output']>;
+  content?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  createdBy?: Maybe<UserType>;
+  departmentCount?: Maybe<Scalars['Int']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  executionCount?: Maybe<Scalars['Int']['output']>;
+  fileName: Scalars['String']['output'];
+  hasInputs: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  inputCount: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
+  os: Array<Os>;
+  parsedInputs: Array<ScriptInputType>;
+  shell: ShellType;
+  tags: Array<Scalars['String']['output']>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+/** Shell type for script execution */
+export enum ShellType {
+  Bash = 'BASH',
+  Cmd = 'CMD',
+  Powershell = 'POWERSHELL',
+  Sh = 'SH'
 }
 
 export type Snapshot = {
@@ -1844,6 +2076,15 @@ export type UpdateMaintenanceTaskInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
   runAt?: InputMaybe<Scalars['DateTimeISO']['input']>;
+};
+
+export type UpdateScriptInput = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  content?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type UpdateUserInputType = {

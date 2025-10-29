@@ -319,8 +319,8 @@ function getStepConfig(stepId, index) {
       icon: Zap
     },
     applications: {
-      title: "Applications",
-      description: "Select applications to install",
+      title: "Applications & Scripts",
+      description: "Select applications and scripts for first boot",
       icon: Package
     },
     review: {

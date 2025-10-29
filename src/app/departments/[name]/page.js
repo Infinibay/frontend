@@ -37,9 +37,14 @@ import ToastNotification from "./components/ToastNotification";
 import CreateDepartmentDialog from "./components/CreateDepartmentDialog";
 
 // Lazy-loaded components
-const SecuritySection = dynamic(() => import('./components/SecuritySection.jsx'), { 
+const SecuritySection = dynamic(() => import('./components/SecuritySection.jsx'), {
   ssr: false,
   loading: () => <div className="p-4">Loading security settings...</div>
+});
+
+const DepartmentScriptsPage = dynamic(() => import('./scripts/page.jsx'), {
+  ssr: false,
+  loading: () => <div className="p-4">Loading scripts...</div>
 });
 
 /**
@@ -174,6 +179,13 @@ const DepartmentPage = () => {
               "size-container size-padding mt-0"
             )}>
               <SecuritySection departmentId={department?.id} />
+            </TabsContent>
+
+            <TabsContent value="scripts" className={cn(
+              getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
+              "size-container size-padding mt-0"
+            )}>
+              <DepartmentScriptsPage />
             </TabsContent>
           </Tabs>
         </div>
