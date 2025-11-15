@@ -315,6 +315,33 @@ input ExecuteScriptInput {
   scriptId: ID!
 }
 
+input ScheduleScriptInput {
+  scriptId: ID!
+  machineIds: [ID!]
+  departmentId: ID
+  inputValues: JSON!
+  scheduleType: ScheduleType!
+  scheduledFor: DateTimeISO
+  repeatIntervalMinutes: Int
+  maxExecutions: Int
+}
+
+input UpdateScheduledScriptInput {
+  executionId: ID!
+  scheduledFor: DateTimeISO
+  repeatIntervalMinutes: Int
+  maxExecutions: Int
+}
+
+input ScheduledScriptsFiltersInput {
+  scriptId: ID
+  departmentId: ID
+  machineId: ID
+  status: ExecutionStatus
+  scheduleType: ScheduleType
+  isActive: Boolean
+}
+
 """Script execution status"""
 enum ExecutionStatus {
   CANCELLED
@@ -330,6 +357,13 @@ enum ExecutionType {
   FIRST_BOOT
   ON_DEMAND
   SCHEDULED
+}
+
+"""Script schedule type"""
+enum ScheduleType {
+  IMMEDIATE
+  ONE_TIME
+  PERIODIC
 }
 
 type FirewallRuleSetType {
@@ -674,6 +708,7 @@ type MachineTemplateType {
 }
 
 type MachineType {
+  department: DepartmentType
   id: ID!
   name: String!
   os: String!
@@ -773,6 +808,7 @@ type Mutation {
   """Calculate ISO checksum"""
   calculateISOChecksum(isoId: String!): String!
   cancelScriptExecution(id: ID!): ScriptExecutionResponseType!
+  cancelScheduledScript(executionId: ID!): ScheduleScriptResponseType!
   cleanupInfinibayFirewall: CleanupResultType!
   createApplication(input: CreateApplicationInputType!): ApplicationType!
   createDepartment(name: String!): DepartmentType!
@@ -792,7 +828,7 @@ type Mutation {
   deleteFirewallRule(ruleId: ID!): Boolean!
   deleteMaintenanceTask(id: ID!): MaintenanceTaskResponse!
   deleteNetwork(input: DeleteNetworkInput!): Boolean!
-  deleteScript(id: ID!): ScriptResponseType!
+  deleteScript(force: Boolean = false, id: ID!): ScriptResponseType!
 
   """Delete a snapshot from a virtual machine"""
   deleteSnapshot(input: DeleteSnapshotInput!): SuccessType!
@@ -867,6 +903,8 @@ type Mutation {
 
   """Update a package on a virtual machine (legacy compatibility)"""
   updatePackage(machineId: ID!, packageName: String!): CommandResult!
+  scheduleScript(input: ScheduleScriptInput!): ScheduleScriptResponseType!
+  updateScheduledScript(input: UpdateScheduledScriptInput!): ScheduleScriptResponseType!
   updateScript(input: UpdateScriptInput!): ScriptResponseType!
   updateUser(id: String!, input: UpdateUserInputType!): UserType!
 
@@ -1114,7 +1152,10 @@ type Query {
   script(id: ID!): ScriptType
   scriptExecution(id: ID!): ScriptExecutionType
   scriptExecutions(limit: Int = 50, machineId: ID!, status: ExecutionStatus): [ScriptExecutionType!]!
+  scriptExecutionsFiltered(filters: ScriptExecutionsFiltersInput!): ScriptExecutionsResponseType!
   scripts(filters: ScriptFiltersInput): [ScriptType!]!
+  scheduledScript(id: ID!): ScheduledScriptType
+  scheduledScripts(filters: ScheduledScriptsFiltersInput): [ScheduledScriptType!]!
 
   """Search for available packages on a virtual machine"""
   searchPackages(machineId: ID!, query: String!): [PackageInfo!]!
@@ -1284,16 +1325,29 @@ type ScriptExecutionResponseType {
   success: Boolean!
 }
 
+type ScriptExecutionsResponseType {
+  executions: [ScriptExecutionType!]!
+  hasMore: Boolean!
+  limit: Int!
+  offset: Int!
+  total: Int!
+}
+
 type ScriptExecutionType {
   completedAt: DateTimeISO
   createdAt: DateTimeISO!
   error: String
   executedAs: String
+  executionCount: Int!
   executionType: ExecutionType!
   exitCode: Int
   id: ID!
   inputValues: JSON!
+  lastExecutedAt: DateTimeISO
   machine: MachineType!
+  maxExecutions: Int
+  repeatIntervalMinutes: Int
+  scheduledFor: DateTimeISO
   script: ScriptType!
   startedAt: DateTimeISO
   status: ExecutionStatus!
@@ -1302,11 +1356,58 @@ type ScriptExecutionType {
   triggeredBy: UserType
 }
 
+type ScheduledScriptType {
+  completedAt: DateTimeISO
+  createdAt: DateTimeISO!
+  error: String
+  executedAs: String
+  executionCount: Int!
+  executionType: ExecutionType!
+  exitCode: Int
+  id: ID!
+  inputValues: JSON!
+  isActive: Boolean!
+  lastExecutedAt: DateTimeISO
+  machine: MachineType!
+  maxExecutions: Int
+  nextExecutionAt: DateTimeISO
+  repeatIntervalMinutes: Int
+  scheduleType: ScheduleType!
+  scheduledFor: DateTimeISO
+  script: ScriptType!
+  startedAt: DateTimeISO
+  status: ExecutionStatus!
+  stderr: String
+  stdout: String
+  triggeredBy: UserType
+  updatedAt: DateTimeISO!
+}
+
+type ScheduleScriptResponseType {
+  error: String
+  executionIds: [String!]
+  executions: [ScheduledScriptType!]
+  message: String
+  success: Boolean!
+}
+
 input ScriptFiltersInput {
   category: String
   os: OS
   search: String
   tags: [String!]
+}
+
+input ScriptExecutionsFiltersInput {
+  departmentId: ID
+  endDate: DateTimeISO
+  executionType: ExecutionType
+  limit: Int = 50
+  machineId: ID
+  offset: Int = 0
+  scriptId: ID
+  startDate: DateTimeISO
+  status: ExecutionStatus
 }
 
 """Script file format"""

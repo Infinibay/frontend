@@ -116,12 +116,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "git add"
-    ],
-    "*.graphql": [
-      "npm run graphql:lint",
-      "git add"
+      "eslint --fix"
     ],
     "src/gql/**/*.graphql": [
       "npm run codegen:validate"

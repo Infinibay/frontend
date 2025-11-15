@@ -720,6 +720,19 @@ mutation UpdateScript($input: UpdateScriptInput!) {
       shell
       hasInputs
       inputCount
+      content
+      parsedInputs {
+        name
+        type
+        label
+        description
+        required
+        default
+        options {
+          label
+          value
+        }
+      }
       createdAt
       updatedAt
     }
@@ -727,8 +740,8 @@ mutation UpdateScript($input: UpdateScriptInput!) {
 }
 
 # Delete a script
-mutation DeleteScript($id: ID!) {
-  deleteScript(id: $id) {
+mutation DeleteScript($id: ID!, $force: Boolean) {
+  deleteScript(id: $id, force: $force) {
     success
     message
     error
@@ -781,5 +794,90 @@ mutation CancelScriptExecution($id: ID!) {
       completedAt
       error
     }
+  }
+}
+
+# Schedule script execution
+mutation ScheduleScript($input: ScheduleScriptInput!) {
+  scheduleScript(input: $input) {
+    success
+    message
+    error
+    executionIds
+    executions {
+      id
+      status
+      executionType
+      scheduledFor
+      repeatIntervalMinutes
+      maxExecutions
+      executionCount
+      scheduleType
+      nextExecutionAt
+      isActive
+      inputValues
+      script {
+        id
+        name
+      }
+      machine {
+        id
+        name
+        status
+      }
+      triggeredBy {
+        id
+        firstName
+        lastName
+      }
+      createdAt
+    }
+  }
+}
+
+# Update scheduled script
+mutation UpdateScheduledScript($input: UpdateScheduledScriptInput!) {
+  updateScheduledScript(input: $input) {
+    success
+    message
+    error
+    executionIds
+    executions {
+      id
+      status
+      executionType
+      scheduledFor
+      repeatIntervalMinutes
+      maxExecutions
+      executionCount
+      scheduleType
+      nextExecutionAt
+      isActive
+      inputValues
+      script {
+        id
+        name
+      }
+      machine {
+        id
+        name
+        status
+      }
+      triggeredBy {
+        id
+        firstName
+        lastName
+      }
+      createdAt
+    }
+  }
+}
+
+# Cancel scheduled script
+mutation CancelScheduledScript($executionId: ID!) {
+  cancelScheduledScript(executionId: $executionId) {
+    success
+    message
+    error
   }
 }

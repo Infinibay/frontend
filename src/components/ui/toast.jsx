@@ -29,9 +29,9 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: 'glass-strong border border-sidebar-border/30 text-foreground backdrop-blur-md',
-        success: 'glass-strong border border-green-500/40 text-green-700 dark:text-green-300 backdrop-blur-md',
-        destructive: 'glass-strong border border-destructive/40 text-destructive dark:text-red-300 backdrop-blur-md',
+        default: 'glass-strong border border-sidebar-border/30 text-foreground backdrop-blur-xl',
+        success: 'bg-green-500/20 dark:bg-green-500/15 border-2 border-green-500/60 text-green-900 dark:text-green-100 backdrop-blur-xl shadow-green-500/20',
+        destructive: 'bg-red-500/20 dark:bg-red-500/15 border-2 border-red-500/60 text-red-900 dark:text-red-100 backdrop-blur-xl shadow-red-500/20',
       },
       size: {
         sm: 'size-padding size-radius size-gap',
@@ -94,8 +94,7 @@ const ToastClose = React.forwardRef(({ className, size, ...props }, ref) => {
     <ToastPrimitives.Close
       ref={ref}
       className={cn(
-        'absolute right-2 top-2 p-1 text-foreground/70 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 hover:bg-background/20 rounded-md',
-        'group-[.destructive]:text-red-600 group-[.destructive]:hover:text-red-700 group-[.destructive]:focus:ring-red-400',
+        'absolute right-2 top-2 p-1 text-foreground/70 opacity-100 transition-all hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 hover:bg-background/30 rounded-md hover:scale-110',
         'size-radius',
         className
       )}
@@ -112,7 +111,7 @@ const ToastTitle = React.forwardRef(({ className, size, ...props }, ref) => {
   return (
     <ToastPrimitives.Title
       ref={ref}
-      className={cn('font-semibold text-foreground', 'size-card-title', className)}
+      className={cn('font-bold text-foreground', 'size-card-title', className)}
       {...props}
     />
   );
@@ -123,7 +122,7 @@ const ToastDescription = React.forwardRef(({ className, size, ...props }, ref) =
   return (
     <ToastPrimitives.Description
       ref={ref}
-      className={cn('text-foreground/80', 'size-card-description', className)}
+      className={cn('text-foreground/90 font-medium', 'size-card-description', className)}
       {...props}
     />
   );

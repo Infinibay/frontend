@@ -1,6 +1,26 @@
 import { io } from 'socket.io-client'
 import { createDebugger } from '@/utils/debug'
 
+/**
+ * Socket Service - Real-time WebSocket communication with backend
+ *
+ * Usage Examples:
+ *
+ * 1. Subscribe to specific resource events:
+ *    const unsubscribe = socketService.subscribeToResource('scripts', 'schedule_created', (data) => {
+ *      console.log('Schedule created:', data)
+ *    })
+ *    // Event pattern: user_abc123:scripts:schedule_created
+ *
+ * 2. Subscribe to multiple events for a resource:
+ *    const unsubscribe = socketService.subscribeToAllResourceEvents('scripts', (action, data) => {
+ *      console.log(`Received ${action} event`, data)
+ *    }, ['schedule_created', 'schedule_updated', 'schedule_cancelled'])
+ *
+ * 3. Cleanup:
+ *    unsubscribe() // Call the returned function to unsubscribe
+ */
+
 // Socket connection states
 export const ConnectionState = {
   DISCONNECTED: 'disconnected',
@@ -237,14 +257,70 @@ export class SocketService {
     }
   }
 
-  // Subscribe to specific resource events
+  /**
+   * Subscribe to specific resource events
+   *
+   * @param {string} resource - The resource name (e.g., 'scripts', 'vms', 'users')
+   * @param {string} action - The action/event name (e.g., 'schedule_created', 'power_on')
+   * @param {Function} callback - Callback function to handle the event
+   * @returns {Function} Unsubscribe function - call this to stop listening
+   *
+   * @example
+   * const unsubscribe = socketService.subscribeToResource('scripts', 'schedule_created', (data) => {
+   *   console.log('Schedule created:', data)
+   *   // data.status: 'success' | 'error'
+   *   // data.data: { eventType, scriptId, executionIds, ... }
+   *   // data.timestamp: ISO string
+   * })
+   *
+   * // Later, to unsubscribe:
+   * unsubscribe()
+   *
+   * Event Pattern: {userNamespace}:{resource}:{action}
+   * Example: user_abc123:scripts:schedule_created
+   */
   subscribeToResource(resource, action, callback) {
     const eventPattern = `${resource}:${action}`
     return this.subscribe(eventPattern, callback)
   }
 
-  // Subscribe to all events for a resource, with sensible defaults per resource.
-  // Optionally override actions by providing an array of action names.
+  /**
+   * Subscribe to multiple events for a resource with a single callback
+   *
+   * @param {string} resource - The resource name (e.g., 'scripts', 'vms')
+   * @param {Function} callback - Callback function (action, data) => void
+   * @param {Array<string>} actionsOverride - Optional array of actions to subscribe to.
+   *                                          If not provided, uses default actions for the resource.
+   * @returns {Function} Unsubscribe function - call this to stop listening to all subscribed events
+   *
+   * @example
+   * const unsubscribe = socketService.subscribeToAllResourceEvents(
+   *   'scripts',
+   *   (action, data) => {
+   *     switch (action) {
+   *       case 'schedule_created':
+   *         console.log('Schedule created:', data)
+   *         break
+   *       case 'schedule_updated':
+   *         console.log('Schedule updated:', data)
+   *         break
+   *       case 'schedule_cancelled':
+   *         console.log('Schedule cancelled:', data)
+   *         break
+   *     }
+   *   },
+   *   ['schedule_created', 'schedule_updated', 'schedule_cancelled']
+   * )
+   *
+   * // Later, to unsubscribe from all:
+   * unsubscribe()
+   *
+   * Default actions by resource:
+   * - vms: ['create', 'update', 'delete', 'power_on', 'power_off', 'suspend']
+   * - users: ['create', 'update', 'delete']
+   * - departments: ['create', 'update', 'delete']
+   * - applications: ['create', 'update', 'delete']
+   */
   subscribeToAllResourceEvents(resource, callback, actionsOverride = null) {
     const defaultActionsByResource = {
       vms: ['create', 'update', 'delete', 'power_on', 'power_off', 'suspend'],

@@ -662,6 +662,19 @@ query DepartmentScripts($departmentId: ID!) {
     shell
     hasInputs
     inputCount
+    parsedInputs {
+      name
+      label
+      type
+      required
+      description
+      default
+      validation
+      options {
+        label
+        value
+      }
+    }
     createdAt
     updatedAt
     createdBy {
@@ -737,8 +750,123 @@ query ScriptExecution($id: ID!) {
   }
 }
 
+# Get filtered and paginated script executions
+query ScriptExecutionsFiltered($filters: ScriptExecutionsFiltersInput!) {
+  scriptExecutionsFiltered(filters: $filters) {
+    total
+    hasMore
+    offset
+    limit
+    executions {
+      id
+      script {
+        id
+        name
+        description
+      }
+      machine {
+        id
+        name
+        status
+        department {
+          id
+          name
+        }
+      }
+      executionType
+      triggeredBy {
+        id
+        firstName
+        lastName
+      }
+      inputValues
+      status
+      startedAt
+      completedAt
+      exitCode
+      stdout
+      stderr
+      error
+      executedAs
+      createdAt
+      scheduledFor
+      repeatIntervalMinutes
+    }
+  }
+}
+
 # Get list of users on a VM for "Run As" selection
 query VmUsers($machineId: ID!) {
   vmUsers(machineId: $machineId)
+}
+
+# Get scheduled scripts with optional filters
+query ScheduledScripts($filters: ScheduledScriptsFiltersInput) {
+  scheduledScripts(filters: $filters) {
+    id
+    status
+    executionType
+    scheduledFor
+    repeatIntervalMinutes
+    maxExecutions
+    executionCount
+    lastExecutedAt
+    scheduleType
+    nextExecutionAt
+    isActive
+    inputValues
+    script {
+      id
+      name
+      description
+    }
+    machine {
+      id
+      name
+      status
+    }
+    triggeredBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get a single scheduled script by ID
+query ScheduledScript($id: ID!) {
+  scheduledScript(id: $id) {
+    id
+    status
+    executionType
+    scheduledFor
+    repeatIntervalMinutes
+    maxExecutions
+    executionCount
+    lastExecutedAt
+    scheduleType
+    nextExecutionAt
+    isActive
+    inputValues
+    script {
+      id
+      name
+      description
+    }
+    machine {
+      id
+      name
+      status
+    }
+    triggeredBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    updatedAt
+  }
 }
 

@@ -9,10 +9,21 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ScriptCard } from '@/app/scripts/components/ScriptCard'
+import { ScriptListItem } from '@/app/scripts/components/ScriptListItem'
 import { ImportExportDialog } from '@/app/scripts/components/ImportExportDialog'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction
+} from '@/components/ui/alert-dialog'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { Download, Loader2, FileCode, Tag, X } from 'lucide-react'
+import { Download, Loader2, FileCode, Tag, X, AlertCircle } from 'lucide-react'
 
 /**
  * ScriptsSection component - Reusable scripts management UI
@@ -35,6 +46,20 @@ const GET_SCRIPT_CONTENT = gql`
   }
 `
 
+// GraphQL query to check active schedules (PENDING and RUNNING)
+const GET_ACTIVE_SCHEDULES = gql`
+  query GetScriptActiveSchedules($scriptId: ID!) {
+    scheduledScripts(filters: { scriptId: $scriptId }) {
+      id
+      status
+      machine {
+        id
+        name
+      }
+    }
+  }
+`
+
 export default function ScriptsSection({ embedded = false, onNavigateToEditor, className = '' }) {
   const router = useRouter()
   const apolloClient = useApolloClient()
@@ -47,6 +72,8 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
   const [selectedScriptIds, setSelectedScriptIds] = useState(new Set())
   const [exportScripts, setExportScripts] = useState([])
   const [fetchingExportData, setFetchingExportData] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(null) // { scriptId, scriptName, activeSchedulesCount, affectedVMs, affectedVMsCount }
+  const [deleteCheckbox, setDeleteCheckbox] = useState(false)
 
   const { data, loading, refetch } = useScriptsQuery()
   const [deleteScript] = useDeleteScriptMutation()
@@ -82,21 +109,88 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
     }
   }, [embedded, onNavigateToEditor, router])
 
+  // Check for active schedules before deletion
   const handleDelete = async (scriptId) => {
-    if (!confirm('Are you sure you want to delete this script?')) return
+    const script = scripts.find(s => s.id === scriptId)
+    if (!script) return
 
     try {
-      await deleteScript({ variables: { id: scriptId } })
-      toast.success('Script deleted successfully')
+      // Query for active schedules
+      const { data } = await apolloClient.query({
+        query: GET_ACTIVE_SCHEDULES,
+        variables: { scriptId },
+        fetchPolicy: 'network-only'
+      })
+
+      // Filter for PENDING and RUNNING schedules
+      const activeSchedules = (data?.scheduledScripts || []).filter(
+        s => s.status === 'PENDING' || s.status === 'RUNNING'
+      )
+
+      if (activeSchedules.length > 0) {
+        // Extract affected VMs - deduplicate to get unique VMs
+        const affectedVMsAll = [...new Set(activeSchedules.map(s => s.machine?.name).filter(Boolean))]
+
+        setDeleteConfirm({
+          scriptId,
+          scriptName: script.name,
+          activeSchedulesCount: activeSchedules.length,
+          affectedVMs: affectedVMsAll.slice(0, 5), // Show max 5 VMs
+          affectedVMsCount: affectedVMsAll.length // Store total unique VM count
+        })
+        setDeleteCheckbox(false) // Reset checkbox
+      } else {
+        // No active schedules, show standard confirmation
+        setDeleteConfirm({
+          scriptId,
+          scriptName: script.name,
+          activeSchedulesCount: 0,
+          affectedVMs: []
+        })
+      }
+    } catch (error) {
+      toast.error(`Failed to check schedules: ${error.message}`)
+    }
+  }
+
+  // Actually delete after confirmation
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return
+
+    // If there are active schedules, require checkbox confirmation
+    if (deleteConfirm.activeSchedulesCount > 0 && !deleteCheckbox) {
+      toast.error('Please confirm that you understand schedules will be cancelled')
+      return
+    }
+
+    try {
+      await deleteScript({
+        variables: {
+          id: deleteConfirm.scriptId,
+          force: deleteConfirm.activeSchedulesCount > 0 // Force cancel schedules if present
+        }
+      })
+
+      toast.success(
+        deleteConfirm.activeSchedulesCount > 0
+          ? `Script deleted successfully. Cancelled ${deleteConfirm.activeSchedulesCount} active schedule${deleteConfirm.activeSchedulesCount > 1 ? 's' : ''}.`
+          : 'Script deleted successfully'
+      )
+
       // Remove from selection if selected
       setSelectedScriptIds(prev => {
         const newSet = new Set(prev)
-        newSet.delete(scriptId)
+        newSet.delete(deleteConfirm.scriptId)
         return newSet
       })
+
+      setDeleteConfirm(null)
+      setDeleteCheckbox(false)
       refetch()
     } catch (error) {
       toast.error(`Failed to delete script: ${error.message}`)
+      setDeleteConfirm(null)
+      setDeleteCheckbox(false)
     }
   }
 
@@ -306,9 +400,9 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
         </div>
       ) : (
         <>
-          <div className={`grid grid-cols-1 ${embedded ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-4`}>
+          <div className="glass-subtle rounded-lg border border-border/20 p-3 space-y-2">
             {displayScripts.map(script => (
-              <ScriptCard
+              <ScriptListItem
                 key={script.id}
                 script={script}
                 selected={!embedded && selectedScriptIds.has(script.id)}
@@ -316,6 +410,7 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 compact={embedded}
+                onClick={() => handleEdit(script.id)}
               />
             ))}
           </div>
@@ -349,6 +444,87 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
         mode="export"
         selectedScripts={exportScripts}
       />
+
+      {/* Confirmation Dialog for Script Deletion */}
+      <AlertDialog open={deleteConfirm !== null} onOpenChange={(open) => {
+        if (!open) {
+          setDeleteConfirm(null)
+          setDeleteCheckbox(false)
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {deleteConfirm?.activeSchedulesCount > 0 && (
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+              )}
+              Delete Script?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              {deleteConfirm?.activeSchedulesCount > 0 ? (
+                <>
+                  <p>
+                    This script has <strong>{deleteConfirm.activeSchedulesCount}</strong> active schedule
+                    {deleteConfirm.activeSchedulesCount > 1 ? 's' : ''}.
+                  </p>
+                  {deleteConfirm.affectedVMs && deleteConfirm.affectedVMs.length > 0 && (
+                    <div>
+                      <p className="font-medium mb-1">Affected VMs:</p>
+                      <ul className="list-disc list-inside ml-2">
+                        {deleteConfirm.affectedVMs.map(vmName => (
+                          <li key={vmName}>{vmName}</li>
+                        ))}
+                        {deleteConfirm.affectedVMsCount > 5 && (
+                          <li className="text-muted-foreground">
+                            and {deleteConfirm.affectedVMsCount - 5} more...
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    All related execution logs and audit logs will be permanently deleted.
+                  </p>
+                  <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                    <Checkbox
+                      id="confirm-cancel-schedules"
+                      checked={deleteCheckbox}
+                      onCheckedChange={setDeleteCheckbox}
+                    />
+                    <label
+                      htmlFor="confirm-cancel-schedules"
+                      className="text-sm cursor-pointer leading-tight"
+                    >
+                      I understand this will cancel all active schedules for this script
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>
+                    Are you sure you want to delete <strong>{deleteConfirm?.scriptName}</strong>?
+                    This action cannot be undone.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    All related execution logs and audit logs will be permanently deleted.
+                  </p>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              variant="destructive"
+            >
+              {deleteConfirm?.activeSchedulesCount > 0
+                ? 'Delete & Cancel Schedules'
+                : 'Delete Script'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

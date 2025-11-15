@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertCircle } from 'lucide-react'
 
 const INPUT_TYPES = [
-  { value: 'string', label: 'Text (String)' },
+  { value: 'text', label: 'Text (String)' },
   { value: 'number', label: 'Number' },
   { value: 'boolean', label: 'Checkbox (Boolean)' },
 ]
@@ -28,7 +28,7 @@ export default function ScriptInputModal({ open, onOpenChange, input, onSave, mo
   const [formData, setFormData] = useState({
     name: '',
     label: '',
-    type: 'string',
+    type: 'text',
     required: false,
     description: '',
     default: '',
@@ -56,8 +56,8 @@ export default function ScriptInputModal({ open, onOpenChange, input, onSave, mo
   // Populate form when editing
   useEffect(() => {
     if (input) {
-      // Normalize legacy 'checkbox' type to 'boolean'
-      const normalizedType = input.type === 'checkbox' ? 'boolean' : (input.type || 'string')
+      // Normalize legacy 'checkbox' type to 'boolean' and 'string' to 'text'
+      const normalizedType = input.type === 'checkbox' ? 'boolean' : (input.type === 'string' ? 'text' : (input.type || 'text'))
 
       setFormData({
         name: input.name || '',
@@ -84,7 +84,7 @@ export default function ScriptInputModal({ open, onOpenChange, input, onSave, mo
       setFormData({
         name: '',
         label: '',
-        type: 'string',
+        type: 'text',
         required: false,
         description: '',
         default: '',
@@ -161,7 +161,7 @@ export default function ScriptInputModal({ open, onOpenChange, input, onSave, mo
       }
     }
 
-    if (formData.type === 'string') {
+    if (formData.type === 'text') {
       const minLen = parseInt(formData.validation.minLength)
       const maxLen = parseInt(formData.validation.maxLength)
 
@@ -212,7 +212,7 @@ export default function ScriptInputModal({ open, onOpenChange, input, onSave, mo
       if (v.step !== '') cleanedValidation.step = parseFloat(v.step)
     }
 
-    if (normalizedType === 'string') {
+    if (normalizedType === 'text') {
       if (v.minLength !== '') cleanedValidation.minLength = parseInt(v.minLength)
       if (v.maxLength !== '') cleanedValidation.maxLength = parseInt(v.maxLength)
       if (v.pattern) cleanedValidation.pattern = v.pattern
@@ -312,7 +312,7 @@ export default function ScriptInputModal({ open, onOpenChange, input, onSave, mo
           </div>
         )
 
-      case 'string':
+      case 'text':
         return (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

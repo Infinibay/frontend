@@ -24,6 +24,9 @@ import { RealTimeProvider } from "@/components/RealTimeProvider"
 import { SocketNamespaceGuard } from "@/components/SocketNamespaceGuard"
 import { createThemeScript } from "@/utils/theme"
 import { ThemeProvider, useAppTheme, useResolvedTheme } from "@/contexts/ThemeProvider"
+import { HelpProvider } from "@/contexts/HelpProvider"
+import { HeaderActionProvider } from "@/contexts/HeaderActionContext"
+import { GlobalHeader } from "@/components/layout/GlobalHeader"
 import { updateWallpaperCSS } from "@/utils/wallpaper"
 import "@/utils/debugInit" // Initialize debug panel
 import "@/utils/debugPanelStatus" // Debug panel utilities
@@ -83,7 +86,10 @@ function AppContent({ children, isAuthenticated }) {
           onLogOut={handleLogout}
         />
         <main className="flex-1 px-6 md:px-8 main-content relative z-10">
-          {children}
+          <GlobalHeader />
+          <div className="mt-6">
+            {children}
+          </div>
         </main>
       </div>
       <ToastProvider>
@@ -192,8 +198,10 @@ export default function RootLayout({ children }) {
             <PersistGate loading={null} persistor={persistor}>
               <SizeProviderWrapper>
                 <ThemeProviderWrapper>
-                  <WallpaperApplier>
-                    <ApolloProvider client={client}>
+                  <HelpProvider>
+                    <HeaderActionProvider>
+                      <WallpaperApplier>
+                      <ApolloProvider client={client}>
                     <NextUIProvider className="w-full">
                       <InitialDataLoader className="w-full">
                         <SocketNamespaceGuard className="w-full">
@@ -206,8 +214,10 @@ export default function RootLayout({ children }) {
                       </InitialDataLoader>
                       <Toaster />
                     </NextUIProvider>
-                    </ApolloProvider>
-                  </WallpaperApplier>
+                      </ApolloProvider>
+                      </WallpaperApplier>
+                    </HeaderActionProvider>
+                  </HelpProvider>
                 </ThemeProviderWrapper>
               </SizeProviderWrapper>
             </PersistGate>

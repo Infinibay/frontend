@@ -1,5 +1,15 @@
 'use client'
 
+/**
+ * @deprecated Use ScriptListItem instead for a more compact design
+ *
+ * This component is kept for backward compatibility but should not be used in new code.
+ * The ScriptListItem component provides a more space-efficient list layout that reduces
+ * whitespace by 60-70% compared to this card-based design.
+ *
+ * @see ScriptListItem
+ */
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

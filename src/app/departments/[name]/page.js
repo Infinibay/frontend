@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
 import {
@@ -17,18 +17,18 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Building2, Monitor, Shield, Plus, Search, Settings } from "lucide-react";
 import dynamic from 'next/dynamic';
 import { getGlassClasses } from '@/utils/glass-effects';
 import { cn } from '@/lib/utils';
 
 // Custom hooks
 import { useDepartmentPage } from "./hooks/useDepartmentPage";
+import { usePageHeader } from '@/hooks/usePageHeader';
 
 // Components
 import LoadingState from "./components/LoadingState";
 import NotFound from "./components/NotFound";
-import DepartmentHeader from "./components/DepartmentHeader";
 import TabControls from "./components/TabControls";
 import MachineGrid from "./components/MachineGrid";
 import MachineTable from "./components/MachineTable";
@@ -96,6 +96,113 @@ const DepartmentPage = () => {
     cancelDelete,
   } = useDepartmentPage(departmentName);
 
+  // Help configuration
+  const helpConfig = useMemo(() => ({
+    title: "Department Management Help",
+    description: "Learn how to manage virtual machines and security settings for your department",
+    icon: <Building2 className="h-5 w-5 text-primary" />,
+    sections: [
+      {
+        id: "managing-vms",
+        title: "Managing Virtual Machines",
+        icon: <Monitor className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <p className="font-medium text-foreground mb-1">Creating VMs</p>
+            <p>Click the "New Computer" button to create a new virtual machine. You'll need to select a template and the VM will be automatically assigned to this department.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Viewing VMs</p>
+            <p>Switch between grid and table views using the toggle button. Grid view shows VM cards with status and quick actions, while table view provides a sortable list with detailed information.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">VM Actions</p>
+            <p>Control VMs with power buttons (start/stop), edit hardware settings, or delete VMs. All destructive actions require confirmation.</p>
+          </div>
+        )
+      },
+      {
+        id: "view-modes",
+        title: "View Modes",
+        icon: <Search className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <p className="font-medium text-foreground mb-1">Grid View</p>
+            <p>Visual card layout showing VM status, specifications, and quick actions. Best for getting an overview of your virtual machines.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Table View</p>
+            <p>Compact list with sortable columns including name, status, assigned user, and creation date. Ideal for detailed sorting and filtering.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Switching Views</p>
+            <p>Use the toggle button in the tab controls to switch between grid and table views. Your preference is saved automatically.</p>
+          </div>
+        )
+      },
+      {
+        id: "security",
+        title: "Security Settings",
+        icon: <Shield className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <p className="font-medium text-foreground mb-1">Firewall Rules</p>
+            <p>Configure department-level firewall rules that affect all VMs in this department. These rules provide a baseline security configuration.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Templates</p>
+            <p>Apply predefined security templates for common scenarios, such as web servers, database servers, or development environments.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Custom Rules</p>
+            <p>Create specific rules for ports, protocols, and IP ranges to match your security requirements.</p>
+          </div>
+        )
+      },
+      {
+        id: "department-settings",
+        title: "Department Settings",
+        icon: <Settings className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <p className="font-medium text-foreground mb-1">Rename Department</p>
+            <p>Admins can click the department name in the header to rename it using inline editing. Press Enter to save or Escape to cancel.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Scripts Tab</p>
+            <p>Access department-specific automation scripts that can be run on VMs within this department.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Organization</p>
+            <p>Use departments to organize VMs by team, project, or function. This helps maintain clear boundaries and access control.</p>
+          </div>
+        )
+      }
+    ],
+    quickTips: [
+      "Use grid view for visual overview, table view for detailed sorting",
+      "Click the department name in the header to rename it (admin only)",
+      "Security settings apply to all VMs in the department",
+      "Each VM can be assigned to a specific user for access control"
+    ]
+  }), []);
+
+  // Configure header
+  usePageHeader({
+    breadcrumbs: [
+      { label: 'Home', href: '/' },
+      { label: 'Departments', href: '/departments' },
+      { label: departmentName || 'Department', isCurrent: true }
+    ],
+    title: departmentName || 'Department',
+    backButton: { href: '/departments', label: 'Back' },
+    actions: [
+      {
+        id: 'new-computer',
+        label: 'New Computer',
+        icon: 'Plus',
+        variant: 'default',
+        size: 'sm',
+        onClick: () => router.push(`/departments/${departmentName}/computers/create`),
+        tooltip: 'Create new computer in this department'
+      }
+    ],
+    helpConfig: helpConfig,
+    helpTooltip: 'Department help'
+  }, [departmentName]);
+
   // Loading state
   if (isLoading) {
     return <LoadingState />;
@@ -109,14 +216,6 @@ const DepartmentPage = () => {
   return (
     <ToastProvider>
       <div className="w-full">
-        <DepartmentHeader
-          departmentName={department?.name}
-          isLoading={departmentsLoading}
-          onNewComputer={handleNewComputer}
-          isAdmin={isAdmin}
-          onNameUpdate={handleDepartmentNameUpdate}
-          nameUpdateLoading={nameUpdateLoading}
-        />
 
         {/* Main content container with consistent spacing */}
         <div className="px-6 py-4 space-y-6">

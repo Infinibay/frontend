@@ -698,6 +698,7 @@ export type MachineTemplateType = {
 
 export type MachineType = {
   __typename?: 'MachineType';
+  department?: Maybe<DepartmentType>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   os: Scalars['String']['output'];
@@ -801,6 +802,7 @@ export type Mutation = {
   assignScriptToDepartment: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
+  cancelScheduledScript: ScheduleScriptResponseType;
   cancelScriptExecution: ScriptExecutionResponseType;
   cleanupInfinibayFirewall: CleanupResultType;
   createApplication: ApplicationType;
@@ -860,6 +862,7 @@ export type Mutation = {
   restoreSnapshot: SuccessType;
   /** Run Windows Defender quick scan on a VM */
   runDefenderQuickScan: DefenderScanResult;
+  scheduleScript: ScheduleScriptResponseType;
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
@@ -883,6 +886,7 @@ export type Mutation = {
   updateMaintenanceTask: MaintenanceTaskResponse;
   /** Update a package on a virtual machine (legacy compatibility) */
   updatePackage: CommandResult;
+  updateScheduledScript: ScheduleScriptResponseType;
   updateScript: ScriptResponseType;
   updateUser: UserType;
   /** Validate ISO file integrity */
@@ -898,6 +902,11 @@ export type MutationAssignScriptToDepartmentArgs = {
 
 export type MutationCalculateIsoChecksumArgs = {
   isoId: Scalars['String']['input'];
+};
+
+
+export type MutationCancelScheduledScriptArgs = {
+  executionId: Scalars['ID']['input'];
 };
 
 
@@ -989,6 +998,7 @@ export type MutationDeleteNetworkArgs = {
 
 
 export type MutationDeleteScriptArgs = {
+  force?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
 };
 
@@ -1147,6 +1157,11 @@ export type MutationRunDefenderQuickScanArgs = {
 };
 
 
+export type MutationScheduleScriptArgs = {
+  input: ScheduleScriptInput;
+};
+
+
 export type MutationSetNetworkBridgeNameArgs = {
   input: BridgeNameInput;
 };
@@ -1236,6 +1251,11 @@ export type MutationUpdateMaintenanceTaskArgs = {
 export type MutationUpdatePackageArgs = {
   machineId: Scalars['ID']['input'];
   packageName: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateScheduledScriptArgs = {
+  input: UpdateScheduledScriptInput;
 };
 
 
@@ -1455,9 +1475,12 @@ export type Query = {
   networks: Array<Network>;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
+  scheduledScript?: Maybe<ScheduledScriptType>;
+  scheduledScripts: Array<ScheduledScriptType>;
   script?: Maybe<ScriptType>;
   scriptExecution?: Maybe<ScriptExecutionType>;
   scriptExecutions: Array<ScriptExecutionType>;
+  scriptExecutionsFiltered: ScriptExecutionsResponseType;
   scripts: Array<ScriptType>;
   /** Search for available packages on a virtual machine */
   searchPackages: Array<PackageInfo>;
@@ -1663,6 +1686,16 @@ export type QueryRunHealthCheckArgs = {
 };
 
 
+export type QueryScheduledScriptArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryScheduledScriptsArgs = {
+  filters?: InputMaybe<ScheduledScriptsFiltersInput>;
+};
+
+
 export type QueryScriptArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1677,6 +1710,11 @@ export type QueryScriptExecutionsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   machineId: Scalars['ID']['input'];
   status?: InputMaybe<ExecutionStatus>;
+};
+
+
+export type QueryScriptExecutionsFilteredArgs = {
+  filters: ScriptExecutionsFiltersInput;
 };
 
 
@@ -1846,6 +1884,70 @@ export enum RuleSetType {
   Vm = 'VM'
 }
 
+export type ScheduleScriptInput = {
+  departmentId?: InputMaybe<Scalars['ID']['input']>;
+  inputValues: Scalars['JSON']['input'];
+  machineIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  maxExecutions?: InputMaybe<Scalars['Int']['input']>;
+  repeatIntervalMinutes?: InputMaybe<Scalars['Int']['input']>;
+  scheduleType: ScheduleType;
+  scheduledFor?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  scriptId: Scalars['ID']['input'];
+};
+
+export type ScheduleScriptResponseType = {
+  __typename?: 'ScheduleScriptResponseType';
+  error?: Maybe<Scalars['String']['output']>;
+  executionIds?: Maybe<Array<Scalars['String']['output']>>;
+  executions?: Maybe<Array<ScheduledScriptType>>;
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+/** Script schedule type */
+export enum ScheduleType {
+  Immediate = 'IMMEDIATE',
+  OneTime = 'ONE_TIME',
+  Periodic = 'PERIODIC'
+}
+
+export type ScheduledScriptType = {
+  __typename?: 'ScheduledScriptType';
+  completedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  executedAs?: Maybe<Scalars['String']['output']>;
+  executionCount: Scalars['Int']['output'];
+  executionType: ExecutionType;
+  exitCode?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  inputValues: Scalars['JSON']['output'];
+  isActive: Scalars['Boolean']['output'];
+  lastExecutedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  machine: MachineType;
+  maxExecutions?: Maybe<Scalars['Int']['output']>;
+  nextExecutionAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  repeatIntervalMinutes?: Maybe<Scalars['Int']['output']>;
+  scheduleType: ScheduleType;
+  scheduledFor?: Maybe<Scalars['DateTimeISO']['output']>;
+  script: ScriptType;
+  startedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  status: ExecutionStatus;
+  stderr?: Maybe<Scalars['String']['output']>;
+  stdout?: Maybe<Scalars['String']['output']>;
+  triggeredBy?: Maybe<UserType>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type ScheduledScriptsFiltersInput = {
+  departmentId?: InputMaybe<Scalars['ID']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  machineId?: InputMaybe<Scalars['ID']['input']>;
+  scheduleType?: InputMaybe<ScheduleType>;
+  scriptId?: InputMaybe<Scalars['ID']['input']>;
+  status?: InputMaybe<ExecutionStatus>;
+};
+
 export type ScriptExecutionResponseType = {
   __typename?: 'ScriptExecutionResponseType';
   error?: Maybe<Scalars['String']['output']>;
@@ -1860,17 +1962,43 @@ export type ScriptExecutionType = {
   createdAt: Scalars['DateTimeISO']['output'];
   error?: Maybe<Scalars['String']['output']>;
   executedAs?: Maybe<Scalars['String']['output']>;
+  executionCount: Scalars['Int']['output'];
   executionType: ExecutionType;
   exitCode?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   inputValues: Scalars['JSON']['output'];
+  lastExecutedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   machine: MachineType;
+  maxExecutions?: Maybe<Scalars['Int']['output']>;
+  repeatIntervalMinutes?: Maybe<Scalars['Int']['output']>;
+  scheduledFor?: Maybe<Scalars['DateTimeISO']['output']>;
   script: ScriptType;
   startedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   status: ExecutionStatus;
   stderr?: Maybe<Scalars['String']['output']>;
   stdout?: Maybe<Scalars['String']['output']>;
   triggeredBy?: Maybe<UserType>;
+};
+
+export type ScriptExecutionsFiltersInput = {
+  departmentId?: InputMaybe<Scalars['ID']['input']>;
+  endDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  executionType?: InputMaybe<ExecutionType>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  machineId?: InputMaybe<Scalars['ID']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  scriptId?: InputMaybe<Scalars['ID']['input']>;
+  startDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  status?: InputMaybe<ExecutionStatus>;
+};
+
+export type ScriptExecutionsResponseType = {
+  __typename?: 'ScriptExecutionsResponseType';
+  executions: Array<ScriptExecutionType>;
+  hasMore: Scalars['Boolean']['output'];
+  limit: Scalars['Int']['output'];
+  offset: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
 };
 
 export type ScriptFiltersInput = {
@@ -2076,6 +2204,13 @@ export type UpdateMaintenanceTaskInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
   runAt?: InputMaybe<Scalars['DateTimeISO']['input']>;
+};
+
+export type UpdateScheduledScriptInput = {
+  executionId: Scalars['ID']['input'];
+  maxExecutions?: InputMaybe<Scalars['Int']['input']>;
+  repeatIntervalMinutes?: InputMaybe<Scalars['Int']['input']>;
+  scheduledFor?: InputMaybe<Scalars['DateTimeISO']['input']>;
 };
 
 export type UpdateScriptInput = {

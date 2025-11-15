@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { cn } from "@/lib/utils";
 import { RiDeleteBin5Line } from "react-icons/ri";
 import { BiSortAlt2 } from "react-icons/bi";
+import { Users as UsersIcon, UserPlus, Shield, Key, Search } from 'lucide-react';
 import {
   fetchUsers,
   createUser,
@@ -12,6 +13,7 @@ import {
   deleteUser
 } from "@/state/slices/users";
 import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { createDebugger } from "@/utils/debug";
 
 // UI Components
@@ -86,6 +88,117 @@ const UsersPage = () => {
     role: 'USER'
   });
 
+  // Help configuration
+  const helpConfig = useMemo(() => ({
+    title: "Users Management Help",
+    description: "Learn how to manage user accounts and permissions",
+    icon: <UsersIcon className="h-5 w-5 text-primary" />,
+    sections: [
+      {
+        id: "managing-users",
+        title: "Managing Users",
+        icon: <UserPlus className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-foreground mb-1">Creating Users</p>
+              <p>Click "Add User" button and fill in required fields: first name, last name, email, password, and role.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Editing Users</p>
+              <p>Click "Edit" button in user row to modify name, password, or role.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Deleting Users</p>
+              <p>Click delete icon to remove users. Confirmation is required before deletion.</p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "user-roles",
+        title: "User Roles",
+        icon: <Shield className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-foreground mb-1">Admin Role</p>
+              <p>Full system access. Can manage all resources, users, and settings.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">User Role</p>
+              <p>Limited access. Can only manage assigned VMs and view own resources.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Role Assignment</p>
+              <p>Set role during user creation or change via edit dialog.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Permissions</p>
+              <p>Roles determine what actions users can perform in the system.</p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "user-profiles",
+        title: "User Profiles",
+        icon: <Key className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-foreground mb-1">Profile Information</p>
+              <p>Users have first name, last name, email, and optional avatar.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Avatar Management</p>
+              <p>Avatars can be updated from the user's profile page.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Password Changes</p>
+              <p>Admins can reset passwords via edit dialog. Users can change their own passwords.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Email Addresses</p>
+              <p>Used for login and system notifications.</p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "search-filter",
+        title: "Search and Filtering",
+        icon: <Search className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-foreground mb-1">Search Users</p>
+              <p>Filter by name or email in real-time using the search box.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Role Filter</p>
+              <p>Use dropdown to show only Admins or Users.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Sorting</p>
+              <p>Click "Sort by" dropdown to organize users by name or role.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">User Table</p>
+              <p>Shows avatar, name, email, role badge, and action buttons.</p>
+            </div>
+          </div>
+        ),
+      },
+    ],
+    quickTips: [
+      "Admin users have full system access, assign this role carefully",
+      "Users can update their own avatars from their profile page",
+      "Use search to quickly find users by name or email",
+      "Password confirmation is required when creating or updating passwords",
+    ],
+  }), []);
+
   // Use optimized data loading for users
   const {
     data: users,
@@ -96,6 +209,31 @@ const UsersPage = () => {
     strategy: LOADING_STRATEGIES.BACKGROUND,
     ttl: 3 * 60 * 1000, // 3 minutes
   });
+
+  // Configure header
+  usePageHeader({
+    breadcrumbs: [
+      { label: 'Home', href: '/' },
+      { label: 'Users', isCurrent: true }
+    ],
+    title: 'Users',
+    actions: [
+      {
+        id: 'refresh',
+        label: '',
+        icon: 'RefreshCw',
+        variant: 'outline',
+        size: 'sm',
+        onClick: refreshUsers,
+        loading: loading,
+        disabled: loading,
+        tooltip: loading ? 'Refreshing...' : error ? 'Retry loading users' : 'Refresh users',
+        className: error ? 'border-destructive text-destructive hover:bg-destructive/10' : ''
+      }
+    ],
+    helpConfig: helpConfig,
+    helpTooltip: 'Users help'
+  }, [loading, error]);
 
   debug.info('Users page state:', {
     usersCount: users?.length || 0,
@@ -280,27 +418,11 @@ const UsersPage = () => {
       )}
       <ToastViewport />
 
-      <Header className="glass-strong elevation-4">
-        <HeaderLeft>
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/">Home</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Users</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </HeaderLeft>
-        <HeaderCenter>
-          <h1 className="size-mainheading text-glass-text-primary font-semibold">
-            Users Management
-          </h1>
-        </HeaderCenter>
-        <HeaderRight>
-          <div className="flex items-center size-gap">
+
+      <div className="size-container mt-6">
+        {/* User Actions */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
             <Button
               onClick={() => setIsCreateUserOpen(true)}
               className="size-button gap-2"
@@ -321,8 +443,8 @@ const UsersPage = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </HeaderRight>
-      </Header>
+        </div>
+      </div>
 
       <div className="size-container">
         {/* Search and Filters */}

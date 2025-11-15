@@ -57,6 +57,8 @@ const DepartmentsPage = () => {
     setNewDepartmentName,
     setShowToast,
     handleCreateDepartment,
+    handleDeleteDepartment,
+    refreshDepartments,
     getMachineCount,
     getDepartmentColor
   } = useDepartmentsPage();
@@ -161,6 +163,7 @@ const DepartmentsPage = () => {
                   machineCount={getMachineCount(dept.name)}
                   colorClass={getDepartmentColor(dept.name)}
                   size={size}
+                  onDelete={handleDeleteDepartment}
                 />
               ))}
             </div>

@@ -6,6 +6,7 @@ import authReducer from './slices/auth'
 import departments from './slices/departments'
 import firewallReducer from './slices/firewall'
 import healthReducer from './slices/health'
+import headerReducer from './slices/header'
 import isoReducer from './slices/iso'
 import persistedApplicaitonReducer from './slices/applications'
 import systemReducer from './slices/system'
@@ -19,7 +20,7 @@ const persistConfig = {
   key: 'root',
   version: 1,
   storage,
-  blacklist: ['vms', 'templates', 'templateCategories', 'users', 'vmPorts', 'firewall'] // Don't persist these reducers
+  blacklist: ['vms', 'templates', 'templateCategories', 'users', 'vmPorts', 'firewall', 'header'] // Don't persist these reducers
 };
 
 const persistAuthConfig = {
@@ -58,6 +59,7 @@ export const store = configureStore({
     auth: persistedAuth,
     departments: persistedDeparments,
     firewall: firewallReducer,
+    header: headerReducer,
     health: healthReducer,
     iso: isoReducer,
     system: persistedSystem,

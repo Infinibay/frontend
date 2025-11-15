@@ -14,7 +14,7 @@ import { fetchApplications } from '@/state/slices/applications';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import { createDebugger } from '@/utils/debug';
 import { useGetDepartmentFirewallRulesQuery, useDepartmentScriptsQuery, RuleAction, RuleDirection } from '@/gql/hooks';
-import { AlertTriangle, FileCode, Play } from 'lucide-react';
+import { AlertTriangle, FileCode, Play, CheckCircle2 } from 'lucide-react';
 import { ScriptInputRenderer } from '@/components/ScriptInput/ScriptInputRenderer';
 import { cn } from '@/lib/utils';
 
@@ -254,13 +254,15 @@ export function ApplicationsScriptsStep({ id }) {
           ) : error ? (
             renderErrorState()
           ) : (
-            <AppStoreInstaller
-              apps={allApps}
-              selectedAppIds={selectedAppIds}
-              onSelectionChange={handleSelectionChange}
-              size="md"
-              className="min-h-[400px] mt-4"
-            />
+            <div className="max-h-[400px] overflow-y-auto overflow-x-hidden mt-4">
+              <AppStoreInstaller
+                apps={allApps}
+                selectedAppIds={selectedAppIds}
+                onSelectionChange={handleSelectionChange}
+                size="md"
+                className="min-h-[200px]"
+              />
+            </div>
           )}
         </Card>
 
@@ -279,14 +281,27 @@ export function ApplicationsScriptsStep({ id }) {
               const isSelected = selectedScripts.some(s => s.scriptId === script.id);
               return (
                 <Card key={script.id} className={cn(
-                  "p-4 cursor-pointer transition-all",
-                  isSelected && "border-primary bg-primary/5"
+                  "p-4 cursor-pointer transition-all relative",
+                  isSelected
+                    ? "border-green-500 bg-green-500/10 ring-2 ring-green-500/20"
+                    : "hover:border-primary/50 hover:bg-primary/5"
                 )}>
+                  {isSelected && (
+                    <div className="absolute top-2 right-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    </div>
+                  )}
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div className="flex-1 pr-6">
                       <div className="flex items-center gap-2 mb-2">
-                        <FileCode className="h-5 w-5" />
-                        <h3 className="font-medium">{script.name}</h3>
+                        <FileCode className={cn(
+                          "h-5 w-5",
+                          isSelected ? "text-green-500" : "text-foreground"
+                        )} />
+                        <h3 className={cn(
+                          "font-medium",
+                          isSelected && "text-green-600 dark:text-green-400"
+                        )}>{script.name}</h3>
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2">
                         {script.description}

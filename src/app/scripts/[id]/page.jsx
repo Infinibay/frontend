@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Editor from '@monaco-editor/react'
 import { useScriptQuery, useCreateScriptMutation, useUpdateScriptMutation } from '@/gql/hooks'
@@ -12,12 +12,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Monitor, Server, Terminal, Plus, Trash2, Edit } from 'lucide-react'
-import { toast } from 'sonner'
+import { Monitor, Server, Terminal, Plus, Trash2, Edit, FileCode, Settings, CheckCircle } from 'lucide-react'
 import yaml from 'js-yaml'
+import { usePageHeader } from '@/hooks/usePageHeader'
+import { useToast } from '@/hooks/use-toast'
 import ScriptInputModal from '@/app/scripts/components/ScriptInputModal'
-import { ScriptEditorHeader } from '@/app/scripts/components/ScriptEditorHeader'
-import { ScriptHelpSheet } from '@/app/scripts/components/ScriptHelpSheet'
 import { TagInput } from '@/components/ui/tag-input'
 import { parseScriptError } from '@/utils/parseScriptError'
 
@@ -28,6 +27,7 @@ export default function ScriptEditorPage() {
   const isNew = scriptId === 'new'
   const editorRef = useRef(null)
   const monacoRef = useRef(null)
+  const { toast } = useToast()
 
   const [scriptContent, setScriptContent] = useState('# Write your script here\n')
   const [scriptName, setScriptName] = useState('New Script')
@@ -42,7 +42,6 @@ export default function ScriptEditorPage() {
   const [originalYamlData, setOriginalYamlData] = useState(null)
   const [inputModalOpen, setInputModalOpen] = useState(false)
   const [editingInputIndex, setEditingInputIndex] = useState(null)
-  const [helpSheetOpen, setHelpSheetOpen] = useState(false)
 
   // Load existing script
   const { data, loading } = useScriptQuery({
@@ -52,6 +51,275 @@ export default function ScriptEditorPage() {
 
   const [createScript, { loading: creating }] = useCreateScriptMutation()
   const [updateScript, { loading: updating }] = useUpdateScriptMutation()
+
+  // Help configuration
+  const helpConfig = useMemo(() => ({
+    title: "Script Editor Help",
+    description: "Learn how to create and edit automation scripts",
+    icon: <FileCode className="h-5 w-5 text-primary" />,
+    sections: [
+      {
+        id: "metadata",
+        title: "Script Metadata",
+        icon: <Settings className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-foreground mb-1">Script Name</p>
+              <p>Required field. Should be descriptive and unique to identify your script.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Description</p>
+              <p>Optional but recommended. Explains the script's purpose and usage.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Tags</p>
+              <p>Categorize scripts for easier filtering and organization.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Operating System</p>
+              <p>Select Windows or Linux. Choices are mutually exclusive.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Shell Type</p>
+              <p>Choose PowerShell or CMD for Windows, Bash or SH for Linux.</p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "inputs",
+        title: "Script Inputs",
+        icon: <Edit className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-foreground mb-1">Adding Inputs</p>
+              <p>Click "Add Input" to define parameters users provide at runtime.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Input Types</p>
+              <p>Support for text, number, boolean, and select (dropdown) types.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Required vs Optional</p>
+              <p>Mark inputs as required to enforce user input before script execution.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Default Values</p>
+              <p>Set defaults for optional inputs to streamline execution.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Variable Syntax</p>
+              <p>Reference inputs in your script using <code>$&#123;&#123; inputs.inputName &#125;&#125;</code> syntax.</p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "editor",
+        title: "Script Editor",
+        icon: <FileCode className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-foreground mb-1">Monaco Editor</p>
+              <p>Full-featured code editor with syntax highlighting and IntelliSense.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Language Support</p>
+              <p>Automatic syntax highlighting based on selected shell (PowerShell, Bash, etc.).</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Auto-save</p>
+              <p>Drafts are saved to localStorage every 30 seconds to prevent data loss.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Validation</p>
+              <p>Scripts are validated before saving. Errors are displayed below the editor.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Preview Tab</p>
+              <p>View formatted script metadata and content before saving.</p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "saving",
+        title: "Saving and Validation",
+        icon: <CheckCircle className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-foreground mb-1">Required Fields</p>
+              <p>Name, OS, shell, and script content must all be filled before saving.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Input Validation</p>
+              <p>Input names must be unique. Labels are required for all inputs.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">YAML Format</p>
+              <p>Scripts are automatically saved in YAML format for easy version control.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Error Handling</p>
+              <p>Validation errors are displayed with specific messages to guide corrections.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Cancel Action</p>
+              <p>Returns to scripts list. Unsaved changes will be discarded.</p>
+            </div>
+          </div>
+        ),
+      },
+    ],
+    quickTips: [
+      "Scripts are auto-saved as drafts every 30 seconds",
+      "Use the Preview tab to review your script before saving",
+      "Input variables use the syntax: ${{ inputs.variableName }}",
+      "Select the correct OS and shell for proper syntax highlighting",
+    ],
+  }), []);
+
+  // Handler functions (must be defined before usePageHeader)
+  const handleCancel = () => {
+    router.push('/scripts')
+  }
+
+  const handleSave = async () => {
+    if (!validateScript()) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Please fix validation errors before saving'
+      })
+
+      // Ensure error panel is visible by switching to edit tab
+      setActiveTab('edit')
+
+      // Defer scroll until after React renders the error panel
+      requestAnimationFrame(() => {
+        const errorPanel = document.getElementById('validation-errors')
+        if (errorPanel) {
+          errorPanel.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+        }
+      })
+
+      return
+    }
+
+    try {
+      // Get the current content directly from the Monaco editor
+      // This ensures we have the latest content even if the state hasn't updated yet
+      const currentScriptContent = editorRef.current ? editorRef.current.getValue() : scriptContent
+
+      // Start with original YAML data to preserve unknown fields
+      // If no original data exists (new script), start with empty object
+      const yamlData = originalYamlData ? { ...originalYamlData } : {}
+
+      // Merge our updates into the object
+      yamlData.name = scriptName
+      yamlData.description = scriptDescription
+      yamlData.os = selectedOS
+      yamlData.shell = selectedShell
+
+      // Add inputs if any exist, otherwise remove the field
+      if (scriptInputs.length > 0) {
+        yamlData.inputs = scriptInputs
+      } else {
+        delete yamlData.inputs
+      }
+
+      // Add script content from the editor
+      yamlData.script = currentScriptContent
+
+      const yamlContent = yaml.dump(yamlData)
+
+      if (isNew) {
+        await createScript({
+          variables: {
+            input: {
+              content: yamlContent,
+              format: 'YAML',
+              name: scriptName,
+              tags: scriptTags
+            }
+          }
+        })
+        toast({
+          variant: 'success',
+          title: 'Success',
+          description: 'Script created successfully'
+        })
+        router.push('/scripts')
+      } else {
+        await updateScript({
+          variables: {
+            input: {
+              id: scriptId,
+              name: scriptName,
+              content: yamlContent,
+              tags: scriptTags
+            }
+          }
+        })
+        toast({
+          variant: 'success',
+          title: 'Success',
+          description: 'Script updated successfully'
+        })
+      }
+      localStorage.removeItem(`script-draft-${scriptId}`)
+    } catch (error) {
+      const context = isNew ? 'script creation' : 'script update'
+      const userMessage = parseScriptError(error, context)
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: userMessage
+      })
+    }
+  }
+
+  // Register help with the provider
+  // Configure header
+  usePageHeader({
+    breadcrumbs: [
+      { label: 'Home', href: '/' },
+      { label: 'Scripts', href: '/scripts' },
+      { label: isNew ? 'New Script' : (scriptName || 'Edit Script'), isCurrent: true }
+    ],
+    title: isNew ? 'New Script' : 'Edit Script',
+    actions: [
+      {
+        id: 'cancel',
+        label: 'Cancel',
+        icon: 'X',
+        variant: 'outline',
+        size: 'sm',
+        onClick: handleCancel,
+        tooltip: 'Discard changes and return to scripts'
+      },
+      {
+        id: 'save',
+        label: 'Save',
+        icon: 'Save',
+        variant: 'default',
+        size: 'sm',
+        onClick: handleSave,
+        loading: creating || updating,
+        disabled: selectedOS.length === 0 || !selectedShell || creating || updating,
+        tooltip: 'Save script'
+      }
+    ],
+    helpConfig: helpConfig,
+    helpTooltip: 'Script editor help'
+  }, [isNew, scriptName, scriptContent, scriptDescription, scriptTags, scriptInputs, selectedOS, selectedShell, originalYamlData, creating, updating]);
 
   useEffect(() => {
     if (data?.script?.content) {
@@ -88,10 +356,14 @@ export default function ScriptEditorPage() {
         setEditorLanguage(getMonacoLanguage(shell))
       } catch (error) {
         console.error('Failed to parse script:', error)
-        toast.error('Failed to load script')
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load script'
+        })
       }
     }
-  }, [data])
+  }, [data, toast])
 
   // Auto-save to localStorage
   useEffect(() => {
@@ -251,20 +523,34 @@ export default function ScriptEditorPage() {
   const handleInputSave = (inputData) => {
     if (editingInputIndex !== null) {
       // Edit existing input
-      const updated = [...scriptInputs]
-      updated[editingInputIndex] = inputData
-      setScriptInputs(updated)
-      toast.success('Input updated successfully')
+      setScriptInputs(prev => {
+        const updated = [...prev]
+        updated[editingInputIndex] = inputData
+        return updated
+      })
+      toast({
+        variant: 'success',
+        title: 'Success',
+        description: 'Input updated successfully'
+      })
     } else {
       // Add new input
-      setScriptInputs([...scriptInputs, inputData])
-      toast.success('Input added successfully')
+      setScriptInputs(prev => [...prev, inputData])
+      toast({
+        variant: 'success',
+        title: 'Success',
+        description: 'Input added successfully'
+      })
     }
   }
 
   const removeInput = (index) => {
     setScriptInputs(scriptInputs.filter((_, i) => i !== index))
-    toast.success('Input removed')
+    toast({
+      variant: 'success',
+      title: 'Success',
+      description: 'Input removed'
+    })
   }
 
   const duplicateInput = (index) => {
@@ -275,102 +561,15 @@ export default function ScriptEditorPage() {
       label: `${inputToDuplicate.label} (Copy)`
     }
     setScriptInputs([...scriptInputs, duplicated])
-    toast.success('Input duplicated')
-  }
-
-  const handleSave = async () => {
-    if (!validateScript()) {
-      toast.error('Please fix validation errors before saving')
-
-      // Ensure error panel is visible by switching to edit tab
-      setActiveTab('edit')
-
-      // Defer scroll until after React renders the error panel
-      requestAnimationFrame(() => {
-        const errorPanel = document.getElementById('validation-errors')
-        if (errorPanel) {
-          errorPanel.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          })
-        }
-      })
-
-      return
-    }
-
-    try {
-      // Start with original YAML data to preserve unknown fields
-      // If no original data exists (new script), start with empty object
-      const yamlData = originalYamlData ? { ...originalYamlData } : {}
-
-      // Merge our updates into the object
-      yamlData.name = scriptName
-      yamlData.description = scriptDescription
-      yamlData.os = selectedOS
-      yamlData.shell = selectedShell
-
-      // Add inputs if any exist, otherwise remove the field
-      if (scriptInputs.length > 0) {
-        yamlData.inputs = scriptInputs
-      } else {
-        delete yamlData.inputs
-      }
-
-      // Add script content
-      yamlData.script = scriptContent
-
-      const yamlContent = yaml.dump(yamlData)
-
-      if (isNew) {
-        await createScript({
-          variables: {
-            input: {
-              content: yamlContent,
-              format: 'yaml',
-              name: scriptName,
-              tags: scriptTags
-            }
-          }
-        })
-        toast.success('Script created successfully')
-        router.push('/scripts')
-      } else {
-        await updateScript({
-          variables: {
-            input: {
-              id: scriptId,
-              name: scriptName,
-              content: yamlContent,
-              tags: scriptTags
-            }
-          }
-        })
-        toast.success('Script updated successfully')
-      }
-      localStorage.removeItem(`script-draft-${scriptId}`)
-    } catch (error) {
-      const context = isNew ? 'script creation' : 'script update'
-      const userMessage = parseScriptError(error, context)
-      toast.error(userMessage)
-    }
-  }
-
-  const handleCancel = () => {
-    router.push('/scripts')
+    toast({
+      variant: 'success',
+      title: 'Success',
+      description: 'Input duplicated'
+    })
   }
 
   return (
     <div className="space-y-6">
-      <ScriptEditorHeader
-        isNew={isNew}
-        scriptName={scriptName}
-        onSave={handleSave}
-        onCancel={handleCancel}
-        onHelp={() => setHelpSheetOpen(true)}
-        isSaving={creating || updating}
-        isDisabled={selectedOS.length === 0 || !selectedShell}
-      />
 
       <div className="container mx-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -693,12 +892,6 @@ export default function ScriptEditorPage() {
           input={editingInputIndex !== null ? scriptInputs[editingInputIndex] : null}
           onSave={handleInputSave}
           mode={editingInputIndex !== null ? 'edit' : 'create'}
-        />
-
-        {/* Help Sheet */}
-        <ScriptHelpSheet
-          open={helpSheetOpen}
-          onOpenChange={setHelpSheetOpen}
         />
       </div>
     </div>

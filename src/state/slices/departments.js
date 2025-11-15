@@ -101,9 +101,14 @@ export const createDepartment = createAsyncThunk(
 
 export const deleteDepartment = createAsyncThunk(
     'departments/deleteDepartment',
-    async (id) => {
-        const data = await executeGraphQLMutation(DestroyDepartmentDocument, { id });
-        return data.destroyDepartment;
+    async ({ id }, { rejectWithValue }) => {
+        try {
+            const data = await executeGraphQLMutation(DestroyDepartmentDocument, { id });
+            return data.destroyDepartment;
+        } catch (error) {
+            debug.error('deleteDepartment', `Error deleting department with id "${id}":`, error);
+            return rejectWithValue(error.message || 'Failed to delete department');
+        }
     }
 );
 
@@ -289,3 +294,4 @@ export const {
 export const selectDepartments = (state) => state.departments.items;
 export const selectDepartmentsLoading = (state) => state.departments.loading.fetch;
 export const selectDepartmentError = (state) => state.departments.error.fetch;
+export const selectDepartmentDeleteError = (state) => state.departments.error.delete;

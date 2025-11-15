@@ -4,7 +4,8 @@ import { useDispatch } from "react-redux";
 // Redux actions
 import {
   fetchDepartments,
-  createDepartment
+  createDepartment,
+  deleteDepartment
 } from "@/state/slices/departments";
 import { fetchVms } from "@/state/slices/vms";
 
@@ -101,7 +102,50 @@ export const useDepartmentsPage = () => {
     setNewDepartmentName("");
     setIsCreateDeptDialogOpen(false);
   }, [dispatch, newDepartmentName, refreshDepartments]);
-  
+
+  // Handle deleting a department
+  const handleDeleteDepartment = useCallback(async (departmentId, departmentName, error) => {
+    debug.info('Deleting department:', { departmentId, departmentName });
+
+    // If error is provided (from resource fetch), show error toast
+    if (error) {
+      debug.error('Failed to fetch department resources:', error);
+      setToastProps({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load department information. Please try again."
+      });
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      await dispatch(deleteDepartment({ id: departmentId })).unwrap();
+
+      // Refresh departments to get the updated list
+      refreshDepartments();
+
+      setToastProps({
+        variant: "success",
+        title: "Department Deleted",
+        description: `Department "${departmentName}" has been successfully deleted.`
+      });
+      setShowToast(true);
+
+      debug.info('Department deleted successfully:', departmentName);
+    } catch (deleteError) {
+      debug.error('Failed to delete department:', deleteError);
+      setToastProps({
+        variant: "destructive",
+        title: "Error",
+        description: deleteError.message || "Failed to delete department. Please try again."
+      });
+      setShowToast(true);
+      // Re-throw so the card component can handle it
+      throw deleteError;
+    }
+  }, [dispatch, refreshDepartments]);
+
   // Filter departments based on search query
   const filteredDepartments = (departments || []).filter(dept =>
     dept.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -152,6 +196,8 @@ export const useDepartmentsPage = () => {
     setNewDepartmentName,
     setShowToast,
     handleCreateDepartment,
+    handleDeleteDepartment,
+    refreshDepartments,
     getMachineCount,
     getDepartmentColor
   };
