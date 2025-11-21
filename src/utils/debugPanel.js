@@ -551,6 +551,12 @@ export class DebugPanel {
     this.filterLogs()
   }
 
+  escapeHtml(text) {
+    const div = document.createElement('div')
+    div.textContent = text
+    return div.innerHTML
+  }
+
   renderLogs() {
     const filteredLogs = this.getFilteredLogs()
 
@@ -562,11 +568,16 @@ export class DebugPanel {
         return String(arg)
       }).join(' ')
 
+      // Escape HTML to prevent injection and encoding issues
+      const escapedArgs = this.escapeHtml(argsText)
+      const escapedNamespace = this.escapeHtml(log.namespace)
+      const escapedTimestamp = this.escapeHtml(log.timestamp)
+
       return `
         <div class="debug-log-entry debug-level-${log.level}">
-          <span class="debug-log-timestamp">${log.timestamp}</span>
-          <span class="debug-log-namespace" style="color: ${log.color}">${log.namespace}</span>
-          <span class="debug-log-content">${argsText}</span>
+          <span class="debug-log-timestamp">${escapedTimestamp}</span>
+          <span class="debug-log-namespace" style="color: ${log.color}">${escapedNamespace}</span>
+          <span class="debug-log-content">${escapedArgs}</span>
         </div>
       `
     }).join('')
