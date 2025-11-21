@@ -184,6 +184,7 @@ const useEnsureData = (
   useEffect(() => {
     if (!isComponentMountedRef.current) return;
 
+    // Call hasValidData inline to avoid function reference in dependencies
     const shouldFetch = !hasValidData() && !isLoading;
 
     if (shouldFetch) {
@@ -211,7 +212,8 @@ const useEnsureData = (
       }
       // LAZY strategy requires manual trigger via refreshData
     }
-  }, [hasValidData, isLoading, strategy, immediate, executeFetch, sliceName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, lastUpdated, isLoading, strategy, immediate, sliceName, ...dependencies]);
 
   // Cleanup on unmount
   useEffect(() => {

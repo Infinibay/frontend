@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
 import {
   ToastProvider,
@@ -53,6 +53,7 @@ const DepartmentScriptsPage = dynamic(() => import('./scripts/page.jsx'), {
  */
 const DepartmentPage = () => {
   const params = useParams();
+  const router = useRouter();
   const departmentName = params.name?.toLowerCase();
   const { size } = useSizeContext();
   
