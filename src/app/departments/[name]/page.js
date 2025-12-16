@@ -9,15 +9,18 @@ import {
 } from "@/components/ui/toast";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Building2, Monitor, Shield, Plus, Search, Settings } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import dynamic from 'next/dynamic';
 import { getGlassClasses } from '@/utils/glass-effects';
 import { cn } from '@/lib/utils';
@@ -27,7 +30,6 @@ import { useDepartmentPage } from "./hooks/useDepartmentPage";
 import { usePageHeader } from '@/hooks/usePageHeader';
 
 // Components
-import LoadingState from "./components/LoadingState";
 import NotFound from "./components/NotFound";
 import TabControls from "./components/TabControls";
 import MachineGrid from "./components/MachineGrid";
@@ -35,16 +37,18 @@ import MachineTable from "./components/MachineTable";
 import EmptyState from "./components/EmptyState";
 import ToastNotification from "./components/ToastNotification";
 import CreateDepartmentDialog from "./components/CreateDepartmentDialog";
+import { MachineGridSkeleton, MachineTableSkeleton } from "./components/UserPcSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy-loaded components
 const SecuritySection = dynamic(() => import('./components/SecuritySection.jsx'), {
   ssr: false,
-  loading: () => <div className="p-4">Loading security settings...</div>
+  loading: () => <div className="size-padding">Loading security settings...</div>
 });
 
 const DepartmentScriptsPage = dynamic(() => import('./scripts/page.jsx'), {
   ssr: false,
-  loading: () => <div className="p-4">Loading scripts...</div>
+  loading: () => <div className="size-padding">Loading scripts...</div>
 });
 
 /**
@@ -76,6 +80,8 @@ const DepartmentPage = () => {
     isAdmin,
     nameUpdateLoading,
     deleteConfirmation,
+    isCreating,
+    isDeleting,
 
     // Actions
     setActiveTab,
@@ -204,9 +210,46 @@ const DepartmentPage = () => {
     helpTooltip: 'Department help'
   }, [departmentName]);
 
-  // Loading state
+  // Loading state - maintains page structure with skeleton placeholders
   if (isLoading) {
-    return <LoadingState />;
+    return (
+      <div className="w-full">
+        <div className="size-padding space-y-6">
+          {/* Subtitle skeleton */}
+          <div className={cn(
+            getGlassClasses({ glass: 'subtle', elevation: 1, radius: 'md' }),
+            "size-padding"
+          )}>
+            <Skeleton className="h-5 w-3/4 rounded" />
+          </div>
+
+          {/* Tab controls skeleton */}
+          <div className={cn(
+            getGlassClasses({ glass: 'subtle', elevation: 1, radius: 'md' }),
+            "size-padding flex items-center justify-between"
+          )}>
+            <div className="flex gap-2">
+              <Skeleton className="h-10 w-24 rounded" />
+              <Skeleton className="h-10 w-20 rounded" />
+              <Skeleton className="h-10 w-20 rounded" />
+            </div>
+            <Skeleton className="h-10 w-10 rounded" />
+          </div>
+
+          {/* Content skeleton - matches current view mode */}
+          <div className={cn(
+            getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
+            "size-container size-padding"
+          )}>
+            {viewMode === "table" ? (
+              <MachineTableSkeleton count={6} />
+            ) : (
+              <MachineGridSkeleton count={6} size={size} />
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // If department not found
@@ -219,7 +262,7 @@ const DepartmentPage = () => {
       <div className="w-full">
 
         {/* Main content container with consistent spacing */}
-        <div className="px-6 py-4 space-y-6">
+        <div className="size-padding space-y-6">
           {/* Subtitle section */}
           <div className={cn(
             getGlassClasses({ glass: 'subtle', elevation: 1, radius: 'md' }),
@@ -291,7 +334,7 @@ const DepartmentPage = () => {
         </div>
       </div>
 
-      <CreateDepartmentDialog 
+      <CreateDepartmentDialog
         open={isCreateDeptDialogOpen}
         onOpenChange={setIsCreateDeptDialogOpen}
         departmentName={newDepartmentName}
@@ -301,6 +344,7 @@ const DepartmentPage = () => {
           setNewDepartmentName("");
           setIsCreateDeptDialogOpen(false);
         }}
+        isLoading={isCreating}
       />
 
       <ToastNotification
@@ -312,34 +356,38 @@ const DepartmentPage = () => {
       />
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={deleteConfirmation.isOpen} onOpenChange={cancelDelete}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-              </div>
-              <DialogTitle>Delete Virtual Machine</DialogTitle>
-            </div>
-            <DialogDescription>
+      <AlertDialog open={deleteConfirmation.isOpen} onOpenChange={(open) => { if (!open) cancelDelete(); }}>
+        <AlertDialogContent glass="strong" className="shadow-elevation-5">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              Delete Virtual Machine?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to delete <strong>{deleteConfirmation.vm?.name}</strong>?
               This action cannot be undone and all data associated with this virtual machine will be permanently removed.
-            </DialogDescription>
-          </DialogHeader>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
-          <DialogFooter className="gap-2 sm:gap-0 mt-6">
-            <Button variant="outline" onClick={cancelDelete}>
-              Cancel
-            </Button>
-            <Button
+          <AlertDialogFooter className="size-gap">
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
               variant="destructive"
               onClick={confirmDelete}
+              disabled={isDeleting}
             >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {isDeleting ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ToastViewport />
     </ToastProvider>

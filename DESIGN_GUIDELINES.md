@@ -352,6 +352,8 @@ const SettingsComponent = () => {
 
 ## Glass Effects System
 
+> **Quick Reference**: For contextual decision-making on when to use each glass effect, see [`GLASS_EFFECTS_GUIDE.md`](./GLASS_EFFECTS_GUIDE.md).
+
 ### Glass Effect Hierarchy
 
 Infinibay implements a comprehensive glassmorphism system with six distinct effects:
@@ -436,6 +438,37 @@ backdrop-filter: blur(20px);
 // Overlay background - use glass-overlay
 <div className="glass-overlay"> {/* No blur - controlled by parent */}
 ```
+
+### Using getGlassClasses() Utility
+
+**Recommended approach** for applying glass effects with automatic fallbacks:
+
+```jsx
+import { getGlassClasses } from '@/utils/glass-effects';
+import { cn } from '@/lib/utils';
+
+// Basic usage with glass effect and elevation
+<div className={cn(
+  getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
+  "size-container size-padding"
+)}>
+
+// With acrylic effect for headers
+<header className={cn(
+  getGlassClasses({ glass: 'none', effect: 'acrylic', elevation: 4 }),
+  "sticky top-0"
+)}>
+```
+
+**When to use `getGlassClasses()`:**
+- Custom containers that need glass effects
+- Components that don't extend base glass components
+- When you need programmatic control over glass properties
+
+**When to use direct classes:**
+- Simple, static glass effects where fallbacks aren't needed
+- Components that already implement glass internally (Dialog, GlassCard)
+- Quick prototyping (migrate to utility later)
 
 ### Glass Effect Guidelines
 

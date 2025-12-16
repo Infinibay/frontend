@@ -10,6 +10,8 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import dynamic from 'next/dynamic';
 import { createDebugger } from '@/utils/debug';
 import { Server, Power, Cpu, Shield, Terminal } from 'lucide-react';
+import { getGlassClasses } from '@/utils/glass-effects';
+import { cn } from '@/lib/utils';
 
 // Custom hooks
 import { useVMDetail } from "./hooks/useVMDetail";
@@ -27,17 +29,17 @@ const debug = createDebugger('frontend:pages:vm-detail');
 
 const VMRecommendationsTab = dynamic(() => import('./components/VMRecommendationsTab'), {
   ssr: false,
-  loading: () => <div className="p-4">Loading recommendations...</div>
+  loading: () => <div className="size-padding">Loading recommendations...</div>
 });
 
 const VMSecurityTab = dynamic(() => import('./components/security/VMSecurityTab'), {
   ssr: false,
-  loading: () => <div className="p-4">Loading security...</div>
+  loading: () => <div className="size-padding">Loading security...</div>
 });
 
 const VMScriptsTab = dynamic(() => import('./components/VMScriptsTab'), {
   ssr: false,
-  loading: () => <div className="p-4">Loading scripts...</div>
+  loading: () => <div className="size-padding">Loading scripts...</div>
 });
 
 /**
@@ -207,7 +209,10 @@ const VMDetailPage = () => {
 
   return (
     <ToastProvider>
-      <div className="size-container size-padding glass-medium">
+      <div className={cn(
+        getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
+        "size-container size-padding"
+      )}>
 
         <div className="size-margin-sm">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

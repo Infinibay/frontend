@@ -5,6 +5,7 @@ import { List, LayoutGrid, FileCode } from 'lucide-react';
 import { getGlassClasses } from '@/utils/glass-effects';
 import { useSizeContext, sizeVariants } from '@/components/ui/size-provider';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 /**
  * Tab controls component for the department page
@@ -20,7 +21,7 @@ const TabControls = ({
   return (
     <div className={cn(
       getGlassClasses({ glass: 'subtle', elevation: 1, radius: 'md' }),
-      "p-4 flex items-center justify-between"
+      "size-padding flex items-center justify-between"
     )}>
       <TabsList className="h-10">
         <TabsTrigger
@@ -28,7 +29,7 @@ const TabControls = ({
           className={cn(
             "data-[state=active]:text-glass-text-primary",
             "data-[state=inactive]:text-glass-text-secondary",
-            "px-4 py-2"
+            "size-padding"
           )}
         >
           Computers
@@ -38,7 +39,7 @@ const TabControls = ({
           className={cn(
             "data-[state=active]:text-glass-text-primary",
             "data-[state=inactive]:text-glass-text-secondary",
-            "px-4 py-2"
+            "size-padding"
           )}
         >
           Security
@@ -48,7 +49,7 @@ const TabControls = ({
           className={cn(
             "data-[state=active]:text-glass-text-primary",
             "data-[state=inactive]:text-glass-text-secondary",
-            "px-4 py-2"
+            "size-padding"
           )}
         >
           <FileCode className="h-4 w-4 mr-2" />
@@ -56,18 +57,26 @@ const TabControls = ({
         </TabsTrigger>
       </TabsList>
 
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={onViewModeToggle}
-        className="h-10 w-10"
-      >
-        {viewMode === "grid" ? (
-          <List className="h-4 w-4" />
-        ) : (
-          <LayoutGrid className="h-4 w-4" />
-        )}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onViewModeToggle}
+            className="h-10 w-10 hover:bg-accent hover:border-primary/50"
+            aria-label={viewMode === "grid" ? "Switch to list view" : "Switch to grid view"}
+          >
+            {viewMode === "grid" ? (
+              <List className="h-4 w-4" />
+            ) : (
+              <LayoutGrid className="h-4 w-4" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{viewMode === "grid" ? "Switch to list view" : "Switch to grid view"}</p>
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 };

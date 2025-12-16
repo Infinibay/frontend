@@ -18,7 +18,9 @@
     "ci:codegen": "npm run codegen:check && npm run codegen:validate",
     "build:check-codegen": "npm run codegen:check && npm run build",
     "postinstall": "husky install",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "validate:spacing": "node scripts/validate-spacing.js",
+    "validate:all": "npm run validate:spacing && npm run lint"
   },
   "dependencies": {
     "@apollo/client": "^3.14.0",

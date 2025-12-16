@@ -105,12 +105,12 @@ const DialogContent = React.forwardRef(({ className, children, glass, ...props }
         {children}
         <DialogPrimitive.Close
           className={cn(
-            "absolute right-4 top-4 rounded-sm ring-offset-background",
+            "absolute right-[var(--size-padding)] top-[var(--size-padding)] rounded-sm ring-offset-background",
             "transition-all duration-200 hover:bg-accent/20 focus:outline-none focus:ring-2",
             "focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none",
             "text-muted-foreground hover:text-foreground",
             glass && glass !== 'none' && "glass-subtle backdrop-blur-sm",
-            "p-1 min-h-[2rem] min-w-[2rem] flex items-center justify-center"
+            "size-icon-button min-h-[2rem] min-w-[2rem] flex items-center justify-center"
           )}>
           <Cross2Icon className="size-icon" />
           <span className="sr-only">Close</span>
@@ -128,7 +128,7 @@ const DialogHeader = ({
   return (
     <div
       className={cn(
-        "flex flex-col space-y-1.5 text-center sm:text-left",
+        "flex flex-col text-center sm:text-left",
         "size-gap",
         className
       )}

@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Plus, Search, AlertTriangle } from "lucide-react";
 import { useSizeContext, sizeVariants, getTypographyClass, getGridClasses, getLayoutSpacing } from "@/components/ui/size-provider";
+import { getGlassClasses } from "@/utils/glass-effects";
+import { cn } from "@/lib/utils";
 
 // Custom hooks
 import { useDepartmentsPage } from "./hooks/useDepartmentsPage";
@@ -28,7 +30,7 @@ import { useDepartmentsPage } from "./hooks/useDepartmentsPage";
 // Components
 import DepartmentCard from "./components/DepartmentCard";
 import EmptyState from "./components/EmptyState";
-import LoadingState from "./components/LoadingState";
+import { DepartmentGridSkeleton } from "./components/DepartmentCardSkeleton";
 import ErrorState from "./components/ErrorState";
 import CreateDepartmentDialog from "./components/CreateDepartmentDialog";
 
@@ -49,6 +51,7 @@ const DepartmentsPage = () => {
     toastProps,
     filteredDepartments,
     useMockData,
+    isCreating,
 
     // Actions
     retryLoading,
@@ -63,9 +66,53 @@ const DepartmentsPage = () => {
     getDepartmentColor
   } = useDepartmentsPage();
   
-  // Loading state
+  // Loading state - maintains page structure with skeleton placeholders
   if (isLoading) {
-    return <LoadingState />;
+    return (
+      <div className="w-full">
+        {/* Header */}
+        <Header
+          variant="glass"
+          elevated
+          sticky={true}
+          style={{ top: 0 }}
+          className="z-30"
+        >
+          <HeaderLeft className="w-[200px]">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Departments</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </HeaderLeft>
+          <HeaderCenter>
+            <h1 className="text-lg sm:text-2xl font-medium text-foreground">
+              Departments
+            </h1>
+          </HeaderCenter>
+          <HeaderRight className="w-[200px] flex items-center justify-end space-x-2">
+            <Button disabled>
+              <Plus className={`${sizeVariants[size].icon.size} ${sizeVariants[size].spacing.marginSm}`} />
+              New Department
+            </Button>
+          </HeaderRight>
+        </Header>
+
+        {/* Content container with glass effect */}
+        <div className={cn(
+          getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
+          "size-container size-padding"
+        )}>
+          <DepartmentGridSkeleton count={6} size={size} />
+        </div>
+      </div>
+    );
   }
   
   // Error state
@@ -78,7 +125,7 @@ const DepartmentsPage = () => {
       <div className="w-full">
         {/* Mock Data Banner */}
         {useMockData && (
-          <div className={`bg-amber-50 border border-amber-200 rounded-md flex items-center ${sizeVariants[size].layout.container} ${sizeVariants[size].layout.sectionSpacing}`}>
+          <div className="bg-amber-50 border border-amber-200 rounded-md flex items-center size-container size-margin-sm">
             <AlertTriangle className={`${sizeVariants[size].icon.size} text-amber-500 ${sizeVariants[size].spacing.marginSm} flex-shrink-0`} />
             <div>
               <p className={`text-amber-800 font-medium ${sizeVariants[size].typography.text}`}>Using Mock Data</p>
@@ -131,16 +178,19 @@ const DepartmentsPage = () => {
         </Header>
 
         {/* Content container with glass effect */}
-        <div className="glass-medium rounded-lg border border-white/20 mx-4 my-4 p-6">
+        <div className={cn(
+          getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
+          "size-container size-padding"
+        )}>
           {/* Subtitle section */}
-          <div className={`${sizeVariants[size].layout.container} pb-6`}>
+          <div className="size-container pb-6">
             <p className={`text-glass-text-primary ${sizeVariants[size].typography.text} text-left`}>
               Manage your organization's departments and their resources
             </p>
           </div>
 
           {/* Search */}
-          <div className={`relative ${sizeVariants[size].layout.sectionSpacing} ${sizeVariants[size].layout.maxWidth}`}>
+          <div className={`relative size-margin-sm ${sizeVariants[size].layout.maxWidth}`}>
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className={`${sizeVariants[size].icon.size} text-muted-foreground`} />
             </div>
@@ -188,6 +238,7 @@ const DepartmentsPage = () => {
           setNewDepartmentName("");
           setIsCreateDeptDialogOpen(false);
         }}
+        isLoading={isCreating}
       />
       
       {/* Toast Notification */}

@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Shield
 } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 import {
   AlertDialog,
   AlertDialogContent,
@@ -29,6 +30,7 @@ import {
   useDepartmentScriptsLazyQuery,
   useGetDepartmentFirewallRulesLazyQuery
 } from "@/gql/hooks"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 const debug = createDebugger('frontend:components:department-card')
 
@@ -136,23 +138,45 @@ const DepartmentCard = ({
       <Card
         elevation="1"
         radius="md"
-        className="h-full bg-card text-card-foreground border hover:shadow-elevation-2 hover:border-primary/40"
+        className="h-full bg-card text-card-foreground border hover:shadow-elevation-2 hover:border-primary/40 hover:scale-[1.02] transition-all duration-200"
       >
         {/* Header with action buttons - outside Link */}
-        <CardContent className="pt-6 pb-0">
-          <div className="flex justify-between items-start mb-4">
-            <div className={`p-3 rounded-lg ${colorClass}`}>
+        <CardContent className="size-card-padding pb-0">
+          <div className="flex justify-between items-start size-margin-sm">
+            <div className={`size-padding rounded-lg ${colorClass}`}>
               <Building2 className="h-6 w-6" />
             </div>
             <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-destructive"
-                onClick={handleDeleteClick}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {isDeleting ? (
+                    <span className="inline-block">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive pointer-events-none"
+                        disabled
+                        aria-label="Deleting department"
+                      >
+                        <Spinner size="sm" />
+                      </Button>
+                    </span>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={handleDeleteClick}
+                      aria-label="Delete department"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isDeleting ? "Deleting..." : "Delete department"}</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </CardContent>
@@ -163,13 +187,13 @@ const DepartmentCard = ({
           className="block"
           onClick={handleCardClick}
         >
-          <CardContent className="pt-0">
-            <div className="flex justify-between items-start mb-2">
+          <CardContent className="size-card-content pt-0">
+            <div className="flex justify-between items-start size-margin-xs">
               <h2 className="text-xl font-semibold truncate">{department.name}</h2>
               <ArrowUpRight className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" />
             </div>
 
-            <div className="flex items-center text-muted-foreground text-sm mb-1">
+            <div className="flex items-center text-muted-foreground text-sm size-margin-xs">
               <Monitor className="h-4 w-4 mr-2" />
               <span>{machineCount} {machineCount === 1 ? 'Computer' : 'Computers'}</span>
             </div>
@@ -180,7 +204,7 @@ const DepartmentCard = ({
             </div>
           </CardContent>
 
-          <CardFooter className="border-t bg-muted text-sm text-muted-foreground py-3">
+          <CardFooter className="border-t bg-muted text-sm text-muted-foreground size-card-footer">
             <Folder className="h-4 w-4 mr-2" />
             <span>Resources</span>
           </CardFooter>
@@ -271,7 +295,14 @@ const DepartmentCard = ({
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? 'Deleting...' : 'Delete Department'}
+              {isDeleting ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Department'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
