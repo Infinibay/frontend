@@ -19,7 +19,7 @@ import {
   AlertDialogAction
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Building2, Monitor, Shield, Plus, Search, Settings } from "lucide-react";
+import { AlertCircle, Building2, Monitor, Shield, Plus, Search, Settings, Network } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import dynamic from 'next/dynamic';
 import { getGlassClasses } from '@/utils/glass-effects';
@@ -49,6 +49,11 @@ const SecuritySection = dynamic(() => import('./components/SecuritySection.jsx')
 const DepartmentScriptsPage = dynamic(() => import('./scripts/page.jsx'), {
   ssr: false,
   loading: () => <div className="size-padding">Loading scripts...</div>
+});
+
+const DepartmentNetworkTab = dynamic(() => import('./components/DepartmentNetworkTab.jsx'), {
+  ssr: false,
+  loading: () => <div className="size-padding">Loading network diagnostics...</div>
 });
 
 /**
@@ -174,6 +179,23 @@ const DepartmentPage = () => {
 
             <p className="font-medium text-foreground mb-1 mt-3">Organization</p>
             <p>Use departments to organize VMs by team, project, or function. This helps maintain clear boundaries and access control.</p>
+          </div>
+        )
+      },
+      {
+        id: "network-diagnostics",
+        title: "Network Diagnostics",
+        icon: <Network className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <p className="font-medium text-foreground mb-1">Network Status</p>
+            <p>View comprehensive diagnostics of the department's network infrastructure including bridge status, DHCP server, and NAT configuration.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">DHCP Traffic Capture</p>
+            <p>Capture and analyze DHCP traffic to troubleshoot connectivity issues. Useful when VMs are not obtaining IP addresses.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Recommendations</p>
+            <p>The system automatically detects common issues and provides actionable recommendations to fix them.</p>
           </div>
         )
       }
@@ -329,6 +351,13 @@ const DepartmentPage = () => {
               "size-container size-padding mt-0"
             )}>
               <DepartmentScriptsPage />
+            </TabsContent>
+
+            <TabsContent value="network" className={cn(
+              getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
+              "size-container size-padding mt-0"
+            )}>
+              <DepartmentNetworkTab departmentId={department?.id} />
             </TabsContent>
           </Tabs>
         </div>

@@ -270,7 +270,7 @@ export const MultipleUserPcs = () => {
     {
       ...defaultPc,
       name: "Testing VM",
-      status: "paused",
+      status: "suspended",
       userName: "test.user",
       template: {
         ram: "8",
@@ -283,7 +283,7 @@ export const MultipleUserPcs = () => {
     {
       ...defaultPc,
       name: "Production VM",
-      status: "stopped",
+      status: "off",
       userName: "prod.user",
       template: {
         cpu: "8",

@@ -1,26 +1,28 @@
 import React from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription, 
-  DialogFooter 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 /**
  * Create Department Dialog Component
  * Dialog for creating a new department
  */
-const CreateDepartmentDialog = ({ 
-  isOpen, 
-  onOpenChange, 
-  departmentName, 
-  onDepartmentNameChange, 
-  onSubmit, 
-  onCancel 
+const CreateDepartmentDialog = ({
+  isOpen,
+  onOpenChange,
+  departmentName,
+  onDepartmentNameChange,
+  onSubmit,
+  onCancel,
+  isLoading = false
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -46,10 +48,20 @@ const CreateDepartmentDialog = ({
               type="button"
               variant="outline"
               onClick={onCancel}
+              disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button type="submit">Create</Button>
+            <Button type="submit" disabled={isLoading || !departmentName.trim()}>
+              {isLoading ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Creating...
+                </>
+              ) : (
+                'Create'
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

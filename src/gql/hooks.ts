@@ -120,6 +120,25 @@ export type BackgroundHealthServiceStatus = {
   totalVMsMonitored: Scalars['Int']['output'];
 };
 
+export type BrNetfilterDiagnosticsType = {
+  __typename?: 'BrNetfilterDiagnosticsType';
+  callArptables: Scalars['Int']['output'];
+  callIp6tables: Scalars['Int']['output'];
+  callIptables: Scalars['Int']['output'];
+  moduleLoaded: Scalars['Boolean']['output'];
+  persistenceFileExists: Scalars['Boolean']['output'];
+};
+
+export type BridgeDiagnosticsType = {
+  __typename?: 'BridgeDiagnosticsType';
+  attachedInterfaces: Array<Scalars['String']['output']>;
+  exists: Scalars['Boolean']['output'];
+  ipAddresses: Array<Scalars['String']['output']>;
+  isUp: Scalars['Boolean']['output'];
+  mtu: Maybe<Scalars['Int']['output']>;
+  state: Maybe<Scalars['String']['output']>;
+};
+
 export type BridgeNameInput = {
   bridgeName: Scalars['String']['input'];
   networkName: Scalars['String']['input'];
@@ -273,6 +292,19 @@ export type DeleteSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
+export type DepartmentNetworkDiagnosticsType = {
+  __typename?: 'DepartmentNetworkDiagnosticsType';
+  brNetfilter: BrNetfilterDiagnosticsType;
+  bridge: BridgeDiagnosticsType;
+  departmentId: Scalars['String']['output'];
+  departmentName: Scalars['String']['output'];
+  dnsmasq: DnsmasqDiagnosticsType;
+  manualCommands: Array<Scalars['String']['output']>;
+  nat: NatDiagnosticsType;
+  recommendations: Array<Scalars['String']['output']>;
+  timestamp: Scalars['DateTimeISO']['output'];
+};
+
 export type DepartmentType = {
   __typename?: 'DepartmentType';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -281,6 +313,23 @@ export type DepartmentType = {
   ipSubnet: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   totalMachines: Maybe<Scalars['Float']['output']>;
+};
+
+export type DhcpPacketSummaryType = {
+  __typename?: 'DhcpPacketSummaryType';
+  ackPackets: Scalars['Int']['output'];
+  discoverPackets: Scalars['Int']['output'];
+  offerPackets: Scalars['Int']['output'];
+  requestPackets: Scalars['Int']['output'];
+  totalPackets: Scalars['Int']['output'];
+};
+
+export type DhcpTrafficCaptureType = {
+  __typename?: 'DhcpTrafficCaptureType';
+  bridgeName: Scalars['String']['output'];
+  duration: Scalars['Int']['output'];
+  packets: Array<Scalars['String']['output']>;
+  summary: DhcpPacketSummaryType;
 };
 
 export type DiskCleanupResult = {
@@ -315,6 +364,21 @@ export type DiskSpaceInfo = {
   timestamp: Scalars['DateTimeISO']['output'];
   vmId: Scalars['ID']['output'];
   warningThreshold: Maybe<Scalars['Float']['output']>;
+};
+
+export type DnsmasqDiagnosticsType = {
+  __typename?: 'DnsmasqDiagnosticsType';
+  configExists: Scalars['Boolean']['output'];
+  configPath: Scalars['String']['output'];
+  isRunning: Scalars['Boolean']['output'];
+  leaseFileExists: Scalars['Boolean']['output'];
+  leasePath: Scalars['String']['output'];
+  listeningPort: Scalars['Boolean']['output'];
+  logExists: Scalars['Boolean']['output'];
+  logPath: Scalars['String']['output'];
+  pid: Maybe<Scalars['Int']['output']>;
+  pidMatches: Scalars['Boolean']['output'];
+  recentLogLines: Maybe<Array<Scalars['String']['output']>>;
 };
 
 export type DyummyType = {
@@ -1277,6 +1341,15 @@ export type MutationValidateIsoArgs = {
   isoId: Scalars['String']['input'];
 };
 
+export type NatDiagnosticsType = {
+  __typename?: 'NatDiagnosticsType';
+  chainExists: Scalars['Boolean']['output'];
+  ipForwardingEnabled: Scalars['Boolean']['output'];
+  ruleDetails: Maybe<Scalars['String']['output']>;
+  ruleExists: Scalars['Boolean']['output'];
+  tableExists: Scalars['Boolean']['output'];
+};
+
 export type Network = {
   __typename?: 'Network';
   bridge: NetworkBridge;
@@ -1413,6 +1486,8 @@ export type Query = {
   /** Get all available ISOs */
   availableISOs: Array<Iso>;
   backgroundHealthServiceStatus: BackgroundHealthServiceStatus;
+  /** Capture DHCP traffic on a department's bridge for debugging */
+  captureDepartmentDhcpTraffic: DhcpTrafficCaptureType;
   /** Check for application updates on a VM */
   checkApplicationUpdates: ApplicationUpdates;
   /** Check if ISO is available for specific OS */
@@ -1434,6 +1509,8 @@ export type Query = {
   currentSnapshot: Maybe<Snapshot>;
   currentUser: Maybe<UserType>;
   department: Maybe<DepartmentType>;
+  /** Get comprehensive network diagnostics for a department */
+  departmentNetworkDiagnostics: DepartmentNetworkDiagnosticsType;
   departmentScripts: Array<ScriptType>;
   departments: Array<DepartmentType>;
   dueMaintenanceTasks: Array<MaintenanceTask>;
@@ -1506,6 +1583,12 @@ export type QueryApplicationArgs = {
 };
 
 
+export type QueryCaptureDepartmentDhcpTrafficArgs = {
+  departmentId: Scalars['String']['input'];
+  durationSeconds: Scalars['Int']['input'];
+};
+
+
 export type QueryCheckApplicationUpdatesArgs = {
   vmId: Scalars['ID']['input'];
 };
@@ -1551,6 +1634,11 @@ export type QueryCurrentSnapshotArgs = {
 
 export type QueryDepartmentArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryDepartmentNetworkDiagnosticsArgs = {
+  departmentId: Scalars['String']['input'];
 };
 
 
@@ -3169,6 +3257,21 @@ export type ScheduledScriptQueryVariables = Exact<{
 
 
 export type ScheduledScriptQuery = { __typename?: 'Query', scheduledScript: { __typename?: 'ScheduledScriptType', id: string, status: ExecutionStatus, executionType: ExecutionType, scheduledFor: string | null, repeatIntervalMinutes: number | null, maxExecutions: number | null, executionCount: number, lastExecutedAt: string | null, scheduleType: ScheduleType, nextExecutionAt: string | null, isActive: boolean, inputValues: any, createdAt: string, updatedAt: string, script: { __typename?: 'ScriptType', id: string, name: string, description: string | null }, machine: { __typename?: 'MachineType', id: string, name: string, status: string }, triggeredBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string } | null } | null };
+
+export type DepartmentNetworkDiagnosticsQueryVariables = Exact<{
+  departmentId: Scalars['String']['input'];
+}>;
+
+
+export type DepartmentNetworkDiagnosticsQuery = { __typename?: 'Query', departmentNetworkDiagnostics: { __typename?: 'DepartmentNetworkDiagnosticsType', departmentId: string, departmentName: string, timestamp: string, recommendations: Array<string>, manualCommands: Array<string>, bridge: { __typename?: 'BridgeDiagnosticsType', exists: boolean, isUp: boolean, ipAddresses: Array<string>, attachedInterfaces: Array<string>, mtu: number | null, state: string | null }, dnsmasq: { __typename?: 'DnsmasqDiagnosticsType', isRunning: boolean, pid: number | null, pidMatches: boolean, configPath: string, configExists: boolean, leasePath: string, leaseFileExists: boolean, logPath: string, logExists: boolean, listeningPort: boolean, recentLogLines: Array<string> | null }, brNetfilter: { __typename?: 'BrNetfilterDiagnosticsType', moduleLoaded: boolean, callIptables: number, callIp6tables: number, callArptables: number, persistenceFileExists: boolean }, nat: { __typename?: 'NatDiagnosticsType', ruleExists: boolean, tableExists: boolean, chainExists: boolean, ipForwardingEnabled: boolean, ruleDetails: string | null } } };
+
+export type CaptureDepartmentDhcpTrafficQueryVariables = Exact<{
+  departmentId: Scalars['String']['input'];
+  durationSeconds: Scalars['Int']['input'];
+}>;
+
+
+export type CaptureDepartmentDhcpTrafficQuery = { __typename?: 'Query', captureDepartmentDhcpTraffic: { __typename?: 'DhcpTrafficCaptureType', bridgeName: string, duration: number, packets: Array<string>, summary: { __typename?: 'DhcpPacketSummaryType', totalPackets: number, discoverPackets: number, offerPackets: number, requestPackets: number, ackPackets: number } } };
 
 export type VmDetailedInfoQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -8138,6 +8241,144 @@ export type ScheduledScriptSuspenseQueryHookResult = ReturnType<typeof useSchedu
 export type ScheduledScriptQueryResult = ApolloReactCommon.QueryResult<ScheduledScriptQuery, ScheduledScriptQueryVariables>;
 export function refetchScheduledScriptQuery(variables: ScheduledScriptQueryVariables) {
       return { query: ScheduledScriptDocument, variables: variables }
+    }
+export const DepartmentNetworkDiagnosticsDocument = gql`
+    query DepartmentNetworkDiagnostics($departmentId: String!) {
+  departmentNetworkDiagnostics(departmentId: $departmentId) {
+    departmentId
+    departmentName
+    timestamp
+    bridge {
+      exists
+      isUp
+      ipAddresses
+      attachedInterfaces
+      mtu
+      state
+    }
+    dnsmasq {
+      isRunning
+      pid
+      pidMatches
+      configPath
+      configExists
+      leasePath
+      leaseFileExists
+      logPath
+      logExists
+      listeningPort
+      recentLogLines
+    }
+    brNetfilter {
+      moduleLoaded
+      callIptables
+      callIp6tables
+      callArptables
+      persistenceFileExists
+    }
+    nat {
+      ruleExists
+      tableExists
+      chainExists
+      ipForwardingEnabled
+      ruleDetails
+    }
+    recommendations
+    manualCommands
+  }
+}
+    `;
+
+/**
+ * __useDepartmentNetworkDiagnosticsQuery__
+ *
+ * To run a query within a React component, call `useDepartmentNetworkDiagnosticsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDepartmentNetworkDiagnosticsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDepartmentNetworkDiagnosticsQuery({
+ *   variables: {
+ *      departmentId: // value for 'departmentId'
+ *   },
+ * });
+ */
+export function useDepartmentNetworkDiagnosticsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables> & ({ variables: DepartmentNetworkDiagnosticsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>(DepartmentNetworkDiagnosticsDocument, options);
+      }
+export function useDepartmentNetworkDiagnosticsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>(DepartmentNetworkDiagnosticsDocument, options);
+        }
+export function useDepartmentNetworkDiagnosticsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>(DepartmentNetworkDiagnosticsDocument, options);
+        }
+export type DepartmentNetworkDiagnosticsQueryHookResult = ReturnType<typeof useDepartmentNetworkDiagnosticsQuery>;
+export type DepartmentNetworkDiagnosticsLazyQueryHookResult = ReturnType<typeof useDepartmentNetworkDiagnosticsLazyQuery>;
+export type DepartmentNetworkDiagnosticsSuspenseQueryHookResult = ReturnType<typeof useDepartmentNetworkDiagnosticsSuspenseQuery>;
+export type DepartmentNetworkDiagnosticsQueryResult = ApolloReactCommon.QueryResult<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>;
+export function refetchDepartmentNetworkDiagnosticsQuery(variables: DepartmentNetworkDiagnosticsQueryVariables) {
+      return { query: DepartmentNetworkDiagnosticsDocument, variables: variables }
+    }
+export const CaptureDepartmentDhcpTrafficDocument = gql`
+    query CaptureDepartmentDhcpTraffic($departmentId: String!, $durationSeconds: Int!) {
+  captureDepartmentDhcpTraffic(
+    departmentId: $departmentId
+    durationSeconds: $durationSeconds
+  ) {
+    bridgeName
+    duration
+    packets
+    summary {
+      totalPackets
+      discoverPackets
+      offerPackets
+      requestPackets
+      ackPackets
+    }
+  }
+}
+    `;
+
+/**
+ * __useCaptureDepartmentDhcpTrafficQuery__
+ *
+ * To run a query within a React component, call `useCaptureDepartmentDhcpTrafficQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCaptureDepartmentDhcpTrafficQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCaptureDepartmentDhcpTrafficQuery({
+ *   variables: {
+ *      departmentId: // value for 'departmentId'
+ *      durationSeconds: // value for 'durationSeconds'
+ *   },
+ * });
+ */
+export function useCaptureDepartmentDhcpTrafficQuery(baseOptions: ApolloReactHooks.QueryHookOptions<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables> & ({ variables: CaptureDepartmentDhcpTrafficQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>(CaptureDepartmentDhcpTrafficDocument, options);
+      }
+export function useCaptureDepartmentDhcpTrafficLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>(CaptureDepartmentDhcpTrafficDocument, options);
+        }
+export function useCaptureDepartmentDhcpTrafficSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>(CaptureDepartmentDhcpTrafficDocument, options);
+        }
+export type CaptureDepartmentDhcpTrafficQueryHookResult = ReturnType<typeof useCaptureDepartmentDhcpTrafficQuery>;
+export type CaptureDepartmentDhcpTrafficLazyQueryHookResult = ReturnType<typeof useCaptureDepartmentDhcpTrafficLazyQuery>;
+export type CaptureDepartmentDhcpTrafficSuspenseQueryHookResult = ReturnType<typeof useCaptureDepartmentDhcpTrafficSuspenseQuery>;
+export type CaptureDepartmentDhcpTrafficQueryResult = ApolloReactCommon.QueryResult<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>;
+export function refetchCaptureDepartmentDhcpTrafficQuery(variables: CaptureDepartmentDhcpTrafficQueryVariables) {
+      return { query: CaptureDepartmentDhcpTrafficDocument, variables: variables }
     }
 export const VmDetailedInfoDocument = gql`
     query vmDetailedInfo($id: String!) {

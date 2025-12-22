@@ -28,6 +28,7 @@ export const useDepartmentsPage = () => {
   const [newDepartmentName, setNewDepartmentName] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [toastProps, setToastProps] = useState({});
+  const [isCreating, setIsCreating] = useState(false);
 
   // Use optimized data loading for departments and VMs
   const {
@@ -74,6 +75,7 @@ export const useDepartmentsPage = () => {
     }
 
     debug.info('Creating department:', trimmedName);
+    setIsCreating(true);
 
     try {
       await dispatch(createDepartment({ name: trimmedName })).unwrap();
@@ -97,6 +99,8 @@ export const useDepartmentsPage = () => {
         description: "Failed to create department. Please try again."
       });
       setShowToast(true);
+    } finally {
+      setIsCreating(false);
     }
 
     setNewDepartmentName("");
@@ -188,6 +192,7 @@ export const useDepartmentsPage = () => {
     filteredDepartments,
     hasError: !!(departmentsError || vmsError),
     error: departmentsError || vmsError,
+    isCreating,
 
     // Actions
     retryLoading,

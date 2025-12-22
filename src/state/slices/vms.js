@@ -430,7 +430,7 @@ const vmsSlice = createSlice({
         state.loading.pause = false;
         const index = state.items.findIndex((vm) => vm.id === action.payload.id);
         if (index !== -1) {
-          state.items[index].status = "paused";
+          state.items[index].status = "suspended";
         }
       })
       .addCase(pauseVm.rejected, (state, action) => {
@@ -447,7 +447,7 @@ const vmsSlice = createSlice({
         state.loading.stop = false;
         const index = state.items.findIndex((vm) => vm.id === action.payload.id);
         if (index !== -1) {
-          state.items[index].status = "stopped";
+          state.items[index].status = "off";
         }
       })
       .addCase(stopVm.rejected, (state, action) => {

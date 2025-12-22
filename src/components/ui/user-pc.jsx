@@ -13,10 +13,19 @@ import {
   CopyIcon,
   CheckIcon,
   EyeIcon,
-  EyeOffIcon
+  EyeOffIcon,
+  RotateCwIcon
 } from "lucide-react"
 import { Square } from "lucide-react" // Use Square as StopIcon
 import { useGraphicConnectionLazyQuery } from "@/gql/hooks"
+import {
+  getStatusColor,
+  getStatusCategory,
+  isActionAvailable,
+  isTransitioning,
+  VM_ACTIONS,
+  STATUS_CATEGORY
+} from "@/utils/vmStatus"
 import {
   Dialog,
   DialogContent,
@@ -29,6 +38,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
 import { getGravatarUrl } from "@/utils/gravatar"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 const UserPc = React.forwardRef(({
   className,
@@ -63,7 +73,29 @@ const UserPc = React.forwardRef(({
   const [getGraphicConnection, { data: connectionData, loading: connectionLoading, error: connectionError }] = useGraphicConnectionLazyQuery();
   const [showPassword, setShowPassword] = React.useState(false);
   const [copiedPassword, setCopiedPassword] = React.useState(false);
-  
+
+  // Helper function to handle password copy with visual feedback and toast
+  const handleCopyPassword = async () => {
+    const success = await copyToClipboard(connectionData.graphicConnection.password);
+
+    if (success) {
+      // Visual feedback
+      setCopiedPassword(true);
+      setTimeout(() => setCopiedPassword(false), 2000);
+
+      toast({
+        title: "Copied!",
+        description: "Password copied to clipboard",
+      });
+    } else {
+      toast({
+        title: "Copy failed",
+        description: "Could not copy password to clipboard. Please try selecting and copying manually.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Handle card click to navigate to VM detail view
   const handleCardClick = (e) => {
     // Don't navigate if clicking on action buttons
@@ -80,10 +112,20 @@ const UserPc = React.forwardRef(({
     }
   };
   
+  // Helper to build connection URL from link (which may already contain protocol)
+  const buildConnectionUrl = (link, protocol) => {
+    // Check if link already starts with a protocol (e.g., "spice://", "vnc://")
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(link)) {
+      return link;
+    }
+    // Otherwise, prepend the protocol
+    return `${protocol.toLowerCase()}://${link}`;
+  };
+
   // Handle connection button click
   const handleConnect = (e) => {
     e.stopPropagation();
-    
+
     if (!pc?.id) {
       toast({
         title: "Connection Error",
@@ -92,22 +134,32 @@ const UserPc = React.forwardRef(({
       });
       return;
     }
-    
+
     // Fetch connection details
-    getGraphicConnection({ 
+    getGraphicConnection({
       variables: { id: pc.id },
       onCompleted: (data) => {
         if (data?.graphicConnection) {
           const { protocol, link, password } = data.graphicConnection;
-          
-          // Try to open the connection directly
-          const connectionUrl = `${protocol.toLowerCase()}://${link}`;
-          
-          // Try to open the connection URL
-          const windowRef = window.open(connectionUrl, '_blank');
-          
-          // If unable to open directly or we need to show password, show dialog
-          if (!windowRef || password) {
+
+          // Check if we're on HTTPS - custom protocol URLs (spice://, vnc://)
+          // won't work reliably from non-secure contexts
+          const isSecureContext = typeof window !== 'undefined' &&
+            (window.location.protocol === 'https:' || window.location.hostname === 'localhost');
+
+          if (isSecureContext) {
+            // Build the connection URL, avoiding protocol duplication
+            const connectionUrl = buildConnectionUrl(link, protocol);
+
+            // Try to open the connection URL
+            const windowRef = window.open(connectionUrl, '_blank');
+
+            // If unable to open directly or we need to show password, show dialog
+            if (!windowRef || password) {
+              setConnectionDialogOpen(true);
+            }
+          } else {
+            // Not on HTTPS, just show the dialog with connection info
             setConnectionDialogOpen(true);
           }
         } else {
@@ -128,94 +180,171 @@ const UserPc = React.forwardRef(({
     });
   };
   
-  // Render actions based on status
+  // Render actions based on status using vmStatus utilities
   const renderActions = () => {
+    const transitioning = isTransitioning(displayStatus);
+
     return (
       <div className="flex justify-center gap-1 mt-1">
-        {(displayStatus === "stopped" || displayStatus === "idle") && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-auto"
-            onClick={(e) => {
-              e.stopPropagation();
-              onPlay?.();
-            }}
-          >
-            <PlayIcon className="w-4 h-4" />
-          </Button>
+        {/* Transitional state indicator */}
+        {transitioning && (
+          <div className="flex items-center text-blue-500">
+            <RotateCwIcon className="w-4 h-4 animate-spin" />
+          </div>
         )}
-        {displayStatus === "running" && (
-          <>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-blue-500 hover:text-blue-600 hover:bg-blue-100 p-1 h-auto"
-              onClick={handleConnect}
-            >
-              <MonitorIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-100 p-1 h-auto"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPause?.();
-              }}
-            >
-              <PauseIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-auto"
-              onClick={(e) => {
-                e.stopPropagation();
-                onStop?.();
-              }}
-            >
-              <Square className="w-4 h-4" />
-            </Button>
-          </>
+
+        {/* Start button - available when off or error */}
+        {isActionAvailable(displayStatus, VM_ACTIONS.START) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-block">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-auto"
+                  disabled={transitioning}
+                  aria-label="Start virtual machine"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPlay?.();
+                  }}
+                >
+                  <PlayIcon className="w-4 h-4" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{transitioning ? "Action in progress..." : "Start virtual machine"}</p>
+            </TooltipContent>
+          </Tooltip>
         )}
-        {displayStatus === "paused" && (
-          <>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-auto"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPlay?.();
-              }}
-            >
-              <PlayIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-auto"
-              onClick={(e) => {
-                e.stopPropagation();
-                onStop?.();
-              }}
-            >
-              <Square className="w-4 h-4" />
-            </Button>
-          </>
+
+        {/* Connect button - available when running */}
+        {isActionAvailable(displayStatus, VM_ACTIONS.CONNECT) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-block">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-blue-500 hover:text-blue-600 hover:bg-blue-100 p-1 h-auto"
+                  disabled={transitioning}
+                  aria-label="Connect to virtual machine"
+                  onClick={handleConnect}
+                >
+                  <MonitorIcon className="w-4 h-4" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{transitioning ? "Action in progress..." : "Connect to virtual machine"}</p>
+            </TooltipContent>
+          </Tooltip>
         )}
-        <Button 
-          size="sm" 
-          variant="ghost" 
-          className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-auto"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete?.();
-          }}
-        >
-          <Trash2Icon className="w-4 h-4" />
-        </Button>
+
+        {/* Pause button - available when running */}
+        {isActionAvailable(displayStatus, VM_ACTIONS.PAUSE) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-block">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-100 p-1 h-auto"
+                  disabled={transitioning}
+                  aria-label="Pause virtual machine"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPause?.();
+                  }}
+                >
+                  <PauseIcon className="w-4 h-4" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{transitioning ? "Action in progress..." : "Pause virtual machine"}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Resume button - available when suspended/paused */}
+        {isActionAvailable(displayStatus, VM_ACTIONS.RESUME) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-block">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-auto"
+                  disabled={transitioning}
+                  aria-label="Resume virtual machine"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPlay?.();
+                  }}
+                >
+                  <PlayIcon className="w-4 h-4" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{transitioning ? "Action in progress..." : "Resume virtual machine"}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Stop button - available when running or suspended */}
+        {isActionAvailable(displayStatus, VM_ACTIONS.STOP) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-block">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-auto"
+                  disabled={transitioning}
+                  aria-label="Stop virtual machine"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStop?.();
+                  }}
+                >
+                  <Square className="w-4 h-4" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{transitioning ? "Action in progress..." : "Stop virtual machine"}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Delete button - available when off or error (not during transitions) */}
+        {isActionAvailable(displayStatus, VM_ACTIONS.DELETE) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-block">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-auto"
+                  disabled={transitioning}
+                  aria-label="Delete virtual machine"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete?.();
+                  }}
+                >
+                  <Trash2Icon className="w-4 h-4" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{transitioning ? "Action in progress..." : "Delete virtual machine"}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     );
   };
@@ -312,14 +441,11 @@ const UserPc = React.forwardRef(({
             </div>
 
             {/* Status Indicator */}
-            {displayStatus !== "idle" && (
+            {displayStatus && (
               <div
                 className={cn(
                   "absolute -top-2 -right-2 w-5 h-5 rounded-full",
-                  displayStatus === "running" && "bg-green-500",
-                  displayStatus === "paused" && "bg-yellow-500",
-                  displayStatus === "building" && "bg-yellow-500",
-                  displayStatus === "stopped" && "bg-red-500"
+                  getStatusColor(displayStatus)
                 )}
               />
             )}
@@ -357,11 +483,15 @@ const UserPc = React.forwardRef(({
                       value={connectionData.graphicConnection.link} 
                       readOnly 
                     />
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="icon"
+                      aria-label="Open connection URL in a new tab"
                       onClick={() => {
-                        const url = `${connectionData.graphicConnection.protocol.toLowerCase()}://${connectionData.graphicConnection.link}`;
+                        const url = buildConnectionUrl(
+                          connectionData.graphicConnection.link,
+                          connectionData.graphicConnection.protocol
+                        );
                         window.open(url, '_blank');
                       }}
                     >
@@ -369,16 +499,16 @@ const UserPc = React.forwardRef(({
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <Input 
-                        id="password" 
-                        value={connectionData.graphicConnection.password} 
+                      <Input
+                        id="password"
+                        value={connectionData.graphicConnection.password}
                         type={showPassword ? "text" : "password"}
-                        readOnly 
+                        readOnly
                         className="pr-10"
                       />
                       <Button
@@ -398,29 +528,11 @@ const UserPc = React.forwardRef(({
                         </span>
                       </Button>
                     </div>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="icon"
-                      onClick={async () => {
-                        const success = await copyToClipboard(connectionData.graphicConnection.password);
-                        
-                        if (success) {
-                          // Visual feedback
-                          setCopiedPassword(true);
-                          setTimeout(() => setCopiedPassword(false), 2000);
-                          
-                          toast({
-                            title: "Copied!",
-                            description: "Password copied to clipboard",
-                          });
-                        } else {
-                          toast({
-                            title: "Copy failed",
-                            description: "Could not copy password to clipboard. Please try selecting and copying manually.",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
+                      aria-label="Copy password"
+                      onClick={handleCopyPassword}
                     >
                       {copiedPassword ? (
                         <CheckIcon className="h-4 w-4 text-green-500" />
@@ -443,6 +555,9 @@ const UserPc = React.forwardRef(({
   }
   
   // Render Table View
+  // DRY: compute transition state once for table view row
+  const transitioning = isTransitioning(displayStatus);
+
   return (
     <>
       <tr
@@ -459,11 +574,7 @@ const UserPc = React.forwardRef(({
           <div className="flex items-center gap-3">
             <div className={cn(
               "w-3 h-3 rounded-full",
-              displayStatus === "running" && "bg-green-500",
-              displayStatus === "paused" && "bg-yellow-500",
-              displayStatus === "building" && "bg-yellow-500",
-              displayStatus === "stopped" && "bg-red-500",
-              displayStatus === "idle" && "bg-gray-300"
+              getStatusColor(displayStatus)
             )} />
             <span className="font-medium">{displayName}</span>
           </div>
@@ -479,92 +590,165 @@ const UserPc = React.forwardRef(({
         {storage !== undefined && <td className="py-3 px-4">{storage} GB</td>}
         <td className="py-3 px-4">
           <div className="flex justify-end gap-2">
-            {displayStatus === "running" && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-blue-500 hover:text-blue-600 hover:bg-blue-100 p-1 h-8 w-8"
-                onClick={handleConnect}
-              >
-                <MonitorIcon className="w-4 h-4" />
-              </Button>
+            {/* Transitional state indicator */}
+            {transitioning && (
+              <div className="flex items-center text-blue-500 p-1 h-8 w-8 justify-center">
+                <RotateCwIcon className="w-4 h-4 animate-spin" />
+              </div>
             )}
-            {(displayStatus === "stopped" || displayStatus === "idle") && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPlay?.();
-                }}
-              >
-                <PlayIcon className="w-4 h-4" />
-              </Button>
+
+            {/* Connect button */}
+            {isActionAvailable(displayStatus, VM_ACTIONS.CONNECT) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-block">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-blue-500 hover:text-blue-600 hover:bg-blue-100 p-1 h-8 w-8"
+                      disabled={transitioning}
+                      aria-label="Connect to virtual machine"
+                      onClick={handleConnect}
+                    >
+                      <MonitorIcon className="w-4 h-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{transitioning ? "Action in progress..." : "Connect to virtual machine"}</p>
+                </TooltipContent>
+              </Tooltip>
             )}
-            {displayStatus === "running" && (
-              <>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-100 p-1 h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPause?.();
-                  }}
-                >
-                  <PauseIcon className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStop?.();
-                  }}
-                >
-                  <Square className="w-4 h-4" />
-                </Button>
-              </>
+
+            {/* Start button */}
+            {isActionAvailable(displayStatus, VM_ACTIONS.START) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-block">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-8 w-8"
+                      disabled={transitioning}
+                      aria-label="Start virtual machine"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPlay?.();
+                      }}
+                    >
+                      <PlayIcon className="w-4 h-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{transitioning ? "Action in progress..." : "Start virtual machine"}</p>
+                </TooltipContent>
+              </Tooltip>
             )}
-            {displayStatus === "paused" && (
-              <>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPlay?.();
-                  }}
-                >
-                  <PlayIcon className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStop?.();
-                  }}
-                >
-                  <Square className="w-4 h-4" />
-                </Button>
-              </>
+
+            {/* Pause button */}
+            {isActionAvailable(displayStatus, VM_ACTIONS.PAUSE) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-block">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-100 p-1 h-8 w-8"
+                      disabled={transitioning}
+                      aria-label="Pause virtual machine"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPause?.();
+                      }}
+                    >
+                      <PauseIcon className="w-4 h-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{transitioning ? "Action in progress..." : "Pause virtual machine"}</p>
+                </TooltipContent>
+              </Tooltip>
             )}
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-8 w-8"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete?.();
-              }}
-            >
-              <Trash2Icon className="w-4 h-4" />
-            </Button>
+
+            {/* Resume button */}
+            {isActionAvailable(displayStatus, VM_ACTIONS.RESUME) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-block">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-green-500 hover:text-green-600 hover:bg-green-100 p-1 h-8 w-8"
+                      disabled={transitioning}
+                      aria-label="Resume virtual machine"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPlay?.();
+                      }}
+                    >
+                      <PlayIcon className="w-4 h-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{transitioning ? "Action in progress..." : "Resume virtual machine"}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Stop button */}
+            {isActionAvailable(displayStatus, VM_ACTIONS.STOP) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-block">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-8 w-8"
+                      disabled={transitioning}
+                      aria-label="Stop virtual machine"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStop?.();
+                      }}
+                    >
+                      <Square className="w-4 h-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{transitioning ? "Action in progress..." : "Stop virtual machine"}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Delete button */}
+            {isActionAvailable(displayStatus, VM_ACTIONS.DELETE) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-block">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-100 p-1 h-8 w-8"
+                      disabled={transitioning}
+                      aria-label="Delete virtual machine"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete?.();
+                      }}
+                    >
+                      <Trash2Icon className="w-4 h-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{transitioning ? "Action in progress..." : "Delete virtual machine"}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </td>
       </tr>
@@ -601,16 +785,20 @@ const UserPc = React.forwardRef(({
               <div className="space-y-2">
                 <Label htmlFor="connection-url">Connection URL</Label>
                 <div className="flex gap-2">
-                  <Input 
-                    id="connection-url" 
-                    value={connectionData.graphicConnection.link} 
-                    readOnly 
+                  <Input
+                    id="connection-url"
+                    value={connectionData.graphicConnection.link}
+                    readOnly
                   />
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="icon"
+                    aria-label="Open connection URL in a new tab"
                     onClick={() => {
-                      const url = `${connectionData.graphicConnection.protocol.toLowerCase()}://${connectionData.graphicConnection.link}`;
+                      const url = buildConnectionUrl(
+                        connectionData.graphicConnection.link,
+                        connectionData.graphicConnection.protocol
+                      );
                       window.open(url, '_blank');
                     }}
                   >
@@ -618,16 +806,16 @@ const UserPc = React.forwardRef(({
                   </Button>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <Input 
-                      id="password" 
-                      value={connectionData.graphicConnection.password} 
+                    <Input
+                      id="password"
+                      value={connectionData.graphicConnection.password}
                       type={showPassword ? "text" : "password"}
-                      readOnly 
+                      readOnly
                       className="pr-10"
                     />
                     <Button
@@ -647,29 +835,11 @@ const UserPc = React.forwardRef(({
                       </span>
                     </Button>
                   </div>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="icon"
-                    onClick={async () => {
-                      const success = await copyToClipboard(connectionData.graphicConnection.password);
-                      
-                      if (success) {
-                        // Visual feedback
-                        setCopiedPassword(true);
-                        setTimeout(() => setCopiedPassword(false), 2000);
-                        
-                        toast({
-                          title: "Copied!",
-                          description: "Password copied to clipboard",
-                        });
-                      } else {
-                        toast({
-                          title: "Copy failed",
-                          description: "Could not copy password to clipboard. Please try selecting and copying manually.",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
+                    aria-label="Copy password"
+                    onClick={handleCopyPassword}
                   >
                     {copiedPassword ? (
                       <CheckIcon className="h-4 w-4 text-green-500" />
@@ -681,7 +851,7 @@ const UserPc = React.forwardRef(({
               </div>
             </div>
           )}
-          
+
           <DialogFooter>
             <Button onClick={() => setConnectionDialogOpen(false)}>Close</Button>
           </DialogFooter>

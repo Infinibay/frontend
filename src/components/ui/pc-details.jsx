@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "./button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "./sheet";
 import { useOptionalSizeContext } from "./size-provider";
+import { VM_STATES, canPlay, canStop, canPause, isBusy } from "@/constants/vmStates";
 
 // Icons
 import { BsFillPauseFill, BsFillPlayFill } from "react-icons/bs";
@@ -65,9 +66,18 @@ const PcDetails = React.forwardRef(({
     department
   } = pc;
 
-  const isRunning = status === "running";
-  const isPaused = status === "paused";
-  const isStopped = status === "stopped";
+  // VM state checks using centralized constants
+  const isRunning = status === VM_STATES.RUNNING;
+  const isSuspended = status === VM_STATES.SUSPENDED;
+  const isPaused = status === VM_STATES.PAUSED;
+  const isOff = status === VM_STATES.OFF;
+  const isError = status === VM_STATES.ERROR;
+  const vmIsBusy = isBusy(status);
+
+  // Action availability
+  const showPlayButton = canPlay(status);
+  const showStopButton = canStop(status);
+  const showPauseButton = canPause(status);
   
   // Handle fullscreen navigation
   const handleFullScreen = () => {
@@ -110,8 +120,11 @@ const PcDetails = React.forwardRef(({
               <div className={cn(
                 "absolute top-2 right-2 w-2 h-2 rounded-full z-10",
                 isRunning && "bg-green-500",
-                isPaused && "bg-yellow-500",
-                isStopped && "bg-red-500"
+                (isSuspended || isPaused) && "bg-yellow-500",
+                isOff && "bg-gray-500",
+                isError && "bg-red-500",
+                vmIsBusy && "bg-blue-500 animate-pulse",
+                !isRunning && !isSuspended && !isPaused && !isOff && !isError && !vmIsBusy && "bg-gray-400"
               )} />
               
               {/* Screen Content */}
@@ -135,34 +148,38 @@ const PcDetails = React.forwardRef(({
 
         <div className="flex items-center justify-between gap-2 mt-4">
           <div className="flex items-center gap-2">
-            {!isRunning ? (
+            {showPlayButton && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handlePlay}
-                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                disabled={vmIsBusy}
+                className="text-green-600 hover:text-green-700 hover:bg-green-50 disabled:opacity-50"
               >
                 <BsFillPlayFill className={sizes.icon.button} />
               </Button>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handlePause}
-                  className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
-                >
-                  <BsFillPauseFill className={sizes.icon.button} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleStop}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <TiMediaStop className={sizes.icon.button} />
-                </Button>
-              </>
+            )}
+            {showPauseButton && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handlePause}
+                disabled={vmIsBusy}
+                className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 disabled:opacity-50"
+              >
+                <BsFillPauseFill className={sizes.icon.button} />
+              </Button>
+            )}
+            {showStopButton && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleStop}
+                disabled={vmIsBusy}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50"
+              >
+                <TiMediaStop className={sizes.icon.button} />
+              </Button>
             )}
             <Button
               variant="ghost"
@@ -200,8 +217,10 @@ const PcDetails = React.forwardRef(({
               Status: <span className={cn(
                 "font-medium",
                 isRunning && "text-green-500",
-                isPaused && "text-yellow-500",
-                isStopped && "text-red-500"
+                (isSuspended || isPaused) && "text-yellow-500",
+                isOff && "text-gray-500",
+                isError && "text-red-500",
+                vmIsBusy && "text-blue-500"
               )}>{status}</span>
             </span>
             <span className={cn("flex items-center gap-2", "size-text")}>

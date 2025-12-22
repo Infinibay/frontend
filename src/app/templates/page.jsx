@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { FaPlus, FaPencilAlt, FaTrash } from 'react-icons/fa';
@@ -13,7 +13,18 @@ import { SimpleIllustration } from '@/components/ui/undraw-illustration';
 import { destroyTemplate, fetchTemplates } from '@/state/slices/templates';
 import { destroyTemplateCategory, fetchTemplateCategories } from '@/state/slices/templateCategories';
 import { useToast } from '@/hooks/use-toast';
-import { Layers, FolderTree, Copy, Settings } from 'lucide-react';
+import { Layers, FolderTree, Copy, Settings, AlertCircle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction
+} from "@/components/ui/alert-dialog";
+import { Spinner } from "@/components/ui/spinner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +40,12 @@ const debug = createDebugger('frontend:pages:templates');
 export default function TemplatesPage() {
   const dispatch = useDispatch();
   const { toast } = useToast();
+
+  // State for delete confirmation dialogs
+  const [deleteTemplateDialog, setDeleteTemplateDialog] = useState({ isOpen: false, template: null });
+  const [deleteCategoryDialog, setDeleteCategoryDialog] = useState({ isOpen: false, category: null });
+  const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   // Use optimized data loading for templates and categories
   const {
@@ -63,6 +80,7 @@ export default function TemplatesPage() {
 
   const handleDeleteTemplate = async (templateId) => {
     debug.info('Deleting template:', templateId);
+    setIsDeletingTemplate(true);
     try {
       await dispatch(destroyTemplate(templateId)).unwrap();
       toast({
@@ -72,6 +90,7 @@ export default function TemplatesPage() {
       });
       // Refresh templates to get updated list
       refreshTemplates();
+      setDeleteTemplateDialog({ isOpen: false, template: null });
       debug.info('Template deleted successfully:', templateId);
     } catch (error) {
       debug.error('Failed to delete template:', error);
@@ -80,11 +99,14 @@ export default function TemplatesPage() {
         title: "Error",
         description: `Failed to delete template: ${error.message}`
       });
+    } finally {
+      setIsDeletingTemplate(false);
     }
   };
 
   const handleDeleteCategory = async (categoryId) => {
     debug.info('Deleting category:', categoryId);
+    setIsDeletingCategory(true);
     try {
       await dispatch(destroyTemplateCategory(categoryId)).unwrap();
       toast({
@@ -94,6 +116,7 @@ export default function TemplatesPage() {
       });
       // Refresh categories to get updated list
       refreshCategories();
+      setDeleteCategoryDialog({ isOpen: false, category: null });
       debug.info('Category deleted successfully:', categoryId);
     } catch (error) {
       debug.error('Failed to delete category:', error);
@@ -102,6 +125,8 @@ export default function TemplatesPage() {
         title: "Error",
         description: `Failed to delete category: ${error.message}`
       });
+    } finally {
+      setIsDeletingCategory(false);
     }
   };
 
@@ -294,8 +319,7 @@ export default function TemplatesPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             className="text-destructive"
-                            disabled={category.totalTemplates > 0}
-                            onClick={() => handleDeleteCategory(category.id)}
+                            onClick={() => setDeleteCategoryDialog({ isOpen: true, category })}
                           >
                             Delete Category
                             {category.totalTemplates > 0 && (
@@ -339,8 +363,7 @@ export default function TemplatesPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             className="text-destructive"
-                            disabled={template.totalMachines > 0}
-                            onClick={() => handleDeleteTemplate(template.id)}
+                            onClick={() => setDeleteTemplateDialog({ isOpen: true, template })}
                           >
                             Delete Template
                             {template.totalMachines > 0 && (
@@ -400,6 +423,74 @@ export default function TemplatesPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Template Confirmation Dialog */}
+      <AlertDialog open={deleteTemplateDialog.isOpen} onOpenChange={(open) => !open && setDeleteTemplateDialog({ isOpen: false, template: null })}>
+        <AlertDialogContent glass="strong" className="shadow-elevation-5">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              Delete Template?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteTemplateDialog.template?.name}</strong>?
+              This action cannot be undone.
+              {deleteTemplateDialog.template?.totalMachines > 0 && (
+                <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    This template is used by {deleteTemplateDialog.template.totalMachines} machine(s).
+                    Please remove all machines before deleting.
+                  </p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="size-gap">
+            <AlertDialogCancel disabled={isDeletingTemplate}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isDeletingTemplate || deleteTemplateDialog.template?.totalMachines > 0}
+              onClick={() => handleDeleteTemplate(deleteTemplateDialog.template?.id)}
+            >
+              {isDeletingTemplate ? (<><Spinner size="sm" className="mr-2" />Deleting...</>) : 'Delete Template'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Category Confirmation Dialog */}
+      <AlertDialog open={deleteCategoryDialog.isOpen} onOpenChange={(open) => !open && setDeleteCategoryDialog({ isOpen: false, category: null })}>
+        <AlertDialogContent glass="strong" className="shadow-elevation-5">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              Delete Category?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteCategoryDialog.category?.name}</strong>?
+              This action cannot be undone.
+              {deleteCategoryDialog.category?.totalTemplates > 0 && (
+                <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    This category contains {deleteCategoryDialog.category.totalTemplates} template(s).
+                    Please remove all templates before deleting.
+                  </p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="size-gap">
+            <AlertDialogCancel disabled={isDeletingCategory}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isDeletingCategory || deleteCategoryDialog.category?.totalTemplates > 0}
+              onClick={() => handleDeleteCategory(deleteCategoryDialog.category?.id)}
+            >
+              {isDeletingCategory ? (<><Spinner size="sm" className="mr-2" />Deleting...</>) : 'Delete Category'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

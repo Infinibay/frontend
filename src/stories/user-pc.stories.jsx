@@ -261,8 +261,8 @@ export const StatusVariations = {
           viewMode="grid"
         />
         <UserPc
-          name="Paused PC"
-          status="paused"
+          name="Suspended PC"
+          status="suspended"
           onClick={fn()}
           onPlay={fn()}
           onPause={fn()}
@@ -271,8 +271,8 @@ export const StatusVariations = {
           viewMode="grid"
         />
         <UserPc
-          name="Stopped PC"
-          status="stopped"
+          name="Off PC"
+          status="off"
           onClick={fn()}
           onPlay={fn()}
           onPause={fn()}
@@ -318,8 +318,8 @@ export const StatusVariations = {
             storage="1 TB"
           />
           <UserPc
-            name="Paused PC"
-            status="paused"
+            name="Suspended PC"
+            status="suspended"
             onClick={fn()}
             onPlay={fn()}
             onPause={fn()}
@@ -332,8 +332,8 @@ export const StatusVariations = {
             storage="256 GB"
           />
           <UserPc
-            name="Stopped PC"
-            status="stopped"
+            name="Off PC"
+            status="off"
             onClick={fn()}
             onPlay={fn()}
             onPause={fn()}

@@ -25,6 +25,7 @@ import { SocketNamespaceGuard } from "@/components/SocketNamespaceGuard"
 import { createThemeScript } from "@/utils/theme"
 import { ThemeProvider, useAppTheme, useResolvedTheme } from "@/contexts/ThemeProvider"
 import { HelpProvider } from "@/contexts/HelpProvider"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { HeaderActionProvider } from "@/contexts/HeaderActionContext"
 import { GlobalHeader } from "@/components/layout/GlobalHeader"
 import { updateWallpaperCSS } from "@/utils/wallpaper"
@@ -198,8 +199,9 @@ export default function RootLayout({ children }) {
             <PersistGate loading={null} persistor={persistor}>
               <SizeProviderWrapper>
                 <ThemeProviderWrapper>
-                  <HelpProvider>
-                    <HeaderActionProvider>
+                  <TooltipProvider delayDuration={300}>
+                    <HelpProvider>
+                      <HeaderActionProvider>
                       <WallpaperApplier>
                       <ApolloProvider client={client}>
                     <NextUIProvider className="w-full">
@@ -216,8 +218,9 @@ export default function RootLayout({ children }) {
                     </NextUIProvider>
                       </ApolloProvider>
                       </WallpaperApplier>
-                    </HeaderActionProvider>
-                  </HelpProvider>
+                      </HeaderActionProvider>
+                    </HelpProvider>
+                  </TooltipProvider>
                 </ThemeProviderWrapper>
               </SizeProviderWrapper>
             </PersistGate>

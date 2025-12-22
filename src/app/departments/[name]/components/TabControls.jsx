@@ -1,7 +1,7 @@
 import React from "react";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
-import { List, LayoutGrid, FileCode } from 'lucide-react';
+import { List, LayoutGrid, FileCode, Network } from 'lucide-react';
 import { getGlassClasses } from '@/utils/glass-effects';
 import { useSizeContext, sizeVariants } from '@/components/ui/size-provider';
 import { cn } from '@/lib/utils';
@@ -54,6 +54,17 @@ const TabControls = ({
         >
           <FileCode className="h-4 w-4 mr-2" />
           Scripts
+        </TabsTrigger>
+        <TabsTrigger
+          value="network"
+          className={cn(
+            "data-[state=active]:text-glass-text-primary",
+            "data-[state=inactive]:text-glass-text-secondary",
+            "size-padding"
+          )}
+        >
+          <Network className="h-4 w-4 mr-2" />
+          Network
         </TabsTrigger>
       </TabsList>
 

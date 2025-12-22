@@ -117,6 +117,25 @@ export type BackgroundHealthServiceStatus = {
   totalVMsMonitored: Scalars['Int']['output'];
 };
 
+export type BrNetfilterDiagnosticsType = {
+  __typename?: 'BrNetfilterDiagnosticsType';
+  callArptables: Scalars['Int']['output'];
+  callIp6tables: Scalars['Int']['output'];
+  callIptables: Scalars['Int']['output'];
+  moduleLoaded: Scalars['Boolean']['output'];
+  persistenceFileExists: Scalars['Boolean']['output'];
+};
+
+export type BridgeDiagnosticsType = {
+  __typename?: 'BridgeDiagnosticsType';
+  attachedInterfaces: Array<Scalars['String']['output']>;
+  exists: Scalars['Boolean']['output'];
+  ipAddresses: Array<Scalars['String']['output']>;
+  isUp: Scalars['Boolean']['output'];
+  mtu?: Maybe<Scalars['Int']['output']>;
+  state?: Maybe<Scalars['String']['output']>;
+};
+
 export type BridgeNameInput = {
   bridgeName?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
@@ -270,6 +289,19 @@ export type DeleteSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
+export type DepartmentNetworkDiagnosticsType = {
+  __typename?: 'DepartmentNetworkDiagnosticsType';
+  brNetfilter: BrNetfilterDiagnosticsType;
+  bridge: BridgeDiagnosticsType;
+  departmentId: Scalars['String']['output'];
+  departmentName: Scalars['String']['output'];
+  dnsmasq: DnsmasqDiagnosticsType;
+  manualCommands: Array<Scalars['String']['output']>;
+  nat: NatDiagnosticsType;
+  recommendations: Array<Scalars['String']['output']>;
+  timestamp: Scalars['DateTimeISO']['output'];
+};
+
 export type DepartmentType = {
   __typename?: 'DepartmentType';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -278,6 +310,23 @@ export type DepartmentType = {
   ipSubnet?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   totalMachines?: Maybe<Scalars['Float']['output']>;
+};
+
+export type DhcpPacketSummaryType = {
+  __typename?: 'DhcpPacketSummaryType';
+  ackPackets: Scalars['Int']['output'];
+  discoverPackets: Scalars['Int']['output'];
+  offerPackets: Scalars['Int']['output'];
+  requestPackets: Scalars['Int']['output'];
+  totalPackets: Scalars['Int']['output'];
+};
+
+export type DhcpTrafficCaptureType = {
+  __typename?: 'DhcpTrafficCaptureType';
+  bridgeName: Scalars['String']['output'];
+  duration: Scalars['Int']['output'];
+  packets: Array<Scalars['String']['output']>;
+  summary: DhcpPacketSummaryType;
 };
 
 export type DiskCleanupResult = {
@@ -312,6 +361,21 @@ export type DiskSpaceInfo = {
   timestamp: Scalars['DateTimeISO']['output'];
   vmId: Scalars['ID']['output'];
   warningThreshold?: Maybe<Scalars['Float']['output']>;
+};
+
+export type DnsmasqDiagnosticsType = {
+  __typename?: 'DnsmasqDiagnosticsType';
+  configExists: Scalars['Boolean']['output'];
+  configPath: Scalars['String']['output'];
+  isRunning: Scalars['Boolean']['output'];
+  leaseFileExists: Scalars['Boolean']['output'];
+  leasePath: Scalars['String']['output'];
+  listeningPort: Scalars['Boolean']['output'];
+  logExists: Scalars['Boolean']['output'];
+  logPath: Scalars['String']['output'];
+  pid?: Maybe<Scalars['Int']['output']>;
+  pidMatches: Scalars['Boolean']['output'];
+  recentLogLines?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 export type DyummyType = {
@@ -1274,6 +1338,15 @@ export type MutationValidateIsoArgs = {
   isoId: Scalars['String']['input'];
 };
 
+export type NatDiagnosticsType = {
+  __typename?: 'NatDiagnosticsType';
+  chainExists: Scalars['Boolean']['output'];
+  ipForwardingEnabled: Scalars['Boolean']['output'];
+  ruleDetails?: Maybe<Scalars['String']['output']>;
+  ruleExists: Scalars['Boolean']['output'];
+  tableExists: Scalars['Boolean']['output'];
+};
+
 export type Network = {
   __typename?: 'Network';
   bridge: NetworkBridge;
@@ -1410,6 +1483,8 @@ export type Query = {
   /** Get all available ISOs */
   availableISOs: Array<Iso>;
   backgroundHealthServiceStatus: BackgroundHealthServiceStatus;
+  /** Capture DHCP traffic on a department's bridge for debugging */
+  captureDepartmentDhcpTraffic: DhcpTrafficCaptureType;
   /** Check for application updates on a VM */
   checkApplicationUpdates: ApplicationUpdates;
   /** Check if ISO is available for specific OS */
@@ -1431,6 +1506,8 @@ export type Query = {
   currentSnapshot?: Maybe<Snapshot>;
   currentUser?: Maybe<UserType>;
   department?: Maybe<DepartmentType>;
+  /** Get comprehensive network diagnostics for a department */
+  departmentNetworkDiagnostics: DepartmentNetworkDiagnosticsType;
   departmentScripts: Array<ScriptType>;
   departments: Array<DepartmentType>;
   dueMaintenanceTasks: Array<MaintenanceTask>;
@@ -1503,6 +1580,12 @@ export type QueryApplicationArgs = {
 };
 
 
+export type QueryCaptureDepartmentDhcpTrafficArgs = {
+  departmentId: Scalars['String']['input'];
+  durationSeconds: Scalars['Int']['input'];
+};
+
+
 export type QueryCheckApplicationUpdatesArgs = {
   vmId: Scalars['ID']['input'];
 };
@@ -1548,6 +1631,11 @@ export type QueryCurrentSnapshotArgs = {
 
 export type QueryDepartmentArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryDepartmentNetworkDiagnosticsArgs = {
+  departmentId: Scalars['String']['input'];
 };
 
 

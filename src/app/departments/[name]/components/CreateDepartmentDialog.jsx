@@ -1,5 +1,5 @@
 import React from "react";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -9,17 +9,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from '@/components/ui/button';
+import { Spinner } from "@/components/ui/spinner";
 
 /**
  * Dialog component for creating a new department
  */
-const CreateDepartmentDialog = ({ 
-  open, 
-  onOpenChange, 
-  departmentName, 
-  onDepartmentNameChange, 
-  onSubmit, 
-  onCancel 
+const CreateDepartmentDialog = ({
+  open,
+  onOpenChange,
+  departmentName,
+  onDepartmentNameChange,
+  onSubmit,
+  onCancel,
+  isLoading = false
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -45,10 +47,20 @@ const CreateDepartmentDialog = ({
               type="button"
               variant="outline"
               onClick={onCancel}
+              disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button type="submit">Create</Button>
+            <Button type="submit" disabled={isLoading || !departmentName.trim()}>
+              {isLoading ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Creating...
+                </>
+              ) : (
+                'Create'
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

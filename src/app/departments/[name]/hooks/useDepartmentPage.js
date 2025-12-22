@@ -54,7 +54,9 @@ export const useDepartmentPage = (departmentName) => {
     isOpen: false,
     vm: null,
   });
-  
+  const [isCreating, setIsCreating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
 
@@ -158,27 +160,33 @@ export const useDepartmentPage = (departmentName) => {
     const vm = deleteConfirmation.vm;
     if (!vm) return;
 
-    await handleDelete(
-      dispatch,
-      vm.id,
-      () => {
-        setSelectedPc(null);
-        setToastProps({
-          variant: "success",
-          title: "VM Deleted",
-          description: "The virtual machine has been successfully deleted."
-        });
-        setShowToast(true);
-      },
-      (errorMessage) => {
-        setToastProps({
-          variant: "destructive",
-          title: "Error",
-          description: errorMessage
-        });
-        setShowToast(true);
-      }
-    );
+    setIsDeleting(true);
+
+    try {
+      await handleDelete(
+        dispatch,
+        vm.id,
+        () => {
+          setSelectedPc(null);
+          setToastProps({
+            variant: "success",
+            title: "VM Deleted",
+            description: "The virtual machine has been successfully deleted."
+          });
+          setShowToast(true);
+        },
+        (errorMessage) => {
+          setToastProps({
+            variant: "destructive",
+            title: "Error",
+            description: errorMessage
+          });
+          setShowToast(true);
+        }
+      );
+    } finally {
+      setIsDeleting(false);
+    }
 
     setDeleteConfirmation({ isOpen: false, vm: null });
   };
@@ -205,11 +213,13 @@ export const useDepartmentPage = (departmentName) => {
   const handleCreateDepartment = async (e) => {
     e.preventDefault();
     const trimmedName = newDepartmentName.trim();
-    
+
     if (!trimmedName) {
       setIsCreateDeptDialogOpen(false);
       return;
     }
+
+    setIsCreating(true);
 
     try {
       await dispatch(createDepartment({ name: trimmedName })).unwrap();
@@ -228,8 +238,10 @@ export const useDepartmentPage = (departmentName) => {
         description: "Failed to create the department. Please try again."
       });
       setShowToast(true);
+    } finally {
+      setIsCreating(false);
     }
-    
+
     setNewDepartmentName("");
     setIsCreateDeptDialogOpen(false);
   };
@@ -316,6 +328,8 @@ export const useDepartmentPage = (departmentName) => {
     isAdmin,
     nameUpdateLoading,
     deleteConfirmation,
+    isCreating,
+    isDeleting,
 
     // Actions
     setActiveTab,

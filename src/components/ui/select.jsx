@@ -16,6 +16,7 @@ import { useSizeContext, sizeVariants } from "./size-provider"
 import { getSelectGlass, getReducedTransparencyForm, getFormGlassEffect, getBrandFormGlow, optimizeFormGlassPerformance, getFormGlassForSize, scaleFormGlass, getResponsiveFormBlur } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 import { useInputStates, FORM_ANIMATION_CLASSES } from "@/utils/form-animations"
+import { Spinner } from "@/components/ui/spinner"
 
 // Internal lightweight context for communication between sub-components
 const SelectInternalContext = React.createContext(null)
@@ -277,7 +278,7 @@ const useSelectSearchInternal = ({ searchable, onSearch, children, value }) => {
 }
 
 // Enhanced Select component with simplified architecture
-const Select = React.forwardRef(({ searchable = false, onSearch, children, value, onValueChange, open, onOpenChange, ...props }, ref) => {
+const Select = React.forwardRef(({ searchable = false, onSearch, children, value, onValueChange, open, onOpenChange, isLoading = false, ...props }, ref) => {
   // Use new utility hooks for clean separation of concerns
   const selectState = useSelectState({ value, onValueChange, open, onOpenChange })
   const searchState = useSelectSearchInternal({ searchable, onSearch, children, value: selectState.value })
@@ -307,6 +308,7 @@ const Select = React.forwardRef(({ searchable = false, onSearch, children, value
     activeDescendant: searchState.activeDescendant,
     highlightedIndex: searchState.highlightedIndex,
     availableItems: searchState.availableItems,
+    isLoading,
     onSearch,
     // State setters
     setSearchValue: searchState.setSearchValue,
@@ -329,6 +331,7 @@ const Select = React.forwardRef(({ searchable = false, onSearch, children, value
     searchState.activeDescendant,
     searchState.highlightedIndex,
     searchState.availableItems,
+    isLoading,
     onSearch,
     searchState.setSearchValue,
     selectState.setOpen,
@@ -497,7 +500,8 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
     navigateUp,
     navigateDown,
     selectHighlighted,
-    setSelectedValue
+    setSelectedValue,
+    isLoading
   } = React.useContext(SelectInternalContext) || {}
   const [isFocused, setIsFocused] = React.useState(false)
   const inputRef = React.useRef(null)
@@ -713,7 +717,7 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
     }
 
     return (
-      <SelectPrimitive.Trigger disabled={disabled} asChild>
+      <SelectPrimitive.Trigger disabled={disabled || isLoading} asChild>
         <div
           ref={ref}
           className={cn(
@@ -736,12 +740,13 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
             getStateClasses(),
 
             // Disabled state
-            disabled && "pointer-events-none",
+            (disabled || isLoading) && "pointer-events-none",
 
             className
           )}
           aria-invalid={error ? 'true' : 'false'}
-          aria-disabled={disabled ? 'true' : 'false'}
+          aria-disabled={(disabled || isLoading) ? 'true' : 'false'}
+          aria-busy={isLoading ? 'true' : 'false'}
           aria-describedby={error ? `${props.id || 'select'}-error` : props['aria-describedby']}
           onClick={composedOnClick}
           {...handlers}
@@ -755,6 +760,13 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
               "size-icon"
             )} />
           </div>
+
+          {/* Loading Spinner */}
+          {isLoading && (
+            <div className="absolute right-12 flex items-center pointer-events-none z-10">
+              <Spinner size="sm" className="text-muted-foreground" />
+            </div>
+          )}
 
           {/* Hidden SelectValue for Radix UI compatibility */}
           <div className="sr-only">{children}</div>
@@ -782,8 +794,8 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
               handleInputClick()
             }}
             placeholder={placeholderText}
-            disabled={disabled}
-            tabIndex={disabled ? -1 : undefined}
+            disabled={disabled || isLoading}
+            tabIndex={(disabled || isLoading) ? -1 : undefined}
             role="combobox"
             aria-expanded={isOpen}
             aria-haspopup="listbox"
@@ -791,6 +803,7 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
             aria-controls={listboxId}
             aria-activedescendant={activeDescendant || undefined}
             aria-label={placeholder || "Search and select an option"}
+            aria-busy={isLoading ? 'true' : 'false'}
             aria-describedby={error ? `${props.id || 'select'}-error` : props['aria-describedby']}
             className={cn(
               "flex-1 bg-transparent border-0 outline-none z-20 relative",
@@ -851,6 +864,9 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
     <SelectPrimitive.Trigger
       ref={ref}
       onKeyDown={handleTraditionalKeyDown}
+      disabled={props.disabled || isLoading}
+      aria-busy={isLoading ? 'true' : 'false'}
+      aria-disabled={(props.disabled || isLoading) ? 'true' : 'false'}
       className={cn(
         // Base styling with Size System
         "flex w-full items-center",
@@ -884,6 +900,10 @@ const SelectTrigger = React.forwardRef(({ className, children, size, glass = fal
       {...props}
     >
       {children}
+      {/* Loading Spinner */}
+      {isLoading && (
+        <Spinner size="sm" className="mr-2 text-muted-foreground" />
+      )}
       <SelectPrimitive.Icon asChild>
         <div className="flex items-center justify-center transition-all duration-300">
           <ChevronDownIcon className={cn(
@@ -1811,6 +1831,43 @@ SelectSeparator.displayName = SelectPrimitive.Separator.displayName
  *   </Select>
  * </SizeProvider>
  * ```
+ *
+ * ### Loading State (Async Data Fetching)
+ * ```jsx
+ * const [options, setOptions] = useState([]);
+ * const [isLoading, setIsLoading] = useState(false);
+ *
+ * const handleSearch = async (query) => {
+ *   setIsLoading(true);
+ *   const results = await fetchOptions(query);
+ *   setOptions(results);
+ *   setIsLoading(false);
+ * };
+ *
+ * <Select searchable onSearch={handleSearch} isLoading={isLoading}>
+ *   <SelectTrigger>
+ *     <SelectValue placeholder="Search..." />
+ *   </SelectTrigger>
+ *   <SelectContent loading={isLoading}>
+ *     {options.map(opt => (
+ *       <SelectItem key={opt.value} value={opt.value}>
+ *         {opt.label}
+ *       </SelectItem>
+ *     ))}
+ *   </SelectContent>
+ * </Select>
+ * ```
+ *
+ * ## Props Reference:
+ *
+ * ### Select Component Props
+ * @param {boolean} [searchable=false] - Enable search/filter functionality
+ * @param {function} [onSearch] - Callback when search value changes (debounced)
+ * @param {boolean} [isLoading=false] - Show loading state with spinner, disable interaction
+ * @param {string} [value] - Controlled value
+ * @param {function} [onValueChange] - Callback when value changes
+ * @param {boolean} [open] - Controlled open state
+ * @param {function} [onOpenChange] - Callback when open state changes
  *
  * ## Performance Notes:
  *

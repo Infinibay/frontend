@@ -1084,6 +1084,12 @@ type Query {
   department(id: String!): DepartmentType
   departmentScripts(departmentId: ID!): [ScriptType!]!
   departments: [DepartmentType!]!
+
+  """Get comprehensive network diagnostics for a department"""
+  departmentNetworkDiagnostics(departmentId: String!): DepartmentNetworkDiagnosticsType!
+
+  """Capture DHCP traffic on a department's bridge for debugging"""
+  captureDepartmentDhcpTraffic(departmentId: String!, durationSeconds: Int!): DhcpTrafficCaptureType!
   dueMaintenanceTasks: [MaintenanceTask!]!
   findDepartmentByName(name: String!): DepartmentType
   getAppSettings: AppSettings!
@@ -1822,4 +1828,74 @@ type WindowsUpdateItem {
   severity: String!
   sizeInMB: Float!
   title: String!
+}
+
+# ===========================================================================
+# Department Network Diagnostics Types
+# ===========================================================================
+
+type BridgeDiagnosticsType {
+  exists: Boolean!
+  isUp: Boolean!
+  ipAddresses: [String!]!
+  attachedInterfaces: [String!]!
+  mtu: Int
+  state: String
+}
+
+type DnsmasqDiagnosticsType {
+  isRunning: Boolean!
+  pid: Int
+  pidMatches: Boolean!
+  configPath: String!
+  configExists: Boolean!
+  leasePath: String!
+  leaseFileExists: Boolean!
+  logPath: String!
+  logExists: Boolean!
+  listeningPort: Boolean!
+  recentLogLines: [String!]
+}
+
+type BrNetfilterDiagnosticsType {
+  moduleLoaded: Boolean!
+  callIptables: Int!
+  callIp6tables: Int!
+  callArptables: Int!
+  persistenceFileExists: Boolean!
+}
+
+type NatDiagnosticsType {
+  ruleExists: Boolean!
+  tableExists: Boolean!
+  chainExists: Boolean!
+  ipForwardingEnabled: Boolean!
+  ruleDetails: String
+}
+
+type DepartmentNetworkDiagnosticsType {
+  departmentId: String!
+  departmentName: String!
+  timestamp: DateTimeISO!
+  bridge: BridgeDiagnosticsType!
+  dnsmasq: DnsmasqDiagnosticsType!
+  brNetfilter: BrNetfilterDiagnosticsType!
+  nat: NatDiagnosticsType!
+  recommendations: [String!]!
+  manualCommands: [String!]!
+}
+
+type DhcpPacketSummaryType {
+  totalPackets: Int!
+  discoverPackets: Int!
+  offerPackets: Int!
+  requestPackets: Int!
+  ackPackets: Int!
+}
+
+type DhcpTrafficCaptureType {
+  bridgeName: String!
+  duration: Int!
+  packets: [String!]!
+  summary: DhcpPacketSummaryType!
 }

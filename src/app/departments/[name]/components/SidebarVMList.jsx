@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
+import { VM_STATES, getStatusBgClass, BUSY_STATES } from "@/constants/vmStates";
 
 /**
  * SidebarVMList Component
@@ -33,13 +34,14 @@ const SidebarVMList = ({ machines = [], menuStyles = {} }) => {
           <div className="relative">
             <div className={cn(
               "w-2.5 h-2.5 rounded-full flex-shrink-0",
-              machine.state === "running" ? "bg-green-400" : 
-              machine.state === "paused" ? "bg-yellow-400" : 
-              machine.state === "stopped" ? "bg-red-400" : "bg-gray-400"
+              getStatusBgClass(machine.status || machine.state)
             )} />
-            {machine.state === "running" && (
-              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full animate-ping bg-green-400/50" 
+            {(machine.status || machine.state) === VM_STATES.RUNNING && (
+              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full animate-ping bg-green-400/50"
                    style={{ animationDuration: '2s' }} />
+            )}
+            {BUSY_STATES.includes(machine.status || machine.state) && (
+              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full animate-pulse bg-blue-400/50" />
             )}
           </div>
           

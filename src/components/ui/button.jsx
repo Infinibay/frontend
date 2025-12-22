@@ -7,28 +7,28 @@ import { cn } from "@/lib/utils"
 import { useSizeContext } from "./size-provider"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap radius-fluent-md font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap radius-fluent-md font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "border border-input bg-background text-foreground hover:bg-accent/10 hover:border-ring/30 active:bg-accent/20",
+          "border border-input bg-background text-foreground hover:bg-accent/10 hover:border-ring/30 active:bg-accent/30 active:scale-[0.98]",
         primary:
-          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80",
+          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/70 active:scale-[0.98]",
         outline:
-          "border-2 border-input bg-transparent hover:bg-accent/10 hover:border-ring/30 active:bg-accent/20",
+          "border-2 border-input bg-transparent hover:bg-accent/10 hover:border-ring/30 active:bg-accent/30 active:scale-[0.98]",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/90 active:bg-secondary/70",
-        ghost: "hover:bg-accent/10 hover:text-foreground active:bg-accent/20",
-        link: "text-primary underline-offset-4 hover:underline hover:text-primary/90 active:text-primary/70",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/90 active:bg-secondary/60 active:scale-[0.98]",
+        ghost: "hover:bg-accent/10 hover:text-foreground active:bg-accent/30 active:scale-[0.98]",
+        link: "text-primary underline-offset-4 hover:underline hover:text-primary/90 active:text-primary/60 active:scale-[0.98]",
         success:
-          "bg-accent text-accent-foreground hover:bg-accent/90 active:bg-accent/80",
+          "bg-accent text-accent-foreground hover:bg-accent/90 active:bg-accent/70 active:scale-[0.98]",
         error:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/80",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/70 active:scale-[0.98]",
         info:
-          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80",
+          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/70 active:scale-[0.98]",
         warning:
-          "bg-accent text-accent-foreground hover:bg-accent/90 active:bg-accent/80",
+          "bg-accent text-accent-foreground hover:bg-accent/90 active:bg-accent/70 active:scale-[0.98]",
       },
       glass: {
         none: "",

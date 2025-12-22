@@ -129,7 +129,9 @@ const client = new ApolloClient({
     },
   },
   ssrMode: typeof window === 'undefined', // Enable SSR mode when running on server
-  connectToDevTools: process.env.NODE_ENV === 'development',
+  devtools: {
+    enabled: process.env.NODE_ENV === 'development',
+  },
 });
 
 // Utility function to clear Apollo cache

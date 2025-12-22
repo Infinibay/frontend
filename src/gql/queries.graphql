@@ -870,3 +870,65 @@ query ScheduledScript($id: ID!) {
   }
 }
 
+# ==================== DEPARTMENT NETWORK DIAGNOSTICS ====================
+
+query DepartmentNetworkDiagnostics($departmentId: String!) {
+  departmentNetworkDiagnostics(departmentId: $departmentId) {
+    departmentId
+    departmentName
+    timestamp
+    bridge {
+      exists
+      isUp
+      ipAddresses
+      attachedInterfaces
+      mtu
+      state
+    }
+    dnsmasq {
+      isRunning
+      pid
+      pidMatches
+      configPath
+      configExists
+      leasePath
+      leaseFileExists
+      logPath
+      logExists
+      listeningPort
+      recentLogLines
+    }
+    brNetfilter {
+      moduleLoaded
+      callIptables
+      callIp6tables
+      callArptables
+      persistenceFileExists
+    }
+    nat {
+      ruleExists
+      tableExists
+      chainExists
+      ipForwardingEnabled
+      ruleDetails
+    }
+    recommendations
+    manualCommands
+  }
+}
+
+query CaptureDepartmentDhcpTraffic($departmentId: String!, $durationSeconds: Int!) {
+  captureDepartmentDhcpTraffic(departmentId: $departmentId, durationSeconds: $durationSeconds) {
+    bridgeName
+    duration
+    packets
+    summary {
+      totalPackets
+      discoverPackets
+      offerPackets
+      requestPackets
+      ackPackets
+    }
+  }
+}
+

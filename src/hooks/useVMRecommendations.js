@@ -160,17 +160,19 @@ const useVMRecommendations = (vmId, options = {}) => {
   // Sort recommendations by urgency, priority, and creation date with metadata attachment
   const sortedRecommendations = useMemo(() => {
     return [...recommendations].map(rec => {
+      // Clone the object since Apollo Client freezes cache objects
+      const clonedRec = { ...rec };
       // Attach metadata as a non-enumerable property to avoid affecting serialization
-      const metadata = extractRecommendationMetadata(rec);
+      const metadata = extractRecommendationMetadata(clonedRec);
       if (metadata) {
-        Object.defineProperty(rec, '_metadata', {
+        Object.defineProperty(clonedRec, '_metadata', {
           value: metadata,
           writable: false,
           enumerable: false,
           configurable: true
         });
       }
-      return rec;
+      return clonedRec;
     }).sort((a, b) => {
       // Define urgency value mapping
       const urgencyValues = {
