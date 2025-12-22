@@ -2,7 +2,7 @@
  * VM State Constants
  *
  * Single source of truth for VM states matching backend DBVMStatus.
- * See: infinivirt/src/types/sync.types.ts
+ * See: infinization/src/types/sync.types.ts
  */
 
 export const VM_STATES = {

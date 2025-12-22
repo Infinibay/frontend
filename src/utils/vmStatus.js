@@ -1,11 +1,11 @@
 /**
  * VM Status Utilities
  *
- * Maps QEMU/infinivirt VM states to frontend display categories and actions.
+ * Maps QEMU/infinization VM states to frontend display categories and actions.
  *
- * Status Flow (from infinivirt/StateSync):
+ * Status Flow (from infinization/StateSync):
  *
- * QMP Status (QEMU)     →  DB Status (infinivirt)  →  Frontend Category
+ * QMP Status (QEMU)     →  DB Status (infinization)  →  Frontend Category
  * ─────────────────────────────────────────────────────────────────────────
  * 'running'             →  'running'               →  'active'
  * 'paused'              →  'suspended'             →  'suspended'
@@ -28,7 +28,7 @@
  */
 
 /**
- * All valid DB statuses from infinivirt
+ * All valid DB statuses from infinization
  * @type {string[]}
  */
 export const DB_VM_STATUSES = [
