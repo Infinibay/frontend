@@ -10,9 +10,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { fetchTemplates, selectTemplatesState } from '@/state/slices/templates';
 import { fetchTemplateCategories } from '@/state/slices/templateCategories';
 import { Settings2, Server, HardDrive, Cpu, MemoryStick } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { DiskSpaceSlider } from '@/components/ui/disk-space-slider';
+import { NumberStepper } from '@/components/ui/number-stepper';
 import { useGetSystemResourcesQuery } from '@/gql/hooks';
 
 // Calculate performance score based on CPU, RAM, and Storage
@@ -220,13 +220,14 @@ export function ResourcesStep({ id }) {
                       />
                     </div>
                   </div>
-                  <Input
-                    type="number"
+                  <NumberStepper
                     value={customHardware.cores}
-                    onChange={(e) => updateCustomHardware('cores', Math.min(cpuLimit, Math.max(1, parseInt(e.target.value) || 1)))}
-                    className="w-20 border-blue-200 focus:border-blue-500"
+                    onChange={(val) => updateCustomHardware('cores', val)}
                     min={1}
                     max={cpuLimit}
+                    step={1}
+                    shiftStep={10}
+                    color="blue"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">Between 1 and {cpuLimit} cores</p>
@@ -281,13 +282,14 @@ export function ResourcesStep({ id }) {
                       />
                     </div>
                   </div>
-                  <Input
-                    type="number"
+                  <NumberStepper
                     value={customHardware.ram}
-                    onChange={(e) => updateCustomHardware('ram', Math.min(memoryLimit, Math.max(1, parseInt(e.target.value) || 1)))}
-                    className="w-20 border-green-200 focus:border-green-500"
+                    onChange={(val) => updateCustomHardware('ram', val)}
                     min={1}
                     max={memoryLimit}
+                    step={1}
+                    shiftStep={10}
+                    color="green"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">Between 1 and {memoryLimit} GB</p>

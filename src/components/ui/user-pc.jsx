@@ -58,6 +58,7 @@ const UserPc = React.forwardRef(({
   username = "User",
   pc,
   departmentName, // Add department name prop for navigation
+  isPending = false, // Show loading indicator for pending actions
   ...props
 }, ref) => {
   const router = useRouter();
@@ -182,7 +183,7 @@ const UserPc = React.forwardRef(({
   
   // Render actions based on status using vmStatus utilities
   const renderActions = () => {
-    const transitioning = isTransitioning(displayStatus);
+    const transitioning = isTransitioning(displayStatus) || isPending;
 
     return (
       <div className="flex justify-center gap-1 mt-1">
@@ -445,7 +446,8 @@ const UserPc = React.forwardRef(({
               <div
                 className={cn(
                   "absolute -top-2 -right-2 w-5 h-5 rounded-full",
-                  getStatusColor(displayStatus)
+                  getStatusColor(displayStatus),
+                  isPending && "animate-pulse"
                 )}
               />
             )}
@@ -556,7 +558,7 @@ const UserPc = React.forwardRef(({
   
   // Render Table View
   // DRY: compute transition state once for table view row
-  const transitioning = isTransitioning(displayStatus);
+  const transitioning = isTransitioning(displayStatus) || isPending;
 
   return (
     <>
@@ -574,7 +576,8 @@ const UserPc = React.forwardRef(({
           <div className="flex items-center gap-3">
             <div className={cn(
               "w-3 h-3 rounded-full",
-              getStatusColor(displayStatus)
+              getStatusColor(displayStatus),
+              isPending && "animate-pulse"
             )} />
             <span className="font-medium">{displayName}</span>
           </div>

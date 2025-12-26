@@ -105,7 +105,7 @@ const DialogContent = React.forwardRef(({ className, children, glass, ...props }
         {children}
         <DialogPrimitive.Close
           className={cn(
-            "absolute right-[var(--size-padding)] top-[var(--size-padding)] rounded-sm ring-offset-background",
+            "absolute left-auto right-4 top-4 rounded-sm ring-offset-background",
             "transition-all duration-200 hover:bg-accent/20 focus:outline-none focus:ring-2",
             "focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none",
             "text-muted-foreground hover:text-foreground",
@@ -129,7 +129,7 @@ const DialogHeader = ({
     <div
       className={cn(
         "flex flex-col text-center sm:text-left",
-        "size-gap",
+        "size-gap mb-4",
         className
       )}
       {...props}

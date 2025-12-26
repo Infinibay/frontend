@@ -312,8 +312,9 @@ const SettingMain = () => {
       label: "Fedora",
       icon: SiFedora,
       color: '#294172',
-      description: 'Advanced Linux distribution',
-      downloadUrl: "https://fedoraproject.org/workstation/download"
+      description: 'Requiere ISO netinstall (no Live)',
+      note: 'Los ISOs Live no soportan instalación automatizada. Descarga el ISO "Everything netinstall".',
+      downloadUrl: "https://download.fedoraproject.org/pub/fedora/linux/releases/41/Everything/x86_64/iso/"
     },
   ];
 
@@ -1129,6 +1130,15 @@ const SettingMain = () => {
                     <p className={`${sizeVariants[size].typography.text} text-muted-foreground`}>
                       {isoFile && `File: ${isoFile.name} (${formatSize(isoFile.size)})`}
                     </p>
+                    {/* Show note for OS types that have special requirements (e.g., Fedora netinstall) */}
+                    {selectedOS && osOptions.find(os => os.value === selectedOS)?.note && (
+                      <div className={`flex items-center ${sizeVariants[size].gap} text-amber-500`}>
+                        <AlertCircle className={sizeVariants[size].icon.size} />
+                        <p className={`${sizeVariants[size].badge.text} font-medium`}>
+                          {osOptions.find(os => os.value === selectedOS)?.note}
+                        </p>
+                      </div>
+                    )}
                     {selectedOS && isOSAvailable(osOptions.find(os => os.value === selectedOS)?.id) && (
                       <div className={`flex items-center ${sizeVariants[size].gap} text-destructive`}>
                         <AlertCircle className={sizeVariants[size].icon.size} />

@@ -144,6 +144,11 @@ export default function CreateMachineWizard({ departmentId }) {
             if (!values.password) {
               errors.password = 'Password is required';
             }
+            if (!values.confirmPassword) {
+              errors.confirmPassword = 'Please confirm your password';
+            } else if (values.password !== values.confirmPassword) {
+              errors.confirmPassword = 'Passwords do not match';
+            }
             if (departmentId == null && !values.departmentId) {
               errors.departmentId = 'Department is required';
             }

@@ -3,8 +3,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { HardDrive } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NumberStepper } from '@/components/ui/number-stepper';
 
 export function DiskSpaceSlider({ 
   total = 1000, 
@@ -36,8 +36,7 @@ export function DiskSpaceSlider({
     }
   };
   
-  const handleInputChange = (e) => {
-    const newValue = parseInt(e.target.value) || min;
+  const handleStepperChange = (newValue) => {
     if (onChange) {
       onChange(Math.min(Math.max(newValue, min), maxSelectable));
     }
@@ -206,14 +205,14 @@ export function DiskSpaceSlider({
             />
           </div>
         </div>
-        <Input
-          type="number"
+        <NumberStepper
           value={clampedValue}
-          onChange={handleInputChange}
-          className={cn("w-24", colors.input)}
+          onChange={handleStepperChange}
           min={min}
           max={maxSelectable}
           step={step}
+          shiftStep={step * 10}
+          color={color}
         />
       </div>
       

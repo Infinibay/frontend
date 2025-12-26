@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
   DialogFooter,
   DialogDescription
@@ -14,6 +14,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Cpu, MemoryStick, HardDrive, FileText, Loader2 } from 'lucide-react';
 import { createTemplate } from '@/state/slices/templates';
 import { selectTemplatesLoading, selectTemplatesError } from '@/state/slices/templates';
 
@@ -74,101 +76,144 @@ export function CreateTemplateDialog({ children, categoryId }) {
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Create New Template</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Create New Template
+          </DialogTitle>
           <DialogDescription>
-            Create a new machine template. Configure the resources for this template.
+            Define a reusable configuration for virtual machines.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 space-y-4">
+
+        <div className="space-y-5 py-4">
           {error?.create && (
-            <div className="text-sm text-red-500">
+            <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
               Error creating template: {error.create}
             </div>
           )}
+
+          {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">Template Name</Label>
             <Input
               id="name"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Template name"
-              required
+              placeholder="e.g., Development Workstation"
               disabled={loading.create}
             />
           </div>
+
+          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Input
+            <Textarea
               id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Template description"
-              required
+              placeholder="Describe the purpose of this template..."
+              rows={2}
               disabled={loading.create}
+              className="resize-none"
             />
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cores">CPU Cores</Label>
-              <Input
-                id="cores"
-                name="cores"
-                type="number"
-                min="1"
-                value={formData.cores}
-                onChange={handleChange}
-                required
-                disabled={loading.create}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ram">RAM (GB)</Label>
-              <Input
-                id="ram"
-                name="ram"
-                type="number"
-                min="1"
-                value={formData.ram}
-                onChange={handleChange}
-                required
-                disabled={loading.create}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="storage">Storage (GB)</Label>
-              <Input
-                id="storage"
-                name="storage"
-                type="number"
-                min="1"
-                value={formData.storage}
-                onChange={handleChange}
-                required
-                disabled={loading.create}
-              />
+
+          {/* Resources Section */}
+          <div className="space-y-3">
+            <Label className="text-muted-foreground text-xs uppercase tracking-wide">
+              Resources
+            </Label>
+            <div className="grid grid-cols-3 gap-3">
+              {/* CPU */}
+              <div className="space-y-2">
+                <Label htmlFor="cores" className="flex items-center gap-1.5 text-sm">
+                  <Cpu className="h-3.5 w-3.5 text-blue-500" />
+                  CPU Cores
+                </Label>
+                <Input
+                  id="cores"
+                  name="cores"
+                  type="number"
+                  min="1"
+                  max="64"
+                  value={formData.cores}
+                  onChange={handleChange}
+                  placeholder="4"
+                  disabled={loading.create}
+                  className="text-center"
+                />
+              </div>
+
+              {/* RAM */}
+              <div className="space-y-2">
+                <Label htmlFor="ram" className="flex items-center gap-1.5 text-sm">
+                  <MemoryStick className="h-3.5 w-3.5 text-green-500" />
+                  RAM (GB)
+                </Label>
+                <Input
+                  id="ram"
+                  name="ram"
+                  type="number"
+                  min="1"
+                  max="512"
+                  value={formData.ram}
+                  onChange={handleChange}
+                  placeholder="8"
+                  disabled={loading.create}
+                  className="text-center"
+                />
+              </div>
+
+              {/* Storage */}
+              <div className="space-y-2">
+                <Label htmlFor="storage" className="flex items-center gap-1.5 text-sm">
+                  <HardDrive className="h-3.5 w-3.5 text-amber-500" />
+                  Storage (GB)
+                </Label>
+                <Input
+                  id="storage"
+                  name="storage"
+                  type="number"
+                  min="10"
+                  max="2000"
+                  value={formData.storage}
+                  onChange={handleChange}
+                  placeholder="50"
+                  disabled={loading.create}
+                  className="text-center"
+                />
+              </div>
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button 
-            type="button" 
-            variant="outline" 
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => setOpen(false)}
             disabled={loading.create}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             type="button"
             onClick={handleCreate}
             disabled={loading.create || !isFormValid()}
             variant="success"
           >
-            {loading.create ? 'Creating...' : 'Create Template'}
+            {loading.create ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              'Create Template'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

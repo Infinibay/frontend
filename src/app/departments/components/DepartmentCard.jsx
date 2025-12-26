@@ -2,15 +2,14 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { createDebugger } from "@/utils/debug"
 import {
   Building2,
   Users,
   Monitor,
-  ArrowUpRight,
-  Folder,
+  ChevronRight,
   Trash2,
   AlertCircle,
   Shield
@@ -133,30 +132,43 @@ const DepartmentCard = ({
 
   const hasBlockingResources = machineCount > 0 || scriptsCount > 0 || firewallRulesCount > 0
 
+  const userCount = Math.max(1, Math.floor(machineCount * 0.8));
+
   return (
     <>
       <Card
         elevation="1"
         radius="md"
-        className="h-full bg-card text-card-foreground border hover:shadow-elevation-2 hover:border-primary/40 hover:scale-[1.02] transition-all duration-200"
+        className="group h-full bg-card text-card-foreground border hover:shadow-elevation-2 hover:border-primary/40 transition-all duration-200"
       >
-        {/* Header with action buttons - outside Link */}
-        <CardContent className="size-card-padding pb-0">
-          <div className="flex justify-between items-start size-margin-sm">
-            <div className={`size-padding rounded-lg ${colorClass}`}>
-              <Building2 className="h-6 w-6" />
-            </div>
-            <div className="flex gap-1">
+        <Link
+          href={departmentUrl}
+          className="block h-full"
+          onClick={handleCardClick}
+        >
+          <CardContent className="flex flex-col gap-4 p-4 sm:p-5 h-full">
+            {/* Header: Icon + Title + Delete button */}
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl flex-shrink-0 ${colorClass}`}>
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-base truncate">{department.name}</h3>
+                <p className="text-xs text-muted-foreground">Click to manage</p>
+              </div>
+
+              {/* Delete button - always visible for better grid accessibility */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   {isDeleting ? (
-                    <span className="inline-block">
+                    <span className="inline-block flex-shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-muted-foreground hover:text-destructive pointer-events-none"
+                        className="h-8 w-8 text-muted-foreground pointer-events-none"
                         disabled
                         aria-label="Deleting department"
+                        onClick={(e) => e.preventDefault()}
                       >
                         <Spinner size="sm" />
                       </Button>
@@ -165,7 +177,7 @@ const DepartmentCard = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-muted-foreground hover:text-destructive"
+                      className="h-8 w-8 flex-shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
                       onClick={handleDeleteClick}
                       aria-label="Delete department"
                     >
@@ -178,36 +190,20 @@ const DepartmentCard = ({
                 </TooltipContent>
               </Tooltip>
             </div>
-          </div>
-        </CardContent>
 
-        {/* Clickable content area */}
-        <Link
-          href={departmentUrl}
-          className="block"
-          onClick={handleCardClick}
-        >
-          <CardContent className="size-card-content pt-0">
-            <div className="flex justify-between items-start size-margin-xs">
-              <h2 className="text-xl font-semibold truncate">{department.name}</h2>
-              <ArrowUpRight className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" />
-            </div>
-
-            <div className="flex items-center text-muted-foreground text-sm size-margin-xs">
-              <Monitor className="h-4 w-4 mr-2" />
-              <span>{machineCount} {machineCount === 1 ? 'Computer' : 'Computers'}</span>
-            </div>
-
-            <div className="flex items-center text-muted-foreground text-sm">
-              <Users className="h-4 w-4 mr-2" />
-              <span>{Math.max(1, Math.floor(machineCount * 0.8))} {Math.max(1, Math.floor(machineCount * 0.8)) === 1 ? 'User' : 'Users'}</span>
+            {/* Stats row - at bottom */}
+            <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto">
+              <span className="flex items-center gap-1.5">
+                <Monitor className="h-4 w-4" />
+                {machineCount} {machineCount === 1 ? 'Computer' : 'Computers'}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Users className="h-4 w-4" />
+                {userCount} {userCount === 1 ? 'User' : 'Users'}
+              </span>
+              <ChevronRight className="h-4 w-4" />
             </div>
           </CardContent>
-
-          <CardFooter className="border-t bg-muted text-sm text-muted-foreground size-card-footer">
-            <Folder className="h-4 w-4 mr-2" />
-            <span>Resources</span>
-          </CardFooter>
         </Link>
       </Card>
 

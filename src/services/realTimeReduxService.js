@@ -296,6 +296,22 @@ export class RealTimeReduxService {
         })
         break
 
+      case 'firewall_policy_changed':
+        this.debug.info('dept-event', `Department firewall policy changed for "${deptData.name}"`)
+        this.store.dispatch({
+          type: 'departments/realTimeDepartmentUpdated',
+          payload: deptData
+        })
+        break
+
+      case 'firewall_default_config_changed':
+        this.debug.info('dept-event', `Department firewall default config changed for "${deptData.name}"`)
+        this.store.dispatch({
+          type: 'departments/realTimeDepartmentUpdated',
+          payload: deptData
+        })
+        break
+
       default:
         this.debug.warn('dept-event', `Unknown Department action: ${action}`)
     }

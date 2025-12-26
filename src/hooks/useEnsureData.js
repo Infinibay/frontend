@@ -58,9 +58,10 @@ const useEnsureData = (
   });
 
   // Extract loading and error states - handle both boolean and object-based loading flags
+  // Only consider 'fetch' loading for list loading state, not individual action loadings (play, pause, stop, etc.)
   const isLoading = typeof sliceData?.loading === 'boolean'
     ? sliceData.loading
-    : Boolean(sliceData?.loading?.fetch || Object.values(sliceData?.loading || {}).some(Boolean));
+    : Boolean(sliceData?.loading?.fetch);
 
   // Handle both string/null and object-based error flags
   const error = typeof sliceData?.error === 'string' || sliceData?.error === null

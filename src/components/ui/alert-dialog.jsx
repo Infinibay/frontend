@@ -173,7 +173,7 @@ const AlertDialogAction = React.forwardRef(({ className, variant, ...props }, re
         "transition-colors focus-visible:outline-none focus-visible:ring-2",
         "focus-visible:ring-ring focus-visible:ring-offset-2",
         "disabled:opacity-50 disabled:pointer-events-none",
-        "size-padding size-text",
+        "px-4 py-2 text-sm",
         variant === "destructive"
           ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
           : "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -194,7 +194,7 @@ const AlertDialogCancel = React.forwardRef(({ className, ...props }, ref) => {
         "transition-colors focus-visible:outline-none focus-visible:ring-2",
         "focus-visible:ring-ring focus-visible:ring-offset-2",
         "disabled:opacity-50 disabled:pointer-events-none",
-        "size-padding size-text",
+        "px-4 py-2 text-sm",
         "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
         className
       )}

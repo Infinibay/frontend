@@ -57,6 +57,7 @@ export default function ComputersPage() {
   // Redux state
   const dispatch = useDispatch();
   const selectedPc = useSelector((state) => state.vms.selectedMachine);
+  const pendingActions = useSelector((state) => state.vms.pendingActions);
 
   // Use optimized data loading for VMs and departments
   const {
@@ -315,6 +316,7 @@ export default function ComputersPage() {
             onPause={handlePause}
             onStop={handleStop}
             onDelete={handleDelete}
+            pendingActions={pendingActions}
           />
         </div>
 

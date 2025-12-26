@@ -19,6 +19,8 @@ export type Scalars = {
   JSON: { input: any; output: any; }
   /** The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
   JSONObject: { input: any; output: any; }
+  /** The javascript `Date` as integer. Type represents date and time as number of milliseconds from start of UNIX epoch. */
+  Timestamp: { input: any; output: any; }
 };
 
 export type AppSettings = {
@@ -186,6 +188,12 @@ export type CreateApplicationInputType = {
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
 };
 
+export type CreateDepartmentFirewallInput = {
+  firewallCustomRules?: InputMaybe<Scalars['JSON']['input']>;
+  firewallDefaultConfig?: InputMaybe<Scalars['String']['input']>;
+  firewallPolicy?: FirewallPolicy;
+};
+
 export type CreateFirewallRuleInput = {
   action: RuleAction;
   connectionState?: InputMaybe<Scalars['JSONObject']['input']>;
@@ -212,12 +220,15 @@ export type CreateMachineInputType = {
   customStorage?: InputMaybe<Scalars['Int']['input']>;
   departmentId?: InputMaybe<Scalars['ID']['input']>;
   firstBootScripts?: Array<FirstBootScriptInputType>;
+  keyboard?: InputMaybe<Scalars['String']['input']>;
+  locale?: InputMaybe<Scalars['String']['input']>;
   name?: Scalars['String']['input'];
   os?: MachineOs;
   password?: Scalars['String']['input'];
   pciBus?: InputMaybe<Scalars['String']['input']>;
   productKey?: InputMaybe<Scalars['String']['input']>;
   templateId?: InputMaybe<Scalars['String']['input']>;
+  timezone?: InputMaybe<Scalars['String']['input']>;
   username?: Scalars['String']['input'];
 };
 
@@ -299,16 +310,23 @@ export type DepartmentNetworkDiagnosticsType = {
   manualCommands: Array<Scalars['String']['output']>;
   nat: NatDiagnosticsType;
   recommendations: Array<Scalars['String']['output']>;
-  timestamp: Scalars['DateTimeISO']['output'];
+  timestamp: Scalars['Timestamp']['output'];
 };
 
 export type DepartmentType = {
   __typename?: 'DepartmentType';
+  bridgeName?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTimeISO']['output'];
+  dnsServers?: Maybe<Array<Scalars['String']['output']>>;
+  firewallCustomRules?: Maybe<Scalars['JSON']['output']>;
+  firewallDefaultConfig?: Maybe<Scalars['String']['output']>;
+  firewallPolicy: FirewallPolicy;
+  gatewayIP?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   internetSpeed?: Maybe<Scalars['Int']['output']>;
   ipSubnet?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
+  ntpServers?: Maybe<Array<Scalars['String']['output']>>;
   totalMachines?: Maybe<Scalars['Float']['output']>;
 };
 
@@ -422,6 +440,12 @@ export enum ExecutionType {
   Scheduled = 'SCHEDULED'
 }
 
+/** Política de firewall del departamento: ALLOW_ALL (Permitir Todo) o BLOCK_ALL (Bloquear Todo) */
+export enum FirewallPolicy {
+  AllowAll = 'ALLOW_ALL',
+  BlockAll = 'BLOCK_ALL'
+}
+
 export type FirewallRuleSetType = {
   __typename?: 'FirewallRuleSetType';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -431,11 +455,13 @@ export type FirewallRuleSetType = {
   internalName: Scalars['String']['output'];
   isActive: Scalars['Boolean']['output'];
   lastSyncedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  /** @deprecated Este campo es legacy de la arquitectura libvirt y ya no se utiliza con nftables */
   libvirtUuid?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   priority: Scalars['Int']['output'];
   rules: Array<FirewallRuleType>;
   updatedAt: Scalars['DateTimeISO']['output'];
+  /** @deprecated Este campo es legacy de la arquitectura libvirt y ya no se utiliza con nftables */
   xmlContent?: Maybe<Scalars['String']['output']>;
 };
 
@@ -470,6 +496,9 @@ export type FirstBootScriptInputType = {
 
 export type FlushResultType = {
   __typename?: 'FlushResultType';
+  /** Nombre del chain de nftables donde se aplicaron las reglas */
+  chainName: Scalars['String']['output'];
+  /** @deprecated Use chainName instead. This field is from the legacy libvirt architecture. */
   libvirtFilterName: Scalars['String']['output'];
   rulesApplied: Scalars['Int']['output'];
   success: Scalars['Boolean']['output'];
@@ -637,10 +666,17 @@ export type KeepAliveMetrics = {
   successRate: Scalars['String']['output'];
 };
 
+/** Información de un chain de nftables asociado a una VM (anteriormente filtro libvirt) */
 export type LibvirtFilterInfoType = {
   __typename?: 'LibvirtFilterInfoType';
+  /** Nombre del chain de nftables */
+  chainName: Scalars['String']['output'];
+  /** @deprecated Use chainName instead. This field is from the legacy libvirt architecture. */
   name: Scalars['String']['output'];
+  /** @deprecated Use vmId instead. This field is from the legacy libvirt architecture. */
   uuid?: Maybe<Scalars['String']['output']>;
+  /** ID de la VM asociada al chain */
+  vmId?: Maybe<Scalars['String']['output']>;
 };
 
 /** Login response with user data and token */
@@ -940,7 +976,9 @@ export type Mutation = {
   unassignScriptFromDepartment: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
+  updateDepartmentFirewallPolicy: DepartmentType;
   updateDepartmentName: DepartmentType;
+  updateDepartmentNetwork: DepartmentType;
   updateFirewallRule: FirewallRuleType;
   updateMachineHardware: Machine;
   updateMachineName: Machine;
@@ -985,6 +1023,7 @@ export type MutationCreateApplicationArgs = {
 
 
 export type MutationCreateDepartmentArgs = {
+  firewallConfig?: InputMaybe<CreateDepartmentFirewallInput>;
   name: Scalars['String']['input'];
 };
 
@@ -1269,8 +1308,19 @@ export type MutationUpdateApplicationArgs = {
 };
 
 
+export type MutationUpdateDepartmentFirewallPolicyArgs = {
+  departmentId: Scalars['String']['input'];
+  input: UpdateDepartmentFirewallPolicyInput;
+};
+
+
 export type MutationUpdateDepartmentNameArgs = {
   input: UpdateDepartmentNameInput;
+};
+
+
+export type MutationUpdateDepartmentNetworkArgs = {
+  input: UpdateDepartmentNetworkInput;
 };
 
 
@@ -1483,7 +1533,6 @@ export type Query = {
   /** Get all available ISOs */
   availableISOs: Array<Iso>;
   backgroundHealthServiceStatus: BackgroundHealthServiceStatus;
-  /** Capture DHCP traffic on a department's bridge for debugging */
   captureDepartmentDhcpTraffic: DhcpTrafficCaptureType;
   /** Check for application updates on a VM */
   checkApplicationUpdates: ApplicationUpdates;
@@ -1506,7 +1555,6 @@ export type Query = {
   currentSnapshot?: Maybe<Snapshot>;
   currentUser?: Maybe<UserType>;
   department?: Maybe<DepartmentType>;
-  /** Get comprehensive network diagnostics for a department */
   departmentNetworkDiagnostics: DepartmentNetworkDiagnosticsType;
   departmentScripts: Array<ScriptType>;
   departments: Array<DepartmentType>;
@@ -1582,7 +1630,7 @@ export type QueryApplicationArgs = {
 
 export type QueryCaptureDepartmentDhcpTrafficArgs = {
   departmentId: Scalars['String']['input'];
-  durationSeconds: Scalars['Int']['input'];
+  durationSeconds?: Scalars['Int']['input'];
 };
 
 
@@ -1978,6 +2026,7 @@ export type ScheduleScriptInput = {
   machineIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   maxExecutions?: InputMaybe<Scalars['Int']['input']>;
   repeatIntervalMinutes?: InputMaybe<Scalars['Int']['input']>;
+  runAs?: InputMaybe<Scalars['String']['input']>;
   scheduleType: ScheduleType;
   scheduledFor?: InputMaybe<Scalars['DateTimeISO']['input']>;
   scriptId: Scalars['ID']['input'];
@@ -1986,10 +2035,11 @@ export type ScheduleScriptInput = {
 export type ScheduleScriptResponseType = {
   __typename?: 'ScheduleScriptResponseType';
   error?: Maybe<Scalars['String']['output']>;
-  executionIds?: Maybe<Array<Scalars['String']['output']>>;
+  executionIds?: Maybe<Array<Scalars['ID']['output']>>;
   executions?: Maybe<Array<ScheduledScriptType>>;
   message?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+  warnings?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 /** Script schedule type */
@@ -2024,16 +2074,15 @@ export type ScheduledScriptType = {
   stderr?: Maybe<Scalars['String']['output']>;
   stdout?: Maybe<Scalars['String']['output']>;
   triggeredBy?: Maybe<UserType>;
-  updatedAt: Scalars['DateTimeISO']['output'];
 };
 
 export type ScheduledScriptsFiltersInput = {
   departmentId?: InputMaybe<Scalars['ID']['input']>;
-  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
   machineId?: InputMaybe<Scalars['ID']['input']>;
   scheduleType?: InputMaybe<ScheduleType>;
   scriptId?: InputMaybe<Scalars['ID']['input']>;
-  status?: InputMaybe<ExecutionStatus>;
+  status?: InputMaybe<Array<ExecutionStatus>>;
 };
 
 export type ScriptExecutionResponseType = {
@@ -2072,9 +2121,9 @@ export type ScriptExecutionsFiltersInput = {
   departmentId?: InputMaybe<Scalars['ID']['input']>;
   endDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
   executionType?: InputMaybe<ExecutionType>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
+  limit?: Scalars['Int']['input'];
   machineId?: InputMaybe<Scalars['ID']['input']>;
-  offset?: InputMaybe<Scalars['Int']['input']>;
+  offset?: Scalars['Int']['input'];
   scriptId?: InputMaybe<Scalars['ID']['input']>;
   startDate?: InputMaybe<Scalars['DateTimeISO']['input']>;
   status?: InputMaybe<ExecutionStatus>;
@@ -2237,9 +2286,21 @@ export type SystemResources = {
   memory: SystemResourceMemory;
 };
 
+export type UpdateDepartmentFirewallPolicyInput = {
+  firewallCustomRules?: InputMaybe<Scalars['JSON']['input']>;
+  firewallDefaultConfig?: Scalars['String']['input'];
+  firewallPolicy?: FirewallPolicy;
+};
+
 export type UpdateDepartmentNameInput = {
   id?: Scalars['ID']['input'];
   name?: Scalars['String']['input'];
+};
+
+export type UpdateDepartmentNetworkInput = {
+  dnsServers?: InputMaybe<Array<Scalars['String']['input']>>;
+  id?: Scalars['ID']['input'];
+  ntpServers?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type UpdateFirewallRuleInput = {
@@ -2296,8 +2357,10 @@ export type UpdateMaintenanceTaskInput = {
 
 export type UpdateScheduledScriptInput = {
   executionId: Scalars['ID']['input'];
+  inputValues?: InputMaybe<Scalars['JSON']['input']>;
   maxExecutions?: InputMaybe<Scalars['Int']['input']>;
   repeatIntervalMinutes?: InputMaybe<Scalars['Int']['input']>;
+  runAs?: InputMaybe<Scalars['String']['input']>;
   scheduledFor?: InputMaybe<Scalars['DateTimeISO']['input']>;
 };
 

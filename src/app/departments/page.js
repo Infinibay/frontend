@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ToastProvider,
   Toast,
@@ -10,17 +10,9 @@ import {
 } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Header, HeaderLeft, HeaderCenter, HeaderRight } from "@/components/ui/header";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Plus, Search, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle, Building2 } from "lucide-react";
 import { useSizeContext, sizeVariants, getTypographyClass, getGridClasses, getLayoutSpacing } from "@/components/ui/size-provider";
+import { usePageHeader } from "@/hooks/usePageHeader";
 import { getGlassClasses } from "@/utils/glass-effects";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +23,7 @@ import { useDepartmentsPage } from "./hooks/useDepartmentsPage";
 import DepartmentCard from "./components/DepartmentCard";
 import EmptyState from "./components/EmptyState";
 import { DepartmentGridSkeleton } from "./components/DepartmentCardSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "./components/ErrorState";
 import CreateDepartmentDialog from "./components/CreateDepartmentDialog";
 
@@ -65,51 +58,89 @@ const DepartmentsPage = () => {
     getMachineCount,
     getDepartmentColor
   } = useDepartmentsPage();
-  
+
+  // Help configuration
+  const helpConfig = useMemo(() => ({
+    title: "Departments Help",
+    description: "Learn how to manage departments and organize your resources",
+    icon: <Building2 className="h-5 w-5 text-primary" />,
+    sections: [
+      {
+        id: "managing-departments",
+        title: "Managing Departments",
+        icon: <Building2 className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-foreground mb-1">Creating Departments</p>
+              <p>Use the "New Department" button to create organizational units for grouping VMs.</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Department Purpose</p>
+              <p>Departments help organize VMs by team, project, or function for easier management.</p>
+            </div>
+          </div>
+        ),
+      },
+    ],
+    quickTips: [
+      "Create departments to organize VMs by team or project",
+      "Each department can have its own security policies",
+      "Click on a department card to view its VMs",
+    ],
+  }), []);
+
+  // Configure header using the global header system
+  usePageHeader({
+    breadcrumbs: [
+      { label: 'Home', href: '/' },
+      { label: 'Departments', isCurrent: true }
+    ],
+    title: 'Departments',
+    actions: [
+      {
+        id: 'refresh',
+        label: '',
+        icon: 'RefreshCw',
+        variant: 'outline',
+        size: 'sm',
+        onClick: refreshDepartments,
+        loading: isLoading,
+        disabled: isLoading,
+        tooltip: isLoading ? 'Refreshing...' : 'Refresh departments',
+        className: 'whitespace-nowrap'
+      },
+      {
+        id: 'new-department',
+        label: 'New Department',
+        icon: 'Plus',
+        variant: 'default',
+        size: 'sm',
+        onClick: () => setIsCreateDeptDialogOpen(true),
+        disabled: isLoading,
+        tooltip: 'Create a new department',
+        className: 'whitespace-nowrap'
+      }
+    ],
+    helpConfig: helpConfig,
+    helpTooltip: 'Departments help'
+  }, [isLoading, refreshDepartments, setIsCreateDeptDialogOpen]);
+
   // Loading state - maintains page structure with skeleton placeholders
   if (isLoading) {
     return (
       <div className="w-full">
-        {/* Header */}
-        <Header
-          variant="glass"
-          elevated
-          sticky={true}
-          style={{ top: 0 }}
-          className="z-30"
-        >
-          <HeaderLeft className="w-[200px]">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Departments</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </HeaderLeft>
-          <HeaderCenter>
-            <h1 className="text-lg sm:text-2xl font-medium text-foreground">
-              Departments
-            </h1>
-          </HeaderCenter>
-          <HeaderRight className="w-[200px] flex items-center justify-end space-x-2">
-            <Button disabled>
-              <Plus className={`${sizeVariants[size].icon.size} ${sizeVariants[size].spacing.marginSm}`} />
-              New Department
-            </Button>
-          </HeaderRight>
-        </Header>
-
         {/* Content container with glass effect */}
         <div className={cn(
           getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
-          "size-container size-padding"
+          "size-container size-padding mt-4"
         )}>
-          <DepartmentGridSkeleton count={6} size={size} />
+          {/* Search skeleton */}
+          <div className={`relative size-margin-sm ${sizeVariants[size].layout.maxWidth}`}>
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+
+          <DepartmentGridSkeleton count={4} />
         </div>
       </div>
     );
@@ -143,52 +174,11 @@ const DepartmentsPage = () => {
           </div>
         )}
 
-        {/* Header */}
-        <Header
-          variant="glass"
-          elevated
-          sticky={true}
-          style={{ top: 0 }}
-          className="z-30"
-        >
-          <HeaderLeft className="w-[200px]">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Departments</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </HeaderLeft>
-          <HeaderCenter>
-            <h1 className="text-lg sm:text-2xl font-medium text-foreground">
-              Departments
-            </h1>
-          </HeaderCenter>
-          <HeaderRight className="w-[200px] flex items-center justify-end space-x-2">
-            <Button onClick={() => setIsCreateDeptDialogOpen(true)}>
-              <Plus className={`${sizeVariants[size].icon.size} ${sizeVariants[size].spacing.marginSm}`} />
-              New Department
-            </Button>
-          </HeaderRight>
-        </Header>
-
         {/* Content container with glass effect */}
         <div className={cn(
           getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
-          "size-container size-padding"
+          "size-container size-padding mt-4"
         )}>
-          {/* Subtitle section */}
-          <div className="size-container pb-6">
-            <p className={`text-glass-text-primary ${sizeVariants[size].typography.text} text-left`}>
-              Manage your organization's departments and their resources
-            </p>
-          </div>
-
           {/* Search */}
           <div className={`relative size-margin-sm ${sizeVariants[size].layout.maxWidth}`}>
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -203,9 +193,9 @@ const DepartmentsPage = () => {
             />
           </div>
 
-          {/* Departments Grid */}
+          {/* Departments List */}
           {filteredDepartments.length > 0 ? (
-            <div className={getGridClasses('departments', size)}>
+            <div className={cn(getGridClasses('departments', size), "mt-6")}>
               {filteredDepartments.map((dept) => (
                 <DepartmentCard
                   key={dept.id}

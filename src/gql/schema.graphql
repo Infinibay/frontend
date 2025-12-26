@@ -92,6 +92,23 @@ type BackgroundHealthServiceStatus {
   totalVMsMonitored: Int!
 }
 
+type BrNetfilterDiagnosticsType {
+  callArptables: Int!
+  callIp6tables: Int!
+  callIptables: Int!
+  moduleLoaded: Boolean!
+  persistenceFileExists: Boolean!
+}
+
+type BridgeDiagnosticsType {
+  attachedInterfaces: [String!]!
+  exists: Boolean!
+  ipAddresses: [String!]!
+  isUp: Boolean!
+  mtu: Int
+  state: String
+}
+
 input BridgeNameInput {
   bridgeName: String! = ""
   networkName: String! = ""
@@ -143,6 +160,12 @@ input CreateApplicationInputType {
   parameters: JSONObject = null
 }
 
+input CreateDepartmentFirewallInput {
+  firewallCustomRules: JSON
+  firewallDefaultConfig: String = "allow_outbound"
+  firewallPolicy: FirewallPolicy! = BLOCK_ALL
+}
+
 input CreateFirewallRuleInput {
   action: RuleAction!
   connectionState: JSONObject
@@ -169,12 +192,15 @@ input CreateMachineInputType {
   customStorage: Int
   departmentId: ID = ""
   firstBootScripts: [FirstBootScriptInputType!]! = []
+  keyboard: String
+  locale: String
   name: String! = ""
   os: MachineOs! = WINDOWS10
   password: String! = ""
   pciBus: String = null
   productKey: String
   templateId: String
+  timezone: String
   username: String! = ""
 }
 
@@ -250,13 +276,47 @@ input DeleteSnapshotInput {
   snapshotName: String!
 }
 
+type DepartmentNetworkDiagnosticsType {
+  brNetfilter: BrNetfilterDiagnosticsType!
+  bridge: BridgeDiagnosticsType!
+  departmentId: String!
+  departmentName: String!
+  dnsmasq: DnsmasqDiagnosticsType!
+  manualCommands: [String!]!
+  nat: NatDiagnosticsType!
+  recommendations: [String!]!
+  timestamp: Timestamp!
+}
+
 type DepartmentType {
+  bridgeName: String
   createdAt: DateTimeISO!
+  dnsServers: [String!]
+  firewallCustomRules: JSON
+  firewallDefaultConfig: String
+  firewallPolicy: FirewallPolicy!
+  gatewayIP: String
   id: ID!
   internetSpeed: Int
   ipSubnet: String
   name: String!
+  ntpServers: [String!]
   totalMachines: Float
+}
+
+type DhcpPacketSummaryType {
+  ackPackets: Int!
+  discoverPackets: Int!
+  offerPackets: Int!
+  requestPackets: Int!
+  totalPackets: Int!
+}
+
+type DhcpTrafficCaptureType {
+  bridgeName: String!
+  duration: Int!
+  packets: [String!]!
+  summary: DhcpPacketSummaryType!
 }
 
 type DiskCleanupResult {
@@ -290,6 +350,20 @@ type DiskSpaceInfo {
   warningThreshold: Float
 }
 
+type DnsmasqDiagnosticsType {
+  configExists: Boolean!
+  configPath: String!
+  isRunning: Boolean!
+  leaseFileExists: Boolean!
+  leasePath: String!
+  listeningPort: Boolean!
+  logExists: Boolean!
+  logPath: String!
+  pid: Int
+  pidMatches: Boolean!
+  recentLogLines: [String!]
+}
+
 type DyummyType {
   value: String!
 }
@@ -315,33 +389,6 @@ input ExecuteScriptInput {
   scriptId: ID!
 }
 
-input ScheduleScriptInput {
-  scriptId: ID!
-  machineIds: [ID!]
-  departmentId: ID
-  inputValues: JSON!
-  scheduleType: ScheduleType!
-  scheduledFor: DateTimeISO
-  repeatIntervalMinutes: Int
-  maxExecutions: Int
-}
-
-input UpdateScheduledScriptInput {
-  executionId: ID!
-  scheduledFor: DateTimeISO
-  repeatIntervalMinutes: Int
-  maxExecutions: Int
-}
-
-input ScheduledScriptsFiltersInput {
-  scriptId: ID
-  departmentId: ID
-  machineId: ID
-  status: ExecutionStatus
-  scheduleType: ScheduleType
-  isActive: Boolean
-}
-
 """Script execution status"""
 enum ExecutionStatus {
   CANCELLED
@@ -359,11 +406,12 @@ enum ExecutionType {
   SCHEDULED
 }
 
-"""Script schedule type"""
-enum ScheduleType {
-  IMMEDIATE
-  ONE_TIME
-  PERIODIC
+"""
+Política de firewall del departamento: ALLOW_ALL (Permitir Todo) o BLOCK_ALL (Bloquear Todo)
+"""
+enum FirewallPolicy {
+  ALLOW_ALL
+  BLOCK_ALL
 }
 
 type FirewallRuleSetType {
@@ -374,12 +422,12 @@ type FirewallRuleSetType {
   internalName: String!
   isActive: Boolean!
   lastSyncedAt: DateTimeISO
-  libvirtUuid: String
+  libvirtUuid: String @deprecated(reason: "Este campo es legacy de la arquitectura libvirt y ya no se utiliza con nftables")
   name: String!
   priority: Int!
   rules: [FirewallRuleType!]!
   updatedAt: DateTimeISO!
-  xmlContent: String
+  xmlContent: String @deprecated(reason: "Este campo es legacy de la arquitectura libvirt y ya no se utiliza con nftables")
 }
 
 type FirewallRuleType {
@@ -411,7 +459,9 @@ input FirstBootScriptInputType {
 }
 
 type FlushResultType {
-  libvirtFilterName: String!
+  """Nombre del chain de nftables donde se aplicaron las reglas"""
+  chainName: String!
+  libvirtFilterName: String! @deprecated(reason: "Use chainName instead. This field is from the legacy libvirt architecture.")
   rulesApplied: Int!
   success: Boolean!
   timestamp: DateTimeISO!
@@ -584,9 +634,17 @@ type KeepAliveMetrics {
   successRate: String!
 }
 
+"""
+Información de un chain de nftables asociado a una VM (anteriormente filtro libvirt)
+"""
 type LibvirtFilterInfoType {
-  name: String!
-  uuid: String
+  """Nombre del chain de nftables"""
+  chainName: String!
+  name: String! @deprecated(reason: "Use chainName instead. This field is from the legacy libvirt architecture.")
+  uuid: String @deprecated(reason: "Use vmId instead. This field is from the legacy libvirt architecture.")
+
+  """ID de la VM asociada al chain"""
+  vmId: String
 }
 
 """Login response with user data and token"""
@@ -807,11 +865,11 @@ type Mutation {
 
   """Calculate ISO checksum"""
   calculateISOChecksum(isoId: String!): String!
-  cancelScriptExecution(id: ID!): ScriptExecutionResponseType!
   cancelScheduledScript(executionId: ID!): ScheduleScriptResponseType!
+  cancelScriptExecution(id: ID!): ScriptExecutionResponseType!
   cleanupInfinibayFirewall: CleanupResultType!
   createApplication(input: CreateApplicationInputType!): ApplicationType!
-  createDepartment(name: String!): DepartmentType!
+  createDepartment(firewallConfig: CreateDepartmentFirewallInput, name: String!): DepartmentType!
   createDepartmentFirewallRule(departmentId: ID!, input: CreateFirewallRuleInput!): FirewallRuleType!
   createMachine(input: CreateMachineInputType!): Machine!
   createMachineTemplate(input: MachineTemplateInputType!): MachineTemplateType!
@@ -878,6 +936,7 @@ type Mutation {
 
   """Run Windows Defender quick scan on a VM"""
   runDefenderQuickScan(vmId: ID!): DefenderScanResult!
+  scheduleScript(input: ScheduleScriptInput!): ScheduleScriptResponseType!
   setNetworkBridgeName(input: BridgeNameInput!): Boolean!
   setNetworkIp(input: NetworkIpInput!): Boolean!
   setNetworkIpRange(input: IpRangeInput!): Boolean!
@@ -892,7 +951,9 @@ type Mutation {
   unassignScriptFromDepartment(departmentId: ID!, scriptId: ID!): Boolean!
   updateAppSettings(input: AppSettingsInput!): AppSettings!
   updateApplication(id: String!, input: CreateApplicationInputType!): ApplicationType!
+  updateDepartmentFirewallPolicy(departmentId: String!, input: UpdateDepartmentFirewallPolicyInput!): DepartmentType!
   updateDepartmentName(input: UpdateDepartmentNameInput!): DepartmentType!
+  updateDepartmentNetwork(input: UpdateDepartmentNetworkInput!): DepartmentType!
   updateFirewallRule(input: UpdateFirewallRuleInput!, ruleId: ID!): FirewallRuleType!
   updateMachineHardware(input: UpdateMachineHardwareInput!): Machine!
   updateMachineName(input: UpdateMachineNameInput!): Machine!
@@ -903,13 +964,20 @@ type Mutation {
 
   """Update a package on a virtual machine (legacy compatibility)"""
   updatePackage(machineId: ID!, packageName: String!): CommandResult!
-  scheduleScript(input: ScheduleScriptInput!): ScheduleScriptResponseType!
   updateScheduledScript(input: UpdateScheduledScriptInput!): ScheduleScriptResponseType!
   updateScript(input: UpdateScriptInput!): ScriptResponseType!
   updateUser(id: String!, input: UpdateUserInputType!): UserType!
 
   """Validate ISO file integrity"""
   validateISO(isoId: String!): Boolean!
+}
+
+type NatDiagnosticsType {
+  chainExists: Boolean!
+  ipForwardingEnabled: Boolean!
+  ruleDetails: String
+  ruleExists: Boolean!
+  tableExists: Boolean!
 }
 
 type Network {
@@ -1052,6 +1120,7 @@ type Query {
   """Get all available ISOs"""
   availableISOs: [ISO!]!
   backgroundHealthServiceStatus: BackgroundHealthServiceStatus!
+  captureDepartmentDhcpTraffic(departmentId: String!, durationSeconds: Int! = 30): DhcpTrafficCaptureType!
 
   """Check for application updates on a VM"""
   checkApplicationUpdates(vmId: ID!): ApplicationUpdates!
@@ -1082,14 +1151,9 @@ type Query {
   currentSnapshot(machineId: String!): Snapshot
   currentUser: UserType
   department(id: String!): DepartmentType
+  departmentNetworkDiagnostics(departmentId: String!): DepartmentNetworkDiagnosticsType!
   departmentScripts(departmentId: ID!): [ScriptType!]!
   departments: [DepartmentType!]!
-
-  """Get comprehensive network diagnostics for a department"""
-  departmentNetworkDiagnostics(departmentId: String!): DepartmentNetworkDiagnosticsType!
-
-  """Capture DHCP traffic on a department's bridge for debugging"""
-  captureDepartmentDhcpTraffic(departmentId: String!, durationSeconds: Int!): DhcpTrafficCaptureType!
   dueMaintenanceTasks: [MaintenanceTask!]!
   findDepartmentByName(name: String!): DepartmentType
   getAppSettings: AppSettings!
@@ -1155,13 +1219,13 @@ type Query {
 
   """Run a specific health check on a VM"""
   runHealthCheck(checkName: HealthCheckName!, vmId: ID!): GenericHealthCheckResponse!
+  scheduledScript(id: ID!): ScheduledScriptType
+  scheduledScripts(filters: ScheduledScriptsFiltersInput): [ScheduledScriptType!]!
   script(id: ID!): ScriptType
   scriptExecution(id: ID!): ScriptExecutionType
   scriptExecutions(limit: Int = 50, machineId: ID!, status: ExecutionStatus): [ScriptExecutionType!]!
   scriptExecutionsFiltered(filters: ScriptExecutionsFiltersInput!): ScriptExecutionsResponseType!
   scripts(filters: ScriptFiltersInput): [ScriptType!]!
-  scheduledScript(id: ID!): ScheduledScriptType
-  scheduledScripts(filters: ScheduledScriptsFiltersInput): [ScheduledScriptType!]!
 
   """Search for available packages on a virtual machine"""
   searchPackages(machineId: ID!, query: String!): [PackageInfo!]!
@@ -1324,42 +1388,32 @@ enum RuleSetType {
   VM
 }
 
-type ScriptExecutionResponseType {
-  error: String
-  execution: ScriptExecutionType
-  message: String
-  success: Boolean!
-}
-
-type ScriptExecutionsResponseType {
-  executions: [ScriptExecutionType!]!
-  hasMore: Boolean!
-  limit: Int!
-  offset: Int!
-  total: Int!
-}
-
-type ScriptExecutionType {
-  completedAt: DateTimeISO
-  createdAt: DateTimeISO!
-  error: String
-  executedAs: String
-  executionCount: Int!
-  executionType: ExecutionType!
-  exitCode: Int
-  id: ID!
+input ScheduleScriptInput {
+  departmentId: ID
   inputValues: JSON!
-  lastExecutedAt: DateTimeISO
-  machine: MachineType!
+  machineIds: [ID!]
   maxExecutions: Int
   repeatIntervalMinutes: Int
+  runAs: String
+  scheduleType: ScheduleType!
   scheduledFor: DateTimeISO
-  script: ScriptType!
-  startedAt: DateTimeISO
-  status: ExecutionStatus!
-  stderr: String
-  stdout: String
-  triggeredBy: UserType
+  scriptId: ID!
+}
+
+type ScheduleScriptResponseType {
+  error: String
+  executionIds: [ID!]
+  executions: [ScheduledScriptType!]
+  message: String
+  success: Boolean!
+  warnings: [String!]
+}
+
+"""Script schedule type"""
+enum ScheduleType {
+  IMMEDIATE
+  ONE_TIME
+  PERIODIC
 }
 
 type ScheduledScriptType {
@@ -1386,15 +1440,65 @@ type ScheduledScriptType {
   stderr: String
   stdout: String
   triggeredBy: UserType
-  updatedAt: DateTimeISO!
 }
 
-type ScheduleScriptResponseType {
+input ScheduledScriptsFiltersInput {
+  departmentId: ID
+  limit: Int = 50
+  machineId: ID
+  scheduleType: ScheduleType
+  scriptId: ID
+  status: [ExecutionStatus!]
+}
+
+type ScriptExecutionResponseType {
   error: String
-  executionIds: [String!]
-  executions: [ScheduledScriptType!]
+  execution: ScriptExecutionType
   message: String
   success: Boolean!
+}
+
+type ScriptExecutionType {
+  completedAt: DateTimeISO
+  createdAt: DateTimeISO!
+  error: String
+  executedAs: String
+  executionCount: Int!
+  executionType: ExecutionType!
+  exitCode: Int
+  id: ID!
+  inputValues: JSON!
+  lastExecutedAt: DateTimeISO
+  machine: MachineType!
+  maxExecutions: Int
+  repeatIntervalMinutes: Int
+  scheduledFor: DateTimeISO
+  script: ScriptType!
+  startedAt: DateTimeISO
+  status: ExecutionStatus!
+  stderr: String
+  stdout: String
+  triggeredBy: UserType
+}
+
+input ScriptExecutionsFiltersInput {
+  departmentId: ID
+  endDate: DateTimeISO
+  executionType: ExecutionType
+  limit: Int! = 50
+  machineId: ID
+  offset: Int! = 0
+  scriptId: ID
+  startDate: DateTimeISO
+  status: ExecutionStatus
+}
+
+type ScriptExecutionsResponseType {
+  executions: [ScriptExecutionType!]!
+  hasMore: Boolean!
+  limit: Int!
+  offset: Int!
+  total: Int!
 }
 
 input ScriptFiltersInput {
@@ -1402,18 +1506,6 @@ input ScriptFiltersInput {
   os: OS
   search: String
   tags: [String!]
-}
-
-input ScriptExecutionsFiltersInput {
-  departmentId: ID
-  endDate: DateTimeISO
-  executionType: ExecutionType
-  limit: Int = 50
-  machineId: ID
-  offset: Int = 0
-  scriptId: ID
-  startDate: DateTimeISO
-  status: ExecutionStatus
 }
 
 """Script file format"""
@@ -1543,9 +1635,26 @@ type SystemResources {
   memory: SystemResourceMemory!
 }
 
+"""
+The javascript `Date` as integer. Type represents date and time as number of milliseconds from start of UNIX epoch.
+"""
+scalar Timestamp
+
+input UpdateDepartmentFirewallPolicyInput {
+  firewallCustomRules: JSON
+  firewallDefaultConfig: String! = "allow_outbound"
+  firewallPolicy: FirewallPolicy! = BLOCK_ALL
+}
+
 input UpdateDepartmentNameInput {
   id: ID! = ""
   name: String! = ""
+}
+
+input UpdateDepartmentNetworkInput {
+  dnsServers: [String!]
+  id: ID! = ""
+  ntpServers: [String!]
 }
 
 input UpdateFirewallRuleInput {
@@ -1602,6 +1711,15 @@ input UpdateMaintenanceTaskInput {
   name: String
   parameters: JSONObject
   runAt: DateTimeISO
+}
+
+input UpdateScheduledScriptInput {
+  executionId: ID!
+  inputValues: JSON
+  maxExecutions: Int
+  repeatIntervalMinutes: Int
+  runAs: String
+  scheduledFor: DateTimeISO
 }
 
 input UpdateScriptInput {
@@ -1828,74 +1946,4 @@ type WindowsUpdateItem {
   severity: String!
   sizeInMB: Float!
   title: String!
-}
-
-# ===========================================================================
-# Department Network Diagnostics Types
-# ===========================================================================
-
-type BridgeDiagnosticsType {
-  exists: Boolean!
-  isUp: Boolean!
-  ipAddresses: [String!]!
-  attachedInterfaces: [String!]!
-  mtu: Int
-  state: String
-}
-
-type DnsmasqDiagnosticsType {
-  isRunning: Boolean!
-  pid: Int
-  pidMatches: Boolean!
-  configPath: String!
-  configExists: Boolean!
-  leasePath: String!
-  leaseFileExists: Boolean!
-  logPath: String!
-  logExists: Boolean!
-  listeningPort: Boolean!
-  recentLogLines: [String!]
-}
-
-type BrNetfilterDiagnosticsType {
-  moduleLoaded: Boolean!
-  callIptables: Int!
-  callIp6tables: Int!
-  callArptables: Int!
-  persistenceFileExists: Boolean!
-}
-
-type NatDiagnosticsType {
-  ruleExists: Boolean!
-  tableExists: Boolean!
-  chainExists: Boolean!
-  ipForwardingEnabled: Boolean!
-  ruleDetails: String
-}
-
-type DepartmentNetworkDiagnosticsType {
-  departmentId: String!
-  departmentName: String!
-  timestamp: DateTimeISO!
-  bridge: BridgeDiagnosticsType!
-  dnsmasq: DnsmasqDiagnosticsType!
-  brNetfilter: BrNetfilterDiagnosticsType!
-  nat: NatDiagnosticsType!
-  recommendations: [String!]!
-  manualCommands: [String!]!
-}
-
-type DhcpPacketSummaryType {
-  totalPackets: Int!
-  discoverPackets: Int!
-  offerPackets: Int!
-  requestPackets: Int!
-  ackPackets: Int!
-}
-
-type DhcpTrafficCaptureType {
-  bridgeName: String!
-  duration: Int!
-  packets: [String!]!
-  summary: DhcpPacketSummaryType!
 }

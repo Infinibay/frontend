@@ -148,10 +148,9 @@ export const fetchVms = createAsyncThunk(
 
 export const deleteVm = createAsyncThunk(
   'vms/deleteVm',
-  async (payload, { dispatch, rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
       await executeGraphQLMutation(DestroyMachineDocument, { id: payload.id });
-      await dispatch(fetchVms());
       return payload;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -173,10 +172,9 @@ export const createVm = createAsyncThunk(
 
 export const playVm = createAsyncThunk(
   'vms/playVm',
-  async (payload, { dispatch, rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
       await executeGraphQLMutation(PowerOnDocument, { id: payload.id });
-      await dispatch(fetchVms());
       return payload;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -186,10 +184,9 @@ export const playVm = createAsyncThunk(
 
 export const pauseVm = createAsyncThunk(
   'vms/pauseVm',
-  async (payload, { dispatch, rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
       await executeGraphQLMutation(SuspendDocument, { id: payload.id });
-      await dispatch(fetchVms());
       return payload;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -199,10 +196,9 @@ export const pauseVm = createAsyncThunk(
 
 export const stopVm = createAsyncThunk(
   'vms/stopVm',
-  async (payload, { dispatch, rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
       await executeGraphQLMutation(PowerOffDocument, { id: payload.id });
-      await dispatch(fetchVms());
       return payload;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -235,6 +231,8 @@ const initialState = {
     lastSuccessfulFetch: null,
     retryCount: 0
   },
+  // Track pending actions per VM: { [vmId]: 'play' | 'pause' | 'stop' | 'delete' }
+  pendingActions: {},
   loading: {
     fetch: false,
     create: false,
@@ -287,6 +285,9 @@ const vmsSlice = createSlice({
         state.items[index] = updatedVm;
         debug.success('realtime', 'VM updated', updatedVm.name);
 
+        // Clear pending action when real-time update arrives
+        delete state.pendingActions[updatedVm.id];
+
         // Update selected machine if it's the one being updated
         if (state.selectedMachine?.id === updatedVm.id) {
           state.selectedMachine = updatedVm;
@@ -298,6 +299,9 @@ const vmsSlice = createSlice({
       const vmId = deletedVm.id || deletedVm;
       state.items = state.items.filter(vm => vm.id !== vmId);
       debug.success('realtime', 'VM deleted', vmId);
+
+      // Clear pending action when VM is deleted
+      delete state.pendingActions[vmId];
 
       // Clear selected machine if it was deleted
       if (state.selectedMachine?.id === vmId) {
@@ -311,6 +315,9 @@ const vmsSlice = createSlice({
         // Update the VM with new data, especially status
         state.items[index] = { ...state.items[index], ...vmData };
         debug.success('realtime', `VM ${statusAction}`, state.items[index].name);
+
+        // Clear pending action when real-time status change arrives
+        delete state.pendingActions[id];
 
         // Update selected machine if it's the one being updated
         if (state.selectedMachine?.id === id) {
@@ -391,26 +398,31 @@ const vmsSlice = createSlice({
       })
 
       // Delete VM
-      .addCase(deleteVm.pending, (state) => {
+      .addCase(deleteVm.pending, (state, action) => {
         state.loading.delete = true;
         state.error.delete = null;
+        state.pendingActions[action.meta.arg.id] = 'delete';
       })
       .addCase(deleteVm.fulfilled, (state, action) => {
         state.loading.delete = false;
+        delete state.pendingActions[action.payload.id];
         state.items = state.items.filter((vm) => vm.id !== action.payload.id);
       })
       .addCase(deleteVm.rejected, (state, action) => {
         state.loading.delete = false;
         state.error.delete = action.payload || 'Failed to delete VM';
+        delete state.pendingActions[action.meta.arg.id];
       })
 
       // Play VM
-      .addCase(playVm.pending, (state) => {
+      .addCase(playVm.pending, (state, action) => {
         state.loading.play = true;
         state.error.play = null;
+        state.pendingActions[action.meta.arg.id] = 'play';
       })
       .addCase(playVm.fulfilled, (state, action) => {
         state.loading.play = false;
+        delete state.pendingActions[action.payload.id];
         const index = state.items.findIndex((vm) => vm.id === action.payload.id);
         if (index !== -1) {
           state.items[index].status = "running";
@@ -419,15 +431,18 @@ const vmsSlice = createSlice({
       .addCase(playVm.rejected, (state, action) => {
         state.loading.play = false;
         state.error.play = action.payload || 'Failed to start VM';
+        delete state.pendingActions[action.meta.arg.id];
       })
 
       // Pause VM
-      .addCase(pauseVm.pending, (state) => {
+      .addCase(pauseVm.pending, (state, action) => {
         state.loading.pause = true;
         state.error.pause = null;
+        state.pendingActions[action.meta.arg.id] = 'pause';
       })
       .addCase(pauseVm.fulfilled, (state, action) => {
         state.loading.pause = false;
+        delete state.pendingActions[action.payload.id];
         const index = state.items.findIndex((vm) => vm.id === action.payload.id);
         if (index !== -1) {
           state.items[index].status = "suspended";
@@ -436,15 +451,18 @@ const vmsSlice = createSlice({
       .addCase(pauseVm.rejected, (state, action) => {
         state.loading.pause = false;
         state.error.pause = action.payload || 'Failed to pause VM';
+        delete state.pendingActions[action.meta.arg.id];
       })
 
       // Stop VM
-      .addCase(stopVm.pending, (state) => {
+      .addCase(stopVm.pending, (state, action) => {
         state.loading.stop = true;
         state.error.stop = null;
+        state.pendingActions[action.meta.arg.id] = 'stop';
       })
       .addCase(stopVm.fulfilled, (state, action) => {
         state.loading.stop = false;
+        delete state.pendingActions[action.payload.id];
         const index = state.items.findIndex((vm) => vm.id === action.payload.id);
         if (index !== -1) {
           state.items[index].status = "off";
@@ -453,6 +471,7 @@ const vmsSlice = createSlice({
       .addCase(stopVm.rejected, (state, action) => {
         state.loading.stop = false;
         state.error.stop = action.payload || 'Failed to stop VM';
+        delete state.pendingActions[action.meta.arg.id];
       })
 
       // Move Machine

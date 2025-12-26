@@ -10,6 +10,7 @@ import { fetchVms } from "@/state/slices/vms";
 import { countMachines } from "@/app/computers/utils/groupMachines";
 import { createDebugger } from '@/utils/debug';
 import { getGlassClasses } from "@/utils/glass-effects";
+import { Building2 } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -25,7 +26,7 @@ import { moveMachine } from "@/state/slices/vms";
 
 const debug = createDebugger('frontend:components:computers-list');
 
-function DraggableUserPc({ machine, selected, onSelect, size, onPlay, onPause, onStop, onDelete }) {
+function DraggableUserPc({ machine, selected, onSelect, size, onPlay, onPause, onStop, onDelete, isPending }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: machine.id,
     data: { type: 'machine' }
@@ -44,6 +45,7 @@ function DraggableUserPc({ machine, selected, onSelect, size, onPlay, onPause, o
         onPause={() => onPause?.(machine)}
         onStop={() => onStop?.(machine)}
         onDelete={() => onDelete?.(machine)}
+        isPending={isPending}
         className={cn(isDragging && "opacity-50")}
       />
     </div>
@@ -57,23 +59,40 @@ function DroppableDepartment({ departmentId, departmentName, children, isOver })
   });
 
   return (
-    <div ref={setNodeRef} className="space-y-4">
+    <div ref={setNodeRef} className={cn(
+      "overflow-hidden transition-all duration-200",
+      getGlassClasses({
+        glass: isOver ? 'medium' : 'subtle',
+        elevation: isOver ? 3 : 2,
+        radius: 'lg'
+      }),
+      isOver && "border-primary/30"
+    )}>
       {departmentName && (
-        <h2 className="text-2xl font-semibold tracking-tight">
-          {departmentName}
-        </h2>
-      )}
-      <div
-        className={cn(
-          "min-h-[100px] p-4 transition-all duration-200",
+        <div className={cn(
+          "flex items-center gap-3 px-4 py-3 border-b",
           getGlassClasses({
-            glass: isOver ? 'medium' : 'subtle',
-            elevation: isOver ? 3 : 2,
-            radius: 'lg'
+            glass: 'subtle',
+            elevation: 1,
+            radius: 'none'
           }),
-          isOver && "border-primary/30 bg-primary/10"
-        )}
-      >
+          "bg-glass-bg-subtle/50"
+        )}>
+          <div className={cn(
+            "flex items-center justify-center w-8 h-8 rounded-lg",
+            "bg-primary/10"
+          )}>
+            <Building2 className="h-4 w-4 text-primary" />
+          </div>
+          <h2 className="text-lg font-semibold tracking-tight text-glass-text-primary">
+            {departmentName}
+          </h2>
+        </div>
+      )}
+      <div className={cn(
+        "min-h-[100px] p-4 transition-colors duration-200",
+        isOver && "bg-primary/5"
+      )}>
         {children}
       </div>
     </div>
@@ -93,6 +112,7 @@ export function ComputersList({
   onPause,
   onStop,
   onDelete,
+  pendingActions = {},
 }) {
   const dispatch = useDispatch();
   const [activeId, setActiveId] = useState(null);
@@ -262,6 +282,7 @@ export function ComputersList({
                   onPause={onPause}
                   onStop={onStop}
                   onDelete={onDelete}
+                  isPending={!!pendingActions[machine.id]}
                 />
               ))}
               {byDepartment && (!departmentData.machines || departmentData.machines.length === 0) && (

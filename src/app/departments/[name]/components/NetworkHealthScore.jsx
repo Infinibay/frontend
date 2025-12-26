@@ -14,11 +14,11 @@ const NetworkHealthScore = ({ diagnostics }) => {
   const getScoreColor = (status) => {
     switch (status) {
       case 'healthy':
-        return 'text-green-600';
+        return 'text-green-600 dark:text-green-400';
       case 'degraded':
-        return 'text-yellow-600';
+        return 'text-yellow-600 dark:text-yellow-400';
       case 'critical':
-        return 'text-red-600';
+        return 'text-red-600 dark:text-red-400';
       default:
         return 'text-muted-foreground';
     }
@@ -27,11 +27,11 @@ const NetworkHealthScore = ({ diagnostics }) => {
   const getBackgroundStyle = (status) => {
     switch (status) {
       case 'healthy':
-        return 'bg-green-50/80 border-green-200';
+        return 'bg-green-50/80 dark:bg-green-950/40 border-green-200 dark:border-green-800';
       case 'degraded':
-        return 'bg-yellow-50/80 border-yellow-200';
+        return 'bg-yellow-50/80 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800';
       case 'critical':
-        return 'bg-red-50/80 border-red-200';
+        return 'bg-red-50/80 dark:bg-red-950/40 border-red-200 dark:border-red-800';
       default:
         return 'bg-muted/50 border-border';
     }
@@ -73,7 +73,7 @@ const NetworkHealthScore = ({ diagnostics }) => {
             <h3 className={cn('text-xl font-semibold mb-1', getScoreColor(health.status))}>
               {statusInfo.title}
             </h3>
-            <p className="text-sm text-muted-foreground max-w-md">
+            <p className="text-sm text-foreground/70 max-w-md">
               {statusInfo.description}
             </p>
           </div>
@@ -84,7 +84,7 @@ const NetworkHealthScore = ({ diagnostics }) => {
           {/* Checks summary */}
           <div className="flex items-center gap-2">
             {passedCount > 0 && (
-              <Badge className="bg-green-100 text-green-800 border-green-300">
+              <Badge className="bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700">
                 <CheckCircle className="w-3 h-3 mr-1" />
                 {passedCount} OK
               </Badge>

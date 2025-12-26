@@ -91,12 +91,21 @@ export function ConfigurationStep({ id }) {
                     "glass-subtle border border-border/20",
                     !isDisabled && 'cursor-pointer hover:scale-105 hover:z-10',
                     isDisabled && 'opacity-60 cursor-not-allowed',
-                    stepValues.os === os.id && !isDisabled && 'ring-2 ring-primary/50 bg-primary/10',
-                    !isDisabled && 'hover:border-primary/50'
+                    stepValues.os === os.id && !isDisabled && 'ring-2 ring-primary border-primary bg-primary/20 scale-[1.02]',
+                    !isDisabled && stepValues.os !== os.id && 'hover:border-primary/50'
                   )}
                   onClick={() => !isDisabled && setValue(`${id}.os`, os.id)}
                 >
                   <div className="p-6">
+                    {/* Selection checkmark */}
+                    {stepValues.os === os.id && !isDisabled && (
+                      <div className="absolute top-2 left-2 h-6 w-6 rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center justify-center z-10">
+                        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+
                     {/* ISO status badge */}
                     {!available && (
                       <div className="absolute top-2 right-2">

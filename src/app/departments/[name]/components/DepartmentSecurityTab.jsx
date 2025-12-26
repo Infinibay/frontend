@@ -14,6 +14,7 @@ import FirewallStatusHeader from '@/components/security/firewall/FirewallStatusH
 import FirewallTemplateSelector from '@/components/security/firewall/FirewallTemplateSelector';
 import CreateDepartmentFirewallRuleDialog from './security/CreateDepartmentFirewallRuleDialog';
 import NoFirewallRulesWarning from '@/components/security/NoFirewallRulesWarning';
+import DepartmentFirewallPolicyEditor from './security/DepartmentFirewallPolicyEditor';
 
 const debug = createDebugger('frontend:components:department-security-tab');
 
@@ -22,7 +23,8 @@ const debug = createDebugger('frontend:components:department-security-tab');
  * These rules are inherited by all VMs in the department
  * Updated to use shared components
  */
-const DepartmentSecurityTab = ({ departmentId }) => {
+const DepartmentSecurityTab = ({ department }) => {
+  const departmentId = department?.id;
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -128,6 +130,9 @@ const DepartmentSecurityTab = ({ departmentId }) => {
 
   return (
     <div className="space-y-6">
+      {/* Firewall Policy Editor - Main policy configuration */}
+      <DepartmentFirewallPolicyEditor department={department} />
+
       {/* Warning when no rules are configured */}
       {hasNoRules && (
         <NoFirewallRulesWarning

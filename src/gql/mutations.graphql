@@ -301,14 +301,17 @@ mutation setupNode {
   }
 }
 
-mutation createDepartment($name: String!) {
-  createDepartment(name: $name) {
+mutation createDepartment($name: String!, $firewallConfig: CreateDepartmentFirewallInput) {
+  createDepartment(name: $name, firewallConfig: $firewallConfig) {
     id
     name
     createdAt
     internetSpeed
     ipSubnet
     totalMachines
+    firewallPolicy
+    firewallDefaultConfig
+    firewallCustomRules
   }
 }
 
@@ -327,6 +330,20 @@ mutation updateDepartmentName($input: UpdateDepartmentNameInput!) {
   updateDepartmentName(input: $input) {
     id
     name
+    createdAt
+    internetSpeed
+    ipSubnet
+    totalMachines
+  }
+}
+
+mutation UpdateDepartmentFirewallPolicy($departmentId: String!, $input: UpdateDepartmentFirewallPolicyInput!) {
+  updateDepartmentFirewallPolicy(departmentId: $departmentId, input: $input) {
+    id
+    name
+    firewallPolicy
+    firewallDefaultConfig
+    firewallCustomRules
     createdAt
     internetSpeed
     ipSubnet

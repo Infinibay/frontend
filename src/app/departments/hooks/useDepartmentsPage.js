@@ -65,20 +65,29 @@ export const useDepartmentsPage = () => {
   }, [refreshDepartments]);
   
   // Handle creating a new department
-  const handleCreateDepartment = useCallback(async (e) => {
+  const handleCreateDepartment = useCallback(async (e, formData) => {
     e.preventDefault();
-    const trimmedName = newDepartmentName.trim();
+    const trimmedName = formData?.name || newDepartmentName.trim();
 
     if (!trimmedName) {
       setIsCreateDeptDialogOpen(false);
       return;
     }
 
-    debug.info('Creating department:', trimmedName);
+    debug.info('Creating department:', trimmedName, 'with firewall config:', formData);
     setIsCreating(true);
 
     try {
-      await dispatch(createDepartment({ name: trimmedName })).unwrap();
+      // Build the input object with optional firewall configuration
+      const input = {
+        name: trimmedName,
+        firewallConfig: formData?.firewallPolicy ? {
+          firewallPolicy: formData.firewallPolicy,
+          firewallDefaultConfig: formData.firewallDefaultConfig
+        } : null
+      };
+
+      await dispatch(createDepartment(input)).unwrap();
 
       // Refresh departments to get the updated list
       refreshDepartments();
@@ -96,7 +105,7 @@ export const useDepartmentsPage = () => {
       setToastProps({
         variant: "destructive",
         title: "Error",
-        description: "Failed to create department. Please try again."
+        description: error.message || "Failed to create department. Please try again."
       });
       setShowToast(true);
     } finally {

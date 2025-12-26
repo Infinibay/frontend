@@ -11,7 +11,7 @@ import { useFormError } from "@/components/ui/form-error-provider"
 import { selectDepartments, selectDepartmentsLoading } from "@/state/slices/departments"
 import { cn } from "@/lib/utils"
 import { createDebugger } from "@/utils/debug"
-import { Building2, User, Lock, KeyRound, Server } from "lucide-react"
+import { Building2, User, Lock, KeyRound, Server, Eye, EyeOff } from "lucide-react"
 
 const debug = createDebugger('frontend:components:basic-info-step')
 
@@ -25,6 +25,21 @@ export function BasicInfoStep({ id, departmentId = null }) {
   const stepValues = values[id] || {};
   const departments = useSelector(selectDepartments);
   const isLoading = useSelector(selectDepartmentsLoading);
+
+  // Password visibility state
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
+  // Password mismatch detection
+  const passwordMismatch = React.useMemo(() => {
+    if (!stepValues.confirmPassword || !stepValues.password) return false;
+    return stepValues.confirmPassword !== stepValues.password;
+  }, [stepValues.confirmPassword, stepValues.password]);
+
+  const passwordsMatch = React.useMemo(() => {
+    if (!stepValues.confirmPassword || !stepValues.password) return false;
+    return stepValues.confirmPassword === stepValues.password;
+  }, [stepValues.confirmPassword, stepValues.password]);
 
   React.useEffect(() => {
     debug.log('render', 'BasicInfoStep rendered:', {
@@ -107,7 +122,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
                 >
                   <SelectValue placeholder="Select a department" />
                 </SelectTrigger>
-                <SelectContent loading={isLoading} glass="minimal">
+                <SelectContent loading={isLoading} glass="medium">
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={String(dept.id)}>
                       {dept.name}
@@ -222,19 +237,79 @@ export function BasicInfoStep({ id, departmentId = null }) {
                   </p>
                 </div>
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter a secure password"
-                value={stepValues.password || ''}
-                onChange={(e) => {
-                  debug.log('input', 'Password changed:', { hasValue: e.target.value.length > 0 })
-                  setValue(`${id}.password`, e.target.value)
-                }}
-                className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md ${getError('password') ? 'border-red-500' : ''}`}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter a secure password"
+                  value={stepValues.password || ''}
+                  onChange={(e) => {
+                    debug.log('input', 'Password changed:', { hasValue: e.target.value.length > 0 })
+                    setValue(`${id}.password`, e.target.value)
+                  }}
+                  className={`bg-background hover:bg-accent/50 transition-all focus:shadow-md pr-10 ${getError('password') ? 'border-red-500' : ''}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {getError('password') && (
                 <p className="text-sm text-red-500" role="alert">{getError('password')}</p>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                  <Lock className="h-5 w-5 text-purple-500" />
+                </div>
+                <div className="flex-1">
+                  <Label
+                    htmlFor="confirmPassword"
+                    className="text-base font-semibold"
+                  >
+                    Confirm Password
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Re-enter your password to confirm
+                  </p>
+                </div>
+              </div>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm your password"
+                  value={stepValues.confirmPassword || ''}
+                  onChange={(e) => setValue(`${id}.confirmPassword`, e.target.value)}
+                  className={cn(
+                    "bg-background hover:bg-accent/50 transition-all focus:shadow-md pr-10",
+                    (passwordMismatch || getError('confirmPassword')) && "border-red-500",
+                    passwordsMatch && !getError('confirmPassword') && "border-green-500"
+                  )}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {(passwordMismatch || getError('confirmPassword')) && (
+                <p className="text-sm text-red-500" role="alert">
+                  {getError('confirmPassword') || 'Passwords do not match'}
+                </p>
+              )}
+              {passwordsMatch && !getError('confirmPassword') && (
+                <p className="text-sm text-green-600">Passwords match</p>
               )}
             </div>
           </div>

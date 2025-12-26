@@ -31,6 +31,7 @@ import NetworkHealthScore from './NetworkHealthScore';
 import NetworkFlowDiagram from './NetworkFlowDiagram';
 import ComponentStatusCards from './ComponentStatusCards';
 import DhcpTrafficCapture from './DhcpTrafficCapture';
+import { calculateNetworkHealth } from './networkDiagnosticsHelp';
 
 const DepartmentNetworkTab = ({ departmentId }) => {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -116,20 +117,25 @@ const DepartmentNetworkTab = ({ departmentId }) => {
       {/* Network Health Score - The main status indicator */}
       <NetworkHealthScore diagnostics={diagnostics} />
 
-      {/* Critical Issues Alert */}
-      {recommendations.length > 0 && (
-        <Alert variant="destructive" className="border-2">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Issues Detected</AlertTitle>
-          <AlertDescription>
-            <ul className="list-disc list-inside space-y-1 mt-2">
-              {recommendations.map((rec, idx) => (
-                <li key={idx}>{rec}</li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Critical Issues Alert - only show when network is not healthy */}
+      {(() => {
+        const health = calculateNetworkHealth(diagnostics);
+        // Only show issues when network status is degraded or critical
+        if (health.status === 'healthy' || recommendations.length === 0) return null;
+        return (
+          <Alert variant="destructive" className="border-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Issues Detected</AlertTitle>
+            <AlertDescription>
+              <ul className="list-disc list-inside space-y-1 mt-2">
+                {recommendations.map((rec, idx) => (
+                  <li key={idx}>{rec}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        );
+      })()}
 
       {/* Network Flow Diagram */}
       <NetworkFlowDiagram diagnostics={diagnostics} />

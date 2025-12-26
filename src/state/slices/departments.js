@@ -10,7 +10,8 @@ import {
     FindDepartmentByNameDocument,
     CreateDepartmentDocument,
     DestroyDepartmentDocument,
-    UpdateDepartmentNameDocument
+    UpdateDepartmentNameDocument,
+    UpdateDepartmentFirewallPolicyDocument
 } from '@/gql/hooks';
 
 const executeGraphQLMutation = async (mutation, variables) => {
@@ -94,7 +95,11 @@ export const fetchDepartmentByName = createAsyncThunk(
 export const createDepartment = createAsyncThunk(
     'departments/createDepartment',
     async (input) => {
-        const data = await executeGraphQLMutation(CreateDepartmentDocument, { name: input.name });
+        const variables = {
+            name: input.name,
+            firewallConfig: input.firewallConfig || null
+        };
+        const data = await executeGraphQLMutation(CreateDepartmentDocument, variables);
         return data.createDepartment;
     }
 );
@@ -120,6 +125,17 @@ export const updateDepartmentName = createAsyncThunk(
     }
 );
 
+export const updateDepartmentFirewallPolicy = createAsyncThunk(
+    'departments/updateDepartmentFirewallPolicy',
+    async ({ departmentId, input }) => {
+        const data = await executeGraphQLMutation(
+            UpdateDepartmentFirewallPolicyDocument,
+            { departmentId, input }
+        );
+        return data.updateDepartmentFirewallPolicy;
+    }
+);
+
 const departmentsSlice = createSlice({
     name: 'departments',
     initialState: {
@@ -130,7 +146,8 @@ const departmentsSlice = createSlice({
             fetchByName: false,
             create: false,
             delete: false,
-            updateName: false
+            updateName: false,
+            updateFirewallPolicy: false
         },
         error: {
             fetch: null,
@@ -138,7 +155,8 @@ const departmentsSlice = createSlice({
             fetchByName: null,
             create: null,
             delete: null,
-            updateName: null
+            updateName: null,
+            updateFirewallPolicy: null
         }
     },
     reducers: {
@@ -277,6 +295,23 @@ const departmentsSlice = createSlice({
             .addCase(updateDepartmentName.rejected, (state, action) => {
                 state.loading.updateName = false;
                 state.error.updateName = action.error.message;
+            })
+
+            // Update Department Firewall Policy
+            .addCase(updateDepartmentFirewallPolicy.pending, (state) => {
+                state.loading.updateFirewallPolicy = true;
+                state.error.updateFirewallPolicy = null;
+            })
+            .addCase(updateDepartmentFirewallPolicy.fulfilled, (state, action) => {
+                state.loading.updateFirewallPolicy = false;
+                const index = state.items.findIndex((dept) => dept.id === action.payload.id);
+                if (index !== -1) {
+                    state.items[index] = action.payload;
+                }
+            })
+            .addCase(updateDepartmentFirewallPolicy.rejected, (state, action) => {
+                state.loading.updateFirewallPolicy = false;
+                state.error.updateFirewallPolicy = action.error.message;
             });
     },
 });
@@ -295,3 +330,5 @@ export const selectDepartments = (state) => state.departments.items;
 export const selectDepartmentsLoading = (state) => state.departments.loading.fetch;
 export const selectDepartmentError = (state) => state.departments.error.fetch;
 export const selectDepartmentDeleteError = (state) => state.departments.error.delete;
+export const selectFirewallPolicyLoading = (state) => state.departments.loading.updateFirewallPolicy;
+export const selectFirewallPolicyError = (state) => state.departments.error.updateFirewallPolicy;

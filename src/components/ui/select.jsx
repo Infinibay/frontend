@@ -1110,8 +1110,9 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
 
   const glassEffect = React.useMemo(() => {
     if (!glass) return { content: '' }
+    // Use stronger background for better visibility while maintaining glass effect
     return {
-      content: `${contentGlass} bg-brand-celeste/5 border-brand-celeste/10 ${blur}`
+      content: `${contentGlass} bg-background/95 backdrop-blur-xl border-border/30 shadow-xl`
     }
   }, [contentGlass, blur, glass])
 
@@ -1339,30 +1340,18 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
         <SelectPrimitive.Content
           ref={ref}
           className={cn(
-            // Dynamic z-index: higher when inside dialogs to ensure proper layering
-            `relative ${isInDialog ? 'z-[1050]' : 'z-50'} size-container max-h-96 min-w-[12rem] overflow-hidden rounded-xl border shadow-lg`,
-            // Enhanced 6-tier glassmorphism with brand color integration
-            glass ? cn(
-              glassEffect.content,
-              reducedTransparencyContent,
-              getBrandFormGlow('celeste', 'default')
-            ) : "glass-medium border-border/20 bg-background/95 backdrop-blur-md",
-            "text-foreground",
-            // Premium animations using form-animations.js utilities
-            FORM_ANIMATION_CLASSES.base,
-            "animate-in fade-in-0 zoom-in-98",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-98 data-[state=open]:zoom-in-98",
-            "data-[state=closed]:duration-200 data-[state=open]:duration-300",
-            "data-[state=closed]:ease-smooth data-[state=open]:ease-bounce",
-            // Enhanced directional slide animations with spring physics
-            "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
-            "data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-            position === "popper" &&
-              "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
-            sizeClasses[effectiveSize],
-            performanceOptimization,
+            // Base layout
+            "relative overflow-hidden rounded-md border shadow-md",
+            isInDialog ? 'z-[1050]' : 'z-50',
+            "max-h-96 min-w-[8rem]",
+            // Background - clean glass effect
+            "bg-popover/95 backdrop-blur-sm border-border",
+            "text-popover-foreground",
+            // Simple animations
+            "animate-in fade-in-0 zoom-in-95",
+            "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+            "data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
+            position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1",
             className
           )}
           position={position}
@@ -1373,8 +1362,7 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
           <SelectPrimitive.Viewport
             ref={viewportRef}
             className={cn(
-              "relative py-2",
-              viewportSizeClasses[effectiveSize],
+              "relative p-1",
               position === "popper" &&
                 "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
             )}
@@ -1608,47 +1596,36 @@ const SelectItem = React.forwardRef(({ className, children, size, disabled, valu
       role="option"
       aria-selected={String(selectedValue) === String(value)}
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-center rounded-lg mx-2 my-0.5 px-3 py-2.5 outline-none group transition-all duration-150 ease-out",
-        FORM_ANIMATION_CLASSES.base,
-        // Enhanced disabled state with proper styling
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed",
-        "disabled:opacity-40 disabled:cursor-not-allowed",
-        // Default state with subtle background
-        "text-foreground/80",
-        // Sophisticated hover effects
+        // Base layout - clean and simple
+        "relative flex w-full cursor-pointer select-none items-center",
+        "rounded-md px-2 py-1.5 text-sm outline-none",
+        "transition-colors duration-100",
+        // Disabled state
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        // Default state
+        "text-foreground",
+        // Hover state - simple background change, no scale
         "hover:bg-accent hover:text-accent-foreground",
-        "hover:scale-[1.01] hover:shadow-sm",
-        // Focus states
-        "focus:bg-accent focus:text-accent-foreground focus:outline-none",
-        "focus:ring-2 focus:ring-primary/20 focus:ring-offset-1",
-        // Keyboard navigation highlighting
-        isHighlighted && "bg-accent text-accent-foreground ring-2 ring-primary/20 ring-offset-1",
-        // Selected state with primary color highlights
-        "data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary",
-        "data-[state=checked]:font-medium data-[state=checked]:border-l-2 data-[state=checked]:border-primary",
-        // Size and layout improvements
-        "min-h-[2.25rem] text-sm font-medium",
-        optimizeFormGlassPerformance(),
+        // Focus state
+        "focus:bg-accent focus:text-accent-foreground",
+        // Keyboard navigation
+        isHighlighted && "bg-accent text-accent-foreground",
+        // Selected state - subtle indicator
+        "data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:font-medium",
         className
       )}
       data-highlighted={isHighlighted ? "true" : undefined}
       {...props}>
 
-      {/* Clean check icon */}
-      <span className="absolute right-3 flex items-center justify-center">
-        <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="h-4 w-4 text-primary transition-all duration-150" />
-        </SelectPrimitive.ItemIndicator>
-      </span>
-
       {/* Content text */}
-      <SelectPrimitive.ItemText className={cn(
-        "flex-1 text-left pr-8",
-        "group-data-[state=checked]:font-medium",
-        disabled && "text-muted-foreground/50"
-      )}>
+      <SelectPrimitive.ItemText className="flex-1 truncate">
         {children}
       </SelectPrimitive.ItemText>
+
+      {/* Check icon - inline, not absolute */}
+      <SelectPrimitive.ItemIndicator className="ml-auto pl-2">
+        <CheckIcon className="h-4 w-4" />
+      </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   )
 })
