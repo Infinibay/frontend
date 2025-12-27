@@ -26,21 +26,21 @@ export const CATEGORIES = {
 // Urgency badge configuration
 export const URGENCY_BADGES = {
   IMMEDIATE: {
-    text: 'URGENTE',
+    text: 'URGENT',
     color: 'bg-red-600 text-white',
     borderColor: 'border-red-600',
     icon: AlertTriangle,
     animate: true
   },
   URGENT: {
-    text: 'ALTA PRIORIDAD',
+    text: 'HIGH PRIORITY',
     color: 'bg-orange-500 text-white',
     borderColor: 'border-orange-500',
     icon: AlertTriangle,
     animate: false
   },
   SOON: {
-    text: 'ATENCIÓN REQUERIDA',
+    text: 'ATTENTION REQUIRED',
     color: 'bg-yellow-500 text-white',
     borderColor: 'border-yellow-500',
     icon: Clock,
@@ -59,93 +59,93 @@ export const URGENCY_BADGES = {
 export const RECOMMENDATION_MAPPINGS = {
   // Security recommendations
   DEFENDER_DISABLED: {
-    label: 'Windows Defender Desactivado',
-    description: 'Windows Defender está desactivado, lo que deja su VM vulnerable a amenazas de seguridad.',
-    detailedDescription: 'Windows Defender es la primera línea de defensa contra malware y amenazas de seguridad. Cuando está desactivado, su VM está expuesta a virus, ransomware y otras amenazas.',
+    label: 'Windows Defender Disabled',
+    description: 'Windows Defender is disabled, leaving your VM vulnerable to security threats.',
+    detailedDescription: 'Windows Defender is your first line of defense against malware and security threats. When disabled, your VM is exposed to viruses, ransomware, and other threats.',
     priority: PRIORITY_LEVELS.CRITICAL,
     category: CATEGORIES.SECURITY,
     icon: Shield,
     color: 'text-red-600',
     bgColor: 'bg-red-50',
     borderColor: 'border-red-200',
-    actions: ['Activar Windows Defender', 'Configurar protección en tiempo real'],
-    userFriendlyExplanation: 'Su antivirus está apagado. Esto es peligroso porque pueden entrar virus a su computadora. Debe activarlo inmediatamente.',
-    technicalDetails: 'Windows Defender proporciona protección en tiempo real contra malware, spyware y otras amenazas de seguridad.'
+    actions: ['Enable Windows Defender', 'Configure real-time protection'],
+    userFriendlyExplanation: 'Your antivirus is turned off. This is dangerous because viruses can enter your computer. You should enable it immediately.',
+    technicalDetails: 'Windows Defender provides real-time protection against malware, spyware, and other security threats.'
   },
 
   DEFENDER_THREAT: {
-    label: 'Amenazas Detectadas por Defender',
-    description: 'Windows Defender ha detectado amenazas activas o elementos en cuarentena.',
-    detailedDescription: 'Se han detectado amenazas de seguridad que requieren atención inmediata para mantener la seguridad del sistema.',
+    label: 'Defender Threats Detected',
+    description: 'Windows Defender has detected active threats or quarantined items.',
+    detailedDescription: 'Security threats have been detected that require immediate attention to maintain system security.',
     priority: PRIORITY_LEVELS.CRITICAL,
     category: CATEGORIES.SECURITY,
     icon: Shield,
     color: 'text-red-600',
     bgColor: 'bg-red-50',
     borderColor: 'border-red-200',
-    actions: ['Revisar amenazas detectadas', 'Ejecutar análisis completo', 'Limpiar elementos en cuarentena'],
+    actions: ['Review detected threats', 'Run full scan', 'Clean quarantined items'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
       if (metadata?.threatCount > 0) {
-        return `Su antivirus encontró ${metadata.threatCount} amenaza(s) en su computadora. Debe revisarlas y limpiarlas inmediatamente.`;
+        return `Your antivirus found ${metadata.threatCount} threat(s) on your computer. You should review and clean them immediately.`;
       }
-      return 'Su antivirus encontró virus o amenazas en su computadora. Debe revisarlas y limpiarlas inmediatamente.';
+      return 'Your antivirus found viruses or threats on your computer. You should review and clean them immediately.';
     },
-    technicalDetails: 'Windows Defender ha detectado malware, spyware u otras amenazas que están activas o en cuarentena.'
+    technicalDetails: 'Windows Defender has detected malware, spyware, or other threats that are active or quarantined.'
   },
 
   // Performance recommendations
   HIGH_CPU_APP: {
-    label: 'Aplicaciones con Uso Alto de CPU',
-    description: 'Aplicaciones específicas están consumiendo recursos excesivos de CPU.',
-    detailedDescription: 'Algunas aplicaciones están utilizando más CPU de lo normal, lo que puede ralentizar el sistema.',
+    label: 'High CPU Applications',
+    description: 'Specific applications are consuming excessive CPU resources.',
+    detailedDescription: 'Some applications are using more CPU than normal, which may slow down the system.',
     priority: PRIORITY_LEVELS.HIGH,
     category: CATEGORIES.PERFORMANCE,
     icon: Zap,
     color: 'text-orange-600',
     bgColor: 'bg-orange-50',
     borderColor: 'border-orange-200',
-    actions: ['Identificar aplicaciones problemáticas', 'Cerrar aplicaciones innecesarias', 'Reiniciar aplicaciones específicas'],
-    userFriendlyExplanation: 'Algunos programas están usando demasiada energía de su computadora. Debe cerrar los que no necesite.',
-    technicalDetails: 'Aplicaciones específicas están consumiendo recursos de CPU por encima de los umbrales normales.'
+    actions: ['Identify problematic applications', 'Close unnecessary applications', 'Restart specific applications'],
+    userFriendlyExplanation: 'Some programs are using too much of your computer\'s processing power. You should close the ones you don\'t need.',
+    technicalDetails: 'Specific applications are consuming CPU resources above normal thresholds.'
   },
 
   HIGH_RAM_APP: {
-    label: 'Aplicaciones con Uso Alto de Memoria',
-    description: 'Aplicaciones específicas están consumiendo recursos excesivos de memoria.',
-    detailedDescription: 'Algunas aplicaciones están utilizando más memoria RAM de lo normal, afectando el rendimiento del sistema.',
+    label: 'High Memory Applications',
+    description: 'Specific applications are consuming excessive memory resources.',
+    detailedDescription: 'Some applications are using more RAM than normal, affecting system performance.',
     priority: PRIORITY_LEVELS.HIGH,
     category: CATEGORIES.PERFORMANCE,
     icon: Zap,
     color: 'text-orange-600',
     bgColor: 'bg-orange-50',
     borderColor: 'border-orange-200',
-    actions: ['Identificar aplicaciones que consumen memoria', 'Cerrar aplicaciones innecesarias', 'Reiniciar aplicaciones específicas'],
-    userFriendlyExplanation: 'Algunos programas están usando demasiada memoria de su computadora. Debe cerrar los que no necesite.',
-    technicalDetails: 'Aplicaciones específicas están consumiendo recursos de memoria por encima de los umbrales normales.'
+    actions: ['Identify memory-consuming applications', 'Close unnecessary applications', 'Restart specific applications'],
+    userFriendlyExplanation: 'Some programs are using too much of your computer\'s memory. You should close the ones you don\'t need.',
+    technicalDetails: 'Specific applications are consuming memory resources above normal thresholds.'
   },
 
   // Storage recommendations
   DISK_SPACE_LOW: {
-    label: 'Espacio en Disco Bajo',
-    description: 'Queda poco espacio libre en el disco, lo que puede afectar el funcionamiento.',
-    detailedDescription: 'Cuando el espacio libre es menor al 10%, el sistema puede volverse inestable y lento.',
+    label: 'Low Disk Space',
+    description: 'There is little free space left on the disk, which may affect performance.',
+    detailedDescription: 'When free space is less than 10%, the system may become unstable and slow.',
     priority: PRIORITY_LEVELS.CRITICAL,
     category: CATEGORIES.STORAGE,
     icon: HardDrive,
     color: 'text-red-600',
     bgColor: 'bg-red-50',
     borderColor: 'border-red-200',
-    actions: ['Eliminar archivos innecesarios', 'Limpiar archivos temporales', 'Mover archivos a almacenamiento externo'],
-    userFriendlyExplanation: 'Su disco duro está casi lleno (como un closet repleto). Esto puede causar problemas. Debe borrar archivos que no necesite.',
-    technicalDetails: 'Se recomienda mantener al menos 15% de espacio libre para un funcionamiento óptimo.'
+    actions: ['Delete unnecessary files', 'Clean temporary files', 'Move files to external storage'],
+    userFriendlyExplanation: 'Your hard drive is almost full. This can cause problems. You should delete files you don\'t need.',
+    technicalDetails: 'It is recommended to maintain at least 15% free space for optimal performance.'
   },
 
   // Update recommendations
   APP_UPDATE_AVAILABLE: {
-    label: 'Actualizaciones de Aplicaciones Disponibles',
-    description: 'Hay actualizaciones disponibles para algunas aplicaciones instaladas.',
-    detailedDescription: 'Las actualizaciones de aplicaciones incluyen mejoras de seguridad, corrección de errores y nuevas funcionalidades.',
+    label: 'Application Updates Available',
+    description: 'Updates are available for some installed applications.',
+    detailedDescription: 'Application updates include security improvements, bug fixes, and new features.',
     priority: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
       return metadata?.securityUpdateCount > 0 ? PRIORITY_LEVELS.HIGH : PRIORITY_LEVELS.MEDIUM;
@@ -155,21 +155,21 @@ export const RECOMMENDATION_MAPPINGS = {
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
-    actions: ['Revisar actualizaciones disponibles', 'Instalar actualizaciones de seguridad', 'Programar actualizaciones automáticas'],
+    actions: ['Review available updates', 'Install security updates', 'Schedule automatic updates'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
       if (metadata?.securityUpdateCount > 0) {
-        return `Tiene ${metadata.securityUpdateCount} actualización(es) de seguridad importante(s). Es como actualizar aplicaciones en su teléfono - mejora la seguridad y funciones.`;
+        return `You have ${metadata.securityUpdateCount} important security update(s). It\'s like updating apps on your phone - improves security and functionality.`;
       }
-      return 'Algunos de sus programas tienen versiones nuevas disponibles. Es como actualizar aplicaciones en su teléfono - mejora la seguridad y funciones.';
+      return 'Some of your programs have new versions available. It\'s like updating apps on your phone - improves security and functionality.';
     },
-    technicalDetails: 'Las actualizaciones de aplicaciones incluyen parches de seguridad críticos y mejoras de funcionalidad.'
+    technicalDetails: 'Application updates include critical security patches and functionality improvements.'
   },
 
   OS_UPDATE_AVAILABLE: {
-    label: 'Actualizaciones del Sistema Disponibles',
-    description: 'Hay actualizaciones críticas o de seguridad de Windows disponibles.',
-    detailedDescription: 'Las actualizaciones del sistema incluyen parches de seguridad críticos y mejoras de estabilidad que son esenciales para la seguridad.',
+    label: 'System Updates Available',
+    description: 'Critical or security updates are available.',
+    detailedDescription: 'System updates include critical security patches and stability improvements that are essential for security.',
     priority: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
       return metadata?.rebootDays >= 7 ? PRIORITY_LEVELS.CRITICAL : PRIORITY_LEVELS.HIGH;
@@ -179,87 +179,87 @@ export const RECOMMENDATION_MAPPINGS = {
     color: 'text-orange-600',
     bgColor: 'bg-orange-50',
     borderColor: 'border-orange-200',
-    actions: ['Instalar actualizaciones de Windows', 'Programar reinicio', 'Revisar actualizaciones automáticas'],
+    actions: ['Install system updates', 'Schedule reboot', 'Review automatic updates'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
       if (metadata?.rebootDays >= 7) {
-        return `URGENTE - Su sistema lleva ${metadata.rebootDays} días esperando reinicio. Windows tiene actualizaciones importantes esperando. Es como vacunarse - protege su computadora de problemas nuevos. Debe instalarlas y reiniciar inmediatamente.`;
+        return `URGENT - Your system has been waiting ${metadata.rebootDays} days for a reboot. Important updates are pending. Like getting vaccinated - it protects your computer from new problems. You should install them and reboot immediately.`;
       } else if (metadata?.rebootDays >= 3) {
-        return `Su sistema lleva ${metadata.rebootDays} días esperando reinicio. Windows tiene actualizaciones importantes esperando. Debe instalarlas y reiniciar pronto.`;
+        return `Your system has been waiting ${metadata.rebootDays} days for a reboot. Important updates are pending. You should install them and reboot soon.`;
       }
-      return 'Windows tiene actualizaciones importantes esperando. Es como vacunarse - protege su computadora de problemas nuevos. Debe instalarlas.';
+      return 'Important system updates are pending. Like getting vaccinated - it protects your computer from new problems. You should install them.';
     },
-    technicalDetails: 'Windows Update incluye parches de seguridad críticos que protegen contra vulnerabilidades conocidas.'
+    technicalDetails: 'System updates include critical security patches that protect against known vulnerabilities.'
   },
 
   // Resource optimization recommendations
   OVER_PROVISIONED: {
-    label: 'VM Sobre-Provisionada',
-    description: 'Los recursos de la VM (CPU/RAM) están consistentemente sub-utilizados.',
-    detailedDescription: 'Su VM tiene más recursos asignados de los que realmente necesita, lo que puede optimizarse.',
+    label: 'Over-Provisioned VM',
+    description: 'VM resources (CPU/RAM) are consistently under-utilized.',
+    detailedDescription: 'Your VM has more resources assigned than it actually needs, which can be optimized.',
     priority: PRIORITY_LEVELS.MEDIUM,
     category: CATEGORIES.PERFORMANCE,
     icon: Settings,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
-    actions: ['Revisar uso de recursos', 'Considerar reducir CPU/RAM', 'Optimizar configuración'],
-    userFriendlyExplanation: 'Su computadora virtual tiene más poder del que necesita (como un camión para ir al supermercado). Puede optimizarla.',
-    technicalDetails: 'Los recursos asignados exceden consistentemente el uso real durante períodos prolongados.'
+    actions: ['Review resource usage', 'Consider reducing CPU/RAM', 'Optimize configuration'],
+    userFriendlyExplanation: 'Your virtual machine has more power than it needs. You can optimize it to save resources.',
+    technicalDetails: 'Assigned resources consistently exceed actual usage over extended periods.'
   },
 
   UNDER_PROVISIONED: {
-    label: 'VM Sub-Provisionada',
-    description: 'Los recursos de la VM están consistentemente sobre-utilizados, afectando el rendimiento.',
-    detailedDescription: 'Su VM necesita más recursos para funcionar óptimamente debido al alto uso constante.',
+    label: 'Under-Provisioned VM',
+    description: 'VM resources are consistently over-utilized, affecting performance.',
+    detailedDescription: 'Your VM needs more resources to function optimally due to consistently high usage.',
     priority: PRIORITY_LEVELS.HIGH,
     category: CATEGORIES.PERFORMANCE,
     icon: Zap,
     color: 'text-orange-600',
     bgColor: 'bg-orange-50',
     borderColor: 'border-orange-200',
-    actions: ['Aumentar CPU/RAM', 'Revisar carga de trabajo', 'Optimizar aplicaciones'],
-    userFriendlyExplanation: 'Su computadora virtual necesita más poder para trabajar bien (como necesitar más trabajadores en una fábrica ocupada).',
-    technicalDetails: 'Los recursos están consistentemente sobre-utilizados, causando degradación del rendimiento.'
+    actions: ['Increase CPU/RAM', 'Review workload', 'Optimize applications'],
+    userFriendlyExplanation: 'Your virtual machine needs more power to work well. Consider adding more resources.',
+    technicalDetails: 'Resources are consistently over-utilized, causing performance degradation.'
   },
 
   // Network recommendations
   PORT_BLOCKED: {
-    label: 'Puertos Bloqueados',
-    description: 'Las reglas del firewall están bloqueando puertos que las aplicaciones intentan usar.',
-    detailedDescription: 'Algunas aplicaciones no pueden funcionar correctamente debido a reglas de firewall que bloquean sus puertos.',
+    label: 'Blocked Ports',
+    description: 'Firewall rules are blocking ports that applications are trying to use.',
+    detailedDescription: 'Some applications cannot function properly due to firewall rules blocking their ports.',
     priority: PRIORITY_LEVELS.MEDIUM,
     category: CATEGORIES.SECURITY,
     icon: Shield,
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-50',
     borderColor: 'border-yellow-200',
-    actions: ['Revisar reglas de firewall', 'Configurar excepciones', 'Verificar aplicaciones afectadas'],
+    actions: ['Review firewall rules', 'Configure exceptions', 'Verify affected applications'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
       if (metadata?.blockedPorts && metadata.blockedPorts.length > 0) {
         const port = metadata.blockedPorts[0];
-        return `El programa '${port.processName || 'Unknown'}' no puede comunicarse en el puerto ${port.port} porque el firewall lo está bloqueando. Puede que necesite ajustar la configuración.`;
+        return `The program '${port.processName || 'Unknown'}' cannot communicate on port ${port.port} because the firewall is blocking it. You may need to adjust the configuration.`;
       }
-      return 'Algunos programas no pueden comunicarse porque el firewall los está bloqueando. Puede que necesite ajustar la configuración.';
+      return 'Some programs cannot communicate because the firewall is blocking them. You may need to adjust the configuration.';
     },
-    technicalDetails: 'Las reglas de firewall están impidiendo el tráfico de red legítimo de aplicaciones específicas.'
+    technicalDetails: 'Firewall rules are preventing legitimate network traffic from specific applications.'
   },
 
   // General recommendations
   OTHER: {
-    label: 'Recomendación General',
-    description: 'Recomendación del sistema que no encaja en otras categorías.',
-    detailedDescription: 'Esta es una recomendación general del sistema para mejorar el funcionamiento.',
+    label: 'General Recommendation',
+    description: 'System recommendation that does not fit in other categories.',
+    detailedDescription: 'This is a general system recommendation to improve performance.',
     priority: PRIORITY_LEVELS.LOW,
     category: CATEGORIES.GENERAL,
     icon: Info,
     color: 'text-muted-foreground',
     bgColor: 'bg-muted',
     borderColor: 'border-border',
-    actions: ['Revisar detalles', 'Aplicar recomendación'],
-    userFriendlyExplanation: 'El sistema tiene una recomendación general para mejorar el funcionamiento.',
-    technicalDetails: 'Recomendación miscelánea del sistema.'
+    actions: ['Review details', 'Apply recommendation'],
+    userFriendlyExplanation: 'The system has a general recommendation to improve performance.',
+    technicalDetails: 'Miscellaneous system recommendation.'
   }
 };
 
@@ -275,15 +275,15 @@ RECOMMENDATION_MAPPINGS.SYSTEM_UPDATE_AVAILABLE = RECOMMENDATION_MAPPINGS.OS_UPD
 export const getRecommendationInfo = (type, recommendation = null) => {
   const mapping = RECOMMENDATION_MAPPINGS[type] || {
     label: type,
-    description: 'Recomendación del sistema',
+    description: 'System recommendation',
     priority: PRIORITY_LEVELS.LOW,
     category: CATEGORIES.GENERAL,
     icon: Info,
     color: 'text-muted-foreground',
     bgColor: 'bg-muted',
     borderColor: 'border-border',
-    userFriendlyExplanation: 'El sistema tiene una recomendación para mejorar el funcionamiento.',
-    technicalDetails: 'Información técnica no disponible.'
+    userFriendlyExplanation: 'The system has a recommendation to improve performance.',
+    technicalDetails: 'Technical information not available.'
   };
 
   // Resolve dynamic properties if recommendation is provided
@@ -413,38 +413,38 @@ export const isFallbackType = (type) => {
 export const getCategoryInfo = (category) => {
   const categoryMap = {
     [CATEGORIES.SECURITY]: {
-      label: 'Seguridad',
-      description: 'Recomendaciones relacionadas con la protección y seguridad del sistema',
+      label: 'Security',
+      description: 'Recommendations related to system protection and security',
       icon: Shield,
       color: 'text-red-600'
     },
     [CATEGORIES.PERFORMANCE]: {
-      label: 'Rendimiento',
-      description: 'Recomendaciones para mejorar la velocidad y eficiencia del sistema',
+      label: 'Performance',
+      description: 'Recommendations to improve system speed and efficiency',
       icon: Zap,
       color: 'text-orange-600'
     },
     [CATEGORIES.MAINTENANCE]: {
-      label: 'Mantenimiento',
-      description: 'Tareas de mantenimiento preventivo y optimización',
+      label: 'Maintenance',
+      description: 'Preventive maintenance and optimization tasks',
       icon: Settings,
       color: 'text-blue-600'
     },
     [CATEGORIES.STORAGE]: {
-      label: 'Almacenamiento',
-      description: 'Gestión del espacio en disco y limpieza de archivos',
+      label: 'Storage',
+      description: 'Disk space management and file cleanup',
       icon: HardDrive,
       color: 'text-purple-600'
     },
     [CATEGORIES.UPDATES]: {
-      label: 'Actualizaciones',
-      description: 'Actualizaciones de sistema, aplicaciones y controladores',
+      label: 'Updates',
+      description: 'System, application, and driver updates',
       icon: Download,
       color: 'text-green-600'
     },
     [CATEGORIES.GENERAL]: {
       label: 'General',
-      description: 'Recomendaciones generales del sistema',
+      description: 'General system recommendations',
       icon: Info,
       color: 'text-muted-foreground'
     }
@@ -586,16 +586,16 @@ const getUrgencyBadge = (type, metadata) => {
  */
 const getDataPreview = (type, metadata) => {
   if ((type === 'OS_UPDATE_AVAILABLE' || type === 'SYSTEM_UPDATE_AVAILABLE') && metadata.rebootDays) {
-    return `Reinicio pendiente ${metadata.rebootDays} días`;
+    return `Reboot pending ${metadata.rebootDays} days`;
   }
   if (type === 'APP_UPDATE_AVAILABLE' && metadata.securityUpdateCount > 0) {
-    return `${metadata.securityUpdateCount} actualizaciones de seguridad`;
+    return `${metadata.securityUpdateCount} security updates`;
   }
   if (type === 'DEFENDER_THREAT' && metadata.threatCount > 0) {
-    return `${metadata.threatCount} amenaza(s) detectada(s)`;
+    return `${metadata.threatCount} threat(s) detected`;
   }
   if (type === 'PORT_BLOCKED' && metadata.blockedPorts?.length > 0) {
-    return `Puerto ${metadata.blockedPorts[0].port} bloqueado`;
+    return `Port ${metadata.blockedPorts[0].port} blocked`;
   }
   return null;
 };
@@ -629,11 +629,11 @@ const getAffectedCount = (type, metadata) => {
  */
 export const getRebootUrgencyText = (days) => {
   if (days >= 7) {
-    return `urgente - pendiente ${days} días`;
+    return `urgent - pending ${days} days`;
   } else if (days >= 3) {
-    return `atención requerida - pendiente ${days} días`;
+    return `attention required - pending ${days} days`;
   } else if (days > 0) {
-    return `pendiente ${days} día(s)`;
+    return `pending ${days} day(s)`;
   }
   return '';
 };

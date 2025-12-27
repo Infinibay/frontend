@@ -29,6 +29,7 @@ export const useDepartmentsPage = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastProps, setToastProps] = useState({});
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState(null);
 
   // Use optimized data loading for departments and VMs
   const {
@@ -76,6 +77,7 @@ export const useDepartmentsPage = () => {
 
     debug.info('Creating department:', trimmedName, 'with firewall config:', formData);
     setIsCreating(true);
+    setCreateError(null); // Clear previous error
 
     try {
       // Build the input object with optional firewall configuration
@@ -100,20 +102,17 @@ export const useDepartmentsPage = () => {
       setShowToast(true);
 
       debug.info('Department created successfully:', trimmedName);
+
+      // Only close dialog and reset on success
+      setNewDepartmentName("");
+      setIsCreateDeptDialogOpen(false);
     } catch (error) {
       debug.error('Failed to create department:', error);
-      setToastProps({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to create department. Please try again."
-      });
-      setShowToast(true);
+      // Show error inline in the modal instead of toast (avoids z-index issues)
+      setCreateError(error.message || "Failed to create department. Please try again.");
     } finally {
       setIsCreating(false);
     }
-
-    setNewDepartmentName("");
-    setIsCreateDeptDialogOpen(false);
   }, [dispatch, newDepartmentName, refreshDepartments]);
 
   // Handle deleting a department
@@ -189,6 +188,14 @@ export const useDepartmentsPage = () => {
     return colors[charSum % colors.length];
   }, []);
 
+  // Wrapper to clear error when dialog is closed
+  const handleSetIsCreateDeptDialogOpen = useCallback((open) => {
+    setIsCreateDeptDialogOpen(open);
+    if (!open) {
+      setCreateError(null); // Clear error when closing dialog
+    }
+  }, []);
+
   return {
     // State
     isLoading: departmentsLoading,
@@ -202,11 +209,12 @@ export const useDepartmentsPage = () => {
     hasError: !!(departmentsError || vmsError),
     error: departmentsError || vmsError,
     isCreating,
+    createError,
 
     // Actions
     retryLoading,
     setSearchQuery,
-    setIsCreateDeptDialogOpen,
+    setIsCreateDeptDialogOpen: handleSetIsCreateDeptDialogOpen,
     setNewDepartmentName,
     setShowToast,
     handleCreateDepartment,

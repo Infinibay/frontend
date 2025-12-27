@@ -1575,6 +1575,7 @@ input[type="text"]#email.peer {
   /* Additional accessibility utilities for glass text */
   .text-glass-text-primary {
     /* Ensure minimum contrast ratio of 4.5:1 for WCAG AA compliance */
+    color: hsl(var(--glass-text-primary));
     text-shadow: 0 0 8px hsl(var(--background) / 0.8);
   }
 

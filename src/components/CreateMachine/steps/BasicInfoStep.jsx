@@ -41,6 +41,11 @@ export function BasicInfoStep({ id, departmentId = null }) {
     return stepValues.confirmPassword === stepValues.password;
   }, [stepValues.confirmPassword, stepValues.password]);
 
+  // Only consider departmentId valid if it exists in the departments list
+  const isDepartmentIdValid = React.useMemo(() => {
+    return departmentId != null && departments.some(d => String(d.id) === String(departmentId));
+  }, [departmentId, departments]);
+
   React.useEffect(() => {
     debug.log('render', 'BasicInfoStep rendered:', {
       stepId: id,
@@ -56,7 +61,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
     if (departments.length > 0 && !isLoading) {
       // If a specific departmentId is provided, use it
       if (departmentId && !stepValues.departmentId) {
-        const targetDept = departments.find(dept => dept.id === departmentId);
+        const targetDept = departments.find(dept => String(dept.id) === String(departmentId));
         if (targetDept) {
           debug.info('selection', 'Department auto-selected:', { departmentId, departmentName: targetDept.name })
           setValue(`${id}.departmentId`, String(departmentId));
@@ -82,62 +87,65 @@ export function BasicInfoStep({ id, departmentId = null }) {
       </div>
 
       <div className="space-y-6">
-        {departmentId == null && (
-          <Card
-            glass="subtle"
-            className="p-6"
-            glow="none"
-          >
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="departmentId"
-                    className="text-base font-semibold"
-                    moreInformation="Select the department this machine will belong to"
-                  >
-                    Department
-                  </Label>
-                </div>
+        <Card
+          glass="subtle"
+          className="p-6"
+          glow="none"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-primary" />
               </div>
-              <Select
-                value={stepValues.departmentId || ''}
-                onValueChange={(value) => {
-                  debug.info('selection', 'Department manually selected:', { departmentId: value })
-                  setValue(`${id}.departmentId`, value)
-                }}
-                disabled={isLoading}
-                aria-describedby="Select department for this machine"
-              >
-                <SelectTrigger
-                  id="departmentId"
-                  glass="subtle"
-                  error={!!getError('departmentId')}
-                  aria-label="Select department"
-                  aria-describedby={getError('departmentId') ? 'departmentId-error' : undefined}
-                  className="size-input"
+              <div>
+                <Label
+                  htmlFor="departmentId"
+                  className="text-base font-semibold"
+                  moreInformation="Select the department this machine will belong to"
                 >
-                  <SelectValue placeholder="Select a department" />
-                </SelectTrigger>
-                <SelectContent loading={isLoading} glass="medium">
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={String(dept.id)}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {getError('departmentId') && (
-                <p id="departmentId-error" className="text-sm text-red-500" role="alert">
-                  {getError('departmentId')}
-                </p>
-              )}
+                  Department
+                </Label>
+              </div>
             </div>
-          </Card>
-        )}
+            {isDepartmentIdValid && (
+              <p className="text-sm text-muted-foreground -mt-2 mb-2">
+                Department preselected from navigation
+              </p>
+            )}
+            <Select
+              value={stepValues.departmentId || ''}
+              onValueChange={(value) => {
+                debug.info('selection', 'Department manually selected:', { departmentId: value })
+                setValue(`${id}.departmentId`, value)
+              }}
+              disabled={isDepartmentIdValid || isLoading}
+              aria-describedby="Select department for this machine"
+            >
+              <SelectTrigger
+                id="departmentId"
+                glass="subtle"
+                error={!!getError('departmentId')}
+                aria-label="Select department"
+                aria-describedby={getError('departmentId') ? 'departmentId-error' : undefined}
+                className={cn("size-input", isDepartmentIdValid && "border-primary/50")}
+              >
+                <SelectValue placeholder="Select a department" />
+              </SelectTrigger>
+              <SelectContent loading={isLoading} glass="medium">
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={String(dept.id)}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {getError('departmentId') && (
+              <p id="departmentId-error" className="text-sm text-red-500" role="alert">
+                {getError('departmentId')}
+              </p>
+            )}
+          </div>
+        </Card>
 
         <Card
           glass="subtle"

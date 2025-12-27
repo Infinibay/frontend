@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApolloClient } from '@apollo/client'
 import { useScriptsQuery, useDeleteScriptMutation } from '@/gql/hooks'
@@ -60,7 +60,13 @@ const GET_ACTIVE_SCHEDULES = gql`
   }
 `
 
-export default function ScriptsSection({ embedded = false, onNavigateToEditor, className = '' }) {
+export default function ScriptsSection({
+  embedded = false,
+  onNavigateToEditor,
+  onSelectionChange,
+  bulkDeleteTrigger,
+  className = ''
+}) {
   const router = useRouter()
   const apolloClient = useApolloClient()
   const [search, setSearch] = useState('')
@@ -74,6 +80,9 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
   const [fetchingExportData, setFetchingExportData] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null) // { scriptId, scriptName, activeSchedulesCount, affectedVMs, affectedVMsCount }
   const [deleteCheckbox, setDeleteCheckbox] = useState(false)
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(null) // { scriptIds, scriptNames, totalActiveSchedules, affectedVMs, affectedVMsCount }
+  const [bulkDeleteCheckbox, setBulkDeleteCheckbox] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
 
   const { data, loading, refetch } = useScriptsQuery()
   const [deleteScript] = useDeleteScriptMutation()
@@ -100,6 +109,10 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
 
   // In embedded mode, limit to 6 scripts
   const displayScripts = embedded ? filteredScripts.slice(0, 6) : filteredScripts
+
+  // Calculate selection states for header checkbox
+  const allSelected = filteredScripts.length > 0 && selectedScriptIds.size === filteredScripts.length
+  const someSelected = selectedScriptIds.size > 0 && selectedScriptIds.size < filteredScripts.length
 
   const handleEdit = useCallback((scriptId) => {
     if (embedded && onNavigateToEditor) {
@@ -207,12 +220,155 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
   }
 
   const handleSelectAll = () => {
-    setSelectedScriptIds(new Set(filteredScripts.map(s => s.id)))
+    // Select all visible scripts (bulk delete will handle filtering system templates)
+    const newSet = new Set(filteredScripts.map(s => s.id))
+    setSelectedScriptIds(newSet)
   }
 
   const handleDeselectAll = () => {
     setSelectedScriptIds(new Set())
   }
+
+  // Bulk delete handler - checks schedules for all selected scripts
+  const handleBulkDelete = async () => {
+    if (selectedScriptIds.size === 0) {
+      toast.error('Please select at least one script to delete')
+      return
+    }
+
+    const deletableScriptIds = Array.from(selectedScriptIds)
+
+    try {
+      // Query active schedules for each selected script
+      const schedulePromises = deletableScriptIds.map(async (scriptId) => {
+        const { data } = await apolloClient.query({
+          query: GET_ACTIVE_SCHEDULES,
+          variables: { scriptId },
+          fetchPolicy: 'network-only'
+        })
+        const activeSchedules = (data?.scheduledScripts || []).filter(
+          s => s.status === 'PENDING' || s.status === 'RUNNING'
+        )
+        return { scriptId, schedules: activeSchedules }
+      })
+
+      const results = await Promise.all(schedulePromises)
+
+      // Aggregate results and build per-script schedule count map
+      let totalActiveSchedules = 0
+      const allAffectedVMs = new Set()
+      const scheduleCountByScriptId = {}
+
+      results.forEach(({ scriptId, schedules }) => {
+        scheduleCountByScriptId[scriptId] = schedules.length
+        totalActiveSchedules += schedules.length
+        schedules.forEach(s => {
+          if (s.machine?.name) allAffectedVMs.add(s.machine.name)
+        })
+      })
+
+      // Get script names for display
+      const scriptNames = deletableScriptIds.map(id => {
+        const script = scripts.find(s => s.id === id)
+        return script?.name || 'Unknown'
+      })
+
+      const affectedVMsArray = Array.from(allAffectedVMs)
+
+      setBulkDeleteConfirm({
+        scriptIds: deletableScriptIds,
+        scriptNames,
+        totalActiveSchedules,
+        scheduleCountByScriptId,
+        affectedVMs: affectedVMsArray.slice(0, 5),
+        affectedVMsCount: affectedVMsArray.length
+      })
+      setBulkDeleteCheckbox(false)
+    } catch (error) {
+      toast.error(`Failed to check schedules: ${error.message}`)
+    }
+  }
+
+  // Confirm and execute bulk delete
+  const handleBulkDeleteConfirm = async () => {
+    if (!bulkDeleteConfirm) return
+
+    // Require checkbox confirmation if there are active schedules
+    if (bulkDeleteConfirm.totalActiveSchedules > 0 && !bulkDeleteCheckbox) {
+      toast.error('Please confirm that you understand schedules will be cancelled')
+      return
+    }
+
+    setBulkDeleting(true)
+
+    try {
+      let successCount = 0
+      let failCount = 0
+      let cancelledSchedules = 0
+      let failedSchedules = 0
+
+      // Delete each script and track cancelled schedules for successful deletions
+      for (const scriptId of bulkDeleteConfirm.scriptIds) {
+        const scriptScheduleCount = bulkDeleteConfirm.scheduleCountByScriptId[scriptId] || 0
+        try {
+          await deleteScript({
+            variables: {
+              id: scriptId,
+              force: bulkDeleteConfirm.totalActiveSchedules > 0
+            }
+          })
+          successCount++
+          cancelledSchedules += scriptScheduleCount
+        } catch {
+          failCount++
+          failedSchedules += scriptScheduleCount
+        }
+      }
+
+      // Build success message
+      let message = `Deleted ${successCount} script${successCount !== 1 ? 's' : ''}`
+
+      if (cancelledSchedules > 0) {
+        message += `. Cancelled ${cancelledSchedules} schedule${cancelledSchedules !== 1 ? 's' : ''}`
+      }
+      message += '.'
+
+      if (failCount > 0) {
+        let warningMessage = message + ` Failed to delete ${failCount} script${failCount !== 1 ? 's' : ''}`
+        if (failedSchedules > 0) {
+          warningMessage += ` (${failedSchedules} schedule${failedSchedules !== 1 ? 's' : ''} not cancelled)`
+        }
+        warningMessage += '.'
+        toast.warning(warningMessage)
+      } else {
+        toast.success(message)
+      }
+
+      // Clear selection
+      setSelectedScriptIds(new Set())
+
+      // Reset state and refetch
+      setBulkDeleteConfirm(null)
+      setBulkDeleteCheckbox(false)
+      refetch()
+    } catch (error) {
+      toast.error(`Bulk delete failed: ${error.message}`)
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
+  // Notify parent when selection changes
+  useEffect(() => {
+    onSelectionChange?.(selectedScriptIds)
+  }, [selectedScriptIds, onSelectionChange])
+
+  // Listen for bulk delete trigger from parent
+  useEffect(() => {
+    if (bulkDeleteTrigger > 0) {
+      handleBulkDelete()
+    }
+  }, [bulkDeleteTrigger])
 
   const handleExportSelected = async () => {
     if (selectedScriptIds.size === 0) {
@@ -284,23 +440,6 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
               </Button>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Selection controls - only in standalone mode */}
-      {!embedded && filteredScripts.length > 0 && (
-        <div className="flex items-center gap-2 mb-4">
-          <Button variant="ghost" size="sm" onClick={handleSelectAll}>
-            Select All
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleDeselectAll}>
-            Deselect All
-          </Button>
-          {selectedScriptIds.size > 0 && (
-            <span className="text-sm text-muted-foreground">
-              {selectedScriptIds.size} selected
-            </span>
-          )}
         </div>
       )}
 
@@ -376,6 +515,24 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Selection header row - only in standalone mode, after filters */}
+      {!embedded && filteredScripts.length > 0 && !loading && (
+        <div className="glass-subtle rounded-lg border border-border/20 p-3 mb-2 flex items-center gap-2">
+          <Checkbox
+            checked={allSelected}
+            data-state={someSelected ? "indeterminate" : allSelected ? "checked" : "unchecked"}
+            onCheckedChange={allSelected ? handleDeselectAll : handleSelectAll}
+          />
+          <button
+            type="button"
+            onClick={allSelected ? handleDeselectAll : handleSelectAll}
+            className="text-sm hover:text-foreground transition-colors"
+          >
+            Select all
+          </button>
+        </div>
       )}
 
       {/* Scripts grid */}
@@ -521,6 +678,107 @@ export default function ScriptsSection({ embedded = false, onNavigateToEditor, c
               {deleteConfirm?.activeSchedulesCount > 0
                 ? 'Delete & Cancel Schedules'
                 : 'Delete Script'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation Dialog for Bulk Script Deletion */}
+      <AlertDialog open={bulkDeleteConfirm !== null} onOpenChange={(open) => {
+        if (!open) {
+          setBulkDeleteConfirm(null)
+          setBulkDeleteCheckbox(false)
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {bulkDeleteConfirm?.totalActiveSchedules > 0 && (
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+              )}
+              Delete {bulkDeleteConfirm?.scriptIds?.length || 0} Script{(bulkDeleteConfirm?.scriptIds?.length || 0) !== 1 ? 's' : ''}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3" asChild>
+              <div>
+                {/* Script names list */}
+                <div>
+                  <p className="font-medium mb-1">Scripts to delete:</p>
+                  <ul className="list-disc list-inside ml-2">
+                    {bulkDeleteConfirm?.scriptNames?.slice(0, 5).map((name, i) => (
+                      <li key={i}>{name}</li>
+                    ))}
+                    {(bulkDeleteConfirm?.scriptNames?.length || 0) > 5 && (
+                      <li className="text-muted-foreground">
+                        and {bulkDeleteConfirm.scriptNames.length - 5} more...
+                      </li>
+                    )}
+                  </ul>
+                </div>
+
+                {bulkDeleteConfirm?.totalActiveSchedules > 0 ? (
+                  <>
+                    <p>
+                      These scripts have <strong>{bulkDeleteConfirm.totalActiveSchedules}</strong> active schedule
+                      {bulkDeleteConfirm.totalActiveSchedules > 1 ? 's' : ''} in total.
+                    </p>
+                    {bulkDeleteConfirm.affectedVMs && bulkDeleteConfirm.affectedVMs.length > 0 && (
+                      <div>
+                        <p className="font-medium mb-1">Affected VMs:</p>
+                        <ul className="list-disc list-inside ml-2">
+                          {bulkDeleteConfirm.affectedVMs.map(vmName => (
+                            <li key={vmName}>{vmName}</li>
+                          ))}
+                          {bulkDeleteConfirm.affectedVMsCount > 5 && (
+                            <li className="text-muted-foreground">
+                              and {bulkDeleteConfirm.affectedVMsCount - 5} more...
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      All related execution logs and audit logs will be permanently deleted.
+                    </p>
+                    <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                      <Checkbox
+                        id="confirm-cancel-bulk-schedules"
+                        checked={bulkDeleteCheckbox}
+                        onCheckedChange={setBulkDeleteCheckbox}
+                      />
+                      <label
+                        htmlFor="confirm-cancel-bulk-schedules"
+                        className="text-sm cursor-pointer leading-tight"
+                      >
+                        I understand this will cancel all active schedules for these scripts
+                      </label>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    All related execution logs and audit logs will be permanently deleted.
+                    This action cannot be undone.
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDeleteConfirm}
+              variant="destructive"
+              disabled={bulkDeleting}
+            >
+              {bulkDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : bulkDeleteConfirm?.totalActiveSchedules > 0 ? (
+                `Delete ${bulkDeleteConfirm?.scriptIds?.length || 0} Script${(bulkDeleteConfirm?.scriptIds?.length || 0) !== 1 ? 's' : ''} & Cancel Schedules`
+              ) : (
+                `Delete ${bulkDeleteConfirm?.scriptIds?.length || 0} Script${(bulkDeleteConfirm?.scriptIds?.length || 0) !== 1 ? 's' : ''}`
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

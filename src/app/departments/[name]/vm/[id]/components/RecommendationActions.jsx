@@ -56,31 +56,35 @@ const RecommendationActions = ({
         if (metadata?.rebootDays >= 7) {
           actions.push({
             action: 'reboot',
-            label: 'Reiniciar Ahora',
+            label: 'Reboot Now',
             variant: 'destructive',
-            icon: AlertTriangle
+            icon: AlertTriangle,
+            comingSoon: true
           });
         } else if (metadata?.rebootDays >= 3) {
           actions.push({
             action: 'schedule_reboot',
-            label: 'Programar Reinicio',
+            label: 'Schedule Reboot',
             variant: 'default',
-            icon: Calendar
+            icon: Calendar,
+            comingSoon: true
           });
         }
 
         actions.push({
           action: 'install_updates',
-          label: 'Instalar Actualizaciones',
+          label: 'Install Updates',
           variant: 'default',
-          icon: RefreshCw
+          icon: RefreshCw,
+          comingSoon: true
         });
 
         actions.push({
           action: 'list',
-          label: 'Ver Actualizaciones',
+          label: 'View Updates',
           variant: 'default',
-          icon: List
+          icon: List,
+          comingSoon: true
         });
         break;
 
@@ -88,15 +92,16 @@ const RecommendationActions = ({
         if (metadata?.securityUpdateCount > 0) {
           actions.push({
             action: 'install_security_updates',
-            label: `Instalar Actualizaciones de Seguridad (${metadata.securityUpdateCount})`,
+            label: `Install Security Updates (${metadata.securityUpdateCount})`,
             variant: 'destructive',
-            icon: Shield
+            icon: Shield,
+            comingSoon: true
           });
         }
 
         actions.push({
           action: 'list',
-          label: `Ver Todas (${metadata?.totalUpdateCount || 0})`,
+          label: `View All (${metadata?.totalUpdateCount || 0})`,
           variant: 'default',
           icon: List
         });
@@ -105,16 +110,17 @@ const RecommendationActions = ({
       case 'DEFENDER_THREAT':
         actions.push({
           action: 'view_threats',
-          label: 'Ver Amenazas',
+          label: 'View Threats',
           variant: metadata?.activeThreats > 0 ? 'destructive' : 'default',
           icon: AlertTriangle
         });
 
         actions.push({
           action: 'run_full_scan',
-          label: 'Ejecutar Análisis Completo',
+          label: 'Run Full Scan',
           variant: 'default',
-          icon: Shield
+          icon: Shield,
+          comingSoon: true
         });
         break;
 
@@ -124,7 +130,7 @@ const RecommendationActions = ({
         if (firstPort) {
           actions.push({
             action: 'firewall',
-            label: `Configurar Puerto ${firstPort.port}`,
+            label: `Configure Port ${firstPort.port}`,
             variant: 'default',
             icon: Settings
           });
@@ -132,7 +138,7 @@ const RecommendationActions = ({
 
         actions.push({
           action: 'firewall',
-          label: 'Ver Reglas de Firewall',
+          label: 'View Firewall Rules',
           variant: 'default',
           icon: ExternalLink
         });
@@ -179,7 +185,7 @@ const RecommendationActions = ({
 
       default:
         actions.push({
-          label: 'Más Información',
+          label: 'More Information',
           icon: Info,
           variant: 'default',
           action: 'info'
@@ -197,9 +203,9 @@ const RecommendationActions = ({
       case 'reboot':
         setConfirmAction({
           type: 'reboot',
-          title: 'Reiniciar Máquina Virtual',
-          description: `Esta VM requiere reinicio urgentemente (${metadata?.rebootDays} días pendiente). El reinicio aplicará ${metadata?.totalUpdates || 0} actualizaciones pendientes y puede tomar 5-10 minutos. ¿Desea continuar?`,
-          confirmLabel: 'Reiniciar Ahora',
+          title: 'Reboot Virtual Machine',
+          description: `This VM urgently requires a reboot (${metadata?.rebootDays} days pending). The reboot will apply ${metadata?.totalUpdates || 0} pending updates and may take 5-10 minutes. Do you want to continue?`,
+          confirmLabel: 'Reboot Now',
           variant: 'destructive'
         });
         setShowConfirmDialog(true);
@@ -207,13 +213,13 @@ const RecommendationActions = ({
 
       case 'schedule_reboot':
         setDialogContent({
-          title: 'Programar Reinicio',
-          description: `Sistema esperando reinicio por ${metadata?.rebootDays} días. Programe un reinicio para aplicar ${metadata?.totalUpdates || 0} actualizaciones.`,
+          title: 'Schedule Reboot',
+          description: `System waiting for reboot for ${metadata?.rebootDays} days. Schedule a reboot to apply ${metadata?.totalUpdates || 0} updates.`,
           guidanceSteps: [
-            'Seleccione una fecha y hora conveniente',
-            'El reinicio aplicará todas las actualizaciones pendientes',
-            'La VM estará offline por aproximadamente 5-10 minutos',
-            'Se enviará una notificación antes del reinicio programado'
+            'Select a convenient date and time',
+            'The reboot will apply all pending updates',
+            'The VM will be offline for approximately 5-10 minutes',
+            'A notification will be sent before the scheduled reboot'
           ]
         });
         setShowInfoDialog(true);
@@ -222,9 +228,9 @@ const RecommendationActions = ({
       case 'install_updates':
         setConfirmAction({
           type: 'install_updates',
-          title: 'Instalar Actualizaciones de Windows',
-          description: `Se instalarán ${metadata?.totalUpdates || 0} actualizaciones (${metadata?.criticalCount || 0} críticas, ${metadata?.securityCount || 0} de seguridad). Esto puede requerir reinicio.`,
-          confirmLabel: 'Instalar',
+          title: 'Install System Updates',
+          description: `${metadata?.totalUpdates || 0} updates will be installed (${metadata?.criticalCount || 0} critical, ${metadata?.securityCount || 0} security). This may require a reboot.`,
+          confirmLabel: 'Install',
           variant: 'default'
         });
         setShowConfirmDialog(true);
@@ -233,9 +239,9 @@ const RecommendationActions = ({
       case 'install_security_updates':
         setConfirmAction({
           type: 'install_security_updates',
-          title: 'Instalar Actualizaciones de Seguridad',
-          description: `Se instalarán ${metadata?.securityUpdateCount} actualizaciones de seguridad críticas. Esto protegerá la VM contra vulnerabilidades conocidas.`,
-          confirmLabel: 'Instalar Ahora',
+          title: 'Install Security Updates',
+          description: `${metadata?.securityUpdateCount} critical security updates will be installed. This will protect the VM against known vulnerabilities.`,
+          confirmLabel: 'Install Now',
           variant: 'destructive'
         });
         setShowConfirmDialog(true);
@@ -244,10 +250,10 @@ const RecommendationActions = ({
       case 'view_threats':
         const items = getRecommendationItems('DEFENDER_THREAT');
         setDialogContent({
-          title: 'Amenazas Detectadas',
+          title: 'Detected Threats',
           description: items && items.length > 0
-            ? `${metadata?.threatCount || 0} amenazas detectadas (${metadata?.activeThreats || 0} activas, ${metadata?.quarantinedThreats || 0} en cuarentena)`
-            : `${metadata?.activeThreats || 0} amenazas activas, ${metadata?.quarantinedThreats || 0} en cuarentena`,
+            ? `${metadata?.threatCount || 0} threats detected (${metadata?.activeThreats || 0} active, ${metadata?.quarantinedThreats || 0} quarantined)`
+            : `${metadata?.activeThreats || 0} active threats, ${metadata?.quarantinedThreats || 0} quarantined`,
           items: items || [],
           type: 'threats'
         });
@@ -257,9 +263,9 @@ const RecommendationActions = ({
       case 'run_full_scan':
         setConfirmAction({
           type: 'run_full_scan',
-          title: 'Ejecutar Análisis Completo',
-          description: 'Windows Defender ejecutará un análisis completo del sistema. Esto puede tomar 30-60 minutos y afectar el rendimiento temporalmente.',
-          confirmLabel: 'Ejecutar Análisis',
+          title: 'Run Full Scan',
+          description: 'Windows Defender will run a full system scan. This may take 30-60 minutes and temporarily affect performance.',
+          confirmLabel: 'Run Scan',
           variant: 'default'
         });
         setShowConfirmDialog(true);
@@ -267,15 +273,15 @@ const RecommendationActions = ({
 
       case 'firewall':
         setDialogContent({
-          title: 'Configuración de Firewall',
+          title: 'Firewall Configuration',
           description: metadata?.blockedPorts?.length > 0
-            ? `${metadata.blockedPorts.length} puerto(s) bloqueado(s) detectado(s)`
-            : 'Ver y configurar reglas de firewall',
+            ? `${metadata.blockedPorts.length} blocked port(s) detected`
+            : 'View and configure firewall rules',
           guidanceSteps: [
-            'Navegue a la pestaña "Firewall" de esta VM',
-            'Revise las reglas que están bloqueando puertos',
-            metadata?.blockedPorts?.[0] ? `Configure una excepción para el puerto ${metadata.blockedPorts[0].port} (${metadata.blockedPorts[0].protocol})` : 'Configure las excepciones necesarias',
-            'Reinicie la VM si es necesario para aplicar cambios'
+            'Navigate to the "Firewall" tab of this VM',
+            'Review the rules that are blocking ports',
+            metadata?.blockedPorts?.[0] ? `Configure an exception for port ${metadata.blockedPorts[0].port} (${metadata.blockedPorts[0].protocol})` : 'Configure the necessary exceptions',
+            'Restart the VM if necessary to apply changes'
           ],
           type: 'firewall'
         });
@@ -287,7 +293,7 @@ const RecommendationActions = ({
           ? info.userFriendlyExplanation(recommendation)
           : info.userFriendlyExplanation;
         setDialogContent({
-          title: `Información: ${info.label}`,
+          title: `Information: ${info.label}`,
           description: explanation,
           technicalDetails: info.technicalDetails,
           actions: info.actions
@@ -298,10 +304,10 @@ const RecommendationActions = ({
       case 'list':
         const listItems = getRecommendationItems(recommendation.type);
         setDialogContent({
-          title: `Lista de elementos: ${info.label}`,
+          title: `Item List: ${info.label}`,
           description: listItems && listItems.length > 0
-            ? `${listItems.length} elementos encontrados`
-            : 'No hay datos estructurados disponibles',
+            ? `${listItems.length} items found`
+            : 'No structured data available',
           items: listItems || [],
           type: recommendation.type
         });
@@ -310,8 +316,8 @@ const RecommendationActions = ({
 
       case 'processes':
         setDialogContent({
-          title: "Procesos del sistema",
-          description: "Lista de procesos que consumen más recursos",
+          title: "System Processes",
+          description: "List of processes consuming the most resources",
           processes: getMockProcesses()
         });
         setShowInfoDialog(true);
@@ -319,8 +325,8 @@ const RecommendationActions = ({
 
       default:
         toast({
-          title: "Acción ejecutada",
-          description: "La acción se ha ejecutado correctamente",
+          title: "Action executed",
+          description: "The action was executed successfully",
           variant: "default"
         });
     }
@@ -335,8 +341,8 @@ const RecommendationActions = ({
     switch (confirmAction.type) {
       case 'reboot':
         toast({
-          title: "Reinicio programado",
-          description: "La VM se reiniciará en breve. Recibirá una notificación cuando complete.",
+          title: "Reboot scheduled",
+          description: "The VM will reboot shortly. You will receive a notification when complete.",
           variant: "default"
         });
         // TODO: Implement actual reboot mutation when available
@@ -345,8 +351,8 @@ const RecommendationActions = ({
       case 'install_updates':
       case 'install_security_updates':
         toast({
-          title: "Instalación iniciada",
-          description: "Las actualizaciones se están instalando. Esto puede tomar varios minutos.",
+          title: "Installation started",
+          description: "Updates are being installed. This may take several minutes.",
           variant: "default"
         });
         // TODO: Implement actual update installation when available
@@ -354,8 +360,8 @@ const RecommendationActions = ({
 
       case 'run_full_scan':
         toast({
-          title: "Análisis iniciado",
-          description: "Windows Defender está ejecutando un análisis completo.",
+          title: "Scan started",
+          description: "Windows Defender is running a full scan.",
           variant: "default"
         });
         // TODO: Implement actual scan trigger when available
@@ -363,8 +369,8 @@ const RecommendationActions = ({
 
       default:
         toast({
-          title: "Acción completada",
-          description: "La acción se ejecutó correctamente.",
+          title: "Action completed",
+          description: "The action was executed successfully.",
           variant: "default"
         });
     }
@@ -458,16 +464,39 @@ const RecommendationActions = ({
       <div className={`flex items-center gap-2 ${className}`}>
         {/* Action Buttons */}
         {actionConfig.actions.map((action, index) => (
-          <Button
-            key={index}
-            size="sm"
-            variant={action.variant}
-            onClick={() => handleAction(action.action)}
-            className="flex items-center gap-1"
-          >
-            <action.icon className="h-3 w-3" />
-            {action.label}
-          </Button>
+          action.comingSoon ? (
+            <TooltipProvider key={index}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      size="sm"
+                      variant={action.variant}
+                      disabled
+                      className="flex items-center gap-1 opacity-50 cursor-not-allowed"
+                    >
+                      <action.icon className="h-3 w-3" />
+                      {action.label}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Coming Soon</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <Button
+              key={index}
+              size="sm"
+              variant={action.variant}
+              onClick={() => handleAction(action.action)}
+              className="flex items-center gap-1"
+            >
+              <action.icon className="h-3 w-3" />
+              {action.label}
+            </Button>
+          )
         ))}
       </div>
 
@@ -481,9 +510,9 @@ const RecommendationActions = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmAction(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmAction(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm} className={confirmAction?.variant === 'destructive' ? 'bg-red-600 hover:bg-red-700' : ''}>
-              {confirmAction?.confirmLabel || 'Confirmar'}
+              {confirmAction?.confirmLabel || 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -503,7 +532,7 @@ const RecommendationActions = ({
 
             {dialogContent.guidanceSteps && (
               <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-sm mb-2">Pasos a seguir:</h4>
+                <h4 className="font-medium text-sm mb-2">Steps to follow:</h4>
                 <ol className="space-y-2">
                   {dialogContent.guidanceSteps.map((step, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
@@ -517,14 +546,14 @@ const RecommendationActions = ({
 
             {dialogContent.technicalDetails && (
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium text-sm mb-2">Información técnica:</h4>
+                <h4 className="font-medium text-sm mb-2">Technical information:</h4>
                 <p className="text-sm text-gray-600">{dialogContent.technicalDetails}</p>
               </div>
             )}
 
             {dialogContent.actions && dialogContent.actions.length > 0 && (
               <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-sm mb-2">Acciones recomendadas:</h4>
+                <h4 className="font-medium text-sm mb-2">Recommended actions:</h4>
                 <ul className="space-y-1">
                   {dialogContent.actions.map((action, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
@@ -538,7 +567,7 @@ const RecommendationActions = ({
 
             {dialogContent.processes && (
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium text-sm mb-3">Procesos con mayor consumo:</h4>
+                <h4 className="font-medium text-sm mb-3">Top resource-consuming processes:</h4>
                 <div className="space-y-2">
                   {dialogContent.processes.map((process, index) => (
                     <div key={index} className="flex justify-between items-center text-sm">
@@ -555,7 +584,7 @@ const RecommendationActions = ({
             )}
           </div>
           <DialogFooter>
-            <Button onClick={() => setShowInfoDialog(false)}>Cerrar</Button>
+            <Button onClick={() => setShowInfoDialog(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -586,21 +615,21 @@ const RecommendationActions = ({
                         </Badge>
                       </div>
                       <div className="flex gap-4 text-xs text-gray-600">
-                        <span>Severidad: {item.severity}</span>
-                        {item.detectionTime && <span>Detectado: {new Date(item.detectionTime).toLocaleDateString()}</span>}
+                        <span>Severity: {item.severity}</span>
+                        {item.detectionTime && <span>Detected: {new Date(item.detectionTime).toLocaleDateString()}</span>}
                       </div>
-                      {item.path && <p className="text-xs text-gray-500 mt-1 truncate">Ruta: {item.path}</p>}
+                      {item.path && <p className="text-xs text-gray-500 mt-1 truncate">Path: {item.path}</p>}
                     </div>
                   ) : dialogContent.type === 'PORT_BLOCKED' ? (
                     // Port blocked display
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-medium text-sm">Puerto {item.port} ({item.protocol})</h4>
+                        <h4 className="font-medium text-sm">Port {item.port} ({item.protocol})</h4>
                       </div>
                       <div className="text-xs text-gray-600">
-                        <p>Proceso: {item.processName} {item.processId && `(PID: ${item.processId})`}</p>
-                        {item.ruleName && <p>Regla: {item.ruleName}</p>}
-                        {item.lastAttempt && <p>Último intento: {new Date(item.lastAttempt).toLocaleString()}</p>}
+                        <p>Process: {item.processName} {item.processId && `(PID: ${item.processId})`}</p>
+                        {item.ruleName && <p>Rule: {item.ruleName}</p>}
+                        {item.lastAttempt && <p>Last attempt: {new Date(item.lastAttempt).toLocaleString()}</p>}
                       </div>
                     </div>
                   ) : dialogContent.type === 'APP_UPDATE_AVAILABLE' ? (
@@ -611,7 +640,7 @@ const RecommendationActions = ({
                           <h4 className="font-medium text-sm">{item.name}</h4>
                           {item.isSecurity && (
                             <Badge variant="destructive" className="text-xs">
-                              Seguridad
+                              Security
                             </Badge>
                           )}
                         </div>
@@ -644,7 +673,7 @@ const RecommendationActions = ({
                         </div>
                         <div className="flex gap-3 text-xs text-gray-600">
                           {item.kb && <span>KB: {item.kb}</span>}
-                          {item.requiresReboot && <span className="text-orange-600">Requiere reinicio</span>}
+                          {item.requiresReboot && <span className="text-orange-600">Requires reboot</span>}
                         </div>
                       </div>
                       {item.size && (
@@ -658,13 +687,13 @@ const RecommendationActions = ({
               ))
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <p className="text-sm">No hay datos estructurados disponibles</p>
-                <p className="text-xs mt-1">Los datos detallados aparecerán cuando estén disponibles</p>
+                <p className="text-sm">No structured data available</p>
+                <p className="text-xs mt-1">Detailed data will appear when available</p>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button onClick={() => setShowListDialog(false)}>Cerrar</Button>
+            <Button onClick={() => setShowListDialog(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

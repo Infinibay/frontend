@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, Package } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { cn } from '@/lib/utils';
+import { selectDepartments } from '@/state/slices/departments';
 
 const operatingSystems = {
   ubuntu20: 'Ubuntu 20.04 LTS',
@@ -28,10 +29,12 @@ export function ReviewStep({ id }) {
   const { values } = useWizardContext();
   const templates = useSelector((state) => state.templates.items);
   const applications = useSelector((state) => state.applications.items);
+  const departments = useSelector(selectDepartments);
 
   const selectedTemplate = templates.find(t => t.id === values.resources?.templateId);
   const selectedApps = values.applications?.applications || [];
   const selectedAppDetails = applications.filter(app => selectedApps.includes(app.id));
+  const selectedDepartment = departments.find(d => d.id === parseInt(values.basicInfo?.departmentId));
 
   return (
     <div className="space-y-6">
@@ -55,6 +58,12 @@ export function ReviewStep({ id }) {
                 <div className="flex justify-between">
                   <dt className="text-sm text-muted-foreground">Description</dt>
                   <dd className="text-sm font-medium">{values.basicInfo.description}</dd>
+                </div>
+              )}
+              {selectedDepartment && (
+                <div className="flex justify-between">
+                  <dt className="text-sm text-muted-foreground">Department</dt>
+                  <dd className="text-sm font-medium">{selectedDepartment.name}</dd>
                 </div>
               )}
             </dl>

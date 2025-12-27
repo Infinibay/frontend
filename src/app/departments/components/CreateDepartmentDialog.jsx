@@ -13,6 +13,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 // Valid configurations for each policy
 const BLOCK_ALL_CONFIGS = {
@@ -60,7 +61,8 @@ const CreateDepartmentDialog = ({
   onDepartmentNameChange,
   onSubmit,
   onCancel,
-  isLoading = false
+  isLoading = false,
+  error = null
 }) => {
   // Internal form state for firewall configuration
   const [formData, setFormData] = useState({
@@ -127,7 +129,7 @@ const CreateDepartmentDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto overflow-x-hidden">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create Department</DialogTitle>
@@ -136,7 +138,7 @@ const CreateDepartmentDialog = ({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-6 space-y-6">
+          <div className="py-4 space-y-4">
             {/* Department Name */}
             <div className="space-y-2">
               <Label>Nombre del Departamento</Label>
@@ -147,159 +149,165 @@ const CreateDepartmentDialog = ({
                 value={departmentName}
                 onChange={(e) => onDepartmentNameChange(e.target.value)}
               />
+              {error && (
+                <Alert variant="destructive" className="mt-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
             </div>
 
-            {/* Firewall Policy Section - Accordion Style */}
-            <div className="space-y-3">
+            {/* Firewall Policy Section */}
+            <div className="space-y-2">
               <Label
                 moreInformation="Define el comportamiento por defecto del firewall. Bloquear Todo es mas seguro y se recomienda para la mayoria de casos."
               >
                 Politica de Firewall
               </Label>
 
-              {/* Block All Policy - Accordion */}
-              <div
-                className={`rounded-lg border transition-all duration-200 ${
-                  formData.firewallPolicy === 'BLOCK_ALL'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-border/80'
-                }`}
-              >
+              <RadioGroup value={formData.firewallPolicy} onValueChange={handlePolicyChange} className="space-y-2">
+                {/* Block All Policy */}
                 <div
-                  className="flex items-start space-x-3 p-3 cursor-pointer"
-                  onClick={() => handlePolicyChange('BLOCK_ALL')}
+                  className={`rounded-lg border transition-all duration-200 ${
+                    formData.firewallPolicy === 'BLOCK_ALL'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-border/80'
+                  }`}
                 >
-                  <RadioGroup value={formData.firewallPolicy} onValueChange={handlePolicyChange}>
+                  <label
+                    htmlFor="policy-block"
+                    className="flex items-start gap-3 p-3 cursor-pointer"
+                  >
                     <RadioGroupItem value="BLOCK_ALL" id="policy-block" className="mt-0.5" />
-                  </RadioGroup>
-                  <div className="flex flex-col flex-1">
-                    <label htmlFor="policy-block" className="text-sm font-medium cursor-pointer">
-                      Bloquear Todo (Recomendado)
-                    </label>
-                    <span className="text-xs text-muted-foreground">
-                      Bloquea todo el trafico excepto lo que permitas explicitamente
-                    </span>
-                  </div>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-sm font-medium">
+                        Bloquear Todo (Recomendado)
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Bloquea todo el trafico excepto lo que permitas explicitamente
+                      </span>
+                    </div>
+                  </label>
+
+                  {/* Nested exceptions for Block All */}
+                  {formData.firewallPolicy === 'BLOCK_ALL' && (
+                    <div className="px-3 pb-3 animate-in slide-in-from-top-2 fade-in duration-200">
+                      <div className="ml-4 pl-3 border-l-2 border-primary/30">
+                        <span className="text-xs text-muted-foreground mb-2 block">
+                          Permitir estas excepciones:
+                        </span>
+
+                        {isBlockAllRisky && (
+                          <Alert variant="warning" className="mb-2 py-2">
+                            <AlertDescription className="text-xs">
+                              Esta configuracion puede causar problemas con la instalacion automatica de sistemas operativos.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        <RadioGroup
+                          value={formData.firewallDefaultConfig}
+                          onValueChange={handleDefaultConfigChange}
+                          className="space-y-1"
+                        >
+                          {Object.entries(BLOCK_ALL_CONFIGS).map(([value, config]) => (
+                            <label
+                              key={value}
+                              htmlFor={`config-block-${value}`}
+                              className={`flex items-start gap-2 p-2 rounded-md border transition-colors cursor-pointer ${
+                                formData.firewallDefaultConfig === value
+                                  ? 'border-primary/50 bg-primary/5'
+                                  : 'border-transparent hover:bg-muted/50'
+                              }`}
+                            >
+                              <RadioGroupItem value={value} id={`config-block-${value}`} className="mt-0.5 scale-90" />
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-xs font-medium">
+                                  {config.label}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {config.description}
+                                </span>
+                              </div>
+                            </label>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Nested exceptions for Block All */}
-                {formData.firewallPolicy === 'BLOCK_ALL' && (
-                  <div className="px-3 pb-3 animate-in slide-in-from-top-2 fade-in duration-200">
-                    <div className="ml-6 pl-3 border-l-2 border-primary/30">
-                      <span className="text-xs text-muted-foreground mb-2 block">
-                        Permitir estas excepciones:
-                      </span>
-
-                      {isBlockAllRisky && (
-                        <Alert variant="warning" className="mb-2 py-2">
-                          <AlertDescription className="text-xs">
-                            Esta configuracion puede causar problemas con la instalacion automatica de sistemas operativos.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-
-                      <RadioGroup
-                        value={formData.firewallDefaultConfig}
-                        onValueChange={handleDefaultConfigChange}
-                        className="space-y-1.5"
-                      >
-                        {Object.entries(BLOCK_ALL_CONFIGS).map(([value, config]) => (
-                          <div
-                            key={value}
-                            className={`flex items-start space-x-2 p-2 rounded-md border transition-colors ${
-                              formData.firewallDefaultConfig === value
-                                ? 'border-primary/50 bg-primary/5'
-                                : 'border-transparent hover:bg-muted/50'
-                            }`}
-                          >
-                            <RadioGroupItem value={value} id={`config-block-${value}`} className="mt-0.5 scale-90" />
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <label htmlFor={`config-block-${value}`} className="text-xs font-medium cursor-pointer">
-                                {config.label}
-                              </label>
-                              <span className="text-xs text-muted-foreground truncate">
-                                {config.description}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </RadioGroup>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Allow All Policy - Accordion */}
-              <div
-                className={`rounded-lg border transition-all duration-200 ${
-                  formData.firewallPolicy === 'ALLOW_ALL'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-border/80'
-                }`}
-              >
+                {/* Allow All Policy */}
                 <div
-                  className="flex items-start space-x-3 p-3 cursor-pointer"
-                  onClick={() => handlePolicyChange('ALLOW_ALL')}
+                  className={`rounded-lg border transition-all duration-200 ${
+                    formData.firewallPolicy === 'ALLOW_ALL'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-border/80'
+                  }`}
                 >
-                  <RadioGroup value={formData.firewallPolicy} onValueChange={handlePolicyChange}>
+                  <label
+                    htmlFor="policy-allow"
+                    className="flex items-start gap-3 p-3 cursor-pointer"
+                  >
                     <RadioGroupItem value="ALLOW_ALL" id="policy-allow" className="mt-0.5" />
-                  </RadioGroup>
-                  <div className="flex flex-col flex-1">
-                    <label htmlFor="policy-allow" className="text-sm font-medium cursor-pointer">
-                      Permitir Todo
-                    </label>
-                    <span className="text-xs text-muted-foreground">
-                      Permite todo el trafico excepto lo que bloquees explicitamente
-                    </span>
-                  </div>
-                </div>
-
-                {/* Nested blocks for Allow All */}
-                {formData.firewallPolicy === 'ALLOW_ALL' && (
-                  <div className="px-3 pb-3 animate-in slide-in-from-top-2 fade-in duration-200">
-                    <div className="ml-6 pl-3 border-l-2 border-primary/30">
-                      <span className="text-xs text-muted-foreground mb-2 block">
-                        Bloquear estos servicios:
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-sm font-medium">
+                        Permitir Todo
                       </span>
-
-                      {isAllowAllRisky && (
-                        <Alert variant="warning" className="mb-2 py-2">
-                          <AlertDescription className="text-xs">
-                            Sin bloqueos iniciales, las VMs estaran mas expuestas.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-
-                      <RadioGroup
-                        value={formData.firewallDefaultConfig}
-                        onValueChange={handleDefaultConfigChange}
-                        className="space-y-1.5"
-                      >
-                        {Object.entries(ALLOW_ALL_CONFIGS).map(([value, config]) => (
-                          <div
-                            key={value}
-                            className={`flex items-start space-x-2 p-2 rounded-md border transition-colors ${
-                              formData.firewallDefaultConfig === value
-                                ? 'border-primary/50 bg-primary/5'
-                                : 'border-transparent hover:bg-muted/50'
-                            }`}
-                          >
-                            <RadioGroupItem value={value} id={`config-allow-${value}`} className="mt-0.5 scale-90" />
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <label htmlFor={`config-allow-${value}`} className="text-xs font-medium cursor-pointer">
-                                {config.label}
-                              </label>
-                              <span className="text-xs text-muted-foreground truncate">
-                                {config.description}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </RadioGroup>
+                      <span className="text-xs text-muted-foreground">
+                        Permite todo el trafico excepto lo que bloquees explicitamente
+                      </span>
                     </div>
-                  </div>
-                )}
-              </div>
+                  </label>
+
+                  {/* Nested blocks for Allow All */}
+                  {formData.firewallPolicy === 'ALLOW_ALL' && (
+                    <div className="px-3 pb-3 animate-in slide-in-from-top-2 fade-in duration-200">
+                      <div className="ml-4 pl-3 border-l-2 border-primary/30">
+                        <span className="text-xs text-muted-foreground mb-2 block">
+                          Bloquear estos servicios:
+                        </span>
+
+                        {isAllowAllRisky && (
+                          <Alert variant="warning" className="mb-2 py-2">
+                            <AlertDescription className="text-xs">
+                              Sin bloqueos iniciales, las VMs estaran mas expuestas.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        <RadioGroup
+                          value={formData.firewallDefaultConfig}
+                          onValueChange={handleDefaultConfigChange}
+                          className="space-y-1"
+                        >
+                          {Object.entries(ALLOW_ALL_CONFIGS).map(([value, config]) => (
+                            <label
+                              key={value}
+                              htmlFor={`config-allow-${value}`}
+                              className={`flex items-start gap-2 p-2 rounded-md border transition-colors cursor-pointer ${
+                                formData.firewallDefaultConfig === value
+                                  ? 'border-primary/50 bg-primary/5'
+                                  : 'border-transparent hover:bg-muted/50'
+                              }`}
+                            >
+                              <RadioGroupItem value={value} id={`config-allow-${value}`} className="mt-0.5 scale-90" />
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-xs font-medium">
+                                  {config.label}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {config.description}
+                                </span>
+                              </div>
+                            </label>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </RadioGroup>
             </div>
           </div>
 

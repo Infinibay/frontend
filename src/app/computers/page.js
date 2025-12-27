@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, Monitor, Power, HardDrive, Network, Filter } from "lucide-react";
 
 // Local components and hooks
-import { ComputersList } from "./components/ComputersList";
+import { ComputersList } from "@/components/ui/computers-list";
 import { useComputerActions } from "./hooks/useComputerActions";
 import { groupMachinesByDepartment } from "./utils/groupMachines";
 

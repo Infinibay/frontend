@@ -12,7 +12,8 @@ import {
   ChevronRight,
   Trash2,
   AlertCircle,
-  Shield
+  Shield,
+  Pencil
 } from "lucide-react"
 import { Spinner } from "@/components/ui/spinner"
 import {
@@ -30,6 +31,7 @@ import {
   useGetDepartmentFirewallRulesLazyQuery
 } from "@/gql/hooks"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import EditDepartmentDialog from "./EditDepartmentDialog"
 
 const debug = createDebugger('frontend:components:department-card')
 
@@ -47,6 +49,7 @@ const DepartmentCard = ({
 
   // State management
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
   const [scriptsCount, setScriptsCount] = useState(0)
@@ -74,6 +77,12 @@ const DepartmentCard = ({
       departmentName: department.name,
       targetUrl: departmentUrl
     })
+  }
+
+  const handleEditClick = (e) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setIsEditDialogOpen(true)
   }
 
   const handleDeleteClick = async (e) => {
@@ -139,15 +148,69 @@ const DepartmentCard = ({
       <Card
         elevation="1"
         radius="md"
-        className="group h-full bg-card text-card-foreground border hover:shadow-elevation-2 hover:border-primary/40 transition-all duration-200"
+        className="group relative h-full bg-card text-card-foreground border hover:shadow-elevation-2 hover:border-primary/40 transition-all duration-200"
       >
+        {/* Action buttons - top right corner */}
+        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Edit button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-green-500 hover:text-green-600 hover:bg-green-500/10"
+                onClick={handleEditClick}
+                aria-label="Edit department"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Edit department</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Delete button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {isDeleting ? (
+                <span className="inline-block">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground pointer-events-none"
+                    disabled
+                    aria-label="Deleting department"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <Spinner size="sm" />
+                  </Button>
+                </span>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={handleDeleteClick}
+                  aria-label="Delete department"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isDeleting ? "Deleting..." : "Delete department"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
         <Link
           href={departmentUrl}
           className="block h-full"
           onClick={handleCardClick}
         >
           <CardContent className="flex flex-col gap-4 p-4 sm:p-5 h-full">
-            {/* Header: Icon + Title + Delete button */}
+            {/* Header: Icon + Title */}
             <div className="flex items-center gap-3">
               <div className={`p-2.5 rounded-xl flex-shrink-0 ${colorClass}`}>
                 <Building2 className="h-5 w-5" />
@@ -156,39 +219,6 @@ const DepartmentCard = ({
                 <h3 className="font-semibold text-base truncate">{department.name}</h3>
                 <p className="text-xs text-muted-foreground">Click to manage</p>
               </div>
-
-              {/* Delete button - always visible for better grid accessibility */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  {isDeleting ? (
-                    <span className="inline-block flex-shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground pointer-events-none"
-                        disabled
-                        aria-label="Deleting department"
-                        onClick={(e) => e.preventDefault()}
-                      >
-                        <Spinner size="sm" />
-                      </Button>
-                    </span>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 flex-shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
-                      onClick={handleDeleteClick}
-                      aria-label="Delete department"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{isDeleting ? "Deleting..." : "Delete department"}</p>
-                </TooltipContent>
-              </Tooltip>
             </div>
 
             {/* Stats row - at bottom */}
@@ -303,6 +333,13 @@ const DepartmentCard = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Department Dialog */}
+      <EditDepartmentDialog
+        department={department}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+      />
     </>
   );
 };

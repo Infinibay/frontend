@@ -118,7 +118,7 @@ export function CreateTemplateDialog({ children, categoryId }) {
               placeholder="Describe the purpose of this template..."
               rows={2}
               disabled={loading.create}
-              className="resize-none"
+              className="resize-none p-3 placeholder:text-muted-foreground/60"
             />
           </div>
 
@@ -142,7 +142,6 @@ export function CreateTemplateDialog({ children, categoryId }) {
                   max="64"
                   value={formData.cores}
                   onChange={handleChange}
-                  placeholder="4"
                   disabled={loading.create}
                   className="text-center"
                 />
@@ -162,7 +161,6 @@ export function CreateTemplateDialog({ children, categoryId }) {
                   max="512"
                   value={formData.ram}
                   onChange={handleChange}
-                  placeholder="8"
                   disabled={loading.create}
                   className="text-center"
                 />
@@ -182,7 +180,6 @@ export function CreateTemplateDialog({ children, categoryId }) {
                   max="2000"
                   value={formData.storage}
                   onChange={handleChange}
-                  placeholder="50"
                   disabled={loading.create}
                   className="text-center"
                 />
@@ -191,7 +188,7 @@ export function CreateTemplateDialog({ children, categoryId }) {
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-3">
           <Button
             type="button"
             variant="outline"

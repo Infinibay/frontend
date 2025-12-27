@@ -190,7 +190,7 @@ const DepartmentFirewallPolicyEditor = ({ department }) => {
 
       {/* Edit Policy Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[650px]">
           <DialogHeader>
             <DialogTitle>Edit Firewall Policy</DialogTitle>
             <DialogDescription>
@@ -198,7 +198,7 @@ const DepartmentFirewallPolicyEditor = ({ department }) => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-4">
+          <div className="space-y-3 py-4 max-h-[60vh] overflow-y-auto overflow-x-hidden">
             {/* Block All Policy - Accordion Style */}
             <div
               className={`rounded-lg border transition-all duration-200 ${
@@ -214,7 +214,7 @@ const DepartmentFirewallPolicyEditor = ({ department }) => {
                 <RadioGroup value={selectedPolicy} onValueChange={handlePolicyChange}>
                   <RadioGroupItem value="BLOCK_ALL" id="policy-block" />
                 </RadioGroup>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <Label htmlFor="policy-block" className="font-medium cursor-pointer flex items-center gap-2">
                     <Shield className="size-4 text-red-600" />
                     Block All
@@ -247,8 +247,8 @@ const DepartmentFirewallPolicyEditor = ({ department }) => {
                             }`}
                           >
                             <RadioGroupItem value={key} id={`config-block-${key}`} className="scale-90" />
-                            <div className="flex-1 min-w-0">
-                              <Label htmlFor={`config-block-${key}`} className="text-sm cursor-pointer flex items-center gap-1.5">
+                            <Label htmlFor={`config-block-${key}`} className="flex-1 min-w-0 cursor-pointer">
+                              <span className="text-sm flex flex-wrap items-center gap-1.5">
                                 <ConfigIcon className="size-3.5" />
                                 {config.label}
                                 {config.isRisky && (
@@ -257,11 +257,11 @@ const DepartmentFirewallPolicyEditor = ({ department }) => {
                                     Risky
                                   </Badge>
                                 )}
-                              </Label>
-                              <p className="text-xs text-muted-foreground truncate">
+                              </span>
+                              <p className="text-xs text-muted-foreground font-normal">
                                 {config.description}
                               </p>
-                            </div>
+                            </Label>
                           </div>
                         );
                       })}
@@ -286,7 +286,7 @@ const DepartmentFirewallPolicyEditor = ({ department }) => {
                 <RadioGroup value={selectedPolicy} onValueChange={handlePolicyChange}>
                   <RadioGroupItem value="ALLOW_ALL" id="policy-allow" />
                 </RadioGroup>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <Label htmlFor="policy-allow" className="font-medium cursor-pointer flex items-center gap-2">
                     <ShieldOff className="size-4 text-green-600" />
                     Allow All
@@ -318,8 +318,8 @@ const DepartmentFirewallPolicyEditor = ({ department }) => {
                             }`}
                           >
                             <RadioGroupItem value={key} id={`config-allow-${key}`} className="scale-90" />
-                            <div className="flex-1 min-w-0">
-                              <Label htmlFor={`config-allow-${key}`} className="text-sm cursor-pointer flex items-center gap-1.5">
+                            <Label htmlFor={`config-allow-${key}`} className="flex-1 min-w-0 cursor-pointer">
+                              <span className="text-sm flex flex-wrap items-center gap-1.5">
                                 <ConfigIcon className="size-3.5" />
                                 {config.label}
                                 {config.isRisky && (
@@ -328,11 +328,11 @@ const DepartmentFirewallPolicyEditor = ({ department }) => {
                                     Risky
                                   </Badge>
                                 )}
-                              </Label>
-                              <p className="text-xs text-muted-foreground truncate">
+                              </span>
+                              <p className="text-xs text-muted-foreground font-normal">
                                 {config.description}
                               </p>
-                            </div>
+                            </Label>
                           </div>
                         );
                       })}
@@ -357,7 +357,7 @@ const DepartmentFirewallPolicyEditor = ({ department }) => {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveClick} disabled={!hasChanges || loading}>
+            <Button variant="success" onClick={handleSaveClick} disabled={!hasChanges || loading}>
               {loading ? (
                 <>
                   <RefreshCw className="size-icon mr-2 animate-spin" />

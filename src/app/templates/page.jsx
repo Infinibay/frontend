@@ -342,22 +342,24 @@ export default function TemplatesPage() {
                 </CreateTemplateDialog>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 size-gap">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 size-gap">
                 {templatesByCategory[category.id]?.map((template) => (
                   <div key={template.id} className="relative group">
                     <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 z-10">
                       <EditTemplateDialog template={template}>
-                        <Button variant="ghost" className="size-icon-button glass-strong">
-                          <FaPencilAlt className="size-icon" />
+                        <Button variant="ghost" size="icon" className="h-10 w-10 glass-strong" title="Edit template">
+                          <FaPencilAlt className="h-5 w-5 text-green-500" />
                         </Button>
                       </EditTemplateDialog>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            className={`size-icon-button glass-strong ${template.totalMachines > 0 ? 'opacity-50' : ''}`}
+                            size="icon"
+                            className={`h-10 w-10 glass-strong ${template.totalMachines > 0 ? 'opacity-50' : ''}`}
+                            title="Delete template"
                           >
-                            <FaTrash className="size-icon" />
+                            <FaTrash className="h-5 w-5 text-red-500" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

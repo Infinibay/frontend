@@ -58,6 +58,15 @@ function DroppableDepartment({ departmentId, departmentName, children, isOver })
     data: { type: 'department', departmentId }
   });
 
+  // When no department name, render without the glass container (for single department views)
+  if (!departmentName) {
+    return (
+      <div ref={setNodeRef}>
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div ref={setNodeRef} className={cn(
       "overflow-hidden transition-all duration-200",
@@ -68,27 +77,25 @@ function DroppableDepartment({ departmentId, departmentName, children, isOver })
       }),
       isOver && "border-primary/30"
     )}>
-      {departmentName && (
+      <div className={cn(
+        "flex items-center gap-3 px-4 py-3 border-b",
+        getGlassClasses({
+          glass: 'subtle',
+          elevation: 1,
+          radius: 'none'
+        }),
+        "bg-glass-bg-subtle/50"
+      )}>
         <div className={cn(
-          "flex items-center gap-3 px-4 py-3 border-b",
-          getGlassClasses({
-            glass: 'subtle',
-            elevation: 1,
-            radius: 'none'
-          }),
-          "bg-glass-bg-subtle/50"
+          "flex items-center justify-center w-8 h-8 rounded-lg",
+          "bg-primary/10"
         )}>
-          <div className={cn(
-            "flex items-center justify-center w-8 h-8 rounded-lg",
-            "bg-primary/10"
-          )}>
-            <Building2 className="h-4 w-4 text-primary" />
-          </div>
-          <h2 className="text-lg font-semibold tracking-tight text-glass-text-primary">
-            {departmentName}
-          </h2>
+          <Building2 className="h-4 w-4 text-primary" />
         </div>
-      )}
+        <h2 className="text-lg font-semibold tracking-tight text-glass-text-primary">
+          {departmentName}
+        </h2>
+      </div>
       <div className={cn(
         "min-h-[100px] p-4 transition-colors duration-200",
         isOver && "bg-primary/5"
@@ -265,12 +272,7 @@ export function ComputersList({
             departmentName={byDepartment ? departmentData.name : null}
             isOver={overDepartmentId === departmentId}
           >
-            <div className={cn(
-              "gap-4",
-              grid
-                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                : "flex flex-wrap"
-            )}>
+            <div className="flex flex-wrap gap-4">
               {(departmentData.machines || []).map((machine) => (
                 <DraggableUserPc
                   key={machine.id}

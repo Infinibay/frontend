@@ -23,31 +23,30 @@ export default function CreateMachineWizard({ departmentId }) {
   const { create: createError } = useSelector(selectVmsError);
   const departments = useSelector(selectDepartments);
   const [initialValues, setInitialValues] = useState(null);
+  // Track validated departmentId - only set if it exists in departments
+  const [validatedDepartmentId, setValidatedDepartmentId] = useState(null);
 
   // Load departments on mount
   useEffect(() => {
     dispatch(fetchDepartments());
   }, [dispatch]);
 
-  // Set initial values once departments are loaded or if departmentId is provided
+  // Set initial values once departments are loaded, validating departmentId
   useEffect(() => {
-    // If departmentId is provided, we can set initial values immediately
-    if (departmentId && !initialValues) {
+    if (departments.length > 0 && !initialValues) {
+      // Check if provided departmentId exists in departments
+      const departmentExists = departmentId && departments.some(d => String(d.id) === String(departmentId));
+
+      const selectedDepartmentId = departmentExists
+        ? String(departmentId)
+        : String(departments[0].id);
+
+      // Only set validatedDepartmentId if the provided ID actually exists
+      setValidatedDepartmentId(departmentExists ? departmentId : null);
+
       setInitialValues({
         basicInfo: {
-          departmentId: departmentId
-        },
-        gpu: {
-          gpuId: 'no-gpu',
-          pciBus: null,
-          gpuInfo: null
-        }
-      });
-    } else if (departments.length > 0 && !initialValues) {
-      // Otherwise, wait for departments to be loaded
-      setInitialValues({
-        basicInfo: {
-          departmentId: departments[0].id
+          departmentId: selectedDepartmentId
         },
         gpu: {
           gpuId: 'no-gpu',
@@ -68,7 +67,7 @@ export default function CreateMachineWizard({ departmentId }) {
         os: values.configuration.os,
         productKey: values.configuration.productKey || '',
         pciBus: values.gpu.pciBus,
-        departmentId: (departmentId || values.basicInfo.departmentId),
+        departmentId: String(validatedDepartmentId || values.basicInfo.departmentId),
         applications: (values.applications?.applications || []).map(appId => ({
           applicationId: appId,
           parameters: {} // Add any necessary parameters here
@@ -149,12 +148,12 @@ export default function CreateMachineWizard({ departmentId }) {
             } else if (values.password !== values.confirmPassword) {
               errors.confirmPassword = 'Passwords do not match';
             }
-            if (departmentId == null && !values.departmentId) {
+            if (validatedDepartmentId == null && !values.departmentId) {
               errors.departmentId = 'Department is required';
             }
             if (Object.keys(errors).length > 0) throw errors;
           }}
-          departmentId={departmentId}
+          departmentId={validatedDepartmentId}
           className="glass-strong"
         />
         <ConfigurationStep

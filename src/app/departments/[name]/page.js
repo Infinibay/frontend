@@ -32,7 +32,7 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 // Components
 import NotFound from "./components/NotFound";
 import TabControls from "./components/TabControls";
-import MachineGrid from "./components/MachineGrid";
+import { ComputersList } from "@/components/ui/computers-list";
 import MachineTable from "./components/MachineTable";
 import EmptyState from "./components/EmptyState";
 import ToastNotification from "./components/ToastNotification";
@@ -213,9 +213,9 @@ const DepartmentPage = () => {
     breadcrumbs: [
       { label: 'Home', href: '/' },
       { label: 'Departments', href: '/departments' },
-      { label: departmentName || 'Department', isCurrent: true }
+      { label: department?.name || 'Department', isCurrent: true }
     ],
-    title: departmentName || 'Department',
+    title: department?.name || 'Department',
     actions: [
       {
         id: 'new-computer',
@@ -229,7 +229,7 @@ const DepartmentPage = () => {
     ],
     helpConfig: helpConfig,
     helpTooltip: 'Department help'
-  }, [departmentName]);
+  }, [department?.name, departmentName]);
 
   // Loading state - maintains page structure with skeleton placeholders
   if (isLoading) {
@@ -305,15 +305,23 @@ const DepartmentPage = () => {
               {machines.length > 0 ? (
                 <>
                   {viewMode === "grid" ? (
-                    <MachineGrid
-                      machines={machines}
-                      departmentName={department?.name}
-                      onSelect={handlePcSelect}
+                    <ComputersList
+                      groupedMachines={{
+                        [department?.id || 'default']: {
+                          name: null,
+                          machines: machines
+                        }
+                      }}
+                      byDepartment={false}
+                      grid={true}
+                      selectedPc={selectedPc}
+                      onSelectMachine={handlePcSelect}
+                      size={size}
                       onPlay={handlePlayAction}
                       onPause={handlePauseAction}
                       onStop={handleStopAction}
                       onDelete={handleDeleteAction}
-                      size={size}
+                      pendingActions={{}}
                     />
                   ) : (
                     <MachineTable

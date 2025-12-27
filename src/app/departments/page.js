@@ -45,6 +45,7 @@ const DepartmentsPage = () => {
     filteredDepartments,
     useMockData,
     isCreating,
+    createError,
 
     // Actions
     retryLoading,
@@ -229,6 +230,7 @@ const DepartmentsPage = () => {
           setIsCreateDeptDialogOpen(false);
         }}
         isLoading={isCreating}
+        error={createError}
       />
       
       {/* Toast Notification */}

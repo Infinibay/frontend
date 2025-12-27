@@ -1,22 +1,27 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileCode, Search, Download } from 'lucide-react'
+import { FileCode, Search, Download, Trash2 } from 'lucide-react'
 import ScriptsSection from '@/components/settings/ScriptsSection'
 import { Card } from '@/components/ui/card'
 import { usePageHeader } from '@/hooks/usePageHeader'
 
 export default function ScriptsPage() {
   const router = useRouter()
+  const [selectedScriptIds, setSelectedScriptIds] = useState(new Set())
+  const [bulkDeleteTrigger, setBulkDeleteTrigger] = useState(0)
 
   // Handler functions
   const handleNewScript = () => router.push('/scripts/new')
   const handleImportScripts = () => {}
   const handleExportSelected = () => {}
+  const handleBulkDelete = () => {
+    setBulkDeleteTrigger(prev => prev + 1)
+  }
 
-  // Placeholder state (will be replaced when ScriptsSection exposes its state)
-  const selectedScripts = []
+  // Derive values for header
+  const selectedCount = selectedScriptIds.size
   const isExporting = false
 
   // Define help configuration
@@ -50,6 +55,13 @@ export default function ScriptsPage() {
               <p>
                 Use the delete button on each script card. You'll be asked to confirm before permanent deletion.
                 This action cannot be undone.
+              </p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Bulk Delete</p>
+              <p>
+                Select multiple scripts using checkboxes and click "Delete" in the header.
+                You'll be warned if any scripts have active schedules that will be cancelled.
               </p>
             </div>
           </div>
@@ -154,7 +166,7 @@ export default function ScriptsPage() {
       }
     ],
     quickTips: [
-      "Select multiple scripts for bulk export operations",
+      "Select multiple scripts for bulk export or delete operations",
       "Scripts are automatically saved in YAML format",
       "Use the search to quickly find specific scripts",
       "Click on a script row to view details or edit"
@@ -178,9 +190,9 @@ export default function ScriptsPage() {
         onClick: handleImportScripts,
         tooltip: 'Import scripts from file'
       },
-      ...(selectedScripts.length > 0 ? [{
+      ...(selectedCount > 0 ? [{
         id: 'export-selected',
-        label: `Export (${selectedScripts.length})`,
+        label: `Export (${selectedCount})`,
         icon: 'Download',
         variant: 'outline',
         size: 'sm',
@@ -188,6 +200,15 @@ export default function ScriptsPage() {
         disabled: isExporting,
         loading: isExporting,
         tooltip: 'Export selected scripts'
+      }] : []),
+      ...(selectedCount > 0 ? [{
+        id: 'delete-selected',
+        label: `Delete (${selectedCount})`,
+        icon: 'Trash2',
+        variant: 'destructive',
+        size: 'sm',
+        onClick: handleBulkDelete,
+        tooltip: 'Delete selected scripts'
       }] : []),
       {
         id: 'new-script',
@@ -201,14 +222,18 @@ export default function ScriptsPage() {
       }
     ],
     helpConfig: helpConfig
-  }, [selectedScripts.length, isExporting])
+  }, [selectedCount, isExporting])
 
   return (
     <div className="space-y-6">
 
       <div className="container mx-auto px-4">
         <Card className="glass-medium elevation-3 p-4">
-          <ScriptsSection embedded={false} />
+          <ScriptsSection
+            embedded={false}
+            onSelectionChange={setSelectedScriptIds}
+            bulkDeleteTrigger={bulkDeleteTrigger}
+          />
         </Card>
       </div>
     </div>

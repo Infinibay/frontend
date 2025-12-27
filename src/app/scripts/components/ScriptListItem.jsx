@@ -54,12 +54,13 @@ export function ScriptListItem({
     >
       {/* Selection Checkbox */}
       {!compact && (
-        <Checkbox
-          checked={selected}
-          onCheckedChange={() => onToggleSelect(script.id)}
-          className="self-start md:self-center"
-          onClick={(e) => e.stopPropagation()}
-        />
+        <div onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onToggleSelect(script.id)}
+            className="self-start md:self-center"
+          />
+        </div>
       )}
 
       {/* Icon & Name Section */}
@@ -119,7 +120,7 @@ export function ScriptListItem({
             className="flex-shrink-0"
           >
             <Edit className="h-4 w-4 mr-1" />
-            {isSystemTemplate ? 'View' : 'Edit'}
+            Edit
           </Button>
 
           {!isSystemTemplate && (
