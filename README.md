@@ -48,7 +48,7 @@ See the [lxd repository](https://github.com/Infinibay/lxd) for LXD-based deploym
 For developers contributing to the frontend:
 
 ### Prerequisites
-- Node.js 20+
+- Node.js 18+
 - Backend API running (http://localhost:4000)
 
 ### Local Setup
