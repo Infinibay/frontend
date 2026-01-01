@@ -40,6 +40,8 @@ import {
 import { useHelp } from "@/hooks/useHelp"
 import { HelpSheet } from "@/components/ui/help-sheet"
 import { useHeaderActions } from "@/contexts/HeaderActionContext"
+import { NotificationBell } from "@/components/recommendations/NotificationBell"
+import { selectUser } from "@/state/slices/auth"
 import {
   selectHeaderBreadcrumbs,
   selectHeaderTitle,
@@ -76,6 +78,9 @@ export function GlobalHeader() {
   const actions = useSelector(selectHeaderActions)
   const helpTooltip = useSelector(selectHeaderHelpTooltip)
   const backButton = useSelector(selectHeaderBackButton)
+  const user = useSelector(selectUser)
+
+  const isAdmin = user?.role === 'ADMIN'
 
   const { helpConfig } = useHelp()
   const { triggerAction } = useHeaderActions()
@@ -138,6 +143,8 @@ export function GlobalHeader() {
         </HeaderCenter>
 
         <HeaderRight className="w-[200px] flex items-center justify-end space-x-2">
+          {isAdmin && <NotificationBell />}
+
           {helpConfig && (
             <TooltipProvider>
               <Tooltip>

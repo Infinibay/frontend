@@ -108,6 +108,220 @@ export type ApplicationUpdates = {
   windowsUpdatesCount?: Maybe<Scalars['Int']['output']>;
 };
 
+export type AutomationDepartmentType = {
+  __typename?: 'AutomationDepartmentType';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type AutomationExecutionFiltersInput = {
+  automationId?: InputMaybe<Scalars['ID']['input']>;
+  dateFrom?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  dateTo?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  evaluationResult?: InputMaybe<Scalars['Boolean']['input']>;
+  machineId?: InputMaybe<Scalars['ID']['input']>;
+  status?: InputMaybe<Array<AutomationExecutionStatus>>;
+};
+
+/** Status of an automation execution */
+export enum AutomationExecutionStatus {
+  Completed = 'COMPLETED',
+  Evaluating = 'EVALUATING',
+  ExecutingScript = 'EXECUTING_SCRIPT',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  Skipped = 'SKIPPED',
+  Triggered = 'TRIGGERED'
+}
+
+export type AutomationExecutionType = {
+  __typename?: 'AutomationExecutionType';
+  automationId: Scalars['String']['output'];
+  completedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  contextSnapshot?: Maybe<Scalars['JSONObject']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  evaluatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  evaluationResult: Scalars['Boolean']['output'];
+  evaluationTimeMs?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  machine: AutomationMachineType;
+  scriptExecution?: Maybe<AutomationScriptExecutionType>;
+  snapshot?: Maybe<AutomationSnapshotType>;
+  status: AutomationExecutionStatus;
+  triggerReason: Scalars['String']['output'];
+  triggeredAt: Scalars['DateTimeISO']['output'];
+};
+
+export type AutomationFiltersInput = {
+  createdById?: InputMaybe<Scalars['ID']['input']>;
+  departmentId?: InputMaybe<Scalars['ID']['input']>;
+  isEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Array<AutomationStatus>>;
+};
+
+export type AutomationMachineType = {
+  __typename?: 'AutomationMachineType';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  osType?: Maybe<Os>;
+};
+
+/** Status of an automation recommendation */
+export enum AutomationRecommendationStatus {
+  AutoResolved = 'AUTO_RESOLVED',
+  Dismissed = 'DISMISSED',
+  Executed = 'EXECUTED',
+  Expired = 'EXPIRED',
+  Pending = 'PENDING',
+  Snoozed = 'SNOOZED'
+}
+
+export type AutomationRecommendationType = {
+  __typename?: 'AutomationRecommendationType';
+  actionTakenAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  actionTakenBy?: Maybe<AutomationUserType>;
+  autoResolveReason?: Maybe<Scalars['String']['output']>;
+  autoResolvedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  automationId: Scalars['String']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  dismissReason?: Maybe<Scalars['String']['output']>;
+  execution?: Maybe<AutomationExecutionType>;
+  id: Scalars['ID']['output'];
+  machine: AutomationMachineType;
+  script?: Maybe<AutomationScriptRefType>;
+  scriptExecution?: Maybe<AutomationScriptExecutionType>;
+  severity: RecommendationSeverity;
+  snoozeUntil?: Maybe<Scalars['DateTimeISO']['output']>;
+  status: AutomationRecommendationStatus;
+  systemScript?: Maybe<SystemScriptType>;
+  title: Scalars['String']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
+  userAction?: Maybe<RecommendationUserAction>;
+};
+
+/** Scope of automation targeting */
+export enum AutomationScope {
+  AllVms = 'ALL_VMS',
+  Department = 'DEPARTMENT',
+  ExcludeVms = 'EXCLUDE_VMS',
+  SpecificVms = 'SPECIFIC_VMS'
+}
+
+export type AutomationScriptExecutionType = {
+  __typename?: 'AutomationScriptExecutionType';
+  completedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  id: Scalars['ID']['output'];
+  startedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  status: Scalars['String']['output'];
+};
+
+export type AutomationScriptRefType = {
+  __typename?: 'AutomationScriptRefType';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  os: Os;
+};
+
+export type AutomationScriptType = {
+  __typename?: 'AutomationScriptType';
+  executeOnTrigger: Scalars['Boolean']['output'];
+  executionOrder: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  os: Os;
+  script?: Maybe<AutomationScriptRefType>;
+  systemScript?: Maybe<SystemScriptType>;
+};
+
+export type AutomationSnapshotType = {
+  __typename?: 'AutomationSnapshotType';
+  id: Scalars['ID']['output'];
+  snapshotDate: Scalars['DateTimeISO']['output'];
+};
+
+/** Workflow status of an automation */
+export enum AutomationStatus {
+  Approved = 'APPROVED',
+  Archived = 'ARCHIVED',
+  Draft = 'DRAFT',
+  PendingApproval = 'PENDING_APPROVAL',
+  Rejected = 'REJECTED'
+}
+
+export type AutomationTargetType = {
+  __typename?: 'AutomationTargetType';
+  createdAt: Scalars['DateTimeISO']['output'];
+  id: Scalars['ID']['output'];
+  machine: AutomationMachineType;
+};
+
+export type AutomationTemplateType = {
+  __typename?: 'AutomationTemplateType';
+  blocklyWorkspace: Scalars['JSONObject']['output'];
+  category: Scalars['String']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  recommendationType?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+  usageCount: Scalars['Int']['output'];
+};
+
+export type AutomationType = {
+  __typename?: 'AutomationType';
+  approvedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  approvedBy?: Maybe<AutomationUserType>;
+  automationScripts: Array<AutomationScriptType>;
+  blocklyWorkspace: Scalars['JSONObject']['output'];
+  compilationError?: Maybe<Scalars['String']['output']>;
+  compiledCode?: Maybe<Scalars['String']['output']>;
+  cooldownMinutes: Scalars['Int']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  createdBy?: Maybe<AutomationUserType>;
+  department?: Maybe<AutomationDepartmentType>;
+  description?: Maybe<Scalars['String']['output']>;
+  executionCount: Scalars['Int']['output'];
+  generatedCode: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isCompiled: Scalars['Boolean']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  lastTriggeredAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  name: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  recentExecutions: Array<AutomationExecutionType>;
+  recommendationActionText?: Maybe<Scalars['String']['output']>;
+  recommendationText?: Maybe<Scalars['String']['output']>;
+  recommendationType?: Maybe<Scalars['String']['output']>;
+  status: AutomationStatus;
+  targetScope: AutomationScope;
+  targets: Array<AutomationTargetType>;
+  triggerRate?: Maybe<Scalars['Float']['output']>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+
+export type AutomationTypeRecentExecutionsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type AutomationUserType = {
+  __typename?: 'AutomationUserType';
+  email?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type AutomationValidationResultType = {
+  __typename?: 'AutomationValidationResultType';
+  errors: Array<ValidationErrorType>;
+  isValid: Scalars['Boolean']['output'];
+  warnings: Array<ValidationWarningType>;
+};
+
 export type BackgroundHealthServiceStatus = {
   __typename?: 'BackgroundHealthServiceStatus';
   activeQueues: Scalars['Int']['output'];
@@ -117,6 +331,33 @@ export type BackgroundHealthServiceStatus = {
   nextRun?: Maybe<Scalars['DateTimeISO']['output']>;
   pendingChecks: Scalars['Int']['output'];
   totalVMsMonitored: Scalars['Int']['output'];
+};
+
+export type BlockDefinitionOutputType = {
+  __typename?: 'BlockDefinitionOutputType';
+  args0?: Maybe<Scalars['JSONObject']['output']>;
+  colour: Scalars['Int']['output'];
+  helpUrl?: Maybe<Scalars['String']['output']>;
+  message0: Scalars['String']['output'];
+  nextStatement?: Maybe<Scalars['Boolean']['output']>;
+  output?: Maybe<Scalars['String']['output']>;
+  previousStatement?: Maybe<Scalars['Boolean']['output']>;
+  tooltip?: Maybe<Scalars['String']['output']>;
+  type: Scalars['String']['output'];
+};
+
+/** Output type of a custom block */
+export enum BlockOutputType {
+  Array = 'ARRAY',
+  Boolean = 'BOOLEAN',
+  Number = 'NUMBER',
+  String = 'STRING',
+  Void = 'VOID'
+}
+
+export type BlocklyToolboxType = {
+  __typename?: 'BlocklyToolboxType';
+  categories: Array<ToolboxCategoryType>;
 };
 
 export type BrNetfilterDiagnosticsType = {
@@ -186,6 +427,35 @@ export type CreateApplicationInputType = {
   name?: Scalars['String']['input'];
   os?: Array<Scalars['String']['input']>;
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
+};
+
+export type CreateAutomationInput = {
+  blocklyWorkspace: Scalars['JSONObject']['input'];
+  cooldownMinutes?: InputMaybe<Scalars['Int']['input']>;
+  departmentId?: InputMaybe<Scalars['ID']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** VMs to exclude (for EXCLUDE_VMS scope) */
+  excludeMachineIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  name: Scalars['String']['input'];
+  priority?: InputMaybe<Scalars['Int']['input']>;
+  recommendationActionText?: InputMaybe<Scalars['String']['input']>;
+  recommendationText?: InputMaybe<Scalars['String']['input']>;
+  recommendationType?: InputMaybe<Scalars['String']['input']>;
+  /** VMs to include (for SPECIFIC_VMS scope) */
+  targetMachineIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  targetScope?: InputMaybe<AutomationScope>;
+};
+
+export type CreateCustomBlockInput = {
+  blockDefinition: Scalars['JSONObject']['input'];
+  category: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  generatorCode: Scalars['String']['input'];
+  inputs: Array<CustomBlockInputDef>;
+  name: Scalars['String']['input'];
+  outputType: BlockOutputType;
+  supportedOS?: InputMaybe<Array<Os>>;
 };
 
 export type CreateDepartmentFirewallInput = {
@@ -268,6 +538,16 @@ export type CreateSnapshotInput = {
   name: Scalars['String']['input'];
 };
 
+export type CreateSystemScriptInput = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  codeLinux?: InputMaybe<Scalars['String']['input']>;
+  codeWindows?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  requiredHealthFields?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type CreateUserInputType = {
   /** User avatar image path */
   avatar?: InputMaybe<Scalars['String']['input']>;
@@ -277,6 +557,42 @@ export type CreateUserInputType = {
   password?: Scalars['String']['input'];
   passwordConfirmation?: Scalars['String']['input'];
   role?: UserRole;
+};
+
+export type CustomBlockInputDef = {
+  defaultValue?: InputMaybe<Scalars['JSONObject']['input']>;
+  label: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  required?: InputMaybe<Scalars['Boolean']['input']>;
+  type: Scalars['String']['input'];
+};
+
+export type CustomBlockInputType = {
+  __typename?: 'CustomBlockInputType';
+  defaultValue?: Maybe<Scalars['JSONObject']['output']>;
+  label: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  required: Scalars['Boolean']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type CustomBlockType = {
+  __typename?: 'CustomBlockType';
+  blockDefinition: Scalars['JSONObject']['output'];
+  category: Scalars['String']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  createdBy?: Maybe<AutomationUserType>;
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  generatorCode: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  inputs: Array<CustomBlockInputType>;
+  isBuiltIn: Scalars['Boolean']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  outputType: BlockOutputType;
+  supportedOS: Array<Os>;
+  updatedAt: Scalars['DateTimeISO']['output'];
 };
 
 export type DefenderScanResult = {
@@ -679,6 +995,17 @@ export type LibvirtFilterInfoType = {
   vmId?: Maybe<Scalars['String']['output']>;
 };
 
+export type LinkScriptToAutomationInput = {
+  automationId: Scalars['ID']['input'];
+  executeOnTrigger?: InputMaybe<Scalars['Boolean']['input']>;
+  executionOrder?: InputMaybe<Scalars['Int']['input']>;
+  os: Os;
+  /** ID of regular script (mutually exclusive with systemScriptId) */
+  scriptId?: InputMaybe<Scalars['ID']['input']>;
+  /** ID of system script (mutually exclusive with scriptId) */
+  systemScriptId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 /** Login response with user data and token */
 export type LoginResponse = {
   __typename?: 'LoginResponse';
@@ -899,13 +1226,19 @@ export enum MaintenanceTrigger {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  approveAutomation: AutomationType;
+  archiveAutomation: AutomationType;
   assignScriptToDepartment: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
   cancelScheduledScript: ScheduleScriptResponseType;
   cancelScriptExecution: ScriptExecutionResponseType;
   cleanupInfinibayFirewall: CleanupResultType;
+  compileAutomation: AutomationType;
   createApplication: ApplicationType;
+  createAutomation: AutomationType;
+  createAutomationFromTemplate: AutomationType;
+  createCustomBlock: CustomBlockType;
   createDepartment: DepartmentType;
   createDepartmentFirewallRule: FirewallRuleType;
   createMachine: Machine;
@@ -916,22 +1249,32 @@ export type Mutation = {
   createScript: ScriptResponseType;
   /** Create a snapshot of a virtual machine */
   createSnapshot: SnapshotResult;
+  createSystemScript: SystemScriptType;
   createUser: UserType;
   createVMFirewallRule: FirewallRuleType;
   deleteApplication: Scalars['Boolean']['output'];
+  deleteAutomation: Scalars['Boolean']['output'];
+  deleteCustomBlock: Scalars['Boolean']['output'];
   deleteFirewallRule: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
   deleteScript: ScriptResponseType;
   /** Delete a snapshot from a virtual machine */
   deleteSnapshot: SuccessType;
+  deleteSystemScript: Scalars['Boolean']['output'];
   destroyDepartment: DepartmentType;
   destroyMachine: SuccessType;
   destroyMachineTemplate: Scalars['Boolean']['output'];
   destroyMachineTemplateCategory: Scalars['Boolean']['output'];
+  disableAutomation: AutomationType;
+  dismissAllRecommendations: Scalars['Int']['output'];
+  dismissRecommendation: AutomationRecommendationType;
+  duplicateAutomation: AutomationType;
+  enableAutomation: AutomationType;
   executeCommand: CommandExecutionResponseType;
   executeImmediateMaintenance: MaintenanceExecutionResponse;
   executeMaintenanceTask: MaintenanceExecutionResponse;
+  executeRecommendation: AutomationRecommendationType;
   executeScript: ScriptExecutionResponseType;
   flushFirewallRules: FlushResultType;
   forcePowerOff: SuccessType;
@@ -941,6 +1284,7 @@ export type Mutation = {
   installPackage: CommandResult;
   killProcess: ProcessControlResult;
   killProcesses: Array<ProcessControlResult>;
+  linkScriptToAutomation: AutomationScriptType;
   login?: Maybe<LoginResponse>;
   /** Install, remove, or update a package on a virtual machine */
   managePackage: PackageManagementResult;
@@ -952,6 +1296,7 @@ export type Mutation = {
   queueAllVMHealthChecks: HealthCheckRoundResult;
   /** Register uploaded ISO */
   registerISO: Iso;
+  rejectAutomation: AutomationType;
   /** Remove ISO file */
   removeISO: Scalars['Boolean']['output'];
   /** Remove a package from a virtual machine (legacy compatibility) */
@@ -967,15 +1312,25 @@ export type Mutation = {
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
   setupNode: DyummyType;
+  snoozeAllRecommendations: Scalars['Int']['output'];
+  snoozeRecommendation: AutomationRecommendationType;
+  submitAutomationForApproval: AutomationType;
   suspend: SuccessType;
   syncFirewallToLibvirt: SyncResultType;
   /** Sync ISOs with filesystem */
   syncISOs: Scalars['Boolean']['output'];
+  testAutomation: AutomationExecutionType;
+  testAutomationWithContext: TestResultType;
+  testCustomBlock: Scalars['JSONObject']['output'];
   toggleMaintenanceTask: MaintenanceTaskResponse;
   triggerHealthCheckRound: HealthCheckRoundResult;
   unassignScriptFromDepartment: Scalars['Boolean']['output'];
+  unlinkScriptFromAutomation: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
+  updateAutomation: AutomationType;
+  updateAutomationScript: AutomationScriptType;
+  updateCustomBlock: CustomBlockType;
   updateDepartmentFirewallPolicy: DepartmentType;
   updateDepartmentName: DepartmentType;
   updateDepartmentNetwork: DepartmentType;
@@ -990,9 +1345,20 @@ export type Mutation = {
   updatePackage: CommandResult;
   updateScheduledScript: ScheduleScriptResponseType;
   updateScript: ScriptResponseType;
+  updateSystemScript: SystemScriptType;
   updateUser: UserType;
   /** Validate ISO file integrity */
   validateISO: Scalars['Boolean']['output'];
+};
+
+
+export type MutationApproveAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationArchiveAutomationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1017,8 +1383,29 @@ export type MutationCancelScriptExecutionArgs = {
 };
 
 
+export type MutationCompileAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationCreateApplicationArgs = {
   input: CreateApplicationInputType;
+};
+
+
+export type MutationCreateAutomationArgs = {
+  input: CreateAutomationInput;
+};
+
+
+export type MutationCreateAutomationFromTemplateArgs = {
+  name?: InputMaybe<Scalars['String']['input']>;
+  templateId: Scalars['ID']['input'];
+};
+
+
+export type MutationCreateCustomBlockArgs = {
+  input: CreateCustomBlockInput;
 };
 
 
@@ -1069,6 +1456,11 @@ export type MutationCreateSnapshotArgs = {
 };
 
 
+export type MutationCreateSystemScriptArgs = {
+  input: CreateSystemScriptInput;
+};
+
+
 export type MutationCreateUserArgs = {
   input: CreateUserInputType;
 };
@@ -1082,6 +1474,16 @@ export type MutationCreateVmFirewallRuleArgs = {
 
 export type MutationDeleteApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationDeleteAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteCustomBlockArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1111,6 +1513,11 @@ export type MutationDeleteSnapshotArgs = {
 };
 
 
+export type MutationDeleteSystemScriptArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDestroyDepartmentArgs = {
   id: Scalars['String']['input'];
 };
@@ -1131,6 +1538,28 @@ export type MutationDestroyMachineTemplateCategoryArgs = {
 };
 
 
+export type MutationDisableAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDismissRecommendationArgs = {
+  id: Scalars['ID']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationDuplicateAutomationArgs = {
+  id: Scalars['ID']['input'];
+  newName: Scalars['String']['input'];
+};
+
+
+export type MutationEnableAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationExecuteCommandArgs = {
   command: Scalars['String']['input'];
   id: Scalars['String']['input'];
@@ -1144,6 +1573,11 @@ export type MutationExecuteImmediateMaintenanceArgs = {
 
 export type MutationExecuteMaintenanceTaskArgs = {
   taskId: Scalars['ID']['input'];
+};
+
+
+export type MutationExecuteRecommendationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1187,6 +1621,11 @@ export type MutationKillProcessesArgs = {
 };
 
 
+export type MutationLinkScriptToAutomationArgs = {
+  input: LinkScriptToAutomationInput;
+};
+
+
 export type MutationLoginArgs = {
   email: Scalars['String']['input'];
   password: Scalars['String']['input'];
@@ -1226,6 +1665,12 @@ export type MutationRegisterIsoArgs = {
   os: Scalars['String']['input'];
   path: Scalars['String']['input'];
   size: Scalars['Float']['input'];
+};
+
+
+export type MutationRejectAutomationArgs = {
+  id: Scalars['ID']['input'];
+  reason: Scalars['String']['input'];
 };
 
 
@@ -1280,8 +1725,43 @@ export type MutationSetNetworkIpRangeArgs = {
 };
 
 
+export type MutationSnoozeAllRecommendationsArgs = {
+  duration: SnoozeDuration;
+};
+
+
+export type MutationSnoozeRecommendationArgs = {
+  duration: SnoozeDuration;
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitAutomationForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationSuspendArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationTestAutomationArgs = {
+  automationId: Scalars['ID']['input'];
+  machineId: Scalars['ID']['input'];
+};
+
+
+export type MutationTestAutomationWithContextArgs = {
+  automationId: Scalars['ID']['input'];
+  context: Scalars['JSONObject']['input'];
+};
+
+
+export type MutationTestCustomBlockArgs = {
+  id: Scalars['ID']['input'];
+  sampleContext?: InputMaybe<Scalars['JSONObject']['input']>;
+  sampleInputs: Scalars['JSONObject']['input'];
 };
 
 
@@ -1297,6 +1777,14 @@ export type MutationUnassignScriptFromDepartmentArgs = {
 };
 
 
+export type MutationUnlinkScriptFromAutomationArgs = {
+  automationId: Scalars['ID']['input'];
+  os: Os;
+  scriptId?: InputMaybe<Scalars['ID']['input']>;
+  systemScriptId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
 export type MutationUpdateAppSettingsArgs = {
   input: AppSettingsInput;
 };
@@ -1305,6 +1793,26 @@ export type MutationUpdateAppSettingsArgs = {
 export type MutationUpdateApplicationArgs = {
   id: Scalars['String']['input'];
   input: CreateApplicationInputType;
+};
+
+
+export type MutationUpdateAutomationArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateAutomationInput;
+};
+
+
+export type MutationUpdateAutomationScriptArgs = {
+  executeOnTrigger?: InputMaybe<Scalars['Boolean']['input']>;
+  executionOrder?: InputMaybe<Scalars['Int']['input']>;
+  id: Scalars['ID']['input'];
+  isEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type MutationUpdateCustomBlockArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateCustomBlockInput;
 };
 
 
@@ -1375,6 +1883,12 @@ export type MutationUpdateScheduledScriptArgs = {
 
 export type MutationUpdateScriptArgs = {
   input: UpdateScriptInput;
+};
+
+
+export type MutationUpdateSystemScriptArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateSystemScriptInput;
 };
 
 
@@ -1530,9 +2044,17 @@ export type Query = {
   allISOs: Array<Iso>;
   application?: Maybe<ApplicationType>;
   applications: Array<ApplicationType>;
+  automation?: Maybe<AutomationType>;
+  automationExecution?: Maybe<AutomationExecutionType>;
+  automationExecutions: Array<AutomationExecutionType>;
+  automationTemplate?: Maybe<AutomationTemplateType>;
+  automationTemplateCategories: Array<Scalars['String']['output']>;
+  automationTemplates: Array<AutomationTemplateType>;
+  automations: Array<AutomationType>;
   /** Get all available ISOs */
   availableISOs: Array<Iso>;
   backgroundHealthServiceStatus: BackgroundHealthServiceStatus;
+  blocklyToolbox: BlocklyToolboxType;
   captureDepartmentDhcpTraffic: DhcpTrafficCaptureType;
   /** Check for application updates on a VM */
   checkApplicationUpdates: ApplicationUpdates;
@@ -1554,6 +2076,8 @@ export type Query = {
   /** Get the current snapshot of a virtual machine */
   currentSnapshot?: Maybe<Snapshot>;
   currentUser?: Maybe<UserType>;
+  customBlock?: Maybe<CustomBlockType>;
+  customBlocks: Array<CustomBlockType>;
   department?: Maybe<DepartmentType>;
   departmentNetworkDiagnostics: DepartmentNetworkDiagnosticsType;
   departmentScripts: Array<ScriptType>;
@@ -1598,6 +2122,11 @@ export type Query = {
   maintenanceTasks: Array<MaintenanceTask>;
   network: Network;
   networks: Array<Network>;
+  pendingRecommendationCount: Scalars['Int']['output'];
+  pendingRecommendations: Array<AutomationRecommendationType>;
+  previewGeneratedCode: Scalars['String']['output'];
+  recommendation?: Maybe<AutomationRecommendationType>;
+  recommendations: Array<AutomationRecommendationType>;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
   scheduledScript?: Maybe<ScheduledScriptType>;
@@ -1611,9 +2140,13 @@ export type Query = {
   searchPackages: Array<PackageInfo>;
   /** Get current socket connection statistics for all VMs */
   socketConnectionStats?: Maybe<SocketConnectionStats>;
+  systemScript?: Maybe<SystemScriptType>;
+  systemScriptCategories: Array<Scalars['String']['output']>;
+  systemScripts: Array<SystemScriptType>;
   user: UserType;
   users: Array<UserType>;
   validateFirewallRule: ValidationResultType;
+  validateWorkspace: AutomationValidationResultType;
   vmHealthCheckQueue: Array<VmHealthCheckQueueType>;
   vmHealthHistory: Array<VmHealthSnapshotType>;
   vmHealthStats: VmHealthStatsType;
@@ -1625,6 +2158,38 @@ export type Query = {
 
 export type QueryApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAutomationExecutionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAutomationExecutionsArgs = {
+  filters?: InputMaybe<AutomationExecutionFiltersInput>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryAutomationTemplateArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAutomationTemplatesArgs = {
+  category?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryAutomationsArgs = {
+  filters?: InputMaybe<AutomationFiltersInput>;
 };
 
 
@@ -1674,6 +2239,17 @@ export type QueryCheckWindowsUpdatesArgs = {
 
 export type QueryCurrentSnapshotArgs = {
   machineId: Scalars['String']['input'];
+};
+
+
+export type QueryCustomBlockArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryCustomBlocksArgs = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  includeBuiltIn?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -1816,6 +2392,32 @@ export type QueryNetworkArgs = {
 };
 
 
+export type QueryPendingRecommendationCountArgs = {
+  machineId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryPendingRecommendationsArgs = {
+  machineId: Scalars['ID']['input'];
+};
+
+
+export type QueryPreviewGeneratedCodeArgs = {
+  blocklyWorkspace: Scalars['JSONObject']['input'];
+};
+
+
+export type QueryRecommendationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryRecommendationsArgs = {
+  filters?: InputMaybe<RecommendationFiltersInput>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type QueryRunHealthCheckArgs = {
   checkName: HealthCheckName;
   vmId: Scalars['ID']['input'];
@@ -1865,6 +2467,16 @@ export type QuerySearchPackagesArgs = {
 };
 
 
+export type QuerySystemScriptArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QuerySystemScriptsArgs = {
+  category?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type QueryUserArgs = {
   id: Scalars['String']['input'];
 };
@@ -1878,6 +2490,11 @@ export type QueryUsersArgs = {
 
 export type QueryValidateFirewallRuleArgs = {
   input: CreateFirewallRuleInput;
+};
+
+
+export type QueryValidateWorkspaceArgs = {
+  blocklyWorkspace: Scalars['JSONObject']['input'];
 };
 
 
@@ -1941,6 +2558,21 @@ export type RecommendationFilterInput = {
   types?: InputMaybe<Array<RecommendationType>>;
 };
 
+export type RecommendationFiltersInput = {
+  automationId?: InputMaybe<Scalars['ID']['input']>;
+  machineId?: InputMaybe<Scalars['ID']['input']>;
+  severity?: InputMaybe<Array<RecommendationSeverity>>;
+  status?: InputMaybe<Array<AutomationRecommendationStatus>>;
+};
+
+/** Severity level of a recommendation */
+export enum RecommendationSeverity {
+  Critical = 'CRITICAL',
+  High = 'HIGH',
+  Low = 'LOW',
+  Medium = 'MEDIUM'
+}
+
 /** Types of VM recommendations that can be generated by the system based on health checks and system analysis */
 export enum RecommendationType {
   /** Generated when application updates, especially security updates, are available */
@@ -1965,6 +2597,13 @@ export enum RecommendationType {
   PortBlocked = 'PORT_BLOCKED',
   /** Generated when VM resources are consistently over-utilized and affecting performance */
   UnderProvisioned = 'UNDER_PROVISIONED'
+}
+
+/** User action taken on a recommendation */
+export enum RecommendationUserAction {
+  Dismiss = 'DISMISS',
+  Execute = 'EXECUTE',
+  Snooze = 'SNOOZE'
 }
 
 export type ResourceOptimizationInfo = {
@@ -2228,6 +2867,14 @@ export type SnapshotResult = {
   success: Scalars['Boolean']['output'];
 };
 
+/** Duration for snoozing a recommendation (ISO 8601) */
+export enum SnoozeDuration {
+  P7D = 'P7D',
+  Pt1H = 'PT1H',
+  Pt4H = 'PT4H',
+  Pt24H = 'PT24H'
+}
+
 export type SocketConnectionStats = {
   __typename?: 'SocketConnectionStats';
   activeConnections?: Maybe<Scalars['Float']['output']>;
@@ -2284,6 +2931,68 @@ export type SystemResources = {
   cpu: SystemResourceCpu;
   disk: SystemResourceDisk;
   memory: SystemResourceMemory;
+};
+
+export type SystemScriptType = {
+  __typename?: 'SystemScriptType';
+  category: Scalars['String']['output'];
+  codeLinux?: Maybe<Scalars['String']['output']>;
+  codeWindows?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  createdBy?: Maybe<AutomationUserType>;
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  requiredHealthFields: Array<Scalars['String']['output']>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type TestResultType = {
+  __typename?: 'TestResultType';
+  error?: Maybe<Scalars['String']['output']>;
+  evaluationTimeMs: Scalars['Int']['output'];
+  generatedCode: Scalars['String']['output'];
+  logs: Array<Scalars['String']['output']>;
+  result?: Maybe<Scalars['Boolean']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type ToolboxCategoryType = {
+  __typename?: 'ToolboxCategoryType';
+  blocks: Array<BlockDefinitionOutputType>;
+  colour: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type UpdateAutomationInput = {
+  blocklyWorkspace?: InputMaybe<Scalars['JSONObject']['input']>;
+  cooldownMinutes?: InputMaybe<Scalars['Int']['input']>;
+  departmentId?: InputMaybe<Scalars['ID']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** VMs to exclude (for EXCLUDE_VMS scope) */
+  excludeMachineIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  priority?: InputMaybe<Scalars['Int']['input']>;
+  recommendationActionText?: InputMaybe<Scalars['String']['input']>;
+  recommendationText?: InputMaybe<Scalars['String']['input']>;
+  recommendationType?: InputMaybe<Scalars['String']['input']>;
+  /** VMs to include (for SPECIFIC_VMS scope) */
+  targetMachineIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  targetScope?: InputMaybe<AutomationScope>;
+};
+
+export type UpdateCustomBlockInput = {
+  blockDefinition?: InputMaybe<Scalars['JSONObject']['input']>;
+  category?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName?: InputMaybe<Scalars['String']['input']>;
+  generatorCode?: InputMaybe<Scalars['String']['input']>;
+  inputs?: InputMaybe<Array<CustomBlockInputDef>>;
+  isEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  outputType?: InputMaybe<BlockOutputType>;
+  supportedOS?: InputMaybe<Array<Os>>;
 };
 
 export type UpdateDepartmentFirewallPolicyInput = {
@@ -2371,6 +3080,16 @@ export type UpdateScriptInput = {
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type UpdateSystemScriptInput = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  codeLinux?: InputMaybe<Scalars['String']['input']>;
+  codeWindows?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName?: InputMaybe<Scalars['String']['input']>;
+  isEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  requiredHealthFields?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type UpdateUserInputType = {
@@ -2495,11 +3214,23 @@ export type VmRecommendationType = {
   type: RecommendationType;
 };
 
+export type ValidationErrorType = {
+  __typename?: 'ValidationErrorType';
+  blockId?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
+};
+
 export type ValidationResultType = {
   __typename?: 'ValidationResultType';
   conflicts: Array<RuleConflictType>;
   isValid: Scalars['Boolean']['output'];
   warnings: Array<Scalars['String']['output']>;
+};
+
+export type ValidationWarningType = {
+  __typename?: 'ValidationWarningType';
+  blockId?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
 };
 
 export type VmConnectionInfo = {

@@ -14,7 +14,7 @@ import { LogoUpload } from "@/components/ui/logo-upload";
 import ScriptsSection from "@/components/settings/ScriptsSection";
 import { FaUbuntu, FaWindows } from 'react-icons/fa';
 import { SiFedora } from 'react-icons/si';
-import { Upload, Download, CheckCircle, AlertCircle, Sun, Moon, Monitor, Loader2, Minimize2, Square, Maximize2, Expand, Clock, RefreshCw, FileCode } from 'lucide-react';
+import { Upload, Download, CheckCircle, AlertCircle, Sun, Moon, Monitor, Loader2, Minimize2, Square, Maximize2, Expand, Clock, RefreshCw, FileCode, Blocks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getGlassClasses } from "@/utils/glass-effects";
 import { useSystemStatus } from '@/hooks/useSystemStatus';
@@ -1195,6 +1195,29 @@ const SettingMain = () => {
               }}
               className="mt-6"
             />
+          </div>
+        </Card>
+
+        {/* Automation Blocks Section */}
+        <Card className={`${sizeVariants[size].card.padding} relative z-20`} id="automation-blocks">
+          <div className={sizeVariants[size].layout.section}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className={`subheading ${getTypographyClass('subheading', size)} ${sizeVariants[size].layout.sectionSpacing}`}>
+                  Automation Blocks
+                </h2>
+                <p className={`${sizeVariants[size].typography.text} text-muted-foreground`}>
+                  Create and manage custom Blockly blocks for visual automations. Define new blocks with custom logic that users can use in the automation editor.
+                </p>
+              </div>
+              <Button
+                onClick={() => router.push('/settings/automations/custom-blocks')}
+                className="shrink-0"
+              >
+                <Blocks className={`${sizeVariants[size].icon.size} mr-2`} />
+                Manage Blocks
+              </Button>
+            </div>
           </div>
         </Card>
       </div>

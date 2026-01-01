@@ -111,6 +111,220 @@ export type ApplicationUpdates = {
   windowsUpdatesCount: Maybe<Scalars['Int']['output']>;
 };
 
+export type AutomationDepartmentType = {
+  __typename?: 'AutomationDepartmentType';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type AutomationExecutionFiltersInput = {
+  automationId: InputMaybe<Scalars['ID']['input']>;
+  dateFrom: InputMaybe<Scalars['DateTimeISO']['input']>;
+  dateTo: InputMaybe<Scalars['DateTimeISO']['input']>;
+  evaluationResult: InputMaybe<Scalars['Boolean']['input']>;
+  machineId: InputMaybe<Scalars['ID']['input']>;
+  status: InputMaybe<Array<AutomationExecutionStatus>>;
+};
+
+/** Status of an automation execution */
+export enum AutomationExecutionStatus {
+  Completed = 'COMPLETED',
+  Evaluating = 'EVALUATING',
+  ExecutingScript = 'EXECUTING_SCRIPT',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  Skipped = 'SKIPPED',
+  Triggered = 'TRIGGERED'
+}
+
+export type AutomationExecutionType = {
+  __typename?: 'AutomationExecutionType';
+  automationId: Scalars['String']['output'];
+  completedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  contextSnapshot: Maybe<Scalars['JSONObject']['output']>;
+  error: Maybe<Scalars['String']['output']>;
+  evaluatedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  evaluationResult: Scalars['Boolean']['output'];
+  evaluationTimeMs: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  machine: AutomationMachineType;
+  scriptExecution: Maybe<AutomationScriptExecutionType>;
+  snapshot: Maybe<AutomationSnapshotType>;
+  status: AutomationExecutionStatus;
+  triggerReason: Scalars['String']['output'];
+  triggeredAt: Scalars['DateTimeISO']['output'];
+};
+
+export type AutomationFiltersInput = {
+  createdById: InputMaybe<Scalars['ID']['input']>;
+  departmentId: InputMaybe<Scalars['ID']['input']>;
+  isEnabled: InputMaybe<Scalars['Boolean']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+  status: InputMaybe<Array<AutomationStatus>>;
+};
+
+export type AutomationMachineType = {
+  __typename?: 'AutomationMachineType';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  osType: Maybe<Os>;
+};
+
+/** Status of an automation recommendation */
+export enum AutomationRecommendationStatus {
+  AutoResolved = 'AUTO_RESOLVED',
+  Dismissed = 'DISMISSED',
+  Executed = 'EXECUTED',
+  Expired = 'EXPIRED',
+  Pending = 'PENDING',
+  Snoozed = 'SNOOZED'
+}
+
+export type AutomationRecommendationType = {
+  __typename?: 'AutomationRecommendationType';
+  actionTakenAt: Maybe<Scalars['DateTimeISO']['output']>;
+  actionTakenBy: Maybe<AutomationUserType>;
+  autoResolveReason: Maybe<Scalars['String']['output']>;
+  autoResolvedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  automationId: Scalars['String']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  description: Maybe<Scalars['String']['output']>;
+  dismissReason: Maybe<Scalars['String']['output']>;
+  execution: Maybe<AutomationExecutionType>;
+  id: Scalars['ID']['output'];
+  machine: AutomationMachineType;
+  script: Maybe<AutomationScriptRefType>;
+  scriptExecution: Maybe<AutomationScriptExecutionType>;
+  severity: RecommendationSeverity;
+  snoozeUntil: Maybe<Scalars['DateTimeISO']['output']>;
+  status: AutomationRecommendationStatus;
+  systemScript: Maybe<SystemScriptType>;
+  title: Scalars['String']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
+  userAction: Maybe<RecommendationUserAction>;
+};
+
+/** Scope of automation targeting */
+export enum AutomationScope {
+  AllVms = 'ALL_VMS',
+  Department = 'DEPARTMENT',
+  ExcludeVms = 'EXCLUDE_VMS',
+  SpecificVms = 'SPECIFIC_VMS'
+}
+
+export type AutomationScriptExecutionType = {
+  __typename?: 'AutomationScriptExecutionType';
+  completedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  id: Scalars['ID']['output'];
+  startedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  status: Scalars['String']['output'];
+};
+
+export type AutomationScriptRefType = {
+  __typename?: 'AutomationScriptRefType';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  os: Os;
+};
+
+export type AutomationScriptType = {
+  __typename?: 'AutomationScriptType';
+  executeOnTrigger: Scalars['Boolean']['output'];
+  executionOrder: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  os: Os;
+  script: Maybe<AutomationScriptRefType>;
+  systemScript: Maybe<SystemScriptType>;
+};
+
+export type AutomationSnapshotType = {
+  __typename?: 'AutomationSnapshotType';
+  id: Scalars['ID']['output'];
+  snapshotDate: Scalars['DateTimeISO']['output'];
+};
+
+/** Workflow status of an automation */
+export enum AutomationStatus {
+  Approved = 'APPROVED',
+  Archived = 'ARCHIVED',
+  Draft = 'DRAFT',
+  PendingApproval = 'PENDING_APPROVAL',
+  Rejected = 'REJECTED'
+}
+
+export type AutomationTargetType = {
+  __typename?: 'AutomationTargetType';
+  createdAt: Scalars['DateTimeISO']['output'];
+  id: Scalars['ID']['output'];
+  machine: AutomationMachineType;
+};
+
+export type AutomationTemplateType = {
+  __typename?: 'AutomationTemplateType';
+  blocklyWorkspace: Scalars['JSONObject']['output'];
+  category: Scalars['String']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  description: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  recommendationType: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+  usageCount: Scalars['Int']['output'];
+};
+
+export type AutomationType = {
+  __typename?: 'AutomationType';
+  approvedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  approvedBy: Maybe<AutomationUserType>;
+  automationScripts: Array<AutomationScriptType>;
+  blocklyWorkspace: Scalars['JSONObject']['output'];
+  compilationError: Maybe<Scalars['String']['output']>;
+  compiledCode: Maybe<Scalars['String']['output']>;
+  cooldownMinutes: Scalars['Int']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  createdBy: Maybe<AutomationUserType>;
+  department: Maybe<AutomationDepartmentType>;
+  description: Maybe<Scalars['String']['output']>;
+  executionCount: Scalars['Int']['output'];
+  generatedCode: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isCompiled: Scalars['Boolean']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  lastTriggeredAt: Maybe<Scalars['DateTimeISO']['output']>;
+  name: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  recentExecutions: Array<AutomationExecutionType>;
+  recommendationActionText: Maybe<Scalars['String']['output']>;
+  recommendationText: Maybe<Scalars['String']['output']>;
+  recommendationType: Maybe<Scalars['String']['output']>;
+  status: AutomationStatus;
+  targetScope: AutomationScope;
+  targets: Array<AutomationTargetType>;
+  triggerRate: Maybe<Scalars['Float']['output']>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+
+export type AutomationTypeRecentExecutionsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type AutomationUserType = {
+  __typename?: 'AutomationUserType';
+  email: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type AutomationValidationResultType = {
+  __typename?: 'AutomationValidationResultType';
+  errors: Array<ValidationErrorType>;
+  isValid: Scalars['Boolean']['output'];
+  warnings: Array<ValidationWarningType>;
+};
+
 export type BackgroundHealthServiceStatus = {
   __typename?: 'BackgroundHealthServiceStatus';
   activeQueues: Scalars['Int']['output'];
@@ -120,6 +334,33 @@ export type BackgroundHealthServiceStatus = {
   nextRun: Maybe<Scalars['DateTimeISO']['output']>;
   pendingChecks: Scalars['Int']['output'];
   totalVMsMonitored: Scalars['Int']['output'];
+};
+
+export type BlockDefinitionOutputType = {
+  __typename?: 'BlockDefinitionOutputType';
+  args0: Maybe<Scalars['JSONObject']['output']>;
+  colour: Scalars['Int']['output'];
+  helpUrl: Maybe<Scalars['String']['output']>;
+  message0: Scalars['String']['output'];
+  nextStatement: Maybe<Scalars['Boolean']['output']>;
+  output: Maybe<Scalars['String']['output']>;
+  previousStatement: Maybe<Scalars['Boolean']['output']>;
+  tooltip: Maybe<Scalars['String']['output']>;
+  type: Scalars['String']['output'];
+};
+
+/** Output type of a custom block */
+export enum BlockOutputType {
+  Array = 'ARRAY',
+  Boolean = 'BOOLEAN',
+  Number = 'NUMBER',
+  String = 'STRING',
+  Void = 'VOID'
+}
+
+export type BlocklyToolboxType = {
+  __typename?: 'BlocklyToolboxType';
+  categories: Array<ToolboxCategoryType>;
 };
 
 export type BrNetfilterDiagnosticsType = {
@@ -189,6 +430,35 @@ export type CreateApplicationInputType = {
   name: Scalars['String']['input'];
   os: Array<Scalars['String']['input']>;
   parameters: InputMaybe<Scalars['JSONObject']['input']>;
+};
+
+export type CreateAutomationInput = {
+  blocklyWorkspace: Scalars['JSONObject']['input'];
+  cooldownMinutes: InputMaybe<Scalars['Int']['input']>;
+  departmentId: InputMaybe<Scalars['ID']['input']>;
+  description: InputMaybe<Scalars['String']['input']>;
+  /** VMs to exclude (for EXCLUDE_VMS scope) */
+  excludeMachineIds: InputMaybe<Array<Scalars['ID']['input']>>;
+  name: Scalars['String']['input'];
+  priority: InputMaybe<Scalars['Int']['input']>;
+  recommendationActionText: InputMaybe<Scalars['String']['input']>;
+  recommendationText: InputMaybe<Scalars['String']['input']>;
+  recommendationType: InputMaybe<Scalars['String']['input']>;
+  /** VMs to include (for SPECIFIC_VMS scope) */
+  targetMachineIds: InputMaybe<Array<Scalars['ID']['input']>>;
+  targetScope: InputMaybe<AutomationScope>;
+};
+
+export type CreateCustomBlockInput = {
+  blockDefinition: Scalars['JSONObject']['input'];
+  category: Scalars['String']['input'];
+  description: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  generatorCode: Scalars['String']['input'];
+  inputs: Array<CustomBlockInputDef>;
+  name: Scalars['String']['input'];
+  outputType: BlockOutputType;
+  supportedOS: InputMaybe<Array<Os>>;
 };
 
 export type CreateDepartmentFirewallInput = {
@@ -271,6 +541,16 @@ export type CreateSnapshotInput = {
   name: Scalars['String']['input'];
 };
 
+export type CreateSystemScriptInput = {
+  category: InputMaybe<Scalars['String']['input']>;
+  codeLinux: InputMaybe<Scalars['String']['input']>;
+  codeWindows: InputMaybe<Scalars['String']['input']>;
+  description: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  requiredHealthFields: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type CreateUserInputType = {
   /** User avatar image path */
   avatar: InputMaybe<Scalars['String']['input']>;
@@ -280,6 +560,42 @@ export type CreateUserInputType = {
   password: Scalars['String']['input'];
   passwordConfirmation: Scalars['String']['input'];
   role: UserRole;
+};
+
+export type CustomBlockInputDef = {
+  defaultValue: InputMaybe<Scalars['JSONObject']['input']>;
+  label: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  required: InputMaybe<Scalars['Boolean']['input']>;
+  type: Scalars['String']['input'];
+};
+
+export type CustomBlockInputType = {
+  __typename?: 'CustomBlockInputType';
+  defaultValue: Maybe<Scalars['JSONObject']['output']>;
+  label: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  required: Scalars['Boolean']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type CustomBlockType = {
+  __typename?: 'CustomBlockType';
+  blockDefinition: Scalars['JSONObject']['output'];
+  category: Scalars['String']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  createdBy: Maybe<AutomationUserType>;
+  description: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  generatorCode: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  inputs: Array<CustomBlockInputType>;
+  isBuiltIn: Scalars['Boolean']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  outputType: BlockOutputType;
+  supportedOS: Array<Os>;
+  updatedAt: Scalars['DateTimeISO']['output'];
 };
 
 export type DefenderScanResult = {
@@ -682,6 +998,17 @@ export type LibvirtFilterInfoType = {
   vmId: Maybe<Scalars['String']['output']>;
 };
 
+export type LinkScriptToAutomationInput = {
+  automationId: Scalars['ID']['input'];
+  executeOnTrigger: InputMaybe<Scalars['Boolean']['input']>;
+  executionOrder: InputMaybe<Scalars['Int']['input']>;
+  os: Os;
+  /** ID of regular script (mutually exclusive with systemScriptId) */
+  scriptId: InputMaybe<Scalars['ID']['input']>;
+  /** ID of system script (mutually exclusive with scriptId) */
+  systemScriptId: InputMaybe<Scalars['ID']['input']>;
+};
+
 /** Login response with user data and token */
 export type LoginResponse = {
   __typename?: 'LoginResponse';
@@ -902,13 +1229,19 @@ export enum MaintenanceTrigger {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  approveAutomation: AutomationType;
+  archiveAutomation: AutomationType;
   assignScriptToDepartment: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
   cancelScheduledScript: ScheduleScriptResponseType;
   cancelScriptExecution: ScriptExecutionResponseType;
   cleanupInfinibayFirewall: CleanupResultType;
+  compileAutomation: AutomationType;
   createApplication: ApplicationType;
+  createAutomation: AutomationType;
+  createAutomationFromTemplate: AutomationType;
+  createCustomBlock: CustomBlockType;
   createDepartment: DepartmentType;
   createDepartmentFirewallRule: FirewallRuleType;
   createMachine: Machine;
@@ -919,22 +1252,32 @@ export type Mutation = {
   createScript: ScriptResponseType;
   /** Create a snapshot of a virtual machine */
   createSnapshot: SnapshotResult;
+  createSystemScript: SystemScriptType;
   createUser: UserType;
   createVMFirewallRule: FirewallRuleType;
   deleteApplication: Scalars['Boolean']['output'];
+  deleteAutomation: Scalars['Boolean']['output'];
+  deleteCustomBlock: Scalars['Boolean']['output'];
   deleteFirewallRule: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
   deleteScript: ScriptResponseType;
   /** Delete a snapshot from a virtual machine */
   deleteSnapshot: SuccessType;
+  deleteSystemScript: Scalars['Boolean']['output'];
   destroyDepartment: DepartmentType;
   destroyMachine: SuccessType;
   destroyMachineTemplate: Scalars['Boolean']['output'];
   destroyMachineTemplateCategory: Scalars['Boolean']['output'];
+  disableAutomation: AutomationType;
+  dismissAllRecommendations: Scalars['Int']['output'];
+  dismissRecommendation: AutomationRecommendationType;
+  duplicateAutomation: AutomationType;
+  enableAutomation: AutomationType;
   executeCommand: CommandExecutionResponseType;
   executeImmediateMaintenance: MaintenanceExecutionResponse;
   executeMaintenanceTask: MaintenanceExecutionResponse;
+  executeRecommendation: AutomationRecommendationType;
   executeScript: ScriptExecutionResponseType;
   flushFirewallRules: FlushResultType;
   forcePowerOff: SuccessType;
@@ -944,6 +1287,7 @@ export type Mutation = {
   installPackage: CommandResult;
   killProcess: ProcessControlResult;
   killProcesses: Array<ProcessControlResult>;
+  linkScriptToAutomation: AutomationScriptType;
   login: Maybe<LoginResponse>;
   /** Install, remove, or update a package on a virtual machine */
   managePackage: PackageManagementResult;
@@ -955,6 +1299,7 @@ export type Mutation = {
   queueAllVMHealthChecks: HealthCheckRoundResult;
   /** Register uploaded ISO */
   registerISO: Iso;
+  rejectAutomation: AutomationType;
   /** Remove ISO file */
   removeISO: Scalars['Boolean']['output'];
   /** Remove a package from a virtual machine (legacy compatibility) */
@@ -970,15 +1315,25 @@ export type Mutation = {
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
   setupNode: DyummyType;
+  snoozeAllRecommendations: Scalars['Int']['output'];
+  snoozeRecommendation: AutomationRecommendationType;
+  submitAutomationForApproval: AutomationType;
   suspend: SuccessType;
   syncFirewallToLibvirt: SyncResultType;
   /** Sync ISOs with filesystem */
   syncISOs: Scalars['Boolean']['output'];
+  testAutomation: AutomationExecutionType;
+  testAutomationWithContext: TestResultType;
+  testCustomBlock: Scalars['JSONObject']['output'];
   toggleMaintenanceTask: MaintenanceTaskResponse;
   triggerHealthCheckRound: HealthCheckRoundResult;
   unassignScriptFromDepartment: Scalars['Boolean']['output'];
+  unlinkScriptFromAutomation: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
+  updateAutomation: AutomationType;
+  updateAutomationScript: AutomationScriptType;
+  updateCustomBlock: CustomBlockType;
   updateDepartmentFirewallPolicy: DepartmentType;
   updateDepartmentName: DepartmentType;
   updateDepartmentNetwork: DepartmentType;
@@ -993,9 +1348,20 @@ export type Mutation = {
   updatePackage: CommandResult;
   updateScheduledScript: ScheduleScriptResponseType;
   updateScript: ScriptResponseType;
+  updateSystemScript: SystemScriptType;
   updateUser: UserType;
   /** Validate ISO file integrity */
   validateISO: Scalars['Boolean']['output'];
+};
+
+
+export type MutationApproveAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationArchiveAutomationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1020,8 +1386,29 @@ export type MutationCancelScriptExecutionArgs = {
 };
 
 
+export type MutationCompileAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationCreateApplicationArgs = {
   input: CreateApplicationInputType;
+};
+
+
+export type MutationCreateAutomationArgs = {
+  input: CreateAutomationInput;
+};
+
+
+export type MutationCreateAutomationFromTemplateArgs = {
+  name: InputMaybe<Scalars['String']['input']>;
+  templateId: Scalars['ID']['input'];
+};
+
+
+export type MutationCreateCustomBlockArgs = {
+  input: CreateCustomBlockInput;
 };
 
 
@@ -1072,6 +1459,11 @@ export type MutationCreateSnapshotArgs = {
 };
 
 
+export type MutationCreateSystemScriptArgs = {
+  input: CreateSystemScriptInput;
+};
+
+
 export type MutationCreateUserArgs = {
   input: CreateUserInputType;
 };
@@ -1085,6 +1477,16 @@ export type MutationCreateVmFirewallRuleArgs = {
 
 export type MutationDeleteApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationDeleteAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteCustomBlockArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1114,6 +1516,11 @@ export type MutationDeleteSnapshotArgs = {
 };
 
 
+export type MutationDeleteSystemScriptArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDestroyDepartmentArgs = {
   id: Scalars['String']['input'];
 };
@@ -1134,6 +1541,28 @@ export type MutationDestroyMachineTemplateCategoryArgs = {
 };
 
 
+export type MutationDisableAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDismissRecommendationArgs = {
+  id: Scalars['ID']['input'];
+  reason: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationDuplicateAutomationArgs = {
+  id: Scalars['ID']['input'];
+  newName: Scalars['String']['input'];
+};
+
+
+export type MutationEnableAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationExecuteCommandArgs = {
   command: Scalars['String']['input'];
   id: Scalars['String']['input'];
@@ -1147,6 +1576,11 @@ export type MutationExecuteImmediateMaintenanceArgs = {
 
 export type MutationExecuteMaintenanceTaskArgs = {
   taskId: Scalars['ID']['input'];
+};
+
+
+export type MutationExecuteRecommendationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1190,6 +1624,11 @@ export type MutationKillProcessesArgs = {
 };
 
 
+export type MutationLinkScriptToAutomationArgs = {
+  input: LinkScriptToAutomationInput;
+};
+
+
 export type MutationLoginArgs = {
   email: Scalars['String']['input'];
   password: Scalars['String']['input'];
@@ -1229,6 +1668,12 @@ export type MutationRegisterIsoArgs = {
   os: Scalars['String']['input'];
   path: Scalars['String']['input'];
   size: Scalars['Float']['input'];
+};
+
+
+export type MutationRejectAutomationArgs = {
+  id: Scalars['ID']['input'];
+  reason: Scalars['String']['input'];
 };
 
 
@@ -1283,8 +1728,43 @@ export type MutationSetNetworkIpRangeArgs = {
 };
 
 
+export type MutationSnoozeAllRecommendationsArgs = {
+  duration: SnoozeDuration;
+};
+
+
+export type MutationSnoozeRecommendationArgs = {
+  duration: SnoozeDuration;
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitAutomationForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationSuspendArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationTestAutomationArgs = {
+  automationId: Scalars['ID']['input'];
+  machineId: Scalars['ID']['input'];
+};
+
+
+export type MutationTestAutomationWithContextArgs = {
+  automationId: Scalars['ID']['input'];
+  context: Scalars['JSONObject']['input'];
+};
+
+
+export type MutationTestCustomBlockArgs = {
+  id: Scalars['ID']['input'];
+  sampleContext: InputMaybe<Scalars['JSONObject']['input']>;
+  sampleInputs: Scalars['JSONObject']['input'];
 };
 
 
@@ -1300,6 +1780,14 @@ export type MutationUnassignScriptFromDepartmentArgs = {
 };
 
 
+export type MutationUnlinkScriptFromAutomationArgs = {
+  automationId: Scalars['ID']['input'];
+  os: Os;
+  scriptId: InputMaybe<Scalars['ID']['input']>;
+  systemScriptId: InputMaybe<Scalars['ID']['input']>;
+};
+
+
 export type MutationUpdateAppSettingsArgs = {
   input: AppSettingsInput;
 };
@@ -1308,6 +1796,26 @@ export type MutationUpdateAppSettingsArgs = {
 export type MutationUpdateApplicationArgs = {
   id: Scalars['String']['input'];
   input: CreateApplicationInputType;
+};
+
+
+export type MutationUpdateAutomationArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateAutomationInput;
+};
+
+
+export type MutationUpdateAutomationScriptArgs = {
+  executeOnTrigger: InputMaybe<Scalars['Boolean']['input']>;
+  executionOrder: InputMaybe<Scalars['Int']['input']>;
+  id: Scalars['ID']['input'];
+  isEnabled: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type MutationUpdateCustomBlockArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateCustomBlockInput;
 };
 
 
@@ -1378,6 +1886,12 @@ export type MutationUpdateScheduledScriptArgs = {
 
 export type MutationUpdateScriptArgs = {
   input: UpdateScriptInput;
+};
+
+
+export type MutationUpdateSystemScriptArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateSystemScriptInput;
 };
 
 
@@ -1533,9 +2047,17 @@ export type Query = {
   allISOs: Array<Iso>;
   application: Maybe<ApplicationType>;
   applications: Array<ApplicationType>;
+  automation: Maybe<AutomationType>;
+  automationExecution: Maybe<AutomationExecutionType>;
+  automationExecutions: Array<AutomationExecutionType>;
+  automationTemplate: Maybe<AutomationTemplateType>;
+  automationTemplateCategories: Array<Scalars['String']['output']>;
+  automationTemplates: Array<AutomationTemplateType>;
+  automations: Array<AutomationType>;
   /** Get all available ISOs */
   availableISOs: Array<Iso>;
   backgroundHealthServiceStatus: BackgroundHealthServiceStatus;
+  blocklyToolbox: BlocklyToolboxType;
   captureDepartmentDhcpTraffic: DhcpTrafficCaptureType;
   /** Check for application updates on a VM */
   checkApplicationUpdates: ApplicationUpdates;
@@ -1557,6 +2079,8 @@ export type Query = {
   /** Get the current snapshot of a virtual machine */
   currentSnapshot: Maybe<Snapshot>;
   currentUser: Maybe<UserType>;
+  customBlock: Maybe<CustomBlockType>;
+  customBlocks: Array<CustomBlockType>;
   department: Maybe<DepartmentType>;
   departmentNetworkDiagnostics: DepartmentNetworkDiagnosticsType;
   departmentScripts: Array<ScriptType>;
@@ -1601,6 +2125,11 @@ export type Query = {
   maintenanceTasks: Array<MaintenanceTask>;
   network: Network;
   networks: Array<Network>;
+  pendingRecommendationCount: Scalars['Int']['output'];
+  pendingRecommendations: Array<AutomationRecommendationType>;
+  previewGeneratedCode: Scalars['String']['output'];
+  recommendation: Maybe<AutomationRecommendationType>;
+  recommendations: Array<AutomationRecommendationType>;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
   scheduledScript: Maybe<ScheduledScriptType>;
@@ -1614,9 +2143,13 @@ export type Query = {
   searchPackages: Array<PackageInfo>;
   /** Get current socket connection statistics for all VMs */
   socketConnectionStats: Maybe<SocketConnectionStats>;
+  systemScript: Maybe<SystemScriptType>;
+  systemScriptCategories: Array<Scalars['String']['output']>;
+  systemScripts: Array<SystemScriptType>;
   user: UserType;
   users: Array<UserType>;
   validateFirewallRule: ValidationResultType;
+  validateWorkspace: AutomationValidationResultType;
   vmHealthCheckQueue: Array<VmHealthCheckQueueType>;
   vmHealthHistory: Array<VmHealthSnapshotType>;
   vmHealthStats: VmHealthStatsType;
@@ -1628,6 +2161,38 @@ export type Query = {
 
 export type QueryApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryAutomationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAutomationExecutionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAutomationExecutionsArgs = {
+  filters: InputMaybe<AutomationExecutionFiltersInput>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryAutomationTemplateArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAutomationTemplatesArgs = {
+  category: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryAutomationsArgs = {
+  filters: InputMaybe<AutomationFiltersInput>;
 };
 
 
@@ -1677,6 +2242,17 @@ export type QueryCheckWindowsUpdatesArgs = {
 
 export type QueryCurrentSnapshotArgs = {
   machineId: Scalars['String']['input'];
+};
+
+
+export type QueryCustomBlockArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryCustomBlocksArgs = {
+  category: InputMaybe<Scalars['String']['input']>;
+  includeBuiltIn?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -1819,6 +2395,32 @@ export type QueryNetworkArgs = {
 };
 
 
+export type QueryPendingRecommendationCountArgs = {
+  machineId: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryPendingRecommendationsArgs = {
+  machineId: Scalars['ID']['input'];
+};
+
+
+export type QueryPreviewGeneratedCodeArgs = {
+  blocklyWorkspace: Scalars['JSONObject']['input'];
+};
+
+
+export type QueryRecommendationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryRecommendationsArgs = {
+  filters: InputMaybe<RecommendationFiltersInput>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type QueryRunHealthCheckArgs = {
   checkName: HealthCheckName;
   vmId: Scalars['ID']['input'];
@@ -1868,6 +2470,16 @@ export type QuerySearchPackagesArgs = {
 };
 
 
+export type QuerySystemScriptArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QuerySystemScriptsArgs = {
+  category: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type QueryUserArgs = {
   id: Scalars['String']['input'];
 };
@@ -1881,6 +2493,11 @@ export type QueryUsersArgs = {
 
 export type QueryValidateFirewallRuleArgs = {
   input: CreateFirewallRuleInput;
+};
+
+
+export type QueryValidateWorkspaceArgs = {
+  blocklyWorkspace: Scalars['JSONObject']['input'];
 };
 
 
@@ -1944,6 +2561,21 @@ export type RecommendationFilterInput = {
   types: InputMaybe<Array<RecommendationType>>;
 };
 
+export type RecommendationFiltersInput = {
+  automationId: InputMaybe<Scalars['ID']['input']>;
+  machineId: InputMaybe<Scalars['ID']['input']>;
+  severity: InputMaybe<Array<RecommendationSeverity>>;
+  status: InputMaybe<Array<AutomationRecommendationStatus>>;
+};
+
+/** Severity level of a recommendation */
+export enum RecommendationSeverity {
+  Critical = 'CRITICAL',
+  High = 'HIGH',
+  Low = 'LOW',
+  Medium = 'MEDIUM'
+}
+
 /** Types of VM recommendations that can be generated by the system based on health checks and system analysis */
 export enum RecommendationType {
   /** Generated when application updates, especially security updates, are available */
@@ -1968,6 +2600,13 @@ export enum RecommendationType {
   PortBlocked = 'PORT_BLOCKED',
   /** Generated when VM resources are consistently over-utilized and affecting performance */
   UnderProvisioned = 'UNDER_PROVISIONED'
+}
+
+/** User action taken on a recommendation */
+export enum RecommendationUserAction {
+  Dismiss = 'DISMISS',
+  Execute = 'EXECUTE',
+  Snooze = 'SNOOZE'
 }
 
 export type ResourceOptimizationInfo = {
@@ -2231,6 +2870,14 @@ export type SnapshotResult = {
   success: Scalars['Boolean']['output'];
 };
 
+/** Duration for snoozing a recommendation (ISO 8601) */
+export enum SnoozeDuration {
+  P7D = 'P7D',
+  Pt1H = 'PT1H',
+  Pt4H = 'PT4H',
+  Pt24H = 'PT24H'
+}
+
 export type SocketConnectionStats = {
   __typename?: 'SocketConnectionStats';
   activeConnections: Maybe<Scalars['Float']['output']>;
@@ -2287,6 +2934,68 @@ export type SystemResources = {
   cpu: SystemResourceCpu;
   disk: SystemResourceDisk;
   memory: SystemResourceMemory;
+};
+
+export type SystemScriptType = {
+  __typename?: 'SystemScriptType';
+  category: Scalars['String']['output'];
+  codeLinux: Maybe<Scalars['String']['output']>;
+  codeWindows: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  createdBy: Maybe<AutomationUserType>;
+  description: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isEnabled: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  requiredHealthFields: Array<Scalars['String']['output']>;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type TestResultType = {
+  __typename?: 'TestResultType';
+  error: Maybe<Scalars['String']['output']>;
+  evaluationTimeMs: Scalars['Int']['output'];
+  generatedCode: Scalars['String']['output'];
+  logs: Array<Scalars['String']['output']>;
+  result: Maybe<Scalars['Boolean']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type ToolboxCategoryType = {
+  __typename?: 'ToolboxCategoryType';
+  blocks: Array<BlockDefinitionOutputType>;
+  colour: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type UpdateAutomationInput = {
+  blocklyWorkspace: InputMaybe<Scalars['JSONObject']['input']>;
+  cooldownMinutes: InputMaybe<Scalars['Int']['input']>;
+  departmentId: InputMaybe<Scalars['ID']['input']>;
+  description: InputMaybe<Scalars['String']['input']>;
+  /** VMs to exclude (for EXCLUDE_VMS scope) */
+  excludeMachineIds: InputMaybe<Array<Scalars['ID']['input']>>;
+  name: InputMaybe<Scalars['String']['input']>;
+  priority: InputMaybe<Scalars['Int']['input']>;
+  recommendationActionText: InputMaybe<Scalars['String']['input']>;
+  recommendationText: InputMaybe<Scalars['String']['input']>;
+  recommendationType: InputMaybe<Scalars['String']['input']>;
+  /** VMs to include (for SPECIFIC_VMS scope) */
+  targetMachineIds: InputMaybe<Array<Scalars['ID']['input']>>;
+  targetScope: InputMaybe<AutomationScope>;
+};
+
+export type UpdateCustomBlockInput = {
+  blockDefinition: InputMaybe<Scalars['JSONObject']['input']>;
+  category: InputMaybe<Scalars['String']['input']>;
+  description: InputMaybe<Scalars['String']['input']>;
+  displayName: InputMaybe<Scalars['String']['input']>;
+  generatorCode: InputMaybe<Scalars['String']['input']>;
+  inputs: InputMaybe<Array<CustomBlockInputDef>>;
+  isEnabled: InputMaybe<Scalars['Boolean']['input']>;
+  outputType: InputMaybe<BlockOutputType>;
+  supportedOS: InputMaybe<Array<Os>>;
 };
 
 export type UpdateDepartmentFirewallPolicyInput = {
@@ -2374,6 +3083,16 @@ export type UpdateScriptInput = {
   id: Scalars['ID']['input'];
   name: InputMaybe<Scalars['String']['input']>;
   tags: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type UpdateSystemScriptInput = {
+  category: InputMaybe<Scalars['String']['input']>;
+  codeLinux: InputMaybe<Scalars['String']['input']>;
+  codeWindows: InputMaybe<Scalars['String']['input']>;
+  description: InputMaybe<Scalars['String']['input']>;
+  displayName: InputMaybe<Scalars['String']['input']>;
+  isEnabled: InputMaybe<Scalars['Boolean']['input']>;
+  requiredHealthFields: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type UpdateUserInputType = {
@@ -2498,11 +3217,23 @@ export type VmRecommendationType = {
   type: RecommendationType;
 };
 
+export type ValidationErrorType = {
+  __typename?: 'ValidationErrorType';
+  blockId: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
+};
+
 export type ValidationResultType = {
   __typename?: 'ValidationResultType';
   conflicts: Array<RuleConflictType>;
   isValid: Scalars['Boolean']['output'];
   warnings: Array<Scalars['String']['output']>;
+};
+
+export type ValidationWarningType = {
+  __typename?: 'ValidationWarningType';
+  blockId: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
 };
 
 export type VmConnectionInfo = {
@@ -2589,6 +3320,373 @@ export type WindowsUpdateItem = {
   sizeInMB: Scalars['Float']['output'];
   title: Scalars['String']['output'];
 };
+
+export type GetAutomationQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetAutomationQuery = { __typename?: 'Query', automation: { __typename?: 'AutomationType', id: string, name: string, description: string | null, blocklyWorkspace: { [key: string]: any }, generatedCode: string, isCompiled: boolean, compiledCode: string | null, compilationError: string | null, targetScope: AutomationScope, status: AutomationStatus, isEnabled: boolean, priority: number, cooldownMinutes: number, recommendationType: string | null, recommendationText: string | null, recommendationActionText: string | null, executionCount: number, lastTriggeredAt: string | null, triggerRate: number | null, approvedAt: string | null, createdAt: string, updatedAt: string, department: { __typename?: 'AutomationDepartmentType', id: string, name: string } | null, targets: Array<{ __typename?: 'AutomationTargetType', id: string, machine: { __typename?: 'AutomationMachineType', id: string, name: string } }>, automationScripts: Array<{ __typename?: 'AutomationScriptType', id: string, os: Os, executionOrder: number, isEnabled: boolean, executeOnTrigger: boolean, script: { __typename?: 'AutomationScriptRefType', id: string, name: string, os: Os } | null, systemScript: { __typename?: 'SystemScriptType', id: string, displayName: string } | null }>, createdBy: { __typename?: 'AutomationUserType', id: string, name: string } | null, approvedBy: { __typename?: 'AutomationUserType', id: string, name: string } | null } | null };
+
+export type GetAutomationsQueryVariables = Exact<{
+  filters: InputMaybe<AutomationFiltersInput>;
+}>;
+
+
+export type GetAutomationsQuery = { __typename?: 'Query', automations: Array<{ __typename?: 'AutomationType', id: string, name: string, description: string | null, status: AutomationStatus, isEnabled: boolean, targetScope: AutomationScope, executionCount: number, lastTriggeredAt: string | null, triggerRate: number | null, createdAt: string, updatedAt: string, department: { __typename?: 'AutomationDepartmentType', id: string, name: string } | null }> };
+
+export type GetAutomationExecutionsQueryVariables = Exact<{
+  filters: InputMaybe<AutomationExecutionFiltersInput>;
+  limit: InputMaybe<Scalars['Int']['input']>;
+  offset: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type GetAutomationExecutionsQuery = { __typename?: 'Query', automationExecutions: Array<{ __typename?: 'AutomationExecutionType', id: string, automationId: string, triggerReason: string, evaluationResult: boolean, status: AutomationExecutionStatus, evaluationTimeMs: number | null, error: string | null, triggeredAt: string, completedAt: string | null, machine: { __typename?: 'AutomationMachineType', id: string, name: string } }> };
+
+export type GetAutomationExecutionQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetAutomationExecutionQuery = { __typename?: 'Query', automationExecution: { __typename?: 'AutomationExecutionType', id: string, automationId: string, triggerReason: string, evaluationResult: boolean, status: AutomationExecutionStatus, contextSnapshot: { [key: string]: any } | null, evaluationTimeMs: number | null, error: string | null, triggeredAt: string, evaluatedAt: string | null, completedAt: string | null, machine: { __typename?: 'AutomationMachineType', id: string, name: string }, snapshot: { __typename?: 'AutomationSnapshotType', id: string, snapshotDate: string } | null, scriptExecution: { __typename?: 'AutomationScriptExecutionType', id: string, status: string } | null } | null };
+
+export type GetCustomBlockQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetCustomBlockQuery = { __typename?: 'Query', customBlock: { __typename?: 'CustomBlockType', id: string, name: string, displayName: string, description: string | null, category: string, blockDefinition: { [key: string]: any }, generatorCode: string, outputType: BlockOutputType, supportedOS: Array<Os>, isBuiltIn: boolean, isEnabled: boolean, createdAt: string, updatedAt: string, inputs: Array<{ __typename?: 'CustomBlockInputType', name: string, type: string, label: string, required: boolean, defaultValue: { [key: string]: any } | null }>, createdBy: { __typename?: 'AutomationUserType', id: string, name: string } | null } | null };
+
+export type GetCustomBlocksQueryVariables = Exact<{
+  category: InputMaybe<Scalars['String']['input']>;
+  includeBuiltIn: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type GetCustomBlocksQuery = { __typename?: 'Query', customBlocks: Array<{ __typename?: 'CustomBlockType', id: string, name: string, displayName: string, description: string | null, category: string, blockDefinition: { [key: string]: any }, outputType: BlockOutputType, supportedOS: Array<Os>, isBuiltIn: boolean, isEnabled: boolean, inputs: Array<{ __typename?: 'CustomBlockInputType', name: string, type: string, label: string, required: boolean, defaultValue: { [key: string]: any } | null }> }> };
+
+export type GetBlocklyToolboxQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetBlocklyToolboxQuery = { __typename?: 'Query', blocklyToolbox: { __typename?: 'BlocklyToolboxType', categories: Array<{ __typename?: 'ToolboxCategoryType', name: string, colour: string, blocks: Array<{ __typename?: 'BlockDefinitionOutputType', type: string, message0: string, args0: { [key: string]: any } | null, output: string | null, previousStatement: boolean | null, nextStatement: boolean | null, colour: number, tooltip: string | null, helpUrl: string | null }> }> } };
+
+export type PreviewGeneratedCodeQueryVariables = Exact<{
+  blocklyWorkspace: Scalars['JSONObject']['input'];
+}>;
+
+
+export type PreviewGeneratedCodeQuery = { __typename?: 'Query', previewGeneratedCode: string };
+
+export type ValidateWorkspaceQueryVariables = Exact<{
+  blocklyWorkspace: Scalars['JSONObject']['input'];
+}>;
+
+
+export type ValidateWorkspaceQuery = { __typename?: 'Query', validateWorkspace: { __typename?: 'AutomationValidationResultType', isValid: boolean, errors: Array<{ __typename?: 'ValidationErrorType', blockId: string | null, message: string }>, warnings: Array<{ __typename?: 'ValidationWarningType', blockId: string | null, message: string }> } };
+
+export type GetRecommendationQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetRecommendationQuery = { __typename?: 'Query', recommendation: { __typename?: 'AutomationRecommendationType', id: string, automationId: string, title: string, description: string | null, severity: RecommendationSeverity, status: AutomationRecommendationStatus, userAction: RecommendationUserAction | null, actionTakenAt: string | null, snoozeUntil: string | null, dismissReason: string | null, autoResolvedAt: string | null, autoResolveReason: string | null, createdAt: string, updatedAt: string, machine: { __typename?: 'AutomationMachineType', id: string, name: string }, execution: { __typename?: 'AutomationExecutionType', id: string, status: AutomationExecutionStatus } | null, actionTakenBy: { __typename?: 'AutomationUserType', id: string, name: string } | null, script: { __typename?: 'AutomationScriptRefType', id: string, name: string, os: Os } | null, systemScript: { __typename?: 'SystemScriptType', id: string, displayName: string } | null, scriptExecution: { __typename?: 'AutomationScriptExecutionType', id: string, status: string } | null } | null };
+
+export type GetRecommendationsQueryVariables = Exact<{
+  filters: InputMaybe<RecommendationFiltersInput>;
+  limit: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type GetRecommendationsQuery = { __typename?: 'Query', recommendations: Array<{ __typename?: 'AutomationRecommendationType', id: string, automationId: string, title: string, description: string | null, severity: RecommendationSeverity, status: AutomationRecommendationStatus, userAction: RecommendationUserAction | null, actionTakenAt: string | null, snoozeUntil: string | null, autoResolvedAt: string | null, autoResolveReason: string | null, createdAt: string, machine: { __typename?: 'AutomationMachineType', id: string, name: string }, actionTakenBy: { __typename?: 'AutomationUserType', id: string, name: string } | null }> };
+
+export type GetPendingRecommendationsQueryVariables = Exact<{
+  machineId: Scalars['ID']['input'];
+}>;
+
+
+export type GetPendingRecommendationsQuery = { __typename?: 'Query', pendingRecommendations: Array<{ __typename?: 'AutomationRecommendationType', id: string, title: string, description: string | null, severity: RecommendationSeverity, status: AutomationRecommendationStatus, createdAt: string, machine: { __typename?: 'AutomationMachineType', id: string, name: string }, script: { __typename?: 'AutomationScriptRefType', id: string, name: string } | null, systemScript: { __typename?: 'SystemScriptType', id: string, displayName: string } | null }> };
+
+export type GlobalPendingRecommendationsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GlobalPendingRecommendationsQuery = { __typename?: 'Query', recommendations: Array<{ __typename?: 'AutomationRecommendationType', id: string, title: string, description: string | null, severity: RecommendationSeverity, status: AutomationRecommendationStatus, createdAt: string, machine: { __typename?: 'AutomationMachineType', id: string, name: string }, script: { __typename?: 'AutomationScriptRefType', id: string, name: string } | null, systemScript: { __typename?: 'SystemScriptType', id: string, displayName: string } | null }> };
+
+export type GetPendingRecommendationCountQueryVariables = Exact<{
+  machineId: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type GetPendingRecommendationCountQuery = { __typename?: 'Query', pendingRecommendationCount: number };
+
+export type GetSystemScriptQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetSystemScriptQuery = { __typename?: 'Query', systemScript: { __typename?: 'SystemScriptType', id: string, name: string, displayName: string, description: string | null, codeWindows: string | null, codeLinux: string | null, category: string, requiredHealthFields: Array<string>, isEnabled: boolean, createdAt: string, updatedAt: string, createdBy: { __typename?: 'AutomationUserType', id: string, name: string } | null } | null };
+
+export type GetSystemScriptsQueryVariables = Exact<{
+  category: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type GetSystemScriptsQuery = { __typename?: 'Query', systemScripts: Array<{ __typename?: 'SystemScriptType', id: string, name: string, displayName: string, description: string | null, category: string, requiredHealthFields: Array<string>, isEnabled: boolean }> };
+
+export type GetSystemScriptCategoriesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetSystemScriptCategoriesQuery = { __typename?: 'Query', systemScriptCategories: Array<string> };
+
+export type CreateAutomationMutationVariables = Exact<{
+  input: CreateAutomationInput;
+}>;
+
+
+export type CreateAutomationMutation = { __typename?: 'Mutation', createAutomation: { __typename?: 'AutomationType', id: string, name: string, status: AutomationStatus, createdAt: string } };
+
+export type UpdateAutomationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateAutomationInput;
+}>;
+
+
+export type UpdateAutomationMutation = { __typename?: 'Mutation', updateAutomation: { __typename?: 'AutomationType', id: string, name: string, blocklyWorkspace: { [key: string]: any }, generatedCode: string, isCompiled: boolean, updatedAt: string } };
+
+export type DeleteAutomationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteAutomationMutation = { __typename?: 'Mutation', deleteAutomation: boolean };
+
+export type DuplicateAutomationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  newName: Scalars['String']['input'];
+}>;
+
+
+export type DuplicateAutomationMutation = { __typename?: 'Mutation', duplicateAutomation: { __typename?: 'AutomationType', id: string, name: string } };
+
+export type SubmitAutomationForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitAutomationForApprovalMutation = { __typename?: 'Mutation', submitAutomationForApproval: { __typename?: 'AutomationType', id: string, status: AutomationStatus, isCompiled: boolean, compilationError: string | null } };
+
+export type ApproveAutomationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ApproveAutomationMutation = { __typename?: 'Mutation', approveAutomation: { __typename?: 'AutomationType', id: string, status: AutomationStatus, approvedAt: string | null, approvedBy: { __typename?: 'AutomationUserType', id: string, name: string } | null } };
+
+export type RejectAutomationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  reason: Scalars['String']['input'];
+}>;
+
+
+export type RejectAutomationMutation = { __typename?: 'Mutation', rejectAutomation: { __typename?: 'AutomationType', id: string, status: AutomationStatus, compilationError: string | null } };
+
+export type EnableAutomationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type EnableAutomationMutation = { __typename?: 'Mutation', enableAutomation: { __typename?: 'AutomationType', id: string, isEnabled: boolean } };
+
+export type DisableAutomationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DisableAutomationMutation = { __typename?: 'Mutation', disableAutomation: { __typename?: 'AutomationType', id: string, isEnabled: boolean } };
+
+export type ArchiveAutomationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ArchiveAutomationMutation = { __typename?: 'Mutation', archiveAutomation: { __typename?: 'AutomationType', id: string, status: AutomationStatus, isEnabled: boolean } };
+
+export type CompileAutomationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type CompileAutomationMutation = { __typename?: 'Mutation', compileAutomation: { __typename?: 'AutomationType', id: string, isCompiled: boolean, compiledCode: string | null, compilationError: string | null } };
+
+export type LinkScriptToAutomationMutationVariables = Exact<{
+  input: LinkScriptToAutomationInput;
+}>;
+
+
+export type LinkScriptToAutomationMutation = { __typename?: 'Mutation', linkScriptToAutomation: { __typename?: 'AutomationScriptType', id: string, os: Os, executionOrder: number, script: { __typename?: 'AutomationScriptRefType', id: string, name: string } | null, systemScript: { __typename?: 'SystemScriptType', id: string, displayName: string } | null } };
+
+export type UnlinkScriptFromAutomationMutationVariables = Exact<{
+  automationId: Scalars['ID']['input'];
+  scriptId: InputMaybe<Scalars['ID']['input']>;
+  systemScriptId: InputMaybe<Scalars['ID']['input']>;
+  os: Os;
+}>;
+
+
+export type UnlinkScriptFromAutomationMutation = { __typename?: 'Mutation', unlinkScriptFromAutomation: boolean };
+
+export type UpdateAutomationScriptMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  executionOrder: InputMaybe<Scalars['Int']['input']>;
+  executeOnTrigger: InputMaybe<Scalars['Boolean']['input']>;
+  isEnabled: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type UpdateAutomationScriptMutation = { __typename?: 'Mutation', updateAutomationScript: { __typename?: 'AutomationScriptType', id: string, executionOrder: number, executeOnTrigger: boolean, isEnabled: boolean } };
+
+export type TestAutomationMutationVariables = Exact<{
+  automationId: Scalars['ID']['input'];
+  machineId: Scalars['ID']['input'];
+}>;
+
+
+export type TestAutomationMutation = { __typename?: 'Mutation', testAutomation: { __typename?: 'AutomationExecutionType', id: string, evaluationResult: boolean, status: AutomationExecutionStatus, evaluationTimeMs: number | null, error: string | null, triggeredAt: string } };
+
+export type TestAutomationWithContextMutationVariables = Exact<{
+  automationId: Scalars['ID']['input'];
+  context: Scalars['JSONObject']['input'];
+}>;
+
+
+export type TestAutomationWithContextMutation = { __typename?: 'Mutation', testAutomationWithContext: { __typename?: 'TestResultType', success: boolean, result: boolean | null, generatedCode: string, evaluationTimeMs: number, error: string | null, logs: Array<string> } };
+
+export type CreateCustomBlockMutationVariables = Exact<{
+  input: CreateCustomBlockInput;
+}>;
+
+
+export type CreateCustomBlockMutation = { __typename?: 'Mutation', createCustomBlock: { __typename?: 'CustomBlockType', id: string, name: string, displayName: string, category: string } };
+
+export type UpdateCustomBlockMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateCustomBlockInput;
+}>;
+
+
+export type UpdateCustomBlockMutation = { __typename?: 'Mutation', updateCustomBlock: { __typename?: 'CustomBlockType', id: string, displayName: string, isEnabled: boolean } };
+
+export type DeleteCustomBlockMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteCustomBlockMutation = { __typename?: 'Mutation', deleteCustomBlock: boolean };
+
+export type TestCustomBlockMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  sampleInputs: Scalars['JSONObject']['input'];
+  sampleContext: InputMaybe<Scalars['JSONObject']['input']>;
+}>;
+
+
+export type TestCustomBlockMutation = { __typename?: 'Mutation', testCustomBlock: { [key: string]: any } };
+
+export type ExecuteRecommendationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ExecuteRecommendationMutation = { __typename?: 'Mutation', executeRecommendation: { __typename?: 'AutomationRecommendationType', id: string, status: AutomationRecommendationStatus, scriptExecution: { __typename?: 'AutomationScriptExecutionType', id: string, status: string } | null } };
+
+export type DismissRecommendationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  reason: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type DismissRecommendationMutation = { __typename?: 'Mutation', dismissRecommendation: { __typename?: 'AutomationRecommendationType', id: string, status: AutomationRecommendationStatus, dismissReason: string | null } };
+
+export type SnoozeRecommendationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  duration: SnoozeDuration;
+}>;
+
+
+export type SnoozeRecommendationMutation = { __typename?: 'Mutation', snoozeRecommendation: { __typename?: 'AutomationRecommendationType', id: string, status: AutomationRecommendationStatus, snoozeUntil: string | null } };
+
+export type DismissAllRecommendationsMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type DismissAllRecommendationsMutation = { __typename?: 'Mutation', dismissAllRecommendations: number };
+
+export type SnoozeAllRecommendationsMutationVariables = Exact<{
+  duration: SnoozeDuration;
+}>;
+
+
+export type SnoozeAllRecommendationsMutation = { __typename?: 'Mutation', snoozeAllRecommendations: number };
+
+export type CreateSystemScriptMutationVariables = Exact<{
+  input: CreateSystemScriptInput;
+}>;
+
+
+export type CreateSystemScriptMutation = { __typename?: 'Mutation', createSystemScript: { __typename?: 'SystemScriptType', id: string, name: string, displayName: string } };
+
+export type UpdateSystemScriptMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateSystemScriptInput;
+}>;
+
+
+export type UpdateSystemScriptMutation = { __typename?: 'Mutation', updateSystemScript: { __typename?: 'SystemScriptType', id: string, displayName: string, isEnabled: boolean } };
+
+export type DeleteSystemScriptMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteSystemScriptMutation = { __typename?: 'Mutation', deleteSystemScript: boolean };
+
+export type BlocklyToolboxQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type BlocklyToolboxQuery = { __typename?: 'Query', blocklyToolbox: { __typename?: 'BlocklyToolboxType', categories: Array<{ __typename?: 'ToolboxCategoryType', name: string, colour: string, blocks: Array<{ __typename?: 'BlockDefinitionOutputType', type: string, message0: string, args0: { [key: string]: any } | null, output: string | null, previousStatement: boolean | null, nextStatement: boolean | null, colour: number, tooltip: string | null, helpUrl: string | null }> }> } };
+
+export type SystemScriptsQueryVariables = Exact<{
+  category: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type SystemScriptsQuery = { __typename?: 'Query', systemScripts: Array<{ __typename?: 'SystemScriptType', id: string, name: string, displayName: string, description: string | null, category: string, requiredHealthFields: Array<string>, isEnabled: boolean }> };
+
+export type GetAutomationTemplatesQueryVariables = Exact<{
+  category: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type GetAutomationTemplatesQuery = { __typename?: 'Query', automationTemplates: Array<{ __typename?: 'AutomationTemplateType', id: string, name: string, description: string | null, category: string, recommendationType: string | null, blocklyWorkspace: { [key: string]: any }, isEnabled: boolean, usageCount: number, createdAt: string }> };
+
+export type GetAutomationTemplateQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetAutomationTemplateQuery = { __typename?: 'Query', automationTemplate: { __typename?: 'AutomationTemplateType', id: string, name: string, description: string | null, category: string, recommendationType: string | null, blocklyWorkspace: { [key: string]: any }, isEnabled: boolean, usageCount: number, createdAt: string, updatedAt: string } | null };
+
+export type GetAutomationTemplateCategoriesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetAutomationTemplateCategoriesQuery = { __typename?: 'Query', automationTemplateCategories: Array<string> };
+
+export type CreateAutomationFromTemplateMutationVariables = Exact<{
+  templateId: Scalars['ID']['input'];
+  name: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type CreateAutomationFromTemplateMutation = { __typename?: 'Mutation', createAutomationFromTemplate: { __typename?: 'AutomationType', id: string, name: string, description: string | null, blocklyWorkspace: { [key: string]: any }, status: AutomationStatus, createdAt: string } };
 
 export type CreateUserMutationVariables = Exact<{
   input: CreateUserInputType;
@@ -3362,6 +4460,2303 @@ export type GetVmRecommendationsQueryVariables = Exact<{
 export type GetVmRecommendationsQuery = { __typename?: 'Query', getVMRecommendations: Array<{ __typename?: 'VMRecommendationType', id: string, machineId: string, snapshotId: string | null, type: RecommendationType, text: string, actionText: string, data: { [key: string]: any } | null, createdAt: string }> };
 
 
+export const GetAutomationDocument = gql`
+    query GetAutomation($id: ID!) {
+  automation(id: $id) {
+    id
+    name
+    description
+    blocklyWorkspace
+    generatedCode
+    isCompiled
+    compiledCode
+    compilationError
+    targetScope
+    department {
+      id
+      name
+    }
+    targets {
+      id
+      machine {
+        id
+        name
+      }
+    }
+    status
+    isEnabled
+    priority
+    cooldownMinutes
+    recommendationType
+    recommendationText
+    recommendationActionText
+    automationScripts {
+      id
+      script {
+        id
+        name
+        os
+      }
+      systemScript {
+        id
+        displayName
+      }
+      os
+      executionOrder
+      isEnabled
+      executeOnTrigger
+    }
+    executionCount
+    lastTriggeredAt
+    triggerRate
+    createdBy {
+      id
+      name
+    }
+    approvedBy {
+      id
+      name
+    }
+    approvedAt
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetAutomationQuery__
+ *
+ * To run a query within a React component, call `useGetAutomationQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAutomationQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAutomationQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetAutomationQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetAutomationQuery, GetAutomationQueryVariables> & ({ variables: GetAutomationQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAutomationQuery, GetAutomationQueryVariables>(GetAutomationDocument, options);
+      }
+export function useGetAutomationLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAutomationQuery, GetAutomationQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAutomationQuery, GetAutomationQueryVariables>(GetAutomationDocument, options);
+        }
+export function useGetAutomationSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetAutomationQuery, GetAutomationQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetAutomationQuery, GetAutomationQueryVariables>(GetAutomationDocument, options);
+        }
+export type GetAutomationQueryHookResult = ReturnType<typeof useGetAutomationQuery>;
+export type GetAutomationLazyQueryHookResult = ReturnType<typeof useGetAutomationLazyQuery>;
+export type GetAutomationSuspenseQueryHookResult = ReturnType<typeof useGetAutomationSuspenseQuery>;
+export type GetAutomationQueryResult = ApolloReactCommon.QueryResult<GetAutomationQuery, GetAutomationQueryVariables>;
+export function refetchGetAutomationQuery(variables: GetAutomationQueryVariables) {
+      return { query: GetAutomationDocument, variables: variables }
+    }
+export const GetAutomationsDocument = gql`
+    query GetAutomations($filters: AutomationFiltersInput) {
+  automations(filters: $filters) {
+    id
+    name
+    description
+    status
+    isEnabled
+    targetScope
+    department {
+      id
+      name
+    }
+    executionCount
+    lastTriggeredAt
+    triggerRate
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetAutomationsQuery__
+ *
+ * To run a query within a React component, call `useGetAutomationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAutomationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAutomationsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *   },
+ * });
+ */
+export function useGetAutomationsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetAutomationsQuery, GetAutomationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAutomationsQuery, GetAutomationsQueryVariables>(GetAutomationsDocument, options);
+      }
+export function useGetAutomationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAutomationsQuery, GetAutomationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAutomationsQuery, GetAutomationsQueryVariables>(GetAutomationsDocument, options);
+        }
+export function useGetAutomationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetAutomationsQuery, GetAutomationsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetAutomationsQuery, GetAutomationsQueryVariables>(GetAutomationsDocument, options);
+        }
+export type GetAutomationsQueryHookResult = ReturnType<typeof useGetAutomationsQuery>;
+export type GetAutomationsLazyQueryHookResult = ReturnType<typeof useGetAutomationsLazyQuery>;
+export type GetAutomationsSuspenseQueryHookResult = ReturnType<typeof useGetAutomationsSuspenseQuery>;
+export type GetAutomationsQueryResult = ApolloReactCommon.QueryResult<GetAutomationsQuery, GetAutomationsQueryVariables>;
+export function refetchGetAutomationsQuery(variables?: GetAutomationsQueryVariables) {
+      return { query: GetAutomationsDocument, variables: variables }
+    }
+export const GetAutomationExecutionsDocument = gql`
+    query GetAutomationExecutions($filters: AutomationExecutionFiltersInput, $limit: Int, $offset: Int) {
+  automationExecutions(filters: $filters, limit: $limit, offset: $offset) {
+    id
+    automationId
+    machine {
+      id
+      name
+    }
+    triggerReason
+    evaluationResult
+    status
+    evaluationTimeMs
+    error
+    triggeredAt
+    completedAt
+  }
+}
+    `;
+
+/**
+ * __useGetAutomationExecutionsQuery__
+ *
+ * To run a query within a React component, call `useGetAutomationExecutionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAutomationExecutionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAutomationExecutionsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *   },
+ * });
+ */
+export function useGetAutomationExecutionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetAutomationExecutionsQuery, GetAutomationExecutionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAutomationExecutionsQuery, GetAutomationExecutionsQueryVariables>(GetAutomationExecutionsDocument, options);
+      }
+export function useGetAutomationExecutionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAutomationExecutionsQuery, GetAutomationExecutionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAutomationExecutionsQuery, GetAutomationExecutionsQueryVariables>(GetAutomationExecutionsDocument, options);
+        }
+export function useGetAutomationExecutionsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetAutomationExecutionsQuery, GetAutomationExecutionsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetAutomationExecutionsQuery, GetAutomationExecutionsQueryVariables>(GetAutomationExecutionsDocument, options);
+        }
+export type GetAutomationExecutionsQueryHookResult = ReturnType<typeof useGetAutomationExecutionsQuery>;
+export type GetAutomationExecutionsLazyQueryHookResult = ReturnType<typeof useGetAutomationExecutionsLazyQuery>;
+export type GetAutomationExecutionsSuspenseQueryHookResult = ReturnType<typeof useGetAutomationExecutionsSuspenseQuery>;
+export type GetAutomationExecutionsQueryResult = ApolloReactCommon.QueryResult<GetAutomationExecutionsQuery, GetAutomationExecutionsQueryVariables>;
+export function refetchGetAutomationExecutionsQuery(variables?: GetAutomationExecutionsQueryVariables) {
+      return { query: GetAutomationExecutionsDocument, variables: variables }
+    }
+export const GetAutomationExecutionDocument = gql`
+    query GetAutomationExecution($id: ID!) {
+  automationExecution(id: $id) {
+    id
+    automationId
+    machine {
+      id
+      name
+    }
+    snapshot {
+      id
+      snapshotDate
+    }
+    triggerReason
+    evaluationResult
+    status
+    contextSnapshot
+    evaluationTimeMs
+    scriptExecution {
+      id
+      status
+    }
+    error
+    triggeredAt
+    evaluatedAt
+    completedAt
+  }
+}
+    `;
+
+/**
+ * __useGetAutomationExecutionQuery__
+ *
+ * To run a query within a React component, call `useGetAutomationExecutionQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAutomationExecutionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAutomationExecutionQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetAutomationExecutionQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetAutomationExecutionQuery, GetAutomationExecutionQueryVariables> & ({ variables: GetAutomationExecutionQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAutomationExecutionQuery, GetAutomationExecutionQueryVariables>(GetAutomationExecutionDocument, options);
+      }
+export function useGetAutomationExecutionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAutomationExecutionQuery, GetAutomationExecutionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAutomationExecutionQuery, GetAutomationExecutionQueryVariables>(GetAutomationExecutionDocument, options);
+        }
+export function useGetAutomationExecutionSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetAutomationExecutionQuery, GetAutomationExecutionQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetAutomationExecutionQuery, GetAutomationExecutionQueryVariables>(GetAutomationExecutionDocument, options);
+        }
+export type GetAutomationExecutionQueryHookResult = ReturnType<typeof useGetAutomationExecutionQuery>;
+export type GetAutomationExecutionLazyQueryHookResult = ReturnType<typeof useGetAutomationExecutionLazyQuery>;
+export type GetAutomationExecutionSuspenseQueryHookResult = ReturnType<typeof useGetAutomationExecutionSuspenseQuery>;
+export type GetAutomationExecutionQueryResult = ApolloReactCommon.QueryResult<GetAutomationExecutionQuery, GetAutomationExecutionQueryVariables>;
+export function refetchGetAutomationExecutionQuery(variables: GetAutomationExecutionQueryVariables) {
+      return { query: GetAutomationExecutionDocument, variables: variables }
+    }
+export const GetCustomBlockDocument = gql`
+    query GetCustomBlock($id: ID!) {
+  customBlock(id: $id) {
+    id
+    name
+    displayName
+    description
+    category
+    blockDefinition
+    generatorCode
+    inputs {
+      name
+      type
+      label
+      required
+      defaultValue
+    }
+    outputType
+    supportedOS
+    isBuiltIn
+    isEnabled
+    createdBy {
+      id
+      name
+    }
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetCustomBlockQuery__
+ *
+ * To run a query within a React component, call `useGetCustomBlockQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetCustomBlockQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetCustomBlockQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetCustomBlockQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetCustomBlockQuery, GetCustomBlockQueryVariables> & ({ variables: GetCustomBlockQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetCustomBlockQuery, GetCustomBlockQueryVariables>(GetCustomBlockDocument, options);
+      }
+export function useGetCustomBlockLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetCustomBlockQuery, GetCustomBlockQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetCustomBlockQuery, GetCustomBlockQueryVariables>(GetCustomBlockDocument, options);
+        }
+export function useGetCustomBlockSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetCustomBlockQuery, GetCustomBlockQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetCustomBlockQuery, GetCustomBlockQueryVariables>(GetCustomBlockDocument, options);
+        }
+export type GetCustomBlockQueryHookResult = ReturnType<typeof useGetCustomBlockQuery>;
+export type GetCustomBlockLazyQueryHookResult = ReturnType<typeof useGetCustomBlockLazyQuery>;
+export type GetCustomBlockSuspenseQueryHookResult = ReturnType<typeof useGetCustomBlockSuspenseQuery>;
+export type GetCustomBlockQueryResult = ApolloReactCommon.QueryResult<GetCustomBlockQuery, GetCustomBlockQueryVariables>;
+export function refetchGetCustomBlockQuery(variables: GetCustomBlockQueryVariables) {
+      return { query: GetCustomBlockDocument, variables: variables }
+    }
+export const GetCustomBlocksDocument = gql`
+    query GetCustomBlocks($category: String, $includeBuiltIn: Boolean) {
+  customBlocks(category: $category, includeBuiltIn: $includeBuiltIn) {
+    id
+    name
+    displayName
+    description
+    category
+    blockDefinition
+    inputs {
+      name
+      type
+      label
+      required
+      defaultValue
+    }
+    outputType
+    supportedOS
+    isBuiltIn
+    isEnabled
+  }
+}
+    `;
+
+/**
+ * __useGetCustomBlocksQuery__
+ *
+ * To run a query within a React component, call `useGetCustomBlocksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetCustomBlocksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetCustomBlocksQuery({
+ *   variables: {
+ *      category: // value for 'category'
+ *      includeBuiltIn: // value for 'includeBuiltIn'
+ *   },
+ * });
+ */
+export function useGetCustomBlocksQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetCustomBlocksQuery, GetCustomBlocksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetCustomBlocksQuery, GetCustomBlocksQueryVariables>(GetCustomBlocksDocument, options);
+      }
+export function useGetCustomBlocksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetCustomBlocksQuery, GetCustomBlocksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetCustomBlocksQuery, GetCustomBlocksQueryVariables>(GetCustomBlocksDocument, options);
+        }
+export function useGetCustomBlocksSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetCustomBlocksQuery, GetCustomBlocksQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetCustomBlocksQuery, GetCustomBlocksQueryVariables>(GetCustomBlocksDocument, options);
+        }
+export type GetCustomBlocksQueryHookResult = ReturnType<typeof useGetCustomBlocksQuery>;
+export type GetCustomBlocksLazyQueryHookResult = ReturnType<typeof useGetCustomBlocksLazyQuery>;
+export type GetCustomBlocksSuspenseQueryHookResult = ReturnType<typeof useGetCustomBlocksSuspenseQuery>;
+export type GetCustomBlocksQueryResult = ApolloReactCommon.QueryResult<GetCustomBlocksQuery, GetCustomBlocksQueryVariables>;
+export function refetchGetCustomBlocksQuery(variables?: GetCustomBlocksQueryVariables) {
+      return { query: GetCustomBlocksDocument, variables: variables }
+    }
+export const GetBlocklyToolboxDocument = gql`
+    query GetBlocklyToolbox {
+  blocklyToolbox {
+    categories {
+      name
+      colour
+      blocks {
+        type
+        message0
+        args0
+        output
+        previousStatement
+        nextStatement
+        colour
+        tooltip
+        helpUrl
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetBlocklyToolboxQuery__
+ *
+ * To run a query within a React component, call `useGetBlocklyToolboxQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetBlocklyToolboxQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetBlocklyToolboxQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetBlocklyToolboxQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetBlocklyToolboxQuery, GetBlocklyToolboxQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetBlocklyToolboxQuery, GetBlocklyToolboxQueryVariables>(GetBlocklyToolboxDocument, options);
+      }
+export function useGetBlocklyToolboxLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetBlocklyToolboxQuery, GetBlocklyToolboxQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetBlocklyToolboxQuery, GetBlocklyToolboxQueryVariables>(GetBlocklyToolboxDocument, options);
+        }
+export function useGetBlocklyToolboxSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetBlocklyToolboxQuery, GetBlocklyToolboxQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetBlocklyToolboxQuery, GetBlocklyToolboxQueryVariables>(GetBlocklyToolboxDocument, options);
+        }
+export type GetBlocklyToolboxQueryHookResult = ReturnType<typeof useGetBlocklyToolboxQuery>;
+export type GetBlocklyToolboxLazyQueryHookResult = ReturnType<typeof useGetBlocklyToolboxLazyQuery>;
+export type GetBlocklyToolboxSuspenseQueryHookResult = ReturnType<typeof useGetBlocklyToolboxSuspenseQuery>;
+export type GetBlocklyToolboxQueryResult = ApolloReactCommon.QueryResult<GetBlocklyToolboxQuery, GetBlocklyToolboxQueryVariables>;
+export function refetchGetBlocklyToolboxQuery(variables?: GetBlocklyToolboxQueryVariables) {
+      return { query: GetBlocklyToolboxDocument, variables: variables }
+    }
+export const PreviewGeneratedCodeDocument = gql`
+    query PreviewGeneratedCode($blocklyWorkspace: JSONObject!) {
+  previewGeneratedCode(blocklyWorkspace: $blocklyWorkspace)
+}
+    `;
+
+/**
+ * __usePreviewGeneratedCodeQuery__
+ *
+ * To run a query within a React component, call `usePreviewGeneratedCodeQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePreviewGeneratedCodeQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePreviewGeneratedCodeQuery({
+ *   variables: {
+ *      blocklyWorkspace: // value for 'blocklyWorkspace'
+ *   },
+ * });
+ */
+export function usePreviewGeneratedCodeQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PreviewGeneratedCodeQuery, PreviewGeneratedCodeQueryVariables> & ({ variables: PreviewGeneratedCodeQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PreviewGeneratedCodeQuery, PreviewGeneratedCodeQueryVariables>(PreviewGeneratedCodeDocument, options);
+      }
+export function usePreviewGeneratedCodeLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PreviewGeneratedCodeQuery, PreviewGeneratedCodeQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PreviewGeneratedCodeQuery, PreviewGeneratedCodeQueryVariables>(PreviewGeneratedCodeDocument, options);
+        }
+export function usePreviewGeneratedCodeSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PreviewGeneratedCodeQuery, PreviewGeneratedCodeQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<PreviewGeneratedCodeQuery, PreviewGeneratedCodeQueryVariables>(PreviewGeneratedCodeDocument, options);
+        }
+export type PreviewGeneratedCodeQueryHookResult = ReturnType<typeof usePreviewGeneratedCodeQuery>;
+export type PreviewGeneratedCodeLazyQueryHookResult = ReturnType<typeof usePreviewGeneratedCodeLazyQuery>;
+export type PreviewGeneratedCodeSuspenseQueryHookResult = ReturnType<typeof usePreviewGeneratedCodeSuspenseQuery>;
+export type PreviewGeneratedCodeQueryResult = ApolloReactCommon.QueryResult<PreviewGeneratedCodeQuery, PreviewGeneratedCodeQueryVariables>;
+export function refetchPreviewGeneratedCodeQuery(variables: PreviewGeneratedCodeQueryVariables) {
+      return { query: PreviewGeneratedCodeDocument, variables: variables }
+    }
+export const ValidateWorkspaceDocument = gql`
+    query ValidateWorkspace($blocklyWorkspace: JSONObject!) {
+  validateWorkspace(blocklyWorkspace: $blocklyWorkspace) {
+    isValid
+    errors {
+      blockId
+      message
+    }
+    warnings {
+      blockId
+      message
+    }
+  }
+}
+    `;
+
+/**
+ * __useValidateWorkspaceQuery__
+ *
+ * To run a query within a React component, call `useValidateWorkspaceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useValidateWorkspaceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useValidateWorkspaceQuery({
+ *   variables: {
+ *      blocklyWorkspace: // value for 'blocklyWorkspace'
+ *   },
+ * });
+ */
+export function useValidateWorkspaceQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ValidateWorkspaceQuery, ValidateWorkspaceQueryVariables> & ({ variables: ValidateWorkspaceQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ValidateWorkspaceQuery, ValidateWorkspaceQueryVariables>(ValidateWorkspaceDocument, options);
+      }
+export function useValidateWorkspaceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ValidateWorkspaceQuery, ValidateWorkspaceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ValidateWorkspaceQuery, ValidateWorkspaceQueryVariables>(ValidateWorkspaceDocument, options);
+        }
+export function useValidateWorkspaceSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ValidateWorkspaceQuery, ValidateWorkspaceQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<ValidateWorkspaceQuery, ValidateWorkspaceQueryVariables>(ValidateWorkspaceDocument, options);
+        }
+export type ValidateWorkspaceQueryHookResult = ReturnType<typeof useValidateWorkspaceQuery>;
+export type ValidateWorkspaceLazyQueryHookResult = ReturnType<typeof useValidateWorkspaceLazyQuery>;
+export type ValidateWorkspaceSuspenseQueryHookResult = ReturnType<typeof useValidateWorkspaceSuspenseQuery>;
+export type ValidateWorkspaceQueryResult = ApolloReactCommon.QueryResult<ValidateWorkspaceQuery, ValidateWorkspaceQueryVariables>;
+export function refetchValidateWorkspaceQuery(variables: ValidateWorkspaceQueryVariables) {
+      return { query: ValidateWorkspaceDocument, variables: variables }
+    }
+export const GetRecommendationDocument = gql`
+    query GetRecommendation($id: ID!) {
+  recommendation(id: $id) {
+    id
+    automationId
+    machine {
+      id
+      name
+    }
+    execution {
+      id
+      status
+    }
+    title
+    description
+    severity
+    status
+    userAction
+    actionTakenBy {
+      id
+      name
+    }
+    actionTakenAt
+    snoozeUntil
+    dismissReason
+    script {
+      id
+      name
+      os
+    }
+    systemScript {
+      id
+      displayName
+    }
+    scriptExecution {
+      id
+      status
+    }
+    autoResolvedAt
+    autoResolveReason
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetRecommendationQuery__
+ *
+ * To run a query within a React component, call `useGetRecommendationQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetRecommendationQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetRecommendationQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetRecommendationQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetRecommendationQuery, GetRecommendationQueryVariables> & ({ variables: GetRecommendationQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetRecommendationQuery, GetRecommendationQueryVariables>(GetRecommendationDocument, options);
+      }
+export function useGetRecommendationLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetRecommendationQuery, GetRecommendationQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetRecommendationQuery, GetRecommendationQueryVariables>(GetRecommendationDocument, options);
+        }
+export function useGetRecommendationSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetRecommendationQuery, GetRecommendationQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetRecommendationQuery, GetRecommendationQueryVariables>(GetRecommendationDocument, options);
+        }
+export type GetRecommendationQueryHookResult = ReturnType<typeof useGetRecommendationQuery>;
+export type GetRecommendationLazyQueryHookResult = ReturnType<typeof useGetRecommendationLazyQuery>;
+export type GetRecommendationSuspenseQueryHookResult = ReturnType<typeof useGetRecommendationSuspenseQuery>;
+export type GetRecommendationQueryResult = ApolloReactCommon.QueryResult<GetRecommendationQuery, GetRecommendationQueryVariables>;
+export function refetchGetRecommendationQuery(variables: GetRecommendationQueryVariables) {
+      return { query: GetRecommendationDocument, variables: variables }
+    }
+export const GetRecommendationsDocument = gql`
+    query GetRecommendations($filters: RecommendationFiltersInput, $limit: Int) {
+  recommendations(filters: $filters, limit: $limit) {
+    id
+    automationId
+    machine {
+      id
+      name
+    }
+    title
+    description
+    severity
+    status
+    userAction
+    actionTakenBy {
+      id
+      name
+    }
+    actionTakenAt
+    snoozeUntil
+    autoResolvedAt
+    autoResolveReason
+    createdAt
+  }
+}
+    `;
+
+/**
+ * __useGetRecommendationsQuery__
+ *
+ * To run a query within a React component, call `useGetRecommendationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetRecommendationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetRecommendationsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useGetRecommendationsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetRecommendationsQuery, GetRecommendationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetRecommendationsQuery, GetRecommendationsQueryVariables>(GetRecommendationsDocument, options);
+      }
+export function useGetRecommendationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetRecommendationsQuery, GetRecommendationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetRecommendationsQuery, GetRecommendationsQueryVariables>(GetRecommendationsDocument, options);
+        }
+export function useGetRecommendationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetRecommendationsQuery, GetRecommendationsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetRecommendationsQuery, GetRecommendationsQueryVariables>(GetRecommendationsDocument, options);
+        }
+export type GetRecommendationsQueryHookResult = ReturnType<typeof useGetRecommendationsQuery>;
+export type GetRecommendationsLazyQueryHookResult = ReturnType<typeof useGetRecommendationsLazyQuery>;
+export type GetRecommendationsSuspenseQueryHookResult = ReturnType<typeof useGetRecommendationsSuspenseQuery>;
+export type GetRecommendationsQueryResult = ApolloReactCommon.QueryResult<GetRecommendationsQuery, GetRecommendationsQueryVariables>;
+export function refetchGetRecommendationsQuery(variables?: GetRecommendationsQueryVariables) {
+      return { query: GetRecommendationsDocument, variables: variables }
+    }
+export const GetPendingRecommendationsDocument = gql`
+    query GetPendingRecommendations($machineId: ID!) {
+  pendingRecommendations(machineId: $machineId) {
+    id
+    title
+    description
+    severity
+    status
+    machine {
+      id
+      name
+    }
+    script {
+      id
+      name
+    }
+    systemScript {
+      id
+      displayName
+    }
+    createdAt
+  }
+}
+    `;
+
+/**
+ * __useGetPendingRecommendationsQuery__
+ *
+ * To run a query within a React component, call `useGetPendingRecommendationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetPendingRecommendationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetPendingRecommendationsQuery({
+ *   variables: {
+ *      machineId: // value for 'machineId'
+ *   },
+ * });
+ */
+export function useGetPendingRecommendationsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetPendingRecommendationsQuery, GetPendingRecommendationsQueryVariables> & ({ variables: GetPendingRecommendationsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetPendingRecommendationsQuery, GetPendingRecommendationsQueryVariables>(GetPendingRecommendationsDocument, options);
+      }
+export function useGetPendingRecommendationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetPendingRecommendationsQuery, GetPendingRecommendationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetPendingRecommendationsQuery, GetPendingRecommendationsQueryVariables>(GetPendingRecommendationsDocument, options);
+        }
+export function useGetPendingRecommendationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetPendingRecommendationsQuery, GetPendingRecommendationsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetPendingRecommendationsQuery, GetPendingRecommendationsQueryVariables>(GetPendingRecommendationsDocument, options);
+        }
+export type GetPendingRecommendationsQueryHookResult = ReturnType<typeof useGetPendingRecommendationsQuery>;
+export type GetPendingRecommendationsLazyQueryHookResult = ReturnType<typeof useGetPendingRecommendationsLazyQuery>;
+export type GetPendingRecommendationsSuspenseQueryHookResult = ReturnType<typeof useGetPendingRecommendationsSuspenseQuery>;
+export type GetPendingRecommendationsQueryResult = ApolloReactCommon.QueryResult<GetPendingRecommendationsQuery, GetPendingRecommendationsQueryVariables>;
+export function refetchGetPendingRecommendationsQuery(variables: GetPendingRecommendationsQueryVariables) {
+      return { query: GetPendingRecommendationsDocument, variables: variables }
+    }
+export const GlobalPendingRecommendationsDocument = gql`
+    query GlobalPendingRecommendations {
+  recommendations(filters: {status: PENDING}) {
+    id
+    title
+    description
+    severity
+    status
+    machine {
+      id
+      name
+    }
+    script {
+      id
+      name
+    }
+    systemScript {
+      id
+      displayName
+    }
+    createdAt
+  }
+}
+    `;
+
+/**
+ * __useGlobalPendingRecommendationsQuery__
+ *
+ * To run a query within a React component, call `useGlobalPendingRecommendationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGlobalPendingRecommendationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGlobalPendingRecommendationsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGlobalPendingRecommendationsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>(GlobalPendingRecommendationsDocument, options);
+      }
+export function useGlobalPendingRecommendationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>(GlobalPendingRecommendationsDocument, options);
+        }
+export function useGlobalPendingRecommendationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>(GlobalPendingRecommendationsDocument, options);
+        }
+export type GlobalPendingRecommendationsQueryHookResult = ReturnType<typeof useGlobalPendingRecommendationsQuery>;
+export type GlobalPendingRecommendationsLazyQueryHookResult = ReturnType<typeof useGlobalPendingRecommendationsLazyQuery>;
+export type GlobalPendingRecommendationsSuspenseQueryHookResult = ReturnType<typeof useGlobalPendingRecommendationsSuspenseQuery>;
+export type GlobalPendingRecommendationsQueryResult = ApolloReactCommon.QueryResult<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>;
+export function refetchGlobalPendingRecommendationsQuery(variables?: GlobalPendingRecommendationsQueryVariables) {
+      return { query: GlobalPendingRecommendationsDocument, variables: variables }
+    }
+export const GetPendingRecommendationCountDocument = gql`
+    query GetPendingRecommendationCount($machineId: ID) {
+  pendingRecommendationCount(machineId: $machineId)
+}
+    `;
+
+/**
+ * __useGetPendingRecommendationCountQuery__
+ *
+ * To run a query within a React component, call `useGetPendingRecommendationCountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetPendingRecommendationCountQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetPendingRecommendationCountQuery({
+ *   variables: {
+ *      machineId: // value for 'machineId'
+ *   },
+ * });
+ */
+export function useGetPendingRecommendationCountQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>(GetPendingRecommendationCountDocument, options);
+      }
+export function useGetPendingRecommendationCountLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>(GetPendingRecommendationCountDocument, options);
+        }
+export function useGetPendingRecommendationCountSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>(GetPendingRecommendationCountDocument, options);
+        }
+export type GetPendingRecommendationCountQueryHookResult = ReturnType<typeof useGetPendingRecommendationCountQuery>;
+export type GetPendingRecommendationCountLazyQueryHookResult = ReturnType<typeof useGetPendingRecommendationCountLazyQuery>;
+export type GetPendingRecommendationCountSuspenseQueryHookResult = ReturnType<typeof useGetPendingRecommendationCountSuspenseQuery>;
+export type GetPendingRecommendationCountQueryResult = ApolloReactCommon.QueryResult<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>;
+export function refetchGetPendingRecommendationCountQuery(variables?: GetPendingRecommendationCountQueryVariables) {
+      return { query: GetPendingRecommendationCountDocument, variables: variables }
+    }
+export const GetSystemScriptDocument = gql`
+    query GetSystemScript($id: ID!) {
+  systemScript(id: $id) {
+    id
+    name
+    displayName
+    description
+    codeWindows
+    codeLinux
+    category
+    requiredHealthFields
+    isEnabled
+    createdBy {
+      id
+      name
+    }
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetSystemScriptQuery__
+ *
+ * To run a query within a React component, call `useGetSystemScriptQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSystemScriptQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSystemScriptQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetSystemScriptQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetSystemScriptQuery, GetSystemScriptQueryVariables> & ({ variables: GetSystemScriptQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetSystemScriptQuery, GetSystemScriptQueryVariables>(GetSystemScriptDocument, options);
+      }
+export function useGetSystemScriptLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetSystemScriptQuery, GetSystemScriptQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetSystemScriptQuery, GetSystemScriptQueryVariables>(GetSystemScriptDocument, options);
+        }
+export function useGetSystemScriptSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetSystemScriptQuery, GetSystemScriptQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetSystemScriptQuery, GetSystemScriptQueryVariables>(GetSystemScriptDocument, options);
+        }
+export type GetSystemScriptQueryHookResult = ReturnType<typeof useGetSystemScriptQuery>;
+export type GetSystemScriptLazyQueryHookResult = ReturnType<typeof useGetSystemScriptLazyQuery>;
+export type GetSystemScriptSuspenseQueryHookResult = ReturnType<typeof useGetSystemScriptSuspenseQuery>;
+export type GetSystemScriptQueryResult = ApolloReactCommon.QueryResult<GetSystemScriptQuery, GetSystemScriptQueryVariables>;
+export function refetchGetSystemScriptQuery(variables: GetSystemScriptQueryVariables) {
+      return { query: GetSystemScriptDocument, variables: variables }
+    }
+export const GetSystemScriptsDocument = gql`
+    query GetSystemScripts($category: String) {
+  systemScripts(category: $category) {
+    id
+    name
+    displayName
+    description
+    category
+    requiredHealthFields
+    isEnabled
+  }
+}
+    `;
+
+/**
+ * __useGetSystemScriptsQuery__
+ *
+ * To run a query within a React component, call `useGetSystemScriptsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSystemScriptsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSystemScriptsQuery({
+ *   variables: {
+ *      category: // value for 'category'
+ *   },
+ * });
+ */
+export function useGetSystemScriptsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetSystemScriptsQuery, GetSystemScriptsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetSystemScriptsQuery, GetSystemScriptsQueryVariables>(GetSystemScriptsDocument, options);
+      }
+export function useGetSystemScriptsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetSystemScriptsQuery, GetSystemScriptsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetSystemScriptsQuery, GetSystemScriptsQueryVariables>(GetSystemScriptsDocument, options);
+        }
+export function useGetSystemScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetSystemScriptsQuery, GetSystemScriptsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetSystemScriptsQuery, GetSystemScriptsQueryVariables>(GetSystemScriptsDocument, options);
+        }
+export type GetSystemScriptsQueryHookResult = ReturnType<typeof useGetSystemScriptsQuery>;
+export type GetSystemScriptsLazyQueryHookResult = ReturnType<typeof useGetSystemScriptsLazyQuery>;
+export type GetSystemScriptsSuspenseQueryHookResult = ReturnType<typeof useGetSystemScriptsSuspenseQuery>;
+export type GetSystemScriptsQueryResult = ApolloReactCommon.QueryResult<GetSystemScriptsQuery, GetSystemScriptsQueryVariables>;
+export function refetchGetSystemScriptsQuery(variables?: GetSystemScriptsQueryVariables) {
+      return { query: GetSystemScriptsDocument, variables: variables }
+    }
+export const GetSystemScriptCategoriesDocument = gql`
+    query GetSystemScriptCategories {
+  systemScriptCategories
+}
+    `;
+
+/**
+ * __useGetSystemScriptCategoriesQuery__
+ *
+ * To run a query within a React component, call `useGetSystemScriptCategoriesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSystemScriptCategoriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSystemScriptCategoriesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetSystemScriptCategoriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetSystemScriptCategoriesQuery, GetSystemScriptCategoriesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetSystemScriptCategoriesQuery, GetSystemScriptCategoriesQueryVariables>(GetSystemScriptCategoriesDocument, options);
+      }
+export function useGetSystemScriptCategoriesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetSystemScriptCategoriesQuery, GetSystemScriptCategoriesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetSystemScriptCategoriesQuery, GetSystemScriptCategoriesQueryVariables>(GetSystemScriptCategoriesDocument, options);
+        }
+export function useGetSystemScriptCategoriesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetSystemScriptCategoriesQuery, GetSystemScriptCategoriesQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetSystemScriptCategoriesQuery, GetSystemScriptCategoriesQueryVariables>(GetSystemScriptCategoriesDocument, options);
+        }
+export type GetSystemScriptCategoriesQueryHookResult = ReturnType<typeof useGetSystemScriptCategoriesQuery>;
+export type GetSystemScriptCategoriesLazyQueryHookResult = ReturnType<typeof useGetSystemScriptCategoriesLazyQuery>;
+export type GetSystemScriptCategoriesSuspenseQueryHookResult = ReturnType<typeof useGetSystemScriptCategoriesSuspenseQuery>;
+export type GetSystemScriptCategoriesQueryResult = ApolloReactCommon.QueryResult<GetSystemScriptCategoriesQuery, GetSystemScriptCategoriesQueryVariables>;
+export function refetchGetSystemScriptCategoriesQuery(variables?: GetSystemScriptCategoriesQueryVariables) {
+      return { query: GetSystemScriptCategoriesDocument, variables: variables }
+    }
+export const CreateAutomationDocument = gql`
+    mutation CreateAutomation($input: CreateAutomationInput!) {
+  createAutomation(input: $input) {
+    id
+    name
+    status
+    createdAt
+  }
+}
+    `;
+export type CreateAutomationMutationFn = ApolloReactCommon.MutationFunction<CreateAutomationMutation, CreateAutomationMutationVariables>;
+
+/**
+ * __useCreateAutomationMutation__
+ *
+ * To run a mutation, you first call `useCreateAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createAutomationMutation, { data, loading, error }] = useCreateAutomationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateAutomationMutation, CreateAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateAutomationMutation, CreateAutomationMutationVariables>(CreateAutomationDocument, options);
+      }
+export type CreateAutomationMutationHookResult = ReturnType<typeof useCreateAutomationMutation>;
+export type CreateAutomationMutationResult = ApolloReactCommon.MutationResult<CreateAutomationMutation>;
+export type CreateAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateAutomationMutation, CreateAutomationMutationVariables>;
+export const UpdateAutomationDocument = gql`
+    mutation UpdateAutomation($id: ID!, $input: UpdateAutomationInput!) {
+  updateAutomation(id: $id, input: $input) {
+    id
+    name
+    blocklyWorkspace
+    generatedCode
+    isCompiled
+    updatedAt
+  }
+}
+    `;
+export type UpdateAutomationMutationFn = ApolloReactCommon.MutationFunction<UpdateAutomationMutation, UpdateAutomationMutationVariables>;
+
+/**
+ * __useUpdateAutomationMutation__
+ *
+ * To run a mutation, you first call `useUpdateAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateAutomationMutation, { data, loading, error }] = useUpdateAutomationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateAutomationMutation, UpdateAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateAutomationMutation, UpdateAutomationMutationVariables>(UpdateAutomationDocument, options);
+      }
+export type UpdateAutomationMutationHookResult = ReturnType<typeof useUpdateAutomationMutation>;
+export type UpdateAutomationMutationResult = ApolloReactCommon.MutationResult<UpdateAutomationMutation>;
+export type UpdateAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateAutomationMutation, UpdateAutomationMutationVariables>;
+export const DeleteAutomationDocument = gql`
+    mutation DeleteAutomation($id: ID!) {
+  deleteAutomation(id: $id)
+}
+    `;
+export type DeleteAutomationMutationFn = ApolloReactCommon.MutationFunction<DeleteAutomationMutation, DeleteAutomationMutationVariables>;
+
+/**
+ * __useDeleteAutomationMutation__
+ *
+ * To run a mutation, you first call `useDeleteAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteAutomationMutation, { data, loading, error }] = useDeleteAutomationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteAutomationMutation, DeleteAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteAutomationMutation, DeleteAutomationMutationVariables>(DeleteAutomationDocument, options);
+      }
+export type DeleteAutomationMutationHookResult = ReturnType<typeof useDeleteAutomationMutation>;
+export type DeleteAutomationMutationResult = ApolloReactCommon.MutationResult<DeleteAutomationMutation>;
+export type DeleteAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteAutomationMutation, DeleteAutomationMutationVariables>;
+export const DuplicateAutomationDocument = gql`
+    mutation DuplicateAutomation($id: ID!, $newName: String!) {
+  duplicateAutomation(id: $id, newName: $newName) {
+    id
+    name
+  }
+}
+    `;
+export type DuplicateAutomationMutationFn = ApolloReactCommon.MutationFunction<DuplicateAutomationMutation, DuplicateAutomationMutationVariables>;
+
+/**
+ * __useDuplicateAutomationMutation__
+ *
+ * To run a mutation, you first call `useDuplicateAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDuplicateAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [duplicateAutomationMutation, { data, loading, error }] = useDuplicateAutomationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      newName: // value for 'newName'
+ *   },
+ * });
+ */
+export function useDuplicateAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DuplicateAutomationMutation, DuplicateAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DuplicateAutomationMutation, DuplicateAutomationMutationVariables>(DuplicateAutomationDocument, options);
+      }
+export type DuplicateAutomationMutationHookResult = ReturnType<typeof useDuplicateAutomationMutation>;
+export type DuplicateAutomationMutationResult = ApolloReactCommon.MutationResult<DuplicateAutomationMutation>;
+export type DuplicateAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<DuplicateAutomationMutation, DuplicateAutomationMutationVariables>;
+export const SubmitAutomationForApprovalDocument = gql`
+    mutation SubmitAutomationForApproval($id: ID!) {
+  submitAutomationForApproval(id: $id) {
+    id
+    status
+    isCompiled
+    compilationError
+  }
+}
+    `;
+export type SubmitAutomationForApprovalMutationFn = ApolloReactCommon.MutationFunction<SubmitAutomationForApprovalMutation, SubmitAutomationForApprovalMutationVariables>;
+
+/**
+ * __useSubmitAutomationForApprovalMutation__
+ *
+ * To run a mutation, you first call `useSubmitAutomationForApprovalMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSubmitAutomationForApprovalMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [submitAutomationForApprovalMutation, { data, loading, error }] = useSubmitAutomationForApprovalMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useSubmitAutomationForApprovalMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SubmitAutomationForApprovalMutation, SubmitAutomationForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SubmitAutomationForApprovalMutation, SubmitAutomationForApprovalMutationVariables>(SubmitAutomationForApprovalDocument, options);
+      }
+export type SubmitAutomationForApprovalMutationHookResult = ReturnType<typeof useSubmitAutomationForApprovalMutation>;
+export type SubmitAutomationForApprovalMutationResult = ApolloReactCommon.MutationResult<SubmitAutomationForApprovalMutation>;
+export type SubmitAutomationForApprovalMutationOptions = ApolloReactCommon.BaseMutationOptions<SubmitAutomationForApprovalMutation, SubmitAutomationForApprovalMutationVariables>;
+export const ApproveAutomationDocument = gql`
+    mutation ApproveAutomation($id: ID!) {
+  approveAutomation(id: $id) {
+    id
+    status
+    approvedAt
+    approvedBy {
+      id
+      name
+    }
+  }
+}
+    `;
+export type ApproveAutomationMutationFn = ApolloReactCommon.MutationFunction<ApproveAutomationMutation, ApproveAutomationMutationVariables>;
+
+/**
+ * __useApproveAutomationMutation__
+ *
+ * To run a mutation, you first call `useApproveAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useApproveAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [approveAutomationMutation, { data, loading, error }] = useApproveAutomationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useApproveAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ApproveAutomationMutation, ApproveAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ApproveAutomationMutation, ApproveAutomationMutationVariables>(ApproveAutomationDocument, options);
+      }
+export type ApproveAutomationMutationHookResult = ReturnType<typeof useApproveAutomationMutation>;
+export type ApproveAutomationMutationResult = ApolloReactCommon.MutationResult<ApproveAutomationMutation>;
+export type ApproveAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<ApproveAutomationMutation, ApproveAutomationMutationVariables>;
+export const RejectAutomationDocument = gql`
+    mutation RejectAutomation($id: ID!, $reason: String!) {
+  rejectAutomation(id: $id, reason: $reason) {
+    id
+    status
+    compilationError
+  }
+}
+    `;
+export type RejectAutomationMutationFn = ApolloReactCommon.MutationFunction<RejectAutomationMutation, RejectAutomationMutationVariables>;
+
+/**
+ * __useRejectAutomationMutation__
+ *
+ * To run a mutation, you first call `useRejectAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRejectAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [rejectAutomationMutation, { data, loading, error }] = useRejectAutomationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      reason: // value for 'reason'
+ *   },
+ * });
+ */
+export function useRejectAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RejectAutomationMutation, RejectAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RejectAutomationMutation, RejectAutomationMutationVariables>(RejectAutomationDocument, options);
+      }
+export type RejectAutomationMutationHookResult = ReturnType<typeof useRejectAutomationMutation>;
+export type RejectAutomationMutationResult = ApolloReactCommon.MutationResult<RejectAutomationMutation>;
+export type RejectAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<RejectAutomationMutation, RejectAutomationMutationVariables>;
+export const EnableAutomationDocument = gql`
+    mutation EnableAutomation($id: ID!) {
+  enableAutomation(id: $id) {
+    id
+    isEnabled
+  }
+}
+    `;
+export type EnableAutomationMutationFn = ApolloReactCommon.MutationFunction<EnableAutomationMutation, EnableAutomationMutationVariables>;
+
+/**
+ * __useEnableAutomationMutation__
+ *
+ * To run a mutation, you first call `useEnableAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEnableAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [enableAutomationMutation, { data, loading, error }] = useEnableAutomationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useEnableAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EnableAutomationMutation, EnableAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<EnableAutomationMutation, EnableAutomationMutationVariables>(EnableAutomationDocument, options);
+      }
+export type EnableAutomationMutationHookResult = ReturnType<typeof useEnableAutomationMutation>;
+export type EnableAutomationMutationResult = ApolloReactCommon.MutationResult<EnableAutomationMutation>;
+export type EnableAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<EnableAutomationMutation, EnableAutomationMutationVariables>;
+export const DisableAutomationDocument = gql`
+    mutation DisableAutomation($id: ID!) {
+  disableAutomation(id: $id) {
+    id
+    isEnabled
+  }
+}
+    `;
+export type DisableAutomationMutationFn = ApolloReactCommon.MutationFunction<DisableAutomationMutation, DisableAutomationMutationVariables>;
+
+/**
+ * __useDisableAutomationMutation__
+ *
+ * To run a mutation, you first call `useDisableAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDisableAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [disableAutomationMutation, { data, loading, error }] = useDisableAutomationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDisableAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DisableAutomationMutation, DisableAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DisableAutomationMutation, DisableAutomationMutationVariables>(DisableAutomationDocument, options);
+      }
+export type DisableAutomationMutationHookResult = ReturnType<typeof useDisableAutomationMutation>;
+export type DisableAutomationMutationResult = ApolloReactCommon.MutationResult<DisableAutomationMutation>;
+export type DisableAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<DisableAutomationMutation, DisableAutomationMutationVariables>;
+export const ArchiveAutomationDocument = gql`
+    mutation ArchiveAutomation($id: ID!) {
+  archiveAutomation(id: $id) {
+    id
+    status
+    isEnabled
+  }
+}
+    `;
+export type ArchiveAutomationMutationFn = ApolloReactCommon.MutationFunction<ArchiveAutomationMutation, ArchiveAutomationMutationVariables>;
+
+/**
+ * __useArchiveAutomationMutation__
+ *
+ * To run a mutation, you first call `useArchiveAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useArchiveAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [archiveAutomationMutation, { data, loading, error }] = useArchiveAutomationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useArchiveAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ArchiveAutomationMutation, ArchiveAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ArchiveAutomationMutation, ArchiveAutomationMutationVariables>(ArchiveAutomationDocument, options);
+      }
+export type ArchiveAutomationMutationHookResult = ReturnType<typeof useArchiveAutomationMutation>;
+export type ArchiveAutomationMutationResult = ApolloReactCommon.MutationResult<ArchiveAutomationMutation>;
+export type ArchiveAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<ArchiveAutomationMutation, ArchiveAutomationMutationVariables>;
+export const CompileAutomationDocument = gql`
+    mutation CompileAutomation($id: ID!) {
+  compileAutomation(id: $id) {
+    id
+    isCompiled
+    compiledCode
+    compilationError
+  }
+}
+    `;
+export type CompileAutomationMutationFn = ApolloReactCommon.MutationFunction<CompileAutomationMutation, CompileAutomationMutationVariables>;
+
+/**
+ * __useCompileAutomationMutation__
+ *
+ * To run a mutation, you first call `useCompileAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCompileAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [compileAutomationMutation, { data, loading, error }] = useCompileAutomationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useCompileAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CompileAutomationMutation, CompileAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CompileAutomationMutation, CompileAutomationMutationVariables>(CompileAutomationDocument, options);
+      }
+export type CompileAutomationMutationHookResult = ReturnType<typeof useCompileAutomationMutation>;
+export type CompileAutomationMutationResult = ApolloReactCommon.MutationResult<CompileAutomationMutation>;
+export type CompileAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<CompileAutomationMutation, CompileAutomationMutationVariables>;
+export const LinkScriptToAutomationDocument = gql`
+    mutation LinkScriptToAutomation($input: LinkScriptToAutomationInput!) {
+  linkScriptToAutomation(input: $input) {
+    id
+    script {
+      id
+      name
+    }
+    systemScript {
+      id
+      displayName
+    }
+    os
+    executionOrder
+  }
+}
+    `;
+export type LinkScriptToAutomationMutationFn = ApolloReactCommon.MutationFunction<LinkScriptToAutomationMutation, LinkScriptToAutomationMutationVariables>;
+
+/**
+ * __useLinkScriptToAutomationMutation__
+ *
+ * To run a mutation, you first call `useLinkScriptToAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useLinkScriptToAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [linkScriptToAutomationMutation, { data, loading, error }] = useLinkScriptToAutomationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useLinkScriptToAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<LinkScriptToAutomationMutation, LinkScriptToAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<LinkScriptToAutomationMutation, LinkScriptToAutomationMutationVariables>(LinkScriptToAutomationDocument, options);
+      }
+export type LinkScriptToAutomationMutationHookResult = ReturnType<typeof useLinkScriptToAutomationMutation>;
+export type LinkScriptToAutomationMutationResult = ApolloReactCommon.MutationResult<LinkScriptToAutomationMutation>;
+export type LinkScriptToAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<LinkScriptToAutomationMutation, LinkScriptToAutomationMutationVariables>;
+export const UnlinkScriptFromAutomationDocument = gql`
+    mutation UnlinkScriptFromAutomation($automationId: ID!, $scriptId: ID, $systemScriptId: ID, $os: OS!) {
+  unlinkScriptFromAutomation(
+    automationId: $automationId
+    scriptId: $scriptId
+    systemScriptId: $systemScriptId
+    os: $os
+  )
+}
+    `;
+export type UnlinkScriptFromAutomationMutationFn = ApolloReactCommon.MutationFunction<UnlinkScriptFromAutomationMutation, UnlinkScriptFromAutomationMutationVariables>;
+
+/**
+ * __useUnlinkScriptFromAutomationMutation__
+ *
+ * To run a mutation, you first call `useUnlinkScriptFromAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnlinkScriptFromAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unlinkScriptFromAutomationMutation, { data, loading, error }] = useUnlinkScriptFromAutomationMutation({
+ *   variables: {
+ *      automationId: // value for 'automationId'
+ *      scriptId: // value for 'scriptId'
+ *      systemScriptId: // value for 'systemScriptId'
+ *      os: // value for 'os'
+ *   },
+ * });
+ */
+export function useUnlinkScriptFromAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UnlinkScriptFromAutomationMutation, UnlinkScriptFromAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UnlinkScriptFromAutomationMutation, UnlinkScriptFromAutomationMutationVariables>(UnlinkScriptFromAutomationDocument, options);
+      }
+export type UnlinkScriptFromAutomationMutationHookResult = ReturnType<typeof useUnlinkScriptFromAutomationMutation>;
+export type UnlinkScriptFromAutomationMutationResult = ApolloReactCommon.MutationResult<UnlinkScriptFromAutomationMutation>;
+export type UnlinkScriptFromAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<UnlinkScriptFromAutomationMutation, UnlinkScriptFromAutomationMutationVariables>;
+export const UpdateAutomationScriptDocument = gql`
+    mutation UpdateAutomationScript($id: ID!, $executionOrder: Int, $executeOnTrigger: Boolean, $isEnabled: Boolean) {
+  updateAutomationScript(
+    id: $id
+    executionOrder: $executionOrder
+    executeOnTrigger: $executeOnTrigger
+    isEnabled: $isEnabled
+  ) {
+    id
+    executionOrder
+    executeOnTrigger
+    isEnabled
+  }
+}
+    `;
+export type UpdateAutomationScriptMutationFn = ApolloReactCommon.MutationFunction<UpdateAutomationScriptMutation, UpdateAutomationScriptMutationVariables>;
+
+/**
+ * __useUpdateAutomationScriptMutation__
+ *
+ * To run a mutation, you first call `useUpdateAutomationScriptMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateAutomationScriptMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateAutomationScriptMutation, { data, loading, error }] = useUpdateAutomationScriptMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      executionOrder: // value for 'executionOrder'
+ *      executeOnTrigger: // value for 'executeOnTrigger'
+ *      isEnabled: // value for 'isEnabled'
+ *   },
+ * });
+ */
+export function useUpdateAutomationScriptMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateAutomationScriptMutation, UpdateAutomationScriptMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateAutomationScriptMutation, UpdateAutomationScriptMutationVariables>(UpdateAutomationScriptDocument, options);
+      }
+export type UpdateAutomationScriptMutationHookResult = ReturnType<typeof useUpdateAutomationScriptMutation>;
+export type UpdateAutomationScriptMutationResult = ApolloReactCommon.MutationResult<UpdateAutomationScriptMutation>;
+export type UpdateAutomationScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateAutomationScriptMutation, UpdateAutomationScriptMutationVariables>;
+export const TestAutomationDocument = gql`
+    mutation TestAutomation($automationId: ID!, $machineId: ID!) {
+  testAutomation(automationId: $automationId, machineId: $machineId) {
+    id
+    evaluationResult
+    status
+    evaluationTimeMs
+    error
+    triggeredAt
+  }
+}
+    `;
+export type TestAutomationMutationFn = ApolloReactCommon.MutationFunction<TestAutomationMutation, TestAutomationMutationVariables>;
+
+/**
+ * __useTestAutomationMutation__
+ *
+ * To run a mutation, you first call `useTestAutomationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useTestAutomationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [testAutomationMutation, { data, loading, error }] = useTestAutomationMutation({
+ *   variables: {
+ *      automationId: // value for 'automationId'
+ *      machineId: // value for 'machineId'
+ *   },
+ * });
+ */
+export function useTestAutomationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<TestAutomationMutation, TestAutomationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<TestAutomationMutation, TestAutomationMutationVariables>(TestAutomationDocument, options);
+      }
+export type TestAutomationMutationHookResult = ReturnType<typeof useTestAutomationMutation>;
+export type TestAutomationMutationResult = ApolloReactCommon.MutationResult<TestAutomationMutation>;
+export type TestAutomationMutationOptions = ApolloReactCommon.BaseMutationOptions<TestAutomationMutation, TestAutomationMutationVariables>;
+export const TestAutomationWithContextDocument = gql`
+    mutation TestAutomationWithContext($automationId: ID!, $context: JSONObject!) {
+  testAutomationWithContext(automationId: $automationId, context: $context) {
+    success
+    result
+    generatedCode
+    evaluationTimeMs
+    error
+    logs
+  }
+}
+    `;
+export type TestAutomationWithContextMutationFn = ApolloReactCommon.MutationFunction<TestAutomationWithContextMutation, TestAutomationWithContextMutationVariables>;
+
+/**
+ * __useTestAutomationWithContextMutation__
+ *
+ * To run a mutation, you first call `useTestAutomationWithContextMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useTestAutomationWithContextMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [testAutomationWithContextMutation, { data, loading, error }] = useTestAutomationWithContextMutation({
+ *   variables: {
+ *      automationId: // value for 'automationId'
+ *      context: // value for 'context'
+ *   },
+ * });
+ */
+export function useTestAutomationWithContextMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<TestAutomationWithContextMutation, TestAutomationWithContextMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<TestAutomationWithContextMutation, TestAutomationWithContextMutationVariables>(TestAutomationWithContextDocument, options);
+      }
+export type TestAutomationWithContextMutationHookResult = ReturnType<typeof useTestAutomationWithContextMutation>;
+export type TestAutomationWithContextMutationResult = ApolloReactCommon.MutationResult<TestAutomationWithContextMutation>;
+export type TestAutomationWithContextMutationOptions = ApolloReactCommon.BaseMutationOptions<TestAutomationWithContextMutation, TestAutomationWithContextMutationVariables>;
+export const CreateCustomBlockDocument = gql`
+    mutation CreateCustomBlock($input: CreateCustomBlockInput!) {
+  createCustomBlock(input: $input) {
+    id
+    name
+    displayName
+    category
+  }
+}
+    `;
+export type CreateCustomBlockMutationFn = ApolloReactCommon.MutationFunction<CreateCustomBlockMutation, CreateCustomBlockMutationVariables>;
+
+/**
+ * __useCreateCustomBlockMutation__
+ *
+ * To run a mutation, you first call `useCreateCustomBlockMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateCustomBlockMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createCustomBlockMutation, { data, loading, error }] = useCreateCustomBlockMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateCustomBlockMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateCustomBlockMutation, CreateCustomBlockMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateCustomBlockMutation, CreateCustomBlockMutationVariables>(CreateCustomBlockDocument, options);
+      }
+export type CreateCustomBlockMutationHookResult = ReturnType<typeof useCreateCustomBlockMutation>;
+export type CreateCustomBlockMutationResult = ApolloReactCommon.MutationResult<CreateCustomBlockMutation>;
+export type CreateCustomBlockMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateCustomBlockMutation, CreateCustomBlockMutationVariables>;
+export const UpdateCustomBlockDocument = gql`
+    mutation UpdateCustomBlock($id: ID!, $input: UpdateCustomBlockInput!) {
+  updateCustomBlock(id: $id, input: $input) {
+    id
+    displayName
+    isEnabled
+  }
+}
+    `;
+export type UpdateCustomBlockMutationFn = ApolloReactCommon.MutationFunction<UpdateCustomBlockMutation, UpdateCustomBlockMutationVariables>;
+
+/**
+ * __useUpdateCustomBlockMutation__
+ *
+ * To run a mutation, you first call `useUpdateCustomBlockMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateCustomBlockMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateCustomBlockMutation, { data, loading, error }] = useUpdateCustomBlockMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateCustomBlockMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateCustomBlockMutation, UpdateCustomBlockMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateCustomBlockMutation, UpdateCustomBlockMutationVariables>(UpdateCustomBlockDocument, options);
+      }
+export type UpdateCustomBlockMutationHookResult = ReturnType<typeof useUpdateCustomBlockMutation>;
+export type UpdateCustomBlockMutationResult = ApolloReactCommon.MutationResult<UpdateCustomBlockMutation>;
+export type UpdateCustomBlockMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateCustomBlockMutation, UpdateCustomBlockMutationVariables>;
+export const DeleteCustomBlockDocument = gql`
+    mutation DeleteCustomBlock($id: ID!) {
+  deleteCustomBlock(id: $id)
+}
+    `;
+export type DeleteCustomBlockMutationFn = ApolloReactCommon.MutationFunction<DeleteCustomBlockMutation, DeleteCustomBlockMutationVariables>;
+
+/**
+ * __useDeleteCustomBlockMutation__
+ *
+ * To run a mutation, you first call `useDeleteCustomBlockMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteCustomBlockMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteCustomBlockMutation, { data, loading, error }] = useDeleteCustomBlockMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteCustomBlockMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteCustomBlockMutation, DeleteCustomBlockMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteCustomBlockMutation, DeleteCustomBlockMutationVariables>(DeleteCustomBlockDocument, options);
+      }
+export type DeleteCustomBlockMutationHookResult = ReturnType<typeof useDeleteCustomBlockMutation>;
+export type DeleteCustomBlockMutationResult = ApolloReactCommon.MutationResult<DeleteCustomBlockMutation>;
+export type DeleteCustomBlockMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteCustomBlockMutation, DeleteCustomBlockMutationVariables>;
+export const TestCustomBlockDocument = gql`
+    mutation TestCustomBlock($id: ID!, $sampleInputs: JSONObject!, $sampleContext: JSONObject) {
+  testCustomBlock(
+    id: $id
+    sampleInputs: $sampleInputs
+    sampleContext: $sampleContext
+  )
+}
+    `;
+export type TestCustomBlockMutationFn = ApolloReactCommon.MutationFunction<TestCustomBlockMutation, TestCustomBlockMutationVariables>;
+
+/**
+ * __useTestCustomBlockMutation__
+ *
+ * To run a mutation, you first call `useTestCustomBlockMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useTestCustomBlockMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [testCustomBlockMutation, { data, loading, error }] = useTestCustomBlockMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      sampleInputs: // value for 'sampleInputs'
+ *      sampleContext: // value for 'sampleContext'
+ *   },
+ * });
+ */
+export function useTestCustomBlockMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<TestCustomBlockMutation, TestCustomBlockMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<TestCustomBlockMutation, TestCustomBlockMutationVariables>(TestCustomBlockDocument, options);
+      }
+export type TestCustomBlockMutationHookResult = ReturnType<typeof useTestCustomBlockMutation>;
+export type TestCustomBlockMutationResult = ApolloReactCommon.MutationResult<TestCustomBlockMutation>;
+export type TestCustomBlockMutationOptions = ApolloReactCommon.BaseMutationOptions<TestCustomBlockMutation, TestCustomBlockMutationVariables>;
+export const ExecuteRecommendationDocument = gql`
+    mutation ExecuteRecommendation($id: ID!) {
+  executeRecommendation(id: $id) {
+    id
+    status
+    scriptExecution {
+      id
+      status
+    }
+  }
+}
+    `;
+export type ExecuteRecommendationMutationFn = ApolloReactCommon.MutationFunction<ExecuteRecommendationMutation, ExecuteRecommendationMutationVariables>;
+
+/**
+ * __useExecuteRecommendationMutation__
+ *
+ * To run a mutation, you first call `useExecuteRecommendationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useExecuteRecommendationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [executeRecommendationMutation, { data, loading, error }] = useExecuteRecommendationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useExecuteRecommendationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ExecuteRecommendationMutation, ExecuteRecommendationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ExecuteRecommendationMutation, ExecuteRecommendationMutationVariables>(ExecuteRecommendationDocument, options);
+      }
+export type ExecuteRecommendationMutationHookResult = ReturnType<typeof useExecuteRecommendationMutation>;
+export type ExecuteRecommendationMutationResult = ApolloReactCommon.MutationResult<ExecuteRecommendationMutation>;
+export type ExecuteRecommendationMutationOptions = ApolloReactCommon.BaseMutationOptions<ExecuteRecommendationMutation, ExecuteRecommendationMutationVariables>;
+export const DismissRecommendationDocument = gql`
+    mutation DismissRecommendation($id: ID!, $reason: String) {
+  dismissRecommendation(id: $id, reason: $reason) {
+    id
+    status
+    dismissReason
+  }
+}
+    `;
+export type DismissRecommendationMutationFn = ApolloReactCommon.MutationFunction<DismissRecommendationMutation, DismissRecommendationMutationVariables>;
+
+/**
+ * __useDismissRecommendationMutation__
+ *
+ * To run a mutation, you first call `useDismissRecommendationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDismissRecommendationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [dismissRecommendationMutation, { data, loading, error }] = useDismissRecommendationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      reason: // value for 'reason'
+ *   },
+ * });
+ */
+export function useDismissRecommendationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DismissRecommendationMutation, DismissRecommendationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DismissRecommendationMutation, DismissRecommendationMutationVariables>(DismissRecommendationDocument, options);
+      }
+export type DismissRecommendationMutationHookResult = ReturnType<typeof useDismissRecommendationMutation>;
+export type DismissRecommendationMutationResult = ApolloReactCommon.MutationResult<DismissRecommendationMutation>;
+export type DismissRecommendationMutationOptions = ApolloReactCommon.BaseMutationOptions<DismissRecommendationMutation, DismissRecommendationMutationVariables>;
+export const SnoozeRecommendationDocument = gql`
+    mutation SnoozeRecommendation($id: ID!, $duration: SnoozeDuration!) {
+  snoozeRecommendation(id: $id, duration: $duration) {
+    id
+    status
+    snoozeUntil
+  }
+}
+    `;
+export type SnoozeRecommendationMutationFn = ApolloReactCommon.MutationFunction<SnoozeRecommendationMutation, SnoozeRecommendationMutationVariables>;
+
+/**
+ * __useSnoozeRecommendationMutation__
+ *
+ * To run a mutation, you first call `useSnoozeRecommendationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSnoozeRecommendationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [snoozeRecommendationMutation, { data, loading, error }] = useSnoozeRecommendationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      duration: // value for 'duration'
+ *   },
+ * });
+ */
+export function useSnoozeRecommendationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SnoozeRecommendationMutation, SnoozeRecommendationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SnoozeRecommendationMutation, SnoozeRecommendationMutationVariables>(SnoozeRecommendationDocument, options);
+      }
+export type SnoozeRecommendationMutationHookResult = ReturnType<typeof useSnoozeRecommendationMutation>;
+export type SnoozeRecommendationMutationResult = ApolloReactCommon.MutationResult<SnoozeRecommendationMutation>;
+export type SnoozeRecommendationMutationOptions = ApolloReactCommon.BaseMutationOptions<SnoozeRecommendationMutation, SnoozeRecommendationMutationVariables>;
+export const DismissAllRecommendationsDocument = gql`
+    mutation DismissAllRecommendations {
+  dismissAllRecommendations
+}
+    `;
+export type DismissAllRecommendationsMutationFn = ApolloReactCommon.MutationFunction<DismissAllRecommendationsMutation, DismissAllRecommendationsMutationVariables>;
+
+/**
+ * __useDismissAllRecommendationsMutation__
+ *
+ * To run a mutation, you first call `useDismissAllRecommendationsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDismissAllRecommendationsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [dismissAllRecommendationsMutation, { data, loading, error }] = useDismissAllRecommendationsMutation({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useDismissAllRecommendationsMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DismissAllRecommendationsMutation, DismissAllRecommendationsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DismissAllRecommendationsMutation, DismissAllRecommendationsMutationVariables>(DismissAllRecommendationsDocument, options);
+      }
+export type DismissAllRecommendationsMutationHookResult = ReturnType<typeof useDismissAllRecommendationsMutation>;
+export type DismissAllRecommendationsMutationResult = ApolloReactCommon.MutationResult<DismissAllRecommendationsMutation>;
+export type DismissAllRecommendationsMutationOptions = ApolloReactCommon.BaseMutationOptions<DismissAllRecommendationsMutation, DismissAllRecommendationsMutationVariables>;
+export const SnoozeAllRecommendationsDocument = gql`
+    mutation SnoozeAllRecommendations($duration: SnoozeDuration!) {
+  snoozeAllRecommendations(duration: $duration)
+}
+    `;
+export type SnoozeAllRecommendationsMutationFn = ApolloReactCommon.MutationFunction<SnoozeAllRecommendationsMutation, SnoozeAllRecommendationsMutationVariables>;
+
+/**
+ * __useSnoozeAllRecommendationsMutation__
+ *
+ * To run a mutation, you first call `useSnoozeAllRecommendationsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSnoozeAllRecommendationsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [snoozeAllRecommendationsMutation, { data, loading, error }] = useSnoozeAllRecommendationsMutation({
+ *   variables: {
+ *      duration: // value for 'duration'
+ *   },
+ * });
+ */
+export function useSnoozeAllRecommendationsMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SnoozeAllRecommendationsMutation, SnoozeAllRecommendationsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SnoozeAllRecommendationsMutation, SnoozeAllRecommendationsMutationVariables>(SnoozeAllRecommendationsDocument, options);
+      }
+export type SnoozeAllRecommendationsMutationHookResult = ReturnType<typeof useSnoozeAllRecommendationsMutation>;
+export type SnoozeAllRecommendationsMutationResult = ApolloReactCommon.MutationResult<SnoozeAllRecommendationsMutation>;
+export type SnoozeAllRecommendationsMutationOptions = ApolloReactCommon.BaseMutationOptions<SnoozeAllRecommendationsMutation, SnoozeAllRecommendationsMutationVariables>;
+export const CreateSystemScriptDocument = gql`
+    mutation CreateSystemScript($input: CreateSystemScriptInput!) {
+  createSystemScript(input: $input) {
+    id
+    name
+    displayName
+  }
+}
+    `;
+export type CreateSystemScriptMutationFn = ApolloReactCommon.MutationFunction<CreateSystemScriptMutation, CreateSystemScriptMutationVariables>;
+
+/**
+ * __useCreateSystemScriptMutation__
+ *
+ * To run a mutation, you first call `useCreateSystemScriptMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateSystemScriptMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createSystemScriptMutation, { data, loading, error }] = useCreateSystemScriptMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateSystemScriptMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateSystemScriptMutation, CreateSystemScriptMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateSystemScriptMutation, CreateSystemScriptMutationVariables>(CreateSystemScriptDocument, options);
+      }
+export type CreateSystemScriptMutationHookResult = ReturnType<typeof useCreateSystemScriptMutation>;
+export type CreateSystemScriptMutationResult = ApolloReactCommon.MutationResult<CreateSystemScriptMutation>;
+export type CreateSystemScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateSystemScriptMutation, CreateSystemScriptMutationVariables>;
+export const UpdateSystemScriptDocument = gql`
+    mutation UpdateSystemScript($id: ID!, $input: UpdateSystemScriptInput!) {
+  updateSystemScript(id: $id, input: $input) {
+    id
+    displayName
+    isEnabled
+  }
+}
+    `;
+export type UpdateSystemScriptMutationFn = ApolloReactCommon.MutationFunction<UpdateSystemScriptMutation, UpdateSystemScriptMutationVariables>;
+
+/**
+ * __useUpdateSystemScriptMutation__
+ *
+ * To run a mutation, you first call `useUpdateSystemScriptMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateSystemScriptMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateSystemScriptMutation, { data, loading, error }] = useUpdateSystemScriptMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateSystemScriptMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateSystemScriptMutation, UpdateSystemScriptMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateSystemScriptMutation, UpdateSystemScriptMutationVariables>(UpdateSystemScriptDocument, options);
+      }
+export type UpdateSystemScriptMutationHookResult = ReturnType<typeof useUpdateSystemScriptMutation>;
+export type UpdateSystemScriptMutationResult = ApolloReactCommon.MutationResult<UpdateSystemScriptMutation>;
+export type UpdateSystemScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateSystemScriptMutation, UpdateSystemScriptMutationVariables>;
+export const DeleteSystemScriptDocument = gql`
+    mutation DeleteSystemScript($id: ID!) {
+  deleteSystemScript(id: $id)
+}
+    `;
+export type DeleteSystemScriptMutationFn = ApolloReactCommon.MutationFunction<DeleteSystemScriptMutation, DeleteSystemScriptMutationVariables>;
+
+/**
+ * __useDeleteSystemScriptMutation__
+ *
+ * To run a mutation, you first call `useDeleteSystemScriptMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteSystemScriptMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteSystemScriptMutation, { data, loading, error }] = useDeleteSystemScriptMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteSystemScriptMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteSystemScriptMutation, DeleteSystemScriptMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteSystemScriptMutation, DeleteSystemScriptMutationVariables>(DeleteSystemScriptDocument, options);
+      }
+export type DeleteSystemScriptMutationHookResult = ReturnType<typeof useDeleteSystemScriptMutation>;
+export type DeleteSystemScriptMutationResult = ApolloReactCommon.MutationResult<DeleteSystemScriptMutation>;
+export type DeleteSystemScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteSystemScriptMutation, DeleteSystemScriptMutationVariables>;
+export const BlocklyToolboxDocument = gql`
+    query BlocklyToolbox {
+  blocklyToolbox {
+    categories {
+      name
+      colour
+      blocks {
+        type
+        message0
+        args0
+        output
+        previousStatement
+        nextStatement
+        colour
+        tooltip
+        helpUrl
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useBlocklyToolboxQuery__
+ *
+ * To run a query within a React component, call `useBlocklyToolboxQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBlocklyToolboxQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBlocklyToolboxQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useBlocklyToolboxQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<BlocklyToolboxQuery, BlocklyToolboxQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BlocklyToolboxQuery, BlocklyToolboxQueryVariables>(BlocklyToolboxDocument, options);
+      }
+export function useBlocklyToolboxLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BlocklyToolboxQuery, BlocklyToolboxQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BlocklyToolboxQuery, BlocklyToolboxQueryVariables>(BlocklyToolboxDocument, options);
+        }
+export function useBlocklyToolboxSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<BlocklyToolboxQuery, BlocklyToolboxQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<BlocklyToolboxQuery, BlocklyToolboxQueryVariables>(BlocklyToolboxDocument, options);
+        }
+export type BlocklyToolboxQueryHookResult = ReturnType<typeof useBlocklyToolboxQuery>;
+export type BlocklyToolboxLazyQueryHookResult = ReturnType<typeof useBlocklyToolboxLazyQuery>;
+export type BlocklyToolboxSuspenseQueryHookResult = ReturnType<typeof useBlocklyToolboxSuspenseQuery>;
+export type BlocklyToolboxQueryResult = ApolloReactCommon.QueryResult<BlocklyToolboxQuery, BlocklyToolboxQueryVariables>;
+export function refetchBlocklyToolboxQuery(variables?: BlocklyToolboxQueryVariables) {
+      return { query: BlocklyToolboxDocument, variables: variables }
+    }
+export const SystemScriptsDocument = gql`
+    query SystemScripts($category: String) {
+  systemScripts(category: $category) {
+    id
+    name
+    displayName
+    description
+    category
+    requiredHealthFields
+    isEnabled
+  }
+}
+    `;
+
+/**
+ * __useSystemScriptsQuery__
+ *
+ * To run a query within a React component, call `useSystemScriptsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSystemScriptsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSystemScriptsQuery({
+ *   variables: {
+ *      category: // value for 'category'
+ *   },
+ * });
+ */
+export function useSystemScriptsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SystemScriptsQuery, SystemScriptsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SystemScriptsQuery, SystemScriptsQueryVariables>(SystemScriptsDocument, options);
+      }
+export function useSystemScriptsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SystemScriptsQuery, SystemScriptsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SystemScriptsQuery, SystemScriptsQueryVariables>(SystemScriptsDocument, options);
+        }
+export function useSystemScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<SystemScriptsQuery, SystemScriptsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<SystemScriptsQuery, SystemScriptsQueryVariables>(SystemScriptsDocument, options);
+        }
+export type SystemScriptsQueryHookResult = ReturnType<typeof useSystemScriptsQuery>;
+export type SystemScriptsLazyQueryHookResult = ReturnType<typeof useSystemScriptsLazyQuery>;
+export type SystemScriptsSuspenseQueryHookResult = ReturnType<typeof useSystemScriptsSuspenseQuery>;
+export type SystemScriptsQueryResult = ApolloReactCommon.QueryResult<SystemScriptsQuery, SystemScriptsQueryVariables>;
+export function refetchSystemScriptsQuery(variables?: SystemScriptsQueryVariables) {
+      return { query: SystemScriptsDocument, variables: variables }
+    }
+export const GetAutomationTemplatesDocument = gql`
+    query GetAutomationTemplates($category: String) {
+  automationTemplates(category: $category) {
+    id
+    name
+    description
+    category
+    recommendationType
+    blocklyWorkspace
+    isEnabled
+    usageCount
+    createdAt
+  }
+}
+    `;
+
+/**
+ * __useGetAutomationTemplatesQuery__
+ *
+ * To run a query within a React component, call `useGetAutomationTemplatesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAutomationTemplatesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAutomationTemplatesQuery({
+ *   variables: {
+ *      category: // value for 'category'
+ *   },
+ * });
+ */
+export function useGetAutomationTemplatesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetAutomationTemplatesQuery, GetAutomationTemplatesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAutomationTemplatesQuery, GetAutomationTemplatesQueryVariables>(GetAutomationTemplatesDocument, options);
+      }
+export function useGetAutomationTemplatesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAutomationTemplatesQuery, GetAutomationTemplatesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAutomationTemplatesQuery, GetAutomationTemplatesQueryVariables>(GetAutomationTemplatesDocument, options);
+        }
+export function useGetAutomationTemplatesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetAutomationTemplatesQuery, GetAutomationTemplatesQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetAutomationTemplatesQuery, GetAutomationTemplatesQueryVariables>(GetAutomationTemplatesDocument, options);
+        }
+export type GetAutomationTemplatesQueryHookResult = ReturnType<typeof useGetAutomationTemplatesQuery>;
+export type GetAutomationTemplatesLazyQueryHookResult = ReturnType<typeof useGetAutomationTemplatesLazyQuery>;
+export type GetAutomationTemplatesSuspenseQueryHookResult = ReturnType<typeof useGetAutomationTemplatesSuspenseQuery>;
+export type GetAutomationTemplatesQueryResult = ApolloReactCommon.QueryResult<GetAutomationTemplatesQuery, GetAutomationTemplatesQueryVariables>;
+export function refetchGetAutomationTemplatesQuery(variables?: GetAutomationTemplatesQueryVariables) {
+      return { query: GetAutomationTemplatesDocument, variables: variables }
+    }
+export const GetAutomationTemplateDocument = gql`
+    query GetAutomationTemplate($id: ID!) {
+  automationTemplate(id: $id) {
+    id
+    name
+    description
+    category
+    recommendationType
+    blocklyWorkspace
+    isEnabled
+    usageCount
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetAutomationTemplateQuery__
+ *
+ * To run a query within a React component, call `useGetAutomationTemplateQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAutomationTemplateQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAutomationTemplateQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetAutomationTemplateQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetAutomationTemplateQuery, GetAutomationTemplateQueryVariables> & ({ variables: GetAutomationTemplateQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAutomationTemplateQuery, GetAutomationTemplateQueryVariables>(GetAutomationTemplateDocument, options);
+      }
+export function useGetAutomationTemplateLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAutomationTemplateQuery, GetAutomationTemplateQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAutomationTemplateQuery, GetAutomationTemplateQueryVariables>(GetAutomationTemplateDocument, options);
+        }
+export function useGetAutomationTemplateSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetAutomationTemplateQuery, GetAutomationTemplateQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetAutomationTemplateQuery, GetAutomationTemplateQueryVariables>(GetAutomationTemplateDocument, options);
+        }
+export type GetAutomationTemplateQueryHookResult = ReturnType<typeof useGetAutomationTemplateQuery>;
+export type GetAutomationTemplateLazyQueryHookResult = ReturnType<typeof useGetAutomationTemplateLazyQuery>;
+export type GetAutomationTemplateSuspenseQueryHookResult = ReturnType<typeof useGetAutomationTemplateSuspenseQuery>;
+export type GetAutomationTemplateQueryResult = ApolloReactCommon.QueryResult<GetAutomationTemplateQuery, GetAutomationTemplateQueryVariables>;
+export function refetchGetAutomationTemplateQuery(variables: GetAutomationTemplateQueryVariables) {
+      return { query: GetAutomationTemplateDocument, variables: variables }
+    }
+export const GetAutomationTemplateCategoriesDocument = gql`
+    query GetAutomationTemplateCategories {
+  automationTemplateCategories
+}
+    `;
+
+/**
+ * __useGetAutomationTemplateCategoriesQuery__
+ *
+ * To run a query within a React component, call `useGetAutomationTemplateCategoriesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAutomationTemplateCategoriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAutomationTemplateCategoriesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetAutomationTemplateCategoriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetAutomationTemplateCategoriesQuery, GetAutomationTemplateCategoriesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAutomationTemplateCategoriesQuery, GetAutomationTemplateCategoriesQueryVariables>(GetAutomationTemplateCategoriesDocument, options);
+      }
+export function useGetAutomationTemplateCategoriesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAutomationTemplateCategoriesQuery, GetAutomationTemplateCategoriesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAutomationTemplateCategoriesQuery, GetAutomationTemplateCategoriesQueryVariables>(GetAutomationTemplateCategoriesDocument, options);
+        }
+export function useGetAutomationTemplateCategoriesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetAutomationTemplateCategoriesQuery, GetAutomationTemplateCategoriesQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetAutomationTemplateCategoriesQuery, GetAutomationTemplateCategoriesQueryVariables>(GetAutomationTemplateCategoriesDocument, options);
+        }
+export type GetAutomationTemplateCategoriesQueryHookResult = ReturnType<typeof useGetAutomationTemplateCategoriesQuery>;
+export type GetAutomationTemplateCategoriesLazyQueryHookResult = ReturnType<typeof useGetAutomationTemplateCategoriesLazyQuery>;
+export type GetAutomationTemplateCategoriesSuspenseQueryHookResult = ReturnType<typeof useGetAutomationTemplateCategoriesSuspenseQuery>;
+export type GetAutomationTemplateCategoriesQueryResult = ApolloReactCommon.QueryResult<GetAutomationTemplateCategoriesQuery, GetAutomationTemplateCategoriesQueryVariables>;
+export function refetchGetAutomationTemplateCategoriesQuery(variables?: GetAutomationTemplateCategoriesQueryVariables) {
+      return { query: GetAutomationTemplateCategoriesDocument, variables: variables }
+    }
+export const CreateAutomationFromTemplateDocument = gql`
+    mutation CreateAutomationFromTemplate($templateId: ID!, $name: String) {
+  createAutomationFromTemplate(templateId: $templateId, name: $name) {
+    id
+    name
+    description
+    blocklyWorkspace
+    status
+    createdAt
+  }
+}
+    `;
+export type CreateAutomationFromTemplateMutationFn = ApolloReactCommon.MutationFunction<CreateAutomationFromTemplateMutation, CreateAutomationFromTemplateMutationVariables>;
+
+/**
+ * __useCreateAutomationFromTemplateMutation__
+ *
+ * To run a mutation, you first call `useCreateAutomationFromTemplateMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateAutomationFromTemplateMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createAutomationFromTemplateMutation, { data, loading, error }] = useCreateAutomationFromTemplateMutation({
+ *   variables: {
+ *      templateId: // value for 'templateId'
+ *      name: // value for 'name'
+ *   },
+ * });
+ */
+export function useCreateAutomationFromTemplateMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateAutomationFromTemplateMutation, CreateAutomationFromTemplateMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateAutomationFromTemplateMutation, CreateAutomationFromTemplateMutationVariables>(CreateAutomationFromTemplateDocument, options);
+      }
+export type CreateAutomationFromTemplateMutationHookResult = ReturnType<typeof useCreateAutomationFromTemplateMutation>;
+export type CreateAutomationFromTemplateMutationResult = ApolloReactCommon.MutationResult<CreateAutomationFromTemplateMutation>;
+export type CreateAutomationFromTemplateMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateAutomationFromTemplateMutation, CreateAutomationFromTemplateMutationVariables>;
 export const CreateUserDocument = gql`
     mutation createUser($input: CreateUserInputType!) {
   createUser(input: $input) {

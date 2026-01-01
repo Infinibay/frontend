@@ -223,4 +223,9 @@ const authSlice = createSlice({
 
 export const { logout, setSocketNamespace, restoreAuthFromStorage, realTimeCurrentUserUpdated } = authSlice.actions;
 export { fetchCurrentUser, loginUser };
+
+// Selectors
+export const selectUser = (state) => state.auth.user;
+export const selectIsLoggedIn = (state) => state.auth.isLoggedIn;
+
 export default authSlice.reducer;

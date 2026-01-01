@@ -1,0 +1,765 @@
+# ============================================================================
+# AUTOMATION QUERIES
+# ============================================================================
+
+query GetAutomation($id: ID!) {
+  automation(id: $id) {
+    id
+    name
+    description
+    blocklyWorkspace
+    generatedCode
+    isCompiled
+    compiledCode
+    compilationError
+    targetScope
+    department {
+      id
+      name
+    }
+    targets {
+      id
+      machine {
+        id
+        name
+      }
+    }
+    status
+    isEnabled
+    priority
+    cooldownMinutes
+    recommendationType
+    recommendationText
+    recommendationActionText
+    automationScripts {
+      id
+      script {
+        id
+        name
+        os
+      }
+      systemScript {
+        id
+        displayName
+      }
+      os
+      executionOrder
+      isEnabled
+      executeOnTrigger
+    }
+    executionCount
+    lastTriggeredAt
+    triggerRate
+    createdBy {
+      id
+      name
+    }
+    approvedBy {
+      id
+      name
+    }
+    approvedAt
+    createdAt
+    updatedAt
+  }
+}
+
+query GetAutomations($filters: AutomationFiltersInput) {
+  automations(filters: $filters) {
+    id
+    name
+    description
+    status
+    isEnabled
+    targetScope
+    department {
+      id
+      name
+    }
+    executionCount
+    lastTriggeredAt
+    triggerRate
+    createdAt
+    updatedAt
+  }
+}
+
+query GetAutomationExecutions(
+  $filters: AutomationExecutionFiltersInput
+  $limit: Int
+  $offset: Int
+) {
+  automationExecutions(filters: $filters, limit: $limit, offset: $offset) {
+    id
+    automationId
+    machine {
+      id
+      name
+    }
+    triggerReason
+    evaluationResult
+    status
+    evaluationTimeMs
+    error
+    triggeredAt
+    completedAt
+  }
+}
+
+query GetAutomationExecution($id: ID!) {
+  automationExecution(id: $id) {
+    id
+    automationId
+    machine {
+      id
+      name
+    }
+    snapshot {
+      id
+      snapshotDate
+    }
+    triggerReason
+    evaluationResult
+    status
+    contextSnapshot
+    evaluationTimeMs
+    scriptExecution {
+      id
+      status
+    }
+    error
+    triggeredAt
+    evaluatedAt
+    completedAt
+  }
+}
+
+# ============================================================================
+# CUSTOM BLOCK QUERIES
+# ============================================================================
+
+query GetCustomBlock($id: ID!) {
+  customBlock(id: $id) {
+    id
+    name
+    displayName
+    description
+    category
+    blockDefinition
+    generatorCode
+    inputs {
+      name
+      type
+      label
+      required
+      defaultValue
+    }
+    outputType
+    supportedOS
+    isBuiltIn
+    isEnabled
+    createdBy {
+      id
+      name
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+query GetCustomBlocks($category: String, $includeBuiltIn: Boolean) {
+  customBlocks(category: $category, includeBuiltIn: $includeBuiltIn) {
+    id
+    name
+    displayName
+    description
+    category
+    blockDefinition
+    inputs {
+      name
+      type
+      label
+      required
+      defaultValue
+    }
+    outputType
+    supportedOS
+    isBuiltIn
+    isEnabled
+  }
+}
+
+# ============================================================================
+# TOOLBOX QUERY
+# ============================================================================
+
+query GetBlocklyToolbox {
+  blocklyToolbox {
+    categories {
+      name
+      colour
+      blocks {
+        type
+        message0
+        args0
+        output
+        previousStatement
+        nextStatement
+        colour
+        tooltip
+        helpUrl
+      }
+    }
+  }
+}
+
+# ============================================================================
+# CODE PREVIEW QUERIES
+# ============================================================================
+
+query PreviewGeneratedCode($blocklyWorkspace: JSONObject!) {
+  previewGeneratedCode(blocklyWorkspace: $blocklyWorkspace)
+}
+
+query ValidateWorkspace($blocklyWorkspace: JSONObject!) {
+  validateWorkspace(blocklyWorkspace: $blocklyWorkspace) {
+    isValid
+    errors {
+      blockId
+      message
+    }
+    warnings {
+      blockId
+      message
+    }
+  }
+}
+
+# ============================================================================
+# RECOMMENDATION QUERIES
+# ============================================================================
+
+query GetRecommendation($id: ID!) {
+  recommendation(id: $id) {
+    id
+    automationId
+    machine {
+      id
+      name
+    }
+    execution {
+      id
+      status
+    }
+    title
+    description
+    severity
+    status
+    userAction
+    actionTakenBy {
+      id
+      name
+    }
+    actionTakenAt
+    snoozeUntil
+    dismissReason
+    script {
+      id
+      name
+      os
+    }
+    systemScript {
+      id
+      displayName
+    }
+    scriptExecution {
+      id
+      status
+    }
+    autoResolvedAt
+    autoResolveReason
+    createdAt
+    updatedAt
+  }
+}
+
+query GetRecommendations($filters: RecommendationFiltersInput, $limit: Int) {
+  recommendations(filters: $filters, limit: $limit) {
+    id
+    automationId
+    machine {
+      id
+      name
+    }
+    title
+    description
+    severity
+    status
+    userAction
+    actionTakenBy {
+      id
+      name
+    }
+    actionTakenAt
+    snoozeUntil
+    autoResolvedAt
+    autoResolveReason
+    createdAt
+  }
+}
+
+query GetPendingRecommendations($machineId: ID!) {
+  pendingRecommendations(machineId: $machineId) {
+    id
+    title
+    description
+    severity
+    status
+    machine {
+      id
+      name
+    }
+    script {
+      id
+      name
+    }
+    systemScript {
+      id
+      displayName
+    }
+    createdAt
+  }
+}
+
+query GlobalPendingRecommendations {
+  recommendations(filters: { status: PENDING }) {
+    id
+    title
+    description
+    severity
+    status
+    machine {
+      id
+      name
+    }
+    script {
+      id
+      name
+    }
+    systemScript {
+      id
+      displayName
+    }
+    createdAt
+  }
+}
+
+query GetPendingRecommendationCount($machineId: ID) {
+  pendingRecommendationCount(machineId: $machineId)
+}
+
+# ============================================================================
+# SYSTEM SCRIPT QUERIES
+# ============================================================================
+
+query GetSystemScript($id: ID!) {
+  systemScript(id: $id) {
+    id
+    name
+    displayName
+    description
+    codeWindows
+    codeLinux
+    category
+    requiredHealthFields
+    isEnabled
+    createdBy {
+      id
+      name
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+query GetSystemScripts($category: String) {
+  systemScripts(category: $category) {
+    id
+    name
+    displayName
+    description
+    category
+    requiredHealthFields
+    isEnabled
+  }
+}
+
+query GetSystemScriptCategories {
+  systemScriptCategories
+}
+
+# ============================================================================
+# AUTOMATION CRUD MUTATIONS
+# ============================================================================
+
+mutation CreateAutomation($input: CreateAutomationInput!) {
+  createAutomation(input: $input) {
+    id
+    name
+    status
+    createdAt
+  }
+}
+
+mutation UpdateAutomation($id: ID!, $input: UpdateAutomationInput!) {
+  updateAutomation(id: $id, input: $input) {
+    id
+    name
+    blocklyWorkspace
+    generatedCode
+    isCompiled
+    updatedAt
+  }
+}
+
+mutation DeleteAutomation($id: ID!) {
+  deleteAutomation(id: $id)
+}
+
+mutation DuplicateAutomation($id: ID!, $newName: String!) {
+  duplicateAutomation(id: $id, newName: $newName) {
+    id
+    name
+  }
+}
+
+# ============================================================================
+# AUTOMATION WORKFLOW MUTATIONS
+# ============================================================================
+
+mutation SubmitAutomationForApproval($id: ID!) {
+  submitAutomationForApproval(id: $id) {
+    id
+    status
+    isCompiled
+    compilationError
+  }
+}
+
+mutation ApproveAutomation($id: ID!) {
+  approveAutomation(id: $id) {
+    id
+    status
+    approvedAt
+    approvedBy {
+      id
+      name
+    }
+  }
+}
+
+mutation RejectAutomation($id: ID!, $reason: String!) {
+  rejectAutomation(id: $id, reason: $reason) {
+    id
+    status
+    compilationError
+  }
+}
+
+mutation EnableAutomation($id: ID!) {
+  enableAutomation(id: $id) {
+    id
+    isEnabled
+  }
+}
+
+mutation DisableAutomation($id: ID!) {
+  disableAutomation(id: $id) {
+    id
+    isEnabled
+  }
+}
+
+mutation ArchiveAutomation($id: ID!) {
+  archiveAutomation(id: $id) {
+    id
+    status
+    isEnabled
+  }
+}
+
+# ============================================================================
+# COMPILATION MUTATION
+# ============================================================================
+
+mutation CompileAutomation($id: ID!) {
+  compileAutomation(id: $id) {
+    id
+    isCompiled
+    compiledCode
+    compilationError
+  }
+}
+
+# ============================================================================
+# SCRIPT LINKING MUTATIONS
+# ============================================================================
+
+mutation LinkScriptToAutomation($input: LinkScriptToAutomationInput!) {
+  linkScriptToAutomation(input: $input) {
+    id
+    script {
+      id
+      name
+    }
+    systemScript {
+      id
+      displayName
+    }
+    os
+    executionOrder
+  }
+}
+
+mutation UnlinkScriptFromAutomation(
+  $automationId: ID!
+  $scriptId: ID
+  $systemScriptId: ID
+  $os: OS!
+) {
+  unlinkScriptFromAutomation(
+    automationId: $automationId
+    scriptId: $scriptId
+    systemScriptId: $systemScriptId
+    os: $os
+  )
+}
+
+mutation UpdateAutomationScript(
+  $id: ID!
+  $executionOrder: Int
+  $executeOnTrigger: Boolean
+  $isEnabled: Boolean
+) {
+  updateAutomationScript(
+    id: $id
+    executionOrder: $executionOrder
+    executeOnTrigger: $executeOnTrigger
+    isEnabled: $isEnabled
+  ) {
+    id
+    executionOrder
+    executeOnTrigger
+    isEnabled
+  }
+}
+
+# ============================================================================
+# TESTING MUTATIONS
+# ============================================================================
+
+mutation TestAutomation($automationId: ID!, $machineId: ID!) {
+  testAutomation(automationId: $automationId, machineId: $machineId) {
+    id
+    evaluationResult
+    status
+    evaluationTimeMs
+    error
+    triggeredAt
+  }
+}
+
+mutation TestAutomationWithContext($automationId: ID!, $context: JSONObject!) {
+  testAutomationWithContext(automationId: $automationId, context: $context) {
+    success
+    result
+    generatedCode
+    evaluationTimeMs
+    error
+    logs
+  }
+}
+
+# ============================================================================
+# CUSTOM BLOCK MUTATIONS (Admin)
+# ============================================================================
+
+mutation CreateCustomBlock($input: CreateCustomBlockInput!) {
+  createCustomBlock(input: $input) {
+    id
+    name
+    displayName
+    category
+  }
+}
+
+mutation UpdateCustomBlock($id: ID!, $input: UpdateCustomBlockInput!) {
+  updateCustomBlock(id: $id, input: $input) {
+    id
+    displayName
+    isEnabled
+  }
+}
+
+mutation DeleteCustomBlock($id: ID!) {
+  deleteCustomBlock(id: $id)
+}
+
+mutation TestCustomBlock(
+  $id: ID!
+  $sampleInputs: JSONObject!
+  $sampleContext: JSONObject
+) {
+  testCustomBlock(
+    id: $id
+    sampleInputs: $sampleInputs
+    sampleContext: $sampleContext
+  )
+}
+
+# ============================================================================
+# RECOMMENDATION MUTATIONS
+# ============================================================================
+
+mutation ExecuteRecommendation($id: ID!) {
+  executeRecommendation(id: $id) {
+    id
+    status
+    scriptExecution {
+      id
+      status
+    }
+  }
+}
+
+mutation DismissRecommendation($id: ID!, $reason: String) {
+  dismissRecommendation(id: $id, reason: $reason) {
+    id
+    status
+    dismissReason
+  }
+}
+
+mutation SnoozeRecommendation($id: ID!, $duration: SnoozeDuration!) {
+  snoozeRecommendation(id: $id, duration: $duration) {
+    id
+    status
+    snoozeUntil
+  }
+}
+
+mutation DismissAllRecommendations {
+  dismissAllRecommendations
+}
+
+mutation SnoozeAllRecommendations($duration: SnoozeDuration!) {
+  snoozeAllRecommendations(duration: $duration)
+}
+
+# ============================================================================
+# SYSTEM SCRIPT MUTATIONS (Admin)
+# ============================================================================
+
+mutation CreateSystemScript($input: CreateSystemScriptInput!) {
+  createSystemScript(input: $input) {
+    id
+    name
+    displayName
+  }
+}
+
+mutation UpdateSystemScript($id: ID!, $input: UpdateSystemScriptInput!) {
+  updateSystemScript(id: $id, input: $input) {
+    id
+    displayName
+    isEnabled
+  }
+}
+
+mutation DeleteSystemScript($id: ID!) {
+  deleteSystemScript(id: $id)
+}
+
+# ============================================================================
+# ADDITIONAL QUERIES
+# ============================================================================
+
+query BlocklyToolbox {
+  blocklyToolbox {
+    categories {
+      name
+      colour
+      blocks {
+        type
+        message0
+        args0
+        output
+        previousStatement
+        nextStatement
+        colour
+        tooltip
+        helpUrl
+      }
+    }
+  }
+}
+
+query SystemScripts($category: String) {
+  systemScripts(category: $category) {
+    id
+    name
+    displayName
+    description
+    category
+    requiredHealthFields
+    isEnabled
+  }
+}
+
+# ============================================================================
+# AUTOMATION TEMPLATE QUERIES & MUTATIONS
+# ============================================================================
+
+query GetAutomationTemplates($category: String) {
+  automationTemplates(category: $category) {
+    id
+    name
+    description
+    category
+    recommendationType
+    blocklyWorkspace
+    isEnabled
+    usageCount
+    createdAt
+  }
+}
+
+query GetAutomationTemplate($id: ID!) {
+  automationTemplate(id: $id) {
+    id
+    name
+    description
+    category
+    recommendationType
+    blocklyWorkspace
+    isEnabled
+    usageCount
+    createdAt
+    updatedAt
+  }
+}
+
+query GetAutomationTemplateCategories {
+  automationTemplateCategories
+}
+
+mutation CreateAutomationFromTemplate($templateId: ID!, $name: String) {
+  createAutomationFromTemplate(templateId: $templateId, name: $name) {
+    id
+    name
+    description
+    blocklyWorkspace
+    status
+    createdAt
+  }
+}

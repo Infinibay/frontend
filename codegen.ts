@@ -6,6 +6,7 @@ const config: CodegenConfig = {
   documents: [
     "src/gql/mutations.graphql",
     "src/gql/queries.graphql",
+    "src/gql/automations.graphql",
     "src/gql/queries/**/*.graphql",
     "src/gql/mutations/**/*.graphql",
     "!src/gql/**/*.bak",
