@@ -76,3 +76,41 @@ mutation createMaintenanceTaskFromRecommendations($input: CreateMaintenanceTaskI
 #     }
 #   }
 # }
+
+# ============================================================================
+# RECOMMENDATION DISMISS/SNOOZE OPERATIONS
+# ============================================================================
+
+mutation dismissRecommendation($id: ID!) {
+  dismissRecommendation(id: $id) {
+    success
+    dismissedCount
+    error
+  }
+}
+
+mutation dismissAllRecommendations {
+  dismissAllRecommendations {
+    success
+    dismissedCount
+    error
+  }
+}
+
+mutation snoozeRecommendation($id: ID!, $duration: String!) {
+  snoozeRecommendation(id: $id, duration: $duration) {
+    success
+    snoozedCount
+    snoozedUntil
+    error
+  }
+}
+
+mutation snoozeAllRecommendations($duration: String!) {
+  snoozeAllRecommendations(duration: $duration) {
+    success
+    snoozedCount
+    snoozedUntil
+    error
+  }
+}

@@ -1,0 +1,64 @@
+# ==================== PLUGIN PACKAGE QUERIES ====================
+
+# Get all installed plugin packages
+query Packages {
+  packages {
+    id
+    name
+    version
+    displayName
+    description
+    author
+    license
+    isBuiltin
+    isEnabled
+    capabilities
+    installedAt
+    updatedAt
+    checkers {
+      id
+      name
+      type
+      dataNeeds
+      isEnabled
+    }
+  }
+}
+
+# Get a specific plugin package by name
+query Package($name: String!) {
+  package(name: $name) {
+    id
+    name
+    version
+    displayName
+    description
+    author
+    license
+    isBuiltin
+    isEnabled
+    capabilities
+    installedAt
+    updatedAt
+    checkers {
+      id
+      name
+      type
+      dataNeeds
+      isEnabled
+    }
+  }
+}
+
+# Get runtime status of all plugin packages
+query PackageStatuses {
+  packageStatuses {
+    name
+    version
+    isLoaded
+    isEnabled
+    isBuiltin
+    checkerCount
+    lastError
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { Card } from "@/components/ui/card";
@@ -12,16 +12,16 @@ import { UploadProgress } from "@/components/ui/upload-progress";
 import { WallpaperSelector } from "@/components/ui/wallpaper-selector";
 import { LogoUpload } from "@/components/ui/logo-upload";
 import ScriptsSection from "@/components/settings/ScriptsSection";
+import PackagesSection from "@/components/settings/PackagesSection";
 import { FaUbuntu, FaWindows } from 'react-icons/fa';
 import { SiFedora } from 'react-icons/si';
-import { Upload, Download, CheckCircle, AlertCircle, Sun, Moon, Monitor, Loader2, Minimize2, Square, Maximize2, Expand, Clock, RefreshCw, FileCode, Blocks } from 'lucide-react';
+import { Upload, Download, CheckCircle, AlertCircle, Sun, Moon, Monitor, Loader2, Minimize2, Square, Maximize2, Expand, Clock, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getGlassClasses } from "@/utils/glass-effects";
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useAppTheme } from '@/contexts/ThemeProvider';
 import { getSystemTheme } from '@/utils/theme';
 import { applyWallpaperWithTransition, getAvailableWallpapers } from '@/utils/wallpaper';
-import { useSizeContext, sizeVariants, getTypographyClass, getLayoutSpacing, getGridClasses } from '@/components/ui/size-provider';
+import { useSizeContext, sizeVariants, getTypographyClass, getGridClasses } from '@/components/ui/size-provider';
 import { createDebugger } from '@/utils/debug';
 
 const debug = createDebugger('frontend:components:settings-main');
@@ -1198,28 +1198,8 @@ const SettingMain = () => {
           </div>
         </Card>
 
-        {/* Automation Blocks Section */}
-        <Card className={`${sizeVariants[size].card.padding} relative z-20`} id="automation-blocks">
-          <div className={sizeVariants[size].layout.section}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className={`subheading ${getTypographyClass('subheading', size)} ${sizeVariants[size].layout.sectionSpacing}`}>
-                  Automation Blocks
-                </h2>
-                <p className={`${sizeVariants[size].typography.text} text-muted-foreground`}>
-                  Create and manage custom Blockly blocks for visual automations. Define new blocks with custom logic that users can use in the automation editor.
-                </p>
-              </div>
-              <Button
-                onClick={() => router.push('/settings/automations/custom-blocks')}
-                className="shrink-0"
-              >
-                <Blocks className={`${sizeVariants[size].icon.size} mr-2`} />
-                Manage Blocks
-              </Button>
-            </div>
-          </div>
-        </Card>
+        {/* Plugin Packages Section */}
+        <PackagesSection className="relative z-20" id="packages" />
       </div>
       {/* Replace the old progress dialog with the new component */}
       <UploadProgress

@@ -82,202 +82,6 @@ type ApplicationUpdates {
   windowsUpdatesCount: Int
 }
 
-type AutomationDepartmentType {
-  id: ID!
-  name: String!
-}
-
-input AutomationExecutionFiltersInput {
-  automationId: ID
-  dateFrom: DateTimeISO
-  dateTo: DateTimeISO
-  evaluationResult: Boolean
-  machineId: ID
-  status: [AutomationExecutionStatus!]
-}
-
-"""Status of an automation execution"""
-enum AutomationExecutionStatus {
-  COMPLETED
-  EVALUATING
-  EXECUTING_SCRIPT
-  FAILED
-  PENDING
-  SKIPPED
-  TRIGGERED
-}
-
-type AutomationExecutionType {
-  automationId: String!
-  completedAt: DateTimeISO
-  contextSnapshot: JSONObject
-  error: String
-  evaluatedAt: DateTimeISO
-  evaluationResult: Boolean!
-  evaluationTimeMs: Int
-  id: ID!
-  machine: AutomationMachineType!
-  scriptExecution: AutomationScriptExecutionType
-  snapshot: AutomationSnapshotType
-  status: AutomationExecutionStatus!
-  triggerReason: String!
-  triggeredAt: DateTimeISO!
-}
-
-input AutomationFiltersInput {
-  createdById: ID
-  departmentId: ID
-  isEnabled: Boolean
-  search: String
-  status: [AutomationStatus!]
-}
-
-type AutomationMachineType {
-  id: ID!
-  name: String!
-  osType: OS
-}
-
-"""Status of an automation recommendation"""
-enum AutomationRecommendationStatus {
-  AUTO_RESOLVED
-  DISMISSED
-  EXECUTED
-  EXPIRED
-  PENDING
-  SNOOZED
-}
-
-type AutomationRecommendationType {
-  actionTakenAt: DateTimeISO
-  actionTakenBy: AutomationUserType
-  autoResolveReason: String
-  autoResolvedAt: DateTimeISO
-  automationId: String!
-  createdAt: DateTimeISO!
-  description: String
-  dismissReason: String
-  execution: AutomationExecutionType
-  id: ID!
-  machine: AutomationMachineType!
-  script: AutomationScriptRefType
-  scriptExecution: AutomationScriptExecutionType
-  severity: RecommendationSeverity!
-  snoozeUntil: DateTimeISO
-  status: AutomationRecommendationStatus!
-  systemScript: SystemScriptType
-  title: String!
-  updatedAt: DateTimeISO!
-  userAction: RecommendationUserAction
-}
-
-"""Scope of automation targeting"""
-enum AutomationScope {
-  ALL_VMS
-  DEPARTMENT
-  EXCLUDE_VMS
-  SPECIFIC_VMS
-}
-
-type AutomationScriptExecutionType {
-  completedAt: DateTimeISO
-  id: ID!
-  startedAt: DateTimeISO
-  status: String!
-}
-
-type AutomationScriptRefType {
-  id: ID!
-  name: String!
-  os: OS!
-}
-
-type AutomationScriptType {
-  executeOnTrigger: Boolean!
-  executionOrder: Int!
-  id: ID!
-  isEnabled: Boolean!
-  os: OS!
-  script: AutomationScriptRefType
-  systemScript: SystemScriptType
-}
-
-type AutomationSnapshotType {
-  id: ID!
-  snapshotDate: DateTimeISO!
-}
-
-"""Workflow status of an automation"""
-enum AutomationStatus {
-  APPROVED
-  ARCHIVED
-  DRAFT
-  PENDING_APPROVAL
-  REJECTED
-}
-
-type AutomationTargetType {
-  createdAt: DateTimeISO!
-  id: ID!
-  machine: AutomationMachineType!
-}
-
-type AutomationTemplateType {
-  blocklyWorkspace: JSONObject!
-  category: String!
-  createdAt: DateTimeISO!
-  description: String
-  id: ID!
-  isEnabled: Boolean!
-  name: String!
-  recommendationType: String
-  updatedAt: DateTimeISO!
-  usageCount: Int!
-}
-
-type AutomationType {
-  approvedAt: DateTimeISO
-  approvedBy: AutomationUserType
-  automationScripts: [AutomationScriptType!]!
-  blocklyWorkspace: JSONObject!
-  compilationError: String
-  compiledCode: String
-  cooldownMinutes: Int!
-  createdAt: DateTimeISO!
-  createdBy: AutomationUserType
-  department: AutomationDepartmentType
-  description: String
-  executionCount: Int!
-  generatedCode: String!
-  id: ID!
-  isCompiled: Boolean!
-  isEnabled: Boolean!
-  lastTriggeredAt: DateTimeISO
-  name: String!
-  priority: Int!
-  recentExecutions(limit: Int = 10): [AutomationExecutionType!]!
-  recommendationActionText: String
-  recommendationText: String
-  recommendationType: String
-  status: AutomationStatus!
-  targetScope: AutomationScope!
-  targets: [AutomationTargetType!]!
-  triggerRate: Float
-  updatedAt: DateTimeISO!
-}
-
-type AutomationUserType {
-  email: String
-  id: ID!
-  name: String!
-}
-
-type AutomationValidationResultType {
-  errors: [ValidationErrorType!]!
-  isValid: Boolean!
-  warnings: [ValidationWarningType!]!
-}
-
 type BackgroundHealthServiceStatus {
   activeQueues: Int!
   cronActive: Boolean!
@@ -286,31 +90,6 @@ type BackgroundHealthServiceStatus {
   nextRun: DateTimeISO
   pendingChecks: Int!
   totalVMsMonitored: Int!
-}
-
-type BlockDefinitionOutputType {
-  args0: JSONObject
-  colour: Int!
-  helpUrl: String
-  message0: String!
-  nextStatement: Boolean
-  output: String
-  previousStatement: Boolean
-  tooltip: String
-  type: String!
-}
-
-"""Output type of a custom block"""
-enum BlockOutputType {
-  ARRAY
-  BOOLEAN
-  NUMBER
-  STRING
-  VOID
-}
-
-type BlocklyToolboxType {
-  categories: [ToolboxCategoryType!]!
 }
 
 type BrNetfilterDiagnosticsType {
@@ -379,37 +158,6 @@ input CreateApplicationInputType {
   name: String! = ""
   os: [String!]! = []
   parameters: JSONObject = null
-}
-
-input CreateAutomationInput {
-  blocklyWorkspace: JSONObject!
-  cooldownMinutes: Int = 60
-  departmentId: ID
-  description: String
-
-  """VMs to exclude (for EXCLUDE_VMS scope)"""
-  excludeMachineIds: [ID!]
-  name: String!
-  priority: Int = 100
-  recommendationActionText: String
-  recommendationText: String
-  recommendationType: String
-
-  """VMs to include (for SPECIFIC_VMS scope)"""
-  targetMachineIds: [ID!]
-  targetScope: AutomationScope = ALL_VMS
-}
-
-input CreateCustomBlockInput {
-  blockDefinition: JSONObject!
-  category: String!
-  description: String
-  displayName: String!
-  generatorCode: String!
-  inputs: [CustomBlockInputDef!]!
-  name: String!
-  outputType: BlockOutputType!
-  supportedOS: [OS!] = [WINDOWS, LINUX]
 }
 
 input CreateDepartmentFirewallInput {
@@ -492,16 +240,6 @@ input CreateSnapshotInput {
   name: String!
 }
 
-input CreateSystemScriptInput {
-  category: String = "General"
-  codeLinux: String
-  codeWindows: String
-  description: String
-  displayName: String!
-  name: String!
-  requiredHealthFields: [String!] = []
-}
-
 input CreateUserInputType {
   """User avatar image path"""
   avatar: String
@@ -511,40 +249,6 @@ input CreateUserInputType {
   password: String! = ""
   passwordConfirmation: String! = ""
   role: UserRole! = USER
-}
-
-input CustomBlockInputDef {
-  defaultValue: JSONObject
-  label: String!
-  name: String!
-  required: Boolean = false
-  type: String!
-}
-
-type CustomBlockInputType {
-  defaultValue: JSONObject
-  label: String!
-  name: String!
-  required: Boolean!
-  type: String!
-}
-
-type CustomBlockType {
-  blockDefinition: JSONObject!
-  category: String!
-  createdAt: DateTimeISO!
-  createdBy: AutomationUserType
-  description: String
-  displayName: String!
-  generatorCode: String!
-  id: ID!
-  inputs: [CustomBlockInputType!]!
-  isBuiltIn: Boolean!
-  isEnabled: Boolean!
-  name: String!
-  outputType: BlockOutputType!
-  supportedOS: [OS!]!
-  updatedAt: DateTimeISO!
 }
 
 """
@@ -644,6 +348,18 @@ type DiskSpaceInfo {
   timestamp: DateTimeISO!
   vmId: ID!
   warningThreshold: Float
+}
+
+"""Result of dismissing recommendation(s)"""
+type DismissRecommendationResult {
+  """Number of recommendations dismissed"""
+  dismissedCount: Float
+
+  """Error message if operation failed"""
+  error: String
+
+  """Whether the operation succeeded"""
+  success: Boolean!
 }
 
 type DnsmasqDiagnosticsType {
@@ -780,6 +496,38 @@ type GenericHealthCheckResponse {
   success: Boolean!
   timestamp: DateTimeISO!
   vmId: ID!
+}
+
+"""
+Recommendation with machine info for global views like notification dropdowns
+"""
+type GlobalRecommendationType {
+  """Suggested action to address the recommendation"""
+  actionText: String!
+
+  """Timestamp when this recommendation was generated"""
+  createdAt: DateTimeISO!
+
+  """Additional structured data"""
+  data: JSONObject
+
+  """Unique identifier for the recommendation"""
+  id: ID!
+
+  """ID of the VM this recommendation applies to"""
+  machineId: ID!
+
+  """Name of the VM for display purposes"""
+  machineName: String!
+
+  """Severity level: CRITICAL, HIGH, MEDIUM, LOW"""
+  severity: String!
+
+  """Human-readable description of the issue"""
+  text: String!
+
+  """Category of recommendation"""
+  type: RecommendationType!
 }
 
 type GraphicConfigurationType {
@@ -941,19 +689,6 @@ type LibvirtFilterInfoType {
 
   """ID de la VM asociada al chain"""
   vmId: String
-}
-
-input LinkScriptToAutomationInput {
-  automationId: ID!
-  executeOnTrigger: Boolean = true
-  executionOrder: Int = 0
-  os: OS!
-
-  """ID of regular script (mutually exclusive with systemScriptId)"""
-  scriptId: ID
-
-  """ID of system script (mutually exclusive with scriptId)"""
-  systemScriptId: ID
 }
 
 """Login response with user data and token"""
@@ -1170,8 +905,6 @@ enum MaintenanceTrigger {
 }
 
 type Mutation {
-  approveAutomation(id: ID!): AutomationType!
-  archiveAutomation(id: ID!): AutomationType!
   assignScriptToDepartment(departmentId: ID!, scriptId: ID!): Boolean!
 
   """Calculate ISO checksum"""
@@ -1179,11 +912,7 @@ type Mutation {
   cancelScheduledScript(executionId: ID!): ScheduleScriptResponseType!
   cancelScriptExecution(id: ID!): ScriptExecutionResponseType!
   cleanupInfinibayFirewall: CleanupResultType!
-  compileAutomation(id: ID!): AutomationType!
   createApplication(input: CreateApplicationInputType!): ApplicationType!
-  createAutomation(input: CreateAutomationInput!): AutomationType!
-  createAutomationFromTemplate(name: String, templateId: ID!): AutomationType!
-  createCustomBlock(input: CreateCustomBlockInput!): CustomBlockType!
   createDepartment(firewallConfig: CreateDepartmentFirewallInput, name: String!): DepartmentType!
   createDepartmentFirewallRule(departmentId: ID!, input: CreateFirewallRuleInput!): FirewallRuleType!
   createMachine(input: CreateMachineInputType!): Machine!
@@ -1195,12 +924,9 @@ type Mutation {
 
   """Create a snapshot of a virtual machine"""
   createSnapshot(input: CreateSnapshotInput!): SnapshotResult!
-  createSystemScript(input: CreateSystemScriptInput!): SystemScriptType!
   createUser(input: CreateUserInputType!): UserType!
   createVMFirewallRule(input: CreateFirewallRuleInput!, vmId: ID!): FirewallRuleType!
   deleteApplication(id: String!): Boolean!
-  deleteAutomation(id: ID!): Boolean!
-  deleteCustomBlock(id: ID!): Boolean!
   deleteFirewallRule(ruleId: ID!): Boolean!
   deleteMaintenanceTask(id: ID!): MaintenanceTaskResponse!
   deleteNetwork(input: DeleteNetworkInput!): Boolean!
@@ -1208,20 +934,25 @@ type Mutation {
 
   """Delete a snapshot from a virtual machine"""
   deleteSnapshot(input: DeleteSnapshotInput!): SuccessType!
-  deleteSystemScript(id: ID!): Boolean!
   destroyDepartment(id: String!): DepartmentType!
   destroyMachine(id: String!): SuccessType!
   destroyMachineTemplate(id: String!): Boolean!
   destroyMachineTemplateCategory(id: String!): Boolean!
-  disableAutomation(id: ID!): AutomationType!
-  dismissAllRecommendations: Int!
-  dismissRecommendation(id: ID!, reason: String): AutomationRecommendationType!
-  duplicateAutomation(id: ID!, newName: String!): AutomationType!
-  enableAutomation(id: ID!): AutomationType!
+
+  """Disable a plugin package"""
+  disablePackage(name: String!): PackageType
+
+  """Dismiss all pending recommendations the user has access to"""
+  dismissAllRecommendations: DismissRecommendationResult!
+
+  """Dismiss a single recommendation"""
+  dismissRecommendation(id: ID!): DismissRecommendationResult!
+
+  """Enable a plugin package"""
+  enablePackage(name: String!): PackageType
   executeCommand(command: String!, id: String!): CommandExecutionResponseType!
   executeImmediateMaintenance(input: ExecuteMaintenanceInput!): MaintenanceExecutionResponse!
   executeMaintenanceTask(taskId: ID!): MaintenanceExecutionResponse!
-  executeRecommendation(id: ID!): AutomationRecommendationType!
   executeScript(input: ExecuteScriptInput!): ScriptExecutionResponseType!
   flushFirewallRules(vmId: ID!): FlushResultType!
   forcePowerOff(id: String!): SuccessType!
@@ -1233,7 +964,6 @@ type Mutation {
   installPackage(machineId: ID!, packageName: String!): CommandResult!
   killProcess(force: Boolean! = false, machineId: String!, pid: Int!): ProcessControlResult!
   killProcesses(force: Boolean! = false, machineId: String!, pids: [Int!]!): [ProcessControlResult!]!
-  linkScriptToAutomation(input: LinkScriptToAutomationInput!): AutomationScriptType!
   login(email: String!, password: String!): LoginResponse
 
   """Install, remove, or update a package on a virtual machine"""
@@ -1248,7 +978,6 @@ type Mutation {
 
   """Register uploaded ISO"""
   registerISO(filename: String!, os: String!, path: String!, size: Float!): ISO!
-  rejectAutomation(id: ID!, reason: String!): AutomationType!
 
   """Remove ISO file"""
   removeISO(isoId: String!): Boolean!
@@ -1268,26 +997,31 @@ type Mutation {
   setNetworkIp(input: NetworkIpInput!): Boolean!
   setNetworkIpRange(input: IpRangeInput!): Boolean!
   setupNode: DyummyType!
-  snoozeAllRecommendations(duration: SnoozeDuration!): Int!
-  snoozeRecommendation(duration: SnoozeDuration!, id: ID!): AutomationRecommendationType!
-  submitAutomationForApproval(id: ID!): AutomationType!
+
+  """
+  Snooze all pending recommendations for a duration (ISO 8601 duration format: PT1H, P1D, etc.)
+  """
+  snoozeAllRecommendations(duration: String!): SnoozeRecommendationResult!
+
+  """
+  Snooze a single recommendation for a duration (ISO 8601 duration format: PT1H, P1D, etc.)
+  """
+  snoozeRecommendation(duration: String!, id: ID!): SnoozeRecommendationResult!
   suspend(id: String!): SuccessType!
   syncFirewallToLibvirt: SyncResultType!
 
   """Sync ISOs with filesystem"""
   syncISOs: Boolean!
-  testAutomation(automationId: ID!, machineId: ID!): AutomationExecutionType!
-  testAutomationWithContext(automationId: ID!, context: JSONObject!): TestResultType!
-  testCustomBlock(id: ID!, sampleContext: JSONObject, sampleInputs: JSONObject!): JSONObject!
   toggleMaintenanceTask(enabled: Boolean!, id: ID!): MaintenanceTaskResponse!
   triggerHealthCheckRound: HealthCheckRoundResult!
   unassignScriptFromDepartment(departmentId: ID!, scriptId: ID!): Boolean!
-  unlinkScriptFromAutomation(automationId: ID!, os: OS!, scriptId: ID, systemScriptId: ID): Boolean!
+
+  """
+  Uninstall an external plugin package (cannot uninstall built-in packages)
+  """
+  uninstallPackage(name: String!): Boolean!
   updateAppSettings(input: AppSettingsInput!): AppSettings!
   updateApplication(id: String!, input: CreateApplicationInputType!): ApplicationType!
-  updateAutomation(id: ID!, input: UpdateAutomationInput!): AutomationType!
-  updateAutomationScript(executeOnTrigger: Boolean, executionOrder: Int, id: ID!, isEnabled: Boolean): AutomationScriptType!
-  updateCustomBlock(id: ID!, input: UpdateCustomBlockInput!): CustomBlockType!
   updateDepartmentFirewallPolicy(departmentId: String!, input: UpdateDepartmentFirewallPolicyInput!): DepartmentType!
   updateDepartmentName(input: UpdateDepartmentNameInput!): DepartmentType!
   updateDepartmentNetwork(input: UpdateDepartmentNetworkInput!): DepartmentType!
@@ -1303,7 +1037,6 @@ type Mutation {
   updatePackage(machineId: ID!, packageName: String!): CommandResult!
   updateScheduledScript(input: UpdateScheduledScriptInput!): ScheduleScriptResponseType!
   updateScript(input: UpdateScriptInput!): ScriptResponseType!
-  updateSystemScript(id: ID!, input: UpdateSystemScriptInput!): SystemScriptType!
   updateUser(id: String!, input: UpdateUserInputType!): UserType!
 
   """Validate ISO file integrity"""
@@ -1382,6 +1115,18 @@ enum PackageAction {
   UPDATE
 }
 
+"""Health checker within a plugin package"""
+type PackageCheckerType {
+  """Data needs for this checker (e.g., diskMetrics, historicalMetrics)"""
+  dataNeeds: [String!]!
+  id: ID!
+  isEnabled: Boolean!
+  name: String!
+
+  """Type of recommendations this checker generates"""
+  type: String!
+}
+
 """Information about a software package"""
 type PackageInfo {
   """Package description"""
@@ -1436,6 +1181,70 @@ type PackageManagementResult {
   success: Boolean!
 }
 
+"""Runtime status of a loaded plugin package"""
+type PackageStatusType {
+  """Number of checkers in this package"""
+  checkerCount: Int!
+
+  """Whether this is a built-in package"""
+  isBuiltin: Boolean!
+
+  """Whether the package is enabled"""
+  isEnabled: Boolean!
+
+  """Whether the package is loaded in memory"""
+  isLoaded: Boolean!
+
+  """Last error message if any"""
+  lastError: String
+
+  """Package name"""
+  name: String!
+
+  """Package version"""
+  version: String!
+}
+
+"""Plugin package that provides extended health checking functionality"""
+type PackageType {
+  """Package author or organization"""
+  author: String!
+
+  """Package capabilities configuration"""
+  capabilities: JSONObject
+
+  """Checkers provided by this package"""
+  checkers: [PackageCheckerType!]!
+
+  """Package description"""
+  description: String
+
+  """Human-readable name for display"""
+  displayName: String!
+  id: ID!
+
+  """When the package was installed"""
+  installedAt: DateTimeISO!
+
+  """Whether this is a built-in package"""
+  isBuiltin: Boolean!
+
+  """Whether the package is currently enabled"""
+  isEnabled: Boolean!
+
+  """License type: open-source or commercial"""
+  license: String!
+
+  """Unique package identifier (lowercase with dashes)"""
+  name: String!
+
+  """Last update timestamp"""
+  updatedAt: DateTimeISO!
+
+  """Semantic version (e.g., 1.0.0)"""
+  version: String!
+}
+
 input PaginationInputType {
   skip: Int = 0
   take: Int = 20
@@ -1454,18 +1263,10 @@ type Query {
   allISOs: [ISO!]!
   application(id: String!): ApplicationType
   applications: [ApplicationType!]!
-  automation(id: ID!): AutomationType
-  automationExecution(id: ID!): AutomationExecutionType
-  automationExecutions(filters: AutomationExecutionFiltersInput, limit: Int = 50, offset: Int = 0): [AutomationExecutionType!]!
-  automationTemplate(id: ID!): AutomationTemplateType
-  automationTemplateCategories: [String!]!
-  automationTemplates(category: String): [AutomationTemplateType!]!
-  automations(filters: AutomationFiltersInput): [AutomationType!]!
 
   """Get all available ISOs"""
   availableISOs: [ISO!]!
   backgroundHealthServiceStatus: BackgroundHealthServiceStatus!
-  blocklyToolbox: BlocklyToolboxType!
   captureDepartmentDhcpTraffic(departmentId: String!, durationSeconds: Int! = 30): DhcpTrafficCaptureType!
 
   """Check for application updates on a VM"""
@@ -1496,8 +1297,6 @@ type Query {
   """Get the current snapshot of a virtual machine"""
   currentSnapshot(machineId: String!): Snapshot
   currentUser: UserType
-  customBlock(id: ID!): CustomBlockType
-  customBlocks(category: String, includeBuiltIn: Boolean = true): [CustomBlockType!]!
   department(id: String!): DepartmentType
   departmentNetworkDiagnostics(departmentId: String!): DepartmentNetworkDiagnosticsType!
   departmentScripts(departmentId: ID!): [ScriptType!]!
@@ -1541,6 +1340,9 @@ type Query {
 
   """Get Windows Update history for a VM"""
   getWindowsUpdateHistory(days: Float, vmId: ID!): WindowsUpdateHistory!
+
+  """Get all pending recommendations across all VMs the user has access to"""
+  globalPendingRecommendations(limit: Int = 50): [GlobalRecommendationType!]!
   graphicConnection(id: String!): GraphicConfigurationType
   healthCheckQueueStats: QueueStatsType!
   healthQueueStatistics: QueueStatistics!
@@ -1564,11 +1366,20 @@ type Query {
   maintenanceTasks(machineId: ID!, status: String): [MaintenanceTask!]!
   network(name: String!): Network!
   networks: [Network!]!
-  pendingRecommendationCount(machineId: ID): Int!
-  pendingRecommendations(machineId: ID!): [AutomationRecommendationType!]!
-  previewGeneratedCode(blocklyWorkspace: JSONObject!): String!
-  recommendation(id: ID!): AutomationRecommendationType
-  recommendations(filters: RecommendationFiltersInput, limit: Int = 50): [AutomationRecommendationType!]!
+
+  """Get a specific plugin package by name"""
+  package(name: String!): PackageType
+
+  """Get runtime status of all plugin packages"""
+  packageStatuses: [PackageStatusType!]!
+
+  """List all installed plugin packages"""
+  packages: [PackageType!]!
+
+  """
+  Get the count of pending (non-dismissed, non-snoozed) recommendations across all VMs
+  """
+  pendingRecommendationCount: Int!
 
   """Run a specific health check on a VM"""
   runHealthCheck(checkName: HealthCheckName!, vmId: ID!): GenericHealthCheckResponse!
@@ -1585,13 +1396,9 @@ type Query {
 
   """Get current socket connection statistics for all VMs"""
   socketConnectionStats: SocketConnectionStats
-  systemScript(id: ID!): SystemScriptType
-  systemScriptCategories: [String!]!
-  systemScripts(category: String): [SystemScriptType!]!
   user(id: String!): UserType!
   users(orderBy: UserOrderByInputType, pagination: PaginationInputType): [UserType!]!
   validateFirewallRule(input: CreateFirewallRuleInput!): ValidationResultType!
-  validateWorkspace(blocklyWorkspace: JSONObject!): AutomationValidationResultType!
   vmHealthCheckQueue(limit: Int = 20, machineId: ID, offset: Int = 0, status: String): [VMHealthCheckQueueType!]!
   vmHealthHistory(limit: Int = 20, machineId: ID!, offset: Int = 0): [VMHealthSnapshotType!]!
   vmHealthStats(machineId: ID!): VMHealthStatsType!
@@ -1635,21 +1442,6 @@ input RecommendationFilterInput {
   Filter by specific recommendation types (e.g., only security or storage recommendations)
   """
   types: [RecommendationType!]
-}
-
-input RecommendationFiltersInput {
-  automationId: ID
-  machineId: ID
-  severity: [RecommendationSeverity!]
-  status: [AutomationRecommendationStatus!]
-}
-
-"""Severity level of a recommendation"""
-enum RecommendationSeverity {
-  CRITICAL
-  HIGH
-  LOW
-  MEDIUM
 }
 
 """
@@ -1708,13 +1500,6 @@ enum RecommendationType {
   Generated when VM resources are consistently over-utilized and affecting performance
   """
   UNDER_PROVISIONED
-}
-
-"""User action taken on a recommendation"""
-enum RecommendationUserAction {
-  DISMISS
-  EXECUTE
-  SNOOZE
 }
 
 type ResourceOptimizationInfo {
@@ -1964,12 +1749,19 @@ type SnapshotResult {
   success: Boolean!
 }
 
-"""Duration for snoozing a recommendation (ISO 8601)"""
-enum SnoozeDuration {
-  P7D
-  PT1H
-  PT4H
-  PT24H
+"""Result of snoozing recommendation(s)"""
+type SnoozeRecommendationResult {
+  """Error message if operation failed"""
+  error: String
+
+  """Number of recommendations snoozed"""
+  snoozedCount: Float
+
+  """When the snooze period ends"""
+  snoozedUntil: DateTimeISO
+
+  """Whether the operation succeeded"""
+  success: Boolean!
 }
 
 type SocketConnectionStats {
@@ -2022,71 +1814,10 @@ type SystemResources {
   memory: SystemResourceMemory!
 }
 
-type SystemScriptType {
-  category: String!
-  codeLinux: String
-  codeWindows: String
-  createdAt: DateTimeISO!
-  createdBy: AutomationUserType
-  description: String
-  displayName: String!
-  id: ID!
-  isEnabled: Boolean!
-  name: String!
-  requiredHealthFields: [String!]!
-  updatedAt: DateTimeISO!
-}
-
-type TestResultType {
-  error: String
-  evaluationTimeMs: Int!
-  generatedCode: String!
-  logs: [String!]!
-  result: Boolean
-  success: Boolean!
-}
-
 """
 The javascript `Date` as integer. Type represents date and time as number of milliseconds from start of UNIX epoch.
 """
 scalar Timestamp
-
-type ToolboxCategoryType {
-  blocks: [BlockDefinitionOutputType!]!
-  colour: String!
-  name: String!
-}
-
-input UpdateAutomationInput {
-  blocklyWorkspace: JSONObject
-  cooldownMinutes: Int
-  departmentId: ID
-  description: String
-
-  """VMs to exclude (for EXCLUDE_VMS scope)"""
-  excludeMachineIds: [ID!]
-  name: String
-  priority: Int
-  recommendationActionText: String
-  recommendationText: String
-  recommendationType: String
-
-  """VMs to include (for SPECIFIC_VMS scope)"""
-  targetMachineIds: [ID!]
-  targetScope: AutomationScope
-}
-
-input UpdateCustomBlockInput {
-  blockDefinition: JSONObject
-  category: String
-  description: String
-  displayName: String
-  generatorCode: String
-  inputs: [CustomBlockInputDef!]
-  isEnabled: Boolean
-  outputType: BlockOutputType
-  supportedOS: [OS!]
-}
 
 input UpdateDepartmentFirewallPolicyInput {
   firewallCustomRules: JSON
@@ -2177,16 +1908,6 @@ input UpdateScriptInput {
   id: ID!
   name: String
   tags: [String!]
-}
-
-input UpdateSystemScriptInput {
-  category: String
-  codeLinux: String
-  codeWindows: String
-  description: String
-  displayName: String
-  isEnabled: Boolean
-  requiredHealthFields: [String!]
 }
 
 input UpdateUserInputType {
@@ -2321,20 +2042,10 @@ type VMRecommendationType {
   type: RecommendationType!
 }
 
-type ValidationErrorType {
-  blockId: String
-  message: String!
-}
-
 type ValidationResultType {
   conflicts: [RuleConflictType!]!
   isValid: Boolean!
   warnings: [String!]!
-}
-
-type ValidationWarningType {
-  blockId: String
-  message: String!
 }
 
 type VmConnectionInfo {

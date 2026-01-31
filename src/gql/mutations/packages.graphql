@@ -1,0 +1,56 @@
+# ==================== PLUGIN PACKAGE MUTATIONS ====================
+
+# Enable a plugin package
+mutation EnablePackage($name: String!) {
+  enablePackage(name: $name) {
+    id
+    name
+    version
+    displayName
+    description
+    author
+    license
+    isBuiltin
+    isEnabled
+    capabilities
+    installedAt
+    updatedAt
+    checkers {
+      id
+      name
+      type
+      dataNeeds
+      isEnabled
+    }
+  }
+}
+
+# Disable a plugin package
+mutation DisablePackage($name: String!) {
+  disablePackage(name: $name) {
+    id
+    name
+    version
+    displayName
+    description
+    author
+    license
+    isBuiltin
+    isEnabled
+    capabilities
+    installedAt
+    updatedAt
+    checkers {
+      id
+      name
+      type
+      dataNeeds
+      isEnabled
+    }
+  }
+}
+
+# Uninstall an external plugin package
+mutation UninstallPackage($name: String!) {
+  uninstallPackage(name: $name)
+}

@@ -3,7 +3,7 @@
 import SettingMain from "@/components/settings/SettingMain"
 import React, { useMemo } from "react"
 import { usePageHeader } from "@/hooks/usePageHeader"
-import { Settings as SettingsIcon, Palette, FileCode, Disc, Wrench } from "lucide-react"
+import { Settings as SettingsIcon, Palette, FileCode, Disc, Wrench, Package } from "lucide-react"
 
 export default function SettingsPage() {
   const helpConfig = useMemo(() => ({
@@ -88,6 +88,26 @@ export default function SettingsPage() {
 
             <p className="font-medium text-foreground mb-1 mt-3">Backup Settings</p>
             <p>Configure automatic backup schedules for your virtual machines. Regular backups help protect against data loss.</p>
+          </div>
+        )
+      },
+      {
+        id: "packages",
+        title: "Plugin Packages",
+        icon: <Package className="h-4 w-4" />,
+        content: (
+          <div className="space-y-3">
+            <p className="font-medium text-foreground mb-1">Health Checking Packages</p>
+            <p>Plugin packages extend Infinibay with specialized health checkers. Built-in packages provide core diagnostics, while external packages can add custom monitoring.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Built-in vs External</p>
+            <p>Built-in packages come with Infinibay and cannot be disabled. External packages are installed via CLI and can be enabled, disabled, or uninstalled.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Capabilities</p>
+            <p>External packages declare capabilities they need: network access, storage, scheduled execution, or remediation actions. Review these before installing.</p>
+
+            <p className="font-medium text-foreground mb-1 mt-3">Installing Packages</p>
+            <p>Use the CLI to install external packages: <code className="bg-muted px-1 rounded">infinibay package install ./package.tar.gz</code></p>
           </div>
         )
       }

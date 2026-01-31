@@ -18,3 +18,23 @@ query getVMRecommendations(
     createdAt
   }
 }
+
+# Global recommendation count for notification bell
+query getPendingRecommendationCount {
+  pendingRecommendationCount
+}
+
+# Global recommendations for dropdown
+query globalPendingRecommendations($limit: Int) {
+  globalPendingRecommendations(limit: $limit) {
+    id
+    machineId
+    machineName
+    type
+    text
+    actionText
+    severity
+    data
+    createdAt
+  }
+}
