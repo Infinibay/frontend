@@ -37,7 +37,7 @@ const Page = () => {
           </div>
           <div className="max-w-[600px]  4xl:max-w-[1200px] w-full ">
             <div className="flex justify-center flex-1 w-full border-[#DEDEDE]">
-              <div className="border  border-web_lightgray flex-1  max-w-[550px] 4xl:max-w-[1000px] 4xl:h-[900px] h-full p-6 rounded-2xl custom_shadow bg-white">
+              <div className="border  border-web_lightgray dark:border-border flex-1  max-w-[550px] 4xl:max-w-[1000px] 4xl:h-[900px] h-full p-6 rounded-2xl custom_shadow bg-white dark:bg-background/90">
                 <Image
                   className="max-w-[280px] 4xl:max-w-[800px] 4xl:mt-10 "
                   alt="laptop-infinibay"
@@ -54,7 +54,7 @@ const Page = () => {
                     <div className="w-full">
                       <label
                         htmlFor="code"
-                        className="relative 4xl:text-3xl block rounded-3xl border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite"
+                        className="relative 4xl:text-3xl block rounded-3xl border dark:border-border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite dark:bg-transparent"
                       >
                         <input
                           type="number"
@@ -65,7 +65,7 @@ const Page = () => {
                             maxLength: 10,
                           })}
                           aria-invalid={errors.code ? "true" : "false"}
-                          className="peer border-none 4xl:p-6 4xl:text-3xl rounded-3xl sm:px-8 p-4 placeholder:text-black placeholder:font-normal focus:border-web_lightGrey focus:outline-none w-full"
+                          className="peer border-none 4xl:p-6 4xl:text-3xl rounded-3xl sm:px-8 p-4 placeholder:text-black dark:placeholder:text-gray-400 placeholder:font-normal focus:border-web_lightGrey focus:outline-none w-full"
                           onKeyDown={(e) => {
                             if (e.key === "-") {
                               e.preventDefault();

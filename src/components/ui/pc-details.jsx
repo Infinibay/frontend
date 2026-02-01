@@ -154,7 +154,7 @@ const PcDetails = React.forwardRef(({
                 size="icon"
                 onClick={handlePlay}
                 disabled={vmIsBusy}
-                className="text-green-600 hover:text-green-700 hover:bg-green-50 disabled:opacity-50"
+                className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 disabled:opacity-50"
               >
                 <BsFillPlayFill className={sizes.icon.button} />
               </Button>
@@ -165,7 +165,7 @@ const PcDetails = React.forwardRef(({
                 size="icon"
                 onClick={handlePause}
                 disabled={vmIsBusy}
-                className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 disabled:opacity-50"
+                className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 disabled:opacity-50"
               >
                 <BsFillPauseFill className={sizes.icon.button} />
               </Button>
@@ -176,7 +176,7 @@ const PcDetails = React.forwardRef(({
                 size="icon"
                 onClick={handleStop}
                 disabled={vmIsBusy}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
               >
                 <TiMediaStop className={sizes.icon.button} />
               </Button>
@@ -185,7 +185,7 @@ const PcDetails = React.forwardRef(({
               variant="ghost"
               size="icon"
               onClick={handleFullScreen}
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
               title="View VM Details"
             >
               <BiFullscreen className={sizes.icon.button} />
@@ -195,7 +195,7 @@ const PcDetails = React.forwardRef(({
             variant="ghost"
             size="sm"
             onClick={handleDelete}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             Delete VM
           </Button>

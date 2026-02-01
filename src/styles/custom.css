@@ -46,6 +46,15 @@
   background: #fff9f2;
   color: #ec9430;
 }
+.dark .persBox:hover .persicon {
+  background: #ec9430;
+  color: white;
+  margin-left: 3px;
+}
+.dark .persBox .persicon {
+  background: rgba(236, 148, 48, 0.15);
+  color: #ec9430;
+}
 
 ::-webkit-scrollbar {
   width: 10px;
@@ -64,6 +73,19 @@
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: #207ec3;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(186 70% 55%);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(186 70% 45%);
 }
 .apexcharts-toolbar {
   display: none !important;

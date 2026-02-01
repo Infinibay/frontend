@@ -184,7 +184,7 @@ export function ResourcesStep({ id }) {
                   <div className="flex-1 relative">
                     {/* Custom styled range slider */}
                     <div
-                      className="relative h-3 bg-gray-200 rounded-lg cursor-pointer"
+                      className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-lg cursor-pointer"
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const clickX = e.clientX - rect.left;
@@ -213,7 +213,7 @@ export function ResourcesStep({ id }) {
                       />
                       {/* Custom thumb */}
                       <div
-                        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 border-blue-500 rounded-full shadow-md transition-all duration-200 hover:scale-110 pointer-events-none"
+                        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white dark:bg-background border-2 border-blue-500 rounded-full shadow-md transition-all duration-200 hover:scale-110 pointer-events-none"
                         style={{
                           left: `calc(10px + (100% - 20px) * ${(customHardware.cores - 1) / (cpuLimit - 1)} - 10px)`
                         }}
@@ -246,7 +246,7 @@ export function ResourcesStep({ id }) {
                   <div className="flex-1 relative">
                     {/* Custom styled range slider */}
                     <div
-                      className="relative h-3 bg-gray-200 rounded-lg cursor-pointer"
+                      className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-lg cursor-pointer"
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const clickX = e.clientX - rect.left;
@@ -275,7 +275,7 @@ export function ResourcesStep({ id }) {
                       />
                       {/* Custom thumb */}
                       <div
-                        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 border-green-500 rounded-full shadow-md transition-all duration-200 hover:scale-110 pointer-events-none"
+                        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white dark:bg-background border-2 border-green-500 rounded-full shadow-md transition-all duration-200 hover:scale-110 pointer-events-none"
                         style={{
                           left: `calc(10px + (100% - 20px) * ${(customHardware.ram - 1) / (memoryLimit - 1)} - 10px)`
                         }}

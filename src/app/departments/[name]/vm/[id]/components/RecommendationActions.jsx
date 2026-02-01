@@ -528,10 +528,10 @@ const RecommendationActions = ({
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-gray-700">{dialogContent.description}</p>
+            <p className="text-gray-700 dark:text-gray-300">{dialogContent.description}</p>
 
             {dialogContent.guidanceSteps && (
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg">
                 <h4 className="font-medium text-sm mb-2">Steps to follow:</h4>
                 <ol className="space-y-2">
                   {dialogContent.guidanceSteps.map((step, index) => (
@@ -545,14 +545,14 @@ const RecommendationActions = ({
             )}
 
             {dialogContent.technicalDetails && (
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-gray-50 dark:bg-muted/50 p-4 rounded-lg">
                 <h4 className="font-medium text-sm mb-2">Technical information:</h4>
-                <p className="text-sm text-gray-600">{dialogContent.technicalDetails}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{dialogContent.technicalDetails}</p>
               </div>
             )}
 
             {dialogContent.actions && dialogContent.actions.length > 0 && (
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg">
                 <h4 className="font-medium text-sm mb-2">Recommended actions:</h4>
                 <ul className="space-y-1">
                   {dialogContent.actions.map((action, index) => (
@@ -566,13 +566,13 @@ const RecommendationActions = ({
             )}
 
             {dialogContent.processes && (
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-gray-50 dark:bg-muted/50 p-4 rounded-lg">
                 <h4 className="font-medium text-sm mb-3">Top resource-consuming processes:</h4>
                 <div className="space-y-2">
                   {dialogContent.processes.map((process, index) => (
                     <div key={index} className="flex justify-between items-center text-sm">
                       <span className="font-mono">{process.name}</span>
-                      <div className="flex gap-4 text-xs text-gray-600">
+                      <div className="flex gap-4 text-xs text-gray-600 dark:text-gray-400">
                         <span>CPU: {process.cpu}%</span>
                         <span>RAM: {process.memory} MB</span>
                         <span>PID: {process.pid}</span>
@@ -604,7 +604,7 @@ const RecommendationActions = ({
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {dialogContent.items && dialogContent.items.length > 0 ? (
               dialogContent.items.map((item, index) => (
-                <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                <div key={index} className="border rounded-lg p-3 bg-gray-50 dark:bg-muted/50 dark:border-gray-700">
                   {dialogContent.type === 'DEFENDER_THREAT' ? (
                     // Threat display
                     <div>
@@ -614,11 +614,11 @@ const RecommendationActions = ({
                           {item.status}
                         </Badge>
                       </div>
-                      <div className="flex gap-4 text-xs text-gray-600">
+                      <div className="flex gap-4 text-xs text-gray-600 dark:text-gray-400">
                         <span>Severity: {item.severity}</span>
                         {item.detectionTime && <span>Detected: {new Date(item.detectionTime).toLocaleDateString()}</span>}
                       </div>
-                      {item.path && <p className="text-xs text-gray-500 mt-1 truncate">Path: {item.path}</p>}
+                      {item.path && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">Path: {item.path}</p>}
                     </div>
                   ) : dialogContent.type === 'PORT_BLOCKED' ? (
                     // Port blocked display
@@ -626,7 +626,7 @@ const RecommendationActions = ({
                       <div className="flex items-center justify-between mb-1">
                         <h4 className="font-medium text-sm">Port {item.port} ({item.protocol})</h4>
                       </div>
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
                         <p>Process: {item.processName} {item.processId && `(PID: ${item.processId})`}</p>
                         {item.ruleName && <p>Rule: {item.ruleName}</p>}
                         {item.lastAttempt && <p>Last attempt: {new Date(item.lastAttempt).toLocaleString()}</p>}
@@ -645,14 +645,14 @@ const RecommendationActions = ({
                           )}
                         </div>
                         {item.currentVersion && item.newVersion && (
-                          <p className="text-xs text-gray-600">
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
                             {item.currentVersion} → {item.newVersion}
                           </p>
                         )}
                       </div>
                       {item.size && (
                         <div className="text-right">
-                          <p className="text-xs text-gray-600">{item.size}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{item.size}</p>
                         </div>
                       )}
                     </div>
@@ -671,14 +671,14 @@ const RecommendationActions = ({
                             </Badge>
                           )}
                         </div>
-                        <div className="flex gap-3 text-xs text-gray-600">
+                        <div className="flex gap-3 text-xs text-gray-600 dark:text-gray-400">
                           {item.kb && <span>KB: {item.kb}</span>}
                           {item.requiresReboot && <span className="text-orange-600">Requires reboot</span>}
                         </div>
                       </div>
                       {item.size && (
                         <div className="text-right">
-                          <p className="text-xs text-gray-600">{item.size}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{item.size}</p>
                         </div>
                       )}
                     </div>
@@ -686,7 +686,7 @@ const RecommendationActions = ({
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <p className="text-sm">No structured data available</p>
                 <p className="text-xs mt-1">Detailed data will appear when available</p>
               </div>

@@ -51,7 +51,7 @@ const Page = () => {
           <div className="4xl:max-w-[1600px] lg:max-w-[800px] w-full h-[95%] xl:h-screen">
             <div className="w-full flex flex-col justify-center h-full ">
               {/* form */}
-              <div className="w-full 4xl:max-w-[1000px] max-w-[600px] sm:p-6 4xl:p-10 p-4 rounded-3xl my-auto custom_shadow bg-white/30  mx-auto">
+              <div className="w-full 4xl:max-w-[1000px] max-w-[600px] sm:p-6 4xl:p-10 p-4 rounded-3xl my-auto custom_shadow bg-white/30 dark:bg-background/50 dark:border dark:border-border  mx-auto">
                 <Image
                   className="w-full pt-10"
                   alt=""
@@ -83,7 +83,7 @@ const Page = () => {
                           class="peer 4xl:text-3xl 4xl:p-6 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                           placeholder=""
                         />
-                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
+                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
                           Name
                         </span>
                       </label>
@@ -116,7 +116,7 @@ const Page = () => {
                           class="peer 4xl:text-3xl 4xl:p-6 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                           placeholder=""
                         />
-                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
+                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
                           Email Address
                         </span>
                       </label>
@@ -161,7 +161,7 @@ const Page = () => {
                           class="peer 4xl:p-6 border-none 4xl:text-3xl rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                           placeholder=""
                         />
-                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
+                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
                           Phone No
                         </span>
                       </label>
@@ -192,7 +192,7 @@ const Page = () => {
                           className="peer 4xl:text-3xl 4xl:p-6 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                           placeholder=""
                         />
-                        <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
+                        <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
                           Password
                         </span>
                         <span
@@ -229,7 +229,7 @@ const Page = () => {
                           className="peer 4xl:p-6 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                           placeholder=""
                         />
-                        <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
+                        <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
                           Confirm Password!
                         </span>
                         <span
@@ -266,7 +266,7 @@ const Page = () => {
 
                       <Link
                         href="/auth/forgot-password"
-                        className="text-black  mt-3 sm:mt-0 font-medium 4xl:text-3xl"
+                        className="text-black dark:text-foreground  mt-3 sm:mt-0 font-medium 4xl:text-3xl"
                       >
                         Forgot password?
                       </Link>

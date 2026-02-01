@@ -58,7 +58,7 @@ const Page = () => {
           {/* form */}
           <div className=" flex-1 lg:max-w-[550px] 4xl:max-w-[1500px]  w-full px-5">
             <div className="flex justify-center flex-1 mx-auto">
-              <div className="border border-[#DEDEDE] 5xl:max-w-[1200px] 4xl:max-w-[1000px] 2xl:max-w-[700px] 4xl:h-[1000px] 4xl:py-[100px] flex-1  max-w-[600px] sm:px-6 px-4 py-6 rounded-2xl custom_shadow bg-white">
+              <div className="border border-[#DEDEDE] dark:border-border 5xl:max-w-[1200px] 4xl:max-w-[1000px] 2xl:max-w-[700px] 4xl:h-[1000px] 4xl:py-[100px] flex-1  max-w-[600px] sm:px-6 px-4 py-6 rounded-2xl custom_shadow bg-white dark:bg-background/90">
                 <Image
                   className="max-w-[280px] 4xl:mt-7 4xl:max-w-[400px]"
                   width={300}
@@ -80,7 +80,7 @@ const Page = () => {
                     <div className="w-full 4xl:mt-16">
                       <label
                         htmlFor="password"
-                        className="relative block rounded-3xl border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite"
+                        className="relative block rounded-3xl border dark:border-border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite dark:bg-transparent"
                       >
                         <input
                           type={!hidePass ? "password" : "text"}
@@ -93,7 +93,7 @@ const Page = () => {
                           className="peer 4xl:text-3xl 4xl:p-6 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                           placeholder="**********"
                         />
-                        <span className="pointer-events-none absolute start-4 4xl:text-3xl text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
+                        <span className="pointer-events-none absolute start-4 4xl:text-3xl text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
                           Password
                         </span>
                         <span
@@ -121,7 +121,7 @@ const Page = () => {
                     <div className="w-full 4xl:mt-10">
                       <label
                         htmlFor="confirmpass"
-                        className="relative block rounded-3xl border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite"
+                        className="relative block rounded-3xl border dark:border-border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite dark:bg-transparent"
                       >
                         <input
                           type={!hidePass1 ? "password" : "text"}
@@ -135,7 +135,7 @@ const Page = () => {
                           className="peer border-none 4xl:p-6 4xl:text-3xl rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] placeholder:my-9 focus:border-web_lightGrey focus:outline-none w-full placeholder-px-4 placeholder-py-2"
                         />
 
-                        <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all ">
+                        <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
                           Confirm Password
                         </span>
                         <span

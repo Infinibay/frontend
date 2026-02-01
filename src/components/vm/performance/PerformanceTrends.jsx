@@ -61,9 +61,9 @@ const PerformanceTrends = ({ trends, vmId }) => {
   const getTrendColor = (direction) => {
     switch (direction) {
       case 'mejorando':
-        return 'text-green-700 bg-green-50 border-green-200';
+        return 'text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
       case 'empeorando':
-        return 'text-red-700 bg-red-50 border-red-200';
+        return 'text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
       case 'estable':
         return 'text-foreground bg-muted border-border';
       default:
@@ -121,7 +121,7 @@ const PerformanceTrends = ({ trends, vmId }) => {
                   key={period.key}
                   onClick={() => setSelectedPeriod(period.key)}
                   className={`px-3 py-1 text-xs rounded-md transition-colors flex items-center space-x-1 ${selectedPeriod === period.key
-                    ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                    ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-800'
                     : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                     }`}
                 >
@@ -145,7 +145,7 @@ const PerformanceTrends = ({ trends, vmId }) => {
                   {currentTrend.summary}
                 </span>
               </div>
-              <Badge className="bg-white/70">
+              <Badge className="bg-white/70 dark:bg-white/10">
                 {currentTrend.direction === 'mejorando' ? 'Mejorando' :
                   currentTrend.direction === 'empeorando' ? 'Empeorando' : 'Estable'}
               </Badge>
@@ -162,11 +162,12 @@ const PerformanceTrends = ({ trends, vmId }) => {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={currentTrend.chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" stroke="currentColor" opacity={0.2} />
                   <XAxis
                     dataKey="time"
                     tick={{ fontSize: 12 }}
-                    stroke="#666"
+                    className="fill-muted-foreground"
+                    stroke="currentColor"
                   />
                   <YAxis
                     tick={false}
@@ -275,7 +276,7 @@ const PerformanceTrends = ({ trends, vmId }) => {
             </h4>
             <div className="space-y-2">
               {currentTrend.significantEvents.map((event, index) => (
-                <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+                <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <div className={`w-2 h-2 rounded-full mt-2 ${event.type === 'improvement' ? 'bg-green-500' :
                     event.type === 'degradation' ? 'bg-red-500' :
                       'bg-yellow-500'
@@ -299,13 +300,13 @@ const PerformanceTrends = ({ trends, vmId }) => {
 
         {/* Performance Insights */}
         {currentTrend && currentTrend.insights && currentTrend.insights.length > 0 && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="text-sm font-medium text-blue-800 mb-2">
+          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
               💡 Información Útil:
             </h4>
             <ul className="space-y-1">
               {currentTrend.insights.map((insight, index) => (
-                <li key={index} className="text-sm text-blue-700 flex items-start space-x-2">
+                <li key={index} className="text-sm text-blue-700 dark:text-blue-300 flex items-start space-x-2">
                   <span className="text-xs mt-1">•</span>
                   <span>{insight}</span>
                 </li>

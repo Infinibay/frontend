@@ -71,7 +71,7 @@ const NetworkInfo = ({ vm, className = '' }) => {
           <span>Información de Red</span>
           <div className="ml-auto flex items-center space-x-2">
             {networkInfo?.hasIPUpdated && (
-              <Badge variant="default" className="bg-green-100 text-green-800 animate-pulse">
+              <Badge variant="default" className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 animate-pulse">
                 Actualizado
               </Badge>
             )}
@@ -79,9 +79,9 @@ const NetworkInfo = ({ vm, className = '' }) => {
               variant="outline"
               className={`${
                 connectionStatus === 'connected'
-                  ? 'border-green-200 text-green-800 bg-green-50'
+                  ? 'border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 bg-green-50 dark:bg-green-900/20'
                   : connectionStatus === 'connecting'
-                  ? 'border-yellow-200 text-yellow-800 bg-yellow-50'
+                  ? 'border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 bg-yellow-50 dark:bg-yellow-900/20'
                   : 'border-border text-muted-foreground'
               }`}
             >
@@ -99,23 +99,23 @@ const NetworkInfo = ({ vm, className = '' }) => {
       <CardContent className="space-y-4">
         {/* Local IP Address */}
         {currentLocalIP && (
-          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Home className="w-4 h-4 text-blue-600" />
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+                <Home className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <div className="font-medium text-blue-900">IP Local</div>
-                <div className="text-sm text-blue-700">Red privada/interna</div>
+                <div className="font-medium text-blue-900 dark:text-blue-100">IP Local</div>
+                <div className="text-sm text-blue-700 dark:text-blue-300">Red privada/interna</div>
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <span className={`font-mono text-sm bg-white px-3 py-1 rounded border ${networkInfo?.hasIPUpdated ? 'ring-2 ring-green-300 ring-opacity-50' : ''}`}>
+              <span className={`font-mono text-sm bg-white dark:bg-muted px-3 py-1 rounded border ${networkInfo?.hasIPUpdated ? 'ring-2 ring-green-300 ring-opacity-50' : ''}`}>
                 {currentLocalIP}
               </span>
               <button
                 onClick={() => handleCopyIP(currentLocalIP, 'local')}
-                className="p-1 hover:bg-blue-200 rounded transition-colors"
+                className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800/40 rounded transition-colors"
                 title="Copiar IP local"
               >
                 {copiedField === 'local' ? (
@@ -130,23 +130,23 @@ const NetworkInfo = ({ vm, className = '' }) => {
 
         {/* Public IP Address */}
         {currentPublicIP && (
-          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+          <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Globe className="w-4 h-4 text-green-600" />
+              <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
+                <Globe className="w-4 h-4 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <div className="font-medium text-green-900">IP Pública</div>
-                <div className="text-sm text-green-700">Acceso desde internet</div>
+                <div className="font-medium text-green-900 dark:text-green-100">IP Pública</div>
+                <div className="text-sm text-green-700 dark:text-green-300">Acceso desde internet</div>
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <span className={`font-mono text-sm bg-white px-3 py-1 rounded border ${networkInfo?.hasIPUpdated ? 'ring-2 ring-green-300 ring-opacity-50' : ''}`}>
+              <span className={`font-mono text-sm bg-white dark:bg-muted px-3 py-1 rounded border ${networkInfo?.hasIPUpdated ? 'ring-2 ring-green-300 ring-opacity-50' : ''}`}>
                 {currentPublicIP}
               </span>
               <button
                 onClick={() => handleCopyIP(currentPublicIP, 'public')}
-                className="p-1 hover:bg-green-200 rounded transition-colors"
+                className="p-1 hover:bg-green-200 dark:hover:bg-green-800/40 rounded transition-colors"
                 title="Copiar IP pública"
               >
                 {copiedField === 'public' ? (

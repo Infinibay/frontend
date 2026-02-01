@@ -47,13 +47,13 @@ const PerformanceOverview = ({ status, vmId }) => {
   const getStatusColor = (level) => {
     switch (level) {
       case 'excelente':
-        return 'bg-green-50 border-green-200 text-green-800';
+        return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200';
       case 'normal':
-        return 'bg-green-50 border-green-200 text-green-800';
+        return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200';
       case 'atencion':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200';
       case 'critico':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200';
       default:
         return 'bg-muted border-border text-foreground';
     }
@@ -62,13 +62,13 @@ const PerformanceOverview = ({ status, vmId }) => {
   const getStatusBadgeColor = (level) => {
     switch (level) {
       case 'excelente':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800';
       case 'normal':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800';
       case 'atencion':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800';
       case 'critico':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800';
       default:
         return 'bg-muted text-muted-foreground border-border';
     }
@@ -111,7 +111,7 @@ const PerformanceOverview = ({ status, vmId }) => {
       <CardContent className="space-y-4">
         {/* Performance Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center space-x-3 p-3 bg-white/50 rounded-lg">
+          <div className="flex items-center space-x-3 p-3 bg-white/50 dark:bg-white/5 rounded-lg">
             <Activity className="h-5 w-5 text-blue-600" />
             <div>
               <p className="text-sm font-medium">Rendimiento General</p>
@@ -119,7 +119,7 @@ const PerformanceOverview = ({ status, vmId }) => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 p-3 bg-white/50 rounded-lg">
+          <div className="flex items-center space-x-3 p-3 bg-white/50 dark:bg-white/5 rounded-lg">
             <Zap className="h-5 w-5 text-purple-600" />
             <div>
               <p className="text-sm font-medium">Velocidad de Respuesta</p>
@@ -127,7 +127,7 @@ const PerformanceOverview = ({ status, vmId }) => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 p-3 bg-white/50 rounded-lg">
+          <div className="flex items-center space-x-3 p-3 bg-white/50 dark:bg-white/5 rounded-lg">
             <Shield className="h-5 w-5 text-indigo-600" />
             <div>
               <p className="text-sm font-medium">Estabilidad</p>
@@ -138,7 +138,7 @@ const PerformanceOverview = ({ status, vmId }) => {
 
         {/* Performance Trend */}
         {status.trend && (
-          <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-lg">
             <div className="flex items-center space-x-2">
               {getTrendIcon(status.trend.direction)}
               <span className="text-sm font-medium">
@@ -174,7 +174,7 @@ const PerformanceOverview = ({ status, vmId }) => {
               {status.quickActions.map((action, index) => (
                 <button
                   key={index}
-                  className="px-3 py-1 text-xs bg-white/70 hover:bg-white/90 rounded-md transition-colors"
+                  className="px-3 py-1 text-xs bg-white/70 dark:bg-white/10 hover:bg-white/90 dark:hover:bg-white/20 rounded-md transition-colors"
                   onClick={() => {
                     // Handle quick action
                     debug.log('action', 'Quick action:', action);

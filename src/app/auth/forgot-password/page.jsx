@@ -37,7 +37,7 @@ const Page = () => {
           </div>
           <div className="max-w-[600px] 4xl:max-w-[1200px]   h-full  w-full">
             <div className="flex justify-center flex-1 4xl:max-w-[1200px] h-full w-full border-[#DEDEDE]">
-              <div className="border border-web_lightgray flex-1  max-w-[550px] 4xl:max-w-[1100px] 4xl:h-[900px] h-full p-6 rounded-2xl custom_shadow bg-white">
+              <div className="border border-web_lightgray dark:border-border flex-1  max-w-[550px] 4xl:max-w-[1100px] 4xl:h-[900px] h-full p-6 rounded-2xl custom_shadow bg-white dark:bg-background/90">
                 <Image
                   className="max-w-[280px] 4xl:max-w-[800px] 4xl:mt-10 "
                   alt="laptop-infinibay"
@@ -54,7 +54,7 @@ const Page = () => {
                     <div className="w-full 4xl:mt-12">
                       <label
                         for="Email"
-                        class="relative block rounded-3xl border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite"
+                        class="relative block rounded-3xl border dark:border-border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite dark:bg-transparent"
                       >
                         <input
                           htmlFor="text"
@@ -70,7 +70,7 @@ const Page = () => {
                           class="peer  4xl:text-3xl 4xl:p-7 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
                           placeholder="Infinibayuzzi@gmail.com"
                         />
-                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 transition-all">
+                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
                           Enter your Email
                         </span>
                       </label>

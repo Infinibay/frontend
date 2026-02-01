@@ -121,19 +121,19 @@ export function NumberStepper({
   // Color variants
   const colorStyles = {
     blue: {
-      input: 'border-blue-300 focus:border-blue-500 focus:ring-blue-500/20',
-      button: 'border-blue-300 hover:bg-blue-50 active:bg-blue-100 text-blue-600',
-      buttonDisabled: 'text-blue-300',
+      input: 'border-blue-300 dark:border-blue-700 focus:border-blue-500 focus:ring-blue-500/20',
+      button: 'border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 active:bg-blue-100 dark:active:bg-blue-900/50 text-blue-600 dark:text-blue-400',
+      buttonDisabled: 'text-blue-300 dark:text-blue-800',
     },
     green: {
-      input: 'border-green-300 focus:border-green-500 focus:ring-green-500/20',
-      button: 'border-green-300 hover:bg-green-50 active:bg-green-100 text-green-600',
-      buttonDisabled: 'text-green-300',
+      input: 'border-green-300 dark:border-green-700 focus:border-green-500 focus:ring-green-500/20',
+      button: 'border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/30 active:bg-green-100 dark:active:bg-green-900/50 text-green-600 dark:text-green-400',
+      buttonDisabled: 'text-green-300 dark:text-green-800',
     },
     purple: {
-      input: 'border-purple-300 focus:border-purple-500 focus:ring-purple-500/20',
-      button: 'border-purple-300 hover:bg-purple-50 active:bg-purple-100 text-purple-600',
-      buttonDisabled: 'text-purple-300',
+      input: 'border-purple-300 dark:border-purple-700 focus:border-purple-500 focus:ring-purple-500/20',
+      button: 'border-purple-300 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/30 active:bg-purple-100 dark:active:bg-purple-900/50 text-purple-600 dark:text-purple-400',
+      buttonDisabled: 'text-purple-300 dark:text-purple-800',
     },
   };
 

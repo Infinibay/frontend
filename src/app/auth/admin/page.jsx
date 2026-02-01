@@ -43,7 +43,7 @@ const Page = () => {
         <div className="flex justify-center flex-1">
           <div className="border border-web_lightgray flex-1  max-w-[550px] 
            4xl:max-w-[850px] 4xl:h-[850px] p-6
-           rounded-2xl custom_shadow bg-white">
+           rounded-2xl custom_shadow bg-white dark:bg-background/90 dark:border-border">
         
             <Image
               className="max-w-[280px] 4xl:max-w-[780px] 4xl:my-10"
@@ -92,13 +92,13 @@ const Page = () => {
                         },
                       })}
                       aria-invalid={errors.email ? "true" : "false"}
-                      className="peer border-none rounded-3xl  bg-white px-8 p-4 4xl:p-6 
+                      className="peer border-none rounded-3xl  bg-white dark:bg-transparent px-8 p-4 4xl:p-6
                       placeholder-transparent focus:border-web_lightGrey focus:outline-none w-full 4xl:text-3xl"
                       placeholder="Infinibayuzzi@gmail.com"
                     />
                     <span
                       className="pointer-events-none absolute start-4 font-medium top-0 
-                      -translate-y-1/2 bg-white pl-4.5 text-xs text-gray-700 transition-all 4xl:text-3xl
+                      -translate-y-1/2 bg-white dark:bg-background pl-4.5 text-xs text-gray-700 dark:text-gray-300 transition-all 4xl:text-3xl
                 peer-placeholder-shown:top-1/2 4xl:peer-placeholder-shown:text-lg peer-placeholder-shown:text-sm peer-focus:top-0 peer-focus:text-lg"
                     >
                       Email
@@ -136,12 +136,12 @@ const Page = () => {
                         maxLength: 20,
                       })}
                       aria-invalid={errors.password ? "true" : "false"}
-                      className="peer border-none rounded-3xl 4xl:text-3xl  bg-white px-8 p-4 4xl:p-6 placeholder-transparent focus:border-web_lightGrey focus:outline-none w-full"
+                      className="peer border-none rounded-3xl 4xl:text-3xl  bg-white dark:bg-transparent px-8 p-4 4xl:p-6 placeholder-transparent focus:border-web_lightGrey focus:outline-none w-full"
                       placeholder="Infinibayuzzi@gmail.com"
                     />
                     <span
                       className="pointer-events-none absolute start-4 font-medium top-0 -translate-y-1/2
-                       bg-white pl-4.5 text-xs text-gray-700 transition-all 
+                       bg-white dark:bg-background pl-4.5 text-xs text-gray-700 dark:text-gray-300 transition-all
                   peer-placeholder-shown:top-1/2 4xl:peer-placeholder-shown:text-lg peer-placeholder-shown:text-sm peer-focus:top-0
                    peer-focus:text-lg 4xl:text-3xl"
                     >
@@ -183,7 +183,7 @@ const Page = () => {
 
                   <Link
                     href="/auth/forgot-password"
-                    className="text-black font-medium  4xl:text-lg"
+                    className="text-black dark:text-foreground font-medium  4xl:text-lg"
                   >
                     Forgot password
                   </Link>

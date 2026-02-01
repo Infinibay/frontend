@@ -132,7 +132,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="text-sm font-medium text-gray-900 truncate">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {info.label}
                     </h4>
                     <RecommendationHelp
@@ -141,16 +141,16 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                     />
                   </div>
 
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     {recommendation.text || info.description}
                   </p>
 
                   {/* Enhanced data display for OS_UPDATE_AVAILABLE or SYSTEM_UPDATE_AVAILABLE */}
                   {(recommendation.type === 'OS_UPDATE_AVAILABLE' || recommendation.type === 'SYSTEM_UPDATE_AVAILABLE') && metadata?.rebootDays && (
                     <div className={`mb-3 p-3 rounded-lg flex items-center gap-2 ${
-                      metadata.rebootDays >= 7 ? 'bg-red-50 border border-red-200' :
-                      metadata.rebootDays >= 3 ? 'bg-orange-50 border border-orange-200' :
-                      'bg-yellow-50 border border-yellow-200'
+                      metadata.rebootDays >= 7 ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800' :
+                      metadata.rebootDays >= 3 ? 'bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800' :
+                      'bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800'
                     }`}>
                       <AlertTriangle className={`h-5 w-5 ${
                         metadata.rebootDays >= 7 ? 'text-red-600' :
@@ -159,14 +159,14 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                       }`} />
                       <div className="flex-1">
                         <p className={`text-sm font-medium ${
-                          metadata.rebootDays >= 7 ? 'text-red-900' :
-                          metadata.rebootDays >= 3 ? 'text-orange-900' :
-                          'text-yellow-900'
+                          metadata.rebootDays >= 7 ? 'text-red-900 dark:text-red-200' :
+                          metadata.rebootDays >= 3 ? 'text-orange-900 dark:text-orange-200' :
+                          'text-yellow-900 dark:text-yellow-200'
                         }`}>
                           ⚠️ Sistema esperando reinicio por {metadata.rebootDays} días
                         </p>
                         {metadata.rebootDays >= 7 && (
-                          <p className="text-xs text-red-700 mt-1">
+                          <p className="text-xs text-red-700 dark:text-red-300 mt-1">
                             URGENTE: Reinicio inmediato requerido para aplicar actualizaciones de seguridad
                           </p>
                         )}
@@ -176,14 +176,14 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
 
                   {/* Enhanced data display for APP_UPDATE_AVAILABLE */}
                   {recommendation.type === 'APP_UPDATE_AVAILABLE' && metadata?.securityUpdateCount > 0 && (
-                    <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2">
+                    <div className="mb-3 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg flex items-center gap-2">
                       <Shield className="h-5 w-5 text-orange-600" />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-orange-900">
+                        <p className="text-sm font-medium text-orange-900 dark:text-orange-200">
                           🛡️ {metadata.securityUpdateCount} actualización(es) de seguridad
                         </p>
                         {metadata.totalUpdateCount > metadata.securityUpdateCount && (
-                          <p className="text-xs text-orange-700 mt-1">
+                          <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
                             Total: {metadata.totalUpdateCount} actualizaciones disponibles
                           </p>
                         )}
@@ -193,9 +193,9 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
 
                   {/* Enhanced data display for PORT_BLOCKED */}
                   {recommendation.type === 'PORT_BLOCKED' && metadata?.blockedPorts?.length > 0 && (
-                    <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                       {metadata.blockedPorts.map((port, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm text-yellow-900">
+                        <div key={idx} className="flex items-center gap-2 text-sm text-yellow-900 dark:text-yellow-200">
                           <Shield className="h-4 w-4 text-yellow-600" />
                           <span className="font-medium">
                             Puerto {port.port} ({port.protocol}) - {port.processName}
@@ -207,14 +207,14 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
 
                   {/* Enhanced data display for DEFENDER_THREAT */}
                   {recommendation.type === 'DEFENDER_THREAT' && metadata?.threatCount > 0 && (
-                    <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                    <div className="mb-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5 text-red-600" />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-red-900">
+                        <p className="text-sm font-medium text-red-900 dark:text-red-200">
                           ⚠️ {metadata.threatCount} amenaza(s) detectada(s)
                         </p>
                         {metadata.activeThreats > 0 && (
-                          <p className="text-xs text-red-700 mt-1">
+                          <p className="text-xs text-red-700 dark:text-red-300 mt-1">
                             {metadata.activeThreats} activa(s) • {metadata.quarantinedThreats || 0} en cuarentena
                           </p>
                         )}
@@ -243,7 +243,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
 
                     {/* Show raw type if using fallback mapping */}
                     {isFallbackType(recommendation.type) && (
-                      <Badge variant="outline" className="text-xs text-gray-500">
+                      <Badge variant="outline" className="text-xs text-gray-500 dark:text-gray-400">
                         {recommendation.type}
                       </Badge>
                     )}
@@ -283,7 +283,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
 
           {/* Expanded content */}
           {isExpanded && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
               <RecommendationHelp
                 recommendationType={recommendation.type}
                 recommendation={recommendation}
@@ -307,7 +307,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
             <div className="flex items-center justify-center py-12">
               <div className="flex items-center gap-3">
                 <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
-                <span className="text-sm text-gray-600">Loading recommendations from last scan...</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Loading recommendations from last scan...</span>
               </div>
             </div>
           </CardContent>
@@ -325,10 +325,10 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
           <CardContent className="p-6">
             <div className="text-center py-12">
               <AlertTriangle className="h-12 w-12 text-red-600 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 Error loading recommendations
               </h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Could not load recommendations from the last health scan for this VM.
               </p>
               <Button onClick={refreshRecommendations} className="flex items-center gap-2">
@@ -351,10 +351,10 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
           <CardContent className="p-6">
             <div className="text-center py-12">
               <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 Excellent! Your VM is optimized
               </h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 No improvement recommendations at this time.
                 Your virtual machine is running optimally.
               </p>
@@ -392,7 +392,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                   <AlertTriangle className="h-5 w-5 text-red-600" />
                 )}
               </CardTitle>
-              <div className="text-sm text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
                 <span>{summary.total} recommendations from last scan</span>
                 {summary.urgent > 0 && (
                   <span className="flex items-center gap-1 text-red-600 font-medium">
@@ -452,7 +452,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
 
           {/* Last update info */}
           {lastUpdateTime && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Last recommendation received: {lastUpdateTime.toLocaleString('en-US')}
             </p>
           )}
@@ -462,10 +462,10 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
           {/* Search and filters */}
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
             <CollapsibleContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-muted/50 rounded-lg">
                 {/* Search */}
                 <div className="relative">
-                  <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                   <Input
                     placeholder="Search recommendations..."
                     value={searchTerm}
@@ -516,8 +516,8 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
               filteredRecommendations.map(renderRecommendationCard)
             ) : (
               <div className="text-center py-8">
-                <Search className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">
+                <Search className="h-8 w-8 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   No recommendations found matching the applied filters.
                 </p>
               </div>

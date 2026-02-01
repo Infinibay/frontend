@@ -66,8 +66,8 @@ export const RECOMMENDATION_MAPPINGS = {
     category: CATEGORIES.SECURITY,
     icon: Shield,
     color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
+    bgColor: 'bg-red-50 dark:bg-red-950/30',
+    borderColor: 'border-red-200 dark:border-red-800',
     actions: ['Enable Windows Defender', 'Configure real-time protection'],
     userFriendlyExplanation: 'Your antivirus is turned off. This is dangerous because viruses can enter your computer. You should enable it immediately.',
     technicalDetails: 'Windows Defender provides real-time protection against malware, spyware, and other security threats.'
@@ -81,8 +81,8 @@ export const RECOMMENDATION_MAPPINGS = {
     category: CATEGORIES.SECURITY,
     icon: Shield,
     color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
+    bgColor: 'bg-red-50 dark:bg-red-950/30',
+    borderColor: 'border-red-200 dark:border-red-800',
     actions: ['Review detected threats', 'Run full scan', 'Clean quarantined items'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
@@ -103,8 +103,8 @@ export const RECOMMENDATION_MAPPINGS = {
     category: CATEGORIES.PERFORMANCE,
     icon: Zap,
     color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
+    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+    borderColor: 'border-orange-200 dark:border-orange-800',
     actions: ['Identify problematic applications', 'Close unnecessary applications', 'Restart specific applications'],
     userFriendlyExplanation: 'Some programs are using too much of your computer\'s processing power. You should close the ones you don\'t need.',
     technicalDetails: 'Specific applications are consuming CPU resources above normal thresholds.'
@@ -118,8 +118,8 @@ export const RECOMMENDATION_MAPPINGS = {
     category: CATEGORIES.PERFORMANCE,
     icon: Zap,
     color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
+    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+    borderColor: 'border-orange-200 dark:border-orange-800',
     actions: ['Identify memory-consuming applications', 'Close unnecessary applications', 'Restart specific applications'],
     userFriendlyExplanation: 'Some programs are using too much of your computer\'s memory. You should close the ones you don\'t need.',
     technicalDetails: 'Specific applications are consuming memory resources above normal thresholds.'
@@ -134,8 +134,8 @@ export const RECOMMENDATION_MAPPINGS = {
     category: CATEGORIES.STORAGE,
     icon: HardDrive,
     color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
+    bgColor: 'bg-red-50 dark:bg-red-950/30',
+    borderColor: 'border-red-200 dark:border-red-800',
     actions: ['Delete unnecessary files', 'Clean temporary files', 'Move files to external storage'],
     userFriendlyExplanation: 'Your hard drive is almost full. This can cause problems. You should delete files you don\'t need.',
     technicalDetails: 'It is recommended to maintain at least 15% free space for optimal performance.'
@@ -153,8 +153,8 @@ export const RECOMMENDATION_MAPPINGS = {
     category: CATEGORIES.UPDATES,
     icon: Download,
     color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+    borderColor: 'border-blue-200 dark:border-blue-800',
     actions: ['Review available updates', 'Install security updates', 'Schedule automatic updates'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
@@ -177,8 +177,8 @@ export const RECOMMENDATION_MAPPINGS = {
     category: CATEGORIES.UPDATES,
     icon: Download,
     color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
+    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+    borderColor: 'border-orange-200 dark:border-orange-800',
     actions: ['Install system updates', 'Schedule reboot', 'Review automatic updates'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
@@ -201,8 +201,8 @@ export const RECOMMENDATION_MAPPINGS = {
     category: CATEGORIES.PERFORMANCE,
     icon: Settings,
     color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+    borderColor: 'border-blue-200 dark:border-blue-800',
     actions: ['Review resource usage', 'Consider reducing CPU/RAM', 'Optimize configuration'],
     userFriendlyExplanation: 'Your virtual machine has more power than it needs. You can optimize it to save resources.',
     technicalDetails: 'Assigned resources consistently exceed actual usage over extended periods.'
@@ -216,8 +216,8 @@ export const RECOMMENDATION_MAPPINGS = {
     category: CATEGORIES.PERFORMANCE,
     icon: Zap,
     color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
+    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+    borderColor: 'border-orange-200 dark:border-orange-800',
     actions: ['Increase CPU/RAM', 'Review workload', 'Optimize applications'],
     userFriendlyExplanation: 'Your virtual machine needs more power to work well. Consider adding more resources.',
     technicalDetails: 'Resources are consistently over-utilized, causing performance degradation.'
@@ -232,8 +232,8 @@ export const RECOMMENDATION_MAPPINGS = {
     category: CATEGORIES.SECURITY,
     icon: Shield,
     color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-200',
+    bgColor: 'bg-yellow-50 dark:bg-yellow-950/30',
+    borderColor: 'border-yellow-200 dark:border-yellow-800',
     actions: ['Review firewall rules', 'Configure exceptions', 'Verify affected applications'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
@@ -280,8 +280,8 @@ export const getRecommendationInfo = (type, recommendation = null) => {
     category: CATEGORIES.GENERAL,
     icon: Info,
     color: 'text-muted-foreground',
-    bgColor: 'bg-muted',
-    borderColor: 'border-border',
+    bgColor: 'bg-muted dark:bg-muted/50',
+    borderColor: 'border-border dark:border-border',
     userFriendlyExplanation: 'The system has a recommendation to improve performance.',
     technicalDetails: 'Technical information not available.'
   };
@@ -369,27 +369,27 @@ export const getPriorityColors = (priority) => {
   const colorMap = {
     [PRIORITY_LEVELS.CRITICAL]: {
       text: 'text-red-600',
-      bg: 'bg-red-50',
-      border: 'border-red-200',
-      badge: 'bg-red-100 text-red-800'
+      bg: 'bg-red-50 dark:bg-red-950/30',
+      border: 'border-red-200 dark:border-red-800',
+      badge: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
     },
     [PRIORITY_LEVELS.HIGH]: {
       text: 'text-orange-600',
-      bg: 'bg-orange-50',
-      border: 'border-orange-200',
-      badge: 'bg-orange-100 text-orange-800'
+      bg: 'bg-orange-50 dark:bg-orange-950/30',
+      border: 'border-orange-200 dark:border-orange-800',
+      badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300'
     },
     [PRIORITY_LEVELS.MEDIUM]: {
       text: 'text-yellow-600',
-      bg: 'bg-yellow-50',
-      border: 'border-yellow-200',
-      badge: 'bg-yellow-100 text-yellow-800'
+      bg: 'bg-yellow-50 dark:bg-yellow-950/30',
+      border: 'border-yellow-200 dark:border-yellow-800',
+      badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300'
     },
     [PRIORITY_LEVELS.LOW]: {
       text: 'text-blue-600',
-      bg: 'bg-blue-50',
-      border: 'border-blue-200',
-      badge: 'bg-blue-100 text-blue-800'
+      bg: 'bg-blue-50 dark:bg-blue-950/30',
+      border: 'border-blue-200 dark:border-blue-800',
+      badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
     }
   };
 

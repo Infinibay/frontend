@@ -98,7 +98,7 @@ export function GlobalHeader() {
         elevated
         sticky
         style={{ top: 0 }}
-        className="z-30"
+        className="z-30 !overflow-visible"
       >
         <HeaderLeft className="w-[200px]">
           {backButton && (

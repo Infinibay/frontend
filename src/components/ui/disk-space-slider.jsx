@@ -61,7 +61,7 @@ export function DiskSpaceSlider({
       used: "bg-red-500/90",
       selected: "bg-purple-500/90",
       available: "bg-purple-200/50",
-      unavailable: "bg-gray-200"
+      unavailable: "bg-gray-200 dark:bg-gray-700"
     },
     blue: {
       icon: "text-blue-500",
@@ -71,7 +71,7 @@ export function DiskSpaceSlider({
       used: "bg-red-500",
       selected: "bg-blue-500",
       available: "bg-blue-200",
-      unavailable: "bg-gray-300"
+      unavailable: "bg-gray-300 dark:bg-gray-700"
     },
     green: {
       icon: "text-green-500",
@@ -81,7 +81,7 @@ export function DiskSpaceSlider({
       used: "bg-red-500",
       selected: "bg-green-500",
       available: "bg-green-200",
-      unavailable: "bg-gray-300"
+      unavailable: "bg-gray-300 dark:bg-gray-700"
     }
   };
   
@@ -98,7 +98,7 @@ export function DiskSpaceSlider({
       </Label>
       
       {/* Visual disk usage bar */}
-      <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden border">
+      <div className="relative h-8 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border">
         {/* Used space (system/other) */}
         {used > 0 && (
           <div
@@ -142,7 +142,7 @@ export function DiskSpaceSlider({
           title={`${available - clampedValue} GB remaining available`}
         >
           {(availablePercentage - selectedPercentage) > 15 && (
-            <span className="text-xs font-semibold text-gray-800 px-1">
+            <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 px-1">
               {(availablePercentage - selectedPercentage) > 25 ? `Free: ${available - clampedValue} GB` : `${available - clampedValue} GB`}
             </span>
           )}
@@ -167,7 +167,7 @@ export function DiskSpaceSlider({
         <div className="flex-1 relative">
           {/* Custom styled range slider */}
           <div
-            className="relative h-3 bg-gray-200 rounded-lg cursor-pointer"
+            className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-lg cursor-pointer"
             onClick={handleTrackClick}
           >
             {/* Progress track - should end exactly at thumb center */}
@@ -194,7 +194,7 @@ export function DiskSpaceSlider({
             />
             {/* Custom thumb - positioned to align with progress track end */}
             <div
-              className={cn("absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 rounded-full shadow-md transition-all duration-200 hover:scale-110 pointer-events-none",
+              className={cn("absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white dark:bg-background border-2 rounded-full shadow-md transition-all duration-200 hover:scale-110 pointer-events-none",
                 color === 'purple' ? 'border-purple-500' :
                 color === 'blue' ? 'border-blue-500' :
                 'border-green-500'
