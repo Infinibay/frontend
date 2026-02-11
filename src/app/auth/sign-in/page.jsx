@@ -98,13 +98,12 @@ const Page = () => {
                 </div>
               </div>
 
-              {/* Hero image */}
-              <div className="relative w-full max-w-lg p-8 bg-gradient-to-br from-white/10 to-white/5 dark:from-white/5 dark:to-white/2 rounded-3xl backdrop-blur-sm border border-white/10">
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent rounded-3xl" />
+              {/* Hero illustration */}
+              <div className="relative w-full max-w-md">
                 <Image
-                  alt="Infinibay platform"
-                  src="/images/auth/authPc.png"
-                  className="w-full h-auto relative z-10 drop-shadow-2xl transition-transform duration-500 hover:scale-105"
+                  alt="Virtual Desktop Infrastructure"
+                  src="/images/auth/vdi-hero.svg"
+                  className="w-full h-auto drop-shadow-lg transition-transform duration-500 hover:scale-105"
                 />
               </div>
             </div>

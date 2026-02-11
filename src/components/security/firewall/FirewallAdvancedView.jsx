@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SimpleIllustration } from '@/components/ui/undraw-illustration';
 import {
   getActionInfo,
   getDirectionInfo,
@@ -73,12 +74,14 @@ const FirewallAdvancedView = ({
         </TableCell>
         <TableCell>
           <Badge className={`${actionInfo.bgColor} ${actionInfo.color} border-0`}>
-            {actionInfo.icon} {actionInfo.label}
+            <actionInfo.icon className="h-3.5 w-3.5 mr-1" />
+            {actionInfo.label}
           </Badge>
         </TableCell>
         <TableCell>
           <Badge variant="outline">
-            {directionInfo.icon} {directionInfo.label}
+            <directionInfo.icon className={`h-3.5 w-3.5 mr-1 ${directionInfo.color}`} />
+            {directionInfo.label}
           </Badge>
         </TableCell>
         <TableCell>
@@ -247,6 +250,12 @@ const FirewallAdvancedView = ({
               </h4>
               {sortedRules.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
+                  <SimpleIllustration
+                    name="security"
+                    size="medium"
+                    opacity={80}
+                    className="mx-auto mb-3"
+                  />
                   <p>No firewall rules configured</p>
                   <p className="text-xs mt-1">Apply a template or create custom rules to get started</p>
                 </div>

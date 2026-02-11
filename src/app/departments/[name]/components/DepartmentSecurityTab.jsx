@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AlertCircle, Info, Shield } from 'lucide-react';
+import { AlertCircle, Info, Shield, Zap } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { createDebugger } from '@/utils/debug';
 import { toast } from 'sonner';
@@ -165,7 +165,10 @@ const DepartmentSecurityTab = ({ department }) => {
 
       {/* Templates Section - Now using shared component */}
       <section className="glass-medium p-6 rounded-lg" data-templates-section>
-        <h3 className="size-heading mb-4">🚀 Quick Security Profiles</h3>
+        <h3 className="size-heading mb-4 flex items-center gap-2">
+          <Zap className="size-icon" />
+          Quick Security Profiles
+        </h3>
         <p className="text-sm text-muted-foreground mb-4">
           Apply pre-configured security templates to set baseline protection for all VMs in this department.
         </p>

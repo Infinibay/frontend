@@ -123,10 +123,12 @@ const TemplatePreviewDialog = ({ template, isOpen, onClose, onApply }) => {
                       )}
                       <div className="flex items-center gap-2 flex-wrap text-xs">
                         <Badge className={`${actionInfo.bgColor} ${actionInfo.color} border-0`}>
-                          {actionInfo.icon} {actionInfo.label}
+                          <actionInfo.icon className="h-3.5 w-3.5 mr-1" />
+                          {actionInfo.label}
                         </Badge>
                         <Badge variant="outline">
-                          {directionInfo.icon} {directionInfo.label}
+                          <directionInfo.icon className={`h-3.5 w-3.5 mr-1 ${directionInfo.color}`} />
+                          {directionInfo.label}
                         </Badge>
                         <Badge variant="outline">
                           {rule.protocol.toUpperCase()}

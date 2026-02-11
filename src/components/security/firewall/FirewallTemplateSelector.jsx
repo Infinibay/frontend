@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Code, Database, Globe, Info, Lock, Monitor, Server } from 'lucide-react';
+import { Check, Code, Database, Globe, Info, Lock, Monitor, Server, ShieldCheck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   useCreateDepartmentFirewallRuleMutation,
@@ -36,12 +36,12 @@ const FirewallTemplateSelector = ({ entityType, entityId, existingRules }) => {
   const entityIdField = entityType === ENTITY_TYPES.DEPARTMENT ? 'departmentId' : 'vmId';
 
   const templateIcons = {
-    'web-server': { icon: Globe, color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950' },
-    'web-server-secure': { icon: Lock, color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950' },
-    'desktop-basic': { icon: Monitor, color: 'text-purple-600', bgColor: 'bg-purple-50 dark:bg-purple-950' },
-    'desktop-secure': { icon: Lock, color: 'text-purple-600', bgColor: 'bg-purple-50 dark:bg-purple-950' },
-    'development': { icon: Code, color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-950' },
-    'database-server': { icon: Database, color: 'text-orange-600', bgColor: 'bg-orange-50 dark:bg-orange-950' }
+    'web-server': { icon: Globe, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/30' },
+    'web-server-secure': { icon: Lock, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/30' },
+    'desktop-basic': { icon: Monitor, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-500/10', borderColor: 'border-purple-500/30' },
+    'desktop-secure': { icon: ShieldCheck, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-500/10', borderColor: 'border-purple-500/30' },
+    'development': { icon: Code, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-500/10', borderColor: 'border-green-500/30' },
+    'database-server': { icon: Database, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-500/10', borderColor: 'border-orange-500/30' }
   };
 
   const handleApplyTemplate = async (templateData) => {
@@ -101,8 +101,9 @@ const FirewallTemplateSelector = ({ entityType, entityId, existingRules }) => {
         {FIREWALL_TEMPLATES.map((template) => {
           const iconConfig = templateIcons[template.id] || {
             icon: Server,
-            color: 'text-gray-600',
-            bgColor: 'bg-gray-50 dark:bg-gray-950'
+            color: 'text-gray-600 dark:text-gray-400',
+            bgColor: 'bg-gray-500/10',
+            borderColor: 'border-gray-500/30'
           };
           const Icon = iconConfig.icon;
           const summary = getTemplateSummary(template);
@@ -122,8 +123,8 @@ const FirewallTemplateSelector = ({ entityType, entityId, existingRules }) => {
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
-                <div className={`p-2 rounded-lg ${iconConfig.bgColor}`}>
-                  <Icon className={`h-6 w-6 ${iconConfig.color}`} />
+                <div className={`p-3 rounded-xl border ${iconConfig.bgColor} ${iconConfig.borderColor}`}>
+                  <Icon className={`h-8 w-8 ${iconConfig.color}`} />
                 </div>
                 <Info className="h-4 w-4 text-gray-400" />
               </div>
@@ -138,9 +139,15 @@ const FirewallTemplateSelector = ({ entityType, entityId, existingRules }) => {
 
               {/* Summary */}
               <div className="text-xs text-muted-foreground space-y-1 mb-3">
-                <div>✓ {summary.allowedServices.length} services enabled</div>
+                <div className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                  {summary.allowedServices.length} services enabled
+                </div>
                 {summary.blockedPorts.length > 0 && (
-                  <div>✗ {summary.blockedPorts.length} ports blocked</div>
+                  <div className="flex items-center gap-1.5">
+                    <X className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                    {summary.blockedPorts.length} ports blocked
+                  </div>
                 )}
                 <div className="font-medium">{summary.totalRules} total rules</div>
               </div>

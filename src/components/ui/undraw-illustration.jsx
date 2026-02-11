@@ -1,17 +1,34 @@
 'use client';
 
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { InboxIcon, AlertCircle, CloudDownload, FileQuestion, ServerCrash } from 'lucide-react';
 
 /**
- * Map of context names to their appropriate icons
- * Using lucide-react icons for a clean, consistent look
+ * Map of context names to custom illustration images
+ */
+const IMAGE_MAP = {
+  'computer': '/images/icons/computer.svg',
+  'department': '/images/icons/department.svg',
+  'empty': '/images/icons/empty-state.svg',
+  'health': '/images/icons/health.svg',
+  'network': '/images/icons/network.svg',
+  'script': '/images/icons/script.svg',
+  'security': '/images/icons/security.svg',
+  'server-rack': '/images/icons/server-rack.svg',
+  'settings': '/images/icons/settings.svg',
+  'storage': '/images/icons/storage.svg',
+  'template': '/images/icons/template.svg',
+  'users': '/images/icons/users.svg',
+};
+
+/**
+ * Map of context names to their appropriate lucide icons (fallback)
  */
 const ICON_MAP = {
-  'empty': InboxIcon,
-  'void': FileQuestion,
   'not-found': InboxIcon,
   'no-data': InboxIcon,
+  'void': FileQuestion,
   'error': ServerCrash,
   'warning': AlertCircle,
   'alert': AlertCircle,
@@ -20,12 +37,18 @@ const ICON_MAP = {
   'cloud': CloudDownload,
 };
 
+const SIZE_PX = {
+  small: 80,
+  medium: 120,
+  large: 160,
+  xlarge: 200,
+};
+
 /**
  * SimpleIllustration Component
- * Displays clean icon-based illustrations using lucide-react
+ * Displays custom SVG illustrations from the icon pack, or falls back to lucide-react icons.
  *
- * This replaces Lottie animations with simple, accessible icons
- * that respect user preferences (reduced motion) and have better performance.
+ * Priority: IMAGE_MAP (custom illustrations) > icon prop > ICON_MAP (lucide fallback)
  */
 export function SimpleIllustration({
   name,
@@ -37,13 +60,41 @@ export function SimpleIllustration({
   ...props
 }) {
   const sizeClasses = {
-    small: 'w-32 h-32',
-    medium: 'w-48 h-48',
-    large: 'w-64 h-64',
-    xlarge: 'w-80 h-80',
+    small: 'w-20 h-20',
+    medium: 'w-30 h-30',
+    large: 'w-40 h-40',
+    xlarge: 'w-50 h-50',
   };
 
-  // Use provided icon or look up by name
+  const imageSrc = IMAGE_MAP[name];
+
+  // If we have a custom illustration image, render it
+  if (imageSrc) {
+    const px = SIZE_PX[size] || SIZE_PX.medium;
+    return (
+      <div
+        className={cn(
+          'flex items-center justify-center select-none pointer-events-none',
+          className
+        )}
+        role="img"
+        aria-label={`${name} illustration`}
+        {...props}
+      >
+        <Image
+          src={imageSrc}
+          alt={`${name} illustration`}
+          width={px}
+          height={px}
+          className="object-contain"
+          style={{ opacity: opacity / 100 }}
+          draggable={false}
+        />
+      </div>
+    );
+  }
+
+  // Fallback to lucide icon
   const Icon = icon || ICON_MAP[name] || InboxIcon;
 
   return (

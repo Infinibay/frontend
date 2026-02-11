@@ -210,12 +210,14 @@ const FirewallCustomRules = ({ vmId, customRules, departmentRules, onRefetch }) 
         </TableCell>
         <TableCell>
           <Badge className={`${actionInfo.bgColor} ${actionInfo.color} border-0`}>
-            {actionInfo.icon} {actionInfo.label}
+            <actionInfo.icon className="h-3.5 w-3.5 mr-1" />
+            {actionInfo.label}
           </Badge>
         </TableCell>
         <TableCell>
           <Badge variant="outline">
-            {directionInfo.icon} {directionInfo.label}
+            <directionInfo.icon className={`h-3.5 w-3.5 mr-1 ${directionInfo.color}`} />
+            {directionInfo.label}
           </Badge>
         </TableCell>
         <TableCell>

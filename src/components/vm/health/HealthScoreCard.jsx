@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { SimpleIllustration } from '@/components/ui/undraw-illustration';
 
 // Custom hook for health score data (placeholder for now)
 const useHealthScore = (vmId) => {
@@ -53,7 +54,13 @@ const HealthScoreCard = ({ vmId }) => {
   if (!healthData && !isLoading) {
     return (
       <Card className="p-6">
-        <CardContent className="flex items-center justify-center h-32">
+        <CardContent className="flex flex-col items-center justify-center h-40">
+          <SimpleIllustration
+            name="health"
+            size="small"
+            opacity={80}
+            className="mb-2"
+          />
           <p className="text-muted-foreground">No health data available</p>
         </CardContent>
       </Card>

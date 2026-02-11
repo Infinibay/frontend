@@ -11,7 +11,7 @@ const EmptyState = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
       <SimpleIllustration
-        name="not-found"
+        name="computer"
         size="large"
         opacity={80}
         className="mb-4"

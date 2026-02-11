@@ -24,6 +24,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { Download, Loader2, FileCode, Tag, X, AlertCircle } from 'lucide-react'
+import { SimpleIllustration } from '@/components/ui/undraw-illustration'
 
 /**
  * ScriptsSection component - Reusable scripts management UI
@@ -543,7 +544,12 @@ export default function ScriptsSection({
         </div>
       ) : displayScripts.length === 0 ? (
         <div className="text-center py-12">
-          <FileCode className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <SimpleIllustration
+            name="script"
+            size="large"
+            opacity={80}
+            className="mx-auto mb-4"
+          />
           <p className="text-muted-foreground">
             {filteredScripts.length === 0 && search ?
               'No scripts found matching your search' :

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw, ShieldCheck, ShieldAlert, ShieldX, ShieldOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ENTITY_TYPES } from '@/config/firewallEntityConfig';
@@ -17,41 +17,53 @@ const FirewallStatusHeader = ({ entityType, rules, conflicts, onRefresh, onCreat
 
   const statusConfig = {
     SECURE: {
-      icon: '🟢',
+      Icon: ShieldCheck,
       label: 'Secure',
       color: 'text-green-700 dark:text-green-400',
       bgColor: 'bg-green-50 dark:bg-green-950',
       borderColor: 'border-green-200 dark:border-green-800',
+      iconBg: 'bg-green-500/10',
+      iconBorder: 'border-green-500/30',
+      iconColor: 'text-green-600 dark:text-green-400',
       description: entityType === ENTITY_TYPES.DEPARTMENT
         ? 'Department has strong baseline protection'
         : 'Your VM is well protected'
     },
     MODERATE: {
-      icon: '🟡',
+      Icon: ShieldAlert,
       label: 'Moderate',
       color: 'text-yellow-700 dark:text-yellow-400',
       bgColor: 'bg-yellow-50 dark:bg-yellow-950',
       borderColor: 'border-yellow-200 dark:border-yellow-800',
+      iconBg: 'bg-yellow-500/10',
+      iconBorder: 'border-yellow-500/30',
+      iconColor: 'text-yellow-600 dark:text-yellow-400',
       description: entityType === ENTITY_TYPES.DEPARTMENT
         ? 'Baseline security could be improved'
         : 'Security could be improved'
     },
     AT_RISK: {
-      icon: '🔴',
+      Icon: ShieldX,
       label: 'At Risk',
       color: 'text-red-700 dark:text-red-400',
       bgColor: 'bg-red-50 dark:bg-red-950',
       borderColor: 'border-red-200 dark:border-red-800',
+      iconBg: 'bg-red-500/10',
+      iconBorder: 'border-red-500/30',
+      iconColor: 'text-red-600 dark:text-red-400',
       description: entityType === ENTITY_TYPES.DEPARTMENT
         ? 'Critical: Configure baseline protection'
         : 'Critical: Configure firewall protection'
     },
     UNCONFIGURED: {
-      icon: '⚪',
+      Icon: ShieldOff,
       label: 'Unconfigured',
       color: 'text-gray-700 dark:text-gray-400',
       bgColor: 'bg-gray-50 dark:bg-gray-950',
       borderColor: 'border-gray-200 dark:border-gray-800',
+      iconBg: 'bg-gray-500/10',
+      iconBorder: 'border-gray-500/30',
+      iconColor: 'text-gray-500 dark:text-gray-400',
       description: entityType === ENTITY_TYPES.DEPARTMENT
         ? 'No department-level rules configured'
         : 'No firewall rules configured'
@@ -75,8 +87,8 @@ const FirewallStatusHeader = ({ entityType, rules, conflicts, onRefresh, onCreat
       <div className="flex items-start justify-between">
         {/* Left: Status info */}
         <div className="flex items-start gap-4 flex-1">
-          <div className="text-4xl" role="img" aria-label={status.label}>
-            {status.icon}
+          <div className={`p-3 rounded-xl border ${status.iconBg} ${status.iconBorder}`} aria-label={status.label}>
+            <status.Icon className={`h-8 w-8 ${status.iconColor}`} />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1 flex-wrap">

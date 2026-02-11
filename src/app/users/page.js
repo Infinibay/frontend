@@ -51,6 +51,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar } from "@/components/ui/avatar";
+import { SimpleIllustration } from "@/components/ui/undraw-illustration";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -485,9 +486,12 @@ const UsersPage = () => {
           ) : !users || users.length === 0 ? (
             <div className="glass-medium size-card-padding radius-fluent-lg elevation-2 text-center">
               <div className="size-gap flex flex-col items-center">
-                <div className="size-avatar bg-muted rounded-full flex items-center justify-center">
-                  <Avatar className="size-icon" />
-                </div>
+                <SimpleIllustration
+                  name="users"
+                  size="large"
+                  opacity={80}
+                  className="mb-2"
+                />
                 <div>
                   <h3 className="size-heading text-glass-text-primary">No Users Found</h3>
                   <p className="size-text text-glass-text-secondary">Get started by adding your first user to the system.</p>

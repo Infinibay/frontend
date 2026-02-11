@@ -6,6 +6,8 @@
  * provide detailed information for geeks.
  */
 
+import type { LucideIcon } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpDown, ArrowUpFromLine, Ban, Check, XCircle } from 'lucide-react';
 import { createDebugger } from './debug';
 
 const debug = createDebugger('frontend:utils:firewallHelpers');
@@ -53,7 +55,7 @@ export type RuleConflict = {
  */
 export function getActionInfo(action: FirewallRule['action']): {
   label: string;
-  icon: string;
+  icon: LucideIcon;
   color: string;
   bgColor: string;
   borderColor: string;
@@ -62,7 +64,7 @@ export function getActionInfo(action: FirewallRule['action']): {
   const actionMap = {
     ACCEPT: {
       label: 'Allow',
-      icon: '✅',
+      icon: Check,
       color: 'text-green-700 dark:text-green-400',
       bgColor: 'bg-green-50 dark:bg-green-950',
       borderColor: 'border-green-200 dark:border-green-800',
@@ -70,7 +72,7 @@ export function getActionInfo(action: FirewallRule['action']): {
     },
     DROP: {
       label: 'Block (Silent)',
-      icon: '🚫',
+      icon: Ban,
       color: 'text-red-700 dark:text-red-400',
       bgColor: 'bg-red-50 dark:bg-red-950',
       borderColor: 'border-red-200 dark:border-red-800',
@@ -78,7 +80,7 @@ export function getActionInfo(action: FirewallRule['action']): {
     },
     REJECT: {
       label: 'Block (Notify)',
-      icon: '❌',
+      icon: XCircle,
       color: 'text-orange-700 dark:text-orange-400',
       bgColor: 'bg-orange-50 dark:bg-orange-950',
       borderColor: 'border-orange-200 dark:border-orange-800',
@@ -94,26 +96,26 @@ export function getActionInfo(action: FirewallRule['action']): {
  */
 export function getDirectionInfo(direction: FirewallRule['direction']): {
   label: string;
-  icon: string;
+  icon: LucideIcon;
   color: string;
   description: string;
 } {
   const directionMap = {
     IN: {
       label: 'Incoming',
-      icon: '↓',
+      icon: ArrowDownToLine,
       color: 'text-blue-600 dark:text-blue-400',
       description: 'Applies to incoming traffic to this VM'
     },
     OUT: {
       label: 'Outgoing',
-      icon: '↑',
+      icon: ArrowUpFromLine,
       color: 'text-purple-600 dark:text-purple-400',
       description: 'Applies to outgoing traffic from this VM'
     },
     INOUT: {
       label: 'Both Directions',
-      icon: '↕',
+      icon: ArrowUpDown,
       color: 'text-gray-600 dark:text-gray-400',
       description: 'Applies to both incoming and outgoing traffic'
     }
@@ -483,7 +485,7 @@ export function calculateSecurityScore(rules: FirewallRule[]): {
   );
   if (hasAllowAll) {
     score -= 40;
-    issues.push('⚠️ "Allow all" rule detected - high security risk');
+    issues.push('"Allow all" rule detected - high security risk');
   }
 
   // Check for inbound protection
@@ -517,7 +519,7 @@ export function calculateSecurityScore(rules: FirewallRule[]): {
     score -= 10 * exposedRiskPorts.length;
     exposedRiskPorts.forEach(r => {
       const portName = getCommonServiceName(r.dstPortStart!) || r.dstPortStart;
-      issues.push(`⚠️ High-risk port exposed: ${portName}`);
+      issues.push(`High-risk port exposed: ${portName}`);
     });
   }
 

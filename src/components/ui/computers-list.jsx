@@ -221,7 +221,7 @@ export function ComputersList({
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
         <SimpleIllustration
-          name="not-found"
+          name="computer"
           size="large"
           opacity={80}
           className="mb-4"
@@ -290,7 +290,7 @@ export function ComputersList({
               {byDepartment && (!departmentData.machines || departmentData.machines.length === 0) && (
                 <div className="flex flex-col items-center justify-center min-h-[300px] p-8 col-span-full">
                   <SimpleIllustration
-                    name="not-found"
+                    name="computer"
                     size="medium"
                     opacity={80}
                     className="mb-4"
