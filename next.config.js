@@ -24,7 +24,8 @@ const nextConfig = {
     "@nextui-org/react",
     "@nextui-org/theme",
     "@nextui-org/system",
-    "@nextui-org/shared-utils"
+    "@nextui-org/shared-utils",
+    "@infinibay/harbor"
   ],
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",

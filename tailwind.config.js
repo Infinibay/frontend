@@ -12,6 +12,9 @@ module.exports = {
     // Or if using `src` directory:
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
     "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}",
+    // Harbor UI library (linked via file:../harbor). Must scan its sources
+    // so Tailwind emits utilities for classes like bg-surface, text-fg, etc.
+    "../harbor/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -141,6 +144,35 @@ module.exports = {
         'glass-text': {
           primary: 'hsl(var(--glass-text-primary))',
           secondary: 'hsl(var(--glass-text-secondary))'
+        },
+
+        /* =====================================================
+         * Harbor design tokens (sourced from harbor/src/tokens.css
+         * via --harbor-* RGB triplets). These are the colors Harbor
+         * components reference via Tailwind utilities (bg-surface,
+         * text-fg, bg-accent-2, etc.).
+         *
+         * Note: harbor's `accent` overrides the shadcn accent key
+         * above. Shadcn-only screens will show hover states in
+         * harbor fuchsia until fully migrated — accepted trade-off.
+         * ===================================================== */
+        accent: 'rgb(var(--harbor-accent) / <alpha-value>)',
+        'accent-2': 'rgb(var(--harbor-accent-2) / <alpha-value>)',
+        'accent-3': 'rgb(var(--harbor-accent-3) / <alpha-value>)',
+        success: 'rgb(var(--harbor-success) / <alpha-value>)',
+        warning: 'rgb(var(--harbor-warning) / <alpha-value>)',
+        danger: 'rgb(var(--harbor-danger) / <alpha-value>)',
+        info: 'rgb(var(--harbor-info) / <alpha-value>)',
+        surface: {
+          DEFAULT: 'rgb(var(--harbor-bg) / <alpha-value>)',
+          1: 'rgb(var(--harbor-bg-elev-1) / <alpha-value>)',
+          2: 'rgb(var(--harbor-bg-elev-2) / <alpha-value>)',
+          3: 'rgb(var(--harbor-bg-elev-3) / <alpha-value>)'
+        },
+        fg: {
+          DEFAULT: 'rgb(var(--harbor-text) / <alpha-value>)',
+          muted: 'rgb(var(--harbor-text-muted) / <alpha-value>)',
+          subtle: 'rgb(var(--harbor-text-subtle) / <alpha-value>)'
         }
       },
       keyframes: {
@@ -158,9 +190,8 @@ module.exports = {
           "100%": { opacity: 0.3 },
         },
         "shimmer": {
-          "100%": {
-            transform: "translateX(100%)",
-          },
+          "0%": { backgroundPosition: "-1000px 0" },
+          "100%": { backgroundPosition: "1000px 0" },
         },
         "spin": {
           from: { transform: 'translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(0deg)' },
@@ -175,12 +206,26 @@ module.exports = {
           '50%': { transform: 'scale(1.5)', opacity: 0.5 },
           '100%': { transform: 'scale(1)', opacity: 1 },
         },
+        /* Harbor motion keyframes */
+        breathe: {
+          "0%, 100%": { opacity: "0.85", transform: "scale(1)" },
+          "50%": { opacity: "1", transform: "scale(1.02)" },
+        },
+        mesh: {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "33%": { transform: "translate(30px, -20px) scale(1.1)" },
+          "66%": { transform: "translate(-20px, 30px) scale(0.95)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "spin": "spin 1s linear infinite",
         "fade": "fade 2s infinite",
+        /* Harbor animations */
+        "breathe": "breathe 3s ease-in-out infinite",
+        "shimmer": "shimmer 2s linear infinite",
+        "mesh": "mesh 18s ease-in-out infinite",
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -256,7 +301,13 @@ module.exports = {
         /* Windows 11 Specific */
         'mica': '0 2px 8px hsl(var(--brand-dark-blue-900) / 0.08), inset 0 1px 0 hsl(255 255 255 / 0.15)',
         'acrylic': '0 16px 64px hsl(var(--brand-dark-blue-900) / 0.18), inset 0 1px 0 hsl(255 255 255 / 0.35)',
-        'fluent': '0 8px 24px hsl(var(--brand-dark-blue-900) / 0.12), 0 4px 8px hsl(var(--brand-dark-blue-900) / 0.08), inset 0 1px 0 hsl(255 255 255 / 0.25)'
+        'fluent': '0 8px 24px hsl(var(--brand-dark-blue-900) / 0.12), 0 4px 8px hsl(var(--brand-dark-blue-900) / 0.08), inset 0 1px 0 hsl(255 255 255 / 0.25)',
+
+        /* Harbor shadows (distinct namespaced keys, no collision) */
+        'harbor-sm': 'var(--harbor-shadow-sm)',
+        'harbor-md': 'var(--harbor-shadow-md)',
+        'harbor-lg': 'var(--harbor-shadow-lg)',
+        'harbor-glow': 'var(--harbor-shadow-glow)'
       },
       /* Enhanced Transition Properties */
       transitionProperty: {
@@ -266,7 +317,19 @@ module.exports = {
       transitionDuration: {
         '400': '400ms',
         '600': '600ms',
-        '800': '800ms'
+        '800': '800ms',
+        /* Harbor motion durations */
+        instant: "var(--harbor-dur-instant)",
+        fast: "var(--harbor-dur-fast)",
+        base: "var(--harbor-dur-base)",
+        slow: "var(--harbor-dur-slow)",
+        slower: "var(--harbor-dur-slower)"
+      },
+      transitionTimingFunction: {
+        /* Harbor easings (keys `out`/`in-out` override Tailwind defaults) */
+        out: "var(--harbor-ease-out)",
+        "in-out": "var(--harbor-ease-in-out)",
+        spring: "var(--harbor-ease-spring)"
       }
     },
     screens: {

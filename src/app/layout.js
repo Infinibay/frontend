@@ -10,6 +10,9 @@ import { PersistGate } from "redux-persist/integration/react"
 import { useSelector, useDispatch } from "react-redux"
 import "../styles/globals.css"
 import "../styles/auth.css"
+// Harbor UI library — design tokens must load after Tailwind base so
+// utilities like bg-surface, text-fg, bg-accent-2 resolve to harbor vars.
+import "@infinibay/harbor/tokens.css"
 import client from "../apollo-client"
 import { store, persistor } from "../state/store"
 import { createDebugger } from "@/utils/debug"
@@ -17,6 +20,8 @@ import { InitialDataLoader } from "@/components/InitialDataLoader"
 import { AppSidebar } from "@/components/ui/navbar"
 import auth from "@/utils/auth"
 import { Toast, ToastTitle, ToastDescription, ToastProvider, ToastViewport } from "@/components/ui/toast"
+import { CursorProvider } from "@infinibay/harbor/lib/cursor"
+import { ToastProvider as HarborToastProvider } from "@infinibay/harbor"
 import { selectInterfaceSize, selectAppSettingsInitialized, selectTheme, selectAppSettings } from "@/state/slices/appSettings"
 import { SizeProvider } from "@/components/ui/size-provider"
 import { Toaster } from "@/components/ui/toaster"
@@ -120,11 +125,17 @@ function ThemeProviderWrapper({ children }) {
   const theme = useSelector(selectTheme);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
 
-  // Use fallback theme when settings aren't loaded yet
-  const currentTheme = (appSettingsInitialized && theme) ? theme : 'system';
+  // Harbor migration: forced dark-only during the Harbor redesign.
+  // Harbor's tokens.css only defines dark values at :root, so mixing light
+  // mode with harbor components would break visuals. Once harbor ships
+  // light tokens (tracked separately), revert to the commented line below.
+  // const currentTheme = (appSettingsInitialized && theme) ? theme : 'system';
+  const currentTheme = 'dark';
+  // Silence unused-var warnings while we keep the Redux selectors wired.
+  void theme; void appSettingsInitialized;
 
   return (
-    <ThemeProvider defaultTheme={currentTheme} enableSystem={true}>
+    <ThemeProvider defaultTheme={currentTheme} enableSystem={false}>
       <ThemeApplier desiredTheme={currentTheme} />
       {children}
     </ThemeProvider>
@@ -189,7 +200,7 @@ export default function RootLayout({ children }) {
   }, [isAuthenticated])
 
   return (
-    <html lang="en" className={monst.className} suppressHydrationWarning>
+    <html lang="en" className={`${monst.className} dark`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: createThemeScript() }} />
       </head>
@@ -205,16 +216,20 @@ export default function RootLayout({ children }) {
                       <WallpaperApplier>
                       <ApolloProvider client={client}>
                     <NextUIProvider className="w-full">
-                      <InitialDataLoader className="w-full">
-                        <SocketNamespaceGuard className="w-full">
-                          <RealTimeProvider className="w-full">
-                            <AppContent isAuthenticated={isAuthenticated}>
-                              {children}
-                            </AppContent>
-                          </RealTimeProvider>
-                        </SocketNamespaceGuard>
-                      </InitialDataLoader>
-                      <Toaster />
+                      <CursorProvider>
+                        <HarborToastProvider>
+                          <InitialDataLoader className="w-full">
+                            <SocketNamespaceGuard className="w-full">
+                              <RealTimeProvider className="w-full">
+                                <AppContent isAuthenticated={isAuthenticated}>
+                                  {children}
+                                </AppContent>
+                              </RealTimeProvider>
+                            </SocketNamespaceGuard>
+                          </InitialDataLoader>
+                          <Toaster />
+                        </HarborToastProvider>
+                      </CursorProvider>
                     </NextUIProvider>
                       </ApolloProvider>
                       </WallpaperApplier>
