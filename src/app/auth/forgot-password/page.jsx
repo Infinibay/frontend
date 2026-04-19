@@ -1,151 +1,138 @@
 "use client";
-import AuthHeader from "@/components/auth/AuthHeader";
-import { Button, Image, Input } from "@nextui-org/react";
+
+import React, { useState } from "react";
 import Link from "next/link";
-import React from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
+import { Mail, ArrowLeft, Send } from "lucide-react";
+import {
+  Card,
+  Button,
+  TextField,
+  Alert,
+} from "@infinibay/harbor";
 
 const Page = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    getValues,
-    reset,
-    control,
-    setValue,
-  } = useForm();
-  // handle form submit
-  const onSubmit = (data) => {
-    // Nothing
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { handleSubmit, control } = useForm();
+
+  const onSubmit = async (_data) => {
+    setError("");
+    setIsLoading(true);
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+      router.push("/auth/email-verification");
+    } catch (_err) {
+      setError("Couldn't send the recovery email. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
   return (
-    <>
-      <div className="auth_bg min-h-screen">
-        {/* header */}
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
+      <div className="mesh-bg">
+        <div
+          className="blob"
+          style={{
+            width: 520, height: 520, left: "-8%", top: "10%",
+            background: "rgb(168 85 247 / 0.38)",
+            animation: "mesh 20s ease-in-out infinite",
+          }}
+        />
+        <div
+          className="blob"
+          style={{
+            width: 480, height: 480, right: "-5%", bottom: "-5%",
+            background: "rgb(56 189 248 / 0.35)",
+            animation: "mesh 24s ease-in-out infinite reverse",
+          }}
+        />
+      </div>
 
-        <div className="container mx-auto px-2 flex flex-wrap xl:flex-nowrap justify-center lg:gap-20 gap-4 xl:pt-20 lg:pt-16 pt-12  items-center">
-          <div className="lg:max-w-[650px] 4xl:max-w-[1300px]  lg:min-w-[750px] w-full  ">
-            <Link href="/auth/sign-in " className=" container  px-2 mx-auto">
-              <AuthHeader text={"Back"} />
-            </Link>
-            <Image
-              src="/images/auth/forgotpassword.png"
-              alt="forgetpassword"
-              className="w-full lg:max-w-[600px] 4xl:max-w-[1600px] 4xl:mt-8 xl:block hidden"
-            />
-          </div>
-          <div className="max-w-[600px] 4xl:max-w-[1200px]   h-full  w-full">
-            <div className="flex justify-center flex-1 4xl:max-w-[1200px] h-full w-full border-[#DEDEDE]">
-              <div className="border border-web_lightgray dark:border-border flex-1  max-w-[550px] 4xl:max-w-[1100px] 4xl:h-[900px] h-full p-6 rounded-2xl custom_shadow bg-white dark:bg-background/90">
-                <Image
-                  className="max-w-[280px] 4xl:max-w-[800px] 4xl:mt-10 "
-                  alt="laptop-infinibay"
-                  src="/images/logo_1.png"
-                />
-                <div className="py-4 4xl:mt-16 ">
-                  <div className="flex gap-2 justify-between mb-2 4xl:mb-6">
-                    <h2 className="subheading">Forgot Password?</h2>
-                  </div>
-                  <p className="text-sm 4xl:text-2xl 4xl:mt-12">
-                    kindly provide the registered email to change the passcode.{" "}
-                  </p>
-                  <form onSubmit={handleSubmit(onSubmit)}>
-                    <div className="w-full 4xl:mt-12">
-                      <label
-                        for="Email"
-                        class="relative block rounded-3xl border dark:border-border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite dark:bg-transparent"
-                      >
-                        <input
-                          htmlFor="text"
-                          id="Email"
-                          {...register("email", {
-                            required: "Email is required",
-                            pattern: {
-                              value:
-                                /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
-                              message: "Enter a valid email address",
-                            },
-                          })}
-                          class="peer  4xl:text-3xl 4xl:p-7 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
-                          placeholder="Infinibayuzzi@gmail.com"
-                        />
-                        <span class="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
-                          Enter your Email
-                        </span>
-                      </label>
-                      <div className="h-2 mt-2">
-                        {errors.email?.type === "required" && (
-                          <p
-                            role="alert"
-                            className="text-red-600 text-[13px] font-bold 4xl:text-2xl"
-                          >
-                            Your email is required
-                          </p>
-                        )}
-                        {errors.email?.type === "pattern" && (
-                          <p
-                            role="alert"
-                            className="text-red-600 text-[13px] font-bold 4xl:text-2xl"
-                          >
-                            Enter a valid email address
-                          </p>
-                        )}
-                      </div>
-                    </div>
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-md mx-auto">
+          <Link
+            href="/auth/sign-in"
+            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg mb-6 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to sign in
+          </Link>
 
-                    {/*  <div className="flex justify-between items-center sm:flex-nowrap flex-wrap  mt-4 pl-3">
-                      <div className="gap-x-3 flex sm:text-end text-center">
-                        <label>
-                          <Controller
-                            name="rememberme"
-                            control={control}
-                            // Set the default value
-                            render={({ field }) => (
-                              <input type="checkbox" {...field} />
-                            )}
-                          />{" "}
-                          remember me
-                        </label>
-                        {errors.rememberme && (
-                          <span>This field is required</span>
-                        )}
-                      </div>
-
-                      <Link
-                        href="/auth/forgot-password"
-                        className="text-black  mt-3 sm:mt-0 font-medium"
-                      >
-                        Forgot password
-                      </Link> 
-                  </div> */}
-                    <Button
-                      as={Link}
-                      href="/auth/email-verification"
-                      // type="submit"
-                      className="mt-4 GradientBlue  text-white w-full p-3 rounded-2xl 4xl:text-3xl 4xl:mt-12 4xl:p-10"
-                    >
-                      Submit
-                    </Button>
-                    <div className="mt-6 -mb-3 flex gap-3 justify-center 4xl:mt-12">
-                      <p className="text-sm text-center 4xl:text-3xl">
-                        {`Don't have an account?`}
-                      </p>
-                      <Link
-                        href="/auth/sign-up"
-                        className="text-web_lightbrown text-sm font-semibold border-web_lightbrown border-b-1 4xl:text-2xl"
-                      >
-                        Sign up now
-                      </Link>
-                    </div>
-                  </form>
-                </div>
-              </div>
+          <Card variant="glass" className="p-8 spotlight-soft">
+            <div className="flex justify-center mb-6">
+              <Image
+                alt="Infinibay"
+                src="/images/logo.png"
+                width={56}
+                height={56}
+                priority
+              />
             </div>
-          </div>
+
+            <div className="space-y-2 text-center mb-6">
+              <h1 className="text-2xl font-semibold text-fg">Forgot password?</h1>
+              <p className="text-sm text-fg-muted">
+                Enter the email you signed up with — we&apos;ll send a recovery code.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <Controller
+                name="email"
+                control={control}
+                defaultValue=""
+                rules={{
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Enter a valid email address",
+                  },
+                }}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    label="Email address"
+                    type="email"
+                    placeholder="you@example.com"
+                    icon={<Mail className="h-4 w-4" />}
+                    error={fieldState.error?.message}
+                    {...field}
+                  />
+                )}
+              />
+
+              {error && <Alert tone="danger">{error}</Alert>}
+
+              <Button
+                type="submit"
+                size="lg"
+                loading={isLoading}
+                disabled={isLoading}
+                icon={<Send className="h-4 w-4" />}
+                className="w-full"
+              >
+                {isLoading ? "Sending…" : "Send recovery code"}
+              </Button>
+            </form>
+
+            <div className="text-center pt-6 mt-6 border-t border-white/8">
+              <p className="text-sm text-fg-muted">
+                Don&apos;t have an account?{" "}
+                <Link
+                  href="/auth/sign-up"
+                  className="font-medium text-accent-2 hover:text-accent-2/80 transition-colors"
+                >
+                  Sign up
+                </Link>
+              </p>
+            </div>
+          </Card>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

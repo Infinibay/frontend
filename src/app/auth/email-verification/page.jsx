@@ -1,131 +1,140 @@
 "use client";
-import AuthHeader from "@/components/auth/AuthHeader";
-import { Button, Image, Input } from "@nextui-org/react";
+
+import React, { useState } from "react";
 import Link from "next/link";
-import React from "react";
-import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { ArrowLeft, MailCheck, KeyRound } from "lucide-react";
+import {
+  Card,
+  Button,
+  TextField,
+  Alert,
+} from "@infinibay/harbor";
 
 const Page = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    getValues,
-    reset,
-    setValue,
-  } = useForm();
-  // handle form submit
-  const onSubmit = (data) => {
-    // Nothing
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const router = useRouter();
+  const { handleSubmit, control } = useForm();
+
+  const onSubmit = async (_data) => {
+    setError("");
+    setIsLoading(true);
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+      router.push("/auth/create-new-password");
+    } catch (_err) {
+      setError("Invalid code. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onResend = async () => {
+    setResending(true);
+    try {
+      await new Promise((r) => setTimeout(r, 400));
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
-    <>
-      <div className="auth_bg min-h-screen">
-        {/* header */}
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
+      <div className="mesh-bg">
+        <div
+          className="blob"
+          style={{
+            width: 520, height: 520, left: "-8%", top: "10%",
+            background: "rgb(56 189 248 / 0.4)",
+            animation: "mesh 20s ease-in-out infinite",
+          }}
+        />
+        <div
+          className="blob"
+          style={{
+            width: 480, height: 480, right: "-5%", bottom: "-5%",
+            background: "rgb(244 114 182 / 0.3)",
+            animation: "mesh 24s ease-in-out infinite reverse",
+          }}
+        />
+      </div>
 
-        <div className="container mx-auto px-2 flex flex-wrap xl:flex-nowrap justify-center lg:gap-20 gap-4 xl:pt-20 lg:pt-16 pt-12  items-center">
-          <div className="lg:max-w-[650px] 4xl:max-w-[1300px]  lg:min-w-[750px] w-full  ">
-            <Link href="/auth/forgot-password" className="px-9">
-              <AuthHeader text={"Back"} />
-            </Link>
-            <Image
-              src="/images/auth/forgotpassword.png"
-              alt="forgetpassword"
-              className="w-full lg:max-w-[600px] 4xl:max-w-[1600px] 4xl:mt-8 xl:block hidden"
-            />
-          </div>
-          <div className="max-w-[600px]  4xl:max-w-[1200px] w-full ">
-            <div className="flex justify-center flex-1 w-full border-[#DEDEDE]">
-              <div className="border  border-web_lightgray dark:border-border flex-1  max-w-[550px] 4xl:max-w-[1000px] 4xl:h-[900px] h-full p-6 rounded-2xl custom_shadow bg-white dark:bg-background/90">
-                <Image
-                  className="max-w-[280px] 4xl:max-w-[800px] 4xl:mt-10 "
-                  alt="laptop-infinibay"
-                  src="/images/logo_1.png"
-                />
-                <div className="py-4 4xl:mt-16 ">
-                  <div className="flex gap-2 justify-between mb-2">
-                    <h2 className="subheading">Check Your Email</h2>
-                  </div>
-                  <p className="text-[15px] 4xl:text-2xl  4xl:mt-4">
-                    we have sent a password recovery instruction to your email.{" "}
-                  </p>
-                  <form onSubmit={handleSubmit(onSubmit)}>
-                    <div className="w-full">
-                      <label
-                        htmlFor="code"
-                        className="relative 4xl:text-3xl block rounded-3xl border dark:border-border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite dark:bg-transparent"
-                      >
-                        <input
-                          type="number"
-                          id="code"
-                          placeholder="Enter a code"
-                          {...register("code", {
-                            required: true,
-                            maxLength: 10,
-                          })}
-                          aria-invalid={errors.code ? "true" : "false"}
-                          className="peer border-none 4xl:p-6 4xl:text-3xl rounded-3xl sm:px-8 p-4 placeholder:text-black dark:placeholder:text-gray-400 placeholder:font-normal focus:border-web_lightGrey focus:outline-none w-full"
-                          onKeyDown={(e) => {
-                            if (e.key === "-") {
-                              e.preventDefault();
-                            }
-                          }}
-                        />
-                        {/* <span
-                          className="pointer-events-none absolute start-4 font-medium top-0 -translate-y-1/2 bg-white pl-4.5 text-xs text-gray-700 transition-all 
-                  peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm peer-focus:top-0 peer-focus:text-lg "
-                        >
-                          Enter a code
-                        </span> */}
-                      </label>
-                      <div className="h-2 mt-2">
-                        {errors.code?.type === "required" && (
-                          <p
-                            role="alert"
-                            className="text-red-600 text-[13px] font-bold 4xl:text-2xl"
-                          >
-                            Your code is required
-                          </p>
-                        )}
-                      </div>
-                    </div>
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-md mx-auto">
+          <Link
+            href="/auth/forgot-password"
+            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg mb-6 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Link>
 
-                    <div className="sm:text-base text-sm  mt-4 pl-3  4xl:mb-10">
-                      <p className="text-sm 4xl:text-2xl  4xl:mt-4">
-                        {`Didn't receive the email? Check your spam filter or try`}{" "}
-                      </p>
-                      <Link
-                        href="#"
-                        className="text-[#1C77BF]  4xl:mt-10 text-sm 4xl:text-2xl sm:mt-0 font-semibold border-b-1 border-b-[#1C77BF]"
-                      >
-                        another email address.
-                      </Link>
-                    </div>
-                    <Button
-                      as={Link}
-                      href="/auth/create-new-password"
-                      type="submit"
-                      className="mt-4 4xl:p-9 GradientBlue text-white w-full p-3 rounded-2xl 4xl:text-3xl"
-                    >
-                      Confirm
-                    </Button>
-                    <div className="mt-6 -mb-3 flex gap-3 justify-center">
-                      <Link
-                        href="#"
-                        className="text-[#EC9430]  text-sm border-b-1 font-semibold border-b-web_lightbrown 4xl:text-2xl"
-                      >
-                        Resend
-                      </Link>
-                    </div>
-                  </form>
-                </div>
+          <Card variant="glass" className="p-8 spotlight-soft">
+            <div className="flex justify-center mb-6">
+              <div className="rounded-full bg-accent-2/15 p-4 text-accent-2">
+                <MailCheck className="h-8 w-8" />
               </div>
             </div>
-          </div>
+
+            <div className="space-y-2 text-center mb-6">
+              <h1 className="text-2xl font-semibold text-fg">Check your email</h1>
+              <p className="text-sm text-fg-muted">
+                We sent a recovery code to your inbox. Enter it below to continue.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <Controller
+                name="code"
+                control={control}
+                defaultValue=""
+                rules={{
+                  required: "Code is required",
+                  maxLength: { value: 10, message: "Max 10 characters" },
+                }}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    label="Recovery code"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="123456"
+                    icon={<KeyRound className="h-4 w-4" />}
+                    error={fieldState.error?.message}
+                    {...field}
+                  />
+                )}
+              />
+
+              {error && <Alert tone="danger">{error}</Alert>}
+
+              <Button
+                type="submit"
+                size="lg"
+                loading={isLoading}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading ? "Verifying…" : "Confirm"}
+              </Button>
+            </form>
+
+            <div className="text-center pt-6 mt-6 border-t border-white/8 text-sm text-fg-muted">
+              Didn&apos;t receive the email?{" "}
+              <button
+                type="button"
+                onClick={onResend}
+                disabled={resending}
+                className="font-medium text-accent-2 hover:text-accent-2/80 transition-colors disabled:opacity-50"
+              >
+                {resending ? "Resending…" : "Resend"}
+              </button>
+            </div>
+          </Card>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
