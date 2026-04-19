@@ -15,7 +15,21 @@
 
 import React from "react";
 
-const NOOP_CTX = { size: "md", setSize: () => {} };
+const NOOP = () => "";
+
+const NOOP_CTX = {
+  size: "md",
+  setSize: () => {},
+  // Legacy helpers — every method used to return a Tailwind class
+  // string; the Harbor redesign owns its own sizing so everything
+  // here just returns an empty string.
+  getSizeClassName: NOOP,
+  getTypographyClass: NOOP,
+  getGridClasses: NOOP,
+  getLayoutSpacing: NOOP,
+  getElevationClasses: NOOP,
+  getGlassClasses: NOOP,
+};
 
 export function SizeProvider({ children }) {
   return children;
