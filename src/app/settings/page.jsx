@@ -582,15 +582,12 @@ export default function SettingsPage() {
           <IsosTab />
         </TabPanel>
         <TabPanel value="scripts">
-          <Card variant="default" className="!p-2">
-            {/* ScriptsSection still shadcn internally — scheduled for a
-                Harbor-native rewrite in a follow-up commit. */}
+          <Card variant="default">
             <ScriptsSection embedded />
           </Card>
         </TabPanel>
         <TabPanel value="packages">
-          <Card variant="default" className="!p-2">
-            {/* Same note as the Scripts tab. */}
+          <Card variant="default">
             <PackagesSection embedded />
           </Card>
         </TabPanel>
