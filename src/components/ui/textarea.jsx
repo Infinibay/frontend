@@ -3,7 +3,6 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 import { getInputGlass, getFormFocusRing, getFormGlassTransition, getReducedTransparencyForm } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 import {
@@ -26,7 +25,6 @@ const Textarea = React.forwardRef(({
   maxRows = 10,
   ...props
 }, ref) => {
-  const contextSize = useSizeContext()
   const theme = useSafeResolvedTheme()
   const effectiveSize = size || contextSize || 'md'
 

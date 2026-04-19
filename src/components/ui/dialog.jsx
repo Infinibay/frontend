@@ -5,7 +5,6 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Cross2Icon } from "@radix-ui/react-icons"
-import { useSizeContext } from "./size-provider"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
 const Dialog = DialogPrimitive.Root
@@ -61,7 +60,6 @@ const dialogContentVariants = cva(
 )
 
 const DialogContent = React.forwardRef(({ className, children, glass, ...props }, ref) => {
-  const { size: contextSize } = useSizeContext();
 
   // Size-responsive glass intensity
   const getResponsiveGlass = (glass) => {

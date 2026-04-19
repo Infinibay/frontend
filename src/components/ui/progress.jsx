@@ -4,7 +4,6 @@ import * as React from "react"
 import * as ProgressPrimitive from "@radix-ui/react-progress"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 import { getProgressGlass, getProgressGlassTrack, getProgressGlassIndicator, getDataGlassAnimation, getReducedTransparencyForm } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
@@ -74,7 +73,6 @@ const Progress = React.forwardRef(({
   striped = false,
   ...props
 }, ref) => {
-  const contextSize = useSizeContext()
   const theme = useSafeResolvedTheme()
   const effectiveSize = size || contextSize || 'md'
 

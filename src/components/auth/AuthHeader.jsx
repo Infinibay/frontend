@@ -2,7 +2,6 @@
 
 import React from "react"
 import { Image } from "@nextui-org/react"
-import { useSizeContext } from "@/components/ui/size-provider"
 import { cn } from "@/lib/utils"
 import { createDebugger } from "@/utils/debug"
 import { ChevronLeft } from "lucide-react"

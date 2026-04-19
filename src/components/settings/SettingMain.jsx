@@ -21,7 +21,6 @@ import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useAppTheme } from '@/contexts/ThemeProvider';
 import { getSystemTheme } from '@/utils/theme';
 import { applyWallpaperWithTransition, getAvailableWallpapers } from '@/utils/wallpaper';
-import { useSizeContext, sizeVariants, getTypographyClass, getGridClasses } from '@/components/ui/size-provider';
 import { createDebugger } from '@/utils/debug';
 
 const debug = createDebugger('frontend:components:settings-main');

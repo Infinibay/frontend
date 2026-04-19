@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "./sheet";
-import { useOptionalSizeContext } from "./size-provider";
 import { VM_STATES, canPlay, canStop, canPause, isBusy } from "@/constants/vmStates";
 
 // Icons

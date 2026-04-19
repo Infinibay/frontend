@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { useSizeContext } from "./size-provider";
 
 const speedVariants = {
   slow: "animate-[spin_3s_linear_infinite]",
@@ -31,7 +30,6 @@ const Spinner = React.forwardRef(({
   size: sizeProp,
   ...props 
 }, ref) => {
-  const { size: contextSize } = useSizeContext();
   const size = sizeProp || contextSize || "md";
   
   // Common classes for all spinners

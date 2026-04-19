@@ -4,12 +4,10 @@ import * as React from "react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 import { getSwitchGlass, getFormFocusRing, getFormGlassTransition, getReducedTransparencyForm } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
 const Switch = React.forwardRef(({ className, size, glass = false, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const theme = useSafeResolvedTheme()
   const effectiveSize = size || contextSize || 'md'
 

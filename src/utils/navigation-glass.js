@@ -21,7 +21,6 @@
 /**
  * Get appropriate glass classes for main navigation
  * @param {string} theme - Current theme (light/dark)
- * @param {string} size - Size context from size-provider
  * @returns {string} Glass class combination
  */
 export const getNavbarGlass = (theme, size) => {

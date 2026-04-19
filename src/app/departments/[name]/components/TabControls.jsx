@@ -3,7 +3,6 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { List, LayoutGrid, FileCode, Network } from 'lucide-react';
 import { getGlassClasses } from '@/utils/glass-effects';
-import { useSizeContext, sizeVariants } from '@/components/ui/size-provider';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 

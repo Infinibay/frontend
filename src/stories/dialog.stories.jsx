@@ -10,7 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { SizeProvider } from "@/components/ui/size-provider";
 
 export default {
   title: "Components/Dialog",
@@ -32,7 +31,7 @@ const Template = ({ size = "md", ...args }) => {
   const [open, setOpen] = React.useState(false);
 
   return (
-    <SizeProvider size={size}>
+    
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button>Open Dialog</Button>
@@ -56,7 +55,7 @@ const Template = ({ size = "md", ...args }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SizeProvider>
+    
   );
 };
 
@@ -69,7 +68,7 @@ Default.args = {
 // All sizes story
 export const AllSizes = () => (
   <div className="flex gap-4">
-    <SizeProvider size="sm">
+    
       <Dialog>
         <DialogTrigger asChild>
           <Button>Small Dialog</Button>
@@ -89,9 +88,9 @@ export const AllSizes = () => (
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SizeProvider>
+    
 
-    <SizeProvider size="md">
+    
       <Dialog>
         <DialogTrigger asChild>
           <Button>Medium Dialog</Button>
@@ -111,9 +110,9 @@ export const AllSizes = () => (
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SizeProvider>
+    
 
-    <SizeProvider size="lg">
+    
       <Dialog>
         <DialogTrigger asChild>
           <Button>Large Dialog</Button>
@@ -133,9 +132,9 @@ export const AllSizes = () => (
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SizeProvider>
+    
 
-    <SizeProvider size="xl">
+    
       <Dialog>
         <DialogTrigger asChild>
           <Button>Extra Large Dialog</Button>
@@ -155,7 +154,7 @@ export const AllSizes = () => (
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SizeProvider>
+    
   </div>
 );
 
@@ -164,7 +163,7 @@ export const ComplexForm = () => {
   const [open, setOpen] = React.useState(false);
   
   return (
-    <SizeProvider size="md">
+    
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button>Edit Settings</Button>
@@ -213,6 +212,6 @@ export const ComplexForm = () => {
           </form>
         </DialogContent>
       </Dialog>
-    </SizeProvider>
+    
   );
 };

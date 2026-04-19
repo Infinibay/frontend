@@ -28,7 +28,6 @@ import {
   useDisablePackageMutation,
   useUninstallPackageMutation
 } from "@/gql/hooks"
-import { useSizeContext, sizeVariants, getTypographyClass } from "@/components/ui/size-provider"
 import {
   Package,
   Puzzle,

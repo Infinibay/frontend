@@ -6,7 +6,6 @@ import { cva } from "class-variance-authority"
 import { HelpCircle } from "lucide-react"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card"
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 
 const labelVariants = cva(
   "font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground",
@@ -32,7 +31,6 @@ const Label = React.forwardRef(({
   children, 
   ...props 
 }, ref) => {
-  const { size: contextSize } = useSizeContext()
   const size = sizeProp || contextSize
 
   return (

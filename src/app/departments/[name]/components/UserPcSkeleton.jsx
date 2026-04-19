@@ -4,7 +4,6 @@ import React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
-import { getGridClasses } from "@/components/ui/size-provider"
 import { getGlassClasses } from "@/utils/glass-effects"
 
 /**

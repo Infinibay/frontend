@@ -2,7 +2,6 @@
  * Form Glass Effects Utilities
  *
  * Comprehensive utility functions for form and data display glassmorphism effects.
- * Integrates with theme system, size-provider, and brand colors.
  */
 
 /**

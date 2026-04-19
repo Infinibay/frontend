@@ -1,6 +1,5 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
-import { SizeProvider } from "@/components/ui/size-provider";
 
 export default {
   title: "Components/Input",
@@ -27,11 +26,11 @@ export default {
 
 // Base template for all stories
 const Template = (args) => (
-  <SizeProvider size={args.size}>
+  
     <div className="w-[300px]">
       <Input {...args} />
     </div>
-  </SizeProvider>
+  
 );
 
 // Default story
@@ -46,27 +45,27 @@ export const AllSizes = () => (
   <div className="space-y-4">
     <div className="grid grid-cols-[100px_1fr] items-center gap-4">
       <div className="text-sm font-medium">Small:</div>
-      <SizeProvider size="sm">
+      
         <Input placeholder="Small input" />
-      </SizeProvider>
+      
     </div>
     <div className="grid grid-cols-[100px_1fr] items-center gap-4">
       <div className="text-sm font-medium">Medium:</div>
-      <SizeProvider size="md">
+      
         <Input placeholder="Medium input" />
-      </SizeProvider>
+      
     </div>
     <div className="grid grid-cols-[100px_1fr] items-center gap-4">
       <div className="text-sm font-medium">Large:</div>
-      <SizeProvider size="lg">
+      
         <Input placeholder="Large input" />
-      </SizeProvider>
+      
     </div>
     <div className="grid grid-cols-[100px_1fr] items-center gap-4">
       <div className="text-sm font-medium">Extra Large:</div>
-      <SizeProvider size="xl">
+      
         <Input placeholder="Extra large input" />
-      </SizeProvider>
+      
     </div>
   </div>
 );
@@ -90,24 +89,24 @@ WithValue.args = {
 export const Types = () => (
   <div className="space-y-4">
     <div className="w-[300px]">
-      <SizeProvider size="md">
+      
         <Input type="text" placeholder="Text input" />
-      </SizeProvider>
+      
     </div>
     <div className="w-[300px]">
-      <SizeProvider size="md">
+      
         <Input type="password" placeholder="Password input" />
-      </SizeProvider>
+      
     </div>
     <div className="w-[300px]">
-      <SizeProvider size="md">
+      
         <Input type="email" placeholder="Email input" />
-      </SizeProvider>
+      
     </div>
     <div className="w-[300px]">
-      <SizeProvider size="md">
+      
         <Input type="number" placeholder="Number input" />
-      </SizeProvider>
+      
     </div>
   </div>
 );

@@ -1,6 +1,5 @@
 import { AppSidebar } from "@/components/ui/navbar";
 import { UserPc } from "../components/ui/user-pc";
-import { SizeProvider } from "../components/ui/size-provider";
 
 const fakeDepartments = [
   { name: "Engineering", totalMachines: 25 },
@@ -19,9 +18,9 @@ const fakeUser = {
 
 const decorators = [
   (Story, context) => (
-    <SizeProvider size={context.args.size}>
+    
       <Story {...context.args} />
-    </SizeProvider>
+    
   ),
 ];
 

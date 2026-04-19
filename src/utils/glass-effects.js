@@ -2,14 +2,12 @@
  * Glass Effects Utility Library
  *
  * Provides utility functions for creating glassmorphism effects and Windows 11 styling.
- * Integrates with the existing brand color system and size-provider.
  *
  * GLOW STRATEGY:
  * - For GlassCard components: Use Tailwind shadow-glow-{color}-{glow} classes (recommended)
  * - For other components: Use CSS .glow-* classes or these utility functions
  */
 
-import { sizeVariants } from "@/components/ui/size-provider"
 
 // Brand color mappings for glass effects
 const BRAND_COLORS = {

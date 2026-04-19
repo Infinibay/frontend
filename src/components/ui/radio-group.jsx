@@ -5,12 +5,10 @@ import { CheckIcon } from "@radix-ui/react-icons"
 import * as RadioGroupPrimitive from "@radix-ui/react-radio-group"
 
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 import { getCheckboxGlass, getFormFocusRing, getFormGlassTransition, getReducedTransparencyForm } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
 const RadioGroup = React.forwardRef(({ className, size, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
 
   const gapClasses = {
@@ -30,7 +28,6 @@ const RadioGroup = React.forwardRef(({ className, size, ...props }, ref) => {
 RadioGroup.displayName = RadioGroupPrimitive.Root.displayName
 
 const RadioGroupItem = React.forwardRef(({ className, size, glass = false, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const theme = useSafeResolvedTheme()
   const effectiveSize = size || contextSize || 'md'
 

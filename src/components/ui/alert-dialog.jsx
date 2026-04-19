@@ -4,7 +4,6 @@ import * as React from "react"
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
 const AlertDialog = AlertDialogPrimitive.Root
@@ -53,7 +52,6 @@ const alertDialogContentVariants = cva(
 )
 
 const AlertDialogContent = React.forwardRef(({ className, glass, ...props }, ref) => {
-  const { size: contextSize } = useSizeContext();
 
   // Size-responsive glass intensity
   const getResponsiveGlass = (glass) => {

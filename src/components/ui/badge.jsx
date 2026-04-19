@@ -4,7 +4,6 @@ import * as React from "react"
 import { cva } from "class-variance-authority";
 
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 import { getBadgeGlass, getBadgeGlassVariant, getDataGlassAnimation, getReducedTransparencyForm } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
@@ -48,7 +47,6 @@ const Badge = React.forwardRef(({
   glass = false,
   ...props
 }, ref) => {
-  const { size: contextSize, getSizeClassName } = useSizeContext()
   const theme = useSafeResolvedTheme()
   const effectiveSize = size || contextSize || 'md'
   const animation = getDataGlassAnimation()

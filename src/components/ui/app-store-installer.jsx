@@ -5,7 +5,6 @@ import { AppSearchBar } from "./app-search-bar"
 import { CategoryFilter } from "./category-filter"
 import { AppCard } from "./app-card"
 import { SelectedAppsPanel } from "./selected-apps-panel"
-import { useOptionalSizeContext } from "./size-provider"
 
 const AppStoreInstaller = React.forwardRef(({
   apps = [],

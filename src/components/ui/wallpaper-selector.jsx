@@ -6,7 +6,6 @@ import { Button } from './button';
 import { RadioGroup, RadioGroupItem } from './radio-group';
 import { Label } from './label';
 import { cn } from '@/lib/utils';
-import { useSizeContext } from './size-provider';
 import { CheckCircle, Loader2, ImageIcon, RefreshCw, AlertTriangle, RotateCcw, Clock, Shield, Wifi, Server } from 'lucide-react';
 import { getAvailableWallpapers, preloadWallpaper, refreshWallpapers } from '@/utils/wallpaper';
 import { createDebugger } from '@/utils/debug';

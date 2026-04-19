@@ -3,12 +3,10 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 import { getTableGlass, getTableRowGlass, getDataGlassAnimation, getReducedTransparencyForm } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
 const Table = React.forwardRef(({ className, size, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
 
   const sizeClasses = {
@@ -31,7 +29,6 @@ const Table = React.forwardRef(({ className, size, ...props }, ref) => {
 Table.displayName = "Table"
 
 const TableContainer = React.forwardRef(({ className, size, glass = false, children, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const theme = useSafeResolvedTheme()
   const effectiveSize = size || contextSize || 'md'
 
@@ -129,7 +126,6 @@ const TableRow = React.forwardRef(({ className, glass, ...props }, ref) => {
 TableRow.displayName = "TableRow"
 
 const TableHead = React.forwardRef(({ className, size, glass, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
 
   const sizeClasses = {
@@ -153,7 +149,6 @@ const TableHead = React.forwardRef(({ className, size, glass, ...props }, ref) =
 TableHead.displayName = "TableHead"
 
 const TableCell = React.forwardRef(({ className, size, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
 
   const sizeClasses = {
@@ -176,7 +171,6 @@ const TableCell = React.forwardRef(({ className, size, ...props }, ref) => {
 TableCell.displayName = "TableCell"
 
 const TableCaption = React.forwardRef(({ className, size, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
 
   const sizeClasses = {

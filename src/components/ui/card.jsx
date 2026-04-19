@@ -3,7 +3,6 @@
 import * as React from "react"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 import { combineElevationAndGlow, getBrandGlow } from "@/utils/glass-effects"
 
 const cardVariants = cva(
@@ -80,7 +79,6 @@ const Card = React.forwardRef(({
   forceGlass = false,
   ...props
 }, ref) => {
-  const { size } = useSizeContext()
 
   // Size-responsive glass and elevation
   const getResponsiveGlass = (glass) => {

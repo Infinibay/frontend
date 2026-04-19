@@ -12,7 +12,6 @@ import {
 import * as SelectPrimitive from "@radix-ui/react-select"
 
 import { cn } from "@/lib/utils"
-import { useSizeContext, sizeVariants } from "./size-provider"
 import { getSelectGlass, getReducedTransparencyForm, getFormGlassEffect, getBrandFormGlow, optimizeFormGlassPerformance, getFormGlassForSize, scaleFormGlass, getResponsiveFormBlur } from "@/utils/form-glass-effects"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 import { useInputStates, FORM_ANIMATION_CLASSES } from "@/utils/form-animations"
@@ -943,7 +942,6 @@ SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
  * ```
  */
 const SelectScrollUpButton = React.forwardRef(({ className, size, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
 
   // Memoized classes for performance optimization using shared utility
@@ -1001,7 +999,6 @@ SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName
  * ```
  */
 const SelectScrollDownButton = React.forwardRef(({ className, size, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
 
   // Memoized classes for performance optimization using shared utility
@@ -1035,7 +1032,6 @@ const SelectScrollDownButton = React.forwardRef(({ className, size, ...props }, 
 SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName
 
 const SelectContent = React.forwardRef(({ className, children, position = "popper", size, glass = false, loading = false, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
   const { isSearchable, searchValue, listboxId, setActiveDescendant } = React.useContext(SelectInternalContext) || {}
   const viewportRef = React.useRef(null)
@@ -1430,7 +1426,6 @@ SelectContent.displayName = SelectPrimitive.Content.displayName
  * ```
  */
 const SelectLabel = React.forwardRef(({ className, size, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
 
   // Memoized classes for performance optimization
@@ -1475,7 +1470,6 @@ const SelectLabel = React.forwardRef(({ className, size, ...props }, ref) => {
 SelectLabel.displayName = SelectPrimitive.Label.displayName
 
 const SelectItem = React.forwardRef(({ className, children, size, disabled, value, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
   const { contentGlass: parentGlass } = React.useContext(SelectInternalContext) || {}
   const {
@@ -1656,7 +1650,6 @@ SelectItem.displayName = SelectPrimitive.Item.displayName
  * ```
  */
 const SelectSeparator = React.forwardRef(({ className, glass = false, size, ...props }, ref) => {
-  const contextSize = useSizeContext()
   const effectiveSize = size || contextSize || 'md'
 
   // Memoized glass effects for performance

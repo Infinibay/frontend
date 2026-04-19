@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 import {
   getFloatingLabelClasses,
@@ -27,7 +26,6 @@ const Input = React.forwardRef(({
   floatingLabel = false,
   ...props
 }, ref) => {
-  const { size: contextSize, getSizeClassName } = useSizeContext();
   const size = propSize || contextSize;
   const theme = useSafeResolvedTheme();
 

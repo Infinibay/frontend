@@ -9,11 +9,19 @@ import { InboxIcon, AlertCircle, CloudDownload, FileQuestion, ServerCrash } from
  */
 const IMAGE_MAP = {
   'computer': '/images/icons/computer.svg',
+  'cpu': '/images/icons/cpu.svg',
+  'delete': '/images/icons/delete.svg',
   'department': '/images/icons/department.svg',
+  'edit': '/images/icons/edit.svg',
   'empty': '/images/icons/empty-state.svg',
   'health': '/images/icons/health.svg',
+  'help': '/images/icons/help.svg',
   'network': '/images/icons/network.svg',
+  'notification': '/images/icons/notification.svg',
+  'ram': '/images/icons/ram.svg',
+  'reload': '/images/icons/reload.svg',
   'script': '/images/icons/script.svg',
+  'search': '/images/icons/search.svg',
   'security': '/images/icons/security.svg',
   'server-rack': '/images/icons/server-rack.svg',
   'settings': '/images/icons/settings.svg',
@@ -117,5 +125,25 @@ export function SimpleIllustration({
         style={{ opacity: opacity / 100 }}
       />
     </div>
+  );
+}
+
+/**
+ * InfiniIcon Component
+ * Lightweight inline icon using custom SVG illustrations.
+ * Use className to control size (e.g. "h-4 w-4", "h-5 w-5").
+ */
+export function InfiniIcon({ name, className, ...props }) {
+  const src = IMAGE_MAP[name];
+  if (!src) return null;
+
+  return (
+    <img
+      src={src}
+      alt={`${name} icon`}
+      className={cn('inline-block', className)}
+      draggable={false}
+      {...props}
+    />
   );
 }

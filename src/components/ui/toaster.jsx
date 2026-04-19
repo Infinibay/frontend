@@ -9,7 +9,6 @@ import {
   ToastViewport,
 } from '@/components/ui/toast';
 import { useToast } from '@/hooks/use-toast';
-import { useOptionalSizeContext } from '@/components/ui/size-provider';
 import { cn } from '@/lib/utils';
 
 export function Toaster() {

@@ -3,7 +3,6 @@
 import * as React from "react"
 import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useSizeContext } from "./size-provider"
 import { useAppTheme } from "@/contexts/ThemeProvider"
 import {
   getHeaderGlass,
@@ -99,7 +98,6 @@ const Header = React.forwardRef(({
   reducedTransparency = false,
   ...props
 }, ref) => {
-  const { size: contextSize } = useSizeContext()
   const { resolvedTheme } = useAppTheme()
   const size = sizeProp || contextSize
 

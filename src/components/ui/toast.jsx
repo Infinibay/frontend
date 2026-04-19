@@ -5,7 +5,6 @@ import * as ToastPrimitives from '@radix-ui/react-toast';
 import { cva } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useOptionalSizeContext } from './size-provider';
 
 const ToastProvider = ToastPrimitives.Provider;
 

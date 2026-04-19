@@ -8,7 +8,6 @@ import { Input } from './input';
 import { Label } from './label';
 import { UploadProgress } from './upload-progress';
 import { cn } from '@/lib/utils';
-import { useSizeContext } from './size-provider';
 import {
   Upload,
   ImageIcon,
