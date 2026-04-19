@@ -9,7 +9,6 @@ import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
 import { useSelector, useDispatch } from "react-redux"
 import "../styles/globals.css"
-import "../styles/auth.css"
 // Harbor UI library — design tokens must load after Tailwind base so
 // utilities like bg-surface, text-fg, bg-accent-2 resolve to harbor vars.
 import "@infinibay/harbor/tokens.css"
@@ -22,18 +21,17 @@ import auth from "@/utils/auth"
 import { Toast, ToastTitle, ToastDescription, ToastProvider, ToastViewport } from "@/components/ui/toast"
 import { CursorProvider } from "@infinibay/harbor/lib/cursor"
 import { ToastProvider as HarborToastProvider } from "@infinibay/harbor"
-import { selectInterfaceSize, selectAppSettingsInitialized, selectTheme, selectAppSettings } from "@/state/slices/appSettings"
+import { selectInterfaceSize, selectAppSettingsInitialized, selectTheme } from "@/state/slices/appSettings"
 import { SizeProvider } from "@/components/ui/size-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { RealTimeProvider } from "@/components/RealTimeProvider"
 import { SocketNamespaceGuard } from "@/components/SocketNamespaceGuard"
 import { createThemeScript } from "@/utils/theme"
-import { ThemeProvider, useAppTheme, useResolvedTheme } from "@/contexts/ThemeProvider"
+import { ThemeProvider, useAppTheme } from "@/contexts/ThemeProvider"
 import { HelpProvider } from "@/contexts/HelpProvider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { HeaderActionProvider } from "@/contexts/HeaderActionContext"
 import { GlobalHeader } from "@/components/layout/GlobalHeader"
-import { updateWallpaperCSS } from "@/utils/wallpaper"
 import "@/utils/debugInit" // Initialize debug panel
 import "@/utils/debugPanelStatus" // Debug panel utilities
 
@@ -73,27 +71,26 @@ function AppContent({ children, isAuthenticated }) {
     window.location.href = '/auth/sign-in';
   };
 
-  if (!isAuthenticated || pathname === '/auth/sign-in' || pathname === '/auth/sign-up') {
+  if (!isAuthenticated || pathname?.startsWith('/auth/')) {
     return children;
   }
 
-  const isSettingsPage = pathname?.startsWith('/settings');
-
   return (
     <>
-      <div className={`flex min-h-screen w-full mt-[1rem] ml-[0.5rem] mr-[0.5rem] max-w-full ${isSettingsPage ? 'settings-container' : ''}`}>
+      <div className="flex min-h-screen w-full bg-surface text-fg">
         <AppSidebar
           user={user?.firstName ? {
             firstName: user.firstName,
             lastName: user.lastName,
+            email: user.email,
             role: user.role,
             avatar: user.avatar,
           } : null}
           onLogOut={handleLogout}
         />
-        <main className="flex-1 px-6 md:px-8 main-content relative z-10">
+        <main className="flex-1 min-w-0 flex flex-col">
           <GlobalHeader />
-          <div className="mt-6">
+          <div className="flex-1 px-6 md:px-8 py-6">
             {children}
           </div>
         </main>
@@ -140,26 +137,6 @@ function ThemeProviderWrapper({ children }) {
       {children}
     </ThemeProvider>
   );
-}
-
-// Component to apply wallpaper from Redux state
-function WallpaperApplier({ children }) {
-  const appSettings = useSelector(selectAppSettings);
-  const initialized = useSelector(selectAppSettingsInitialized);
-  const resolvedTheme = useResolvedTheme(); // 'light' | 'dark'
-
-  useEffect(() => {
-    if (!initialized) return;
-
-    if (appSettings.wallpaper) {
-      const url = `/api/wallpapers/image/${appSettings.wallpaper}`;
-      updateWallpaperCSS(url, resolvedTheme);
-    } else {
-      updateWallpaperCSS('', resolvedTheme);
-    }
-  }, [initialized, appSettings.wallpaper, resolvedTheme]);
-
-  return children;
 }
 
 // Component to handle size provider with Redux integration
@@ -213,26 +190,24 @@ export default function RootLayout({ children }) {
                   <TooltipProvider delayDuration={300}>
                     <HelpProvider>
                       <HeaderActionProvider>
-                      <WallpaperApplier>
-                      <ApolloProvider client={client}>
-                    <NextUIProvider className="w-full">
-                      <CursorProvider>
-                        <HarborToastProvider>
-                          <InitialDataLoader className="w-full">
-                            <SocketNamespaceGuard className="w-full">
-                              <RealTimeProvider className="w-full">
-                                <AppContent isAuthenticated={isAuthenticated}>
-                                  {children}
-                                </AppContent>
-                              </RealTimeProvider>
-                            </SocketNamespaceGuard>
-                          </InitialDataLoader>
-                          <Toaster />
-                        </HarborToastProvider>
-                      </CursorProvider>
-                    </NextUIProvider>
-                      </ApolloProvider>
-                      </WallpaperApplier>
+                        <ApolloProvider client={client}>
+                          <NextUIProvider className="w-full">
+                            <CursorProvider>
+                              <HarborToastProvider>
+                                <InitialDataLoader className="w-full">
+                                  <SocketNamespaceGuard className="w-full">
+                                    <RealTimeProvider className="w-full">
+                                      <AppContent isAuthenticated={isAuthenticated}>
+                                        {children}
+                                      </AppContent>
+                                    </RealTimeProvider>
+                                  </SocketNamespaceGuard>
+                                </InitialDataLoader>
+                                <Toaster />
+                              </HarborToastProvider>
+                            </CursorProvider>
+                          </NextUIProvider>
+                        </ApolloProvider>
                       </HeaderActionProvider>
                     </HelpProvider>
                   </TooltipProvider>

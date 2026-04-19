@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import React, { useState } from "react"
-import { useSelector } from "react-redux"
-import Link from "next/link"
+import React, { useState } from "react";
+import Link from "next/link";
+import { useSelector } from "react-redux";
 import {
   Plus,
   Download,
@@ -14,44 +14,24 @@ import {
   HelpCircle,
   ChevronLeft,
   Loader2,
-  AlertCircle
-} from "lucide-react"
-import {
-  Header,
-  HeaderLeft,
-  HeaderCenter,
-  HeaderRight,
-} from "@/components/ui/header"
-import { Button } from "@/components/ui/button"
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { useHelp } from "@/hooks/useHelp"
-import { HelpSheet } from "@/components/ui/help-sheet"
-import { useHeaderActions } from "@/contexts/HeaderActionContext"
-import { NotificationBell } from "@/components/recommendations/NotificationBell"
-import { selectUser } from "@/state/slices/auth"
+  AlertCircle,
+} from "lucide-react";
+import { Button, Breadcrumbs } from "@infinibay/harbor";
+
+import { useHelp } from "@/hooks/useHelp";
+import { HelpSheet } from "@/components/ui/help-sheet";
+import { useHeaderActions } from "@/contexts/HeaderActionContext";
+import { NotificationBell } from "@/components/recommendations/NotificationBell";
+import { selectUser } from "@/state/slices/auth";
 import {
   selectHeaderBreadcrumbs,
   selectHeaderTitle,
   selectHeaderSubtitle,
   selectHeaderActions,
   selectHeaderHelpTooltip,
-  selectHeaderBackButton
-} from "@/state/slices/header"
+  selectHeaderBackButton,
+} from "@/state/slices/header";
 
-// Icon mapping - maps icon name strings to actual icon components
 const iconMap = {
   Plus,
   Download,
@@ -63,147 +43,126 @@ const iconMap = {
   HelpCircle,
   ChevronLeft,
   Loader2,
-  AlertCircle
+  AlertCircle,
+};
+
+/** Map shadcn-era action variants to Harbor Button variants. */
+function harborVariant(v) {
+  switch (v) {
+    case "destructive":
+      return "destructive";
+    case "outline":
+    case "secondary":
+      return "secondary";
+    case "ghost":
+    case "link":
+      return "ghost";
+    default:
+      return "primary";
+  }
 }
 
-/**
- * GlobalHeader component that renders based on Redux state
- * Single header component used across all pages
- * Reads configuration from Redux header slice
- */
 export function GlobalHeader() {
-  const breadcrumbs = useSelector(selectHeaderBreadcrumbs)
-  const title = useSelector(selectHeaderTitle)
-  const subtitle = useSelector(selectHeaderSubtitle)
-  const actions = useSelector(selectHeaderActions)
-  const helpTooltip = useSelector(selectHeaderHelpTooltip)
-  const backButton = useSelector(selectHeaderBackButton)
-  const user = useSelector(selectUser)
+  const breadcrumbs = useSelector(selectHeaderBreadcrumbs);
+  const title = useSelector(selectHeaderTitle);
+  const subtitle = useSelector(selectHeaderSubtitle);
+  const actions = useSelector(selectHeaderActions);
+  const helpTooltip = useSelector(selectHeaderHelpTooltip);
+  const backButton = useSelector(selectHeaderBackButton);
+  const user = useSelector(selectUser);
 
-  const isAdmin = user?.role === 'ADMIN'
+  const isAdmin = user?.role === "ADMIN";
+  const { helpConfig } = useHelp();
+  const { triggerAction } = useHeaderActions();
+  const [helpSheetOpen, setHelpSheetOpen] = useState(false);
 
-  const { helpConfig } = useHelp()
-  const { triggerAction } = useHeaderActions()
-  const [helpSheetOpen, setHelpSheetOpen] = useState(false)
-
-  // Early return if no header config
+  // No header config? Render nothing.
   if (!breadcrumbs.length && !title && !actions.length && !helpConfig && !backButton) {
-    return null
+    return null;
   }
 
   return (
     <>
-      <Header
-        variant="glass"
-        elevated
-        sticky
-        style={{ top: 0 }}
-        className="z-30 !overflow-visible"
+      <header
+        className="sticky top-0 z-30 bg-surface/80 backdrop-blur-md border-b border-white/8 px-6 py-3 flex items-center gap-4"
       >
-        <HeaderLeft className="w-[200px]">
-          {backButton && (
+        {/* Left — back button + breadcrumbs */}
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {backButton ? (
             <Link href={backButton.href} legacyBehavior passHref>
-              <Button variant="ghost" size="sm" className="mb-2" asChild>
-                <a>
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  {backButton.label || 'Back'}
-                </a>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<ChevronLeft className="h-4 w-4" />}
+              >
+                {backButton.label || "Back"}
               </Button>
             </Link>
-          )}
-          {breadcrumbs.length > 0 && (
-            <Breadcrumb>
-              <BreadcrumbList>
-                {breadcrumbs.map((crumb, index) => (
-                  <React.Fragment key={index}>
-                    {index > 0 && <BreadcrumbSeparator />}
-                    <BreadcrumbItem>
-                      {crumb.isCurrent ? (
-                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                      ) : (
-                        <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
-                      )}
-                    </BreadcrumbItem>
-                  </React.Fragment>
-                ))}
-              </BreadcrumbList>
-            </Breadcrumb>
-          )}
-        </HeaderLeft>
+          ) : null}
 
-        <HeaderCenter>
-          <h1 className="text-lg sm:text-2xl font-medium text-foreground">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className={subtitle.className || "text-sm text-muted-foreground"}>
-              {subtitle.text}
-            </p>
-          )}
-        </HeaderCenter>
+          <div className="min-w-0 flex flex-col gap-0.5">
+            {breadcrumbs.length > 0 ? (
+              <Breadcrumbs
+                items={breadcrumbs.map((c) => ({
+                  label: c.label,
+                  href: c.isCurrent ? undefined : c.href,
+                }))}
+              />
+            ) : null}
+            {title ? (
+              <div className="flex items-baseline gap-3 min-w-0">
+                <h1 className="text-lg font-semibold text-fg truncate">{title}</h1>
+                {subtitle ? (
+                  <span className={subtitle.className || "text-xs text-fg-muted truncate"}>
+                    {subtitle.text}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </div>
 
-        <HeaderRight className="w-[200px] flex items-center justify-end space-x-2">
-          {isAdmin && <NotificationBell />}
+        {/* Right — notifications, help, page actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          {isAdmin ? <NotificationBell /> : null}
 
-          {helpConfig && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setHelpSheetOpen(true)}
-                    className="px-2.5 border-brand-celeste-700/40 hover:bg-brand-celeste-800/10 hover:border-brand-celeste-700/60"
-                  >
-                    <HelpCircle className="h-4 w-4 text-brand-celeste-800 dark:text-brand-celeste-500" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{helpTooltip || 'Help'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+          {helpConfig ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<HelpCircle className="h-4 w-4" />}
+              onClick={() => setHelpSheetOpen(true)}
+              title={helpTooltip || "Help"}
+            >
+              {""}
+            </Button>
+          ) : null}
 
           {actions.map((action) => {
-            const IconComponent = action.icon ? iconMap[action.icon] : null
-            const button = (
+            const IconComponent = action.icon ? iconMap[action.icon] : null;
+            const iconEl = action.loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : IconComponent ? (
+              <IconComponent className="h-4 w-4" />
+            ) : undefined;
+
+            return (
               <Button
                 key={action.id}
-                variant={action.variant || 'default'}
-                size={action.size || 'sm'}
-                onClick={() => triggerAction(action.id)}
+                variant={harborVariant(action.variant)}
+                size="sm"
+                loading={action.loading || undefined}
                 disabled={action.disabled || false}
-                className={action.className || ''}
+                icon={iconEl}
+                onClick={() => triggerAction(action.id)}
+                title={action.tooltip}
               >
-                {action.loading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  IconComponent && <IconComponent className="h-4 w-4 mr-2" />
-                )}
                 {action.label}
               </Button>
-            )
-
-            if (action.tooltip) {
-              return (
-                <TooltipProvider key={action.id}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      {button}
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{action.tooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )
-            }
-
-            return button
+            );
           })}
-        </HeaderRight>
-      </Header>
+        </div>
+      </header>
 
       <HelpSheet
         open={helpSheetOpen}
@@ -211,5 +170,5 @@ export function GlobalHeader() {
         config={helpConfig}
       />
     </>
-  )
+  );
 }

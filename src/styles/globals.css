@@ -1,9 +1,18 @@
-@import url(./custom.css);
-@import url(./auth.css);
-@import url(./dashboard.css);
+/* Legacy CSS @imports removed during Harbor migration — glass-*,
+ * size-*, brand-* utilities live inline below or in Harbor tokens. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Harbor-native base: page background is a flat dark surface, body
+ * text inherits Harbor's --harbor-text (white). No wallpaper. */
+@layer base {
+  html, body {
+    background-color: rgb(var(--harbor-bg));
+    color: rgb(var(--harbor-text));
+    font-family: var(--harbor-font-sans);
+  }
+}
 
 /* live done*/
 @layer components {
@@ -1346,38 +1355,12 @@ input[type="text"]#email.peer {
     --wallpaper-url-dark: url('/images/wallpapers/wallpaper1.jpg');
   }
 
-  /* Dynamic wallpaper background for glass visibility */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 0;
-    background: var(--wallpaper-url);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    transition: background-image 0.3s ease-in-out;
-  }
-
-  .dark body::before {
-    background: var(--wallpaper-url-dark);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    transition: background-image 0.3s ease-in-out;
-  }
-
-  /* Ensure main app container is positioned above background pattern */
+  /* Wallpaper `body::before` removed — Harbor surface is flat dark,
+   * per-page mesh backgrounds (auth pages) live on the page itself. */
   body {
-    @apply text-foreground;
     position: relative;
     z-index: 1;
     overflow-x: hidden;
-    /* Prevent horizontal scrollbar */
   }
 
   /* Reduced transparency accessibility enhancements */

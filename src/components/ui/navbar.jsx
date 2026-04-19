@@ -1,230 +1,136 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import React, { useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { useSelector } from "react-redux";
+import {
+  Monitor,
+  Building2,
+  LayoutGrid,
+  Users,
+  FileCode,
+  Settings,
+  LogOut,
+} from "lucide-react";
+import { Sidebar, Avatar, Button } from "@infinibay/harbor";
+
 import { selectAppSettings } from "@/state/slices/appSettings";
-import { useIsMobile } from "@/hooks/use-mobile";
 
-// UI Components
-import { Button } from "./button";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarProvider,
-  useSidebar,
-} from "./sidebar";
-import { useSizeContext } from "./size-provider";
-import {
-  getGlassNavContainer,
-  getGlassNavItem,
-  getAccessibleNavContrast,
-  getFocusRingForGlass
-} from "@/utils/navigation-glass";
-import { Avatar } from "./avatar";
+const NAV_ITEMS = [
+  { id: "computers", href: "/computers", icon: <Monitor className="h-4 w-4" />, label: "Computers" },
+  { id: "departments", href: "/departments", icon: <Building2 className="h-4 w-4" />, label: "Departments" },
+  { id: "templates", href: "/templates", icon: <LayoutGrid className="h-4 w-4" />, label: "Templates" },
+  { id: "users", href: "/users", icon: <Users className="h-4 w-4" />, label: "Users" },
+  { id: "scripts", href: "/scripts", icon: <FileCode className="h-4 w-4" />, label: "Scripts" },
+  { id: "settings", href: "/settings", icon: <Settings className="h-4 w-4" />, label: "Settings" },
+];
 
-// Custom Components
-
-// Icons
-import { RiDashboardLine, RiSettings4Line, RiCodeSSlashLine } from "react-icons/ri";
-import { FiUsers } from "react-icons/fi";
-import { BiLogOut, BiBuildings } from "react-icons/bi";
-import { ImInsertTemplate } from "react-icons/im";
-
-// Helper component to handle sidebar collapsed state
-function SidebarWidthContainer({ children }) {
-  const { isMobile, open } = useSidebar();
-  const width = isMobile ? 0 : (open ? 'var(--sidebar-width)' : 0);
-  return (
-    <div className="relative flex-shrink-0" style={{ width, height: 'calc(100vh - 2rem)' }}>
-      {children}
-    </div>
-  );
+function routeForId(id) {
+  return NAV_ITEMS.find((i) => i.id === id)?.href || "/";
 }
 
-const AppSidebar = React.forwardRef(({
-  user,
-  onLogOut,
-  reducedTransparency = false,
-  ...props
-}, ref) => {
+function activeId(pathname) {
+  for (const item of NAV_ITEMS) {
+    if (pathname === item.href) return item.id;
+    if (item.id === "settings") {
+      if (pathname.startsWith("/settings/")) return item.id;
+      continue;
+    }
+    if (pathname.startsWith(item.href + "/")) return item.id;
+  }
+  return null;
+}
+
+const AppSidebar = React.forwardRef(function AppSidebar({ user, onLogOut }, _ref) {
   const pathname = usePathname();
   const router = useRouter();
-  const isActive = (path) => {
-    // Exact match
-    if (pathname === path) return true;
-
-    // For Settings, only match /settings and its sub-paths
-    if (path === '/settings') {
-      return pathname.startsWith('/settings/');
-    }
-
-    // For other paths, match path and its sub-paths
-    return pathname.startsWith(path + '/');
-  };
-
-  const { size: contextSize } = useSizeContext();
-  const isMobile = useIsMobile();
-  const sidebarWidth = "var(--size-navbar-width)";
-  const sidebarWidthMobile = "var(--size-navbar-mobile-width)";
-  const sidebarWidthIcon = "var(--size-icon-button)";
-
   const appSettings = useSelector(selectAppSettings);
 
-  // Logo state management
-  const defaultLogo = '/images/logo.png';
-  const [logoSrc, setLogoSrc] = useState(appSettings.logoUrl || defaultLogo);
+  const logoSrc = appSettings?.logoUrl || "/images/logo.png";
+  const isExternalLogo = !!appSettings?.logoUrl && /^(https?:)?\/\//.test(appSettings.logoUrl);
 
-  useEffect(() => {
-    setLogoSrc(appSettings.logoUrl || defaultLogo);
-  }, [appSettings.logoUrl]);
+  const sections = useMemo(
+    () => [
+      {
+        label: "Navigation",
+        items: NAV_ITEMS.map((it) => ({
+          id: it.id,
+          label: it.label,
+          icon: it.icon,
+          href: it.href,
+        })),
+      },
+    ],
+    []
+  );
 
-  // Detect external URLs
-  const isExternal = !!appSettings.logoUrl && /^(https?:)?\/\//.test(appSettings.logoUrl);
+  const selected = activeId(pathname);
 
-  // Menu item styles based on size
-  const menuStyles = {
-    text: "size-text",
-    icon: "size-icon-nav",
-    spacing: {
-      item: "size-spacing-item",
-      container: "size-spacing-container"
-    },
-    gap: "size-gap",
-    avatar: "size-avatar",
-    logo: "size-logo",
-  };
+  const header = (
+    <Link href="/" className="flex items-center gap-2">
+      <Image
+        src={logoSrc}
+        alt="Infinibay"
+        width={120}
+        height={32}
+        className="h-8 w-auto"
+        unoptimized={isExternalLogo}
+        priority
+      />
+    </Link>
+  );
 
-  const navItems = [
-    { id: "computers", href: "/computers", icon: RiDashboardLine, label: "Computers" },
-    { id: "departments", href: "/departments", icon: BiBuildings, label: "Departments" },
-    { id: "templates", href: "/templates", icon: ImInsertTemplate, label: "Templates" },
-    { id: "users", href: "/users", icon: FiUsers, label: "Users" },
-    { id: "scripts", href: "/scripts", icon: RiCodeSSlashLine, label: "Scripts" },
-    { id: "settings", href: "/settings", icon: RiSettings4Line, label: "Settings" }
-  ];
+  const displayName = user
+    ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email
+    : "";
 
-  const renderMainMenuItems = () => {
-    return navItems.map((item) => (
-      <SidebarMenuItem key={item.id}>
-        <SidebarMenuButton
-          className={cn(
-            "text-sidebar-foreground/80 hover:text-sidebar-foreground w-full",
-            menuStyles.text,
-            menuStyles.spacing.item,
-            isActive(item.href) && getGlassNavItem({ active: true, theme: 'light', size: contextSize }),
-            getAccessibleNavContrast('bg-sidebar', 'light'),
-            getFocusRingForGlass('light')
-          )}
-          onClick={() => {
-            router.push(item.href);
-          }}
+  const footer = (
+    <div className="space-y-2">
+      {user ? (
+        <Link
+          href="/profile"
+          className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors min-w-0"
         >
-          <div className={cn("flex items-center", menuStyles.gap)}>
-            {item.icon && <item.icon className={menuStyles.icon} />}
-            <span>{item.label}</span>
+          <Avatar
+            name={displayName}
+            size="sm"
+          />
+          <div className="min-w-0 text-left">
+            <div className="text-sm font-medium text-fg truncate">{displayName}</div>
+            {user.role ? (
+              <div className="text-[10px] uppercase tracking-wider text-fg-subtle truncate">
+                {user.role}
+              </div>
+            ) : null}
           </div>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    ));
-  };
-
-
+        </Link>
+      ) : null}
+      <Button
+        variant="ghost"
+        size="sm"
+        icon={<LogOut className="h-4 w-4" />}
+        onClick={() => onLogOut?.()}
+        className="w-full justify-start"
+      >
+        Logout
+      </Button>
+    </div>
+  );
 
   return (
-      <div className="flex-shrink-0">
-        <SidebarProvider
-          defaultOpen
-          sidebarWidth={sidebarWidth}
-          sidebarWidthMobile={sidebarWidthMobile}
-          sidebarWidthIcon={sidebarWidthIcon}
-        >
-          <SidebarWidthContainer>
-            <Sidebar
-              variant="sidebar"
-              collapsible="none"
-              className={cn(
-                "overflow-hidden border-r border-sidebar-border",
-                "h-full",
-                getGlassNavContainer({ variant: 'main', theme: 'light', size: contextSize })
-              )}
-              data-collapsible="sidebar"
-              data-reduced-transparency={reducedTransparency ? 'true' : undefined}
-            >
-              <SidebarHeader
-                className={cn("border-b border-sidebar-border relative", menuStyles.spacing.container)}
-              >
-                <Link href="/">
-                  <Image
-                    src={logoSrc}
-                    alt="Logo"
-                    width={120}
-                    height={40}
-                    className={cn("w-auto rounded-none", menuStyles.logo)}
-                    unoptimized={isExternal}
-                    onError={() => setLogoSrc(defaultLogo)}
-                  />
-                </Link>
-              </SidebarHeader>
-              <SidebarContent className="relative">
-                <SidebarMenu>
-                  {renderMainMenuItems()}
-                </SidebarMenu>
-              </SidebarContent>
-              <SidebarFooter
-                className={cn("border-t border-sidebar-border relative", menuStyles.spacing.container)}
-              >
-                {user && (
-                  <Link
-                    href="/profile"
-                    className={cn("flex items-center px-2 mb-4 w-full justify-start hover:bg-sidebar-accent/50 transition-colors rounded-md", menuStyles.gap)}
-                  >
-                    <Avatar
-                      email={user.email}
-                      alt={`${user.firstName} ${user.lastName}'s avatar`}
-                      fallback={`${user.firstName} ${user.lastName}`}
-                      className={cn("w-10 h-10", menuStyles.avatar)}
-                    />
-                    <div className="flex-1 min-w-0 text-left">
-                      <h3 className={cn("text-sidebar-foreground font-medium truncate", menuStyles.text)}>
-                        {user.firstName} {user.lastName}
-                      </h3>
-                      <p className={cn("text-sidebar-foreground/70 truncate", menuStyles.text)}>
-                        {user.role}
-                      </p>
-                    </div>
-                  </Link>
-                )}
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent",
-                    menuStyles.text,
-                    menuStyles.spacing.item,
-                    menuStyles.gap
-                  )}
-                  onClick={() => onLogOut?.()}
-                >
-                  <BiLogOut className={menuStyles.icon} />
-                  Logout
-                </Button>
-              </SidebarFooter>
-            </Sidebar>
-          </SidebarWidthContainer>
-        </SidebarProvider>
-
-      </div>
+    <div className="shrink-0 h-screen sticky top-0 p-3">
+      <Sidebar
+        sections={sections}
+        selected={selected || undefined}
+        onSelect={(id) => router.push(routeForId(id))}
+        header={header}
+        footer={footer}
+        className="h-full"
+      />
+    </div>
   );
 });
-
-AppSidebar.displayName = "AppSidebar";
 
 export { AppSidebar };
