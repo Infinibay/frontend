@@ -80,18 +80,8 @@ const Card = React.forwardRef(({
   ...props
 }, ref) => {
 
-  // Size-responsive glass and elevation
-  const getResponsiveGlass = (glass) => {
-    if (!glass || glass === 'none') return 'none'
-    if (forceGlass) return glass // Bypass responsive behavior when forceGlass is true
-    if (size === 'sm') {
-      return glass === 'strong' ? 'minimal' : glass
-    }
-    return glass
-  }
-
-  const responsiveGlass = getResponsiveGlass(glass)
-  const responsiveElevation = elevation || (size === 'sm' ? '1' : elevation || '2')
+  const responsiveGlass = !glass || glass === 'none' ? 'none' : glass
+  const responsiveElevation = elevation || '2'
 
   // Enforce precedence: if effect is specified, don't apply glass variant
   const effectiveGlass = effect !== 'none' ? undefined : responsiveGlass

@@ -21,8 +21,7 @@ const AppStoreInstaller = React.forwardRef(({
   processingApps = [],
   ...props
 }, ref) => {
-  const sizeContext = useOptionalSizeContext()
-  const size = propSize || sizeContext?.size || 'md'
+  const size = propSize || 'md'
 
   const [searchTerm, setSearchTerm] = React.useState("")
   const [selectedCategory, setSelectedCategory] = React.useState("all")
