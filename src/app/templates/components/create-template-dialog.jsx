@@ -1,219 +1,185 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useState, cloneElement, isValidElement, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
+import { Cpu, MemoryStick, HardDrive, Layers } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogDescription
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Cpu, MemoryStick, HardDrive, FileText, Loader2 } from 'lucide-react';
-import { createTemplate } from '@/state/slices/templates';
-import { selectTemplatesLoading, selectTemplatesError } from '@/state/slices/templates';
+  Drawer,
+  Button,
+  ButtonGroup,
+  TextField,
+  Textarea,
+  Alert,
+} from "@infinibay/harbor";
+
+import {
+  createTemplate,
+  selectTemplatesLoading,
+  selectTemplatesError,
+} from "@/state/slices/templates";
+
+const EMPTY = {
+  name: "",
+  description: "",
+  cores: "",
+  ram: "",
+  storage: "",
+};
 
 export function CreateTemplateDialog({ children, categoryId }) {
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   const loading = useSelector(selectTemplatesLoading);
   const error = useSelector(selectTemplatesError);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    cores: '',
-    ram: '',
-    storage: '',
-  });
+  const [form, setForm] = useState(EMPTY);
+
+  const close = () => {
+    setOpen(false);
+    setForm(EMPTY);
+  };
+
+  const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
+
+  const validate = () => {
+    if (!form.name.trim()) return "Name is required";
+    if (!form.description.trim()) return "Description is required";
+    const cores = Number(form.cores);
+    const ram = Number(form.ram);
+    const storage = Number(form.storage);
+    if (!cores || cores <= 0 || cores > 128) return "CPU cores must be 1–128";
+    if (!ram || ram <= 0 || ram > 512) return "RAM must be 1–512 GB";
+    if (!storage || storage <= 0 || storage > 10000)
+      return "Storage must be 1–10 000 GB";
+    return null;
+  };
 
   const handleCreate = async () => {
+    const err = validate();
+    if (err) {
+      toast.error(err);
+      return;
+    }
     try {
-      await dispatch(createTemplate({
-        ...formData,
-        cores: parseInt(formData.cores),
-        ram: parseInt(formData.ram),
-        storage: parseInt(formData.storage),
-        categoryId
-      })).unwrap();
-      
-      setOpen(false);
-      setFormData({
-        name: '',
-        description: '',
-        cores: '',
-        ram: '',
-        storage: '',
-      });
+      await dispatch(
+        createTemplate({
+          name: form.name.trim(),
+          description: form.description.trim(),
+          cores: parseInt(form.cores, 10),
+          ram: parseInt(form.ram, 10),
+          storage: parseInt(form.storage, 10),
+          categoryId,
+        })
+      ).unwrap();
+      toast.success(`Template "${form.name}" created`);
+      close();
     } catch (err) {
-      console.error('Failed to create template:', err);
+      toast.error(`Could not create: ${err.message || err}`);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const isFormValid = () => {
-    return formData.name && 
-           formData.description && 
-           formData.cores && 
-           formData.ram && 
-           formData.storage;
-  };
+  const trigger = useCallback(
+    (child) => {
+      if (!isValidElement(child)) return null;
+      const prev = child.props.onClick;
+      return cloneElement(child, {
+        onClick: (e) => {
+          prev?.(e);
+          setOpen(true);
+        },
+      });
+    },
+    []
+  );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Create New Template
-          </DialogTitle>
-          <DialogDescription>
-            Define a reusable configuration for virtual machines.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {trigger(children)}
+      <Drawer
+        open={open}
+        onClose={close}
+        side="right"
+        size={480}
+        title={
+          <span className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-accent-2" />
+            New template
+          </span>
+        }
+        footer={
+          <ButtonGroup className="justify-end">
+            <Button variant="secondary" onClick={close} disabled={loading?.create}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              loading={loading?.create}
+              disabled={loading?.create}
+            >
+              Create template
+            </Button>
+          </ButtonGroup>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-fg-muted">
+            Pre-configured VM blueprint. Each new VM started from this
+            template inherits these resources and the OS its ISO provides.
+          </p>
 
-        <div className="space-y-5 py-4">
-          {error?.create && (
-            <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-              Error creating template: {error.create}
-            </div>
-          )}
+          {error?.create && <Alert tone="danger">{String(error.create)}</Alert>}
 
-          {/* Name */}
+          <TextField
+            label="Name"
+            placeholder="e.g. Ubuntu · small"
+            value={form.name}
+            onChange={(e) => update({ name: e.target.value })}
+            autoFocus
+          />
+
           <div className="space-y-2">
-            <Label htmlFor="name">Template Name</Label>
-            <Input
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="e.g., Development Workstation"
-              disabled={loading.create}
-            />
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <label className="text-sm font-medium text-fg">Description</label>
             <Textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Describe the purpose of this template..."
+              value={form.description}
+              onChange={(e) => update({ description: e.target.value })}
               rows={2}
-              disabled={loading.create}
-              className="resize-none p-3 placeholder:text-muted-foreground/60"
+              placeholder="What is this template for?"
             />
           </div>
 
-          {/* Resources Section */}
-          <div className="space-y-3">
-            <Label className="text-muted-foreground text-xs uppercase tracking-wide">
-              Resources
-            </Label>
-            <div className="grid grid-cols-3 gap-3">
-              {/* CPU */}
-              <div className="space-y-2">
-                <Label htmlFor="cores" className="flex items-center gap-1.5 text-sm">
-                  <Cpu className="h-3.5 w-3.5 text-blue-500" />
-                  CPU Cores
-                </Label>
-                <Input
-                  id="cores"
-                  name="cores"
-                  type="number"
-                  min="1"
-                  max="64"
-                  value={formData.cores}
-                  onChange={handleChange}
-                  disabled={loading.create}
-                  className="text-center"
-                />
-              </div>
-
-              {/* RAM */}
-              <div className="space-y-2">
-                <Label htmlFor="ram" className="flex items-center gap-1.5 text-sm">
-                  <MemoryStick className="h-3.5 w-3.5 text-green-500" />
-                  RAM (GB)
-                </Label>
-                <Input
-                  id="ram"
-                  name="ram"
-                  type="number"
-                  min="1"
-                  max="512"
-                  value={formData.ram}
-                  onChange={handleChange}
-                  disabled={loading.create}
-                  className="text-center"
-                />
-              </div>
-
-              {/* Storage */}
-              <div className="space-y-2">
-                <Label htmlFor="storage" className="flex items-center gap-1.5 text-sm">
-                  <HardDrive className="h-3.5 w-3.5 text-amber-500" />
-                  Storage (GB)
-                </Label>
-                <Input
-                  id="storage"
-                  name="storage"
-                  type="number"
-                  min="10"
-                  max="2000"
-                  value={formData.storage}
-                  onChange={handleChange}
-                  disabled={loading.create}
-                  className="text-center"
-                />
-              </div>
-            </div>
+          <div className="grid grid-cols-3 gap-3">
+            <TextField
+              label="vCPU"
+              type="number"
+              min={1}
+              max={128}
+              icon={<Cpu className="h-4 w-4" />}
+              value={form.cores}
+              onChange={(e) => update({ cores: e.target.value })}
+            />
+            <TextField
+              label="RAM"
+              type="number"
+              min={1}
+              max={512}
+              suffix={<span className="text-fg-subtle text-xs">GB</span>}
+              icon={<MemoryStick className="h-4 w-4" />}
+              value={form.ram}
+              onChange={(e) => update({ ram: e.target.value })}
+            />
+            <TextField
+              label="Disk"
+              type="number"
+              min={1}
+              max={10000}
+              suffix={<span className="text-fg-subtle text-xs">GB</span>}
+              icon={<HardDrive className="h-4 w-4" />}
+              value={form.storage}
+              onChange={(e) => update({ storage: e.target.value })}
+            />
           </div>
         </div>
-
-        <DialogFooter className="gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setOpen(false)}
-            disabled={loading.create}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleCreate}
-            disabled={loading.create || !isFormValid()}
-            variant="success"
-          >
-            {loading.create ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              'Create Template'
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </Drawer>
+    </>
   );
 }
