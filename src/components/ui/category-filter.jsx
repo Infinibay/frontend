@@ -1,24 +1,30 @@
 "use client";
 import PropTypes from "prop-types";
 
-/** Stub. Legacy category chip row used by app-store-installer. */
 export function CategoryFilter({ categories = [], selected, onSelect }) {
+  const items = [{ value: "all", label: "All" }, ...categories].map((c) =>
+    typeof c === "string" ? { value: c, label: c } : c
+  );
+
   return (
     <div className="flex gap-1.5 flex-wrap">
-      {categories.map((c) => {
-        const active = c === selected;
+      {items.map((item) => {
+        const active = item.value === selected;
         return (
           <button
-            key={c}
+            key={item.value}
             type="button"
-            onClick={() => onSelect?.(c)}
+            onClick={() => onSelect?.(item.value)}
             className={
               active
-                ? "px-2.5 py-1 text-xs rounded-full bg-accent/20 text-accent border border-accent/40"
-                : "px-2.5 py-1 text-xs rounded-full bg-surface-1 text-fg-muted border border-white/10 hover:text-fg"
+                ? "px-2.5 py-1 text-xs rounded-full bg-accent/20 text-accent border border-accent/40 inline-flex items-center gap-1.5"
+                : "px-2.5 py-1 text-xs rounded-full bg-surface-1 text-fg-muted border border-white/10 hover:text-fg inline-flex items-center gap-1.5"
             }
           >
-            {c}
+            {item.label}
+            {typeof item.count === "number" && (
+              <span className="text-fg-subtle tabular-nums">{item.count}</span>
+            )}
           </button>
         );
       })}
