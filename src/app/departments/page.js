@@ -1,251 +1,358 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
-  ToastProvider,
-  Toast,
-  ToastTitle,
-  ToastDescription,
-  ToastViewport
-} from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, AlertTriangle, Building2 } from "lucide-react";
-import { useSizeContext, sizeVariants, getTypographyClass, getGridClasses, getLayoutSpacing } from "@/components/ui/size-provider";
-import { usePageHeader } from "@/hooks/usePageHeader";
-import { getGlassClasses } from "@/utils/glass-effects";
-import { cn } from "@/lib/utils";
+  Card,
+  CardGrid,
+  Button,
+  ButtonGroup,
+  TextField,
+  Dialog,
+  Alert,
+  EmptyState,
+  Spinner,
+  Stat,
+  Badge,
+} from "@infinibay/harbor";
+import {
+  Building2,
+  Search,
+  Plus,
+  RefreshCw,
+  AlertTriangle,
+  Trash2,
+  ArrowRight,
+} from "lucide-react";
 
-// Custom hooks
 import { useDepartmentsPage } from "./hooks/useDepartmentsPage";
+import { usePageHeader } from "@/hooks/usePageHeader";
 
-// Components
-import DepartmentCard from "./components/DepartmentCard";
-import EmptyState from "./components/EmptyState";
-import { DepartmentGridSkeleton } from "./components/DepartmentCardSkeleton";
-import { Skeleton } from "@/components/ui/skeleton";
-import ErrorState from "./components/ErrorState";
-import CreateDepartmentDialog from "./components/CreateDepartmentDialog";
-
-/**
- * Departments Page Component
- * Displays all departments and allows creating new ones
- */
 const DepartmentsPage = () => {
-  const { size } = useSizeContext();
+  const router = useRouter();
   const {
-    // State
     isLoading,
     hasError,
     searchQuery,
     isCreateDeptDialogOpen,
     newDepartmentName,
-    showToast,
-    toastProps,
     filteredDepartments,
     useMockData,
     isCreating,
     createError,
-
-    // Actions
     retryLoading,
     setSearchQuery,
     setIsCreateDeptDialogOpen,
     setNewDepartmentName,
-    setShowToast,
     handleCreateDepartment,
     handleDeleteDepartment,
     refreshDepartments,
     getMachineCount,
-    getDepartmentColor
   } = useDepartmentsPage();
 
-  // Help configuration
-  const helpConfig = useMemo(() => ({
-    title: "Departments Help",
-    description: "Learn how to manage departments and organize your resources",
-    icon: <Building2 className="h-5 w-5 text-primary" />,
-    sections: [
-      {
-        id: "managing-departments",
-        title: "Managing Departments",
-        icon: <Building2 className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Creating Departments</p>
-              <p>Use the "New Department" button to create organizational units for grouping VMs.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Department Purpose</p>
-              <p>Departments help organize VMs by team, project, or function for easier management.</p>
-            </div>
-          </div>
-        ),
-      },
-    ],
-    quickTips: [
-      "Create departments to organize VMs by team or project",
-      "Each department can have its own security policies",
-      "Click on a department card to view its VMs",
-    ],
-  }), []);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // Configure header using the global header system
-  usePageHeader({
-    breadcrumbs: [
-      { label: 'Home', href: '/' },
-      { label: 'Departments', isCurrent: true }
-    ],
-    title: 'Departments',
-    actions: [
-      {
-        id: 'refresh',
-        label: '',
-        icon: 'RefreshCw',
-        variant: 'outline',
-        size: 'sm',
-        onClick: refreshDepartments,
-        loading: isLoading,
-        disabled: isLoading,
-        tooltip: isLoading ? 'Refreshing...' : 'Refresh departments',
-        className: 'whitespace-nowrap'
-      },
-      {
-        id: 'new-department',
-        label: 'New Department',
-        icon: 'Plus',
-        variant: 'default',
-        size: 'sm',
-        onClick: () => setIsCreateDeptDialogOpen(true),
-        disabled: isLoading,
-        tooltip: 'Create a new department',
-        className: 'whitespace-nowrap'
-      }
-    ],
-    helpConfig: helpConfig,
-    helpTooltip: 'Departments help'
-  }, [isLoading, refreshDepartments, setIsCreateDeptDialogOpen]);
+  const helpConfig = useMemo(
+    () => ({
+      title: "Departments",
+      description: "Organize your VMs by team, project or function.",
+      icon: <Building2 className="h-5 w-5 text-accent-2" />,
+      sections: [
+        {
+          id: "managing",
+          title: "Managing departments",
+          icon: <Building2 className="h-4 w-4" />,
+          content: (
+            <p>
+              Use <strong>New department</strong> to create an organizational
+              unit. Click any card to open its VMs, firewall rules and scripts.
+            </p>
+          ),
+        },
+      ],
+      quickTips: [
+        "Click a card to open a department",
+        "Each department has its own firewall rules and scripts",
+        "Use the search box to narrow a long list",
+      ],
+    }),
+    []
+  );
 
-  // Loading state - maintains page structure with skeleton placeholders
-  if (isLoading) {
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: "Home", href: "/" },
+        { label: "Departments", isCurrent: true },
+      ],
+      title: "Departments",
+      actions: [],
+      helpConfig,
+      helpTooltip: "Departments help",
+    },
+    []
+  );
+
+  const totalDepartments = filteredDepartments?.length || 0;
+  const totalMachines = useMemo(
+    () =>
+      (filteredDepartments || []).reduce(
+        (acc, d) => acc + (getMachineCount(d.name) || 0),
+        0
+      ),
+    [filteredDepartments, getMachineCount]
+  );
+
+  const submitDelete = async () => {
+    if (!deleteTarget) return;
+    await handleDeleteDepartment(deleteTarget.id);
+    setDeleteTarget(null);
+  };
+
+  if (hasError) {
     return (
-      <div className="w-full">
-        {/* Content container with glass effect */}
-        <div className={cn(
-          getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
-          "size-container size-padding mt-4"
-        )}>
-          {/* Search skeleton */}
-          <div className={`relative size-margin-sm ${sizeVariants[size].layout.maxWidth}`}>
-            <Skeleton className="h-10 w-full rounded-md" />
-          </div>
-
-          <DepartmentGridSkeleton count={4} />
-        </div>
-      </div>
+      <Alert
+        tone="danger"
+        title="Couldn't load departments"
+        actions={
+          <Button size="sm" onClick={retryLoading} icon={<RefreshCw className="h-4 w-4" />}>
+            Retry
+          </Button>
+        }
+      >
+        The departments API is unreachable. Check the backend service or retry.
+      </Alert>
     );
   }
-  
-  // Error state
-  if (hasError) {
-    return <ErrorState onRetry={retryLoading} />;
-  }
-  
+
   return (
-    <ToastProvider>
-      <div className="w-full">
-        {/* Mock Data Banner */}
-        {useMockData && (
-          <div className="bg-amber-50 border border-amber-200 rounded-md flex items-center size-container size-margin-sm">
-            <AlertTriangle className={`${sizeVariants[size].icon.size} text-amber-500 ${sizeVariants[size].spacing.marginSm} flex-shrink-0`} />
-            <div>
-              <p className={`text-amber-800 font-medium ${sizeVariants[size].typography.text}`}>Using Mock Data</p>
-              <p className={`text-amber-700 ${sizeVariants[size].text}`}>
-                Could not connect to the API. Displaying mock data for development.
-                <Button
-                  variant="link"
-                  className={`p-0 h-auto text-amber-800 underline ${sizeVariants[size].spacing.marginStartXs}`}
-                  onClick={retryLoading}
-                >
-                  Try again
-                </Button>
-              </p>
-            </div>
-          </div>
-        )}
+    <div className="space-y-6">
+      {useMockData && (
+        <Alert
+          tone="warning"
+          title="Using mock data"
+          actions={
+            <Button size="sm" onClick={retryLoading} icon={<RefreshCw className="h-4 w-4" />}>
+              Retry
+            </Button>
+          }
+        >
+          Could not connect to the departments API. Showing mock data.
+        </Alert>
+      )}
 
-        {/* Content container with glass effect */}
-        <div className={cn(
-          getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
-          "size-container size-padding mt-4"
-        )}>
-          {/* Search */}
-          <div className={`relative size-margin-sm ${sizeVariants[size].layout.maxWidth}`}>
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className={`${sizeVariants[size].icon.size} text-muted-foreground`} />
-            </div>
-            <Input
-              type="text"
-              placeholder="Search departments..."
-              className={sizeVariants[size].input.withIconLeftPadding}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      {/* Hero + actions */}
+      <Card variant="glass" className="p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-fg flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-accent-2" />
+              Departments
+            </h1>
+            <p className="text-sm text-fg-muted mt-1">
+              Organize VMs by team, project or function.
+            </p>
           </div>
 
-          {/* Departments List */}
-          {filteredDepartments.length > 0 ? (
-            <div className={cn(getGridClasses('departments', size), "mt-6")}>
-              {filteredDepartments.map((dept) => (
-                <DepartmentCard
-                  key={dept.id}
-                  department={dept}
-                  machineCount={getMachineCount(dept.name)}
-                  colorClass={getDepartmentColor(dept.name)}
-                  size={size}
-                  onDelete={handleDeleteDepartment}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              searchQuery={searchQuery}
-              onCreateDepartment={() => setIsCreateDeptDialogOpen(true)}
-              size={size}
-            />
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />}
+              onClick={refreshDepartments}
+              disabled={isLoading}
+            >
+              Refresh
+            </Button>
+            <Button
+              size="sm"
+              icon={<Plus className="h-4 w-4" />}
+              onClick={() => setIsCreateDeptDialogOpen(true)}
+            >
+              New department
+            </Button>
+          </div>
         </div>
-      </div>
-      
-      {/* Create Department Dialog */}
-      <CreateDepartmentDialog
-        isOpen={isCreateDeptDialogOpen}
-        onOpenChange={setIsCreateDeptDialogOpen}
-        departmentName={newDepartmentName}
-        onDepartmentNameChange={setNewDepartmentName}
-        onSubmit={handleCreateDepartment}
-        onCancel={() => {
+
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <Stat label="Departments" value={totalDepartments} icon={<Building2 className="h-3.5 w-3.5" />} />
+          <Stat label="Virtual machines" value={totalMachines} />
+        </div>
+      </Card>
+
+      {/* Search */}
+      <Card variant="default" className="p-4">
+        <div className="max-w-md">
+          <TextField
+            placeholder="Search departments…"
+            icon={<Search className="h-4 w-4" />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </Card>
+
+      {/* Grid */}
+      {isLoading && filteredDepartments.length === 0 ? (
+        <div className="py-10 flex items-center justify-center gap-3 text-fg-muted">
+          <Spinner /> Loading departments…
+        </div>
+      ) : filteredDepartments.length === 0 ? (
+        <Card variant="default" className="p-0">
+          <EmptyState
+            icon={<Building2 className="h-10 w-10 text-fg-subtle" />}
+            title={searchQuery ? "No matches" : "No departments yet"}
+            description={
+              searchQuery
+                ? "No departments match your search."
+                : "Create a department to start organizing VMs."
+            }
+            actions={
+              !searchQuery ? (
+                <Button
+                  size="sm"
+                  icon={<Plus className="h-4 w-4" />}
+                  onClick={() => setIsCreateDeptDialogOpen(true)}
+                >
+                  New department
+                </Button>
+              ) : null
+            }
+          />
+        </Card>
+      ) : (
+        <CardGrid cols={3}>
+          {filteredDepartments.map((dept) => {
+            const count = getMachineCount(dept.name);
+            return (
+              <Card
+                key={dept.id}
+                variant="solid"
+                interactive
+                spotlight
+                glow
+                className="p-5 flex flex-col gap-3 cursor-pointer"
+                onClick={() => router.push(`/departments/${encodeURIComponent(dept.name)}`)}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-accent/15 grid place-items-center shrink-0">
+                      <Building2 className="h-5 w-5 text-accent" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-fg truncate">{dept.name}</h3>
+                      <p className="text-xs text-fg-muted mt-0.5">
+                        {count === 0 ? "No VMs" : count === 1 ? "1 VM" : `${count} VMs`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget(dept);
+                    }}
+                    className="p-1.5 rounded-lg text-fg-subtle hover:text-danger hover:bg-danger/10 transition-colors"
+                    aria-label="Delete department"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 mt-auto pt-3 border-t border-white/5">
+                  <Badge tone="neutral">{dept.id?.slice(0, 6) || ""}</Badge>
+                  <div className="ml-auto flex items-center text-xs text-accent-2 gap-1">
+                    Open <ArrowRight className="h-3 w-3" />
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </CardGrid>
+      )}
+
+      {/* Create dialog */}
+      <Dialog
+        open={isCreateDeptDialogOpen}
+        onClose={() => {
           setNewDepartmentName("");
           setIsCreateDeptDialogOpen(false);
         }}
-        isLoading={isCreating}
-        error={createError}
-      />
-      
-      {/* Toast Notification */}
-      {showToast && (
-        <Toast
-          variant={toastProps.variant}
-          onOpenChange={(open) => !open && setShowToast(false)}
-        >
-          <ToastTitle>{toastProps.title}</ToastTitle>
-          <ToastDescription>{toastProps.description}</ToastDescription>
-        </Toast>
-      )}
-      
-      <ToastViewport />
-    </ToastProvider>
+        size="sm"
+        title={
+          <span className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-accent-2" />
+            New department
+          </span>
+        }
+        description="Create an organizational unit to group VMs, firewall rules and scripts."
+        footer={
+          <ButtonGroup className="justify-end">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setNewDepartmentName("");
+                setIsCreateDeptDialogOpen(false);
+              }}
+              disabled={isCreating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateDepartment}
+              loading={isCreating}
+              disabled={isCreating || !newDepartmentName.trim()}
+            >
+              Create
+            </Button>
+          </ButtonGroup>
+        }
+      >
+        <div className="space-y-3">
+          <TextField
+            label="Name"
+            placeholder="Engineering"
+            value={newDepartmentName}
+            onChange={(e) => setNewDepartmentName(e.target.value)}
+            autoFocus
+          />
+          {createError && <Alert tone="danger">{createError}</Alert>}
+        </div>
+      </Dialog>
+
+      {/* Delete dialog */}
+      <Dialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        size="sm"
+        title={
+          <span className="flex items-center gap-2 text-danger">
+            <AlertTriangle className="h-4 w-4" />
+            Delete department
+          </span>
+        }
+        description={
+          deleteTarget
+            ? `Remove ${deleteTarget.name}? Its VMs will need to be reassigned to another department.`
+            : ""
+        }
+        footer={
+          <ButtonGroup className="justify-end">
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={submitDelete}>
+              Delete
+            </Button>
+          </ButtonGroup>
+        }
+      >
+        <p className="text-sm text-fg-muted">
+          This action cannot be undone.
+        </p>
+      </Dialog>
+    </div>
   );
 };
 
