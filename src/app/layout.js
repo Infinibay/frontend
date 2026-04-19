@@ -21,8 +21,8 @@ import { AppSidebar } from "@/components/ui/navbar"
 import auth from "@/utils/auth"
 import { CursorProvider } from "@infinibay/harbor/lib/cursor"
 import { ToastProvider as HarborToastProvider } from "@infinibay/harbor"
+import { Toaster as SonnerToaster } from "sonner"
 import { selectInterfaceSize, selectAppSettingsInitialized, selectTheme } from "@/state/slices/appSettings"
-import { Toaster } from "@/components/ui/toaster"
 import { RealTimeProvider } from "@/components/RealTimeProvider"
 import { SocketNamespaceGuard } from "@/components/SocketNamespaceGuard"
 import { createThemeScript } from "@/utils/theme"
@@ -174,7 +174,7 @@ export default function RootLayout({ children }) {
                                   </RealTimeProvider>
                                 </SocketNamespaceGuard>
                               </InitialDataLoader>
-                              <Toaster />
+                              <SonnerToaster theme="dark" position="bottom-right" richColors />
                             </HarborToastProvider>
                           </CursorProvider>
                         </ApolloProvider>
