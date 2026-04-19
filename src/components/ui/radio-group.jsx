@@ -9,7 +9,7 @@ import { getCheckboxGlass, getFormFocusRing, getFormGlassTransition, getReducedT
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
 const RadioGroup = React.forwardRef(({ className, size, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const gapClasses = {
     sm: "gap-1.5",
@@ -29,7 +29,7 @@ RadioGroup.displayName = RadioGroupPrimitive.Root.displayName
 
 const RadioGroupItem = React.forwardRef(({ className, size, glass = false, ...props }, ref) => {
   const theme = useSafeResolvedTheme()
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const sizeClasses = {
     sm: "h-3 w-3",

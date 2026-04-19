@@ -15,7 +15,7 @@ const TabControls = ({
   viewMode,
   onViewModeToggle
 }) => {
-  const { size } = useSizeContext();
+  const size = 'md';
 
   return (
     <div className={cn(

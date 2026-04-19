@@ -26,7 +26,7 @@ const Textarea = React.forwardRef(({
   ...props
 }, ref) => {
   const theme = useSafeResolvedTheme()
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const [value, setValue] = React.useState(props.value || props.defaultValue || "")
   const { isFocused, isHovered, handlers } = useInputStates()

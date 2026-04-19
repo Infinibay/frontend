@@ -61,31 +61,9 @@ const dialogContentVariants = cva(
 
 const DialogContent = React.forwardRef(({ className, children, glass, ...props }, ref) => {
 
-  // Size-responsive glass intensity
-  const getResponsiveGlass = (glass) => {
-    if (!glass || glass === 'none') return 'none'
-    if (contextSize === 'sm') {
-      return glass === 'strong' || glass === 'mica' || glass === 'acrylic' ? 'medium' : glass
-    }
-    return glass
-  }
-
-  // Size-responsive radius and elevation
-  const getFluentRadius = () => {
-    switch(contextSize) {
-      case 'sm': return 'radius-fluent-md'
-      case 'md':
-      case 'lg': return 'radius-fluent-lg'
-      case 'xl': return 'radius-fluent-xl'
-      default: return 'radius-fluent-lg'
-    }
-  }
-
-  const getElevation = () => {
-    return contextSize === 'sm' ? 'shadow-elevation-4' : 'shadow-elevation-5'
-  }
-
-  const responsiveGlass = getResponsiveGlass(glass)
+  const responsiveGlass = !glass || glass === 'none' ? 'none' : glass
+  const getFluentRadius = () => 'radius-fluent-lg'
+  const getElevation = () => 'shadow-elevation-5'
 
   return (
     <DialogPortal>

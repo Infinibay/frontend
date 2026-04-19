@@ -942,7 +942,7 @@ SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
  * ```
  */
 const SelectScrollUpButton = React.forwardRef(({ className, size, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   // Memoized classes for performance optimization using shared utility
   const buttonClasses = React.useMemo(() => {
@@ -999,7 +999,7 @@ SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName
  * ```
  */
 const SelectScrollDownButton = React.forwardRef(({ className, size, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   // Memoized classes for performance optimization using shared utility
   const buttonClasses = React.useMemo(() => {
@@ -1032,7 +1032,7 @@ const SelectScrollDownButton = React.forwardRef(({ className, size, ...props }, 
 SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName
 
 const SelectContent = React.forwardRef(({ className, children, position = "popper", size, glass = false, loading = false, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
   const { isSearchable, searchValue, listboxId, setActiveDescendant } = React.useContext(SelectInternalContext) || {}
   const viewportRef = React.useRef(null)
 
@@ -1426,7 +1426,7 @@ SelectContent.displayName = SelectPrimitive.Content.displayName
  * ```
  */
 const SelectLabel = React.forwardRef(({ className, size, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   // Memoized classes for performance optimization
   const labelClasses = React.useMemo(() => {
@@ -1470,7 +1470,7 @@ const SelectLabel = React.forwardRef(({ className, size, ...props }, ref) => {
 SelectLabel.displayName = SelectPrimitive.Label.displayName
 
 const SelectItem = React.forwardRef(({ className, children, size, disabled, value, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
   const { contentGlass: parentGlass } = React.useContext(SelectInternalContext) || {}
   const {
     isSearchable,
@@ -1650,7 +1650,7 @@ SelectItem.displayName = SelectPrimitive.Item.displayName
  * ```
  */
 const SelectSeparator = React.forwardRef(({ className, glass = false, size, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   // Memoized glass effects for performance
   const glassEffect = React.useMemo(() => {

@@ -48,7 +48,7 @@ const Badge = React.forwardRef(({
   ...props
 }, ref) => {
   const theme = useSafeResolvedTheme()
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
   const animation = getDataGlassAnimation()
 
   // If glass is enabled but variant doesn't include glass, convert to glass variant

@@ -30,7 +30,7 @@ const Spinner = React.forwardRef(({
   size: sizeProp,
   ...props 
 }, ref) => {
-  const size = sizeProp || contextSize || "md";
+  const size = sizeProp || "md";
   
   // Common classes for all spinners
   const baseClasses = cn(

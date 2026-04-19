@@ -74,7 +74,7 @@ const Progress = React.forwardRef(({
   ...props
 }, ref) => {
   const theme = useSafeResolvedTheme()
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const glassEffect = getProgressGlass(variant, glass, theme)
   const trackGlass = getProgressGlassTrack(variant, glass, theme)

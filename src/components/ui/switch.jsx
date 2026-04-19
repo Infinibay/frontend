@@ -9,7 +9,7 @@ import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
 const Switch = React.forwardRef(({ className, size, glass = false, ...props }, ref) => {
   const theme = useSafeResolvedTheme()
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const sizeClasses = {
     sm: "h-4 w-7",

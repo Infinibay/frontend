@@ -31,7 +31,7 @@ const Label = React.forwardRef(({
   children, 
   ...props 
 }, ref) => {
-  const size = sizeProp || contextSize
+  const size = sizeProp || 'md'
 
   return (
     <div className="flex items-center gap-2">

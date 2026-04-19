@@ -7,7 +7,7 @@ import { CheckIcon } from "@radix-ui/react-icons"
 import { cn } from "@/lib/utils"
 
 const Checkbox = React.forwardRef(({ className, size, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const sizeClasses = {
     sm: "h-5 w-5 min-h-5 min-w-5",

@@ -46,7 +46,7 @@ const DepartmentCardSkeleton = () => {
  * Uses responsive grid layout matching the actual department grid
  */
 const DepartmentGridSkeleton = ({ count = 6 }) => {
-  const { size } = useSizeContext()
+  const size = 'md'
 
   return (
     <div className={cn(getGridClasses('departments', size), "mt-6")}>

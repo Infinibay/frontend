@@ -26,7 +26,7 @@ const Input = React.forwardRef(({
   floatingLabel = false,
   ...props
 }, ref) => {
-  const size = propSize || contextSize;
+  const size = propSize || 'md';
   const theme = useSafeResolvedTheme();
 
   const [value, setValue] = React.useState(props.value || props.defaultValue || "");

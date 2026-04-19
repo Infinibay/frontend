@@ -27,7 +27,7 @@ const MachineTable = ({
   handleStop,
   handleDelete
 }) => {
-  const { size } = useSizeContext();
+  const size = 'md';
   const { resolvedTheme } = useAppTheme();
 
   // Render sort icon

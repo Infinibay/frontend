@@ -7,7 +7,7 @@ import { getTableGlass, getTableRowGlass, getDataGlassAnimation, getReducedTrans
 import { useSafeResolvedTheme } from "@/utils/safe-theme"
 
 const Table = React.forwardRef(({ className, size, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const sizeClasses = {
     sm: "text-xs",
@@ -30,7 +30,7 @@ Table.displayName = "Table"
 
 const TableContainer = React.forwardRef(({ className, size, glass = false, children, ...props }, ref) => {
   const theme = useSafeResolvedTheme()
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const glassEffect = getTableGlass(glass, theme)
   const animation = getDataGlassAnimation()
@@ -126,7 +126,7 @@ const TableRow = React.forwardRef(({ className, glass, ...props }, ref) => {
 TableRow.displayName = "TableRow"
 
 const TableHead = React.forwardRef(({ className, size, glass, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const sizeClasses = {
     sm: "h-8 px-1.5",
@@ -149,7 +149,7 @@ const TableHead = React.forwardRef(({ className, size, glass, ...props }, ref) =
 TableHead.displayName = "TableHead"
 
 const TableCell = React.forwardRef(({ className, size, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const sizeClasses = {
     sm: "p-1.5",
@@ -171,7 +171,7 @@ const TableCell = React.forwardRef(({ className, size, ...props }, ref) => {
 TableCell.displayName = "TableCell"
 
 const TableCaption = React.forwardRef(({ className, size, ...props }, ref) => {
-  const effectiveSize = size || contextSize || 'md'
+  const effectiveSize = size || 'md'
 
   const sizeClasses = {
     sm: "mt-3 text-xs",

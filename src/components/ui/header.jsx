@@ -99,7 +99,7 @@ const Header = React.forwardRef(({
   ...props
 }, ref) => {
   const { resolvedTheme } = useAppTheme()
-  const size = sizeProp || contextSize
+  const size = sizeProp || 'md'
 
   // If glass prop is provided, override any glass-related variant
   const effectiveVariant = glass ? (variant === 'glass' || variant === 'acrylic' || variant === 'fluent' ? 'default' : variant) : variant
