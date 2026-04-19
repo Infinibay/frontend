@@ -3,10 +3,24 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { createDebugger } from "@/utils/debug"
-import { Button } from "./button"
-import { Card } from "./card"
+import { Button, Card } from "@infinibay/harbor"
 import { FormErrorProvider, useFormError } from "./form-error-provider"
-import { Check, User, Mail, Settings, Info, Monitor, Cpu, Zap, Package, ClipboardCheck, ArrowRight, Shield } from "lucide-react"
+import {
+  Check,
+  User,
+  Mail,
+  Settings,
+  Info,
+  Monitor,
+  Cpu,
+  Zap,
+  Package,
+  ClipboardCheck,
+  ArrowRight,
+  Shield,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
 
 const debug = createDebugger('frontend:components:wizard')
 
@@ -21,8 +35,8 @@ export function useWizardContext() {
 }
 
 /**
- * Wizard component with step management, validation, and progress tracking
- * Features glass effects, icon indicators, and form error handling
+ * Wizard component with step management, validation, and progress tracking.
+ * Uses Harbor primitives for the chrome while preserving the full context API.
  */
 function WizardContent({
   children,
@@ -59,7 +73,6 @@ function WizardContent({
     const stepId = currentStepElement.props.id
     debug.info('navigation', 'Moving to next step:', { stepId, currentStep, isLastStep })
 
-    // Clear all errors before starting validation
     clearAllErrors()
 
     if (currentStepElement.props.validate) {
@@ -67,7 +80,6 @@ function WizardContent({
       debug.log('validation', 'Starting step validation:', stepId)
 
       try {
-        // Ensure we always pass an object to validate
         const stepValues = values[stepId] || {}
         await currentStepElement.props.validate(stepValues)
         debug.success('validation', 'Step validation passed:', stepId)
@@ -80,7 +92,6 @@ function WizardContent({
         }
       } catch (error) {
         debug.warn('validation', 'Step validation failed:', { stepId, error })
-        // Handle validation errors
         if (error && typeof error === 'object') {
           Object.entries(error).forEach(([field, message]) => {
             setFieldError(field, message)
@@ -103,12 +114,11 @@ function WizardContent({
   const previous = () => {
     debug.info('navigation', 'Moving to previous step:', { from: currentStep, to: Math.max(currentStep - 1, 0) })
     setCurrentStep(s => Math.max(s - 1, 0))
-    clearAllErrors() // Clear errors when going back
+    clearAllErrors()
   }
 
   const setStepValues = React.useCallback((stepId, stepValues) => {
     debug.log('data', 'Step values updated:', { stepId, keys: Object.keys(stepValues) })
-    // Clear errors when values change
     clearAllErrors()
     setValues(prev => ({
       ...prev,
@@ -121,7 +131,6 @@ function WizardContent({
     const fieldName = parts.join('.')
     debug.log('data', 'Field value changed:', { stepId, fieldName, valueType: typeof value })
 
-    // Clear field error when value changes
     clearFieldError(fieldName)
 
     setValues(prev => ({
@@ -140,26 +149,35 @@ function WizardContent({
     setValue,
   }), [currentStep, values, setStepValues, setValue])
 
+  const currentStepConfig = getStepConfig(currentStepElement.props.id, currentStep)
+
   return (
     <WizardContext.Provider value={contextValue}>
-      <div className={cn("w-full relative", className)} {...props}>
-        {/* Modern Progress Section */}
-        <div className="mb-8 p-6 glass-strong">
-          {/* Step Labels */}
-          <div className="flex justify-between mb-6">
+      <div className={cn("w-full relative space-y-6", className)} {...props}>
+        {/* Progress rail */}
+        <Card variant="glass" spotlight={false} glow={false} className="p-6">
+          {/* Step labels */}
+          <div className="flex justify-between mb-6 gap-2">
             {steps.map((step, index) => {
               const stepConfig = getStepConfig(step.props.id, index)
+              const isCurrent = index === currentStep
+              const isCompleted = index < currentStep
               return (
-                <div key={step.props.id} className="flex flex-col items-center space-y-2 flex-1">
-                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <div
+                  key={step.props.id}
+                  className="flex flex-col items-center gap-1.5 flex-1 min-w-0"
+                >
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-fg-subtle">
                     Step {index + 1}
                   </div>
-                  <div className={cn(
-                    "text-sm font-semibold transition-colors duration-300",
-                    index === currentStep && "text-primary",
-                    index < currentStep && "text-primary",
-                    index > currentStep && "text-muted-foreground"
-                  )}>
+                  <div
+                    className={cn(
+                      "text-xs sm:text-sm font-semibold transition-colors duration-300 text-center truncate w-full",
+                      isCurrent && "text-accent",
+                      isCompleted && "text-success",
+                      !isCurrent && !isCompleted && "text-fg-subtle"
+                    )}
+                  >
                     {stepConfig.title}
                   </div>
                 </div>
@@ -167,18 +185,22 @@ function WizardContent({
             })}
           </div>
 
-          {/* Progress Visualization */}
+          {/* Progress visualization */}
           <div className="relative flex w-full items-center">
             {/* Background line */}
-            <div className="absolute top-1/2 left-0 w-full h-1 bg-border/20 rounded-full -translate-y-1/2" />
+            <div className="absolute top-1/2 left-0 w-full h-[2px] bg-white/8 rounded-full -translate-y-1/2" />
 
-            {/* Active line with gradient */}
+            {/* Active line */}
             <div
-              className="absolute top-1/2 left-0 h-1 bg-gradient-to-r from-primary to-primary/80 rounded-full -translate-y-1/2 transition-all duration-500 ease-out"
-              style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+              className="absolute top-1/2 left-0 h-[2px] rounded-full -translate-y-1/2 transition-all duration-500 ease-out bg-gradient-to-r from-accent to-accent-2"
+              style={{
+                width: steps.length > 1
+                  ? `${(currentStep / (steps.length - 1)) * 100}%`
+                  : '0%'
+              }}
             />
 
-            {/* Step indicators with icons */}
+            {/* Step indicators */}
             <div className="relative z-10 flex justify-between w-full">
               {steps.map((step, index) => {
                 const stepConfig = getStepConfig(step.props.id, index)
@@ -190,91 +212,81 @@ function WizardContent({
                   <div
                     key={step.props.id}
                     className={cn(
-                      "flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 shadow-lg",
-                      "border-2 backdrop-blur-sm",
-                      isCurrent && "bg-primary text-primary-foreground border-primary ring-4 ring-primary/20 scale-110",
-                      isCompleted && "bg-primary text-primary-foreground border-primary",
-                      !isCurrent && !isCompleted && "bg-background/80 text-muted-foreground border-border/40 hover:border-border/60"
+                      "flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full transition-all duration-300 border",
+                      isCurrent && "bg-accent text-white border-accent ring-4 ring-accent/20 scale-110 shadow-harbor-glow",
+                      isCompleted && "bg-success text-surface border-success",
+                      !isCurrent && !isCompleted && "bg-surface-2 text-fg-subtle border-white/8"
                     )}
                   >
                     {isCompleted ? (
                       <Check className="w-5 h-5" />
                     ) : (
-                      <IconComponent className={cn(
-                        "w-5 h-5 transition-all duration-300",
-                        isCurrent && "scale-110"
-                      )} />
+                      <IconComponent
+                        className={cn(
+                          "w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300",
+                          isCurrent && "scale-110"
+                        )}
+                      />
                     )}
                   </div>
                 )
               })}
             </div>
           </div>
-        </div>
+        </Card>
 
-        {/* Step content with clean design */}
-        <div className="min-h-[400px] p-6 transition-all duration-300 glass-strong">
+        {/* Step content */}
+        <Card variant="glass" spotlight={false} glow={false} className="p-6 min-h-[400px]">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-2">
-              {getStepConfig(currentStepElement.props.id, currentStep).title}
+            <h2 className="text-2xl font-bold text-fg mb-1">
+              {currentStepConfig.title}
             </h2>
-            <p className="text-muted-foreground">
-              {getStepConfig(currentStepElement.props.id, currentStep).description}
+            <p className="text-sm text-fg-muted">
+              {currentStepConfig.description}
             </p>
           </div>
           <div className="space-y-6">
             {currentStepElement}
           </div>
-        </div>
+        </Card>
 
-        {/* Enhanced Navigation */}
-        <div className="flex justify-between items-center mt-8 p-4 glass-strong">
-          <Button
-            variant="outline"
-            onClick={previous}
-            disabled={currentStep === 0}
-            className={cn(
-              "px-6 py-3 text-sm font-medium transition-all duration-200",
-              "hover:scale-105 disabled:hover:scale-100",
-              currentStep === 0 && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Previous
-          </Button>
+        {/* Navigation */}
+        <Card variant="glass" spotlight={false} glow={false} className="p-4">
+          <div className="flex justify-between items-center">
+            <Button
+              variant="secondary"
+              onClick={previous}
+              disabled={currentStep === 0}
+              icon={<ChevronLeft className="w-4 h-4" />}
+            >
+              Previous
+            </Button>
 
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <span>{currentStep + 1}</span>
-            <span>of</span>
-            <span>{steps.length}</span>
+            <div className="flex items-center gap-1 text-xs text-fg-muted tabular-nums">
+              <span className="text-fg font-medium">{currentStep + 1}</span>
+              <span>of</span>
+              <span>{steps.length}</span>
+            </div>
+
+            <Button
+              variant="primary"
+              onClick={next}
+              loading={isValidating}
+              disabled={isValidating}
+              iconRight={
+                !isValidating && !isLastStep ? (
+                  <ChevronRight className="w-4 h-4" />
+                ) : null
+              }
+            >
+              {isValidating
+                ? "Validating..."
+                : isLastStep
+                  ? "Complete Setup"
+                  : "Continue"}
+            </Button>
           </div>
-
-          <Button
-            onClick={next}
-            disabled={isValidating}
-            className={cn(
-              "px-6 py-3 text-sm font-medium transition-all duration-200",
-              "hover:scale-105 disabled:hover:scale-100",
-              "bg-primary hover:bg-primary/90",
-              isValidating && "opacity-75 cursor-wait"
-            )}
-          >
-            {isValidating && (
-              <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            )}
-            {isValidating ? "Validating..." : isLastStep ? "Complete Setup" : "Continue"}
-            {!isValidating && !isLastStep && (
-              <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            )}
-          </Button>
-        </div>
+        </Card>
       </div>
     </WizardContext.Provider>
   )

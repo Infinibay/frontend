@@ -1,20 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Badge, Card, Skeleton } from '@infinibay/harbor';
 import { useWizardContext } from '@/components/ui/wizard';
 import { useFormError } from '@/components/ui/form-error-provider';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { fetchGraphics } from '@/state/slices/system';
 import { cn } from '@/lib/utils';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import { createDebugger } from '@/utils/debug';
+import { Check, Cpu, MonitorOff, Zap } from 'lucide-react';
 
 const debug = createDebugger('frontend:components:gpu-selection-step');
 
-export function GpuSelectionStep({ id }) {
+export function GpuSelectionStep({ id, className }) {
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
   const stepValues = values[id] || {};
@@ -24,11 +22,11 @@ export function GpuSelectionStep({ id }) {
     data: graphics,
     isLoading: loading,
     error,
-    hasData
+    hasData,
   } = useEnsureData('system', fetchGraphics, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
-    ttl: 10 * 60 * 1000, // 10 minutes (graphics don't change often)
-    transform: (data) => data?.graphics || data || []
+    ttl: 10 * 60 * 1000, // 10 minutes
+    transform: (data) => data?.graphics || data || [],
   });
 
   debug.info('GpuSelectionStep state:', {
@@ -36,23 +34,17 @@ export function GpuSelectionStep({ id }) {
     selectedGpu: stepValues.gpuId,
     loading,
     hasError: !!error,
-    hasData
+    hasData,
   });
 
   // Add "No GPU" option to the list
   const allOptions = [
     { pciBus: 'no-gpu', vendor: '', model: 'No GPU', memory: 0 },
-    ...(graphics || [])
+    ...(graphics || []),
   ];
-
-  const formatGpuName = (gpu) => {
-    if (gpu.pciBus === 'no-gpu') return 'No GPU';
-    return gpu.model;
-  };
 
   const formatMemory = (memory) => {
     if (!memory) return '';
-    // Convert to MB for values less than 1GB
     if (memory < 1) {
       const mbValue = Math.round(memory * 1024);
       return `${mbValue}MB VRAM`;
@@ -60,69 +52,56 @@ export function GpuSelectionStep({ id }) {
     return `${Math.round(memory)}GB VRAM`;
   };
 
-  const renderLoadingSkeleton = () => (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {[...Array(4)].map((_, index) => (
-        <div key={index} className="relative flex rounded-lg p-4 border space-y-3">
-          <div className="flex flex-col gap-2 w-full">
-            <div className="flex items-start justify-between gap-2">
-              <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-6 w-16 rounded-full" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-3 w-1/2" />
-              <Skeleton className="h-3 w-3/4" />
-              <Skeleton className="h-3 w-1/3" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderErrorState = () => (
-    <div className="flex items-center justify-center min-h-[200px]">
-      <div className="text-center space-y-2">
-        <div className="text-red-500">Error loading graphics cards</div>
-        <div className="text-sm text-muted-foreground">
-          {error?.message || 'Failed to load available graphics cards'}
-        </div>
-      </div>
-    </div>
-  );
+  const pickGpu = (pciBus) => {
+    debug.info('GPU selection changed:', pciBus);
+    const selectedGpu = allOptions.find((gpu) => gpu.pciBus === pciBus);
+    setValue(`${id}.gpuId`, pciBus);
+    setValue(`${id}.pciBus`, pciBus === 'no-gpu' ? null : pciBus);
+    setValue(
+      `${id}.gpuInfo`,
+      pciBus === 'no-gpu'
+        ? null
+        : {
+            model: selectedGpu.model,
+            vendor: selectedGpu.vendor,
+            memory: selectedGpu.memory,
+          }
+    );
+  };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Select Graphics Card</h2>
-          <p className="text-sm text-muted-foreground">
-            Choose a graphics card for your virtual machine or select "No GPU" if you don't need one.
-          </p>
+      <div className={cn('space-y-4', className)}>
+        <label className="text-sm font-medium text-fg">Select a Graphics Card</label>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(4)].map((_, index) => (
+            <Card key={index} variant="default" spotlight={false} glow={false}>
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-3 w-3/4" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </Card>
+          ))}
         </div>
-        <Card glass="subtle" className={cn("p-6", "glass-subtle border border-border/20")}>
-          <div className="space-y-4">
-            <Label>Select a Graphics Card</Label>
-            {renderLoadingSkeleton()}
-          </div>
-        </Card>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Select Graphics Card</h2>
-          <p className="text-sm text-muted-foreground">
-            Choose a graphics card for your virtual machine or select "No GPU" if you don't need one.
-          </p>
-        </div>
-        <Card glass="subtle" className={cn("p-6", "glass-subtle border border-border/20")}>
-          <div className="space-y-4">
-            <Label>Select a Graphics Card</Label>
-            {renderErrorState()}
+      <div className={cn('space-y-4', className)}>
+        <label className="text-sm font-medium text-fg">Select a Graphics Card</label>
+        <Card variant="default" spotlight={false} glow={false} className="border-danger/30 bg-danger/10">
+          <div className="text-center space-y-2 py-4">
+            <div className="text-danger font-medium">Error loading graphics cards</div>
+            <div className="text-sm text-fg-muted">
+              {error?.message || 'Failed to load available graphics cards'}
+            </div>
           </div>
         </Card>
       </div>
@@ -130,92 +109,88 @@ export function GpuSelectionStep({ id }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight">Select Graphics Card</h2>
-        <p className="text-sm text-muted-foreground">
-          Choose a graphics card for your virtual machine or select "No GPU" if you don't need one.
+    <div className={cn('space-y-4', className)}>
+      <div>
+        <label className="text-sm font-medium text-fg">Select a Graphics Card</label>
+        <p className="text-xs text-fg-muted mt-0.5">
+          A GPU can significantly improve graphics performance for applications that require hardware acceleration.
         </p>
       </div>
 
-      <Card glass="subtle" className={cn("p-6", "glass-subtle border border-border/20")}>
-        <div className="space-y-4">
-          <Label
-            moreInformation="A GPU can significantly improve graphics performance for applications that require hardware acceleration."
-          >
-            Select a Graphics Card
-          </Label>
-          <RadioGroup
-            value={stepValues.gpuId}
-            onValueChange={(value) => {
-              debug.info('GPU selection changed:', value);
-              const selectedGpu = allOptions.find(gpu => gpu.pciBus === value);
-              setValue(`${id}.gpuId`, value);
-              setValue(`${id}.pciBus`, value === 'no-gpu' ? null : value);
-              // Store additional GPU information for the review step
-              setValue(`${id}.gpuInfo`, value === 'no-gpu' ? null : {
-                model: selectedGpu.model,
-                vendor: selectedGpu.vendor,
-                memory: selectedGpu.memory
-              });
-            }}
-            className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
-          >
-            {allOptions.map((gpu) => (
-              <Label
-                key={gpu.pciBus}
-                className={cn(
-                  "relative flex cursor-pointer rounded-lg p-4 transition-all duration-200",
-                  "glass-subtle border border-border/20",
-                  stepValues.gpuId === gpu.pciBus
-                    ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
-                    : 'hover:border-primary/50 hover:bg-primary/5'
-                )}
-              >
-                <RadioGroupItem
-                  value={gpu.pciBus}
-                  id={gpu.pciBus}
-                  className="sr-only"
-                />
-                <div className="flex flex-col gap-2 w-full">
-                  {gpu.pciBus === 'no-gpu' ? (
-                    <div className="text-center py-2">
-                      <span className="text-base font-semibold">No GPU</span>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Continue without graphics acceleration
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="font-semibold text-sm leading-tight break-words flex-1">
-                            {gpu.model}
-                          </h4>
-                          <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full whitespace-nowrap">
-                            {formatMemory(gpu.memory)}
-                          </span>
-                        </div>
-                        <div className="text-xs space-y-1">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <span className="font-medium">Graphics Controller</span>
-                          </div>
-                          <div className="text-muted-foreground truncate" title={gpu.vendor}>
-                            <span className="font-medium">Vendor:</span> {gpu.vendor}
-                          </div>
-                          <div className="text-muted-foreground">
-                            <span className="font-medium">PCI Bus:</span> {gpu.pciBus}
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {allOptions.map((gpu) => {
+          const isSelected = stepValues.gpuId === gpu.pciBus;
+          const isNoGpu = gpu.pciBus === 'no-gpu';
+          return (
+            <Card
+              key={gpu.pciBus}
+              variant="default"
+              spotlight={false}
+              glow={false}
+              interactive
+              className={cn(
+                'cursor-pointer transition-all duration-200 relative',
+                isSelected
+                  ? 'border-accent/60 bg-accent/10 ring-2 ring-accent/30'
+                  : 'hover:border-accent/40'
+              )}
+              onClick={() => pickGpu(gpu.pciBus)}
+            >
+              {isSelected && (
+                <div className="absolute top-2 right-2 h-6 w-6 rounded-full bg-accent text-white flex items-center justify-center z-10 shadow-harbor-sm">
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
                 </div>
-              </Label>
-            ))}
-          </RadioGroup>
-        </div>
-      </Card>
+              )}
+
+              {isNoGpu ? (
+                <div className="text-center py-4 space-y-2">
+                  <div className="h-12 w-12 mx-auto rounded-xl bg-white/5 border border-white/8 flex items-center justify-center">
+                    <MonitorOff className="h-6 w-6 text-fg-subtle" />
+                  </div>
+                  <div className="text-base font-semibold text-fg">No GPU</div>
+                  <p className="text-sm text-fg-muted">
+                    Continue without graphics acceleration
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="h-8 w-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center flex-shrink-0">
+                        <Zap className="h-4 w-4 text-accent" />
+                      </div>
+                      <h4 className="font-semibold text-sm text-fg leading-tight break-words flex-1 pr-6">
+                        {gpu.model}
+                      </h4>
+                    </div>
+                  </div>
+                  {formatMemory(gpu.memory) && (
+                    <div>
+                      <Badge tone="purple">{formatMemory(gpu.memory)}</Badge>
+                    </div>
+                  )}
+                  <div className="text-xs space-y-1 text-fg-muted">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="h-3 w-3" />
+                      <span>Graphics Controller</span>
+                    </div>
+                    <div className="truncate" title={gpu.vendor}>
+                      <span className="font-medium text-fg">Vendor:</span> {gpu.vendor}
+                    </div>
+                    <div>
+                      <span className="font-medium text-fg">PCI Bus:</span> {gpu.pciBus}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+
+      {getError('gpuId') && (
+        <p className="text-sm text-danger">{getError('gpuId')}</p>
+      )}
     </div>
   );
 }

@@ -154,7 +154,6 @@ export default function CreateMachineWizard({ departmentId }) {
             if (Object.keys(errors).length > 0) throw errors;
           }}
           departmentId={validatedDepartmentId}
-          className="glass-strong"
         />
         <ConfigurationStep
           id="configuration"
@@ -165,7 +164,6 @@ export default function CreateMachineWizard({ departmentId }) {
             }
             if (Object.keys(errors).length > 0) throw errors;
           }}
-          className="glass-strong"
         />
         <ResourcesStep
           id="resources"
@@ -176,19 +174,10 @@ export default function CreateMachineWizard({ departmentId }) {
             }
             if (Object.keys(errors).length > 0) throw errors;
           }}
-          className="glass-strong"
         />
-        <GpuSelectionStep
-          id="gpu"
-          className="glass-strong"
-        />
-        <ApplicationsScriptsStep
-          id="applications"
-          className="glass-strong"
-        />
-        <ReviewStep
-          id="review"
-          className="glass-strong" />
+        <GpuSelectionStep id="gpu" />
+        <ApplicationsScriptsStep id="applications" />
+        <ReviewStep id="review" />
       </Wizard>
     </>
   );
