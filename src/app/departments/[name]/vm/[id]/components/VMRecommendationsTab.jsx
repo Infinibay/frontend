@@ -1,52 +1,83 @@
 import React, { useState, useMemo } from 'react';
-import { RefreshCw, Search, Filter, CheckCircle, AlertTriangle, Clock, Lightbulb, Shield } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+  RefreshCw,
+  Search,
+  CheckCircle,
+  AlertTriangle,
+  Lightbulb,
+  Shield,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
+import {
+  Card,
+  Button,
+  Badge,
+  TextField,
+  Alert,
+  SegmentedControl,
+} from '@infinibay/harbor';
 
-// Import our custom components and utilities
 import useVMRecommendations from '@/hooks/useVMRecommendations';
 import RecommendationHelp, { RecommendationsGeneralHelp } from './RecommendationHelp';
 import RecommendationActions from './RecommendationActions';
 import {
   getRecommendationInfo,
-  getPriorityColors,
   getCategoryInfo,
   isFallbackType,
   extractRecommendationMetadata,
-  getRebootUrgencyText,
   URGENCY_BADGES,
   PRIORITY_LEVELS,
-  CATEGORIES
+  CATEGORIES,
 } from '@/utils/recommendationTypeMapper';
 
-/**
- * VM Recommendations Tab Component
- * Displays and manages VM recommendations with filtering, actions, and help
- */
+/** Map internal priority levels → Alert tone. */
+const priorityToAlertTone = (priority) => {
+  switch (priority) {
+    case PRIORITY_LEVELS.CRITICAL:
+      return 'danger';
+    case PRIORITY_LEVELS.HIGH:
+      return 'warning';
+    case PRIORITY_LEVELS.MEDIUM:
+      return 'info';
+    default:
+      return 'info';
+  }
+};
+
+/** Map internal priority levels → Badge tone. */
+const priorityToBadgeTone = (priority) => {
+  switch (priority) {
+    case PRIORITY_LEVELS.CRITICAL:
+      return 'danger';
+    case PRIORITY_LEVELS.HIGH:
+      return 'warning';
+    case PRIORITY_LEVELS.MEDIUM:
+      return 'info';
+    case PRIORITY_LEVELS.LOW:
+      return 'neutral';
+    default:
+      return 'neutral';
+  }
+};
+
+const priorityLabel = (priority) => {
+  if (priority === PRIORITY_LEVELS.CRITICAL) return 'Critical';
+  if (priority === PRIORITY_LEVELS.HIGH) return 'High';
+  if (priority === PRIORITY_LEVELS.MEDIUM) return 'Medium';
+  if (priority === PRIORITY_LEVELS.LOW) return 'Low';
+  return '';
+};
+
 const VMRecommendationsTab = ({ vmId, vmStatus }) => {
-  // State management
   const [expandedRec, setExpandedRec] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
+  const [filterCategory, setFilterCategory] = useState('all');
 
-  // Hook for recommendations data
   const {
-    recommendations,
-    categorizedRecommendations,
-    highPriorityRecommendations,
+    recommendations = [],
     summary,
     categoryStats,
     requiresImmediateAttention,
@@ -54,477 +85,345 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
     isLoading,
     isRefreshing,
     error,
-    refreshRecommendations
-  } = useVMRecommendations(vmId, {
-    pollInterval: 60000 // Poll every minute
-  });
+    refreshRecommendations,
+  } = useVMRecommendations(vmId, { pollInterval: 60_000 }) || {};
 
-  // Filter and search recommendations
-  const filteredRecommendations = useMemo(() => {
-    let filtered = [...recommendations];
+  const filtered = useMemo(() => {
+    let list = [...recommendations];
 
-    // Apply search filter
     if (searchTerm.trim()) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(rec => {
+      const needle = searchTerm.toLowerCase();
+      list = list.filter((rec) => {
         const info = getRecommendationInfo(rec.type);
         return (
-          (info.label || '').toLowerCase().includes(search) ||
-          (info.description || '').toLowerCase().includes(search) ||
-          (rec.text || '').toLowerCase().includes(search) ||
-          (info.userFriendlyExplanation || '').toLowerCase().includes(search)
+          (info.label || '').toLowerCase().includes(needle) ||
+          (info.description || '').toLowerCase().includes(needle) ||
+          (rec.text || '').toLowerCase().includes(needle) ||
+          (info.userFriendlyExplanation || '').toLowerCase().includes(needle)
         );
       });
     }
 
-    // Apply category filter
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(rec => {
-        const info = getRecommendationInfo(rec.type);
-        return info.category === filterCategory;
-      });
-    }
-
-    // Apply priority filter
     if (filterPriority !== 'all') {
-      filtered = filtered.filter(rec => {
-        const info = getRecommendationInfo(rec.type);
-        return info.priority === filterPriority;
-      });
+      list = list.filter((rec) => getRecommendationInfo(rec.type).priority === filterPriority);
+    }
+    if (filterCategory !== 'all') {
+      list = list.filter((rec) => getRecommendationInfo(rec.type).category === filterCategory);
     }
 
-    return filtered;
-  }, [recommendations, searchTerm, filterCategory, filterPriority]);
+    return list;
+  }, [recommendations, searchTerm, filterPriority, filterCategory]);
 
-  // Handle recommendation expansion
-  const toggleExpanded = (recId) => {
-    setExpandedRec(expandedRec === recId ? null : recId);
-  };
+  const toggleExpanded = (id) => setExpandedRec((prev) => (prev === id ? null : id));
 
-  // Render recommendation card
-  const renderRecommendationCard = (recommendation) => {
-    const metadata = extractRecommendationMetadata(recommendation);
-    const info = getRecommendationInfo(recommendation.type, recommendation);
-    const priorityColors = getPriorityColors(info.priority);
-    const isExpanded = expandedRec === recommendation.id;
+  const priorityItems = useMemo(
+    () => [
+      { value: 'all', label: `All (${recommendations.length})` },
+      { value: PRIORITY_LEVELS.CRITICAL, label: 'Critical' },
+      { value: PRIORITY_LEVELS.HIGH, label: 'High' },
+      { value: PRIORITY_LEVELS.MEDIUM, label: 'Medium' },
+      { value: PRIORITY_LEVELS.LOW, label: 'Low' },
+    ],
+    [recommendations.length]
+  );
 
-    // Determine urgency styling
-    const isUrgent = info.urgencyBadge === 'IMMEDIATE' || info.urgencyBadge === 'URGENT';
-    const urgencyBadgeConfig = info.urgencyBadge ? URGENCY_BADGES[info.urgencyBadge] : null;
-    const urgentBorderClass = urgencyBadgeConfig ? `border-l-4 ${urgencyBadgeConfig.borderColor} shadow-lg` : '';
-    const urgentAnimateClass = urgencyBadgeConfig?.animate ? 'animate-pulse' : '';
+  const categoryItems = useMemo(() => {
+    const base = [{ value: 'all', label: 'All categories' }];
+    Object.values(CATEGORIES).forEach((c) => {
+      const count = categoryStats?.[c] || 0;
+      if (count > 0) {
+        base.push({ value: c, label: `${getCategoryInfo(c).label} · ${count}` });
+      }
+    });
+    return base;
+  }, [categoryStats]);
 
-    return (
-      <div
-        key={recommendation.id}
-        className={`border rounded-lg hover:shadow-sm transition-all ${priorityColors.border} ${urgentBorderClass} ${urgentAnimateClass}`}
-      >
-        {/* Card Header */}
-        <div className="p-4">
-          <div className="flex items-start gap-3">
-            {/* Recommendation icon */}
-            <div className="flex-shrink-0 mt-0.5">
-              <info.icon className={`h-5 w-5 ${info.color}`} />
-            </div>
+  // ---- Loading / error / empty states ----------------------------
 
-            {/* Main content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {info.label}
-                    </h4>
-                    <RecommendationHelp
-                      recommendationType={recommendation.type}
-                      showDetailed={false}
-                    />
-                  </div>
-
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    {recommendation.text || info.description}
-                  </p>
-
-                  {/* Enhanced data display for OS_UPDATE_AVAILABLE or SYSTEM_UPDATE_AVAILABLE */}
-                  {(recommendation.type === 'OS_UPDATE_AVAILABLE' || recommendation.type === 'SYSTEM_UPDATE_AVAILABLE') && metadata?.rebootDays && (
-                    <div className={`mb-3 p-3 rounded-lg flex items-center gap-2 ${
-                      metadata.rebootDays >= 7 ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800' :
-                      metadata.rebootDays >= 3 ? 'bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800' :
-                      'bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800'
-                    }`}>
-                      <AlertTriangle className={`h-5 w-5 ${
-                        metadata.rebootDays >= 7 ? 'text-red-600' :
-                        metadata.rebootDays >= 3 ? 'text-orange-600' :
-                        'text-yellow-600'
-                      }`} />
-                      <div className="flex-1">
-                        <p className={`text-sm font-medium ${
-                          metadata.rebootDays >= 7 ? 'text-red-900 dark:text-red-200' :
-                          metadata.rebootDays >= 3 ? 'text-orange-900 dark:text-orange-200' :
-                          'text-yellow-900 dark:text-yellow-200'
-                        }`}>
-                          ⚠️ Sistema esperando reinicio por {metadata.rebootDays} días
-                        </p>
-                        {metadata.rebootDays >= 7 && (
-                          <p className="text-xs text-red-700 dark:text-red-300 mt-1">
-                            URGENTE: Reinicio inmediato requerido para aplicar actualizaciones de seguridad
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Enhanced data display for APP_UPDATE_AVAILABLE */}
-                  {recommendation.type === 'APP_UPDATE_AVAILABLE' && metadata?.securityUpdateCount > 0 && (
-                    <div className="mb-3 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-orange-600" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-orange-900 dark:text-orange-200">
-                          🛡️ {metadata.securityUpdateCount} actualización(es) de seguridad
-                        </p>
-                        {metadata.totalUpdateCount > metadata.securityUpdateCount && (
-                          <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-                            Total: {metadata.totalUpdateCount} actualizaciones disponibles
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Enhanced data display for PORT_BLOCKED */}
-                  {recommendation.type === 'PORT_BLOCKED' && metadata?.blockedPorts?.length > 0 && (
-                    <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                      {metadata.blockedPorts.map((port, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm text-yellow-900 dark:text-yellow-200">
-                          <Shield className="h-4 w-4 text-yellow-600" />
-                          <span className="font-medium">
-                            Puerto {port.port} ({port.protocol}) - {port.processName}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Enhanced data display for DEFENDER_THREAT */}
-                  {recommendation.type === 'DEFENDER_THREAT' && metadata?.threatCount > 0 && (
-                    <div className="mb-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-red-600" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-red-900 dark:text-red-200">
-                          ⚠️ {metadata.threatCount} amenaza(s) detectada(s)
-                        </p>
-                        {metadata.activeThreats > 0 && (
-                          <p className="text-xs text-red-700 dark:text-red-300 mt-1">
-                            {metadata.activeThreats} activa(s) • {metadata.quarantinedThreats || 0} en cuarentena
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 mb-2">
-                    {/* Urgency badge */}
-                    {urgencyBadgeConfig && (
-                      <Badge className={urgencyBadgeConfig.color}>
-                        {urgencyBadgeConfig.text}
-                      </Badge>
-                    )}
-
-                    <Badge className={priorityColors.badge}>
-                      {info.priority === PRIORITY_LEVELS.CRITICAL && 'Critical'}
-                      {info.priority === PRIORITY_LEVELS.HIGH && 'High'}
-                      {info.priority === PRIORITY_LEVELS.MEDIUM && 'Medium'}
-                      {info.priority === PRIORITY_LEVELS.LOW && 'Low'}
-                    </Badge>
-
-                    <Badge variant="outline" className="text-xs">
-                      {getCategoryInfo(info.category).label}
-                    </Badge>
-
-                    {/* Show raw type if using fallback mapping */}
-                    {isFallbackType(recommendation.type) && (
-                      <Badge variant="outline" className="text-xs text-gray-500 dark:text-gray-400">
-                        {recommendation.type}
-                      </Badge>
-                    )}
-
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <RecommendationActions
-                      recommendation={recommendation}
-                      vmId={vmId}
-                      vmStatus={vmStatus}
-                    />
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleExpanded(recommendation.id)}
-                      className="flex items-center gap-1"
-                    >
-                      {isExpanded ? (
-                        <>
-                          <ChevronDown className="h-4 w-4" />
-                          Less details
-                        </>
-                      ) : (
-                        <>
-                          <ChevronRight className="h-4 w-4" />
-                          More details
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Expanded content */}
-          {isExpanded && (
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-              <RecommendationHelp
-                recommendationType={recommendation.type}
-                recommendation={recommendation}
-                showDetailed={true}
-                className="mb-0"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Loading state
   if (isLoading) {
     return (
       <div className="space-y-6">
         <RecommendationsGeneralHelp />
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-3">
-                <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">Loading recommendations from last scan...</span>
-              </div>
-            </div>
-          </CardContent>
+        <Card variant="glass" className="p-10">
+          <div className="flex items-center justify-center gap-3 text-fg-muted">
+            <RefreshCw className="h-5 w-5 animate-spin text-accent-2" />
+            <span className="text-sm">Loading recommendations from last scan…</span>
+          </div>
         </Card>
       </div>
     );
   }
 
-  // Error state - only show when there is no usable data
-  if (error && (!recommendations || recommendations.length === 0)) {
+  if (error && recommendations.length === 0) {
     return (
       <div className="space-y-6">
         <RecommendationsGeneralHelp />
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center py-12">
-              <AlertTriangle className="h-12 w-12 text-red-600 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                Error loading recommendations
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Could not load recommendations from the last health scan for this VM.
-              </p>
-              <Button onClick={refreshRecommendations} className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Retry
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <Alert
+          tone="danger"
+          title="Could not load recommendations"
+          actions={
+            <Button
+              size="sm"
+              onClick={refreshRecommendations}
+              icon={<RefreshCw className="h-4 w-4" />}
+            >
+              Retry
+            </Button>
+          }
+        >
+          We couldn&apos;t load recommendations from the last health scan for this VM.
+        </Alert>
       </div>
     );
   }
 
-  // Empty state
-  if (!recommendations?.length) {
+  if (recommendations.length === 0) {
     return (
       <div className="space-y-6">
         <RecommendationsGeneralHelp />
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center py-12">
-              <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                Excellent! Your VM is optimized
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                No improvement recommendations at this time.
-                Your virtual machine is running optimally.
-              </p>
-              <div className="flex justify-center">
-                <Button
-                  onClick={refreshRecommendations}
-                  disabled={isRefreshing}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  {isRefreshing ? 'Scanning...' : 'Run new scan'}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Alert
+          tone="success"
+          title="Excellent — your VM is optimised"
+          actions={
+            <Button
+              size="sm"
+              onClick={refreshRecommendations}
+              disabled={isRefreshing}
+              loading={isRefreshing}
+              icon={<RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />}
+            >
+              {isRefreshing ? 'Scanning…' : 'Run new scan'}
+            </Button>
+          }
+        >
+          No improvement recommendations at this time.
+          Your virtual machine is running optimally.
+        </Alert>
       </div>
     );
   }
+
+  // ---- Main render -----------------------------------------------
 
   return (
     <div className="space-y-6">
-      {/* General help section */}
       <RecommendationsGeneralHelp />
 
-      {/* Main recommendations card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Lightbulb className="h-5 w-5 text-yellow-600" />
-                VM Recommendations
-                {requiresImmediateAttention && (
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
-                )}
-              </CardTitle>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
-                <span>{summary.total} recommendations from last scan</span>
-                {summary.urgent > 0 && (
-                  <span className="flex items-center gap-1 text-red-600 font-medium">
-                    <span className="w-2 h-2 bg-red-600 rounded-full"></span>
-                    {summary.urgent} urgent
-                  </span>
-                )}
-                {summary.rebootPending > 0 && (
-                  <span className="flex items-center gap-1 text-orange-600 font-medium">
-                    <span className="w-2 h-2 bg-orange-600 rounded-full"></span>
-                    {summary.rebootPending} reboot pending
-                  </span>
-                )}
-                {summary.securityUpdates > 0 && (
-                  <span className="flex items-center gap-1 text-orange-600 font-medium">
-                    <span className="w-2 h-2 bg-orange-600 rounded-full"></span>
-                    {summary.securityUpdates} security updates
-                  </span>
-                )}
-                {summary.activeThreats > 0 && (
-                  <span className="flex items-center gap-1 text-red-600 font-bold">
-                    <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
-                    {summary.activeThreats} active threats
-                  </span>
-                )}
-                {summary.blockedPorts > 0 && (
-                  <span className="flex items-center gap-1 text-yellow-600">
-                    <span className="w-2 h-2 bg-yellow-600 rounded-full"></span>
-                    {summary.blockedPorts} blocked ports
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-1"
-              >
-                <Filter className="h-4 w-4" />
-                Filters
-              </Button>
-
-              <Button
-                onClick={refreshRecommendations}
-                disabled={isRefreshing}
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? 'Scanning...' : 'Search for new recommendations'}
-              </Button>
+      {/* Summary strip + controls */}
+      <Card variant="glass" className="p-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-fg">
+              <Lightbulb className="h-5 w-5 text-warning" />
+              Recommendations
+              {requiresImmediateAttention && (
+                <AlertTriangle className="h-5 w-5 text-danger animate-pulse" />
+              )}
+            </h2>
+            <div className="mt-2 flex items-center gap-3 flex-wrap text-xs text-fg-muted">
+              <span>{summary?.total ?? recommendations.length} from last scan</span>
+              {summary?.urgent > 0 && (
+                <span className="inline-flex items-center gap-1 text-danger font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+                  {summary.urgent} urgent
+                </span>
+              )}
+              {summary?.rebootPending > 0 && (
+                <span className="inline-flex items-center gap-1 text-warning font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+                  {summary.rebootPending} reboot pending
+                </span>
+              )}
+              {summary?.securityUpdates > 0 && (
+                <span className="inline-flex items-center gap-1 text-warning font-medium">
+                  <Shield className="h-3 w-3" />
+                  {summary.securityUpdates} security updates
+                </span>
+              )}
+              {summary?.activeThreats > 0 && (
+                <span className="inline-flex items-center gap-1 text-danger font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+                  {summary.activeThreats} active threats
+                </span>
+              )}
+              {lastUpdateTime && (
+                <span className="text-fg-subtle">
+                  · updated {new Date(lastUpdateTime).toLocaleTimeString('en-US')}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Last update info */}
-          {lastUpdateTime && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Last recommendation received: {lastUpdateTime.toLocaleString('en-US')}
-            </p>
+          <Button
+            size="sm"
+            onClick={refreshRecommendations}
+            disabled={isRefreshing}
+            loading={isRefreshing}
+            icon={<RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />}
+          >
+            {isRefreshing ? 'Scanning…' : 'Scan now'}
+          </Button>
+        </div>
+
+        <div className="mt-4 flex flex-col md:flex-row md:items-center gap-3">
+          <SegmentedControl
+            items={priorityItems}
+            value={filterPriority}
+            onChange={setFilterPriority}
+            size="sm"
+          />
+          {categoryItems.length > 1 && (
+            <SegmentedControl
+              items={categoryItems}
+              value={filterCategory}
+              onChange={setFilterCategory}
+              size="sm"
+              className="max-w-full overflow-x-auto"
+            />
           )}
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {/* Search and filters */}
-          <Collapsible open={showFilters} onOpenChange={setShowFilters}>
-            <CollapsibleContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-muted/50 rounded-lg">
-                {/* Search */}
-                <div className="relative">
-                  <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                  <Input
-                    placeholder="Search recommendations..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-
-                {/* Category filter */}
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All categories</SelectItem>
-                    {Object.values(CATEGORIES).map(category => {
-                      const categoryInfo = getCategoryInfo(category);
-                      return (
-                        <SelectItem key={category} value={category}>
-                          {categoryInfo.label} ({categoryStats[category] || 0})
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-
-                {/* Priority filter */}
-                <Select value={filterPriority} onValueChange={setFilterPriority}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All priorities" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All priorities</SelectItem>
-                    <SelectItem value={PRIORITY_LEVELS.CRITICAL}>Critical</SelectItem>
-                    <SelectItem value={PRIORITY_LEVELS.HIGH}>High</SelectItem>
-                    <SelectItem value={PRIORITY_LEVELS.MEDIUM}>Medium</SelectItem>
-                    <SelectItem value={PRIORITY_LEVELS.LOW}>Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-
-          {/* Recommendations list */}
-          <div className="space-y-3">
-            {filteredRecommendations.length > 0 ? (
-              filteredRecommendations.map(renderRecommendationCard)
-            ) : (
-              <div className="text-center py-8">
-                <Search className="h-8 w-8 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  No recommendations found matching the applied filters.
-                </p>
-              </div>
-            )}
+          <div className="md:ml-auto md:w-72">
+            <TextField
+              placeholder="Search recommendations…"
+              icon={<Search className="h-4 w-4" />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        </CardContent>
+        </div>
       </Card>
+
+      {/* Recommendation list — each row is a Harbor Alert with tone
+          derived from the priority. Expand/collapse animates inline
+          via framer-motion. */}
+      <div className="space-y-3">
+        {filtered.length === 0 ? (
+          <Card variant="default" className="p-10 text-center text-fg-muted text-sm">
+            <Search className="h-8 w-8 mx-auto mb-2 text-fg-subtle" />
+            No recommendations match the current filters.
+          </Card>
+        ) : (
+          filtered.map((rec) => {
+            const info = getRecommendationInfo(rec.type, rec);
+            const metadata = extractRecommendationMetadata(rec);
+            const urgencyBadgeConfig = info.urgencyBadge ? URGENCY_BADGES[info.urgencyBadge] : null;
+            const isExpanded = expandedRec === rec.id;
+            const IconComp = info.icon;
+
+            return (
+              <Alert
+                key={rec.id}
+                tone={priorityToAlertTone(info.priority)}
+                title={
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {IconComp && <IconComp className="h-4 w-4 shrink-0" />}
+                    <span>{info.label}</span>
+                    {urgencyBadgeConfig && (
+                      <Badge tone={priorityToBadgeTone(info.priority)}>
+                        {urgencyBadgeConfig.text}
+                      </Badge>
+                    )}
+                    <Badge tone={priorityToBadgeTone(info.priority)}>{priorityLabel(info.priority)}</Badge>
+                    <Badge tone="neutral">{getCategoryInfo(info.category).label}</Badge>
+                    {isFallbackType(rec.type) && (
+                      <Badge tone="neutral" className="text-[10px] text-fg-subtle">{rec.type}</Badge>
+                    )}
+                  </div>
+                }
+                actions={
+                  <>
+                    <RecommendationActions
+                      recommendation={rec}
+                      vmId={vmId}
+                      vmStatus={vmStatus}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      onClick={() => toggleExpanded(rec.id)}
+                    >
+                      {isExpanded ? 'Less' : 'More'}
+                    </Button>
+                  </>
+                }
+              >
+                <div className="space-y-2">
+                  <p>{rec.text || info.description}</p>
+
+                  {/* Enhanced metadata blocks per recommendation type. */}
+                  {(rec.type === 'OS_UPDATE_AVAILABLE' || rec.type === 'SYSTEM_UPDATE_AVAILABLE') && metadata?.rebootDays && (
+                    <div className="text-xs text-fg-muted flex items-center gap-2">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      Waiting {metadata.rebootDays} day{metadata.rebootDays !== 1 ? 's' : ''} for reboot
+                    </div>
+                  )}
+                  {rec.type === 'APP_UPDATE_AVAILABLE' && metadata?.securityUpdateCount > 0 && (
+                    <div className="text-xs text-fg-muted flex items-center gap-2">
+                      <Shield className="h-3.5 w-3.5" />
+                      {metadata.securityUpdateCount} security update{metadata.securityUpdateCount !== 1 ? 's' : ''} pending
+                      {metadata.totalUpdateCount > metadata.securityUpdateCount && (
+                        <span className="text-fg-subtle">
+                          · {metadata.totalUpdateCount} total
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {rec.type === 'PORT_BLOCKED' && metadata?.blockedPorts?.length > 0 && (
+                    <div className="space-y-1">
+                      {metadata.blockedPorts.map((port, idx) => (
+                        <div key={idx} className="text-xs text-fg-muted flex items-center gap-2">
+                          <Shield className="h-3.5 w-3.5" />
+                          Port {port.port} ({port.protocol}) · {port.processName}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {rec.type === 'DEFENDER_THREAT' && metadata?.threatCount > 0 && (
+                    <div className="text-xs text-fg-muted flex items-center gap-2">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      {metadata.threatCount} threat{metadata.threatCount !== 1 ? 's' : ''} detected
+                      {metadata.activeThreats > 0 && (
+                        <span className="text-danger/80">
+                          · {metadata.activeThreats} active
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        key="expanded"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-3 mt-3 border-t border-white/10">
+                          <RecommendationHelp
+                            recommendationType={rec.type}
+                            recommendation={rec}
+                            showDetailed={true}
+                            className="mb-0"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </Alert>
+            );
+          })
+        )}
+      </div>
+
+      {filtered.length > 0 && (
+        <div className="text-center text-xs text-fg-subtle">
+          <CheckCircle className="h-4 w-4 inline mr-1 -mt-0.5" />
+          Showing {filtered.length} of {recommendations.length} recommendations
+        </div>
+      )}
     </div>
   );
 };
