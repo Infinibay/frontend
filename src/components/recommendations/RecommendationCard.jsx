@@ -27,7 +27,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  useExecuteRecommendationMutation,
   useDismissRecommendationMutation,
   useSnoozeRecommendationMutation,
 } from '@/gql/hooks';
@@ -60,31 +59,17 @@ export function RecommendationCard({ recommendation, onActionComplete }) {
     recommendation.systemScript?.displayName ||
     'Script';
 
-  const [executeRec] = useExecuteRecommendationMutation({
-    onCompleted: (data) => {
-      const status = data.executeRecommendation?.scriptExecution?.status;
-      if (status === 'COMPLETED') {
-        setExecutionResult('success');
-        toast.success(`"${scriptName}" ejecutado correctamente`, {
-          description: `En ${recommendation.machine?.name}`,
-        });
-      } else if (status === 'FAILED') {
-        setExecutionResult('error');
-        toast.error(`Error ejecutando "${scriptName}"`, {
-          description: 'Revisa los logs para mas detalles',
-        });
-      } else {
-        toast.info(`"${scriptName}" iniciado`, {
-          description: 'La ejecucion esta en progreso...',
-        });
-      }
-      onActionComplete?.();
-    },
-    onError: (err) => {
-      setExecutionResult('error');
-      toast.error(`Error: ${err.message}`);
-    },
-  });
+  // `executeRecommendation` mutation doesn't exist in the backend
+  // schema yet — stub it out so the component compiles. When the
+  // backend exposes it, replace this placeholder with the real
+  // useExecuteRecommendationMutation hook.
+  const executeRec = async () => {
+    setExecutionResult('error');
+    toast.info(`"${scriptName}" — execute from the VM Scripts tab`, {
+      description: 'One-click remediation is not wired up yet.',
+    });
+    onActionComplete?.();
+  };
 
   const [dismissRec] = useDismissRecommendationMutation({
     onCompleted: () => {
@@ -110,7 +95,7 @@ export function RecommendationCard({ recommendation, onActionComplete }) {
     setShowConfirmDialog(false);
     setExecuting(true);
     setExecutionResult(null);
-    await executeRec({ variables: { id: recommendation.id } });
+    await executeRec();
     setExecuting(false);
   };
 
