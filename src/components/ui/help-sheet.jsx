@@ -1,134 +1,109 @@
-"use client"
+"use client";
 
-import React from "react"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-import { HelpCircle } from "lucide-react"
+import React, { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { HelpCircle, ChevronDown } from "lucide-react";
+import { Drawer } from "@infinibay/harbor";
 
 /**
- * Generic HelpSheet component that renders help content based on configuration
- *
- * This component provides a consistent help UI across the application.
- * It follows the Infinibay philosophy of guiding users without treating them as stupid.
- *
- * @param {Object} props
- * @param {boolean} props.open - Controls sheet visibility
- * @param {function(boolean): void} props.onOpenChange - Callback when sheet open state changes
- * @param {import('@/contexts/HelpProvider').HelpConfig} props.config - Help configuration object
- *
- * @example
- * ```jsx
- * const [helpOpen, setHelpOpen] = useState(false)
- *
- * const config = {
- *   title: "Feature Help",
- *   description: "Learn how to use this feature",
- *   icon: <FileCode className="h-5 w-5 text-primary" />,
- *   sections: [
- *     {
- *       id: "section-1",
- *       title: "Getting Started",
- *       icon: <Play className="h-4 w-4" />,
- *       content: <div>Content here...</div>
- *     }
- *   ],
- *   quickTips: ["Tip 1", "Tip 2"]
- * }
- *
- * <HelpSheet open={helpOpen} onOpenChange={setHelpOpen} config={config} />
- * ```
+ * HelpSheet — Harbor-native replacement. A right-side Drawer that
+ * hosts a help config (title, description, sections with id + icon +
+ * title + content, optional quickTips). Sections expand/collapse
+ * inline via framer-motion AnimatePresence.
  */
 export function HelpSheet({ open, onOpenChange, config }) {
-  // Development-time uniqueness check for section IDs
+  const [expanded, setExpanded] = useState(null);
+
   React.useEffect(() => {
-    if (config && config.sections && config.sections.length > 0) {
-      if (process.env.NODE_ENV !== 'production') {
-        const ids = config.sections.map(section => section.id)
-        const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index)
-
-        if (duplicates.length > 0) {
-          console.warn(
-            `[HelpSheet] Duplicate section IDs detected: ${[...new Set(duplicates)].join(', ')}. ` +
-            `Each section must have a unique 'id' to avoid React key warnings.`
-          )
-        }
-      }
+    if (open && config?.sections?.length && expanded == null) {
+      setExpanded(config.sections[0].id);
     }
-  }, [config])
+  }, [open, config, expanded]);
 
-  // Early return if no config provided
-  if (!config) {
-    return null
-  }
+  if (!config) return null;
 
-  const { title, description, icon, sections, quickTips } = config
+  const { title, description, icon, sections = [], quickTips = [] } = config;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-0">
-        {/* Sticky Header */}
-        <SheetHeader className="sticky top-0 z-10 glass-strong elevation-5 border-b-2 border-primary/20 px-6 py-8 bg-gradient-to-b from-background/95 to-background/90">
-          <SheetTitle className="flex items-center gap-3 text-xl font-semibold text-glass-text-primary">
-            <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-              {icon || <HelpCircle className="h-5 w-5 text-primary" />}
-            </div>
-            {title}
-          </SheetTitle>
-          {description && (
-            <SheetDescription className="text-base text-glass-text-secondary mt-2">
-              {description}
-            </SheetDescription>
-          )}
-        </SheetHeader>
+    <Drawer
+      open={!!open}
+      onClose={() => onOpenChange?.(false)}
+      side="right"
+      size={460}
+      title={
+        <span className="flex items-center gap-2">
+          <span className="h-8 w-8 rounded-lg bg-accent/15 grid place-items-center text-accent">
+            {icon || <HelpCircle className="h-4 w-4" />}
+          </span>
+          {title}
+        </span>
+      }
+    >
+      <div className="space-y-6">
+        {description ? (
+          <p className="text-sm text-fg-muted">{description}</p>
+        ) : null}
 
-        {/* Scrollable Body */}
-        <div className="px-6 py-8 space-y-8">
-          {/* Collapsible Sections */}
-          {sections && sections.length > 0 && (
-            <Accordion type="single" collapsible className="w-full space-y-2">
-              {sections.map((section) => (
-                <AccordionItem key={section.id} value={section.id}>
-                  <AccordionTrigger className="text-sm font-medium">
-                    <div className="flex items-center gap-2">
-                      {section.icon}
-                      {section.title}
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground space-y-3">
-                    {section.content}
-                  </AccordionContent>
-                </AccordionItem>
+        {sections.length > 0 && (
+          <div className="space-y-1">
+            {sections.map((section) => {
+              const isOpen = expanded === section.id;
+              return (
+                <div
+                  key={section.id}
+                  className="rounded-lg border border-white/8 bg-surface-1 overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(isOpen ? null : section.id)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm font-medium text-fg hover:bg-white/5 transition-colors"
+                  >
+                    {section.icon}
+                    <span className="flex-1">{section.title}</span>
+                    <motion.span
+                      animate={{ rotate: isOpen ? 180 : 0 }}
+                      transition={{ duration: 0.18 }}
+                    >
+                      <ChevronDown className="h-4 w-4 text-fg-muted" />
+                    </motion.span>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        key="content"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 py-3 text-sm text-fg-muted border-t border-white/8 space-y-2">
+                          {section.content}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {quickTips.length > 0 && (
+          <div className="rounded-lg border border-accent/30 bg-accent/10 p-4 space-y-2">
+            <p className="text-sm font-semibold text-fg flex items-center gap-2">
+              <span>💡</span>
+              Quick tips
+            </p>
+            <ul className="text-sm text-fg-muted list-disc list-inside space-y-1 leading-relaxed">
+              {quickTips.map((tip, i) => (
+                <li key={i}>{tip}</li>
               ))}
-            </Accordion>
-          )}
-
-          {/* Quick Tips Section */}
-          {quickTips && quickTips.length > 0 && (
-            <div className="mt-8 p-6 glass-subtle elevation-2 rounded-lg border border-primary/10 space-y-3">
-              <p className="font-semibold text-base text-foreground flex items-center gap-2">
-                <span className="text-primary">💡</span>
-                Quick Tips
-              </p>
-              <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside leading-relaxed">
-                {quickTips.map((tip, index) => (
-                  <li key={index}>{tip}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
-  )
+            </ul>
+          </div>
+        )}
+      </div>
+    </Drawer>
+  );
 }

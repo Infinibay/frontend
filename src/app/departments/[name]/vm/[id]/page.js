@@ -3,10 +3,6 @@
 import React, { useMemo } from "react";
 import { useParams } from "next/navigation";
 import {
-  ToastProvider,
-  ToastViewport,
-} from "@/components/ui/toast";
-import {
   Tabs,
   TabList,
   Tab,
@@ -200,8 +196,8 @@ const VMDetailPage = () => {
   const isBusy = status === 'provisioning' || status === 'maintenance';
 
   return (
-    <ToastProvider>
-      <div className="size-container size-padding space-y-6">
+    <>
+      <div className="space-y-6">
         {/* Hero — VM identity, status and power actions. */}
         <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-surface-1 p-6 spotlight-soft">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
@@ -304,9 +300,7 @@ const VMDetailPage = () => {
         description={toastProps.description}
         onOpenChange={(open) => !open && setShowToast(false)}
       />
-
-      <ToastViewport />
-    </ToastProvider>
+    </>
   );
 };
 

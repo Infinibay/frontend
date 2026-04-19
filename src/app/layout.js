@@ -18,11 +18,9 @@ import { createDebugger } from "@/utils/debug"
 import { InitialDataLoader } from "@/components/InitialDataLoader"
 import { AppSidebar } from "@/components/ui/navbar"
 import auth from "@/utils/auth"
-import { Toast, ToastTitle, ToastDescription, ToastProvider, ToastViewport } from "@/components/ui/toast"
 import { CursorProvider } from "@infinibay/harbor/lib/cursor"
 import { ToastProvider as HarborToastProvider } from "@infinibay/harbor"
 import { selectInterfaceSize, selectAppSettingsInitialized, selectTheme } from "@/state/slices/appSettings"
-import { SizeProvider } from "@/components/ui/size-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { RealTimeProvider } from "@/components/RealTimeProvider"
 import { SocketNamespaceGuard } from "@/components/SocketNamespaceGuard"
@@ -52,9 +50,6 @@ function AppContent({ children, isAuthenticated }) {
   const user = useSelector((state) => state.auth.user);
   const interfaceSize = useSelector(selectInterfaceSize);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
-  const [open, setOpen] = useState(false);
-  const [toastData, setToastData] = useState({ title: '', description: '', variant: 'default' });
-
   React.useEffect(() => {
     debug.info('layout', 'AppContent rendered:', {
       isAuthenticated,
@@ -76,33 +71,24 @@ function AppContent({ children, isAuthenticated }) {
   }
 
   return (
-    <>
-      <div className="flex min-h-screen w-full bg-surface text-fg">
-        <AppSidebar
-          user={user?.firstName ? {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            role: user.role,
-            avatar: user.avatar,
-          } : null}
-          onLogOut={handleLogout}
-        />
-        <main className="flex-1 min-w-0 flex flex-col">
-          <GlobalHeader />
-          <div className="flex-1 px-6 md:px-8 py-6">
-            {children}
-          </div>
-        </main>
-      </div>
-      <ToastProvider>
-        <Toast open={open} onOpenChange={setOpen} variant={toastData.variant} className="z-1100">
-          <ToastTitle>{toastData.title}</ToastTitle>
-          <ToastDescription>{toastData.description}</ToastDescription>
-        </Toast>
-        <ToastViewport className="z-1100" />
-      </ToastProvider>
-    </>
+    <div className="flex min-h-screen w-full bg-surface text-fg">
+      <AppSidebar
+        user={user?.firstName ? {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+          avatar: user.avatar,
+        } : null}
+        onLogOut={handleLogout}
+      />
+      <main className="flex-1 min-w-0 flex flex-col">
+        <GlobalHeader />
+        <div className="flex-1 px-6 md:px-8 py-6">
+          {children}
+        </div>
+      </main>
+    </div>
   );
 }
 
@@ -139,21 +125,6 @@ function ThemeProviderWrapper({ children }) {
   );
 }
 
-// Component to handle size provider with Redux integration
-function SizeProviderWrapper({ children }) {
-  const interfaceSize = useSelector(selectInterfaceSize);
-  const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
-
-  // Use fallback size when settings aren't loaded yet
-  // Add extra safety checks for hydration
-  const currentSize = (appSettingsInitialized && interfaceSize) ? interfaceSize : 'md';
-
-  return (
-    <SizeProvider size={currentSize}>
-      {children}
-    </SizeProvider>
-  );
-}
 
 /**
  * RootLayout component that provides the application root structure
@@ -185,8 +156,7 @@ export default function RootLayout({ children }) {
         <div className="app-container w-full flex min-h-screen overflow-hidden">
           <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
-              <SizeProviderWrapper>
-                <ThemeProviderWrapper>
+              <ThemeProviderWrapper>
                   <TooltipProvider delayDuration={300}>
                     <HelpProvider>
                       <HeaderActionProvider>
@@ -212,7 +182,6 @@ export default function RootLayout({ children }) {
                     </HelpProvider>
                   </TooltipProvider>
                 </ThemeProviderWrapper>
-              </SizeProviderWrapper>
             </PersistGate>
           </Provider>
         </div>

@@ -27,31 +27,31 @@ const HealthDashboard = ({ vmId, vmName }) => {
           category="updates"
           vmId={vmId}
         />
-        <AutoCheckCard 
+        <AutoCheckCard
           title="Security Status"
           icon={<Shield className="h-5 w-5" />}
           category="security"
           vmId={vmId}
         />
-        <AutoCheckCard 
+        <AutoCheckCard
           title="Storage Health"
           icon={<HardDrive className="h-5 w-5" />}
           category="storage"
           vmId={vmId}
         />
-        <AutoCheckCard 
+        <AutoCheckCard
           title="Performance"
           icon={<Activity className="h-5 w-5" />}
           category="performance"
           vmId={vmId}
         />
-        <AutoCheckCard 
+        <AutoCheckCard
           title="Applications"
           icon={<Package className="h-5 w-5" />}
           category="applications"
           vmId={vmId}
         />
-        <AutoCheckCard 
+        <AutoCheckCard
           title="Network & Firewall"
           icon={<Network className="h-5 w-5" />}
           category="firewall"
