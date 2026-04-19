@@ -4,7 +4,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { useWizardContext } from '@/components/ui/wizard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, Package } from 'lucide-react';
+import { CheckCircle2, Package, Cpu, MemoryStick, HardDrive } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { cn } from '@/lib/utils';
 import { selectDepartments } from '@/state/slices/departments';
@@ -84,35 +84,21 @@ export function ReviewStep({ id }) {
                   <dl className="grid gap-3">
                     <div className="flex items-center justify-between border-b pb-2 border-primary/10">
                       <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M6 12c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M18 18c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M8.59 13.51l6.82 3.98"/>
-                          <path d="M15.41 6.51l-6.82 3.98"/>
-                        </svg>
+                        <Cpu className="w-4 h-4 text-blue-500" />
                         CPU Cores
                       </dt>
                       <dd className="text-sm font-medium">{values.resources?.customCores || 4} Cores</dd>
                     </div>
                     <div className="flex items-center justify-between border-b pb-2 border-primary/10">
                       <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                        </svg>
+                        <MemoryStick className="w-4 h-4 text-green-500" />
                         Memory
                       </dt>
                       <dd className="text-sm font-medium">{values.resources?.customRam || 8} GB RAM</dd>
                     </div>
                     <div className="flex items-center justify-between border-b pb-2 border-primary/10">
                       <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5z"/>
-                          <path d="M9 5v14"/>
-                          <path d="M15 5v14"/>
-                          <path d="M5 9h14"/>
-                          <path d="M5 15h14"/>
-                        </svg>
+                        <HardDrive className="w-4 h-4 text-purple-500" />
                         Storage
                       </dt>
                       <dd className="text-sm font-medium">{values.resources?.customStorage || 50} GB</dd>
@@ -153,22 +139,14 @@ export function ReviewStep({ id }) {
                   <dl className="grid gap-3">
                     <div className="flex items-center justify-between border-b pb-2 border-primary/10">
                       <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M6 12c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M18 18c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M8.59 13.51l6.82 3.98"/>
-                          <path d="M15.41 6.51l-6.82 3.98"/>
-                        </svg>
+                        <Cpu className="w-4 h-4 text-blue-500" />
                         CPU Cores
                       </dt>
                       <dd className="text-sm font-medium">{selectedTemplate.cores} Cores</dd>
                     </div>
                     <div className="flex items-center justify-between border-b pb-2 border-primary/10">
                       <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                        </svg>
+                        <MemoryStick className="w-4 h-4 text-green-500" />
                         Memory
                       </dt>
                       <dd className="text-sm font-medium">{selectedTemplate.ram} GB RAM</dd>
@@ -195,13 +173,7 @@ export function ReviewStep({ id }) {
                     </div>
                     <div className="flex items-center justify-between">
                       <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5z"/>
-                          <path d="M9 5v14"/>
-                          <path d="M15 5v14"/>
-                          <path d="M5 9h14"/>
-                          <path d="M5 15h14"/>
-                        </svg>
+                        <HardDrive className="w-4 h-4 text-purple-500" />
                         Storage
                       </dt>
                       <dd className="text-sm font-medium">{selectedTemplate.storage} GB</dd>
