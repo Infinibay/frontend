@@ -1,984 +1,612 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
-import { cn } from "@/lib/utils";
-import { RiDeleteBin5Line } from "react-icons/ri";
-import { BiSortAlt2 } from "react-icons/bi";
-import { Users as UsersIcon, UserPlus, Shield, Key, Search } from 'lucide-react';
+import {
+  UserPlus,
+  Shield,
+  Users as UsersIcon,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  Search,
+  Eye,
+  EyeOff,
+  Lock,
+} from "lucide-react";
+import {
+  Card,
+  Button,
+  ButtonGroup,
+  TextField,
+  Select,
+  Avatar,
+  Badge,
+  Alert,
+  Dialog,
+  Drawer,
+  DataTable,
+  EmptyState,
+  Spinner,
+  Stat,
+} from "@infinibay/harbor";
+
 import {
   fetchUsers,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
 } from "@/state/slices/users";
 import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
-import { usePageHeader } from '@/hooks/usePageHeader';
+import { usePageHeader } from "@/hooks/usePageHeader";
 import { createDebugger } from "@/utils/debug";
+import { toast } from "sonner";
 
-// UI Components
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import { Header, HeaderLeft, HeaderCenter, HeaderRight } from "@/components/ui/header";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar } from "@/components/ui/avatar";
-import { SimpleIllustration } from "@/components/ui/undraw-illustration";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { useSizeContext } from "@/components/ui/size-provider";
-import { Toast, ToastProvider, ToastTitle, ToastDescription, ToastViewport } from "@/components/ui/toast";
-import { Form } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
+const debug = createDebugger("frontend:pages:users");
 
-const debug = createDebugger('frontend:pages:users');
+const ROLE_OPTIONS = [
+  { value: "USER", label: "User" },
+  { value: "ADMIN", label: "Admin" },
+];
+const ROLE_FILTER_OPTIONS = [
+  { value: "all", label: "All roles" },
+  { value: "USER", label: "User" },
+  { value: "ADMIN", label: "Admin" },
+];
 
-const UsersPage = () => {
+const EMPTY_FORM = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  passwordConfirmation: "",
+  role: "USER",
+};
+
+/** User create/edit form shared between both drawer modes. */
+function UserFormFields({ form, setForm, mode }) {
+  const [hideA, setHideA] = useState(true);
+  const [hideB, setHideB] = useState(true);
+
+  const update = (key) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <TextField
+          label="First name"
+          value={form.firstName}
+          onChange={update("firstName")}
+        />
+        <TextField
+          label="Last name"
+          value={form.lastName}
+          onChange={update("lastName")}
+        />
+      </div>
+
+      {mode === "create" && (
+        <TextField
+          label="Email"
+          type="email"
+          value={form.email}
+          onChange={update("email")}
+        />
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <TextField
+          label={mode === "create" ? "Password" : "New password (optional)"}
+          type={hideA ? "password" : "text"}
+          icon={<Lock className="h-4 w-4" />}
+          suffix={
+            <button
+              type="button"
+              onClick={() => setHideA((s) => !s)}
+              className="text-fg-muted hover:text-fg"
+            >
+              {hideA ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          }
+          value={form.password || ""}
+          onChange={update("password")}
+        />
+        <TextField
+          label="Confirm password"
+          type={hideB ? "password" : "text"}
+          icon={<Lock className="h-4 w-4" />}
+          suffix={
+            <button
+              type="button"
+              onClick={() => setHideB((s) => !s)}
+              className="text-fg-muted hover:text-fg"
+            >
+              {hideB ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          }
+          value={form.passwordConfirmation || ""}
+          onChange={update("passwordConfirmation")}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-fg">Role</label>
+        <Select
+          value={form.role}
+          onChange={(v) => setForm((prev) => ({ ...prev, role: v }))}
+          options={ROLE_OPTIONS}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default function UsersPage() {
   const dispatch = useDispatch();
-  const { size } = useSizeContext();
-  const [selectedUsers, setSelectedUsers] = useState(new Set());
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState(null);
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState({});
-  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
-  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [newUser, setNewUser] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    passwordConfirmation: '',
-    role: 'USER'
-  });
 
-  // Help configuration
-  const helpConfig = useMemo(() => ({
-    title: "Users Management Help",
-    description: "Learn how to manage user accounts and permissions",
-    icon: <UsersIcon className="h-5 w-5 text-primary" />,
-    sections: [
-      {
-        id: "managing-users",
-        title: "Managing Users",
-        icon: <UserPlus className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Creating Users</p>
-              <p>Click "Add User" button and fill in required fields: first name, last name, email, password, and role.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Editing Users</p>
-              <p>Click "Edit" button in user row to modify name, password, or role.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Deleting Users</p>
-              <p>Click delete icon to remove users. Confirmation is required before deletion.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "user-roles",
-        title: "User Roles",
-        icon: <Shield className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Admin Role</p>
-              <p>Full system access. Can manage all resources, users, and settings.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">User Role</p>
-              <p>Limited access. Can only manage assigned VMs and view own resources.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Role Assignment</p>
-              <p>Set role during user creation or change via edit dialog.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Permissions</p>
-              <p>Roles determine what actions users can perform in the system.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "user-profiles",
-        title: "User Profiles",
-        icon: <Key className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Profile Information</p>
-              <p>Users have first name, last name, email, and optional avatar.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Avatar Management</p>
-              <p>Avatars can be updated from the user's profile page.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Password Changes</p>
-              <p>Admins can reset passwords via edit dialog. Users can change their own passwords.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Email Addresses</p>
-              <p>Used for login and system notifications.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "search-filter",
-        title: "Search and Filtering",
-        icon: <Search className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Search Users</p>
-              <p>Filter by name or email in real-time using the search box.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Role Filter</p>
-              <p>Use dropdown to show only Admins or Users.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Sorting</p>
-              <p>Click "Sort by" dropdown to organize users by name or role.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">User Table</p>
-              <p>Shows avatar, name, email, role badge, and action buttons.</p>
-            </div>
-          </div>
-        ),
-      },
-    ],
-    quickTips: [
-      "Admin users have full system access, assign this role carefully",
-      "Users can update their own avatars from their profile page",
-      "Use search to quickly find users by name or email",
-      "Password confirmation is required when creating or updating passwords",
-    ],
-  }), []);
-
-  // Use optimized data loading for users
   const {
     data: users,
-    isLoading: loading,
+    isLoading,
     error,
-    refresh: refreshUsers
-  } = useEnsureData('users', fetchUsers, {
+    refresh,
+  } = useEnsureData("users", fetchUsers, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
-    ttl: 3 * 60 * 1000, // 3 minutes
+    ttl: 3 * 60 * 1000,
   });
 
-  // Configure header
-  usePageHeader({
-    breadcrumbs: [
-      { label: 'Home', href: '/' },
-      { label: 'Users', isCurrent: true }
-    ],
-    title: 'Users',
-    actions: [
-      {
-        id: 'refresh',
-        label: '',
-        icon: 'RefreshCw',
-        variant: 'outline',
-        size: 'sm',
-        onClick: refreshUsers,
-        loading: loading,
-        disabled: loading,
-        tooltip: loading ? 'Refreshing...' : error ? 'Retry loading users' : 'Refresh users',
-        className: error ? 'border-destructive text-destructive hover:bg-destructive/10' : ''
-      }
-    ],
-    helpConfig: helpConfig,
-    helpTooltip: 'Users help'
-  }, [loading, error]);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [selected, setSelected] = useState([]);
 
-  debug.info('Users page state:', {
-    usersCount: users?.length || 0,
-    loading,
-    hasError: !!error,
-    selectedCount: selectedUsers.size
-  });
+  const [drawerMode, setDrawerMode] = useState(null); // 'create' | 'edit' | null
+  const [drawerForm, setDrawerForm] = useState(EMPTY_FORM);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  const handleCreateUser = async (userData) => {
-    debug.info('Creating user:', userData.email);
-    try {
-      await dispatch(createUser(userData)).unwrap();
-      setIsCreateUserOpen(false);
-      setToastProps({
-        variant: "success",
-        title: "User Created",
-        description: "The user has been successfully created."
-      });
-      setShowToast(true);
-      debug.info('User created successfully:', userData.email);
-      debug.info('List will update automatically via real-time events');
-    } catch (error) {
-      debug.error('Failed to create user:', error);
-      setToastProps({
-        variant: "error",
-        title: "Error",
-        description: error.message || "Failed to create user."
-      });
-      setShowToast(true);
-    }
+  const openCreate = () => {
+    setDrawerForm(EMPTY_FORM);
+    setEditingId(null);
+    setDrawerMode("create");
   };
 
-  const handleUpdateUser = async (userData) => {
-    debug.info('Updating user:', editingUser.id);
-    try {
-      await dispatch(updateUser({ id: editingUser.id, input: userData })).unwrap();
-      setIsEditUserOpen(false);
-      setToastProps({
-        variant: "success",
-        title: "User Updated",
-        description: "The user has been successfully updated."
-      });
-      setShowToast(true);
-      debug.info('User updated successfully:', editingUser.id);
-      debug.info('List will update automatically via real-time events');
-    } catch (error) {
-      debug.error('Failed to update user:', error);
-      setToastProps({
-        variant: "error",
-        title: "Error",
-        description: error.message || "Failed to update user."
-      });
-      setShowToast(true);
-    }
+  const openEdit = (user) => {
+    setDrawerForm({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: user.email || "",
+      password: "",
+      passwordConfirmation: "",
+      role: user.role || "USER",
+    });
+    setEditingId(user.id);
+    setDrawerMode("edit");
   };
 
-  const handleAvatarUpdate = async (avatarPath) => {
-    console.log('🎯 handleAvatarUpdate called with:', { avatarPath, editingUserId: editingUser?.id });
+  const closeDrawer = () => {
+    setDrawerMode(null);
+    setEditingId(null);
+    setDrawerForm(EMPTY_FORM);
+  };
 
-    if (!editingUser?.id) {
-      console.error('❌ No editing user ID available');
-      setToastProps({
-        variant: "error",
-        title: "Error",
-        description: "No user selected for update."
-      });
-      setShowToast(true);
+  const filtered = useMemo(() => {
+    const list = users || [];
+    const q = search.trim().toLowerCase();
+    return list.filter((u) => {
+      if (roleFilter !== "all" && u.role !== roleFilter) return false;
+      if (!q) return true;
+      return (
+        u.email?.toLowerCase().includes(q) ||
+        u.firstName?.toLowerCase().includes(q) ||
+        u.lastName?.toLowerCase().includes(q)
+      );
+    });
+  }, [users, search, roleFilter]);
+
+  const stats = useMemo(() => {
+    const list = users || [];
+    return {
+      total: list.length,
+      admins: list.filter((u) => u.role === "ADMIN").length,
+      users: list.filter((u) => u.role === "USER").length,
+    };
+  }, [users]);
+
+  const helpConfig = useMemo(
+    () => ({
+      title: "Users",
+      description: "Manage who can sign into Infinibay and what they can do.",
+      icon: <UsersIcon className="h-5 w-5 text-accent-2" />,
+      sections: [
+        {
+          id: "creating",
+          title: "Creating users",
+          icon: <UserPlus className="h-4 w-4" />,
+          content: (
+            <p>
+              Click <strong>Add user</strong> to open a drawer with first
+              name, last name, email, password and role.
+            </p>
+          ),
+        },
+        {
+          id: "roles",
+          title: "Roles",
+          icon: <Shield className="h-4 w-4" />,
+          content: (
+            <p>
+              <strong>Admin</strong> can manage all resources and users.{" "}
+              <strong>User</strong> can only operate the VMs assigned to them.
+            </p>
+          ),
+        },
+      ],
+      quickTips: [
+        "Click a row to open the edit drawer",
+        "Search filters by name and email",
+        "Select rows to delete in bulk",
+      ],
+    }),
+    []
+  );
+
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: "Home", href: "/" },
+        { label: "Users", isCurrent: true },
+      ],
+      title: "Users",
+      actions: [],
+      helpConfig,
+      helpTooltip: "Users help",
+    },
+    []
+  );
+
+  // ---- Mutations --------------------------------------------------
+
+  const handleSave = async () => {
+    const form = drawerForm;
+    if (!form.firstName || !form.lastName || !form.role) {
+      toast.error("First name, last name and role are required");
       return;
     }
 
+    if (drawerMode === "create") {
+      if (!form.email || !form.password || !form.passwordConfirmation) {
+        toast.error("Email and password fields are required");
+        return;
+      }
+      if (form.password !== form.passwordConfirmation) {
+        toast.error("Passwords do not match");
+        return;
+      }
+      setSaving(true);
+      try {
+        await dispatch(createUser(form)).unwrap();
+        toast.success("User created");
+        closeDrawer();
+      } catch (e) {
+        toast.error(e.message || "Failed to create user");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    // edit
+    if (form.password || form.passwordConfirmation) {
+      if (form.password !== form.passwordConfirmation) {
+        toast.error("Passwords do not match");
+        return;
+      }
+    }
+    const input = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      role: form.role,
+      ...(form.password && form.passwordConfirmation
+        ? {
+            password: form.password,
+            passwordConfirmation: form.passwordConfirmation,
+          }
+        : {}),
+    };
+    setSaving(true);
     try {
-      console.log('🔄 Dispatching updateUser with avatar only...', {
-        userId: editingUser.id,
-        avatarPath,
-        userRole: editingUser.role,
-        fullEditingUser: editingUser
-      });
-
-      // Send ONLY the avatar field, no other user data
-      const avatarOnlyInput = { avatar: avatarPath };
-      console.log('📤 Final input being sent:', { id: editingUser.id, input: avatarOnlyInput });
-
-      await dispatch(updateUser({ id: editingUser.id, input: avatarOnlyInput })).unwrap();
-      console.log('✅ Avatar update successful');
-
-      // Update local state
-      setEditingUser(prev => ({
-        ...prev,
-        avatar: avatarPath
-      }));
-
-      // Show subtle success feedback
-      setToastProps({
-        variant: "success",
-        title: "Avatar Updated",
-        description: "Your profile picture has been updated."
-      });
-      setShowToast(true);
-
-      // List will update automatically via real-time events
-      debug.info('Avatar updated, list will update via real-time events');
-    } catch (error) {
-      console.error('❌ Avatar update failed:', error);
-      setToastProps({
-        variant: "error",
-        title: "Error",
-        description: error.message || "Failed to update avatar."
-      });
-      setShowToast(true);
+      await dispatch(updateUser({ id: editingId, input })).unwrap();
+      toast.success("User updated");
+      closeDrawer();
+    } catch (e) {
+      toast.error(e.message || "Failed to update user");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDeleteUser = async (userId) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const isBulk = deleteTarget === "bulk";
     try {
-      await dispatch(deleteUser(userId)).unwrap();
-      setIsDeleteDialogOpen(false);
-      setToastProps({
-        variant: "success",
-        title: "User Deleted",
-        description: "The user has been successfully deleted."
-      });
-      setShowToast(true);
-    } catch (error) {
-      setToastProps({
-        variant: "error",
-        title: "Error",
-        description: error.message || "Failed to delete user."
-      });
-      setShowToast(true);
+      if (isBulk) {
+        await Promise.all(
+          selected.map((id) => dispatch(deleteUser(id)).unwrap())
+        );
+        toast.success("Users deleted");
+        setSelected([]);
+      } else {
+        await dispatch(deleteUser(deleteTarget.id)).unwrap();
+        toast.success("User deleted");
+      }
+    } catch (e) {
+      toast.error(e.message || "Failed to delete user");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
-  const handleDeleteSelected = async () => {
-    try {
-      const deletePromises = Array.from(selectedUsers).map(userId =>
-        dispatch(deleteUser(userId)).unwrap()
-      );
-      await Promise.all(deletePromises);
-      setSelectedUsers(new Set());
-      setToastProps({
-        variant: "success",
-        title: "Users Deleted",
-        description: "Selected users have been successfully deleted."
-      });
-      setShowToast(true);
-    } catch (error) {
-      setToastProps({
-        variant: "error",
-        title: "Error",
-        description: error.message || "Failed to delete users."
-      });
-      setShowToast(true);
-    }
-  };
+  // ---- Columns ----------------------------------------------------
 
-  const columns = [
-    { key: "username", label: "Username" },
-    { key: "firstName", label: "First Name" },
-    { key: "lastName", label: "Last Name" },
-    { key: "email", label: "Email" },
-    { key: "role", label: "Role" },
-    { key: "actions", label: "Actions" }
-  ];
+  const columns = useMemo(
+    () => [
+      {
+        key: "name",
+        label: "User",
+        sortable: true,
+        render: (row) => (
+          <div className="flex items-center gap-3 min-w-0">
+            <Avatar
+              name={`${row.firstName || ""} ${row.lastName || ""}`.trim() || row.email}
+              size="sm"
+            />
+            <div className="min-w-0">
+              <div className="text-sm font-medium text-fg truncate">
+                {`${row.firstName || ""} ${row.lastName || ""}`.trim() || "—"}
+              </div>
+              <div className="text-xs text-fg-muted truncate">{row.email}</div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: "role",
+        label: "Role",
+        width: 110,
+        sortable: true,
+        render: (row) =>
+          row.role === "ADMIN" ? (
+            <Badge tone="purple">Admin</Badge>
+          ) : (
+            <Badge tone="neutral">User</Badge>
+          ),
+      },
+      {
+        key: "actions",
+        label: "",
+        width: 120,
+        align: "right",
+        render: (row) => (
+          <div
+            className="flex items-center gap-1 justify-end"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={<Pencil className="h-3.5 w-3.5" />}
+              onClick={() => openEdit(row)}
+              aria-label="Edit"
+            >
+              {""}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={<Trash2 className="h-3.5 w-3.5" />}
+              onClick={() => setDeleteTarget(row)}
+              aria-label="Delete"
+            >
+              {""}
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-xl text-red-500">
-          {error.message || 'Failed to load users'}
-        </div>
-      </div>
-    );
-  }
+  debug.info("Users page:", {
+    count: users?.length || 0,
+    filteredCount: filtered.length,
+    selected: selected.length,
+  });
 
   return (
-    <ToastProvider>
-      {showToast && (
-        <Toast variant={toastProps.variant} onOpenChange={setShowToast}>
-          <ToastTitle>{toastProps.title}</ToastTitle>
-          <ToastDescription>{toastProps.description}</ToastDescription>
-        </Toast>
+    <div className="space-y-6">
+      {/* Hero / actions strip */}
+      <Card variant="glass" className="p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-fg flex items-center gap-2">
+              <UsersIcon className="h-5 w-5 text-accent-2" />
+              Users
+            </h1>
+            <p className="text-sm text-fg-muted mt-1">
+              Manage sign-in accounts and permissions.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />}
+              onClick={refresh}
+              disabled={isLoading}
+            >
+              Refresh
+            </Button>
+            <Button
+              size="sm"
+              icon={<UserPlus className="h-4 w-4" />}
+              onClick={openCreate}
+            >
+              Add user
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          <Stat label="Total users" value={stats.total} />
+          <Stat label="Admins" value={stats.admins} icon={<Shield className="h-3.5 w-3.5" />} />
+          <Stat label="Users" value={stats.users} />
+        </div>
+      </Card>
+
+      {error && (
+        <Alert
+          tone="danger"
+          title="Couldn't load users"
+          actions={
+            <Button size="sm" onClick={refresh} icon={<RefreshCw className="h-4 w-4" />}>
+              Retry
+            </Button>
+          }
+        >
+          {String(error.message || error)}
+        </Alert>
       )}
-      <ToastViewport />
 
+      {/* Search + filters + bulk actions */}
+      <Card variant="default" className="p-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          <div className="md:w-80">
+            <TextField
+              placeholder="Search users by name or email…"
+              icon={<Search className="h-4 w-4" />}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="md:w-56">
+            <Select
+              value={roleFilter}
+              onChange={setRoleFilter}
+              options={ROLE_FILTER_OPTIONS}
+            />
+          </div>
 
-      <div className="size-container mt-6">
-        {/* User Actions */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={() => setIsCreateUserOpen(true)}
-              className="size-button gap-2"
-            >
-              Add User
+          <div className="md:ml-auto flex items-center gap-2">
+            {selected.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                icon={<Trash2 className="h-4 w-4" />}
+                onClick={() => setDeleteTarget("bulk")}
+              >
+                Delete {selected.length}
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Users table */}
+      {isLoading && !users?.length ? (
+        <div className="py-10 flex items-center justify-center gap-3 text-fg-muted">
+          <Spinner /> Loading users…
+        </div>
+      ) : filtered.length === 0 ? (
+        <Card variant="default" className="p-0">
+          <EmptyState
+            icon={<UsersIcon className="h-10 w-10 text-fg-subtle" />}
+            title={users?.length ? "No matches" : "No users yet"}
+            description={
+              users?.length
+                ? "No users match the current search or filter."
+                : "Create the first user to get started."
+            }
+            actions={
+              <Button
+                size="sm"
+                icon={<UserPlus className="h-4 w-4" />}
+                onClick={openCreate}
+              >
+                Add user
+              </Button>
+            }
+          />
+        </Card>
+      ) : (
+        <Card variant="default" className="p-2">
+          <DataTable
+            rows={filtered}
+            columns={columns}
+            rowKey={(r) => r.id}
+            selectable
+            selected={selected}
+            onSelectionChange={setSelected}
+            onRowClick={openEdit}
+          />
+        </Card>
+      )}
+
+      {/* Create/Edit Drawer */}
+      <Drawer
+        open={drawerMode !== null}
+        onClose={closeDrawer}
+        side="right"
+        size={440}
+        title={drawerMode === "create" ? "Add user" : "Edit user"}
+        footer={
+          <ButtonGroup className="justify-end">
+            <Button variant="secondary" onClick={closeDrawer} disabled={saving}>
+              Cancel
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="size-button gap-2">
-                  <BiSortAlt2 className="size-icon" />
-                  Sort by
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="glass-medium">
-                <DropdownMenuItem>Name (A-Z)</DropdownMenuItem>
-                <DropdownMenuItem>Name (Z-A)</DropdownMenuItem>
-                <DropdownMenuItem>Role</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
-
-      <div className="size-container">
-        {/* Search and Filters */}
-        <div className="size-padding">
-          <div className="glass-medium size-card-padding radius-fluent-md elevation-2">
-            <div className="flex flex-wrap items-center size-gap">
-              <div className="flex-1 min-w-[200px]">
-                <div className="relative">
-                  <Input
-                    placeholder="Search users by name, email..."
-                    className="size-input"
-                  />
-                </div>
-              </div>
-              <Select>
-                <SelectTrigger className="w-[150px] size-input">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent className="glass-medium">
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="USER">User</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* Users Table */}
-        <div className="size-padding">
-          {loading ? (
-            <div className="glass-medium size-card-padding radius-fluent-lg elevation-2 flex items-center justify-center">
-              <div className="flex items-center size-gap">
-                <Spinner size="lg" />
-                <span className="size-text text-glass-text-secondary">Loading users...</span>
-              </div>
-            </div>
-          ) : !users || users.length === 0 ? (
-            <div className="glass-medium size-card-padding radius-fluent-lg elevation-2 text-center">
-              <div className="size-gap flex flex-col items-center">
-                <SimpleIllustration
-                  name="users"
-                  size="large"
-                  opacity={80}
-                  className="mb-2"
-                />
-                <div>
-                  <h3 className="size-heading text-glass-text-primary">No Users Found</h3>
-                  <p className="size-text text-glass-text-secondary">Get started by adding your first user to the system.</p>
-                </div>
-                <Button onClick={() => setIsCreateUserOpen(true)} className="size-button">
-                  Add User
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="glass-medium radius-fluent-lg elevation-2 overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-glass-text-primary/10">
-                    <TableHead className="size-text text-glass-text-primary font-semibold size-padding">User</TableHead>
-                    <TableHead className="size-text text-glass-text-primary font-semibold">Name</TableHead>
-                    <TableHead className="size-text text-glass-text-primary font-semibold">Email</TableHead>
-                    <TableHead className="size-text text-glass-text-primary font-semibold">Role</TableHead>
-                    <TableHead className="size-text text-glass-text-primary font-semibold">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id} className="border-glass-text-primary/10 hover:bg-glass-text-primary/5">
-                      <TableCell className="size-padding">
-                        <div className="flex items-center size-gap">
-                          <Avatar
-                            className="size-avatar"
-                            email={user.email}
-                            fallback={`${user.firstName} ${user.lastName}`}
-                          />
-                          <div>
-                            <div className="size-text font-medium text-glass-text-primary">{user.email}</div>
-                            <div className="size-small text-glass-text-secondary">@{user.email.split('@')[0]}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="size-text text-glass-text-primary">
-                          {user.firstName} {user.lastName}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="size-text text-glass-text-secondary">{user.email}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className={cn(
-                          "size-badge inline-flex items-center rounded-full font-medium",
-                          user.role === 'ADMIN'
-                            ? "bg-brand-celeste-100 text-brand-celeste-800 border border-brand-celeste-200"
-                            : "bg-muted text-muted-foreground border border-border"
-                        )}>
-                          {user.role}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 px-3 text-glass-text-secondary hover:text-glass-text-primary hover:bg-glass-text-primary/10"
-                                  onClick={() => {
-                                    setEditingUser(user);
-                                    setIsEditUserOpen(true);
-                                  }}
-                                >
-                                  <span className="text-sm">Edit</span>
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent className="glass-strong">
-                                <p>Edit User</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => {
-                                    setUserToDelete(user);
-                                    setIsDeleteDialogOpen(true);
-                                  }}
-                                >
-                                  <RiDeleteBin5Line className="w-6 h-6" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent className="glass-strong">
-                                <p>Delete User</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-
-        {selectedUsers.size > 0 && (
-          <div className="size-padding">
-            <div className="glass-subtle size-card-padding radius-fluent-md elevation-1">
-              <div className="flex items-center justify-between">
-                <span className="size-text text-glass-text-primary">
-                  {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
-                </span>
-                <Button
-                  variant="destructive"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className="size-button"
-                >
-                  Delete Selected ({selectedUsers.size})
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Create User Dialog */}
-      <Dialog open={isCreateUserOpen} onOpenChange={(open) => {
-        setIsCreateUserOpen(open);
-        if (open) {
-          // Reset form when opening
-          setNewUser({
-            firstName: '',
-            lastName: '',
-            email: '',
-            password: '',
-            passwordConfirmation: '',
-            role: 'USER'
-          });
+            <Button onClick={handleSave} loading={saving} disabled={saving}>
+              {drawerMode === "create" ? "Create user" : "Save changes"}
+            </Button>
+          </ButtonGroup>
         }
-      }}>
-        <DialogContent className="glass-strong z-1000 max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="size-heading text-glass-text-primary">Create User</DialogTitle>
-            <DialogDescription className="size-text text-glass-text-secondary">
-              Add a new user to the system. User can set their avatar from their profile later.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid size-gap size-padding">
-            <div className="space-y-2">
-              <Label htmlFor="firstName" className="size-text text-glass-text-primary">
-                First Name
-              </Label>
-              <Input
-                id="firstName"
-                className="size-input"
-                value={newUser.firstName}
-                onChange={(e) => setNewUser(prev => ({
-                  ...prev,
-                  firstName: e.target.value
-                }))}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName" className="size-text text-glass-text-primary">
-                Last Name
-              </Label>
-              <Input
-                id="lastName"
-                className="size-input"
-                value={newUser.lastName}
-                onChange={(e) => setNewUser(prev => ({
-                  ...prev,
-                  lastName: e.target.value
-                }))}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="size-text text-glass-text-primary">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                className="size-input"
-                value={newUser.email}
-                onChange={(e) => setNewUser(prev => ({
-                  ...prev,
-                  email: e.target.value
-                }))}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="size-text text-glass-text-primary">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                className="size-input"
-                value={newUser.password}
-                onChange={(e) => setNewUser(prev => ({
-                  ...prev,
-                  password: e.target.value
-                }))}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="passwordConfirmation" className="size-text text-glass-text-primary">
-                Confirm Password
-              </Label>
-              <Input
-                id="passwordConfirmation"
-                type="password"
-                className="size-input"
-                value={newUser.passwordConfirmation}
-                onChange={(e) => setNewUser(prev => ({
-                  ...prev,
-                  passwordConfirmation: e.target.value
-                }))}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role" className="size-text text-glass-text-primary">
-                Role
-              </Label>
-              <Select
-                value={newUser.role}
-                onValueChange={(value) => setNewUser(prev => ({
-                  ...prev,
-                  role: value
-                }))}
-              >
-                <SelectTrigger className="size-input">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent className="glass-medium">
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="USER">User</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter className="size-gap">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsCreateUserOpen(false);
-                setNewUser({
-                  firstName: '',
-                  lastName: '',
-                  email: '',
-                  password: '',
-                  passwordConfirmation: '',
-                  role: 'USER'
-                });
-              }}
-              className="size-button"
-            >
-              Cancel
-            </Button>
-            <Button
-              className="size-button"
-              onClick={() => {
-                if (!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.password || !newUser.passwordConfirmation) {
-                  setToastProps({
-                    variant: "error",
-                    title: "Validation Error",
-                    description: "Please fill in all required fields."
-                  });
-                  setShowToast(true);
-                  return;
-                }
-
-                if (newUser.password !== newUser.passwordConfirmation) {
-                  setToastProps({
-                    variant: "error",
-                    title: "Validation Error",
-                    description: "Passwords do not match."
-                  });
-                  setShowToast(true);
-                  return;
-                }
-
-                handleCreateUser(newUser);
-                setNewUser({
-                  firstName: '',
-                  lastName: '',
-                  email: '',
-                  password: '',
-                  passwordConfirmation: '',
-                  role: 'USER'
-                });
-              }}
-            >
-              Create User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit User Dialog */}
-      <Dialog
-        open={isEditUserOpen}
-        onOpenChange={(open) => {
-          setIsEditUserOpen(open);
-          if (!open) setEditingUser(null);
-        }}
       >
-        <DialogContent className="glass-strong z-1000 max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="size-heading text-glass-text-primary">Edit User</DialogTitle>
-            <DialogDescription className="size-text text-glass-text-secondary">
-              Make changes to the user's information
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid size-gap size-padding">
-            <div className="space-y-2">
-              <Label htmlFor="firstName" className="size-text text-glass-text-primary">
-                First Name
-              </Label>
-              <Input
-                id="firstName"
-                value={editingUser?.firstName ?? ""}
-                className="size-input"
-                onChange={(e) => {
-                  setEditingUser(prev => ({
-                    ...prev,
-                    firstName: e.target.value
-                  }));
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName" className="size-text text-glass-text-primary">
-                Last Name
-              </Label>
-              <Input
-                id="lastName"
-                value={editingUser?.lastName ?? ""}
-                className="size-input"
-                onChange={(e) => {
-                  setEditingUser(prev => ({
-                    ...prev,
-                    lastName: e.target.value
-                  }));
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="size-text text-glass-text-primary">
-                New Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                className="size-input"
-                onChange={(e) => {
-                  setEditingUser(prev => ({
-                    ...prev,
-                    password: e.target.value
-                  }));
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="passwordConfirmation" className="size-text text-glass-text-primary">
-                Confirm Password
-              </Label>
-              <Input
-                id="passwordConfirmation"
-                type="password"
-                className="size-input"
-                onChange={(e) => {
-                  setEditingUser(prev => ({
-                    ...prev,
-                    passwordConfirmation: e.target.value
-                  }));
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role" className="size-text text-glass-text-primary">
-                Role
-              </Label>
-              <Select
-                value={editingUser?.role ?? "USER"}
-                onValueChange={(value) => {
-                  setEditingUser(prev => ({
-                    ...prev,
-                    role: value
-                  }));
-                }}
-              >
-                <SelectTrigger className="size-input">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent className="glass-medium">
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="USER">User</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="size-text text-glass-text-primary">
-                Avatar
-              </Label>
-              <div className="glass-subtle size-card-padding radius-fluent-md">
-                <p className="size-text text-glass-text-secondary">
-                  Avatar can be updated from the user's profile page.
-                </p>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button className="size-button" onClick={() => {
-              if ((editingUser?.password || editingUser?.passwordConfirmation) &&
-                  (!editingUser?.password || !editingUser?.passwordConfirmation)) {
-                setToastProps({ variant: "error", title: "Validation Error", description: "Please fill out both password fields." });
-                setShowToast(true);
-                return;
-              }
-              if (editingUser?.password && editingUser?.passwordConfirmation && editingUser.password !== editingUser.passwordConfirmation) {
-                setToastProps({ variant: "error", title: "Validation Error", description: "Passwords do not match." });
-                setShowToast(true);
-                return;
-              }
-              const userData = {
-                firstName: editingUser.firstName,
-                lastName: editingUser.lastName,
-                role: editingUser.role,
-                // Avatar can be updated from the user's profile page
-                ...(editingUser.password && editingUser.passwordConfirmation && {
-                  password: editingUser.password,
-                  passwordConfirmation: editingUser.passwordConfirmation
-                })
-              };
-              handleUpdateUser(userData);
-            }}>
-              Update User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <UserFormFields form={drawerForm} setForm={setDrawerForm} mode={drawerMode || "create"} />
+      </Drawer>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="glass-strong">
-          <DialogHeader>
-            <DialogTitle className="size-heading text-glass-text-primary">Delete Confirmation</DialogTitle>
-            <DialogDescription className="size-text text-glass-text-secondary">
-              {userToDelete
-                ? `Are you sure you want to delete ${userToDelete.firstName} ${userToDelete.lastName}?`
-                : `Are you sure you want to delete ${selectedUsers.size} selected users?`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="size-gap">
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-              className="size-button"
-            >
+      {/* Delete confirmation */}
+      <Dialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        size="sm"
+        title={
+          <span className="flex items-center gap-2 text-danger">
+            <Trash2 className="h-4 w-4" />
+            Delete {deleteTarget === "bulk" ? `${selected.length} users` : "user"}
+          </span>
+        }
+        description={
+          deleteTarget && deleteTarget !== "bulk"
+            ? `Remove ${deleteTarget.firstName || ""} ${deleteTarget.lastName || ""} (${deleteTarget.email})?`
+            : "Remove all selected users?"
+        }
+        footer={
+          <ButtonGroup className="justify-end">
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() =>
-                userToDelete
-                  ? handleDeleteUser(userToDelete.id)
-                  : handleDeleteSelected()
-              }
-              className="size-button"
-            >
+            <Button variant="destructive" onClick={handleDelete}>
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </ButtonGroup>
+        }
+      >
+        <p className="text-sm text-fg-muted">
+          This cannot be undone. The account will no longer be able to sign in
+          and any VMs they own will be orphaned unless reassigned first.
+        </p>
       </Dialog>
-    </ToastProvider>
+    </div>
   );
-};
-
-export default UsersPage;
+}
