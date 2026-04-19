@@ -1,29 +1,78 @@
 'use client';
 
-import React, { useState } from 'react';
-import { AlertCircle, Info, Shield, Zap } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import React, { useMemo, useState } from 'react';
+import {
+  Shield,
+  Zap,
+  RefreshCw,
+  Plus,
+} from 'lucide-react';
+import {
+  Card,
+  Button,
+  Badge,
+  Alert,
+  Skeleton,
+  Stat,
+  DataTable,
+} from '@infinibay/harbor';
 import { createDebugger } from '@/utils/debug';
 import { toast } from 'sonner';
+
 import { ENTITY_TYPES } from '@/config/firewallEntityConfig';
 import { useFirewallData } from '@/hooks/useFirewallData';
-import { expandTemplateToRules, getFirewallTemplate } from '@/config/firewallTemplates';
+import {
+  FIREWALL_TEMPLATES,
+  expandTemplateToRules,
+  getFirewallTemplate,
+} from '@/config/firewallTemplates';
 
-import FirewallRulesList from '@/components/security/firewall/FirewallRulesList';
-import FirewallStatusHeader from '@/components/security/firewall/FirewallStatusHeader';
-import FirewallTemplateSelector from '@/components/security/firewall/FirewallTemplateSelector';
 import CreateFirewallRuleDialog from './CreateFirewallRuleDialog';
 import NoFirewallRulesWarning from '@/components/security/NoFirewallRulesWarning';
 
 const debug = createDebugger('frontend:components:vm-security-tab');
 
-/**
- * VMSecurityTab - VM-level firewall management
- * Redesigned to match department tab look and feel EXACTLY
- * Shows all rules (inherited + custom) in a simple list like department
- */
-const VMSecurityTab = ({ vmId, vmStatus, vmOs, departmentId }) => {
+/** Shape each rule into the uniform row structure the table consumes. */
+const shapeRules = (vmRules, departmentRules) => {
+  const rows = [];
+  (departmentRules || []).forEach((r, i) => {
+    rows.push({
+      id: `dept-${r.id || i}`,
+      source: 'department',
+      name: r.name,
+      direction: r.direction,
+      protocol: r.protocol,
+      port: r.dstPortStart
+        ? r.dstPortEnd && r.dstPortEnd !== r.dstPortStart
+          ? `${r.dstPortStart}–${r.dstPortEnd}`
+          : String(r.dstPortStart)
+        : '—',
+      action: r.action,
+      priority: r.priority ?? 500,
+    });
+  });
+  (vmRules || []).forEach((r, i) => {
+    rows.push({
+      id: `vm-${r.id || i}`,
+      source: 'custom',
+      name: r.name,
+      direction: r.direction,
+      protocol: r.protocol,
+      port: r.dstPortStart
+        ? r.dstPortEnd && r.dstPortEnd !== r.dstPortStart
+          ? `${r.dstPortStart}–${r.dstPortEnd}`
+          : String(r.dstPortStart)
+        : '—',
+      action: r.action,
+      priority: r.priority ?? 500,
+    });
+  });
+  return rows;
+};
+
+const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
+  const [applyingId, setApplyingId] = useState(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const {
@@ -33,11 +82,11 @@ const VMSecurityTab = ({ vmId, vmStatus, vmOs, departmentId }) => {
     loading,
     error,
     createRule,
-    refetch
+    refetch,
   } = useFirewallData({
     entityType: ENTITY_TYPES.VM,
     entityId: vmId,
-    departmentId
+    departmentId,
   });
 
   const handleRefresh = async () => {
@@ -45,31 +94,17 @@ const VMSecurityTab = ({ vmId, vmStatus, vmOs, departmentId }) => {
     await refetch();
   };
 
-  const handleCreateRule = () => {
-    debug.log('Opening create rule dialog for VM');
-    setIsCreateDialogOpen(true);
-  };
+  const handleCreateRule = () => setIsCreateDialogOpen(true);
+  const handleRuleCreated = () => setIsCreateDialogOpen(false);
 
-  const handleRuleCreated = () => {
-    debug.success('VM rule created, closing dialog');
-    setIsCreateDialogOpen(false);
-    // Real-time events will automatically update the UI via Redux
-  };
-
-  const handleApplyDesktopSecure = async () => {
-    debug.log('Applying Desktop Secure template to VM from warning');
+  const applyTemplate = async (templateId) => {
+    setApplyingId(templateId);
     setIsApplyingTemplate(true);
-
     try {
-      const template = getFirewallTemplate('desktop-secure');
-      if (!template) {
-        throw new Error('Desktop Secure template not found');
-      }
+      const template = getFirewallTemplate(templateId);
+      if (!template) throw new Error(`Template ${templateId} not found`);
 
       const rules = expandTemplateToRules(template);
-      debug.log(`Applying ${rules.length} rules from Desktop Secure template to VM`);
-
-      // Create each rule from the template
       for (const rule of rules) {
         await createRule({
           variables: {
@@ -89,139 +124,241 @@ const VMSecurityTab = ({ vmId, vmStatus, vmOs, departmentId }) => {
               srcIpAddr: rule.srcIpAddr || null,
               srcIpMask: rule.srcIpMask || null,
               srcPortEnd: rule.srcPortEnd || null,
-              srcPortStart: rule.srcPortStart || null
-            }
-          }
+              srcPortStart: rule.srcPortStart || null,
+            },
+          },
         });
       }
-
-      toast.success(`Desktop Secure template applied to VM (${rules.length} rules created)`);
-      debug.success('Desktop Secure template applied to VM');
-      // Real-time events will automatically update the UI via Redux
-    } catch (error) {
-      debug.error('Failed to apply Desktop Secure template to VM:', error);
-      toast.error(`Failed to apply template: ${error.message}`);
+      toast.success(`${template.displayName} applied (${rules.length} rules)`);
+    } catch (err) {
+      debug.error('Failed to apply template:', err);
+      toast.error(`Failed to apply template: ${err.message}`);
     } finally {
       setIsApplyingTemplate(false);
+      setApplyingId(null);
     }
   };
 
-  // Loading state
-  if (loading) {
-    return <VMSecurityTabSkeleton />;
-  };
+  const rows = useMemo(() => shapeRules(vmRules, departmentRules), [vmRules, departmentRules]);
 
-  // Error state
-  if (error) {
+  const columns = useMemo(
+    () => [
+      {
+        key: 'name',
+        label: 'Rule',
+        sortable: true,
+        render: (row) => (
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                row.action === 'ACCEPT' ? 'bg-success' : 'bg-danger'
+              }`}
+            />
+            <span className="truncate text-fg">{row.name || '—'}</span>
+          </div>
+        ),
+      },
+      {
+        key: 'direction',
+        label: 'Dir',
+        width: 72,
+        sortable: true,
+        render: (row) => (
+          <span className="font-mono text-xs text-fg-muted uppercase">{row.direction}</span>
+        ),
+      },
+      {
+        key: 'protocol',
+        label: 'Proto',
+        width: 72,
+        sortable: true,
+        render: (row) => (
+          <span className="font-mono text-xs text-fg-muted uppercase">{row.protocol}</span>
+        ),
+      },
+      {
+        key: 'port',
+        label: 'Port',
+        width: 100,
+        sortable: true,
+        render: (row) => (
+          <span className="font-mono text-xs text-fg">{row.port}</span>
+        ),
+      },
+      {
+        key: 'action',
+        label: 'Action',
+        width: 110,
+        sortable: true,
+        render: (row) =>
+          row.action === 'ACCEPT' ? (
+            <Badge tone="success">Allow</Badge>
+          ) : (
+            <Badge tone="danger">Block</Badge>
+          ),
+      },
+      {
+        key: 'source',
+        label: 'Scope',
+        width: 110,
+        sortable: true,
+        render: (row) =>
+          row.source === 'department' ? (
+            <Badge tone="info">Inherited</Badge>
+          ) : (
+            <Badge tone="purple">Custom</Badge>
+          ),
+      },
+      {
+        key: 'priority',
+        label: 'Priority',
+        width: 80,
+        sortable: true,
+        align: 'right',
+        render: (row) => (
+          <span className="font-mono text-xs tabular-nums text-fg-muted">{row.priority}</span>
+        ),
+      },
+    ],
+    []
+  );
+
+  if (loading) {
     return (
-      <div className="glass-minimal p-6 rounded-lg text-center">
-        <p className="text-red-600 mb-4">Failed to load VM firewall configuration</p>
-        <button
-          onClick={handleRefresh}
-          className="size-button bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md"
-        >
-          Retry
-        </button>
+      <div className="space-y-6">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-56 w-full" />
       </div>
     );
   }
 
-  // Check if there are NO rules at all (neither department nor VM rules)
+  if (error) {
+    return (
+      <Alert
+        tone="danger"
+        title="Failed to load firewall configuration"
+        actions={
+          <Button
+            size="sm"
+            onClick={handleRefresh}
+            icon={<RefreshCw className="h-4 w-4" />}
+          >
+            Retry
+          </Button>
+        }
+      >
+        We couldn&apos;t load the firewall rules for this VM. The network may be
+        unstable or the backend service is unreachable.
+      </Alert>
+    );
+  }
+
   const hasNoRules = effectiveRules.length === 0;
 
   return (
     <div className="space-y-6">
-      {/* Warning when no rules are configured */}
       {hasNoRules && (
         <NoFirewallRulesWarning
           isApplying={isApplyingTemplate}
           isForDepartment={false}
-          onApplyTemplate={handleApplyDesktopSecure}
+          onApplyTemplate={() => applyTemplate('desktop-secure')}
         />
       )}
 
-      {/* Info Banner - IGUAL que department */}
       {departmentRules.length > 0 && (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
-          <Info className="size-icon text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-blue-700 dark:text-blue-300">
-            <p className="font-medium mb-1">VM Firewall Rules</p>
-            <p>
-              This VM inherits {departmentRules.length} rule{departmentRules.length !== 1 ? 's' : ''} from its department.
-              You can add VM-specific rules or override department rules if needed.
-            </p>
-          </div>
-        </div>
+        <Alert tone="info" title="Department rules apply to this VM">
+          This VM inherits {departmentRules.length} rule{departmentRules.length !== 1 ? 's' : ''} from its department.
+          You can add VM-specific rules or override department rules if needed.
+        </Alert>
       )}
 
-      {/* Status Header - IGUAL formato que department */}
-      <FirewallStatusHeader
-        entityType={ENTITY_TYPES.VM}
-        rules={effectiveRules}
-        conflicts={[]}
-        onRefresh={handleRefresh}
-        onCreateRule={handleCreateRule}
-      />
+      {/* Posture summary — 3 stats. */}
+      <div className="grid grid-cols-3 gap-4">
+        <Stat
+          label="Inherited"
+          value={departmentRules.length}
+          icon={<Shield className="h-3.5 w-3.5" />}
+        />
+        <Stat
+          label="Custom"
+          value={vmRules.length}
+          icon={<Shield className="h-3.5 w-3.5" />}
+        />
+        <Stat
+          label="Effective"
+          value={effectiveRules.length}
+          icon={<Shield className="h-3.5 w-3.5" />}
+        />
+      </div>
 
-      {/* Templates Section - IGUAL que department */}
-      <section className="glass-medium p-6 rounded-lg" data-templates-section>
-        <h3 className="size-heading mb-4 flex items-center gap-2">
-          <Zap className="size-icon" />
-          Quick Security Profiles
+      {/* Quick profiles — harbor chip row instead of FirewallTemplateSelector. */}
+      <Card variant="glass" className="p-6">
+        <h3 className="flex items-center gap-2 mb-3 text-sm font-semibold text-fg">
+          <Zap className="h-4 w-4 text-warning" />
+          Quick security profiles
         </h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Apply pre-configured security templates to set baseline protection for this VM.
+        <p className="text-xs text-fg-muted mb-4">
+          Apply a pre-configured rule set. Rules from the profile are added on
+          top of anything already in place — nothing is removed automatically.
         </p>
-        <FirewallTemplateSelector
-          entityType={ENTITY_TYPES.VM}
-          entityId={vmId}
-          existingRules={vmRules}
-        />
-      </section>
+        <div className="flex flex-wrap gap-2">
+          {FIREWALL_TEMPLATES.map((tpl) => (
+            <Button
+              key={tpl.id}
+              size="sm"
+              variant="secondary"
+              loading={applyingId === tpl.id}
+              disabled={isApplyingTemplate}
+              onClick={() => applyTemplate(tpl.id)}
+            >
+              {tpl.displayName}
+            </Button>
+          ))}
+        </div>
+      </Card>
 
-      {/* Rules List - IGUAL header que department */}
-      <section className="glass-medium p-6 rounded-lg">
-        <div className="flex items-center justify-between mb-4">
+      {/* Rules table */}
+      <Card variant="default" className="p-0 overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-white/8">
           <div>
-            <h3 className="size-heading flex items-center gap-2">
-              <Shield className="size-icon" />
-              Firewall Rules
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+              <Shield className="h-4 w-4 text-accent-2" />
+              Firewall rules
             </h3>
-            <p className="text-sm text-muted-foreground">
-              {departmentRules.length} inherited • {vmRules.length} custom • {effectiveRules.length} total effective
+            <p className="text-xs text-fg-muted">
+              {departmentRules.length} inherited · {vmRules.length} custom · {effectiveRules.length} effective
             </p>
           </div>
-          <button
+          <Button
+            size="sm"
             onClick={handleCreateRule}
-            className="size-button bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md"
+            icon={<Plus className="h-4 w-4" />}
           >
-            + Add Rule
-          </button>
+            Add Rule
+          </Button>
         </div>
+        <div className="p-2">
+          <DataTable
+            rows={rows}
+            columns={columns}
+            rowKey={(r) => r.id}
+            emptyState={
+              <div className="py-10 text-center text-sm text-fg-muted">
+                No firewall rules configured for this VM yet.
+              </div>
+            }
+          />
+        </div>
+      </Card>
 
-        <FirewallRulesList
-          entityType={ENTITY_TYPES.VM}
-          entityId={vmId}
-          rules={vmRules}
-          departmentRules={departmentRules}
-        />
-      </section>
-
-      {/* Warning about custom rules - IGUAL formato que department */}
       {vmRules.length > 0 && (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
-          <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-orange-700 dark:text-orange-300">
-            <p className="font-medium mb-1">Custom VM Rules</p>
-            <p>
-              This VM has {vmRules.length} custom rule{vmRules.length !== 1 ? 's' : ''} configured.
-              These rules are applied on top of the department rules and can override them if needed.
-            </p>
-          </div>
-        </div>
+        <Alert tone="warning" title="Custom VM rules are active">
+          This VM has {vmRules.length} custom rule{vmRules.length !== 1 ? 's' : ''} configured.
+          They are applied alongside department rules and can override them when needed.
+        </Alert>
       )}
 
-      {/* Create Rule Dialog */}
       <CreateFirewallRuleDialog
         vmId={vmId}
         vmOs={vmOs}
@@ -230,18 +367,6 @@ const VMSecurityTab = ({ vmId, vmStatus, vmOs, departmentId }) => {
         onSuccess={handleRuleCreated}
         existingRules={effectiveRules}
       />
-    </div>
-  );
-};
-
-// Loading skeleton
-const VMSecurityTabSkeleton = () => {
-  return (
-    <div className="space-y-6">
-      <Skeleton className="h-24 w-full" />
-      <Skeleton className="h-24 w-full" />
-      <Skeleton className="h-48 w-full" />
-      <Skeleton className="h-32 w-full" />
     </div>
   );
 };
