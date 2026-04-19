@@ -66,7 +66,6 @@ const Badge = React.forwardRef(({
         badgeVariants({ variant: effectiveVariant, size: effectiveSize }),
         glass && animation,
         glass && reducedTransparency,
-        size && getSizeClassName(size),
         className
       )}
       {...props}

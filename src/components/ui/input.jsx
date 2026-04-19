@@ -26,7 +26,6 @@ const Input = React.forwardRef(({
   floatingLabel = false,
   ...props
 }, ref) => {
-  const size = propSize || 'md';
   const theme = useSafeResolvedTheme();
 
   const [value, setValue] = React.useState(props.value || props.defaultValue || "");
@@ -80,7 +79,6 @@ const Input = React.forwardRef(({
         "size-input-height",
         floatingLabel ? "size-input-padding-floating" : "size-input-padding",
         "size-input-text",
-        propSize && getSizeClassName(propSize),
         className
       )}
       placeholder={floatingLabel ? (isFloated ? placeholder : "") : placeholder}

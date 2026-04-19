@@ -20,39 +20,22 @@ import { Spinner } from "@/components/ui/spinner"
 // Internal lightweight context for communication between sub-components
 const SelectInternalContext = React.createContext(null)
 
-// Shared utility for scroll button size mappings to eliminate duplication
-const getScrollButtonSizeClasses = (effectiveSize) => {
-  const variant = sizeVariants[effectiveSize] || sizeVariants.md
-
-  return {
-    button: cn(
-      // Base styling with enhanced positioning
-      "flex cursor-pointer items-center justify-center",
-      "relative group transition-all duration-200 ease-bounce",
-
-      // Brand color theming
-      "text-foreground/70 hover:text-brand-dark-blue",
-      "hover:bg-brand-celeste/10 active:bg-brand-celeste/20",
-
-      // Enhanced interactivity
-      "hover:shadow-glow-brand-celeste/20 hover:scale-110",
-      "focus:outline-none focus:ring-2 focus:ring-brand-dark-blue/30",
-      "focus:bg-brand-dark-blue/5",
-
-      // Disabled state handling
-      "disabled:cursor-not-allowed disabled:opacity-50",
-      "disabled:hover:text-foreground/70 disabled:hover:bg-transparent",
-
-      // Size System integration using sizeVariants
-      variant.spacing.item,
-
-      // Performance optimizations
-      "will-change-transform",
-      FORM_ANIMATION_CLASSES.base
-    ),
-    icon: variant.icon.size
-  }
-}
+const getScrollButtonSizeClasses = () => ({
+  button: cn(
+    "flex cursor-pointer items-center justify-center",
+    "relative group transition-all duration-200 ease-bounce",
+    "text-foreground/70 hover:text-brand-dark-blue",
+    "hover:bg-brand-celeste/10 active:bg-brand-celeste/20",
+    "hover:shadow-glow-brand-celeste/20 hover:scale-110",
+    "focus:outline-none focus:ring-2 focus:ring-brand-dark-blue/30",
+    "focus:bg-brand-dark-blue/5",
+    "disabled:cursor-not-allowed disabled:opacity-50",
+    "disabled:hover:text-foreground/70 disabled:hover:bg-transparent",
+    "px-2 py-1.5 will-change-transform",
+    FORM_ANIMATION_CLASSES.base
+  ),
+  icon: "h-4 w-4",
+})
 
 // Internal hook for managing value and open state
 const useSelectState = ({ value, onValueChange, open, onOpenChange }) => {
@@ -1425,39 +1408,20 @@ SelectContent.displayName = SelectPrimitive.Content.displayName
  * <SelectLabel className="text-brand-dark-blue">Custom styled label</SelectLabel>
  * ```
  */
-const SelectLabel = React.forwardRef(({ className, size, ...props }, ref) => {
-  const effectiveSize = size || 'md'
-
-  // Memoized classes for performance optimization
-  const labelClasses = React.useMemo(() => {
-    // Size System classes for consistent scaling using sizeVariants
-    const variant = sizeVariants[effectiveSize] || sizeVariants.md
-    const sizeClasses = {
-      sm: `${variant.typography.small} ${variant.spacing.item}`,
-      md: `${variant.typography.text} ${variant.spacing.item}`,
-      lg: `${variant.typography.text} ${variant.spacing.item}`
-    }
-
-    return cn(
-      // Enhanced typography with brand color integration
-      "font-semibold tracking-wide text-brand-dark-blue",
-
-      // Subtle visual enhancements
-      "border-l-2 border-brand-celeste/20 rounded-r-md",
-      "bg-gradient-to-r from-brand-celeste/5 to-transparent",
-
-      // Size System integration using sizeVariants
-      sizeClasses[effectiveSize],
-
-      // Smooth transitions
-      FORM_ANIMATION_CLASSES.base,
-
-      // Performance optimizations
-      optimizeFormGlassPerformance(),
-
-      className
-    )
-  }, [effectiveSize, className])
+const SelectLabel = React.forwardRef(({ className, ...props }, ref) => {
+  const labelClasses = React.useMemo(
+    () =>
+      cn(
+        "font-semibold tracking-wide text-brand-dark-blue",
+        "border-l-2 border-brand-celeste/20 rounded-r-md",
+        "bg-gradient-to-r from-brand-celeste/5 to-transparent",
+        "text-sm px-2 py-1.5",
+        FORM_ANIMATION_CLASSES.base,
+        optimizeFormGlassPerformance(),
+        className
+      ),
+    [className]
+  )
 
   return (
     <SelectPrimitive.Label
