@@ -74,7 +74,7 @@ function toHarborStatus(state) {
     case 'building':
       return 'provisioning';
     case 'stopping':
-      return 'draining';
+      return 'maintenance';
     case 'stopped':
     case 'shutoff':
     case 'powered_off':
@@ -197,7 +197,7 @@ const VMDetailPage = () => {
 
   const status = toHarborStatus(vm.status);
   const isRunning = status === 'online';
-  const isBusy = status === 'provisioning' || status === 'draining';
+  const isBusy = status === 'provisioning' || status === 'maintenance';
 
   return (
     <ToastProvider>
