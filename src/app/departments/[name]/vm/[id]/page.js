@@ -239,7 +239,7 @@ const VMDetailPage = () => {
                   variant="destructive"
                   size="sm"
                   icon={<PowerOff className="h-4 w-4" />}
-                  onClick={() => handlePowerAction('off')}
+                  onClick={() => handlePowerAction('stop')}
                   loading={isBusy}
                   disabled={isBusy}
                 >
@@ -249,7 +249,7 @@ const VMDetailPage = () => {
                 <Button
                   size="sm"
                   icon={<Power className="h-4 w-4" />}
-                  onClick={() => handlePowerAction('on')}
+                  onClick={() => handlePowerAction('start')}
                   loading={isBusy}
                   disabled={isBusy}
                 >
