@@ -1,5 +1,6 @@
 import React from "react";
-import { TabList, Tab, Button } from "@infinibay/harbor";
+import { TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from '@/components/ui/button';
 import { RefreshCw, Lightbulb, Shield, FileCode } from 'lucide-react';
 import { createDebugger } from '@/utils/debug';
 
@@ -7,7 +8,7 @@ const debug = createDebugger('frontend:components:vm-tab-controls');
 
 /**
  * Tab controls component for the VM detail page
- * Note: Tab state is managed by parent Tabs component from Harbor
+ * Note: Tab state is managed by parent Tabs component from Radix UI
  */
 const VMTabControls = ({
   onRefresh
@@ -20,24 +21,37 @@ const VMTabControls = ({
   return (
     <div className="flex items-center justify-between my-6 py-2">
       <div className="flex items-center size-gap">
-        <TabList>
-          <Tab value="recommendations" icon={<Lightbulb className="size-icon" />}>
+        <TabsList className="glass-subtle">
+          <TabsTrigger
+            value="recommendations"
+            className="flex items-center size-gap size-text"
+          >
+            <Lightbulb className="size-icon" />
             Recommendations
-          </Tab>
-          <Tab value="firewall" icon={<Shield className="size-icon" />}>
+          </TabsTrigger>
+          <TabsTrigger
+            value="firewall"
+            className="flex items-center size-gap size-text"
+          >
+            <Shield className="size-icon" />
             Security
-          </Tab>
-          <Tab value="scripts" icon={<FileCode className="size-icon" />}>
+          </TabsTrigger>
+          <TabsTrigger
+            value="scripts"
+            className="flex items-center size-gap size-text"
+          >
+            <FileCode className="size-icon" />
             Scripts
-          </Tab>
-        </TabList>
+          </TabsTrigger>
+        </TabsList>
 
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
-          icon={<RefreshCw className="size-icon" />}
+          className="size-button"
           onClick={handleRefresh}
         >
+          <RefreshCw className="size-icon mr-2" />
           Refresh
         </Button>
       </div>

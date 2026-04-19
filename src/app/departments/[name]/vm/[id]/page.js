@@ -6,7 +6,7 @@ import {
   ToastProvider,
   ToastViewport,
 } from "@/components/ui/toast";
-import { Tabs, TabPanel } from "@infinibay/harbor";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import dynamic from 'next/dynamic';
 import { createDebugger } from '@/utils/debug';
 import { Server, Power, Cpu, Shield, Terminal } from 'lucide-react';
@@ -220,26 +220,26 @@ const VMDetailPage = () => {
               onRefresh={refreshVM}
             />
 
-            <TabPanel value="recommendations" className="mt-2">
+            <TabsContent value="recommendations" className="mt-2">
               <VMRecommendationsTab vmId={vmId} vm={vm} />
-            </TabPanel>
+            </TabsContent>
 
-            <TabPanel value="firewall" className="mt-2">
+            <TabsContent value="firewall" className="mt-2">
               <VMSecurityTab
                 vmId={vmId}
                 vmStatus={vm?.status}
                 vmOs={vm?.configuration?.os}
                 departmentId={vm?.department?.id}
               />
-            </TabPanel>
+            </TabsContent>
 
-            <TabPanel value="scripts" className="mt-2">
+            <TabsContent value="scripts" className="mt-2">
               <VMScriptsTab
                 vmId={vmId}
                 vmStatus={vm?.status}
                 departmentId={vm?.department?.id}
               />
-            </TabPanel>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
