@@ -3,11 +3,10 @@
 import React, { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { Montserrat } from "next/font/google"
-import { NextUIProvider } from "@nextui-org/react"
 import { ApolloProvider } from "@apollo/client"
 import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
-import { useSelector, useDispatch } from "react-redux"
+import { useSelector } from "react-redux"
 import "../styles/globals.css"
 // Harbor UI library — full CSS (tokens + effect utilities:
 // .spotlight, .glow-border, .mesh-bg, .glass, etc.). Must load after
@@ -48,7 +47,6 @@ const monst = Montserrat({
  * Handles theme, sizing, real-time updates, and layout state
  */
 function AppContent({ children, isAuthenticated }) {
-  const dispatch = useDispatch();
   const pathname = usePathname();
   const user = useSelector((state) => state.auth.user);
   const interfaceSize = useSelector(selectInterfaceSize);
@@ -165,22 +163,20 @@ export default function RootLayout({ children }) {
                     <HelpProvider>
                       <HeaderActionProvider>
                         <ApolloProvider client={client}>
-                          <NextUIProvider className="w-full">
-                            <CursorProvider>
-                              <HarborToastProvider>
-                                <InitialDataLoader className="w-full">
-                                  <SocketNamespaceGuard className="w-full">
-                                    <RealTimeProvider className="w-full">
-                                      <AppContent isAuthenticated={isAuthenticated}>
-                                        {children}
-                                      </AppContent>
-                                    </RealTimeProvider>
-                                  </SocketNamespaceGuard>
-                                </InitialDataLoader>
-                                <Toaster />
-                              </HarborToastProvider>
-                            </CursorProvider>
-                          </NextUIProvider>
+                          <CursorProvider>
+                            <HarborToastProvider>
+                              <InitialDataLoader className="w-full">
+                                <SocketNamespaceGuard className="w-full">
+                                  <RealTimeProvider className="w-full">
+                                    <AppContent isAuthenticated={isAuthenticated}>
+                                      {children}
+                                    </AppContent>
+                                  </RealTimeProvider>
+                                </SocketNamespaceGuard>
+                              </InitialDataLoader>
+                              <Toaster />
+                            </HarborToastProvider>
+                          </CursorProvider>
                         </ApolloProvider>
                       </HeaderActionProvider>
                     </HelpProvider>

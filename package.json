@@ -30,7 +30,6 @@
     "@hookform/resolvers": "^3.9.1",
     "@infinibay/harbor": "file:../harbor",
     "@monaco-editor/react": "^4.6.0",
-    "@nextui-org/react": "^2.2.9",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-checkbox": "^1.1.2",
