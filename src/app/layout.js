@@ -9,9 +9,11 @@ import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
 import { useSelector, useDispatch } from "react-redux"
 import "../styles/globals.css"
-// Harbor UI library — design tokens must load after Tailwind base so
-// utilities like bg-surface, text-fg, bg-accent-2 resolve to harbor vars.
-import "@infinibay/harbor/tokens.css"
+// Harbor UI library — full CSS (tokens + effect utilities:
+// .spotlight, .glow-border, .mesh-bg, .glass, etc.). Must load after
+// Tailwind base so `bg-surface`, `text-fg`, `bg-accent-2` resolve to
+// harbor vars and Harbor components' cursor-reactive effects render.
+import "@infinibay/harbor/index.css"
 import client from "../apollo-client"
 import { store, persistor } from "../state/store"
 import { createDebugger } from "@/utils/debug"

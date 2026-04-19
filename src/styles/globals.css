@@ -5,31 +5,14 @@
 /**
  * Harbor-native global stylesheet.
  *
- * No brand-*, web_*, size-*, glass-* or wallpaper legacy left. A tiny
- * shim at the bottom maps the shadcn semantic variable names
- * (--background / --foreground / --card / --primary / …) onto Harbor
- * tokens so any surviving shadcn component renders in the dark
- * Harbor palette while it awaits being redesigned out of existence.
+ * Body styles + effect utilities (.spotlight, .glow-border, .glass,
+ * .mesh-bg, .shimmer, .breathe …) come from Harbor's own
+ * `@infinibay/harbor/index.css`, imported from layout.js. This file
+ * only owns the shadcn semantic-var shim so any still-unmigrated
+ * shadcn component lands on Harbor's dark palette.
  */
 
 @layer base {
-  :root,
-  .dark {
-    color-scheme: dark;
-  }
-
-  html, body {
-    background: rgb(var(--harbor-bg));
-    color: rgb(var(--harbor-text));
-    font-family: var(--harbor-font-sans);
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-  }
-
-  body {
-    position: relative;
-    overflow-x: hidden;
-  }
 
   /* ────────────────────────────────────────────────────────────── */
   /* Shadcn compatibility shim — remaps every semantic variable the
