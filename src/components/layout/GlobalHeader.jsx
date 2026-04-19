@@ -64,7 +64,11 @@ function harborVariant(v) {
 
 export function GlobalHeader() {
   const breadcrumbs = useSelector(selectHeaderBreadcrumbs);
-  const title = useSelector(selectHeaderTitle);
+  // Title is intentionally read but never rendered in the header —
+  // pages own their own hero <h1>. The selector stays wired so
+  // existing usePageHeader calls don't break.
+  // eslint-disable-next-line no-unused-vars
+  const _title = useSelector(selectHeaderTitle);
   const subtitle = useSelector(selectHeaderSubtitle);
   const actions = useSelector(selectHeaderActions);
   const helpTooltip = useSelector(selectHeaderHelpTooltip);
@@ -77,7 +81,7 @@ export function GlobalHeader() {
   const [helpSheetOpen, setHelpSheetOpen] = useState(false);
 
   // No header config? Render nothing.
-  if (!breadcrumbs.length && !title && !actions.length && !helpConfig && !backButton) {
+  if (!breadcrumbs.length && !actions.length && !helpConfig && !backButton) {
     return null;
   }
 
@@ -100,7 +104,7 @@ export function GlobalHeader() {
             </Link>
           ) : null}
 
-          <div className="min-w-0 flex flex-col gap-0.5">
+          <div className="min-w-0 flex items-center gap-3">
             {breadcrumbs.length > 0 ? (
               <Breadcrumbs
                 items={breadcrumbs.map((c) => ({
@@ -109,15 +113,10 @@ export function GlobalHeader() {
                 }))}
               />
             ) : null}
-            {title ? (
-              <div className="flex items-baseline gap-3 min-w-0">
-                <h1 className="text-lg font-semibold text-fg truncate">{title}</h1>
-                {subtitle ? (
-                  <span className={subtitle.className || "text-xs text-fg-muted truncate"}>
-                    {subtitle.text}
-                  </span>
-                ) : null}
-              </div>
+            {subtitle ? (
+              <span className={subtitle.className || "text-xs text-fg-muted truncate"}>
+                {subtitle.text}
+              </span>
             ) : null}
           </div>
         </div>
