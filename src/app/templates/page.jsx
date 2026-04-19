@@ -2,497 +2,567 @@
 
 import React, { useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { Button } from '@/components/ui/button';
-import { FaPlus, FaPencilAlt, FaTrash } from 'react-icons/fa';
+import { toast } from 'sonner';
+import {
+  Layers,
+  FolderTree,
+  Copy,
+  Settings,
+  Plus,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  Cpu,
+  MemoryStick,
+  HardDrive,
+  AlertCircle,
+} from 'lucide-react';
+import {
+  Card,
+  Button,
+  ButtonGroup,
+  Badge,
+  Alert,
+  EmptyState,
+  Spinner,
+  Dialog,
+  Stat,
+} from '@infinibay/harbor';
+
 import { CreateTemplateDialog } from './components/create-template-dialog';
 import { CreateCategoryDialog } from './components/create-category-dialog';
 import { EditTemplateDialog } from './components/edit-template-dialog';
 import { EditCategoryDialog } from './components/edit-category-dialog';
-import { TemplateCard } from './components/template-card';
-import { SimpleIllustration } from '@/components/ui/undraw-illustration';
-import { destroyTemplate, fetchTemplates } from '@/state/slices/templates';
-import { destroyTemplateCategory, fetchTemplateCategories } from '@/state/slices/templateCategories';
-import { useToast } from '@/hooks/use-toast';
-import { Layers, FolderTree, Copy, Settings, AlertCircle } from 'lucide-react';
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
+  destroyTemplate,
+  fetchTemplates,
+} from '@/state/slices/templates';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  destroyTemplateCategory,
+  fetchTemplateCategories,
+} from '@/state/slices/templateCategories';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { createDebugger } from '@/utils/debug';
 
 const debug = createDebugger('frontend:pages:templates');
 
+/** Harbor-native tile for a single template (no context-menu dep). */
+function TemplateTile({ template, onEdit, onDelete }) {
+  const inUse = (template.totalMachines || 0) > 0;
+  return (
+    <Card
+      variant="default"
+      interactive
+      className="flex flex-col gap-3 !p-4 relative group"
+    >
+      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          type="button"
+          onClick={onEdit}
+          className="p-1.5 rounded-md bg-surface-2 text-fg-muted hover:text-fg hover:bg-white/10"
+          aria-label="Edit template"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => !inUse && onDelete?.(template)}
+          disabled={inUse}
+          className={
+            inUse
+              ? 'p-1.5 rounded-md bg-surface-2 text-fg-subtle cursor-not-allowed opacity-50'
+              : 'p-1.5 rounded-md bg-surface-2 text-fg-muted hover:text-danger hover:bg-danger/10'
+          }
+          title={
+            inUse
+              ? `In use by ${template.totalMachines} machine${template.totalMachines !== 1 ? 's' : ''}`
+              : 'Delete template'
+          }
+          aria-label="Delete template"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div>
+        <h3 className="font-semibold text-fg truncate">{template.name}</h3>
+        {template.description ? (
+          <p className="text-xs text-fg-muted line-clamp-2 mt-1">
+            {template.description}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mt-auto">
+        <div className="flex items-center gap-1.5 text-xs text-fg-muted">
+          <Cpu className="h-3.5 w-3.5" />
+          <span className="font-mono tabular-nums">{template.cores}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-fg-muted">
+          <MemoryStick className="h-3.5 w-3.5" />
+          <span className="font-mono tabular-nums">{template.ram}</span>
+          <span className="text-fg-subtle">GB</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-fg-muted">
+          <HardDrive className="h-3.5 w-3.5" />
+          <span className="font-mono tabular-nums">{template.storage}</span>
+          <span className="text-fg-subtle">GB</span>
+        </div>
+      </div>
+
+      {inUse ? (
+        <Badge tone="info" className="self-start">
+          {template.totalMachines} in use
+        </Badge>
+      ) : null}
+    </Card>
+  );
+}
+
 export default function TemplatesPage() {
   const dispatch = useDispatch();
-  const { toast } = useToast();
 
-  // State for delete confirmation dialogs
-  const [deleteTemplateDialog, setDeleteTemplateDialog] = useState({ isOpen: false, template: null });
-  const [deleteCategoryDialog, setDeleteCategoryDialog] = useState({ isOpen: false, category: null });
+  const [deleteTemplateTarget, setDeleteTemplateTarget] = useState(null);
+  const [deleteCategoryTarget, setDeleteCategoryTarget] = useState(null);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
   const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
-  // Use optimized data loading for templates and categories
   const {
     data: templates,
     isLoading: templatesLoading,
     error: templatesError,
-    refresh: refreshTemplates
+    refresh: refreshTemplates,
   } = useEnsureData('templates', fetchTemplates, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
-    ttl: 5 * 60 * 1000, // 5 minutes
-    transform: (data) => data.items || data || []
+    ttl: 5 * 60 * 1000,
+    transform: (data) => data.items || data || [],
   });
 
   const {
     data: categories,
     isLoading: categoriesLoading,
     error: categoriesError,
-    refresh: refreshCategories
+    refresh: refreshCategories,
   } = useEnsureData('templateCategories', fetchTemplateCategories, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
-    ttl: 10 * 60 * 1000, // 10 minutes
-    transform: (data) => data.items || data || []
+    ttl: 10 * 60 * 1000,
+    transform: (data) => data.items || data || [],
   });
 
-  debug.info('Templates page state:', {
-    templatesCount: templates?.length || 0,
-    categoriesCount: categories?.length || 0,
-    templatesLoading,
-    categoriesLoading,
-    hasErrors: !!(templatesError || categoriesError)
-  });
+  const loading = templatesLoading || categoriesLoading;
+  const error = templatesError || categoriesError;
 
-  const handleDeleteTemplate = async (templateId) => {
-    debug.info('Deleting template:', templateId);
+  const handleRefresh = () => {
+    refreshTemplates();
+    refreshCategories();
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!deleteTemplateTarget) return;
     setIsDeletingTemplate(true);
     try {
-      await dispatch(destroyTemplate(templateId)).unwrap();
-      toast({
-        variant: "success",
-        title: "Success",
-        description: "Template deleted successfully"
-      });
-      // Refresh templates to get updated list
+      await dispatch(destroyTemplate(deleteTemplateTarget.id)).unwrap();
+      toast.success('Template deleted');
       refreshTemplates();
-      setDeleteTemplateDialog({ isOpen: false, template: null });
-      debug.info('Template deleted successfully:', templateId);
-    } catch (error) {
-      debug.error('Failed to delete template:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: `Failed to delete template: ${error.message}`
-      });
+      setDeleteTemplateTarget(null);
+    } catch (err) {
+      debug.error('delete template', err);
+      toast.error(`Could not delete template: ${err.message}`);
     } finally {
       setIsDeletingTemplate(false);
     }
   };
 
-  const handleDeleteCategory = async (categoryId) => {
-    debug.info('Deleting category:', categoryId);
+  const handleDeleteCategory = async () => {
+    if (!deleteCategoryTarget) return;
     setIsDeletingCategory(true);
     try {
-      await dispatch(destroyTemplateCategory(categoryId)).unwrap();
-      toast({
-        variant: "success",
-        title: "Success",
-        description: "Category deleted successfully"
-      });
-      // Refresh categories to get updated list
+      await dispatch(destroyTemplateCategory(deleteCategoryTarget.id)).unwrap();
+      toast.success('Category deleted');
       refreshCategories();
-      setDeleteCategoryDialog({ isOpen: false, category: null });
-      debug.info('Category deleted successfully:', categoryId);
-    } catch (error) {
-      debug.error('Failed to delete category:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: `Failed to delete category: ${error.message}`
-      });
+      setDeleteCategoryTarget(null);
+    } catch (err) {
+      debug.error('delete category', err);
+      toast.error(`Could not delete category: ${err.message}`);
     } finally {
       setIsDeletingCategory(false);
     }
   };
 
-  const templatesByCategory = (templates || []).reduce((acc, template) => {
-    const categoryId = template.categoryId;
-    if (!acc[categoryId]) {
-      acc[categoryId] = [];
-    }
-    acc[categoryId].push(template);
-    return acc;
-  }, {});
+  const templatesByCategory = useMemo(() => {
+    const map = {};
+    (templates || []).forEach((t) => {
+      const cid = t.categoryId;
+      if (!map[cid]) map[cid] = [];
+      map[cid].push(t);
+    });
+    return map;
+  }, [templates]);
 
-  const handleRefresh = () => {
-    debug.info('Refreshing templates and categories data...');
-    refreshTemplates();
-    refreshCategories();
-  };
+  const stats = useMemo(
+    () => ({
+      categories: categories?.length || 0,
+      templates: templates?.length || 0,
+      inUse: (templates || []).filter((t) => (t.totalMachines || 0) > 0).length,
+    }),
+    [templates, categories]
+  );
 
-  // Help configuration
-  const helpConfig = useMemo(() => ({
-    title: "Templates Help",
-    description: "Learn how to create and manage VM templates and categories",
-    icon: <Layers className="h-5 w-5 text-primary" />,
-    sections: [
-      {
-        id: "understanding-templates",
-        title: "Understanding Templates",
-        icon: <Layers className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">What are Templates</p>
-              <p>Pre-configured VM blueprints that define OS, resources, and settings. Templates allow you to create VMs quickly without configuring from scratch.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Template Components</p>
-              <p>Templates include base ISO, CPU/RAM allocation, storage configuration, and network settings.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Reusability</p>
-              <p>Create VMs quickly by selecting a template instead of configuring each setting manually.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "managing-categories",
-        title: "Managing Categories",
-        icon: <FolderTree className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Creating Categories</p>
-              <p>Click "Create Category" to organize templates by purpose, environment, or department.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Editing Categories</p>
-              <p>Use the pencil icon to modify category name and description.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Deleting Categories</p>
-              <p>Categories can only be deleted when empty (no templates assigned).</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Organization</p>
-              <p>Categories help filter and find templates quickly when creating VMs.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "managing-templates",
-        title: "Managing Templates",
-        icon: <Copy className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Creating Templates</p>
-              <p>Click "Create Template" within a category, select an ISO and configure resources.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Editing Templates</p>
-              <p>Hover over template cards to reveal the edit button, then modify settings as needed.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Deleting Templates</p>
-              <p>Templates can only be deleted when no VMs are using them.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Template Cards</p>
-              <p>Show OS type, resource allocation, and usage count for easy management.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "best-practices",
-        title: "Best Practices",
-        icon: <Settings className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <p>Follow these guidelines for effective template management:</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Create templates for commonly deployed VM configurations</li>
-              <li>Use descriptive names that indicate OS, purpose, and resource tier</li>
-              <li>Organize templates into logical categories (Development, Production, Testing)</li>
-              <li>Set appropriate default resources to avoid over-provisioning</li>
-              <li>Keep templates updated with latest OS versions and security patches</li>
-              <li>Document special configurations in template descriptions</li>
+  const helpConfig = useMemo(
+    () => ({
+      title: 'Templates',
+      description: 'VM blueprints grouped by category.',
+      icon: <Layers className="h-5 w-5 text-accent-2" />,
+      sections: [
+        {
+          id: 'templates',
+          title: 'What templates are',
+          icon: <Layers className="h-4 w-4" />,
+          content: (
+            <p>
+              Pre-configured VM blueprints: OS, CPU, RAM, storage. Creating a
+              VM from a template skips the manual wiring step.
+            </p>
+          ),
+        },
+        {
+          id: 'categories',
+          title: 'Categories',
+          icon: <FolderTree className="h-4 w-4" />,
+          content: (
+            <p>
+              Group templates by purpose (Dev, Production, Testing) or by
+              team. A category can only be deleted when empty.
+            </p>
+          ),
+        },
+        {
+          id: 'lifecycle',
+          title: 'Lifecycle',
+          icon: <Copy className="h-4 w-4" />,
+          content: (
+            <p>
+              Templates in use by VMs can&apos;t be deleted until every VM that
+              uses them is removed or moved to another template.
+            </p>
+          ),
+        },
+        {
+          id: 'conventions',
+          title: 'Conventions',
+          icon: <Settings className="h-4 w-4" />,
+          content: (
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Use descriptive names (OS + purpose + resource tier)</li>
+              <li>Keep ISOs current with security patches</li>
+              <li>Document edge cases in the template description</li>
             </ul>
-          </div>
-        ),
-      },
-    ],
-    quickTips: [
-      "Templates save time by pre-configuring VM settings",
-      "Categories help organize templates by purpose or environment",
-      "Templates in use cannot be deleted until all VMs are removed",
-      "Use the refresh button to reload templates and categories",
-    ],
-  }), []);
+          ),
+        },
+      ],
+      quickTips: [
+        'Hover over a template to reveal edit / delete',
+        'Categories cannot be deleted while they contain templates',
+        'The refresh button reloads both templates and categories',
+      ],
+    }),
+    []
+  );
 
-  // Register help with the provider
-  // Configure header
-  usePageHeader({
-    breadcrumbs: [
-      { label: 'Home', href: '/' },
-      { label: 'Templates', isCurrent: true }
-    ],
-    title: 'Templates',
-    actions: [
-      {
-        id: 'refresh',
-        label: '',
-        icon: 'RefreshCw',
-        variant: 'outline',
-        size: 'sm',
-        onClick: handleRefresh,
-        loading: templatesLoading || categoriesLoading,
-        disabled: templatesLoading || categoriesLoading,
-        tooltip: (templatesLoading || categoriesLoading) ? 'Refreshing...' : (templatesError || categoriesError) ? 'Retry loading templates' : 'Refresh templates',
-        className: (templatesError || categoriesError) ? 'border-destructive text-destructive hover:bg-destructive/10' : ''
-      }
-    ],
-    helpConfig: helpConfig,
-    helpTooltip: 'Templates help'
-  }, [templatesLoading, categoriesLoading, templatesError, categoriesError]);
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: 'Home', href: '/' },
+        { label: 'Templates', isCurrent: true },
+      ],
+      title: 'Templates',
+      actions: [],
+      helpConfig,
+      helpTooltip: 'Templates help',
+    },
+    []
+  );
 
   return (
-    <div className="pb-4 lg:pb-0">
-
-      <div className="glass-medium size-container size-padding mt-6">
-        <div className="flex justify-between items-center size-gap">
-          <div className="size-padding">
-            <h1 className="size-mainheading font-bold text-glass-text-primary">Machine Templates</h1>
-            <p className="size-text text-glass-text-secondary mt-2">
-              Templates are pre-configured virtual machine blueprints that define OS, resources, and settings. Categories help organize templates by purpose, environment, or department for easier management.
-            </p>
-          </div>
-          <CreateCategoryDialog>
-            <Button className="size-button">
-              <FaPlus className="size-icon mr-2" />
-              Create Category
-            </Button>
-          </CreateCategoryDialog>
-        </div>
-
-        <div className="size-gap space-y-8">
-          {(categories || []).map((category) => (
-            <div key={category.id} className="glass-subtle radius-fluent-lg size-padding space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <h2 className="size-heading font-semibold text-glass-text-primary">{category.name}</h2>
-                    <div className="flex items-center space-x-2">
-                      <EditCategoryDialog category={category}>
-                        <Button variant="ghost" className="size-icon-button">
-                          <FaPencilAlt className="size-icon" />
-                        </Button>
-                      </EditCategoryDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className={`size-icon-button ${category.totalTemplates > 0 ? 'opacity-50' : ''}`}
-                          >
-                            <FaTrash className="size-icon" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setDeleteCategoryDialog({ isOpen: true, category })}
-                          >
-                            Delete Category
-                            {category.totalTemplates > 0 && (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                ({category.totalTemplates} template{category.totalTemplates !== 1 ? 's' : ''} in use)
-                              </span>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                  <p className="size-text text-glass-text-secondary">{category.description}</p>
-                </div>
-                <CreateTemplateDialog categoryId={category.id}>
-                  <Button className="size-button">
-                    <FaPlus className="size-icon mr-2" />
-                    Create Template
-                  </Button>
-                </CreateTemplateDialog>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 size-gap">
-                {templatesByCategory[category.id]?.map((template) => (
-                  <div key={template.id} className="relative group">
-                    <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 z-10">
-                      <EditTemplateDialog template={template}>
-                        <Button variant="ghost" size="icon" className="h-10 w-10 glass-strong" title="Edit template">
-                          <FaPencilAlt className="h-5 w-5 text-green-500" />
-                        </Button>
-                      </EditTemplateDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={`h-10 w-10 glass-strong ${template.totalMachines > 0 ? 'opacity-50' : ''}`}
-                            title="Delete template"
-                          >
-                            <FaTrash className="h-5 w-5 text-red-500" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setDeleteTemplateDialog({ isOpen: true, template })}
-                          >
-                            Delete Template
-                            {template.totalMachines > 0 && (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                ({template.totalMachines} machine{template.totalMachines !== 1 ? 's' : ''} in use)
-                              </span>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <TemplateCard template={template} onDelete={handleDeleteTemplate} />
-                  </div>
-                ))}
-                {(!templatesByCategory[category.id] || templatesByCategory[category.id].length === 0) && (
-                  <div className="col-span-full flex flex-col items-center justify-center min-h-[300px] p-8">
-                    <SimpleIllustration
-                      name="template"
-                      size="medium"
-                      opacity={80}
-                      className="mb-4"
-                    />
-                    <div className="text-center">
-                      <p className="size-text text-glass-text-primary">
-                        No templates in this category yet
-                      </p>
-                      <p className="size-small text-glass-text-secondary mt-1">
-                        Create your first template to get started
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-          </div>
-          ))}
-          {(!categories || categories.length === 0) && !(categoriesLoading || templatesLoading) && (
-            <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-              <SimpleIllustration
-                name="template"
-                size="large"
-                opacity={80}
-                className="mb-4"
-              />
-              <div className="text-center">
-                <h3 className="size-heading text-glass-text-primary mb-2">No categories available</h3>
-                <p className="size-text text-glass-text-secondary mb-4">
-                  Create your first category to organize your machine templates
-                </p>
-                <CreateCategoryDialog>
-                  <Button className="size-button">
-                    <FaPlus className="size-icon mr-2" />
-                    Create Your First Category
-                  </Button>
-                </CreateCategoryDialog>
-              </div>
+    <div className="space-y-6">
+      {/* Hero */}
+      <Card variant="glass" className="relative">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-xl bg-accent/15 grid place-items-center shrink-0">
+              <Layers className="h-5 w-5 text-accent" />
             </div>
-          )}
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold text-fg">Templates</h1>
+              <p className="text-sm text-fg-muted mt-1">
+                VM blueprints grouped by category. Use them to skip manual
+                wiring when creating a new VM.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              }
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              Refresh
+            </Button>
+            <CreateCategoryDialog>
+              <Button size="sm" icon={<Plus className="h-4 w-4" />}>
+                New category
+              </Button>
+            </CreateCategoryDialog>
+          </div>
         </div>
-      </div>
 
-      {/* Delete Template Confirmation Dialog */}
-      <AlertDialog open={deleteTemplateDialog.isOpen} onOpenChange={(open) => !open && setDeleteTemplateDialog({ isOpen: false, template: null })}>
-        <AlertDialogContent glass="strong" className="shadow-elevation-5">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              Delete Template?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteTemplateDialog.template?.name}</strong>?
-              This action cannot be undone.
-              {deleteTemplateDialog.template?.totalMachines > 0 && (
-                <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
-                  <p className="text-sm text-amber-800 dark:text-amber-200">
-                    This template is used by {deleteTemplateDialog.template.totalMachines} machine(s).
-                    Please remove all machines before deleting.
-                  </p>
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="size-gap">
-            <AlertDialogCancel disabled={isDeletingTemplate}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={isDeletingTemplate || deleteTemplateDialog.template?.totalMachines > 0}
-              onClick={() => handleDeleteTemplate(deleteTemplateDialog.template?.id)}
-            >
-              {isDeletingTemplate ? (<><Spinner size="sm" className="mr-2" />Deleting...</>) : 'Delete Template'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          <Stat
+            label="Categories"
+            value={stats.categories}
+            icon={<FolderTree className="h-3.5 w-3.5" />}
+          />
+          <Stat
+            label="Templates"
+            value={stats.templates}
+            icon={<Layers className="h-3.5 w-3.5" />}
+          />
+          <Stat
+            label="In use"
+            value={stats.inUse}
+            icon={<Copy className="h-3.5 w-3.5" />}
+          />
+        </div>
+      </Card>
 
-      {/* Delete Category Confirmation Dialog */}
-      <AlertDialog open={deleteCategoryDialog.isOpen} onOpenChange={(open) => !open && setDeleteCategoryDialog({ isOpen: false, category: null })}>
-        <AlertDialogContent glass="strong" className="shadow-elevation-5">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              Delete Category?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteCategoryDialog.category?.name}</strong>?
-              This action cannot be undone.
-              {deleteCategoryDialog.category?.totalTemplates > 0 && (
-                <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
-                  <p className="text-sm text-amber-800 dark:text-amber-200">
-                    This category contains {deleteCategoryDialog.category.totalTemplates} template(s).
-                    Please remove all templates before deleting.
-                  </p>
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="size-gap">
-            <AlertDialogCancel disabled={isDeletingCategory}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={isDeletingCategory || deleteCategoryDialog.category?.totalTemplates > 0}
-              onClick={() => handleDeleteCategory(deleteCategoryDialog.category?.id)}
+      {error && (
+        <Alert
+          tone="danger"
+          title="Couldn't load templates"
+          actions={
+            <Button
+              size="sm"
+              onClick={handleRefresh}
+              icon={<RefreshCw className="h-4 w-4" />}
             >
-              {isDeletingCategory ? (<><Spinner size="sm" className="mr-2" />Deleting...</>) : 'Delete Category'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              Retry
+            </Button>
+          }
+        >
+          {String(error.message || error)}
+        </Alert>
+      )}
+
+      {loading && (templates || []).length === 0 ? (
+        <div className="py-10 flex items-center justify-center gap-3 text-fg-muted">
+          <Spinner /> Loading templates…
+        </div>
+      ) : (categories || []).length === 0 ? (
+        <Card variant="default" className="p-0">
+          <EmptyState
+            icon={<FolderTree className="h-10 w-10 text-fg-subtle" />}
+            title="No categories yet"
+            description="Create a category to start organising templates."
+            actions={
+              <CreateCategoryDialog>
+                <Button size="sm" icon={<Plus className="h-4 w-4" />}>
+                  New category
+                </Button>
+              </CreateCategoryDialog>
+            }
+          />
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {(categories || []).map((category) => {
+            const list = templatesByCategory[category.id] || [];
+            const canDelete = (category.totalTemplates || 0) === 0;
+            return (
+              <Card key={category.id} variant="default" className="!p-0 overflow-hidden">
+                <div className="flex items-start justify-between gap-3 p-4 border-b border-white/8">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-base font-semibold text-fg">
+                        {category.name}
+                      </h2>
+                      <Badge tone="neutral">
+                        {list.length} template{list.length !== 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                    {category.description ? (
+                      <p className="text-sm text-fg-muted mt-1 line-clamp-2">
+                        {category.description}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setEditingCategory(category)}
+                      className="p-1.5 rounded-md text-fg-muted hover:text-fg hover:bg-white/5"
+                      aria-label="Edit category"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        canDelete && setDeleteCategoryTarget(category)
+                      }
+                      disabled={!canDelete}
+                      title={
+                        canDelete
+                          ? 'Delete category'
+                          : `Contains ${category.totalTemplates} template${category.totalTemplates !== 1 ? 's' : ''}`
+                      }
+                      className={
+                        canDelete
+                          ? 'p-1.5 rounded-md text-fg-muted hover:text-danger hover:bg-danger/10'
+                          : 'p-1.5 rounded-md text-fg-subtle cursor-not-allowed opacity-50'
+                      }
+                      aria-label="Delete category"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    <CreateTemplateDialog categoryId={category.id}>
+                      <Button size="sm" icon={<Plus className="h-4 w-4" />}>
+                        Template
+                      </Button>
+                    </CreateTemplateDialog>
+                  </div>
+                </div>
+
+                <div className="p-4">
+                  {list.length === 0 ? (
+                    <div className="text-sm text-fg-muted text-center py-6">
+                      No templates in this category yet.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                      {list.map((template) => (
+                        <TemplateTile
+                          key={template.id}
+                          template={template}
+                          onEdit={() => setEditingTemplate(template)}
+                          onDelete={setDeleteTemplateTarget}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Edit dialogs — rendered only when a target is set so the
+          shadcn internals don't mount in the background. */}
+      {editingTemplate ? (
+        <EditTemplateDialog
+          template={editingTemplate}
+          open
+          onOpenChange={(o) => !o && setEditingTemplate(null)}
+        />
+      ) : null}
+      {editingCategory ? (
+        <EditCategoryDialog
+          category={editingCategory}
+          open
+          onOpenChange={(o) => !o && setEditingCategory(null)}
+        />
+      ) : null}
+
+      {/* Delete confirmations in Harbor Dialog. */}
+      <Dialog
+        open={!!deleteTemplateTarget}
+        onClose={() => setDeleteTemplateTarget(null)}
+        size="sm"
+        title={
+          <span className="flex items-center gap-2 text-danger">
+            <AlertCircle className="h-4 w-4" />
+            Delete template
+          </span>
+        }
+        description={
+          deleteTemplateTarget
+            ? `Remove ${deleteTemplateTarget.name}? VMs already created from it are unaffected.`
+            : ''
+        }
+        footer={
+          <ButtonGroup className="justify-end">
+            <Button
+              variant="secondary"
+              onClick={() => setDeleteTemplateTarget(null)}
+              disabled={isDeletingTemplate}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteTemplate}
+              loading={isDeletingTemplate}
+              disabled={isDeletingTemplate}
+            >
+              Delete
+            </Button>
+          </ButtonGroup>
+        }
+      >
+        <p className="text-sm text-fg-muted">
+          This cannot be undone. Only the blueprint is removed; existing VMs
+          keep running.
+        </p>
+      </Dialog>
+
+      <Dialog
+        open={!!deleteCategoryTarget}
+        onClose={() => setDeleteCategoryTarget(null)}
+        size="sm"
+        title={
+          <span className="flex items-center gap-2 text-danger">
+            <AlertCircle className="h-4 w-4" />
+            Delete category
+          </span>
+        }
+        description={
+          deleteCategoryTarget
+            ? `Remove the ${deleteCategoryTarget.name} category?`
+            : ''
+        }
+        footer={
+          <ButtonGroup className="justify-end">
+            <Button
+              variant="secondary"
+              onClick={() => setDeleteCategoryTarget(null)}
+              disabled={isDeletingCategory}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteCategory}
+              loading={isDeletingCategory}
+              disabled={isDeletingCategory}
+            >
+              Delete
+            </Button>
+          </ButtonGroup>
+        }
+      >
+        <p className="text-sm text-fg-muted">
+          The category must be empty. Templates inside must be removed or
+          moved first.
+        </p>
+      </Dialog>
     </div>
   );
 }
