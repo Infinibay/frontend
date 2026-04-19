@@ -1,262 +1,287 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Editor from '@monaco-editor/react'
-import { useScriptQuery, useCreateScriptMutation, useUpdateScriptMutation } from '@/gql/hooks'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Monitor, Server, Terminal, Plus, Trash2, Edit, FileCode, Settings, CheckCircle } from 'lucide-react'
-import yaml from 'js-yaml'
-import { usePageHeader } from '@/hooks/usePageHeader'
-import { useToast } from '@/hooks/use-toast'
-import ScriptInputModal from '@/app/scripts/components/ScriptInputModal'
-import { TagInput } from '@/components/ui/tag-input'
-import { parseScriptError } from '@/utils/parseScriptError'
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Editor from "@monaco-editor/react";
+import yaml from "js-yaml";
+import { toast } from "sonner";
+import {
+  FileCode,
+  Monitor,
+  Server,
+  Terminal,
+  Plus,
+  Trash2,
+  Edit,
+  Save,
+  X as XIcon,
+  Copy,
+  Settings as SettingsIcon,
+  Eye,
+  Code2,
+} from "lucide-react";
+import {
+  Card,
+  Button,
+  Badge,
+  TextField,
+  Select,
+  SegmentedControl,
+  Alert,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanel,
+  Spinner,
+} from "@infinibay/harbor";
+
+import {
+  useScriptQuery,
+  useCreateScriptMutation,
+  useUpdateScriptMutation,
+} from "@/gql/hooks";
+import { usePageHeader } from "@/hooks/usePageHeader";
+import ScriptInputModal from "@/app/scripts/components/ScriptInputModal";
+import { parseScriptError } from "@/utils/parseScriptError";
+
+const OS_OPTIONS = [
+  {
+    value: "windows",
+    label: (
+      <span className="inline-flex items-center gap-1.5">
+        <Monitor className="h-3.5 w-3.5" />
+        Windows
+      </span>
+    ),
+  },
+  {
+    value: "linux",
+    label: (
+      <span className="inline-flex items-center gap-1.5">
+        <Server className="h-3.5 w-3.5" />
+        Linux
+      </span>
+    ),
+  },
+];
+
+const SHELL_BY_OS = {
+  windows: [
+    { value: "powershell", label: "PowerShell" },
+    { value: "cmd", label: "Command Prompt (CMD)" },
+  ],
+  linux: [
+    { value: "bash", label: "Bash" },
+    { value: "sh", label: "SH" },
+  ],
+};
+
+const INPUT_TYPE_TONES = {
+  text: "info",
+  number: "info",
+  boolean: "purple",
+  select: "success",
+  multiselect: "success",
+};
+
+const monacoLanguage = (shell) => {
+  switch (shell) {
+    case "powershell":
+      return "powershell";
+    case "bash":
+    case "sh":
+      return "shell";
+    case "cmd":
+      return "bat";
+    default:
+      return "powershell";
+  }
+};
 
 export default function ScriptEditorPage() {
-  const params = useParams()
-  const router = useRouter()
-  const scriptId = params.id
-  const isNew = scriptId === 'new'
-  const editorRef = useRef(null)
-  const monacoRef = useRef(null)
-  const { toast } = useToast()
+  const params = useParams();
+  const router = useRouter();
+  const scriptId = params.id;
+  const isNew = scriptId === "new";
 
-  const [scriptContent, setScriptContent] = useState('# Write your script here\n')
-  const [scriptName, setScriptName] = useState('New Script')
-  const [scriptDescription, setScriptDescription] = useState('')
-  const [scriptTags, setScriptTags] = useState([])
-  const [scriptInputs, setScriptInputs] = useState([])
-  const [activeTab, setActiveTab] = useState('edit')
-  const [errors, setErrors] = useState([])
-  const [selectedOS, setSelectedOS] = useState(['windows'])
-  const [selectedShell, setSelectedShell] = useState('powershell')
-  const [editorLanguage, setEditorLanguage] = useState('powershell')
-  const [originalYamlData, setOriginalYamlData] = useState(null)
-  const [inputModalOpen, setInputModalOpen] = useState(false)
-  const [editingInputIndex, setEditingInputIndex] = useState(null)
+  const editorRef = useRef(null);
 
-  // Load existing script
+  const [scriptName, setScriptName] = useState("New Script");
+  const [scriptDescription, setScriptDescription] = useState("");
+  const [scriptTags, setScriptTags] = useState([]);
+  const [tagInput, setTagInput] = useState("");
+  const [scriptInputs, setScriptInputs] = useState([]);
+  const [scriptContent, setScriptContent] = useState("# Write your script here\n");
+  const [selectedOS, setSelectedOS] = useState("windows");
+  const [selectedShell, setSelectedShell] = useState("powershell");
+  const [editorLanguage, setEditorLanguage] = useState("powershell");
+  const [originalYamlData, setOriginalYamlData] = useState(null);
+  const [errors, setErrors] = useState([]);
+  const [activeTab, setActiveTab] = useState("edit");
+  const [inputModalOpen, setInputModalOpen] = useState(false);
+  const [editingInputIndex, setEditingInputIndex] = useState(null);
+
   const { data, loading } = useScriptQuery({
     variables: { id: scriptId },
-    skip: isNew
-  })
+    skip: isNew,
+  });
 
-  const [createScript, { loading: creating }] = useCreateScriptMutation()
-  const [updateScript, { loading: updating }] = useUpdateScriptMutation()
+  const [createScript, { loading: creating }] = useCreateScriptMutation();
+  const [updateScript, { loading: updating }] = useUpdateScriptMutation();
 
-  // Help configuration
-  const helpConfig = useMemo(() => ({
-    title: "Script Editor Help",
-    description: "Learn how to create and edit automation scripts",
-    icon: <FileCode className="h-5 w-5 text-primary" />,
-    sections: [
-      {
-        id: "metadata",
-        title: "Script Metadata",
-        icon: <Settings className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Script Name</p>
-              <p>Required field. Should be descriptive and unique to identify your script.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Description</p>
-              <p>Optional but recommended. Explains the script's purpose and usage.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Tags</p>
-              <p>Categorize scripts for easier filtering and organization.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Operating System</p>
-              <p>Select Windows or Linux. Choices are mutually exclusive.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Shell Type</p>
-              <p>Choose PowerShell or CMD for Windows, Bash or SH for Linux.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "inputs",
-        title: "Script Inputs",
-        icon: <Edit className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Adding Inputs</p>
-              <p>Click "Add Input" to define parameters users provide at runtime.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Input Types</p>
-              <p>Support for text, number, boolean, and select (dropdown) types.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Required vs Optional</p>
-              <p>Mark inputs as required to enforce user input before script execution.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Default Values</p>
-              <p>Set defaults for optional inputs to streamline execution.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Variable Syntax</p>
-              <p>Reference inputs in your script using <code>$&#123;&#123; inputs.inputName &#125;&#125;</code> syntax.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "editor",
-        title: "Script Editor",
-        icon: <FileCode className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Monaco Editor</p>
-              <p>Full-featured code editor with syntax highlighting and IntelliSense.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Language Support</p>
-              <p>Automatic syntax highlighting based on selected shell (PowerShell, Bash, etc.).</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Auto-save</p>
-              <p>Drafts are saved to localStorage every 30 seconds to prevent data loss.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Validation</p>
-              <p>Scripts are validated before saving. Errors are displayed below the editor.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Preview Tab</p>
-              <p>View formatted script metadata and content before saving.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "saving",
-        title: "Saving and Validation",
-        icon: <CheckCircle className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Required Fields</p>
-              <p>Name, OS, shell, and script content must all be filled before saving.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Input Validation</p>
-              <p>Input names must be unique. Labels are required for all inputs.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">YAML Format</p>
-              <p>Scripts are automatically saved in YAML format for easy version control.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Error Handling</p>
-              <p>Validation errors are displayed with specific messages to guide corrections.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Cancel Action</p>
-              <p>Returns to scripts list. Unsaved changes will be discarded.</p>
-            </div>
-          </div>
-        ),
-      },
-    ],
-    quickTips: [
-      "Scripts are auto-saved as drafts every 30 seconds",
-      "Use the Preview tab to review your script before saving",
-      "Input variables use the syntax: ${{ inputs.variableName }}",
-      "Select the correct OS and shell for proper syntax highlighting",
-    ],
-  }), []);
+  // ── Populate from existing script ────────────────────────────
+  useEffect(() => {
+    if (data?.script?.content) {
+      try {
+        const parsed = yaml.load(data.script.content);
+        setOriginalYamlData(parsed);
+        setScriptName(parsed?.name || "New Script");
+        setScriptDescription(parsed?.description || "");
+        setScriptTags(data.script.tags || []);
+        setScriptContent(parsed?.script || "# Write your script here\n");
 
-  // Handler functions (must be defined before usePageHeader)
-  const handleCancel = () => {
-    router.push('/scripts')
-  }
+        const normalized = (parsed?.inputs || []).map((i) => ({
+          ...i,
+          type: i.type === "checkbox" ? "boolean" : i.type,
+        }));
+        setScriptInputs(normalized);
 
-  const handleSave = async () => {
-    if (!validateScript()) {
-      toast({
-        variant: 'destructive',
-        title: 'Validation Error',
-        description: 'Please fix validation errors before saving'
-      })
-
-      // Ensure error panel is visible by switching to edit tab
-      setActiveTab('edit')
-
-      // Defer scroll until after React renders the error panel
-      requestAnimationFrame(() => {
-        const errorPanel = document.getElementById('validation-errors')
-        if (errorPanel) {
-          errorPanel.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          })
-        }
-      })
-
-      return
-    }
-
-    try {
-      // Get the current content directly from the Monaco editor
-      // This ensures we have the latest content even if the state hasn't updated yet
-      const currentScriptContent = editorRef.current ? editorRef.current.getValue() : scriptContent
-
-      // Start with original YAML data to preserve unknown fields
-      // If no original data exists (new script), start with empty object
-      const yamlData = originalYamlData ? { ...originalYamlData } : {}
-
-      // Merge our updates into the object
-      yamlData.name = scriptName
-      yamlData.description = scriptDescription
-      yamlData.os = selectedOS
-      yamlData.shell = selectedShell
-
-      // Add inputs if any exist, otherwise remove the field
-      if (scriptInputs.length > 0) {
-        yamlData.inputs = scriptInputs
-      } else {
-        delete yamlData.inputs
+        const os = Array.isArray(parsed?.os)
+          ? parsed.os[0] || "windows"
+          : parsed?.os || "windows";
+        setSelectedOS(os);
+        const shell = parsed?.shell || (os === "linux" ? "bash" : "powershell");
+        setSelectedShell(shell);
+        setEditorLanguage(monacoLanguage(shell));
+      } catch (err) {
+        toast.error(`Failed to load script: ${err.message || err}`);
       }
+    }
+  }, [data]);
 
-      // Add script content from the editor
-      yamlData.script = currentScriptContent
+  // ── Draft autosave ───────────────────────────────────────────
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (!scriptContent) return;
+      try {
+        localStorage.setItem(
+          `script-draft-${scriptId}`,
+          JSON.stringify({
+            scriptContent,
+            scriptName,
+            scriptDescription,
+            scriptTags,
+            scriptInputs,
+            selectedOS,
+            selectedShell,
+          })
+        );
+      } catch {
+        /* localStorage quota — silent */
+      }
+    }, 30_000);
+    return () => clearInterval(t);
+  }, [
+    scriptContent,
+    scriptName,
+    scriptDescription,
+    scriptTags,
+    scriptInputs,
+    selectedOS,
+    selectedShell,
+    scriptId,
+  ]);
 
-      const yamlContent = yaml.dump(yamlData)
+  // Clear errors once inputs become valid.
+  useEffect(() => {
+    if (
+      errors.length > 0 &&
+      scriptName.trim() &&
+      selectedOS &&
+      selectedShell &&
+      scriptContent.trim()
+    ) {
+      setErrors([]);
+    }
+  }, [scriptName, selectedOS, selectedShell, scriptContent, errors.length]);
+
+  // ── Validation ───────────────────────────────────────────────
+  const validate = useCallback(() => {
+    const errs = [];
+    if (!scriptName.trim()) errs.push({ message: "Script name is required" });
+    if (!selectedOS) errs.push({ message: "Operating system is required" });
+    if (!selectedShell) errs.push({ message: "Shell type is required" });
+    if (!scriptContent.trim()) errs.push({ message: "Script content cannot be empty" });
+
+    scriptInputs.forEach((input, idx) => {
+      if (!input.name?.trim())
+        errs.push({ message: `Input #${idx + 1}: name is required` });
+      if (!input.label?.trim())
+        errs.push({ message: `Input #${idx + 1}: label is required` });
+      if (
+        scriptInputs.filter((i) => i.name && i.name === input.name).length > 1
+      ) {
+        errs.push({ message: `Duplicate input name: "${input.name}"` });
+      }
+    });
+
+    setErrors(errs);
+    return errs.length === 0;
+  }, [scriptName, selectedOS, selectedShell, scriptContent, scriptInputs]);
+
+  // ── OS / shell coordination ──────────────────────────────────
+  const handleOSChange = (next) => {
+    setSelectedOS(next);
+    const shells = SHELL_BY_OS[next] || [];
+    if (!shells.find((s) => s.value === selectedShell)) {
+      const newShell = shells[0]?.value || "bash";
+      setSelectedShell(newShell);
+      setEditorLanguage(monacoLanguage(newShell));
+    }
+  };
+  const handleShellChange = (next) => {
+    setSelectedShell(next);
+    setEditorLanguage(monacoLanguage(next));
+  };
+
+  // ── Save ─────────────────────────────────────────────────────
+  const handleSave = async () => {
+    if (!validate()) {
+      toast.error("Please fix validation errors before saving");
+      setActiveTab("edit");
+      return;
+    }
+    try {
+      const currentContent = editorRef.current
+        ? editorRef.current.getValue()
+        : scriptContent;
+      const yamlData = originalYamlData ? { ...originalYamlData } : {};
+      yamlData.name = scriptName;
+      yamlData.description = scriptDescription;
+      yamlData.os = [selectedOS];
+      yamlData.shell = selectedShell;
+      if (scriptInputs.length > 0) {
+        yamlData.inputs = scriptInputs;
+      } else {
+        delete yamlData.inputs;
+      }
+      yamlData.script = currentContent;
+
+      const yamlContent = yaml.dump(yamlData);
 
       if (isNew) {
         await createScript({
           variables: {
             input: {
               content: yamlContent,
-              format: 'YAML',
+              format: "YAML",
               name: scriptName,
-              tags: scriptTags
-            }
-          }
-        })
-        toast({
-          variant: 'success',
-          title: 'Success',
-          description: 'Script created successfully'
-        })
-        router.push('/scripts')
+              tags: scriptTags,
+            },
+          },
+        });
+        toast.success("Script created");
+        router.push("/scripts");
       } else {
         await updateScript({
           variables: {
@@ -264,636 +289,508 @@ export default function ScriptEditorPage() {
               id: scriptId,
               name: scriptName,
               content: yamlContent,
-              tags: scriptTags
-            }
-          }
-        })
-        toast({
-          variant: 'success',
-          title: 'Success',
-          description: 'Script updated successfully'
-        })
+              tags: scriptTags,
+            },
+          },
+        });
+        toast.success("Script updated");
       }
-      localStorage.removeItem(`script-draft-${scriptId}`)
-    } catch (error) {
-      const context = isNew ? 'script creation' : 'script update'
-      const userMessage = parseScriptError(error, context)
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: userMessage
-      })
+      localStorage.removeItem(`script-draft-${scriptId}`);
+    } catch (err) {
+      const msg = parseScriptError(err, isNew ? "create" : "update");
+      toast.error(msg);
     }
-  }
+  };
 
-  // Register help with the provider
-  // Configure header
-  usePageHeader({
-    breadcrumbs: [
-      { label: 'Home', href: '/' },
-      { label: 'Scripts', href: '/scripts' },
-      { label: isNew ? 'New Script' : (scriptName || 'Edit Script'), isCurrent: true }
-    ],
-    title: isNew ? 'New Script' : 'Edit Script',
-    actions: [
-      {
-        id: 'cancel',
-        label: 'Cancel',
-        icon: 'X',
-        variant: 'outline',
-        size: 'sm',
-        onClick: handleCancel,
-        tooltip: 'Discard changes and return to scripts'
-      },
-      {
-        id: 'save',
-        label: 'Save',
-        icon: 'Save',
-        variant: 'default',
-        size: 'sm',
-        onClick: handleSave,
-        loading: creating || updating,
-        disabled: selectedOS.length === 0 || !selectedShell || creating || updating,
-        tooltip: 'Save script'
-      }
-    ],
-    helpConfig: helpConfig,
-    helpTooltip: 'Script editor help'
-  }, [isNew, scriptName, scriptContent, scriptDescription, scriptTags, scriptInputs, selectedOS, selectedShell, originalYamlData, creating, updating]);
+  const handleCancel = () => router.push("/scripts");
 
-  useEffect(() => {
-    if (data?.script?.content) {
-      try {
-        const parsed = yaml.load(data.script.content)
-
-        // Store original parsed data to preserve unknown fields
-        setOriginalYamlData(parsed)
-
-        setScriptName(parsed?.name || 'New Script')
-        setScriptDescription(parsed?.description || '')
-        setScriptTags(data.script.tags || [])
-        setScriptContent(parsed?.script || '# Write your script here\n')
-
-        // Normalize legacy 'checkbox' type to 'boolean' in inputs
-        const normalizedInputs = (parsed?.inputs || []).map(input => ({
-          ...input,
-          type: input.type === 'checkbox' ? 'boolean' : input.type
-        }))
-        setScriptInputs(normalizedInputs)
-
-        // Handle OS (string or array)
-        let os = parsed?.os
-        if (Array.isArray(os)) {
-          setSelectedOS(os.length > 0 ? os : ['windows'])
-        } else if (typeof os === 'string') {
-          setSelectedOS([os])
-        } else {
-          setSelectedOS(['windows'])
-        }
-
-        const shell = parsed?.shell || 'powershell'
-        setSelectedShell(shell)
-        setEditorLanguage(getMonacoLanguage(shell))
-      } catch (error) {
-        console.error('Failed to parse script:', error)
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load script'
-        })
-      }
+  // ── Tag input ────────────────────────────────────────────────
+  const addTag = (raw) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+    if (scriptTags.length >= 10) {
+      toast.error("Up to 10 tags per script");
+      return;
     }
-  }, [data, toast])
-
-  // Auto-save to localStorage
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (scriptContent) {
-        const draft = {
-          scriptContent,
-          scriptName,
-          scriptDescription,
-          scriptTags,
-          scriptInputs,
-          selectedOS,
-          selectedShell
-        }
-        localStorage.setItem(`script-draft-${scriptId}`, JSON.stringify(draft))
-      }
-    }, 30000)
-    return () => clearInterval(timer)
-  }, [scriptContent, scriptName, scriptDescription, scriptTags, scriptInputs, selectedOS, selectedShell, scriptId])
-
-  // Clear errors reactively when required fields are filled
-  useEffect(() => {
-    if (errors.length > 0) {
-      // Clear errors if basic required fields are now valid
-      if (scriptName.trim() && selectedOS.length > 0 && selectedShell && scriptContent.trim()) {
-        setErrors([])
-      }
+    if (scriptTags.includes(trimmed)) return;
+    setScriptTags((prev) => [...prev, trimmed]);
+    setTagInput("");
+  };
+  const removeTag = (t) =>
+    setScriptTags((prev) => prev.filter((x) => x !== t));
+  const onTagKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag(tagInput);
     }
-  }, [scriptName, selectedOS, selectedShell, scriptContent, errors.length])
+  };
 
-  // Monaco editor setup
-  const handleEditorWillMount = (monaco) => {
-    monacoRef.current = monaco
-    // Monaco already has built-in support for PowerShell, Bash, and Batch
-    // No custom configuration needed
-  }
-
-  const handleEditorDidMount = (editor, monaco) => {
-    editorRef.current = editor
-  }
-
-  const validateScript = () => {
-    const validationErrors = []
-
-    // Check metadata requirements
-    if (!scriptName.trim()) {
-      validationErrors.push({ message: 'Script name is required' })
-    }
-    if (!selectedOS || selectedOS.length === 0) {
-      validationErrors.push({ message: 'At least one operating system must be selected' })
-    }
-    if (!selectedShell) {
-      validationErrors.push({ message: 'Shell type must be selected' })
-    }
-    if (!scriptContent.trim()) {
-      validationErrors.push({ message: 'Script content cannot be empty' })
-    }
-
-    // Validate inputs
-    scriptInputs.forEach((input, index) => {
-      if (!input.name.trim()) {
-        validationErrors.push({ message: `Input #${index + 1}: Name is required` })
-      }
-      if (!input.label.trim()) {
-        validationErrors.push({ message: `Input #${index + 1}: Label is required` })
-      }
-      // Check for duplicate input names
-      const duplicates = scriptInputs.filter(i => i.name === input.name)
-      if (duplicates.length > 1) {
-        validationErrors.push({ message: `Input name "${input.name}" is duplicated` })
-      }
-    })
-
-    setErrors(validationErrors)
-    return validationErrors.length === 0
-  }
-
-  const getMonacoLanguage = (shell) => {
-    switch (shell) {
-      case 'powershell':
-        return 'powershell'
-      case 'bash':
-      case 'sh':
-        return 'shell'
-      case 'cmd':
-        return 'bat'
-      default:
-        return 'powershell'
-    }
-  }
-
-  const handleOSChange = (os, checked) => {
-    let newSelectedOS
-    if (checked) {
-      // Only allow one OS at a time (mutually exclusive)
-      newSelectedOS = [os]
-    } else {
-      // If unchecking, don't allow empty selection
-      // Keep at least one OS selected
-      return
-    }
-    setSelectedOS(newSelectedOS)
-
-    // Adjust shell if incompatible with new OS selection
-    // If Windows is selected and shell is Linux-only
-    if (newSelectedOS[0] === 'windows') {
-      if (selectedShell === 'bash' || selectedShell === 'sh') {
-        const newShell = 'powershell'
-        setSelectedShell(newShell)
-        setEditorLanguage(getMonacoLanguage(newShell))
-      }
-    }
-    // If Linux is selected, always use bash by default
-    else if (newSelectedOS[0] === 'linux') {
-      if (selectedShell === 'cmd' || selectedShell === 'powershell') {
-        const newShell = 'bash'
-        setSelectedShell(newShell)
-        setEditorLanguage(getMonacoLanguage(newShell))
-      }
-    }
-  }
-
-  const handleShellChange = (shell) => {
-    setSelectedShell(shell)
-    const newLanguage = getMonacoLanguage(shell)
-    setEditorLanguage(newLanguage)
-  }
-
-  const getAvailableShells = () => {
-    const hasWindows = selectedOS.includes('windows')
-    const hasLinux = selectedOS.includes('linux')
-
-    if (hasWindows) {
-      return [
-        { value: 'powershell', label: 'PowerShell' },
-        { value: 'cmd', label: 'CMD (Command Prompt)' }
-      ]
-    } else if (hasLinux) {
-      return [
-        { value: 'bash', label: 'Bash' },
-        { value: 'sh', label: 'SH (Shell)' }
-      ]
-    }
-    return []
-  }
-
-  const openAddInputModal = () => {
-    setEditingInputIndex(null)
-    setInputModalOpen(true)
-  }
-
-  const openEditInputModal = (index) => {
-    setEditingInputIndex(index)
-    setInputModalOpen(true)
-  }
-
+  // ── Inputs management ────────────────────────────────────────
+  const openAddInput = () => {
+    setEditingInputIndex(null);
+    setInputModalOpen(true);
+  };
+  const openEditInput = (i) => {
+    setEditingInputIndex(i);
+    setInputModalOpen(true);
+  };
   const handleInputSave = (inputData) => {
     if (editingInputIndex !== null) {
-      // Edit existing input
-      setScriptInputs(prev => {
-        const updated = [...prev]
-        updated[editingInputIndex] = inputData
-        return updated
-      })
-      toast({
-        variant: 'success',
-        title: 'Success',
-        description: 'Input updated successfully'
-      })
+      setScriptInputs((prev) => {
+        const next = [...prev];
+        next[editingInputIndex] = inputData;
+        return next;
+      });
+      toast.success("Input updated");
     } else {
-      // Add new input
-      setScriptInputs(prev => [...prev, inputData])
-      toast({
-        variant: 'success',
-        title: 'Success',
-        description: 'Input added successfully'
-      })
+      setScriptInputs((prev) => [...prev, inputData]);
+      toast.success("Input added");
     }
-  }
+  };
+  const removeInput = (i) => {
+    setScriptInputs((prev) => prev.filter((_, idx) => idx !== i));
+    toast.success("Input removed");
+  };
+  const duplicateInput = (i) => {
+    const orig = scriptInputs[i];
+    setScriptInputs((prev) => [
+      ...prev,
+      { ...orig, name: `${orig.name}_copy`, label: `${orig.label} (Copy)` },
+    ]);
+    toast.success("Input duplicated");
+  };
 
-  const removeInput = (index) => {
-    setScriptInputs(scriptInputs.filter((_, i) => i !== index))
-    toast({
-      variant: 'success',
-      title: 'Success',
-      description: 'Input removed'
-    })
-  }
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: "Home", href: "/" },
+        { label: "Scripts", href: "/scripts" },
+        {
+          label: isNew ? "New script" : scriptName || "Edit script",
+          isCurrent: true,
+        },
+      ],
+      title: isNew ? "New script" : "Edit script",
+      backButton: { href: "/scripts", label: "Scripts" },
+      actions: [],
+    },
+    [isNew, scriptName]
+  );
 
-  const duplicateInput = (index) => {
-    const inputToDuplicate = scriptInputs[index]
-    const duplicated = {
-      ...inputToDuplicate,
-      name: `${inputToDuplicate.name}_copy`,
-      label: `${inputToDuplicate.label} (Copy)`
-    }
-    setScriptInputs([...scriptInputs, duplicated])
-    toast({
-      variant: 'success',
-      title: 'Success',
-      description: 'Input duplicated'
-    })
+  const availableShells = useMemo(
+    () => SHELL_BY_OS[selectedOS] || [],
+    [selectedOS]
+  );
+
+  // ── Render ───────────────────────────────────────────────────
+
+  if (!isNew && loading) {
+    return (
+      <div className="py-10 flex items-center justify-center gap-3 text-fg-muted">
+        <Spinner /> Loading script…
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
+      {/* Hero */}
+      <Card variant="glass">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-xl bg-accent-2/15 grid place-items-center shrink-0">
+              <FileCode className="h-5 w-5 text-accent-2" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold text-fg truncate">
+                {scriptName || (isNew ? "New script" : "Edit script")}
+              </h1>
+              <p className="text-sm text-fg-muted mt-1">
+                Reusable automation with parametrised inputs, versioned in
+                YAML. Drafts auto-save every 30 s.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<XIcon className="h-4 w-4" />}
+              onClick={handleCancel}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              icon={<Save className="h-4 w-4" />}
+              onClick={handleSave}
+              loading={creating || updating}
+              disabled={creating || updating}
+            >
+              Save
+            </Button>
+          </div>
+        </div>
+      </Card>
 
-      <div className="container mx-auto">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="edit">Edit</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
-        </TabsList>
+      {/* Edit / Preview tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} variant="underline">
+        <TabList>
+          <Tab value="edit" icon={<Code2 className="h-4 w-4" />}>
+            Edit
+          </Tab>
+          <Tab value="preview" icon={<Eye className="h-4 w-4" />}>
+            Preview
+          </Tab>
+        </TabList>
 
-        <TabsContent value="edit" className="mt-4">
-          {/* Metadata Controls */}
-          <Card className="p-4 mb-4">
-            <div className="space-y-4">
-              {/* Script Name and Description */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="script-name">Script Name *</Label>
-                  <Input
-                    id="script-name"
-                    value={scriptName}
-                    onChange={(e) => setScriptName(e.target.value)}
-                    placeholder="Enter script name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="script-description">Description</Label>
-                  <Input
-                    id="script-description"
-                    value={scriptDescription}
-                    onChange={(e) => setScriptDescription(e.target.value)}
-                    placeholder="Brief description (optional)"
-                  />
-                </div>
-              </div>
+        <TabPanel value="edit">
+          <div className="space-y-4">
+            {/* Metadata */}
+            <Card variant="default">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-fg mb-4">
+                <SettingsIcon className="h-4 w-4 text-accent-2" />
+                Metadata
+              </h2>
 
-              {/* Tags */}
-              <div className="space-y-2">
-                <Label htmlFor="script-tags">Tags</Label>
-                <TagInput
-                  value={scriptTags}
-                  onChange={setScriptTags}
-                  placeholder="Add tags to categorize this script..."
-                  maxTags={10}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <TextField
+                  label="Name *"
+                  value={scriptName}
+                  onChange={(e) => setScriptName(e.target.value)}
+                  placeholder="e.g. Rotate logs nightly"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Tags help organize and filter scripts in your library
-                </p>
+                <TextField
+                  label="Description"
+                  value={scriptDescription}
+                  onChange={(e) => setScriptDescription(e.target.value)}
+                  placeholder="What does this script do?"
+                />
               </div>
 
-              {/* OS and Shell Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* OS Selection */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Monitor className="h-4 w-4" />
-                    Operating System *
-                  </Label>
-                  <div className="space-y-3 border rounded-md p-3">
-                    <div className="flex items-center space-x-2 w-full">
-                      <Checkbox
-                        id="os-windows"
-                        checked={selectedOS.includes('windows')}
-                        onCheckedChange={(checked) => handleOSChange('windows', checked)}
-                      />
-                      <Label htmlFor="os-windows" className="cursor-pointer font-normal flex items-center gap-2 flex-1">
-                        <Monitor className="h-4 w-4 shrink-0" />
-                        Windows
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 w-full">
-                      <Checkbox
-                        id="os-linux"
-                        checked={selectedOS.includes('linux')}
-                        onCheckedChange={(checked) => handleOSChange('linux', checked)}
-                      />
-                      <Label htmlFor="os-linux" className="cursor-pointer font-normal flex items-center gap-2 flex-1">
-                        <Server className="h-4 w-4 shrink-0" />
-                        Linux
-                      </Label>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Select target operating system
-                  </p>
-                </div>
-
-                {/* Shell Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="shell-select" className="flex items-center gap-2">
-                    <Terminal className="h-4 w-4" />
-                    Shell Type *
-                  </Label>
-                  <Select value={selectedShell} onValueChange={handleShellChange}>
-                    <SelectTrigger id="shell-select">
-                      <SelectValue placeholder="Select shell" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailableShells().map(shell => (
-                        <SelectItem key={shell.value} value={shell.value}>
-                          {shell.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Shell for script execution
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Script Inputs */}
-          <Card className="p-4 mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-medium">Script Inputs</h3>
-                <p className="text-xs text-muted-foreground">
-                  Define parameters that will be requested when running this script
-                </p>
-              </div>
-              <Button onClick={openAddInputModal} size="sm" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Input
-              </Button>
-            </div>
-
-            {scriptInputs.length === 0 ? (
-              <div className="text-center py-6 text-sm text-muted-foreground">
-                No inputs defined. Click "Add Input" to add parameters for this script.
-              </div>
-            ) : (
-              <div className="glass-subtle elevation-1 rounded-lg overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-muted/50 border-b border-border/50">
-                    <tr>
-                      <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">Name</th>
-                      <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">Variable</th>
-                      <th className="text-center text-xs font-medium text-muted-foreground px-4 py-2">Type</th>
-                      <th className="text-center text-xs font-medium text-muted-foreground px-4 py-2">Required</th>
-                      <th className="text-right text-xs font-medium text-muted-foreground px-4 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/30">
-                    {scriptInputs.map((input, index) => (
-                      <tr key={index} className="hover:bg-muted/30 transition-colors group">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-sm font-medium">{input.label || input.name}</span>
-                          </div>
-                          {input.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                              {input.description}
-                            </p>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <code className="text-xs bg-muted/50 px-2 py-0.5 rounded text-muted-foreground">
-                            {'${{ inputs.'}{input.name}{' }}'}
-                          </code>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className="inline-flex items-center text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium capitalize">
-                            {input.type}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {input.required ? (
-                            <span className="inline-flex items-center text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full font-medium">
-                              Yes
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">No</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => openEditInputModal(index)}
-                              className="h-7 w-7 p-0"
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => removeInput(index)}
-                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-
-
-          {/* Monaco Editor */}
-          <Card className="p-0 overflow-hidden">
-            <Editor
-              height="600px"
-              defaultLanguage="powershell"
-              language={editorLanguage}
-              value={scriptContent}
-              onChange={setScriptContent}
-              theme="vs-dark"
-              beforeMount={handleEditorWillMount}
-              onMount={handleEditorDidMount}
-              options={{
-                minimap: { enabled: true },
-                fontSize: 14,
-                lineNumbers: 'on',
-                folding: true,
-                wordWrap: 'on',
-                automaticLayout: true,
-              }}
-            />
-          </Card>
-          {errors.length > 0 && (
-            <div id="validation-errors" className="mt-4 p-4 bg-destructive/10 border border-destructive rounded-lg">
-              <p className="text-sm text-destructive font-medium">Validation Errors:</p>
-              {errors.map((error, i) => (
-                <div key={i} className="text-sm text-destructive mt-1">
-                  {error.line && error.column ? (
-                    <span className="font-mono">
-                      Line {error.line}, Column {error.column}: {error.message}
-                    </span>
-                  ) : (
-                    <span>{error.message}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="preview" className="mt-4">
-          <Card className="p-6">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold">{scriptName || 'Untitled Script'}</h3>
-                {scriptDescription && (
-                  <p className="text-sm text-muted-foreground mt-1">{scriptDescription}</p>
-                )}
-                {scriptTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {scriptTags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium border border-primary/20"
+              <div className="mt-3 space-y-2">
+                <label className="text-sm font-medium text-fg">Tags</label>
+                <div className="flex flex-wrap gap-1.5 p-2 rounded-lg bg-surface-1 border border-white/10 min-h-[44px]">
+                  {scriptTags.map((tag) => (
+                    <Badge key={tag} tone="purple" className="flex items-center gap-1">
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="hover:text-danger ml-0.5"
+                        aria-label={`Remove ${tag}`}
                       >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={onTagKeyDown}
+                    onBlur={() => tagInput.trim() && addTag(tagInput)}
+                    placeholder={scriptTags.length === 0 ? "Type a tag, press Enter…" : ""}
+                    className="flex-1 min-w-[120px] bg-transparent outline-none text-sm text-fg placeholder:text-fg-subtle"
+                  />
+                </div>
+                <p className="text-xs text-fg-subtle">
+                  Up to 10 tags. Enter or comma to add.
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Operating System:</span>{' '}
-                  <span className="capitalize">{selectedOS.join(', ')}</span>
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-fg">Target OS</label>
+                  <SegmentedControl
+                    items={OS_OPTIONS}
+                    value={selectedOS}
+                    onChange={handleOSChange}
+                  />
                 </div>
-                <div>
-                  <span className="font-medium">Shell Type:</span>{' '}
-                  <span className="capitalize">{selectedShell}</span>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-fg flex items-center gap-2">
+                    <Terminal className="h-3.5 w-3.5" />
+                    Shell
+                  </label>
+                  <Select
+                    value={selectedShell}
+                    onChange={handleShellChange}
+                    options={availableShells}
+                  />
                 </div>
               </div>
+            </Card>
 
-              {scriptInputs.length > 0 && (
+            {/* Inputs */}
+            <Card variant="default">
+              <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h4 className="text-sm font-medium mb-3">Script Inputs:</h4>
-                  <div className="space-y-2">
-                    {scriptInputs.map((input, index) => (
-                      <div key={index} className="bg-muted p-3 rounded-lg text-sm">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <span className="font-medium">{input.label || input.name}</span>
-                            {input.required && <span className="text-destructive ml-1">*</span>}
-                            <span className="text-muted-foreground ml-2">({input.type})</span>
-                          </div>
-                          {input.default && (
-                            <span className="text-xs text-muted-foreground">Default: {input.default}</span>
-                          )}
-                        </div>
-                        {input.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{input.description}</p>
-                        )}
-                        <code className="text-xs text-muted-foreground mt-1 block">
-                          {'${{ inputs.'}{input.name}{' }}'}
-                        </code>
-                      </div>
-                    ))}
-                  </div>
+                  <h2 className="text-sm font-semibold text-fg">Script inputs</h2>
+                  <p className="text-xs text-fg-muted">
+                    Parameters collected at runtime. Reference them with{" "}
+                    <code className="px-1 rounded bg-surface-2 text-[11px]">
+                      ${"{{"} inputs.name {"}}"}
+                    </code>
+                    .
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<Plus className="h-4 w-4" />}
+                  onClick={openAddInput}
+                >
+                  Add input
+                </Button>
+              </div>
+
+              {scriptInputs.length === 0 ? (
+                <div className="py-6 text-center text-sm text-fg-muted">
+                  No inputs defined. Scripts without inputs run with no extra
+                  prompts.
+                </div>
+              ) : (
+                <div className="rounded-lg border border-white/8 bg-surface-1 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-surface-2/60 border-b border-white/8">
+                      <tr>
+                        <th className="text-left text-[11px] uppercase tracking-wider text-fg-muted px-4 py-2">
+                          Input
+                        </th>
+                        <th className="text-left text-[11px] uppercase tracking-wider text-fg-muted px-4 py-2">
+                          Variable
+                        </th>
+                        <th className="text-center text-[11px] uppercase tracking-wider text-fg-muted px-4 py-2">
+                          Type
+                        </th>
+                        <th className="text-center text-[11px] uppercase tracking-wider text-fg-muted px-4 py-2">
+                          Required
+                        </th>
+                        <th className="text-right text-[11px] uppercase tracking-wider text-fg-muted px-4 py-2">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/8">
+                      {scriptInputs.map((input, i) => (
+                        <tr
+                          key={i}
+                          className="group hover:bg-white/[0.03] transition-colors"
+                        >
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <Terminal className="h-3.5 w-3.5 text-fg-muted shrink-0" />
+                              <span className="font-medium text-fg">
+                                {input.label || input.name}
+                              </span>
+                            </div>
+                            {input.description ? (
+                              <p className="text-xs text-fg-muted mt-0.5 line-clamp-1">
+                                {input.description}
+                              </p>
+                            ) : null}
+                          </td>
+                          <td className="px-4 py-3">
+                            <code className="text-xs bg-surface-2 px-2 py-0.5 rounded text-fg-muted font-mono">
+                              {input.name}
+                            </code>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge tone={INPUT_TYPE_TONES[input.type] || "neutral"}>
+                              {input.type}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {input.required ? (
+                              <Badge tone="danger">Yes</Badge>
+                            ) : (
+                              <span className="text-xs text-fg-muted">No</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                icon={<Edit className="h-3.5 w-3.5" />}
+                                onClick={() => openEditInput(i)}
+                                aria-label="Edit"
+                              >
+                                {""}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                icon={<Copy className="h-3.5 w-3.5" />}
+                                onClick={() => duplicateInput(i)}
+                                aria-label="Duplicate"
+                              >
+                                {""}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                icon={<Trash2 className="h-3.5 w-3.5" />}
+                                onClick={() => removeInput(i)}
+                                aria-label="Remove"
+                              >
+                                {""}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
+            </Card>
 
-              <div>
-                <h4 className="text-sm font-medium mb-2">Script Content:</h4>
-                <pre className="text-sm bg-muted p-4 rounded-lg overflow-x-auto">
-                  {scriptContent || '# No content'}
-                </pre>
+            {/* Monaco editor */}
+            <Card variant="default" className="!p-0 overflow-hidden">
+              <div className="px-4 py-2 border-b border-white/8 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-fg-muted">
+                  <Code2 className="h-3.5 w-3.5" />
+                  <span>{scriptName || "script"}.{selectedShell === "powershell" ? "ps1" : selectedShell === "cmd" ? "bat" : "sh"}</span>
+                </div>
+                <Badge tone="neutral">{editorLanguage}</Badge>
+              </div>
+              <Editor
+                height="600px"
+                defaultLanguage="powershell"
+                language={editorLanguage}
+                value={scriptContent}
+                onChange={(v) => setScriptContent(v ?? "")}
+                theme="vs-dark"
+                onMount={(editor) => (editorRef.current = editor)}
+                options={{
+                  minimap: { enabled: true },
+                  fontSize: 14,
+                  lineNumbers: "on",
+                  folding: true,
+                  wordWrap: "on",
+                  automaticLayout: true,
+                }}
+              />
+            </Card>
+
+            {errors.length > 0 && (
+              <Alert
+                tone="danger"
+                title={`${errors.length} validation error${errors.length === 1 ? "" : "s"}`}
+              >
+                <ul className="space-y-0.5 mt-1">
+                  {errors.map((e, i) => (
+                    <li key={i} className="text-sm">
+                      {e.line && e.column
+                        ? `Line ${e.line}, column ${e.column}: ${e.message}`
+                        : e.message}
+                    </li>
+                  ))}
+                </ul>
+              </Alert>
+            )}
+          </div>
+        </TabPanel>
+
+        <TabPanel value="preview">
+          <Card variant="default">
+            <h2 className="text-lg font-semibold text-fg">
+              {scriptName || "Untitled script"}
+            </h2>
+            {scriptDescription ? (
+              <p className="text-sm text-fg-muted mt-1">{scriptDescription}</p>
+            ) : null}
+
+            {scriptTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {scriptTags.map((t) => (
+                  <Badge key={t} tone="purple">
+                    {t}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
+              <div className="rounded-lg bg-surface-1 p-3">
+                <div className="text-[11px] uppercase tracking-wider text-fg-muted">
+                  Target OS
+                </div>
+                <div className="font-medium text-fg capitalize">
+                  {selectedOS}
+                </div>
+              </div>
+              <div className="rounded-lg bg-surface-1 p-3">
+                <div className="text-[11px] uppercase tracking-wider text-fg-muted">
+                  Shell
+                </div>
+                <div className="font-medium text-fg">{selectedShell}</div>
               </div>
             </div>
+
+            {scriptInputs.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold text-fg mb-2">Inputs</h3>
+                <div className="space-y-2">
+                  {scriptInputs.map((input, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg bg-surface-1 p-3 text-sm flex items-start justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <span className="font-medium text-fg">
+                          {input.label || input.name}
+                        </span>
+                        {input.required && (
+                          <span className="text-danger ml-1">*</span>
+                        )}
+                        <Badge
+                          tone={INPUT_TYPE_TONES[input.type] || "neutral"}
+                          className="ml-2"
+                        >
+                          {input.type}
+                        </Badge>
+                        {input.description ? (
+                          <p className="text-xs text-fg-muted mt-0.5">
+                            {input.description}
+                          </p>
+                        ) : null}
+                        <code className="text-[11px] text-fg-muted mt-1 block font-mono">
+                          ${"{{"} inputs.{input.name} {"}}"}
+                        </code>
+                      </div>
+                      {input.default ? (
+                        <span className="text-[11px] text-fg-subtle shrink-0">
+                          default: {String(input.default)}
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-fg mb-2">
+                Script content
+              </h3>
+              <pre className="text-sm bg-surface-1 p-4 rounded-lg overflow-x-auto border border-white/8 whitespace-pre-wrap font-mono">
+                {scriptContent || "# No content"}
+              </pre>
+            </div>
           </Card>
-        </TabsContent>
+        </TabPanel>
       </Tabs>
 
-        {/* Input Configuration Modal */}
-        <ScriptInputModal
-          open={inputModalOpen}
-          onOpenChange={setInputModalOpen}
-          input={editingInputIndex !== null ? scriptInputs[editingInputIndex] : null}
-          onSave={handleInputSave}
-          mode={editingInputIndex !== null ? 'edit' : 'create'}
-        />
-      </div>
+      <ScriptInputModal
+        open={inputModalOpen}
+        onOpenChange={setInputModalOpen}
+        input={editingInputIndex !== null ? scriptInputs[editingInputIndex] : null}
+        onSave={handleInputSave}
+        mode={editingInputIndex !== null ? "edit" : "create"}
+      />
     </div>
-  )
+  );
 }
