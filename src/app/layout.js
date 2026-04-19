@@ -32,6 +32,7 @@ import { HelpProvider } from "@/contexts/HelpProvider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { HeaderActionProvider } from "@/contexts/HeaderActionContext"
 import { GlobalHeader } from "@/components/layout/GlobalHeader"
+import { GlobalCommandPalette } from "@/components/layout/GlobalCommandPalette"
 import "@/utils/debugInit" // Initialize debug panel
 import "@/utils/debugPanelStatus" // Debug panel utilities
 
@@ -90,6 +91,7 @@ function AppContent({ children, isAuthenticated }) {
           {children}
         </div>
       </main>
+      <GlobalCommandPalette />
     </div>
   );
 }
