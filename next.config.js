@@ -18,7 +18,12 @@ const nextConfig = {
     NEXT_PUBLIC_GRAPHQL_API_URL: process.env.NEXT_PUBLIC_GRAPHQL_API_URL,
   },
   images: {
-    domains: ["api.dicebear.com", "cdn.simpleicons.org", "i.pravatar.cc", "www.gravatar.com"],
+    remotePatterns: [
+      { protocol: "https", hostname: "api.dicebear.com" },
+      { protocol: "https", hostname: "cdn.simpleicons.org" },
+      { protocol: "https", hostname: "i.pravatar.cc" },
+      { protocol: "https", hostname: "www.gravatar.com" },
+    ],
   },
   transpilePackages: [
     "@nextui-org/react",
