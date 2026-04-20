@@ -3,11 +3,6 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     // Warning: This allows production builds to successfully complete even if
     // your project has type errors.
@@ -35,6 +30,13 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
+  // Empty turbopack config silences the Next 16 warning when migrating from
+  // a legacy webpack config. Turbopack is used by default for dev+build.
+  turbopack: {
+    resolveAlias: {
+      '@components': './src/components',
+    },
+  },
   async rewrites() {
     return [
       {
@@ -43,6 +45,7 @@ const nextConfig = {
       },
     ];
   },
+  // Kept for legacy fallbacks; the Turbopack-equivalent is in `turbopack` above.
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
