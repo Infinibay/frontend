@@ -1,19 +1,22 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { Shield, Settings } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Settings, Shield } from 'lucide-react';
 import {
-  Drawer,
+  Alert,
+  Badge,
   Button,
-  ButtonGroup,
+  Drawer,
+  FormField,
+  ResponsiveGrid,
+  ResponsiveStack,
+  Select,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
   TextField,
   Textarea,
-  Select,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanel,
-  Alert,
 } from '@infinibay/harbor';
 import { toast } from 'sonner';
 
@@ -22,7 +25,9 @@ import { createDebugger } from '@/utils/debug';
 import { getPriorityFromLabel } from '@/utils/firewallHelpers';
 import { SERVICE_PRESETS } from '@/config/servicePresets';
 
-const debug = createDebugger('frontend:components:create-dept-firewall-rule-dialog');
+const debug = createDebugger(
+  'frontend:components:create-dept-firewall-rule-dialog',
+);
 
 const EMPTY_FORM = {
   name: '',
@@ -82,7 +87,7 @@ const CreateDepartmentFirewallRuleDialog = ({
         label: `${p.icon ? p.icon + ' ' : ''}${p.displayName} · ${p.category}`,
       })),
     ],
-    []
+    [],
   );
 
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
@@ -108,7 +113,8 @@ const CreateDepartmentFirewallRuleDialog = ({
       action: 'ACCEPT',
       direction: r.direction,
       protocol: r.protocol.toUpperCase(),
-      dstPortStart: r.port?.toString() || r.portRange?.start?.toString() || '',
+      dstPortStart:
+        r.port?.toString() || r.portRange?.start?.toString() || '',
       dstPortEnd: r.port?.toString() || r.portRange?.end?.toString() || '',
       srcIpAddr: '',
       srcIpMask: '',
@@ -120,7 +126,8 @@ const CreateDepartmentFirewallRuleDialog = ({
   const validateForm = () => {
     const next = {};
     if (!form.name.trim()) next.name = 'Rule name is required';
-    if (mode === 'simple' && !selectedPreset) next.preset = 'Pick a service first';
+    if (mode === 'simple' && !selectedPreset)
+      next.preset = 'Pick a service first';
     if (mode === 'advanced') {
       const ds = Number(form.dstPortStart);
       const de = Number(form.dstPortEnd);
@@ -193,192 +200,187 @@ const CreateDepartmentFirewallRuleDialog = ({
       side="right"
       size={520}
       title={
-        <span className="flex items-center gap-2">
-          <Shield className="h-4 w-4 text-accent-2" />
-          New department rule
-        </span>
+        <ResponsiveStack direction="row" gap={2} align="center">
+          <Shield size={14} />
+          <span>New department rule</span>
+        </ResponsiveStack>
       }
       footer={
-        <ButtonGroup className="justify-end">
+        <ResponsiveStack direction="row" gap={2} justify="end">
           <Button variant="secondary" onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} loading={loading} disabled={loading}>
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            loading={loading}
+            disabled={loading}
+          >
             {loading ? 'Creating…' : 'Create rule'}
           </Button>
-        </ButtonGroup>
+        </ResponsiveStack>
       }
     >
-      <div className="space-y-5">
-        <Alert tone="info">
+      <ResponsiveStack direction="col" gap={5}>
+        <Alert tone="info" icon={<Shield size={14} />}>
           Rules created here apply to <strong>every VM</strong> in this
-          department. Individual VMs can still override with the
-          <code className="mx-1 px-1 rounded bg-surface-1 text-[11px]">
-            overrides department
-          </code>
-          flag.
+          department. Individual VMs can still override with the{' '}
+          <Badge tone="neutral">overrides department</Badge> flag.
         </Alert>
 
         <Tabs value={mode} onValueChange={setMode} variant="pill">
           <TabList>
-            <Tab value="simple" icon={<Shield className="h-3.5 w-3.5" />}>
+            <Tab value="simple" icon={<Shield size={12} />}>
               Simple
             </Tab>
-            <Tab value="advanced" icon={<Settings className="h-3.5 w-3.5" />}>
+            <Tab value="advanced" icon={<Settings size={12} />}>
               Advanced
             </Tab>
           </TabList>
 
-          <TabPanel value="simple" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-fg">Service</label>
-              <Select
-                value={selectedPreset}
-                onChange={handlePresetChange}
-                options={presetOptions}
-                placeholder="Pick a common service"
-              />
-              {errors.preset && (
-                <p className="text-xs text-danger">{errors.preset}</p>
-              )}
-              {selectedPreset && (
-                <p className="text-xs text-fg-muted">
-                  {SERVICE_PRESETS.find((p) => p.id === selectedPreset)?.description}
-                </p>
-              )}
-            </div>
+          <TabPanel value="simple">
+            <ResponsiveStack direction="col" gap={4}>
+              <FormField
+                label="Service"
+                error={errors.preset}
+                helper={
+                  selectedPreset
+                    ? SERVICE_PRESETS.find((p) => p.id === selectedPreset)
+                        ?.description
+                    : undefined
+                }
+              >
+                <Select
+                  value={selectedPreset}
+                  onChange={handlePresetChange}
+                  options={presetOptions}
+                  placeholder="Pick a common service"
+                />
+              </FormField>
 
-            <TextField
-              label="Rule name"
-              placeholder="e.g. Allow HTTPS"
-              value={form.name}
-              onChange={(e) => {
-                update({ name: e.target.value });
-                clearFieldError('name');
-              }}
-              error={errors.name}
-            />
+              <FormField label="Rule name" error={errors.name}>
+                <TextField
+                  placeholder="e.g. Allow HTTPS"
+                  value={form.name}
+                  onChange={(e) => {
+                    update({ name: e.target.value });
+                    clearFieldError('name');
+                  }}
+                />
+              </FormField>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-fg">Action</label>
-              <Select
-                value={form.action}
-                onChange={(v) => update({ action: v })}
-                options={ACTION_OPTIONS}
-              />
-            </div>
-          </TabPanel>
-
-          <TabPanel value="advanced" className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-3">
-              <TextField
-                label="Rule name *"
-                placeholder="e.g. Allow custom app"
-                value={form.name}
-                onChange={(e) => {
-                  update({ name: e.target.value });
-                  clearFieldError('name');
-                }}
-                error={errors.name}
-              />
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-fg">Action</label>
+              <FormField label="Action">
                 <Select
                   value={form.action}
                   onChange={(v) => update({ action: v })}
                   options={ACTION_OPTIONS}
                 />
-              </div>
-            </div>
+              </FormField>
+            </ResponsiveStack>
+          </TabPanel>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-fg">
-                Description (optional)
-              </label>
-              <Textarea
-                value={form.description}
-                onChange={(e) => update({ description: e.target.value })}
-                placeholder="What does this rule do?"
-                rows={2}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-fg">Direction</label>
-                <Select
-                  value={form.direction}
-                  onChange={(v) => update({ direction: v })}
-                  options={DIRECTION_OPTIONS}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-fg">Protocol</label>
-                <Select
-                  value={form.protocol}
-                  onChange={(v) => update({ protocol: v })}
-                  options={PROTOCOL_OPTIONS}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-fg">
-                Destination ports
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <TextField
-                  placeholder="Start"
-                  value={form.dstPortStart}
-                  onChange={(e) => {
-                    update({ dstPortStart: e.target.value });
-                    clearFieldError('dstPortStart');
-                  }}
-                  error={errors.dstPortStart}
-                />
-                <TextField
-                  placeholder="End (optional)"
-                  value={form.dstPortEnd}
-                  onChange={(e) => {
-                    update({ dstPortEnd: e.target.value });
-                    clearFieldError('dstPortEnd');
-                  }}
-                  error={errors.dstPortEnd}
-                />
-              </div>
-              <p className="text-xs text-fg-muted">
-                Leave end empty for a single port.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-fg">Priority</label>
-              <div className="grid grid-cols-2 gap-2">
-                <Select
-                  value={form.priorityLabel}
-                  onChange={(v) => update({ priorityLabel: v })}
-                  options={PRIORITY_OPTIONS}
-                />
-                {form.priorityLabel === 'CUSTOM' && (
+          <TabPanel value="advanced">
+            <ResponsiveStack direction="col" gap={4}>
+              <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={3}>
+                <FormField label="Rule name" required error={errors.name}>
                   <TextField
-                    type="number"
-                    placeholder="1–1000"
-                    value={form.customPriority}
+                    placeholder="e.g. Allow custom app"
+                    value={form.name}
                     onChange={(e) => {
-                      update({ customPriority: e.target.value });
-                      clearFieldError('customPriority');
+                      update({ name: e.target.value });
+                      clearFieldError('name');
                     }}
-                    error={errors.customPriority}
                   />
-                )}
-              </div>
-              <p className="text-xs text-fg-muted">
-                Lower numbers evaluate first.
-              </p>
-            </div>
+                </FormField>
+                <FormField label="Action">
+                  <Select
+                    value={form.action}
+                    onChange={(v) => update({ action: v })}
+                    options={ACTION_OPTIONS}
+                  />
+                </FormField>
+              </ResponsiveGrid>
+
+              <FormField label="Description" optional>
+                <Textarea
+                  value={form.description}
+                  onChange={(e) => update({ description: e.target.value })}
+                  placeholder="What does this rule do?"
+                  rows={2}
+                />
+              </FormField>
+
+              <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={3}>
+                <FormField label="Direction">
+                  <Select
+                    value={form.direction}
+                    onChange={(v) => update({ direction: v })}
+                    options={DIRECTION_OPTIONS}
+                  />
+                </FormField>
+                <FormField label="Protocol">
+                  <Select
+                    value={form.protocol}
+                    onChange={(v) => update({ protocol: v })}
+                    options={PROTOCOL_OPTIONS}
+                  />
+                </FormField>
+              </ResponsiveGrid>
+
+              <FormField
+                label="Destination ports"
+                helper="Leave end empty for a single port."
+              >
+                <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={2}>
+                  <TextField
+                    placeholder="Start"
+                    value={form.dstPortStart}
+                    onChange={(e) => {
+                      update({ dstPortStart: e.target.value });
+                      clearFieldError('dstPortStart');
+                    }}
+                    error={errors.dstPortStart}
+                  />
+                  <TextField
+                    placeholder="End (optional)"
+                    value={form.dstPortEnd}
+                    onChange={(e) => {
+                      update({ dstPortEnd: e.target.value });
+                      clearFieldError('dstPortEnd');
+                    }}
+                    error={errors.dstPortEnd}
+                  />
+                </ResponsiveGrid>
+              </FormField>
+
+              <FormField
+                label="Priority"
+                helper="Lower numbers evaluate first."
+              >
+                <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={2}>
+                  <Select
+                    value={form.priorityLabel}
+                    onChange={(v) => update({ priorityLabel: v })}
+                    options={PRIORITY_OPTIONS}
+                  />
+                  {form.priorityLabel === 'CUSTOM' ? (
+                    <TextField
+                      type="number"
+                      placeholder="1–1000"
+                      value={form.customPriority}
+                      onChange={(e) => {
+                        update({ customPriority: e.target.value });
+                        clearFieldError('customPriority');
+                      }}
+                      error={errors.customPriority}
+                    />
+                  ) : null}
+                </ResponsiveGrid>
+              </FormField>
+            </ResponsiveStack>
           </TabPanel>
         </Tabs>
-      </div>
+      </ResponsiveStack>
     </Drawer>
   );
 };

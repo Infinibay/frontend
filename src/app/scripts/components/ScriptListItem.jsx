@@ -1,25 +1,22 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Edit, Trash2, FileCode, Tag } from 'lucide-react'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
+import {
+  Card,
+  Badge,
+  Checkbox,
+  Button,
+  IconButton,
+  IconTile,
+  ResponsiveStack,
+} from '@infinibay/harbor'
+import { Edit, Trash2, FileCode } from 'lucide-react'
 
 /**
- * ScriptListItem Component
+ * ScriptListItem — Harbor-native row for the scripts library.
  *
- * @param {Object} script - Script data object
- * @param {boolean} selected - Whether the script is selected (for bulk operations)
- * @param {Function} onToggleSelect - Callback for toggling selection
- * @param {Function} onEdit - Callback for editing the script
- * @param {Function} onDelete - Callback for deleting the script
- * @param {boolean} compact - Whether to use compact mode (hides selection checkbox)
- * @param {Function} [onClick] - Optional click handler for the entire row. When provided, makes the row clickable and navigable.
- * @param {ReactNode} customActions - Custom action buttons to replace default Edit/Delete actions
+ * Consumed by `/scripts` and `/departments/[name]/scripts`. The surface is
+ * a Harbor `Card` (default variant) so callers never need to override layout.
  */
-
 export function ScriptListItem({
   script,
   selected,
@@ -28,7 +25,7 @@ export function ScriptListItem({
   onDelete,
   compact = false,
   onClick,
-  customActions
+  customActions,
 }) {
   const isSystemTemplate = !script.createdBy
 
@@ -39,110 +36,95 @@ export function ScriptListItem({
     }
   }
 
-  return (
-    <div
-      className={cn(
-        "glass-subtle rounded-lg border border-border/20 p-3 hover:bg-accent transition-colors flex flex-col md:flex-row items-start md:items-center gap-3",
-        onClick && "cursor-pointer"
-      )}
-      onClick={onClick}
-      {...(onClick && {
-        role: "button",
+  const interactiveProps = onClick
+    ? {
+        onClick,
+        role: 'button',
         tabIndex: 0,
-        onKeyDown: handleKeyDown
-      })}
-    >
-      {/* Selection Checkbox */}
-      {!compact && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={selected}
-            onCheckedChange={() => onToggleSelect(script.id)}
-            className="self-start md:self-center"
-          />
-        </div>
-      )}
+        onKeyDown: handleKeyDown,
+        interactive: true,
+      }
+    : {}
 
-      {/* Icon & Name Section */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <FileCode className="h-5 w-5 text-primary" />
-        <span className={cn("text-base font-medium", onClick && "hover:text-primary transition-colors")}>
-          {script.name}
-        </span>
-      </div>
+  const osList = Array.isArray(script.os) ? script.os : []
+  const hasTags = Array.isArray(script.tags) && script.tags.length > 0
 
-      {/* Description */}
-      <div className="flex-1 min-w-0">
-        <p className="line-clamp-1 text-sm text-muted-foreground">
-          {script.description || 'No description'}
-        </p>
-      </div>
+  return (
+    <Card variant="default" {...interactiveProps}>
+      <ResponsiveStack
+        direction={{ base: 'col', md: 'row' }}
+        gap={3}
+        align="center"
+      >
+        {!compact ? (
+          <div onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={!!selected}
+              onChange={() => onToggleSelect?.(script.id)}
+              aria-label={`Select ${script.name}`}
+            />
+          </div>
+        ) : null}
 
-      {/* Badges Section */}
-      <div className="flex flex-wrap gap-1.5 items-center">
-        {(Array.isArray(script.os) ? script.os : []).map(os => (
-          <Badge key={os} variant="secondary" className="text-xs">{os}</Badge>
-        ))}
-        <Badge variant="outline" className="text-xs">{script.shell}</Badge>
-      </div>
+        <IconTile icon={<FileCode size={16} />} tone="sky" size="sm" />
 
-      {/* Metadata */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
-        {script.hasInputs && <span>{script.inputCount} inputs</span>}
-        {isSystemTemplate && <Badge variant="outline" className="text-xs">System Template</Badge>}
-      </div>
+        <ResponsiveStack direction="col" gap={1}>
+          <span>{script.name}</span>
+          <span>{script.description || 'No description'}</span>
+        </ResponsiveStack>
 
-      {/* Tags (if present) */}
-      {script.tags && script.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {script.tags.slice(0, 2).map((tag, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium border border-primary/20"
+        <ResponsiveStack direction="row" gap={1} wrap>
+          {osList.map((os) => (
+            <Badge
+              key={os}
+              tone={os === 'windows' ? 'info' : os === 'linux' ? 'success' : 'neutral'}
             >
-              <Tag className="h-3 w-3" />
-              {tag}
-            </span>
+              {os}
+            </Badge>
           ))}
-          {script.tags.length > 2 && (
-            <span className="text-xs text-muted-foreground">+{script.tags.length - 2}</span>
-          )}
-        </div>
-      )}
+          {script.shell ? <Badge tone="neutral">{script.shell}</Badge> : null}
+          {script.hasInputs ? <Badge tone="purple">{script.inputCount} inputs</Badge> : null}
+          {isSystemTemplate ? <Badge tone="neutral">System template</Badge> : null}
+          {hasTags
+            ? script.tags.slice(0, 2).map((tag) => (
+                <Badge key={tag} tone="purple">
+                  {tag}
+                </Badge>
+              ))
+            : null}
+          {hasTags && script.tags.length > 2 ? (
+            <Badge tone="neutral">+{script.tags.length - 2}</Badge>
+          ) : null}
+        </ResponsiveStack>
 
-      {/* Actions */}
-      {customActions || (
-        <div className="flex items-center gap-2 ml-auto" onClick={(e) => e.stopPropagation()}>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(script.id)}
-            className="flex-shrink-0"
-          >
-            <Edit className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
-
-          {!isSystemTemplate && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="px-2">
-                  •••
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => onDelete(script.id)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <ResponsiveStack direction="row" gap={2} align="center" justify="end">
+          {customActions ?? (
+            <div onClick={(e) => e.stopPropagation()}>
+              <ResponsiveStack direction="row" gap={2} align="center">
+                {onEdit ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<Edit size={14} />}
+                    onClick={() => onEdit(script.id)}
+                  >
+                    Edit
+                  </Button>
+                ) : null}
+                {!isSystemTemplate && onDelete ? (
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    label="Delete"
+                    icon={<Trash2 size={14} />}
+                    onClick={() => onDelete(script.id)}
+                  />
+                ) : null}
+              </ResponsiveStack>
+            </div>
           )}
-        </div>
-      )}
-    </div>
+        </ResponsiveStack>
+      </ResponsiveStack>
+    </Card>
   )
 }

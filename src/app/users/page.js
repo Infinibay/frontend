@@ -15,13 +15,15 @@ import {
   Lock,
 } from "lucide-react";
 import {
+  Page,
   Card,
   Button,
   ButtonGroup,
+  IconButton,
   TextField,
   Select,
+  FormField,
   Avatar,
-  Badge,
   Alert,
   Dialog,
   Drawer,
@@ -29,6 +31,10 @@ import {
   EmptyState,
   Spinner,
   Stat,
+  RoleBadge,
+  PasswordStrength,
+  ResponsiveStack,
+  ResponsiveGrid,
 } from "@infinibay/harbor";
 
 import {
@@ -74,8 +80,8 @@ function UserFormFields({ form, setForm, mode }) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+    <ResponsiveStack direction="col" gap={4}>
+      <ResponsiveGrid columns={{ base: 1, sm: 2 }} gap={3}>
         <TextField
           label="First name"
           value={form.firstName}
@@ -86,7 +92,7 @@ function UserFormFields({ form, setForm, mode }) {
           value={form.lastName}
           onChange={update("lastName")}
         />
-      </div>
+      </ResponsiveGrid>
 
       {mode === "create" && (
         <TextField
@@ -97,19 +103,19 @@ function UserFormFields({ form, setForm, mode }) {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <ResponsiveGrid columns={{ base: 1, sm: 2 }} gap={3}>
         <TextField
           label={mode === "create" ? "Password" : "New password (optional)"}
           type={hideA ? "password" : "text"}
-          icon={<Lock className="h-4 w-4" />}
+          icon={<Lock size={16} />}
           suffix={
-            <button
-              type="button"
+            <IconButton
+              size="sm"
+              variant="ghost"
+              label={hideA ? "Show password" : "Hide password"}
+              icon={hideA ? <EyeOff size={16} /> : <Eye size={16} />}
               onClick={() => setHideA((s) => !s)}
-              className="text-fg-muted hover:text-fg"
-            >
-              {hideA ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+            />
           }
           value={form.password || ""}
           onChange={update("password")}
@@ -117,30 +123,33 @@ function UserFormFields({ form, setForm, mode }) {
         <TextField
           label="Confirm password"
           type={hideB ? "password" : "text"}
-          icon={<Lock className="h-4 w-4" />}
+          icon={<Lock size={16} />}
           suffix={
-            <button
-              type="button"
+            <IconButton
+              size="sm"
+              variant="ghost"
+              label={hideB ? "Show password" : "Hide password"}
+              icon={hideB ? <EyeOff size={16} /> : <Eye size={16} />}
               onClick={() => setHideB((s) => !s)}
-              className="text-fg-muted hover:text-fg"
-            >
-              {hideB ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+            />
           }
           value={form.passwordConfirmation || ""}
           onChange={update("passwordConfirmation")}
         />
-      </div>
+      </ResponsiveGrid>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-fg">Role</label>
+      {form.password ? (
+        <PasswordStrength value={form.password} />
+      ) : null}
+
+      <FormField label="Role">
         <Select
           value={form.role}
           onChange={(v) => setForm((prev) => ({ ...prev, role: v }))}
           options={ROLE_OPTIONS}
         />
-      </div>
-    </div>
+      </FormField>
+    </ResponsiveStack>
   );
 }
 
@@ -219,12 +228,12 @@ export default function UsersPage() {
     () => ({
       title: "Users",
       description: "Manage who can sign into Infinibay and what they can do.",
-      icon: <UsersIcon className="h-5 w-5 text-accent-2" />,
+      icon: <UsersIcon size={20} />,
       sections: [
         {
           id: "creating",
           title: "Creating users",
-          icon: <UserPlus className="h-4 w-4" />,
+          icon: <UserPlus size={16} />,
           content: (
             <p>
               Click <strong>Add user</strong> to open a drawer with first
@@ -235,7 +244,7 @@ export default function UsersPage() {
         {
           id: "roles",
           title: "Roles",
-          icon: <Shield className="h-4 w-4" />,
+          icon: <Shield size={16} />,
           content: (
             <p>
               <strong>Admin</strong> can manage all resources and users.{" "}
@@ -358,30 +367,30 @@ export default function UsersPage() {
         label: "User",
         sortable: true,
         render: (row) => (
-          <div className="flex items-center gap-3 min-w-0">
+          <ResponsiveStack direction="row" gap={3} align="center">
             <Avatar
               name={`${row.firstName || ""} ${row.lastName || ""}`.trim() || row.email}
               size="sm"
             />
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-fg truncate">
+            <ResponsiveStack direction="col" gap={0}>
+              <span>
                 {`${row.firstName || ""} ${row.lastName || ""}`.trim() || "—"}
-              </div>
-              <div className="text-xs text-fg-muted truncate">{row.email}</div>
-            </div>
-          </div>
+              </span>
+              <span style={{ fontSize: 12, opacity: 0.6 }}>{row.email}</span>
+            </ResponsiveStack>
+          </ResponsiveStack>
         ),
       },
       {
         key: "role",
         label: "Role",
-        width: 110,
+        width: 120,
         sortable: true,
         render: (row) =>
           row.role === "ADMIN" ? (
-            <Badge tone="purple">Admin</Badge>
+            <RoleBadge role="admin" />
           ) : (
-            <Badge tone="neutral">User</Badge>
+            <RoleBadge role="viewer" label="User" />
           ),
       },
       {
@@ -390,29 +399,31 @@ export default function UsersPage() {
         width: 120,
         align: "right",
         render: (row) => (
-          <div
-            className="flex items-center gap-1 justify-end"
-            onClick={(e) => e.stopPropagation()}
+          <ResponsiveStack
+            direction="row"
+            gap={1}
+            justify="end"
+            align="center"
           >
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={<Pencil className="h-3.5 w-3.5" />}
-              onClick={() => openEdit(row)}
-              aria-label="Edit"
-            >
-              {""}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={<Trash2 className="h-3.5 w-3.5" />}
-              onClick={() => setDeleteTarget(row)}
-              aria-label="Delete"
-            >
-              {""}
-            </Button>
-          </div>
+            <span onClick={(e) => e.stopPropagation()}>
+              <IconButton
+                size="sm"
+                variant="ghost"
+                label="Edit user"
+                icon={<Pencil size={14} />}
+                onClick={() => openEdit(row)}
+              />
+            </span>
+            <span onClick={(e) => e.stopPropagation()}>
+              <IconButton
+                size="sm"
+                variant="ghost"
+                label="Delete user"
+                icon={<Trash2 size={14} />}
+                onClick={() => setDeleteTarget(row)}
+              />
+            </span>
+          </ResponsiveStack>
         ),
       },
     ],
@@ -426,24 +437,26 @@ export default function UsersPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <Page size="xl" gap="lg">
       {/* Hero / actions strip */}
-      <Card variant="glass" className="p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-fg flex items-center gap-2">
-              <UsersIcon className="h-5 w-5 text-accent-2" />
-              Users
-            </h1>
-            <p className="text-sm text-fg-muted mt-1">
+      <Card variant="default">
+        <ResponsiveStack
+          direction={{ base: "col", lg: "row" }}
+          gap={4}
+          justify="between"
+          align={{ base: "stretch", lg: "center" }}
+        >
+          <ResponsiveStack direction="col" gap={1}>
+            <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>Users</h1>
+            <p style={{ opacity: 0.7, margin: 0 }}>
               Manage sign-in accounts and permissions.
             </p>
-          </div>
-          <div className="flex items-center gap-2">
+          </ResponsiveStack>
+          <ButtonGroup>
             <Button
               variant="secondary"
               size="sm"
-              icon={<RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />}
+              icon={<RefreshCw size={16} />}
               onClick={refresh}
               disabled={isLoading}
             >
@@ -451,19 +464,23 @@ export default function UsersPage() {
             </Button>
             <Button
               size="sm"
-              icon={<UserPlus className="h-4 w-4" />}
+              icon={<UserPlus size={16} />}
               onClick={openCreate}
             >
               Add user
             </Button>
-          </div>
-        </div>
+          </ButtonGroup>
+        </ResponsiveStack>
 
-        <div className="grid grid-cols-3 gap-3 mt-4">
+        <ResponsiveGrid columns={{ base: 1, sm: 3 }} gap={3}>
           <Stat label="Total users" value={stats.total} />
-          <Stat label="Admins" value={stats.admins} icon={<Shield className="h-3.5 w-3.5" />} />
+          <Stat
+            label="Admins"
+            value={stats.admins}
+            icon={<Shield size={14} />}
+          />
           <Stat label="Users" value={stats.users} />
-        </div>
+        </ResponsiveGrid>
       </Card>
 
       {error && (
@@ -471,7 +488,11 @@ export default function UsersPage() {
           tone="danger"
           title="Couldn't load users"
           actions={
-            <Button size="sm" onClick={refresh} icon={<RefreshCw className="h-4 w-4" />}>
+            <Button
+              size="sm"
+              onClick={refresh}
+              icon={<RefreshCw size={16} />}
+            >
               Retry
             </Button>
           }
@@ -481,48 +502,57 @@ export default function UsersPage() {
       )}
 
       {/* Search + filters + bulk actions */}
-      <Card variant="default" className="p-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <div className="md:w-80">
+      <Card variant="default">
+        <ResponsiveStack
+          direction={{ base: "col", md: "row" }}
+          gap={3}
+          align={{ base: "stretch", md: "center" }}
+        >
+          <div style={{ flex: "1 1 320px", minWidth: 0 }}>
             <TextField
               placeholder="Search users by name or email…"
-              icon={<Search className="h-4 w-4" />}
+              icon={<Search size={16} />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="md:w-56">
+          <div style={{ flex: "0 0 220px", minWidth: 0 }}>
             <Select
               value={roleFilter}
               onChange={setRoleFilter}
               options={ROLE_FILTER_OPTIONS}
             />
           </div>
-
-          <div className="md:ml-auto flex items-center gap-2">
-            {selected.length > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                icon={<Trash2 className="h-4 w-4" />}
-                onClick={() => setDeleteTarget("bulk")}
-              >
-                Delete {selected.length}
-              </Button>
-            )}
-          </div>
-        </div>
+          {selected.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              icon={<Trash2 size={16} />}
+              onClick={() => setDeleteTarget("bulk")}
+            >
+              Delete {selected.length}
+            </Button>
+          )}
+        </ResponsiveStack>
       </Card>
 
       {/* Users table */}
       {isLoading && !users?.length ? (
-        <div className="py-10 flex items-center justify-center gap-3 text-fg-muted">
-          <Spinner /> Loading users…
-        </div>
+        <Card variant="default">
+          <ResponsiveStack
+            direction="row"
+            gap={3}
+            align="center"
+            justify="center"
+          >
+            <Spinner />
+            <span>Loading users…</span>
+          </ResponsiveStack>
+        </Card>
       ) : filtered.length === 0 ? (
-        <Card variant="default" className="p-0">
+        <Card variant="default">
           <EmptyState
-            icon={<UsersIcon className="h-10 w-10 text-fg-subtle" />}
+            icon={<UsersIcon size={40} />}
             title={users?.length ? "No matches" : "No users yet"}
             description={
               users?.length
@@ -532,7 +562,7 @@ export default function UsersPage() {
             actions={
               <Button
                 size="sm"
-                icon={<UserPlus className="h-4 w-4" />}
+                icon={<UserPlus size={16} />}
                 onClick={openCreate}
               >
                 Add user
@@ -541,7 +571,7 @@ export default function UsersPage() {
           />
         </Card>
       ) : (
-        <Card variant="default" className="p-2">
+        <Card variant="default">
           <DataTable
             rows={filtered}
             columns={columns}
@@ -562,17 +592,25 @@ export default function UsersPage() {
         size={440}
         title={drawerMode === "create" ? "Add user" : "Edit user"}
         footer={
-          <ButtonGroup className="justify-end">
-            <Button variant="secondary" onClick={closeDrawer} disabled={saving}>
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              onClick={closeDrawer}
+              disabled={saving}
+            >
               Cancel
             </Button>
             <Button onClick={handleSave} loading={saving} disabled={saving}>
               {drawerMode === "create" ? "Create user" : "Save changes"}
             </Button>
-          </ButtonGroup>
+          </ResponsiveStack>
         }
       >
-        <UserFormFields form={drawerForm} setForm={setDrawerForm} mode={drawerMode || "create"} />
+        <UserFormFields
+          form={drawerForm}
+          setForm={setDrawerForm}
+          mode={drawerMode || "create"}
+        />
       </Drawer>
 
       {/* Delete confirmation */}
@@ -581,10 +619,13 @@ export default function UsersPage() {
         onClose={() => setDeleteTarget(null)}
         size="sm"
         title={
-          <span className="flex items-center gap-2 text-danger">
-            <Trash2 className="h-4 w-4" />
-            Delete {deleteTarget === "bulk" ? `${selected.length} users` : "user"}
-          </span>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <Trash2 size={16} />
+            <span>
+              Delete{" "}
+              {deleteTarget === "bulk" ? `${selected.length} users` : "user"}
+            </span>
+          </ResponsiveStack>
         }
         description={
           deleteTarget && deleteTarget !== "bulk"
@@ -592,21 +633,24 @@ export default function UsersPage() {
             : "Remove all selected users?"
         }
         footer={
-          <ButtonGroup className="justify-end">
-            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              onClick={() => setDeleteTarget(null)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               Delete
             </Button>
-          </ButtonGroup>
+          </ResponsiveStack>
         }
       >
-        <p className="text-sm text-fg-muted">
+        <p style={{ margin: 0, opacity: 0.7 }}>
           This cannot be undone. The account will no longer be able to sign in
           and any VMs they own will be orphaned unless reassigned first.
         </p>
       </Dialog>
-    </div>
+    </Page>
   );
 }

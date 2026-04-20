@@ -1,33 +1,37 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  Shield,
-  ShieldOff,
-  Zap,
-  Plus,
-  RefreshCw,
-  Pencil,
   AlertTriangle,
+  Check,
   Globe,
   Lock,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Shield,
+  ShieldOff,
+  Trash2,
   Unlock,
-  Check,
+  Zap,
 } from 'lucide-react';
 import {
-  Card,
-  Button,
-  ButtonGroup,
-  Badge,
   Alert,
+  Badge,
+  Button,
+  Card,
+  DataTable,
+  Dialog,
+  Drawer,
+  EmptyState,
+  LoadingOverlay,
+  ResponsiveGrid,
+  ResponsiveStack,
+  SegmentedControl,
   Skeleton,
   Stat,
-  DataTable,
-  SegmentedControl,
-  Drawer,
-  Dialog,
-  EmptyState,
+  StatusDot,
 } from '@infinibay/harbor';
 
 import { createDebugger } from '@/utils/debug';
@@ -43,23 +47,20 @@ import CreateDepartmentFirewallRuleDialog from './security/CreateDepartmentFirew
 
 const debug = createDebugger('frontend:components:department-security-tab');
 
-/**
- * Policy model. Each policy has a `defaultBehavior` copy and a set of
- * optional configs. Matches the backend's POLICY + DEFAULT_CONFIG
- * mutation surface.
- */
 const POLICY_CONFIG = {
   BLOCK_ALL: {
     label: 'Block all',
     tone: 'danger',
     icon: Shield,
-    tagline: 'Blocks every inbound and outbound connection unless a rule explicitly allows it.',
+    tagline:
+      'Blocks every inbound and outbound connection unless a rule explicitly allows it.',
     recommended: true,
     configs: [
       {
         id: 'allow_outbound',
         label: 'Allow all outbound',
-        description: 'VMs reach the internet freely; inbound still gated by rules.',
+        description:
+          'VMs reach the internet freely; inbound still gated by rules.',
         icon: Globe,
       },
       {
@@ -86,7 +87,8 @@ const POLICY_CONFIG = {
       {
         id: 'none',
         label: 'No extra blocks',
-        description: 'Very permissive. Use only for trusted dev / lab networks.',
+        description:
+          'Very permissive. Use only for trusted dev / lab networks.',
         icon: Unlock,
         risky: true,
       },
@@ -115,7 +117,6 @@ const POLICY_CONFIG = {
 const getDefaultConfigFor = (policy) =>
   policy === 'BLOCK_ALL' ? 'allow_outbound' : 'none';
 
-/** Shape firewall rules for the DataTable. */
 const shapeRules = (rules = []) =>
   rules.map((r, i) => ({
     id: r.id || `row-${i}`,
@@ -132,24 +133,32 @@ const shapeRules = (rules = []) =>
     priority: r.priority ?? 500,
   }));
 
-// ----- Policy drawer ---------------------------------------------
+const directionArrow = (d) => {
+  const v = (d || '').toUpperCase();
+  if (v === 'IN') return '↓';
+  if (v === 'OUT') return '↑';
+  if (v === 'INOUT') return '↔';
+  return v;
+};
 
 function PolicyEditor({ open, onClose, department, onSaved }) {
   const current = department?.firewallPolicy || 'BLOCK_ALL';
-  const currentConfig = department?.firewallDefaultConfig || getDefaultConfigFor(current);
+  const currentConfig =
+    department?.firewallDefaultConfig || getDefaultConfigFor(current);
 
   const [policy, setPolicy] = useState(current);
   const [config, setConfig] = useState(currentConfig);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setPolicy(current);
       setConfig(currentConfig);
     }
   }, [open, current, currentConfig]);
 
-  const [updatePolicy, { loading }] = useUpdateDepartmentFirewallPolicyMutation();
+  const [updatePolicy, { loading }] =
+    useUpdateDepartmentFirewallPolicyMutation();
   const policyInfo = POLICY_CONFIG[policy];
   const configInfo = policyInfo.configs.find((c) => c.id === config);
   const risky = !!configInfo?.risky;
@@ -189,150 +198,160 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
         side="right"
         size={520}
         title={
-          <span className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-accent-2" />
-            Firewall policy
-          </span>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <Shield size={14} />
+            <span>Firewall policy</span>
+          </ResponsiveStack>
         }
         footer={
-          <ButtonGroup className="justify-end">
-            <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button variant="secondary" onClick={onClose} disabled={loading}>
+              Cancel
+            </Button>
             <Button
+              variant="primary"
               onClick={() => (risky ? setConfirmOpen(true) : handleSave())}
               loading={loading}
               disabled={loading || !hasChanges}
             >
               {hasChanges ? 'Apply policy' : 'No changes'}
             </Button>
-          </ButtonGroup>
+          </ResponsiveStack>
         }
       >
-        <div className="space-y-5">
-          <p className="text-sm text-fg-muted">
-            The policy defines what the firewall does with traffic that <em>no rule</em>{' '}
-            matches — the fallback. Rules you add below override this default for matching
-            packets.
-          </p>
+        <ResponsiveStack direction="col" gap={5}>
+          <span>
+            The policy defines what the firewall does with traffic that{' '}
+            <em>no rule</em> matches — the fallback. Rules you add below
+            override this default for matching packets.
+          </span>
 
-          <div className="space-y-2">
-            <label className="text-[11px] uppercase tracking-wider text-fg-muted">Policy</label>
+          <ResponsiveStack direction="col" gap={2}>
+            <span>Policy</span>
             <SegmentedControl
               items={[
                 {
                   value: 'BLOCK_ALL',
                   label: (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Shield className="h-3.5 w-3.5" /> Block all
-                    </span>
+                    <ResponsiveStack direction="row" gap={1} align="center">
+                      <Shield size={12} />
+                      <span>Block all</span>
+                    </ResponsiveStack>
                   ),
                 },
                 {
                   value: 'ALLOW_ALL',
                   label: (
-                    <span className="inline-flex items-center gap-1.5">
-                      <ShieldOff className="h-3.5 w-3.5" /> Allow all
-                    </span>
+                    <ResponsiveStack direction="row" gap={1} align="center">
+                      <ShieldOff size={12} />
+                      <span>Allow all</span>
+                    </ResponsiveStack>
                   ),
                 },
               ]}
               value={policy}
               onChange={handlePolicyChange}
             />
-            <p className="text-xs text-fg-muted pt-1">{policyInfo.tagline}</p>
-            {policyInfo.recommended && (
-              <Badge tone="info" className="mt-1">Recommended</Badge>
-            )}
-          </div>
+            <span>{policyInfo.tagline}</span>
+            {policyInfo.recommended ? (
+              <Badge tone="info">Recommended</Badge>
+            ) : null}
+          </ResponsiveStack>
 
-          <div className="space-y-2">
-            <label className="text-[11px] uppercase tracking-wider text-fg-muted">
-              Default behavior
-            </label>
-            <div className="space-y-1.5">
+          <ResponsiveStack direction="col" gap={2}>
+            <span>Default behaviour</span>
+            <ResponsiveStack direction="col" gap={2}>
               {policyInfo.configs.map((c) => {
                 const Icon = c.icon;
                 const active = c.id === config;
                 return (
-                  <button
+                  <Card
                     key={c.id}
-                    type="button"
-                    onClick={() => setConfig(c.id)}
-                    className={`w-full text-left flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                      active
-                        ? 'bg-accent/10 border-accent/40'
-                        : 'bg-surface-1 border-white/10 hover:border-white/20'
-                    }`}
-                  >
-                    <div
-                      className={`h-8 w-8 rounded-md grid place-items-center shrink-0 ${
-                        c.risky ? 'bg-warning/15 text-warning' : 'bg-accent-2/15 text-accent-2'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-fg">{c.label}</span>
+                    variant="default"
+                    spotlight={false}
+                    glow={false}
+                    interactive
+                    selected={active}
+                    leadingIcon={<Icon size={16} />}
+                    leadingIconTone={c.risky ? 'amber' : 'sky'}
+                    title={
+                      <ResponsiveStack direction="row" gap={2} align="center">
+                        <span>{c.label}</span>
                         {c.risky ? <Badge tone="warning">Risky</Badge> : null}
-                        {active ? <Check className="h-3.5 w-3.5 text-accent-2" /> : null}
-                      </div>
-                      <p className="text-xs text-fg-muted mt-0.5">{c.description}</p>
-                    </div>
-                  </button>
+                        {active ? <Check size={12} /> : null}
+                      </ResponsiveStack>
+                    }
+                    description={c.description}
+                    onClick={() => setConfig(c.id)}
+                  />
                 );
               })}
-            </div>
-          </div>
+            </ResponsiveStack>
+          </ResponsiveStack>
 
-          {risky && (
-            <Alert tone="warning" title="Risky default selected">
-              This config leaves traffic mostly unguarded. Make sure it matches this
-              department&apos;s threat model.
+          {risky ? (
+            <Alert
+              tone="warning"
+              icon={<AlertTriangle size={14} />}
+              title="Risky default selected"
+            >
+              This config leaves traffic mostly unguarded. Make sure it matches
+              this department&apos;s threat model.
             </Alert>
-          )}
-        </div>
+          ) : null}
+        </ResponsiveStack>
       </Drawer>
 
       <Dialog
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         size="sm"
-        title={
-          <span className="flex items-center gap-2 text-warning">
-            <AlertTriangle className="h-4 w-4" /> Apply risky policy?
-          </span>
-        }
-        description="The selected default behavior leaves the network broadly open. Confirm to continue."
+        title="Apply risky policy?"
+        description="The selected default behaviour leaves the network broadly open. Confirm to continue."
         footer={
-          <ButtonGroup className="justify-end">
-            <Button variant="secondary" onClick={() => setConfirmOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleSave}>Apply anyway</Button>
-          </ButtonGroup>
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleSave}>
+              Apply anyway
+            </Button>
+          </ResponsiveStack>
         }
       >
-        <p className="text-sm text-fg-muted">
+        <Alert tone="warning" size="sm" icon={<AlertTriangle size={12} />}>
           The subnet will restart immediately. In-flight connections may drop.
-        </p>
+        </Alert>
       </Dialog>
     </>
   );
 }
-
-// ----- Main tab --------------------------------------------------
 
 const DepartmentSecurityTab = ({ department }) => {
   const departmentId = department?.id;
   const [applyingId, setApplyingId] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState({ done: 0, total: 0 });
 
-  const { rules = [], loading, error, createRule, refetch } = useFirewallData({
+  const {
+    rules = [],
+    loading,
+    error,
+    createRule,
+    deleteRule,
+    refetch,
+  } = useFirewallData({
     entityType: ENTITY_TYPES.DEPARTMENT,
     entityId: departmentId,
   });
 
   const policyKey = department?.firewallPolicy || 'BLOCK_ALL';
-  const policyCfgId = department?.firewallDefaultConfig || getDefaultConfigFor(policyKey);
+  const policyCfgId =
+    department?.firewallDefaultConfig || getDefaultConfigFor(policyKey);
   const policyInfo = POLICY_CONFIG[policyKey];
   const PolicyIcon = policyInfo?.icon || Shield;
   const configInfo = policyInfo?.configs.find((c) => c.id === policyCfgId);
@@ -349,7 +368,8 @@ const DepartmentSecurityTab = ({ department }) => {
             departmentId,
             input: {
               action: rule.action,
-              description: rule.description || `From template: ${template.displayName}`,
+              description:
+                rule.description || `From template: ${template.displayName}`,
               direction: rule.direction,
               dstIpAddr: rule.dstIpAddr || null,
               dstIpMask: rule.dstIpMask || null,
@@ -367,7 +387,9 @@ const DepartmentSecurityTab = ({ department }) => {
           },
         });
       }
-      toast.success(`${template.displayName} applied · ${templateRules.length} rules added`);
+      toast.success(
+        `${template.displayName} applied · ${templateRules.length} rules added`,
+      );
     } catch (err) {
       debug.error('Template apply failed:', err);
       toast.error(`Template failed: ${err.message}`);
@@ -378,6 +400,39 @@ const DepartmentSecurityTab = ({ department }) => {
 
   const rows = useMemo(() => shapeRules(rules), [rules]);
 
+  const handleBulkDelete = async () => {
+    const ids = selectedIds.filter(Boolean);
+    if (ids.length === 0) {
+      setBulkDeleteOpen(false);
+      return;
+    }
+    setIsDeleting(true);
+    setBulkDeleteOpen(false);
+    setDeleteProgress({ done: 0, total: ids.length });
+    try {
+      let done = 0;
+      await Promise.all(
+        ids.map((ruleId) =>
+          deleteRule({ variables: { ruleId } }).then(() => {
+            done += 1;
+            setDeleteProgress({ done, total: ids.length });
+          }),
+        ),
+      );
+      toast.success(
+        `${ids.length} rule${ids.length !== 1 ? 's' : ''} deleted`,
+      );
+      setSelectedIds([]);
+    } catch (err) {
+      debug.error('Failed to bulk delete:', err);
+      toast.error(`Could not delete all rules: ${err.message}`);
+    } finally {
+      setIsDeleting(false);
+      setDeleteProgress({ done: 0, total: 0 });
+      await refetch();
+    }
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -385,14 +440,12 @@ const DepartmentSecurityTab = ({ department }) => {
         label: 'Rule',
         sortable: true,
         render: (row) => (
-          <div className="flex items-center gap-2 min-w-0">
-            <span
-              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                row.action === 'ACCEPT' ? 'bg-success' : 'bg-danger'
-              }`}
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <StatusDot
+              status={row.action === 'ACCEPT' ? 'online' : 'offline'}
             />
-            <span className="text-fg truncate">{row.name || '—'}</span>
-          </div>
+            <span>{row.name || '—'}</span>
+          </ResponsiveStack>
         ),
       },
       {
@@ -400,25 +453,22 @@ const DepartmentSecurityTab = ({ department }) => {
         label: 'Dir',
         width: 64,
         sortable: true,
-        render: (r) => (
-          <span className="font-mono text-xs text-fg-muted uppercase">{r.direction}</span>
-        ),
+        align: 'center',
+        render: (r) => <span>{directionArrow(r.direction)}</span>,
       },
       {
         key: 'protocol',
         label: 'Proto',
-        width: 64,
+        width: 80,
         sortable: true,
-        render: (r) => (
-          <span className="font-mono text-xs text-fg-muted uppercase">{r.protocol}</span>
-        ),
+        render: (r) => <span>{(r.protocol || '').toUpperCase()}</span>,
       },
       {
         key: 'port',
         label: 'Port',
-        width: 96,
+        width: 110,
         sortable: true,
-        render: (r) => <span className="font-mono text-xs text-fg">{r.port}</span>,
+        render: (r) => <span>{r.port}</span>,
       },
       {
         key: 'action',
@@ -438,151 +488,183 @@ const DepartmentSecurityTab = ({ department }) => {
         width: 80,
         sortable: true,
         align: 'right',
-        render: (r) => (
-          <span className="font-mono text-xs tabular-nums text-fg-muted">{r.priority}</span>
-        ),
+        render: (r) => <span>{r.priority}</span>,
       },
     ],
-    []
+    [],
   );
 
   if (loading && rules.length === 0) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <ResponsiveStack direction="col" gap={6}>
+        <Skeleton />
+        <Skeleton />
+        <Skeleton />
+      </ResponsiveStack>
     );
   }
 
   if (error) {
     return (
-      <Alert
-        tone="danger"
-        title="Firewall unavailable"
-        actions={
-          <Button size="sm" onClick={refetch} icon={<RefreshCw className="h-4 w-4" />}>
-            Retry
-          </Button>
-        }
-      >
-        We couldn&apos;t load the firewall rules for this department.
-      </Alert>
+      <ResponsiveStack direction="col" gap={6}>
+        <Alert
+          tone="danger"
+          title="Firewall unavailable"
+          actions={
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<RefreshCw size={14} />}
+              onClick={refetch}
+            >
+              Retry
+            </Button>
+          }
+        >
+          We couldn&apos;t load the firewall rules for this department.
+        </Alert>
+      </ResponsiveStack>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Policy hero ─ big glass card showing the current policy, its
-          config and a button that slides open the editor Drawer. */}
-      <Card variant="glass" className="relative">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div className="flex items-start gap-4 min-w-0">
-            <div
-              className={`h-14 w-14 rounded-2xl grid place-items-center shrink-0 ${
-                policyInfo.tone === 'danger'
-                  ? 'bg-danger/15 text-danger'
-                  : 'bg-success/15 text-success'
-              }`}
-            >
-              <PolicyIcon className="h-6 w-6" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] uppercase tracking-widest text-fg-muted">Policy</span>
-                <Badge tone={policyInfo.tone === 'danger' ? 'danger' : 'success'}>
-                  {policyInfo.label}
-                </Badge>
-              </div>
-              <h2 className="text-xl font-semibold text-fg mt-1">
-                {configInfo?.label || policyCfgId}
-              </h2>
-              <p className="text-sm text-fg-muted mt-1">
-                {configInfo?.description || policyInfo.tagline}
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<Pencil className="h-4 w-4" />}
-            onClick={() => setPolicyOpen(true)}
-          >
-            Edit policy
-          </Button>
-        </div>
-      </Card>
+    <>
+      <ResponsiveStack direction="col" gap={6}>
+        <Alert
+          tone="info"
+          icon={<Shield size={14} />}
+          title="Inherited by all VMs"
+        >
+          Every VM in{' '}
+          <strong>{department?.name || 'this department'}</strong> starts
+          with these rules applied on top of its own stack. Individual VMs
+          can mark their own rules with “overrides department” and take
+          precedence for matching traffic.
+        </Alert>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Stat label="Rules" value={rules.length} icon={<Shield className="h-3.5 w-3.5" />} />
-        <Stat
-          label="Allow"
-          value={rules.filter((r) => r.action === 'ACCEPT').length}
+        <Card
+          variant="default"
+          spotlight={false}
+          glow={false}
+          leadingIcon={<PolicyIcon size={22} />}
+          leadingIconTone={policyInfo.tone === 'danger' ? 'rose' : 'green'}
+          title={
+            <ResponsiveStack direction="row" gap={2} align="center" wrap>
+              <span>Policy</span>
+              <Badge tone={policyInfo.tone === 'danger' ? 'danger' : 'success'}>
+                {policyInfo.label}
+              </Badge>
+              <span>·</span>
+              <span>{configInfo?.label || policyCfgId}</span>
+            </ResponsiveStack>
+          }
+          description={configInfo?.description || policyInfo.tagline}
+          footer={
+            <ResponsiveStack direction="row" justify="end">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Pencil size={14} />}
+                onClick={() => setPolicyOpen(true)}
+              >
+                Edit policy
+              </Button>
+            </ResponsiveStack>
+          }
         />
-        <Stat
-          label="Block"
-          value={rules.filter((r) => r.action !== 'ACCEPT').length}
-        />
-      </div>
 
-      {/* Template chips */}
-      <Card variant="glass">
-        <div className="flex items-center gap-2 mb-1">
-          <Zap className="h-4 w-4 text-warning" />
-          <h3 className="text-sm font-semibold text-fg">Quick security profiles</h3>
-        </div>
-        <p className="text-xs text-fg-muted mb-4">
-          Apply a starter set of rules. Existing rules are kept — nothing is removed.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {FIREWALL_TEMPLATES.map((tpl) => (
-            <Button
-              key={tpl.id}
-              size="sm"
-              variant="secondary"
-              loading={applyingId === tpl.id}
-              disabled={!!applyingId}
-              onClick={() => applyTemplate(tpl.id)}
-            >
-              {tpl.displayName}
-            </Button>
-          ))}
-        </div>
-      </Card>
+        <ResponsiveGrid columns={{ base: 1, md: 3 }} gap={4}>
+          <Stat
+            label="Rules"
+            value={rules.length}
+            icon={<Shield size={12} />}
+          />
+          <Stat
+            label="Allow"
+            value={rules.filter((r) => r.action === 'ACCEPT').length}
+          />
+          <Stat
+            label="Block"
+            value={rules.filter((r) => r.action !== 'ACCEPT').length}
+          />
+        </ResponsiveGrid>
 
-      {/* Rules */}
-      <Card variant="default" className="p-0 overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-white/8">
-          <div>
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-accent-2" />
-              <h3 className="text-sm font-semibold text-fg">Department rules</h3>
-            </div>
-            <p className="text-xs text-fg-muted mt-0.5">
-              {rules.length} rule{rules.length !== 1 ? 's' : ''} · inherited by every VM in{' '}
-              {department?.name || 'this department'}
-            </p>
-          </div>
-          <Button
-            size="sm"
-            icon={<Plus className="h-4 w-4" />}
-            onClick={() => setCreateOpen(true)}
-          >
-            Add rule
-          </Button>
-        </div>
-        <div className="p-2">
-          {rows.length === 0 ? (
+        <Card
+          variant="default"
+          spotlight={false}
+          glow={false}
+          leadingIcon={<Zap size={18} />}
+          leadingIconTone="amber"
+          title="Quick security profiles"
+          description="Apply a starter set of rules. Existing rules are kept — nothing is removed."
+        >
+          <ResponsiveStack direction="row" gap={2} wrap>
+            {FIREWALL_TEMPLATES.map((tpl) => (
+              <Button
+                key={tpl.id}
+                size="sm"
+                variant={applyingId === tpl.id ? 'primary' : 'secondary'}
+                loading={applyingId === tpl.id}
+                disabled={!!applyingId}
+                onClick={() => applyTemplate(tpl.id)}
+              >
+                {tpl.displayName}
+              </Button>
+            ))}
+          </ResponsiveStack>
+        </Card>
+
+        <Card
+          variant="default"
+          spotlight={false}
+          glow={false}
+          leadingIcon={<Shield size={18} />}
+          leadingIconTone="sky"
+          title="Department rules"
+          description={`${rules.length} rule${rules.length !== 1 ? 's' : ''} · inherited by every VM in ${department?.name || 'this department'}`}
+          footer={
+            <ResponsiveStack direction="row" justify="between" align="center">
+              {selectedIds.length > 0 ? (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  icon={<Trash2 size={14} />}
+                  onClick={() => setBulkDeleteOpen(true)}
+                  disabled={isDeleting || !!applyingId}
+                >
+                  Delete {selectedIds.length} selected
+                </Button>
+              ) : (
+                <span />
+              )}
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => setCreateOpen(true)}
+                disabled={isDeleting || !!applyingId}
+              >
+                Add rule
+              </Button>
+            </ResponsiveStack>
+          }
+        >
+          {isDeleting && deleteProgress.total > 0 ? (
+            <LoadingOverlay
+              label="Deleting rules…"
+              progress={deleteProgress}
+            />
+          ) : rows.length === 0 ? (
             <EmptyState
-              icon={<Shield className="h-10 w-10 text-fg-subtle" />}
+              variant="dashed"
+              icon={<Shield size={18} />}
               title="No rules yet"
               description="Pick a Quick Security Profile above, or add your first rule manually."
               actions={
                 <Button
                   size="sm"
-                  icon={<Plus className="h-4 w-4" />}
+                  variant="primary"
+                  icon={<Plus size={14} />}
                   onClick={() => setCreateOpen(true)}
                 >
                   Add rule
@@ -594,25 +676,14 @@ const DepartmentSecurityTab = ({ department }) => {
               rows={rows}
               columns={columns}
               rowKey={(r) => r.id}
-              emptyState={null}
+              selectable
+              selected={selectedIds}
+              onSelectionChange={setSelectedIds}
             />
           )}
-        </div>
-      </Card>
+        </Card>
 
-      {/* Inheritance callouts */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <Alert tone="info" title="Inherited by all VMs">
-          Every VM in <strong>{department?.name || 'this department'}</strong> starts with
-          these rules applied on top of its own stack.
-        </Alert>
-        {rules.length > 0 && (
-          <Alert tone="warning" title="VMs can override">
-            Individual VMs can mark their own rules with “overrides department” and take
-            precedence for matching traffic.
-          </Alert>
-        )}
-      </div>
+      </ResponsiveStack>
 
       <PolicyEditor
         open={policyOpen}
@@ -628,7 +699,42 @@ const DepartmentSecurityTab = ({ department }) => {
         onSuccess={() => setCreateOpen(false)}
         existingRules={rules}
       />
-    </div>
+
+      <Dialog
+        open={bulkDeleteOpen}
+        onClose={() => !isDeleting && setBulkDeleteOpen(false)}
+        size="md"
+        title="Delete selected rules?"
+        footerAlign="end"
+        footer={
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              disabled={isDeleting}
+              onClick={() => setBulkDeleteOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              loading={isDeleting}
+              disabled={isDeleting}
+              icon={<Trash2 size={14} />}
+              onClick={handleBulkDelete}
+            >
+              Delete {selectedIds.length} rule
+              {selectedIds.length !== 1 ? 's' : ''}
+            </Button>
+          </ResponsiveStack>
+        }
+      >
+        <Alert tone="warning" size="sm" icon={<AlertTriangle size={14} />}>
+          This will permanently remove {selectedIds.length} rule
+          {selectedIds.length !== 1 ? 's' : ''} from this department. VMs
+          inheriting these rules will lose them immediately.
+        </Alert>
+      </Dialog>
+    </>
   );
 };
 

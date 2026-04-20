@@ -1,62 +1,64 @@
-"use client";
+'use client';
 
-import React, { useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useMemo } from 'react';
+import { useParams } from 'next/navigation';
 import {
-  Tabs,
-  TabList,
-  Tab,
-  TabPanel,
-  Button,
   Badge,
+  Button,
+  Card,
+  Container,
+  IconTile,
+  ResponsiveStack,
   StatusDot,
-} from "@infinibay/harbor";
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+} from '@infinibay/harbor';
 import dynamic from 'next/dynamic';
 import { createDebugger } from '@/utils/debug';
 import {
-  Server,
-  Power,
   Cpu,
+  FileCode,
+  LayoutDashboard,
+  Lightbulb,
+  Power,
+  PowerOff,
+  RefreshCw,
+  Server,
   Shield,
   Terminal,
-  Lightbulb,
-  FileCode,
-  RefreshCw,
-  LayoutDashboard,
-  PowerOff,
 } from 'lucide-react';
-import { useVMDetail } from "./hooks/useVMDetail";
+import { useVMDetail } from './hooks/useVMDetail';
 import { usePageHeader } from '@/hooks/usePageHeader';
 
-import LoadingState from "./components/LoadingState";
-import ErrorState from "./components/ErrorState";
-import ToastNotification from "../../components/ToastNotification";
+import LoadingState from './components/LoadingState';
+import ErrorState from './components/ErrorState';
+import ToastNotification from '../../components/ToastNotification';
 
 const debug = createDebugger('frontend:pages:vm-detail');
 
-// Lazy-loaded tab content — loaded only when the user activates the tab.
 const VMOverviewTab = dynamic(() => import('./components/VMOverviewTab'), {
   ssr: false,
-  loading: () => <TabLoading label="Loading overview…" />
+  loading: () => <TabLoading label="Loading overview…" />,
 });
-const VMRecommendationsTab = dynamic(() => import('./components/VMRecommendationsTab'), {
-  ssr: false,
-  loading: () => <TabLoading label="Loading recommendations…" />
-});
-const VMSecurityTab = dynamic(() => import('./components/security/VMSecurityTab'), {
-  ssr: false,
-  loading: () => <TabLoading label="Loading security…" />
-});
+const VMRecommendationsTab = dynamic(
+  () => import('./components/VMRecommendationsTab'),
+  { ssr: false, loading: () => <TabLoading label="Loading recommendations…" /> },
+);
+const VMSecurityTab = dynamic(
+  () => import('./components/security/VMSecurityTab'),
+  { ssr: false, loading: () => <TabLoading label="Loading security…" /> },
+);
 const VMScriptsTab = dynamic(() => import('./components/VMScriptsTab'), {
   ssr: false,
-  loading: () => <TabLoading label="Loading scripts…" />
+  loading: () => <TabLoading label="Loading scripts…" />,
 });
 
 function TabLoading({ label }) {
-  return <div className="py-12 text-center text-fg-muted text-sm">{label}</div>;
+  return <Container size="md" padded>{label}</Container>;
 }
 
-/** Map a VM state string to Harbor's StatusDot status vocabulary. */
 function toHarborStatus(state) {
   switch ((state || '').toLowerCase()) {
     case 'running':
@@ -80,15 +82,26 @@ function toHarborStatus(state) {
   }
 }
 
-/** Compose a human subtitle from VM metadata. */
-function vmSubtitle(vm) {
-  const bits = [];
-  const os = vm?.configuration?.os;
-  if (os) bits.push(os);
-  if (vm?.cpuCores) bits.push(`${vm.cpuCores} vCPU`);
-  if (vm?.ramGB) bits.push(`${vm.ramGB} GB RAM`);
-  if (vm?.localIP) bits.push(vm.localIP);
-  return bits.join(' · ');
+function statusLabel(status) {
+  switch (status) {
+    case 'online': return 'Running';
+    case 'degraded': return 'Degraded';
+    case 'provisioning': return 'Starting';
+    case 'maintenance': return 'Stopping';
+    case 'offline': return 'Stopped';
+    default: return 'Unknown';
+  }
+}
+
+function statusTone(status) {
+  switch (status) {
+    case 'online': return 'success';
+    case 'degraded': return 'warning';
+    case 'provisioning': return 'info';
+    case 'maintenance': return 'info';
+    case 'offline': return 'neutral';
+    default: return 'neutral';
+  }
 }
 
 const VMDetailPage = () => {
@@ -111,73 +124,82 @@ const VMDetailPage = () => {
     handlePowerAction,
   } = useVMDetail(vmId);
 
-  const helpConfig = useMemo(() => ({
-    title: "Virtual Machine Help",
-    description: "Learn how to manage and control your virtual machine",
-    icon: <Server className="h-5 w-5 text-accent-2" />,
-    sections: [
-      {
-        id: "power-management",
-        title: "Power Management",
-        icon: <Power className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <p className="font-medium text-fg mb-1">Starting VMs</p>
-            <p>Click the &quot;Start&quot; button when the VM is stopped. The system will initiate the boot process and the status badge will update to &quot;Running&quot; when ready.</p>
+  const helpConfig = useMemo(
+    () => ({
+      title: 'Virtual Machine Help',
+      description: 'Learn how to manage and control your virtual machine',
+      icon: <Server size={14} />,
+      sections: [
+        {
+          id: 'power-management',
+          title: 'Power Management',
+          icon: <Power size={14} />,
+          content: (
+            <ResponsiveStack direction="col" gap={2}>
+              <span>Starting VMs</span>
+              <span>
+                Click the &quot;Start&quot; button when the VM is stopped. The system
+                will initiate the boot process.
+              </span>
+              <span>Stopping VMs</span>
+              <span>
+                Click the &quot;Stop&quot; button when the VM is running to trigger a
+                graceful shutdown.
+              </span>
+            </ResponsiveStack>
+          ),
+        },
+        {
+          id: 'hardware',
+          title: 'Hardware Configuration',
+          icon: <Cpu size={14} />,
+          content: 'Admins can edit CPU and RAM from the Overview tab, but only when the VM is stopped.',
+        },
+        {
+          id: 'tabs',
+          title: 'Tabs',
+          icon: <Terminal size={14} />,
+          content: (
+            <ResponsiveStack direction="col" gap={2}>
+              <span>Overview — live metrics, hardware, network, snapshots, critical alerts.</span>
+              <span>Recommendations — AI-powered suggestions for VM optimization.</span>
+              <span>Security — VM-specific firewall rules layered on top of department rules.</span>
+              <span>Scripts — run automation scripts on this VM.</span>
+            </ResponsiveStack>
+          ),
+        },
+      ],
+      quickTips: [
+        'Stop the VM before modifying CPU or RAM settings',
+        'Click IP addresses to copy them to clipboard',
+        'Check the Overview tab for live metrics',
+      ],
+    }),
+    [],
+  );
 
-            <p className="font-medium text-fg mb-1 mt-3">Stopping VMs</p>
-            <p>Click the &quot;Stop&quot; button when the VM is running. A graceful shutdown will be initiated to safely stop the virtual machine.</p>
-          </div>
-        )
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: 'Home', href: '/' },
+        { label: 'Departments', href: '/departments' },
+        {
+          label: departmentName || 'Department',
+          href: `/departments/${departmentName}`,
+        },
+        { label: vm?.name || 'VM', isCurrent: true },
+      ],
+      title: vm?.name || 'Virtual Machine',
+      backButton: {
+        href: `/departments/${departmentName}`,
+        label: 'Back',
       },
-      {
-        id: "hardware",
-        title: "Hardware Configuration",
-        icon: <Cpu className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <p>Admins can edit CPU and RAM from the Overview tab, but only when the VM is stopped.</p>
-          </div>
-        )
-      },
-      {
-        id: "tabs",
-        title: "Tabs",
-        icon: <Terminal className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <p className="font-medium text-fg mb-1">Overview</p>
-            <p>Live metrics, hardware, network, snapshots, and critical alerts.</p>
-            <p className="font-medium text-fg mb-1 mt-3">Recommendations</p>
-            <p>AI-powered suggestions for VM optimization.</p>
-            <p className="font-medium text-fg mb-1 mt-3">Security</p>
-            <p>VM-specific firewall rules layered on top of department rules.</p>
-            <p className="font-medium text-fg mb-1 mt-3">Scripts</p>
-            <p>Run automation scripts on this VM.</p>
-          </div>
-        )
-      }
-    ],
-    quickTips: [
-      "Stop the VM before modifying CPU or RAM settings",
-      "Click IP addresses to copy them to clipboard",
-      "Check the Overview tab for live metrics",
-    ]
-  }), []);
-
-  usePageHeader({
-    breadcrumbs: [
-      { label: 'Home', href: '/' },
-      { label: 'Departments', href: '/departments' },
-      { label: departmentName || 'Department', href: `/departments/${departmentName}` },
-      { label: vm?.name || 'VM', isCurrent: true }
-    ],
-    title: vm?.name || 'Virtual Machine',
-    backButton: { href: `/departments/${departmentName}`, label: 'Back' },
-    actions: [],
-    helpConfig: helpConfig,
-    helpTooltip: 'VM detail help'
-  }, [vm?.name, departmentName]);
+      actions: [],
+      helpConfig,
+      helpTooltip: 'VM detail help',
+    },
+    [vm?.name, departmentName],
+  );
 
   if (isLoading) {
     debug.log('Showing loading state');
@@ -194,104 +216,126 @@ const VMDetailPage = () => {
   const status = toHarborStatus(vm.status);
   const isRunning = status === 'online';
   const isBusy = status === 'provisioning' || status === 'maintenance';
+  const os = vm?.configuration?.os;
 
   return (
     <>
-      <div className="space-y-6">
-        {/* Hero — VM identity, status and power actions. */}
-        <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-surface-1 p-6 spotlight-soft">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <div className="flex items-start gap-4 flex-1 min-w-0">
-              <StatusDot status={status} />
-              <div className="min-w-0">
-                <h1 className="text-2xl font-semibold text-fg truncate">{vm.name}</h1>
-                <p className="text-sm text-fg-muted mt-1">{vmSubtitle(vm) || 'Virtual machine'}</p>
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  {vm.department?.name ? (
-                    <Badge tone="neutral">{vm.department.name}</Badge>
-                  ) : null}
-                  {vm.template?.name ? (
-                    <Badge tone="info">{vm.template.name}</Badge>
-                  ) : null}
-                  {vm.user ? (
-                    <Badge tone="purple">{vm.user.firstName || vm.user.email}</Badge>
-                  ) : null}
-                </div>
-              </div>
-            </div>
+      <Container size="xl" padded>
+        <ResponsiveStack direction="col" gap={6}>
+          <Card variant="default" spotlight={false} glow={false}>
+            <ResponsiveStack
+              direction={{ base: 'col', lg: 'row' }}
+              gap={5}
+              justify="between"
+              align={{ base: 'start', lg: 'center' }}
+            >
+              <ResponsiveStack direction="row" gap={4} align="center">
+                <IconTile icon={<Server size={22} />} tone="purple" size="lg" />
+                <ResponsiveStack direction="col" gap={2}>
+                  <ResponsiveStack direction="row" gap={3} align="center" wrap>
+                    <span>{vm.name}</span>
+                    <Badge tone={statusTone(status)} pulse={isRunning}>
+                      <StatusDot status={status} />
+                      {statusLabel(status)}
+                    </Badge>
+                    {vm.template?.name ? (
+                      <Badge tone="purple">{vm.template.name}</Badge>
+                    ) : null}
+                  </ResponsiveStack>
+                  <ResponsiveStack direction="row" gap={3} align="center" wrap>
+                    {os ? <span>{os}</span> : null}
+                    {vm?.cpuCores ? <span>· {vm.cpuCores} vCPU</span> : null}
+                    {vm?.ramGB ? <span>· {vm.ramGB} GB RAM</span> : null}
+                    {vm?.localIP ? <span>· {vm.localIP}</span> : null}
+                  </ResponsiveStack>
+                </ResponsiveStack>
+              </ResponsiveStack>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<RefreshCw className="h-4 w-4" />}
-                onClick={refreshVM}
-                disabled={isBusy}
-              >
-                Refresh
-              </Button>
-              {isRunning ? (
+              <ResponsiveStack direction="row" gap={2} align="center">
                 <Button
-                  variant="destructive"
+                  variant="ghost"
                   size="sm"
-                  icon={<PowerOff className="h-4 w-4" />}
-                  onClick={() => handlePowerAction('stop')}
-                  loading={isBusy}
+                  icon={<RefreshCw size={14} />}
+                  onClick={refreshVM}
                   disabled={isBusy}
                 >
-                  Stop
+                  Refresh
                 </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  icon={<Power className="h-4 w-4" />}
-                  onClick={() => handlePowerAction('start')}
-                  loading={isBusy}
-                  disabled={isBusy}
-                >
-                  Start
-                </Button>
-              )}
-            </div>
-          </div>
+                {isRunning ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    icon={<PowerOff size={14} />}
+                    onClick={() => handlePowerAction('stop')}
+                    loading={isBusy}
+                    disabled={isBusy}
+                  >
+                    Stop
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<Power size={14} />}
+                    onClick={() => handlePowerAction('start')}
+                    loading={isBusy}
+                    disabled={isBusy}
+                  >
+                    Start
+                  </Button>
+                )}
+              </ResponsiveStack>
+            </ResponsiveStack>
+          </Card>
 
-        </section>
+          <Tabs
+            value={activeTab || 'overview'}
+            onValueChange={setActiveTab}
+            variant="pill"
+          >
+            <TabList>
+              <Tab value="overview" icon={<LayoutDashboard size={14} />}>
+                Overview
+              </Tab>
+              <Tab value="recommendations" icon={<Lightbulb size={14} />}>
+                Recommendations
+              </Tab>
+              <Tab value="firewall" icon={<Shield size={14} />}>
+                Security
+              </Tab>
+              <Tab value="scripts" icon={<FileCode size={14} />}>
+                Scripts
+              </Tab>
+            </TabList>
 
-        {/* Tabs */}
-        <Tabs value={activeTab || 'overview'} onValueChange={setActiveTab} variant="underline" className="w-full">
-          <TabList className="w-full">
-            <Tab value="overview" icon={<LayoutDashboard className="h-4 w-4" />}>Overview</Tab>
-            <Tab value="recommendations" icon={<Lightbulb className="h-4 w-4" />}>Recommendations</Tab>
-            <Tab value="firewall" icon={<Shield className="h-4 w-4" />}>Security</Tab>
-            <Tab value="scripts" icon={<FileCode className="h-4 w-4" />}>Scripts</Tab>
-          </TabList>
-
-          <TabPanel value="overview" className="mt-2">
-            <VMOverviewTab vmId={vmId} vm={vm} />
-          </TabPanel>
-
-          <TabPanel value="recommendations" className="mt-2">
-            <VMRecommendationsTab vmId={vmId} vm={vm} vmStatus={vm?.status} />
-          </TabPanel>
-
-          <TabPanel value="firewall" className="mt-2">
-            <VMSecurityTab
-              vmId={vmId}
-              vmStatus={vm?.status}
-              vmOs={vm?.configuration?.os}
-              departmentId={vm?.department?.id}
-            />
-          </TabPanel>
-
-          <TabPanel value="scripts" className="mt-2">
-            <VMScriptsTab
-              vmId={vmId}
-              vmStatus={vm?.status}
-              departmentId={vm?.department?.id}
-            />
-          </TabPanel>
-        </Tabs>
-      </div>
+            <TabPanel value="overview">
+              <VMOverviewTab vmId={vmId} vm={vm} />
+            </TabPanel>
+            <TabPanel value="recommendations">
+              <VMRecommendationsTab
+                vmId={vmId}
+                vm={vm}
+                vmStatus={vm?.status}
+              />
+            </TabPanel>
+            <TabPanel value="firewall">
+              <VMSecurityTab
+                vmId={vmId}
+                vmStatus={vm?.status}
+                vmOs={vm?.configuration?.os}
+                departmentId={vm?.department?.id}
+              />
+            </TabPanel>
+            <TabPanel value="scripts">
+              <VMScriptsTab
+                vmId={vmId}
+                vmStatus={vm?.status}
+                departmentId={vm?.department?.id}
+              />
+            </TabPanel>
+          </Tabs>
+        </ResponsiveStack>
+      </Container>
 
       <ToastNotification
         show={showToast}

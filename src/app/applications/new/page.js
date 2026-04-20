@@ -13,8 +13,10 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import {
+  Page,
   Card,
   Button,
+  IconButton,
   TextField,
   Textarea,
   Select,
@@ -24,7 +26,8 @@ import {
   Tab,
   TabPanel,
   Alert,
-  Badge,
+  FormField,
+  ResponsiveStack,
 } from "@infinibay/harbor";
 
 import { createApplication } from "@/state/slices/applications";
@@ -36,9 +39,9 @@ const PARAM_TYPE_OPTIONS = [
 ];
 
 const OS_TABS = [
-  { id: "windows", label: "Windows", tone: "info" },
-  { id: "ubuntu", label: "Ubuntu", tone: "success" },
-  { id: "fedora", label: "Fedora", tone: "success" },
+  { id: "windows", label: "Windows" },
+  { id: "ubuntu", label: "Ubuntu" },
+  { id: "fedora", label: "Fedora" },
 ];
 
 export default function NewApplicationPage() {
@@ -126,190 +129,163 @@ export default function NewApplicationPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
-      <Card variant="glass">
-        <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-accent/15 grid place-items-center shrink-0">
-            <AppWindow className="h-5 w-5 text-accent" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold text-fg">New application</h1>
-            <p className="text-sm text-fg-muted mt-1">
-              Register an install-script catalogue entry that VMs can pull
-              and run with parameters.
-            </p>
-          </div>
+    <form onSubmit={handleSubmit}>
+      <Page size="lg" gap="lg">
+        <Card
+          variant="default"
+          leadingIcon={<AppWindow size={20} />}
+          leadingIconTone="purple"
+          title="New application"
+          description="Register an install-script catalogue entry that VMs can pull and run with parameters."
+        >
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<ArrowLeft size={16} />}
+              type="button"
+              onClick={() => router.push("/applications")}
+            >
+              Cancel
+            </Button>
+          </ResponsiveStack>
+        </Card>
+
+        <Card
+          variant="default"
+          leadingIcon={<Package size={18} />}
+          title="Identity"
+        >
+          <ResponsiveStack direction="col" gap={3}>
+            <FormField label="Name" required>
+              <TextField
+                placeholder="e.g. VSCode, Postman, OBS"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </FormField>
+            <FormField label="Description" required>
+              <Textarea
+                placeholder="Short blurb shown to anyone picking this app"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                required
+              />
+            </FormField>
+          </ResponsiveStack>
+        </Card>
+
+        <Card variant="default" title="Parameters">
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              size="sm"
+              variant="secondary"
+              type="button"
+              icon={<Plus size={16} />}
+              onClick={addParam}
+            >
+              Add parameter
+            </Button>
+          </ResponsiveStack>
+
+          {params.length === 0 ? (
+            <p>No parameters — this app installs with zero inputs.</p>
+          ) : (
+            <ResponsiveStack direction="col" gap={2}>
+              {params.map((p, i) => (
+                <Card key={i} variant="default">
+                  <ResponsiveStack direction="row" gap={2} align="center">
+                    <TextField
+                      placeholder="name"
+                      value={p.name}
+                      onChange={(e) => updateParam(i, { name: e.target.value })}
+                    />
+                    <Select
+                      value={p.type}
+                      onChange={(v) => updateParam(i, { type: v })}
+                      options={PARAM_TYPE_OPTIONS}
+                    />
+                    <Checkbox
+                      checked={p.required}
+                      onChange={(e) => updateParam(i, { required: e.target.checked })}
+                      label="Required"
+                    />
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      type="button"
+                      icon={<Trash2 size={14} />}
+                      onClick={() => removeParam(i)}
+                      aria-label="Remove parameter"
+                    />
+                  </ResponsiveStack>
+                </Card>
+              ))}
+            </ResponsiveStack>
+          )}
+
+          <Alert tone="info" size="sm">
+            Use <code>{"{{param_name}}"}</code> inside any script to interpolate values at install time.
+          </Alert>
+        </Card>
+
+        <Card
+          variant="default"
+          leadingIcon={<AppWindow size={18} />}
+          title="Install scripts"
+        >
+          <Tabs value={activeTab} onValueChange={setActiveTab} variant="pill">
+            <TabList>
+              {OS_TABS.map((os) => (
+                <Tab key={os.id} value={os.id}>
+                  {os.label}
+                  {scripts[os.id]?.trim() ? " ●" : ""}
+                </Tab>
+              ))}
+            </TabList>
+
+            {OS_TABS.map((os) => (
+              <TabPanel key={os.id} value={os.id}>
+                <Textarea
+                  placeholder={`${os.label} install script`}
+                  value={scripts[os.id]}
+                  onChange={(e) =>
+                    setScripts((prev) => ({ ...prev, [os.id]: e.target.value }))
+                  }
+                  rows={10}
+                />
+              </TabPanel>
+            ))}
+          </Tabs>
+
+          {!scriptHasContent && (
+            <Alert tone="warning">
+              Provide at least one OS script before saving.
+            </Alert>
+          )}
+        </Card>
+
+        <ResponsiveStack direction="row" gap={2} justify="end">
           <Button
-            variant="secondary"
-            size="sm"
-            icon={<ArrowLeft className="h-4 w-4" />}
             type="button"
+            variant="secondary"
             onClick={() => router.push("/applications")}
+            disabled={saving}
           >
             Cancel
           </Button>
-        </div>
-      </Card>
-
-      <Card variant="default">
-        <h2 className="text-sm font-semibold text-fg mb-3 flex items-center gap-2">
-          <Package className="h-4 w-4 text-accent-2" />
-          Identity
-        </h2>
-        <div className="space-y-3">
-          <TextField
-            label="Name"
-            placeholder="e.g. VSCode, Postman, OBS"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-fg">Description</label>
-            <Textarea
-              placeholder="Short blurb shown to anyone picking this app"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              required
-            />
-          </div>
-        </div>
-      </Card>
-
-      <Card variant="default">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-fg">Parameters</h2>
           <Button
-            size="sm"
-            variant="secondary"
-            type="button"
-            icon={<Plus className="h-4 w-4" />}
-            onClick={addParam}
+            type="submit"
+            icon={<Save size={16} />}
+            loading={saving}
+            disabled={saving}
           >
-            Add parameter
+            Create application
           </Button>
-        </div>
-
-        {params.length === 0 ? (
-          <p className="text-sm text-fg-muted">
-            No parameters — this app installs with zero inputs.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {params.map((p, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 rounded-lg bg-surface-1 border border-white/8 p-2"
-              >
-                <div className="flex-1 min-w-0">
-                  <TextField
-                    placeholder="name"
-                    value={p.name}
-                    onChange={(e) => updateParam(i, { name: e.target.value })}
-                  />
-                </div>
-                <div className="w-28 shrink-0">
-                  <Select
-                    value={p.type}
-                    onChange={(v) => updateParam(i, { type: v })}
-                    options={PARAM_TYPE_OPTIONS}
-                  />
-                </div>
-                <div className="w-28 shrink-0">
-                  <Checkbox
-                    checked={p.required}
-                    onChange={(e) => updateParam(i, { required: e.target.checked })}
-                    label="Required"
-                  />
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  type="button"
-                  icon={<Trash2 className="h-3.5 w-3.5" />}
-                  onClick={() => removeParam(i)}
-                  aria-label="Remove parameter"
-                >
-                  {""}
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <p className="text-xs text-fg-muted mt-3">
-          Use <code className="px-1 bg-surface-2 rounded">{"{{param_name}}"}</code>
-          {" "}inside any script to interpolate values at install time.
-        </p>
-      </Card>
-
-      <Card variant="default">
-        <h2 className="text-sm font-semibold text-fg mb-3 flex items-center gap-2">
-          <AppWindow className="h-4 w-4 text-accent-2" />
-          Install scripts
-        </h2>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} variant="pill">
-          <TabList>
-            {OS_TABS.map((os) => (
-              <Tab
-                key={os.id}
-                value={os.id}
-                icon={
-                  scripts[os.id]?.trim() ? (
-                    <Badge
-                      tone={os.tone}
-                      className="h-2 w-2 !p-0 rounded-full border-none"
-                    />
-                  ) : null
-                }
-              >
-                {os.label}
-              </Tab>
-            ))}
-          </TabList>
-
-          {OS_TABS.map((os) => (
-            <TabPanel key={os.id} value={os.id} className="mt-3">
-              <Textarea
-                placeholder={`${os.label} install script`}
-                value={scripts[os.id]}
-                onChange={(e) =>
-                  setScripts((prev) => ({ ...prev, [os.id]: e.target.value }))
-                }
-                rows={10}
-                className="font-mono text-sm"
-              />
-            </TabPanel>
-          ))}
-        </Tabs>
-
-        {!scriptHasContent && (
-          <Alert tone="warning" className="mt-3">
-            Provide at least one OS script before saving.
-          </Alert>
-        )}
-      </Card>
-
-      <div className="flex items-center justify-end gap-2 pt-2">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => router.push("/applications")}
-          disabled={saving}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          icon={<Save className="h-4 w-4" />}
-          loading={saving}
-          disabled={saving}
-        >
-          Create application
-        </Button>
-      </div>
+        </ResponsiveStack>
+      </Page>
     </form>
   );
 }

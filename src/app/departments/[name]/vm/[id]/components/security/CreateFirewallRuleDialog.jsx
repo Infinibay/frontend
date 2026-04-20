@@ -1,21 +1,24 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { AlertCircle, Shield, Settings } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Settings, Shield } from 'lucide-react';
 import {
-  Drawer,
-  Button,
-  ButtonGroup,
-  TextField,
-  Textarea,
-  Select,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanel,
-  Checkbox,
   Alert,
   Badge,
+  Bento,
+  BentoItem,
+  Button,
+  Checkbox,
+  Drawer,
+  FormField,
+  ResponsiveStack,
+  Select,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+  TextField,
+  Textarea,
 } from '@infinibay/harbor';
 import { toast } from 'sonner';
 
@@ -29,7 +32,7 @@ const debug = createDebugger('frontend:components:create-firewall-rule-dialog');
 const parseValidationErrors = (errorMessage) => {
   if (!errorMessage) return [];
   const parts = errorMessage.split(
-    /\. (?=Port overlap:|Destination port|Source port|Priority |Protocol )/
+    /\. (?=Port overlap:|Destination port|Source port|Priority |Protocol )/,
   );
   return parts.map((part, i) => {
     const isOverlap = part.includes('Port overlap:');
@@ -89,7 +92,6 @@ const CreateFirewallRuleDialog = ({
   isOpen,
   onClose,
   onSuccess,
-  existingRules,
 }) => {
   const [mode, setMode] = useState('simple');
   const [form, setForm] = useState(EMPTY_FORM);
@@ -107,7 +109,7 @@ const CreateFirewallRuleDialog = ({
         label: `${p.icon ? p.icon + ' ' : ''}${p.displayName} · ${p.category}`,
       })),
     ],
-    []
+    [],
   );
 
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
@@ -224,7 +226,7 @@ const CreateFirewallRuleDialog = ({
         toast.error(
           overlaps === 1
             ? 'Rule conflicts with an existing rule'
-            : `${overlaps} rule conflicts detected`
+            : `${overlaps} rule conflicts detected`,
         );
       } else {
         toast.error(`Could not create rule: ${msg}`);
@@ -247,29 +249,34 @@ const CreateFirewallRuleDialog = ({
       side="right"
       size={520}
       title={
-        <span className="flex items-center gap-2">
-          <Shield className="h-4 w-4 text-accent-2" />
-          New firewall rule
-        </span>
+        <ResponsiveStack direction="row" gap={2} align="center">
+          <Shield size={14} />
+          <span>New firewall rule</span>
+        </ResponsiveStack>
       }
       footer={
-        <ButtonGroup className="justify-end">
+        <ResponsiveStack direction="row" gap={2} justify="end">
           <Button variant="secondary" onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} loading={loading} disabled={loading}>
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            loading={loading}
+            disabled={loading}
+          >
             {loading ? 'Creating…' : 'Create rule'}
           </Button>
-        </ButtonGroup>
+        </ResponsiveStack>
       }
     >
-      <div className="space-y-5">
-        <p className="text-sm text-fg-muted">
+      <ResponsiveStack direction="col" gap={5}>
+        <span>
           Control network traffic for this VM. Rules here apply on top of the
           department defaults.
-        </p>
+        </span>
 
-        {validationErrors.length > 0 && (
+        {validationErrors.length > 0 ? (
           <Alert
             tone="warning"
             title={
@@ -278,7 +285,7 @@ const CreateFirewallRuleDialog = ({
                 : `${validationErrors.length} rule conflicts detected`
             }
             actions={
-              <>
+              <ResponsiveStack direction="row" gap={2}>
                 <Button
                   size="sm"
                   variant="secondary"
@@ -286,213 +293,217 @@ const CreateFirewallRuleDialog = ({
                 >
                   Cancel
                 </Button>
-                {canOverride && (
-                  <Button size="sm" onClick={handleOverrideAndRetry}>
+                {canOverride ? (
+                  <Button size="sm" variant="primary" onClick={handleOverrideAndRetry}>
                     Override department rules
                   </Button>
-                )}
-              </>
+                ) : null}
+              </ResponsiveStack>
             }
           >
-            <ul className="space-y-1 mt-1">
+            <ResponsiveStack direction="col" gap={1}>
               {validationErrors.map((e) => (
-                <li
-                  key={e.id}
-                  className="text-sm pl-3 border-l-2 border-warning/40"
-                >
-                  {e.message}
-                </li>
+                <span key={e.id}>• {e.message}</span>
               ))}
-            </ul>
+            </ResponsiveStack>
           </Alert>
-        )}
+        ) : null}
 
         <Tabs value={mode} onValueChange={setMode} variant="pill">
           <TabList>
-            <Tab value="simple" icon={<Shield className="h-3.5 w-3.5" />}>
+            <Tab value="simple" icon={<Shield size={12} />}>
               Simple
             </Tab>
-            <Tab value="advanced" icon={<Settings className="h-3.5 w-3.5" />}>
+            <Tab value="advanced" icon={<Settings size={12} />}>
               Advanced
             </Tab>
           </TabList>
 
-          <TabPanel value="simple" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-fg">Service</label>
-              <Select
-                value={selectedPreset}
-                onChange={handlePresetChange}
-                options={presetOptions}
-                placeholder="Pick a common service"
-              />
-              {errors.preset && (
-                <p className="text-xs text-danger">{errors.preset}</p>
-              )}
-              {selectedPreset && (
-                <p className="text-xs text-fg-muted">
-                  {SERVICE_PRESETS.find((p) => p.id === selectedPreset)?.description}
-                </p>
-              )}
-            </div>
+          <TabPanel value="simple">
+            <ResponsiveStack direction="col" gap={4}>
+              <FormField
+                label="Service"
+                error={errors.preset}
+                helper={
+                  selectedPreset
+                    ? SERVICE_PRESETS.find((p) => p.id === selectedPreset)
+                        ?.description
+                    : undefined
+                }
+              >
+                <Select
+                  value={selectedPreset}
+                  onChange={handlePresetChange}
+                  options={presetOptions}
+                  placeholder="Pick a common service"
+                />
+              </FormField>
 
-            <TextField
-              label="Rule name"
-              placeholder="e.g. Allow HTTPS"
-              value={form.name}
-              onChange={(e) => {
-                update({ name: e.target.value });
-                clearFieldError('name');
-              }}
-              error={errors.name}
-            />
+              <FormField label="Rule name" error={errors.name}>
+                <TextField
+                  placeholder="e.g. Allow HTTPS"
+                  value={form.name}
+                  onChange={(e) => {
+                    update({ name: e.target.value });
+                    clearFieldError('name');
+                  }}
+                />
+              </FormField>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-fg">Action</label>
-              <Select
-                value={form.action}
-                onChange={(v) => update({ action: v })}
-                options={ACTION_OPTIONS}
-              />
-            </div>
-
-            <Checkbox
-              checked={form.overridesDept}
-              onChange={(e) => update({ overridesDept: e.target.checked })}
-              label="Override department rules (admin only)"
-            />
-          </TabPanel>
-
-          <TabPanel value="advanced" className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-3">
-              <TextField
-                label="Rule name *"
-                placeholder="e.g. Allow custom app"
-                value={form.name}
-                onChange={(e) => {
-                  update({ name: e.target.value });
-                  clearFieldError('name');
-                }}
-                error={errors.name}
-              />
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-fg">Action</label>
+              <FormField label="Action">
                 <Select
                   value={form.action}
                   onChange={(v) => update({ action: v })}
                   options={ACTION_OPTIONS}
                 />
-              </div>
-            </div>
+              </FormField>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-fg">
-                Description (optional)
-              </label>
-              <Textarea
-                value={form.description}
-                onChange={(e) => update({ description: e.target.value })}
-                placeholder="What does this rule do?"
-                rows={2}
+              <Checkbox
+                checked={form.overridesDept}
+                onChange={(e) => update({ overridesDept: e.target.checked })}
+                label="Override department rules (admin only)"
               />
-            </div>
+            </ResponsiveStack>
+          </TabPanel>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-fg">Direction</label>
-                <Select
-                  value={form.direction}
-                  onChange={(v) => update({ direction: v })}
-                  options={DIRECTION_OPTIONS}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-fg">Protocol</label>
-                <Select
-                  value={form.protocol}
-                  onChange={(v) => update({ protocol: v })}
-                  options={PROTOCOL_OPTIONS}
-                />
-              </div>
-            </div>
+          <TabPanel value="advanced">
+            <ResponsiveStack direction="col" gap={4}>
+              <Bento columns={{ base: 1, md: 2 }} gap={12}>
+                <BentoItem>
+                  <FormField label="Rule name" required error={errors.name}>
+                    <TextField
+                      placeholder="e.g. Allow custom app"
+                      value={form.name}
+                      onChange={(e) => {
+                        update({ name: e.target.value });
+                        clearFieldError('name');
+                      }}
+                    />
+                  </FormField>
+                </BentoItem>
+                <BentoItem>
+                  <FormField label="Action">
+                    <Select
+                      value={form.action}
+                      onChange={(v) => update({ action: v })}
+                      options={ACTION_OPTIONS}
+                    />
+                  </FormField>
+                </BentoItem>
+              </Bento>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-fg">
-                Destination ports
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <TextField
-                  placeholder="Start"
-                  value={form.dstPortStart}
-                  onChange={(e) => {
-                    update({ dstPortStart: e.target.value });
-                    clearFieldError('dstPortStart');
-                  }}
-                  error={errors.dstPortStart}
+              <FormField label="Description" optional>
+                <Textarea
+                  value={form.description}
+                  onChange={(e) => update({ description: e.target.value })}
+                  placeholder="What does this rule do?"
+                  rows={2}
                 />
-                <TextField
-                  placeholder="End (optional)"
-                  value={form.dstPortEnd}
-                  onChange={(e) => {
-                    update({ dstPortEnd: e.target.value });
-                    clearFieldError('dstPortEnd');
-                  }}
-                  error={errors.dstPortEnd}
-                />
-              </div>
-              <p className="text-xs text-fg-muted">
-                Leave end empty for a single port.
-              </p>
-            </div>
+              </FormField>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-fg">Priority</label>
-              <div className="grid grid-cols-2 gap-2">
-                <Select
-                  value={form.priorityLabel}
-                  onChange={(v) => update({ priorityLabel: v })}
-                  options={PRIORITY_OPTIONS}
-                />
-                {form.priorityLabel === 'CUSTOM' && (
-                  <TextField
-                    type="number"
-                    placeholder="1–1000"
-                    value={form.customPriority}
-                    onChange={(e) => {
-                      update({ customPriority: e.target.value });
-                      clearFieldError('customPriority');
-                    }}
-                    error={errors.customPriority}
-                  />
-                )}
-              </div>
-              <p className="text-xs text-fg-muted">
-                Lower numbers evaluate first.
-              </p>
-            </div>
+              <Bento columns={{ base: 1, md: 2 }} gap={12}>
+                <BentoItem>
+                  <FormField label="Direction">
+                    <Select
+                      value={form.direction}
+                      onChange={(v) => update({ direction: v })}
+                      options={DIRECTION_OPTIONS}
+                    />
+                  </FormField>
+                </BentoItem>
+                <BentoItem>
+                  <FormField label="Protocol">
+                    <Select
+                      value={form.protocol}
+                      onChange={(v) => update({ protocol: v })}
+                      options={PROTOCOL_OPTIONS}
+                    />
+                  </FormField>
+                </BentoItem>
+              </Bento>
 
-            <Checkbox
-              checked={form.overridesDept}
-              onChange={(e) => update({ overridesDept: e.target.checked })}
-              label="Override department rules (admin only)"
-            />
+              <FormField
+                label="Destination ports"
+                helper="Leave end empty for a single port."
+              >
+                <Bento columns={{ base: 1, md: 2 }} gap={8}>
+                  <BentoItem>
+                    <TextField
+                      placeholder="Start"
+                      value={form.dstPortStart}
+                      onChange={(e) => {
+                        update({ dstPortStart: e.target.value });
+                        clearFieldError('dstPortStart');
+                      }}
+                      error={errors.dstPortStart}
+                    />
+                  </BentoItem>
+                  <BentoItem>
+                    <TextField
+                      placeholder="End (optional)"
+                      value={form.dstPortEnd}
+                      onChange={(e) => {
+                        update({ dstPortEnd: e.target.value });
+                        clearFieldError('dstPortEnd');
+                      }}
+                      error={errors.dstPortEnd}
+                    />
+                  </BentoItem>
+                </Bento>
+              </FormField>
 
-            {form.overridesDept && (
-              <Alert tone="warning">
-                This rule will override matching department rules. Use
-                sparingly — it can weaken the department baseline.
-              </Alert>
-            )}
+              <FormField
+                label="Priority"
+                helper="Lower numbers evaluate first."
+              >
+                <Bento columns={{ base: 1, md: 2 }} gap={8}>
+                  <BentoItem>
+                    <Select
+                      value={form.priorityLabel}
+                      onChange={(v) => update({ priorityLabel: v })}
+                      options={PRIORITY_OPTIONS}
+                    />
+                  </BentoItem>
+                  {form.priorityLabel === 'CUSTOM' ? (
+                    <BentoItem>
+                      <TextField
+                        type="number"
+                        placeholder="1–1000"
+                        value={form.customPriority}
+                        onChange={(e) => {
+                          update({ customPriority: e.target.value });
+                          clearFieldError('customPriority');
+                        }}
+                        error={errors.customPriority}
+                      />
+                    </BentoItem>
+                  ) : null}
+                </Bento>
+              </FormField>
+
+              <Checkbox
+                checked={form.overridesDept}
+                onChange={(e) => update({ overridesDept: e.target.checked })}
+                label="Override department rules (admin only)"
+              />
+
+              {form.overridesDept ? (
+                <Alert tone="warning">
+                  This rule will override matching department rules. Use sparingly
+                  — it can weaken the department baseline.
+                </Alert>
+              ) : null}
+            </ResponsiveStack>
           </TabPanel>
         </Tabs>
 
         {vmOs ? (
-          <div className="flex items-center gap-2 text-xs text-fg-subtle">
+          <ResponsiveStack direction="row" gap={2} align="center">
             <span>Target OS:</span>
             <Badge tone="neutral">{vmOs}</Badge>
-          </div>
+          </ResponsiveStack>
         ) : null}
-      </div>
+      </ResponsiveStack>
     </Drawer>
   );
 };

@@ -1,80 +1,77 @@
-"use client";
+'use client';
 
-import React, { useMemo } from "react";
-import dynamic from "next/dynamic";
-import { useParams, useRouter } from "next/navigation";
+import { useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { useParams, useRouter } from 'next/navigation';
 import {
-  Building2,
-  Monitor,
-  Shield,
-  FileCode,
-  Network,
-  Plus,
   AlertCircle,
-  Play,
-  Pause,
-  Square,
   ArrowLeft,
-} from "lucide-react";
+  Building2,
+  FileCode,
+  Monitor,
+  Network,
+  Pause,
+  Play,
+  Plus,
+  Shield,
+  Square,
+  Trash2,
+} from 'lucide-react';
 import {
-  Tabs,
-  TabList,
-  Tab,
-  TabPanel,
-  Button,
-  ButtonGroup,
-  Badge,
-  Card,
-  Dialog,
   Alert,
-  Stat,
+  Badge,
+  Button,
+  Card,
   ClusterView,
+  Dialog,
   EmptyState,
-  Spinner,
+  IconTile,
+  LoadingOverlay,
+  Page,
+  ResponsiveGrid,
+  ResponsiveStack,
   Skeleton,
-} from "@infinibay/harbor";
+  Stat,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+} from '@infinibay/harbor';
 
-import { useDepartmentPage } from "./hooks/useDepartmentPage";
-import { usePageHeader } from "@/hooks/usePageHeader";
+import { useDepartmentPage } from './hooks/useDepartmentPage';
+import { usePageHeader } from '@/hooks/usePageHeader';
 
-// Lazy tab content.
-const SecuritySection = dynamic(() => import("./components/SecuritySection.jsx"), {
+const SecuritySection = dynamic(() => import('./components/SecuritySection.jsx'), {
   ssr: false,
-  loading: () => <TabLoading label="Loading security…" />,
+  loading: () => <LoadingOverlay label="Loading security…" />,
 });
-const DepartmentScriptsPage = dynamic(() => import("./scripts/page.jsx"), {
+const DepartmentScriptsPage = dynamic(() => import('./scripts/page.jsx'), {
   ssr: false,
-  loading: () => <TabLoading label="Loading scripts…" />,
+  loading: () => <LoadingOverlay label="Loading scripts…" />,
 });
-const DepartmentNetworkTab = dynamic(() => import("./components/DepartmentNetworkTab.jsx"), {
-  ssr: false,
-  loading: () => <TabLoading label="Loading network diagnostics…" />,
-});
+const DepartmentNetworkTab = dynamic(
+  () => import('./components/DepartmentNetworkTab.jsx'),
+  {
+    ssr: false,
+    loading: () => <LoadingOverlay label="Loading network diagnostics…" />,
+  },
+);
 
-function TabLoading({ label }) {
-  return (
-    <div className="py-12 flex items-center justify-center gap-3 text-fg-muted text-sm">
-      <Spinner /> {label}
-    </div>
-  );
-}
-
-/** Map VM state → Harbor HostStatus vocabulary. */
 const vmStatusToHarbor = (status) => {
-  switch ((status || "").toLowerCase()) {
-    case "running":
-      return "online";
-    case "paused":
-    case "suspended":
-      return "degraded";
-    case "starting":
-    case "provisioning":
-    case "building":
-      return "provisioning";
-    case "stopping":
-      return "maintenance";
+  switch ((status || '').toLowerCase()) {
+    case 'running':
+      return 'online';
+    case 'paused':
+    case 'suspended':
+      return 'degraded';
+    case 'starting':
+    case 'provisioning':
+    case 'building':
+      return 'provisioning';
+    case 'stopping':
+      return 'maintenance';
     default:
-      return "offline";
+      return 'offline';
   }
 };
 
@@ -84,60 +81,55 @@ const vmSubtitle = (vm) => {
   if (os) bits.push(os);
   if (vm?.cpuCores) bits.push(`${vm.cpuCores} vCPU`);
   if (vm?.ramGB) bits.push(`${vm.ramGB} GB`);
-  return bits.join(" · ");
+  return bits.join(' · ');
 };
 
-/**
- * Per-card inline power controls for a host in the ClusterView.
- * Click-propagation is stopped so pressing a button doesn't fire the
- * card's navigation-to-detail handler.
- */
 function VmActions({ vm, onPlay, onPause, onStop }) {
   const stop = (e) => e.stopPropagation();
-  const status = (vm.status || "").toLowerCase();
+  const status = (vm.status || '').toLowerCase();
 
-  if (status === "running") {
+  if (status === 'running') {
     return (
-      <ButtonGroup className="gap-1" onClick={stop}>
+      <ResponsiveStack direction="row" gap={1} onClick={stop}>
         <Button
           size="sm"
           variant="ghost"
-          icon={<Pause className="h-3.5 w-3.5" />}
+          icon={<Pause size={12} />}
           onClick={(e) => {
             stop(e);
             onPause?.(vm);
           }}
           aria-label="Pause"
         >
-          {""}
+          {''}
         </Button>
         <Button
           size="sm"
           variant="ghost"
-          icon={<Square className="h-3.5 w-3.5" />}
+          icon={<Square size={12} />}
           onClick={(e) => {
             stop(e);
             onStop?.(vm);
           }}
           aria-label="Stop"
         >
-          {""}
+          {''}
         </Button>
-      </ButtonGroup>
+      </ResponsiveStack>
     );
   }
   return (
     <Button
       size="sm"
       variant="ghost"
-      icon={<Play className="h-3.5 w-3.5" />}
+      icon={<Play size={12} />}
       onClick={(e) => {
         stop(e);
         onPlay?.(vm);
       }}
       aria-label="Start"
     >
-      {""}
+      {''}
     </Button>
   );
 }
@@ -165,82 +157,65 @@ const DepartmentPage = () => {
 
   const helpConfig = useMemo(
     () => ({
-      title: "Department",
-      description: "Manage VMs, firewall, scripts and network for this department.",
-      icon: <Building2 className="h-5 w-5 text-accent-2" />,
+      title: 'Department',
+      description:
+        'Manage VMs, firewall, scripts and network for this department.',
+      icon: <Building2 size={14} />,
       sections: [
         {
-          id: "vms",
-          title: "Virtual machines",
-          icon: <Monitor className="h-4 w-4" />,
-          content: (
-            <p>
-              The Computers tab lists every VM that belongs here. Click a card
-              to open its detail view; use the inline controls for quick
-              power actions.
-            </p>
-          ),
+          id: 'vms',
+          title: 'Virtual machines',
+          icon: <Monitor size={14} />,
+          content:
+            'The Computers tab lists every VM that belongs here. Click a card to open its detail view; use the inline controls for quick power actions.',
         },
         {
-          id: "security",
-          title: "Security",
-          icon: <Shield className="h-4 w-4" />,
-          content: (
-            <p>
-              Firewall policy + department-wide rules that every VM inherits.
-              VMs can still add their own rules on top.
-            </p>
-          ),
+          id: 'security',
+          title: 'Security',
+          icon: <Shield size={14} />,
+          content:
+            'Firewall policy + department-wide rules that every VM inherits. VMs can still add their own rules on top.',
         },
         {
-          id: "scripts",
-          title: "Scripts",
-          icon: <FileCode className="h-4 w-4" />,
-          content: (
-            <p>
-              Automation scripts scoped to this department. Run them on
-              individual VMs or on demand for the whole set.
-            </p>
-          ),
+          id: 'scripts',
+          title: 'Scripts',
+          icon: <FileCode size={14} />,
+          content:
+            'Automation scripts scoped to this department. Run them on individual VMs or on demand for the whole set.',
         },
         {
-          id: "network",
-          title: "Network",
-          icon: <Network className="h-4 w-4" />,
-          content: (
-            <p>
-              Bridge / DHCP / NAT diagnostics for the subnet this department
-              lives on.
-            </p>
-          ),
+          id: 'network',
+          title: 'Network',
+          icon: <Network size={14} />,
+          content:
+            'Bridge / DHCP / NAT diagnostics for the subnet this department lives on.',
         },
       ],
       quickTips: [
-        "Click any VM card to open its detail page",
-        "Security rules here apply to every VM in the department",
-        "Use the Scripts tab for department-wide automation",
+        'Click any VM card to open its detail page',
+        'Security rules here apply to every VM in the department',
+        'Use the Scripts tab for department-wide automation',
       ],
     }),
-    []
+    [],
   );
 
   usePageHeader(
     {
       breadcrumbs: [
-        { label: "Home", href: "/" },
-        { label: "Departments", href: "/departments" },
-        { label: department?.name || "Department", isCurrent: true },
+        { label: 'Home', href: '/' },
+        { label: 'Departments', href: '/departments' },
+        { label: department?.name || 'Department', isCurrent: true },
       ],
-      title: department?.name || "Department",
-      backButton: { href: "/departments", label: "Back" },
+      title: department?.name || 'Department',
+      backButton: { href: '/departments', label: 'Back' },
       actions: [],
       helpConfig,
-      helpTooltip: "Department help",
+      helpTooltip: 'Department help',
     },
-    [department?.name]
+    [department?.name],
   );
 
-  // Map machines → ClusterHost once per render.
   const hosts = useMemo(
     () =>
       machines.map((vm) => ({
@@ -250,7 +225,7 @@ const DepartmentPage = () => {
         subtitle: vmSubtitle(vm),
         tags: vm.user
           ? [
-              `${vm.user.firstName || ""} ${vm.user.lastName || ""}`.trim() ||
+              `${vm.user.firstName || ''} ${vm.user.lastName || ''}`.trim() ||
                 vm.user.email,
             ]
           : [],
@@ -264,40 +239,41 @@ const DepartmentPage = () => {
           />
         ),
       })),
-    [machines, handlePlayAction, handlePauseAction, handleStopAction]
+    [machines, handlePlayAction, handlePauseAction, handleStopAction],
   );
 
   const stats = useMemo(() => {
     const total = machines.length;
-    const running = machines.filter((m) => (m.status || "").toLowerCase() === "running").length;
+    const running = machines.filter(
+      (m) => (m.status || '').toLowerCase() === 'running',
+    ).length;
     const stopped = machines.filter(
-      (m) => !["running", "paused", "suspended", "starting", "provisioning"].includes(
-        (m.status || "").toLowerCase()
-      )
+      (m) =>
+        !['running', 'paused', 'suspended', 'starting', 'provisioning'].includes(
+          (m.status || '').toLowerCase(),
+        ),
     ).length;
     const busy = total - running - stopped;
     return { total, running, stopped, busy };
   }, [machines]);
 
-  // ─── Loading / not-found ────────────────────────────────────────
-
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <Page>
+        <Skeleton />
+        <Skeleton />
+        <ResponsiveGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-32" />
+            <Skeleton key={i} />
           ))}
-        </div>
-      </div>
+        </ResponsiveGrid>
+      </Page>
     );
   }
 
   if (departmentName && !department) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <Page size="md">
         <Alert
           tone="warning"
           title="Department not found"
@@ -305,172 +281,179 @@ const DepartmentPage = () => {
             <Button
               size="sm"
               variant="secondary"
-              icon={<ArrowLeft className="h-4 w-4" />}
-              onClick={() => router.push("/departments")}
+              icon={<ArrowLeft size={14} />}
+              onClick={() => router.push('/departments')}
             >
               Back to departments
             </Button>
           }
         >
-          We couldn&apos;t find a department named <strong>{params.name}</strong>.
+          We couldn&apos;t find a department named{' '}
+          <strong>{params.name}</strong>.
         </Alert>
-      </div>
+      </Page>
     );
   }
 
   const newComputerHref = `/departments/${departmentName}/computers/create`;
 
   return (
-    <div className="space-y-6">
-      {/* Hero — department identity + primary actions */}
-      <Card variant="glass" className="relative">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div className="flex items-start gap-4 min-w-0">
-            <div className="h-14 w-14 rounded-2xl bg-accent/15 grid place-items-center shrink-0">
-              <Building2 className="h-6 w-6 text-accent" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[11px] uppercase tracking-widest text-fg-muted">
-                Department
-              </div>
-              <h1 className="text-2xl font-semibold text-fg truncate">
-                {department?.name || "Department"}
-              </h1>
-              <p className="text-sm text-fg-muted mt-1">
-                {stats.total} {stats.total === 1 ? "virtual machine" : "virtual machines"}
-                {department?.id ? (
-                  <>
-                    {" · "}
-                    <Badge tone="neutral" className="font-mono text-[10px]">
-                      {department.id.slice(0, 6)}
-                    </Badge>
-                  </>
-                ) : null}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
+    <>
+      <Page>
+        <Card
+          variant="default"
+          spotlight={false}
+          glow={false}
+          title={
+            <ResponsiveStack direction="row" gap={3} align="center">
+              <IconTile
+                icon={<Building2 size={22} />}
+                tone="purple"
+                size="lg"
+              />
+              <ResponsiveStack direction="col" gap={1}>
+                <span>{department?.name || 'Department'}</span>
+                <ResponsiveStack direction="row" gap={2} align="center" wrap>
+                  <span>
+                    {stats.total}{' '}
+                    {stats.total === 1 ? 'virtual machine' : 'virtual machines'}
+                  </span>
+                  {department?.id ? (
+                    <Badge tone="neutral">{department.id.slice(0, 6)}</Badge>
+                  ) : null}
+                </ResponsiveStack>
+              </ResponsiveStack>
+            </ResponsiveStack>
+          }
+          footer={
+            <ResponsiveGrid columns={{ base: 2, md: 4 }} gap={3}>
+              <Stat
+                label="Total"
+                value={stats.total}
+                icon={<Monitor size={12} />}
+              />
+              <Stat label="Running" value={stats.running} />
+              <Stat label="Stopped" value={stats.stopped} />
+              <Stat label="Busy" value={stats.busy} />
+            </ResponsiveGrid>
+          }
+        >
+          <ResponsiveStack direction="row" justify="end">
             <Button
               size="sm"
-              icon={<Plus className="h-4 w-4" />}
+              variant="primary"
+              icon={<Plus size={14} />}
               onClick={() => router.push(newComputerHref)}
             >
               New computer
             </Button>
-          </div>
-        </div>
+          </ResponsiveStack>
+        </Card>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
-          <Stat label="Total" value={stats.total} icon={<Monitor className="h-3.5 w-3.5" />} />
-          <Stat label="Running" value={stats.running} />
-          <Stat label="Stopped" value={stats.stopped} />
-          <Stat label="Busy" value={stats.busy} />
-        </div>
-      </Card>
+        <Tabs
+          value={activeTab || 'computers'}
+          onValueChange={setActiveTab}
+          variant="pill"
+        >
+          <TabList>
+            <Tab value="computers" icon={<Monitor size={14} />}>
+              Computers
+            </Tab>
+            <Tab value="security" icon={<Shield size={14} />}>
+              Security
+            </Tab>
+            <Tab value="scripts" icon={<FileCode size={14} />}>
+              Scripts
+            </Tab>
+            <Tab value="network" icon={<Network size={14} />}>
+              Network
+            </Tab>
+          </TabList>
 
-      {/* Tabs */}
-      <Tabs
-        value={activeTab || "computers"}
-        onValueChange={setActiveTab}
-        variant="underline"
-        className="w-full"
-      >
-        <TabList className="w-full">
-          <Tab value="computers" icon={<Monitor className="h-4 w-4" />}>
-            Computers
-          </Tab>
-          <Tab value="security" icon={<Shield className="h-4 w-4" />}>
-            Security
-          </Tab>
-          <Tab value="scripts" icon={<FileCode className="h-4 w-4" />}>
-            Scripts
-          </Tab>
-          <Tab value="network" icon={<Network className="h-4 w-4" />}>
-            Network
-          </Tab>
-        </TabList>
-
-        <TabPanel value="computers" className="mt-2">
-          {hosts.length === 0 ? (
-            <Card variant="default" className="p-0">
+          <TabPanel value="computers">
+            {hosts.length === 0 ? (
               <EmptyState
-                icon={<Monitor className="h-10 w-10 text-fg-subtle" />}
+                variant="dashed"
+                icon={<Monitor size={18} />}
                 title="No VMs in this department yet"
                 description="Create your first VM to start populating this department."
                 actions={
                   <Button
                     size="sm"
-                    icon={<Plus className="h-4 w-4" />}
+                    variant="primary"
+                    icon={<Plus size={14} />}
                     onClick={() => router.push(newComputerHref)}
                   >
                     New computer
                   </Button>
                 }
               />
-            </Card>
-          ) : (
-            <ClusterView
-              hosts={hosts}
-              onHostClick={(host) => {
-                const raw = hosts.find((h) => h.id === host.id)?._raw;
-                if (raw) handlePcSelect(raw);
-              }}
-            />
-          )}
-        </TabPanel>
+            ) : (
+              <ClusterView
+                hosts={hosts}
+                onHostClick={(host) => {
+                  const raw = hosts.find((h) => h.id === host.id)?._raw;
+                  if (raw) handlePcSelect(raw);
+                }}
+              />
+            )}
+          </TabPanel>
 
-        <TabPanel value="security" className="mt-2">
-          <SecuritySection departmentId={department?.id} />
-        </TabPanel>
+          <TabPanel value="security">
+            <SecuritySection departmentId={department?.id} />
+          </TabPanel>
 
-        <TabPanel value="scripts" className="mt-2">
-          <DepartmentScriptsPage />
-        </TabPanel>
+          <TabPanel value="scripts">
+            <DepartmentScriptsPage />
+          </TabPanel>
 
-        <TabPanel value="network" className="mt-2">
-          <DepartmentNetworkTab departmentId={department?.id} />
-        </TabPanel>
-      </Tabs>
+          <TabPanel value="network">
+            <DepartmentNetworkTab departmentId={department?.id} />
+          </TabPanel>
+        </Tabs>
+      </Page>
 
-      {/* Delete confirmation */}
       <Dialog
         open={!!deleteConfirmation?.isOpen}
         onClose={cancelDelete}
         size="sm"
-        title={
-          <span className="flex items-center gap-2 text-danger">
-            <AlertCircle className="h-4 w-4" />
-            Delete virtual machine
-          </span>
-        }
+        title="Delete virtual machine"
         description={
           deleteConfirmation?.vm
-            ? `Remove ${deleteConfirmation.vm.name}? This cannot be undone.`
-            : "This action cannot be undone."
+            ? `Remove "${deleteConfirmation.vm.name}"? This cannot be undone.`
+            : 'This action cannot be undone.'
         }
         footer={
-          <ButtonGroup className="justify-end">
-            <Button variant="secondary" onClick={cancelDelete} disabled={isDeleting}>
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              onClick={cancelDelete}
+              disabled={isDeleting}
+            >
               Cancel
             </Button>
             <Button
               variant="destructive"
+              icon={<Trash2 size={14} />}
               onClick={confirmDelete}
               loading={isDeleting}
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting…" : "Delete"}
+              {isDeleting ? 'Deleting…' : 'Delete'}
             </Button>
-          </ButtonGroup>
+          </ResponsiveStack>
         }
       >
-        <p className="text-sm text-fg-muted">
+        <Alert
+          tone="danger"
+          size="sm"
+          icon={<AlertCircle size={14} />}
+        >
           All snapshots, volumes and configuration for this VM will be
           permanently removed.
-        </p>
+        </Alert>
       </Dialog>
-    </div>
+    </>
   );
 };
 

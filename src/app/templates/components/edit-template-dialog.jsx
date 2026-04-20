@@ -17,6 +17,8 @@ import {
   TextField,
   Textarea,
   Alert,
+  ResponsiveStack,
+  ResponsiveGrid,
 } from "@infinibay/harbor";
 
 import {
@@ -131,13 +133,13 @@ export function EditTemplateDialog({ children, template, open, onOpenChange }) {
         side="right"
         size={480}
         title={
-          <span className="flex items-center gap-2">
-            <Layers className="h-4 w-4 text-accent-2" />
-            Edit template
-          </span>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <Layers size={16} />
+            <span>Edit template</span>
+          </ResponsiveStack>
         }
         footer={
-          <ButtonGroup className="justify-end">
+          <ButtonGroup attached={false}>
             <Button variant="secondary" onClick={close} disabled={loading?.update}>
               Cancel
             </Button>
@@ -151,13 +153,15 @@ export function EditTemplateDialog({ children, template, open, onOpenChange }) {
           </ButtonGroup>
         }
       >
-        <div className="space-y-4">
-          <p className="text-sm text-fg-muted">
-            Editing this template does not affect VMs already created from
-            it — the change only applies to new VMs.
-          </p>
+        <ResponsiveStack direction="col" gap={4}>
+          <Alert tone="info" size="sm">
+            Editing this template does not affect VMs already created from it —
+            the change only applies to new VMs.
+          </Alert>
 
-          {error?.update && <Alert tone="danger">{String(error.update)}</Alert>}
+          {error?.update ? (
+            <Alert tone="danger">{String(error.update)}</Alert>
+          ) : null}
 
           <TextField
             label="Name"
@@ -165,47 +169,43 @@ export function EditTemplateDialog({ children, template, open, onOpenChange }) {
             onChange={(e) => update({ name: e.target.value })}
           />
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-fg">Description</label>
-            <Textarea
-              value={form.description}
-              onChange={(e) => update({ description: e.target.value })}
-              rows={2}
-            />
-          </div>
+          <Textarea
+            label="Description"
+            value={form.description}
+            onChange={(e) => update({ description: e.target.value })}
+            rows={2}
+          />
 
-          <div className="grid grid-cols-3 gap-3">
+          <ResponsiveGrid columns={3} gap={3}>
             <TextField
               label="vCPU"
               type="number"
               min={1}
               max={128}
-              icon={<Cpu className="h-4 w-4" />}
+              icon={<Cpu size={14} />}
               value={form.cores}
               onChange={(e) => update({ cores: e.target.value })}
             />
             <TextField
-              label="RAM"
+              label="RAM (GB)"
               type="number"
               min={1}
               max={512}
-              suffix={<span className="text-fg-subtle text-xs">GB</span>}
-              icon={<MemoryStick className="h-4 w-4" />}
+              icon={<MemoryStick size={14} />}
               value={form.ram}
               onChange={(e) => update({ ram: e.target.value })}
             />
             <TextField
-              label="Disk"
+              label="Disk (GB)"
               type="number"
               min={1}
               max={10000}
-              suffix={<span className="text-fg-subtle text-xs">GB</span>}
-              icon={<HardDrive className="h-4 w-4" />}
+              icon={<HardDrive size={14} />}
               value={form.storage}
               onChange={(e) => update({ storage: e.target.value })}
             />
-          </div>
-        </div>
+          </ResponsiveGrid>
+        </ResponsiveStack>
       </Drawer>
     </>
   );

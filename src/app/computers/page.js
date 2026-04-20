@@ -4,8 +4,10 @@ import React, { useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import {
+  Page,
   Card,
   Button,
+  IconButton,
   Dialog,
   ButtonGroup,
   Alert,
@@ -13,6 +15,12 @@ import {
   Stat,
   ClusterView,
   Spinner,
+  ResponsiveStack,
+  ResponsiveGrid,
+  ContextMenu,
+  MenuItem,
+  MenuLabel,
+  MenuSeparator,
 } from "@infinibay/harbor";
 import {
   AlertCircle,
@@ -24,6 +32,8 @@ import {
   Square,
   Cpu,
   Power,
+  ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { createDebugger } from "@/utils/debug";
 
@@ -58,6 +68,36 @@ const vmStatusToHarbor = (status) => {
   }
 };
 
+/** Map an OS string → simple-icons CDN slug + brand color. */
+const OS_ICON_MAP = [
+  { match: /windows|win\b|win10|win11|server/i, slug: "windows", color: "0078D6" },
+  { match: /ubuntu/i, slug: "ubuntu", color: "E95420" },
+  { match: /debian/i, slug: "debian", color: "A81D33" },
+  { match: /fedora/i, slug: "fedora", color: "51A2DA" },
+  { match: /centos/i, slug: "centos", color: "262577" },
+  { match: /rhel|red\s?hat/i, slug: "redhat", color: "EE0000" },
+  { match: /arch/i, slug: "archlinux", color: "1793D1" },
+  { match: /alpine/i, slug: "alpinelinux", color: "0D597F" },
+  { match: /macos|osx|darwin|apple/i, slug: "apple", color: "FFFFFF" },
+  { match: /freebsd|bsd/i, slug: "freebsd", color: "AB2B28" },
+  { match: /linux|gnu/i, slug: "linux", color: "FCC624" },
+];
+
+const osIconFor = (os) => {
+  if (!os) return null;
+  const hit = OS_ICON_MAP.find((m) => m.match.test(os));
+  if (!hit) return null;
+  return (
+    <img
+      src={`https://cdn.simpleicons.org/${hit.slug}/${hit.color}`}
+      alt={os}
+      title={os}
+      width={16}
+      height={16}
+    />
+  );
+};
+
 /** Compose a HostCard subtitle line from VM metadata. */
 const vmSubtitle = (vm) => {
   const bits = [];
@@ -77,56 +117,50 @@ const InlinePowerButtons = ({ vm, pending, onPlay, onPause, onStop }) => {
 
   if (isPending) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
-        <Spinner /> …
-      </span>
+      <ResponsiveStack direction="row" gap={1} align="center">
+        <Spinner />
+      </ResponsiveStack>
     );
   }
 
   if (status === "running") {
     return (
-      <ButtonGroup className="gap-1" onClick={stop}>
-        <Button
+      <ButtonGroup onClick={stop}>
+        <IconButton
           variant="ghost"
           size="sm"
-          icon={<Pause className="h-3.5 w-3.5" />}
+          icon={<Pause size={14} />}
           onClick={(e) => {
             stop(e);
             onPause?.(vm);
           }}
           aria-label="Pause"
-        >
-          {""}
-        </Button>
-        <Button
+        />
+        <IconButton
           variant="ghost"
           size="sm"
-          icon={<Square className="h-3.5 w-3.5" />}
+          icon={<Square size={14} />}
           onClick={(e) => {
             stop(e);
             onStop?.(vm);
           }}
           aria-label="Stop"
-        >
-          {""}
-        </Button>
+        />
       </ButtonGroup>
     );
   }
 
   return (
-    <Button
+    <IconButton
       variant="ghost"
       size="sm"
-      icon={<Play className="h-3.5 w-3.5" />}
+      icon={<Play size={14} />}
       onClick={(e) => {
         stop(e);
         onPlay?.(vm);
       }}
       aria-label="Start"
-    >
-      {""}
-    </Button>
+    />
   );
 };
 
@@ -163,25 +197,27 @@ export default function ComputersPage() {
     handlePlay,
     handlePause,
     handleStop,
+    handleDelete,
     deleteConfirmation,
     confirmDelete,
     cancelDelete,
   } = useComputerActions();
 
-  // Map machines → ClusterHost. Department name doubles as a region so
-  // the ClusterView's region filter chips act as department filters for
-  // free.
   const hosts = useMemo(
     () =>
-      (machines || []).map((vm) => ({
-        id: vm.id,
-        name: vm.name,
-        status: vmStatusToHarbor(vm.status),
-        subtitle: vmSubtitle(vm),
-        tags: vm.department?.name ? [vm.department.name] : [],
-        region: vm.department?.name || undefined,
-        _raw: vm,
-      })),
+      (machines || []).map((vm) => {
+        const os = vm?.configuration?.os || vm?.os;
+        return {
+          id: vm.id,
+          name: vm.name,
+          status: vmStatusToHarbor(vm.status),
+          subtitle: vmSubtitle(vm),
+          tags: vm.department?.name ? [vm.department.name] : [],
+          region: vm.department?.name || undefined,
+          osIcon: osIconFor(os),
+          _raw: vm,
+        };
+      }),
     [machines]
   );
 
@@ -209,12 +245,12 @@ export default function ComputersPage() {
     () => ({
       title: "Computers",
       description: "Manage your fleet of virtual machines.",
-      icon: <Monitor className="h-5 w-5 text-accent-2" />,
+      icon: <Monitor size={20} />,
       sections: [
         {
           id: "managing",
           title: "Managing VMs",
-          icon: <Monitor className="h-4 w-4" />,
+          icon: <Monitor size={16} />,
           content: (
             <p>
               Click a VM card to open its detail view. Use the inline Play /
@@ -226,7 +262,7 @@ export default function ComputersPage() {
         {
           id: "filters",
           title: "Filters",
-          icon: <Cpu className="h-4 w-4" />,
+          icon: <Cpu size={16} />,
           content: (
             <p>
               Filter chips at the top of the grid narrow by status, region
@@ -238,7 +274,7 @@ export default function ComputersPage() {
         {
           id: "new",
           title: "Creating VMs",
-          icon: <Plus className="h-4 w-4" />,
+          icon: <Plus size={16} />,
           content: (
             <p>
               Upload at least one ISO in Settings before creating your first
@@ -270,38 +306,54 @@ export default function ComputersPage() {
     []
   );
 
-  // ---- Render ------------------------------------------------------
-
   if (loading && !machines?.length) {
     return (
-      <div className="flex items-center justify-center py-20 gap-3 text-fg-muted">
-        <Spinner /> Loading computers…
-      </div>
+      <Page gap="lg">
+        <Card variant="default">
+          <ResponsiveStack direction="row" gap={3} justify="center" align="center">
+            <Spinner /> Loading computers…
+          </ResponsiveStack>
+        </Card>
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Hero strip — fleet stats + primary actions. */}
-      <Card variant="glass" className="p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-fg flex items-center gap-2">
-              <Monitor className="h-5 w-5 text-accent-2" />
-              Computers
-            </h1>
-            <p className="text-sm text-fg-muted mt-1">
-              {hosts.length} virtual machine{hosts.length !== 1 ? "s" : ""} across{" "}
-              {departments?.length || 0} department
-              {(departments?.length || 0) !== 1 ? "s" : ""}
-            </p>
-          </div>
+    <Page gap="lg">
+      <Card
+        variant="default"
+        leadingIcon={<Monitor size={20} />}
+        leadingIconTone="sky"
+        title="Computers"
+        description={`${hosts.length} virtual machine${hosts.length !== 1 ? "s" : ""} across ${departments?.length || 0} department${(departments?.length || 0) !== 1 ? "s" : ""}`}
+      >
+        <ResponsiveStack
+          direction={{ base: "col", lg: "row" }}
+          gap={4}
+          justify="between"
+          align="stretch"
+        >
+          <ResponsiveGrid columns={{ base: 2, md: 4 }} gap={3}>
+            <Stat
+              label="Running"
+              value={statusCounts.online}
+              icon={<Power size={14} />}
+              variant="plain"
+            />
+            <Stat label="Paused" value={statusCounts.degraded} variant="plain" />
+            <Stat label="Stopped" value={statusCounts.offline} variant="plain" />
+            <Stat
+              label="Provisioning"
+              value={statusCounts.provisioning}
+              variant="plain"
+            />
+          </ResponsiveGrid>
 
-          <div className="flex items-center gap-2">
+          <ResponsiveStack direction="row" gap={2} align="center">
             <Button
               variant="secondary"
               size="sm"
-              icon={<RefreshCw className={`h-4 w-4 ${vmsLoading ? "animate-spin" : ""}`} />}
+              icon={<RefreshCw size={16} />}
               onClick={refreshVms}
               disabled={vmsLoading}
             >
@@ -310,7 +362,7 @@ export default function ComputersPage() {
             {hasISOs ? (
               <Button
                 size="sm"
-                icon={<Plus className="h-4 w-4" />}
+                icon={<Plus size={16} />}
                 onClick={handleNewVM}
               >
                 New VM
@@ -319,36 +371,15 @@ export default function ComputersPage() {
               <Button
                 size="sm"
                 variant="secondary"
-                icon={<AlertCircle className="h-4 w-4" />}
+                icon={<AlertCircle size={16} />}
                 disabled
                 title="Upload an ISO image first"
               >
                 New VM
               </Button>
             )}
-          </div>
-        </div>
-
-        {/* Status mini-board */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-          <Stat
-            label="Running"
-            value={statusCounts.online}
-            icon={<Power className="h-3.5 w-3.5" />}
-          />
-          <Stat
-            label="Paused"
-            value={statusCounts.degraded}
-          />
-          <Stat
-            label="Stopped"
-            value={statusCounts.offline}
-          />
-          <Stat
-            label="Provisioning"
-            value={statusCounts.provisioning}
-          />
-        </div>
+          </ResponsiveStack>
+        </ResponsiveStack>
       </Card>
 
       {error && (
@@ -356,7 +387,7 @@ export default function ComputersPage() {
           tone="danger"
           title="Couldn't load VMs"
           actions={
-            <Button size="sm" onClick={refreshVms} icon={<RefreshCw className="h-4 w-4" />}>
+            <Button size="sm" onClick={refreshVms} icon={<RefreshCw size={16} />}>
               Retry
             </Button>
           }
@@ -365,12 +396,10 @@ export default function ComputersPage() {
         </Alert>
       )}
 
-      {/* Fleet grid — Harbor's ClusterView does status/region/tag filter chips,
-          FluidGrid responsive columns, and density toggle out of the box. */}
       {hosts.length === 0 ? (
-        <Card variant="default" className="p-2">
+        <Card variant="default">
           <EmptyState
-            icon={<Monitor className="h-10 w-10 text-fg-subtle" />}
+            icon={<Monitor size={40} />}
             title="No virtual machines yet"
             description={
               hasISOs
@@ -381,7 +410,7 @@ export default function ComputersPage() {
               hasISOs ? (
                 <Button
                   size="sm"
-                  icon={<Plus className="h-4 w-4" />}
+                  icon={<Plus size={16} />}
                   onClick={handleNewVM}
                 >
                   New VM
@@ -408,19 +437,75 @@ export default function ComputersPage() {
             const raw = hosts.find((h) => h.id === host.id)?._raw;
             if (raw) handlePcSelect(raw);
           }}
+          renderHost={(host, card) => {
+            const raw = hosts.find((h) => h.id === host.id)?._raw;
+            if (!raw) return card;
+            const status = (raw.status || "").toLowerCase();
+            const isRunning = status === "running";
+            const isPaused = status === "paused" || status === "suspended";
+            const isStopped = !isRunning && !isPaused;
+            const isPending = !!pendingActions?.[raw.id];
+            return (
+              <ContextMenu
+                menu={
+                  <>
+                    <MenuLabel>{raw.name}</MenuLabel>
+                    <MenuSeparator />
+                    <MenuItem
+                      icon={<Play size={14} />}
+                      disabled={isPending || isRunning}
+                      onClick={() => handlePlay(raw)}
+                    >
+                      Start
+                    </MenuItem>
+                    <MenuItem
+                      icon={<Pause size={14} />}
+                      disabled={isPending || !isRunning}
+                      onClick={() => handlePause(raw)}
+                    >
+                      Pause
+                    </MenuItem>
+                    <MenuItem
+                      icon={<Square size={14} />}
+                      disabled={isPending || isStopped}
+                      onClick={() => handleStop(raw)}
+                    >
+                      Stop
+                    </MenuItem>
+                    <MenuSeparator />
+                    <MenuItem
+                      icon={<ExternalLink size={14} />}
+                      onClick={() => handlePcSelect(raw)}
+                    >
+                      Open
+                    </MenuItem>
+                    <MenuSeparator />
+                    <MenuItem
+                      icon={<Trash2 size={14} />}
+                      danger
+                      onClick={() => handleDelete(raw)}
+                    >
+                      Delete
+                    </MenuItem>
+                  </>
+                }
+              >
+                {card}
+              </ContextMenu>
+            );
+          }}
         />
       )}
 
-      {/* Delete confirmation */}
       <Dialog
         open={!!deleteConfirmation?.isOpen}
         onClose={cancelDelete}
         size="sm"
         title={
-          <span className="flex items-center gap-2 text-danger">
-            <AlertCircle className="h-4 w-4" />
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <AlertCircle size={16} />
             Delete virtual machine
-          </span>
+          </ResponsiveStack>
         }
         description={
           deleteConfirmation?.machine
@@ -428,7 +513,7 @@ export default function ComputersPage() {
             : "This action cannot be undone."
         }
         footer={
-          <ButtonGroup className="justify-end">
+          <ButtonGroup>
             <Button variant="secondary" onClick={cancelDelete}>
               Cancel
             </Button>
@@ -438,10 +523,8 @@ export default function ComputersPage() {
           </ButtonGroup>
         }
       >
-        <p className="text-sm text-fg-muted">
-          All snapshots, volumes and attached configuration will be lost.
-        </p>
+        <p>All snapshots, volumes and attached configuration will be lost.</p>
       </Dialog>
-    </div>
+    </Page>
   );
 }

@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { createVm, selectVmsLoading, selectVmsError } from '@/state/slices/vms';
-import { Wizard } from '@/components/ui/wizard';
-import { LoadingOverlay } from '@/components/ui/loading-overlay';
+import { EmptyState, LoadingOverlay, Page } from '@infinibay/harbor';
+import { Wizard } from './wizard/wizard';
 import { useToast } from '@/hooks/use-toast';
 import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ResourcesStep } from './steps/ResourcesStep';
@@ -112,20 +112,16 @@ export default function CreateMachineWizard({ departmentId }) {
   // Don't render until initial values are ready
   if (!initialValues) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
+      <Page size="md">
+        <EmptyState variant="inline" title="Loading…" />
+      </Page>
     );
   }
 
   return (
     <>
       {isCreating && (
-        <LoadingOverlay
-          message="Creating your virtual machine..."
-          variant="pulse"
-          size="xl"
-        />
+        <LoadingOverlay label="Creating your virtual machine…" fill size={32} />
       )}
       <Wizard onComplete={handleComplete} initialValues={initialValues}>
         <BasicInfoStep

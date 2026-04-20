@@ -1,6 +1,6 @@
 'use client'
 
-import { Input } from '@/components/ui/input'
+import { TextField, FormField } from '@infinibay/harbor'
 import { ExternalLink } from 'lucide-react'
 import { validateScriptInput } from '@/utils/validateScriptInput'
 
@@ -9,7 +9,7 @@ export function UrlInput({ input, value, onChange, error }) {
     try {
       const parsed = new URL(url)
       if (input.validation?.protocols) {
-        const normalizedProtocols = input.validation.protocols.map(p => p.replace(':', ''))
+        const normalizedProtocols = input.validation.protocols.map((p) => p.replace(':', ''))
         return normalizedProtocols.includes(parsed.protocol.replace(':', ''))
       }
       return true
@@ -19,32 +19,26 @@ export function UrlInput({ input, value, onChange, error }) {
   }
 
   const validationError = validateScriptInput(input, value)
-  const isValid = value && validateUrl(value)
+  const displayError = error || validationError || undefined
+  const isValid = Boolean(value) && validateUrl(value)
+
+  const helper = input.validation?.protocols
+    ? `Allowed protocols: ${input.validation.protocols.join(', ')}`
+    : undefined
 
   return (
-    <div className="space-y-2">
-      <div className="relative">
-        <Input
-          id={input.name}
-          type="url"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="https://example.com"
-          className={`pr-10 ${error || validationError ? 'border-destructive' : ''}`}
-        />
-        {value && isValid && (
-          <ExternalLink className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        )}
-      </div>
-      {input.validation?.protocols && (
-        <p className="text-xs text-muted-foreground">
-          Allowed protocols: {input.validation.protocols.join(', ')}
-        </p>
-      )}
-      {(error || validationError) && (
-        <p className="text-xs text-destructive">{error || validationError}</p>
-      )}
-    </div>
+    <FormField error={displayError} helper={helper}>
+      <TextField
+        id={input.name}
+        type="url"
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="https://example.com"
+        error={displayError}
+        valid={isValid && !displayError}
+        suffix={isValid ? <ExternalLink size={16} /> : null}
+      />
+    </FormField>
   )
 }
 

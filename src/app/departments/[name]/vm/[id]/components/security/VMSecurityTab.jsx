@@ -1,20 +1,21 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Plus, RefreshCw, Shield, Trash2, Zap } from 'lucide-react';
 import {
-  Shield,
-  Zap,
-  RefreshCw,
-  Plus,
-} from 'lucide-react';
-import {
-  Card,
-  Button,
-  Badge,
   Alert,
-  Skeleton,
-  Stat,
+  Badge,
+  Button,
+  Card,
   DataTable,
+  Dialog,
+  EmptyState,
+  IconButton,
+  LoadingOverlay,
+  Page,
+  ResponsiveStack,
+  Skeleton,
+  StatusDot,
 } from '@infinibay/harbor';
 import { createDebugger } from '@/utils/debug';
 import { toast } from 'sonner';
@@ -28,25 +29,28 @@ import {
 } from '@/config/firewallTemplates';
 
 import CreateFirewallRuleDialog from './CreateFirewallRuleDialog';
-import NoFirewallRulesWarning from '@/components/security/NoFirewallRulesWarning';
 
 const debug = createDebugger('frontend:components:vm-security-tab');
 
-/** Shape each rule into the uniform row structure the table consumes. */
+const formatPort = (r) => {
+  if (!r.dstPortStart) return '—';
+  if (r.dstPortEnd && r.dstPortEnd !== r.dstPortStart) {
+    return `${r.dstPortStart}–${r.dstPortEnd}`;
+  }
+  return String(r.dstPortStart);
+};
+
 const shapeRules = (vmRules, departmentRules) => {
   const rows = [];
   (departmentRules || []).forEach((r, i) => {
     rows.push({
       id: `dept-${r.id || i}`,
+      ruleId: r.id,
       source: 'department',
       name: r.name,
       direction: r.direction,
       protocol: r.protocol,
-      port: r.dstPortStart
-        ? r.dstPortEnd && r.dstPortEnd !== r.dstPortStart
-          ? `${r.dstPortStart}–${r.dstPortEnd}`
-          : String(r.dstPortStart)
-        : '—',
+      port: formatPort(r),
       action: r.action,
       priority: r.priority ?? 500,
     });
@@ -54,15 +58,12 @@ const shapeRules = (vmRules, departmentRules) => {
   (vmRules || []).forEach((r, i) => {
     rows.push({
       id: `vm-${r.id || i}`,
+      ruleId: r.id,
       source: 'custom',
       name: r.name,
       direction: r.direction,
       protocol: r.protocol,
-      port: r.dstPortStart
-        ? r.dstPortEnd && r.dstPortEnd !== r.dstPortStart
-          ? `${r.dstPortStart}–${r.dstPortEnd}`
-          : String(r.dstPortStart)
-        : '—',
+      port: formatPort(r),
       action: r.action,
       priority: r.priority ?? 500,
     });
@@ -70,10 +71,24 @@ const shapeRules = (vmRules, departmentRules) => {
   return rows;
 };
 
+const directionArrow = (d) => {
+  const v = (d || '').toUpperCase();
+  if (v === 'IN') return '↓';
+  if (v === 'OUT') return '↑';
+  if (v === 'INOUT') return '↔';
+  return v;
+};
+
 const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const [applyingId, setApplyingId] = useState(null);
+  const [applyProgress, setApplyProgress] = useState({ done: 0, total: 0 });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [ruleToDelete, setRuleToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState({ done: 0, total: 0 });
 
   const {
     rules: vmRules,
@@ -82,6 +97,7 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
     loading,
     error,
     createRule,
+    deleteRule,
     refetch,
   } = useFirewallData({
     entityType: ENTITY_TYPES.VM,
@@ -94,24 +110,23 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
     await refetch();
   };
 
-  const handleCreateRule = () => setIsCreateDialogOpen(true);
-  const handleRuleCreated = () => setIsCreateDialogOpen(false);
-
   const applyTemplate = async (templateId) => {
     setApplyingId(templateId);
     setIsApplyingTemplate(true);
     try {
       const template = getFirewallTemplate(templateId);
       if (!template) throw new Error(`Template ${templateId} not found`);
-
       const rules = expandTemplateToRules(template);
-      for (const rule of rules) {
+      setApplyProgress({ done: 0, total: rules.length });
+      for (let i = 0; i < rules.length; i++) {
+        const rule = rules[i];
         await createRule({
           variables: {
             vmId,
             input: {
               action: rule.action,
-              description: rule.description || `From template: ${template.displayName}`,
+              description:
+                rule.description || `From template: ${template.displayName}`,
               direction: rule.direction,
               dstIpAddr: rule.dstIpAddr || null,
               dstIpMask: rule.dstIpMask || null,
@@ -128,6 +143,7 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
             },
           },
         });
+        setApplyProgress({ done: i + 1, total: rules.length });
       }
       toast.success(`${template.displayName} applied (${rules.length} rules)`);
     } catch (err) {
@@ -136,10 +152,67 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
     } finally {
       setIsApplyingTemplate(false);
       setApplyingId(null);
+      setApplyProgress({ done: 0, total: 0 });
+      await refetch();
     }
   };
 
-  const rows = useMemo(() => shapeRules(vmRules, departmentRules), [vmRules, departmentRules]);
+  const handleDeleteRule = async () => {
+    if (!ruleToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteRule({ variables: { ruleId: ruleToDelete.ruleId } });
+      toast.success('Firewall rule deleted');
+      setRuleToDelete(null);
+      await refetch();
+    } catch (err) {
+      debug.error('Failed to delete rule:', err);
+      toast.error(`Could not delete rule: ${err.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const targetRuleIds = rows
+      .filter((r) => selectedIds.includes(r.id) && r.source === 'custom')
+      .map((r) => r.ruleId)
+      .filter(Boolean);
+    if (targetRuleIds.length === 0) {
+      setBulkDeleteOpen(false);
+      return;
+    }
+    setIsDeleting(true);
+    setBulkDeleteOpen(false);
+    setDeleteProgress({ done: 0, total: targetRuleIds.length });
+    try {
+      let done = 0;
+      await Promise.all(
+        targetRuleIds.map((ruleId) =>
+          deleteRule({ variables: { ruleId } }).then(() => {
+            done += 1;
+            setDeleteProgress({ done, total: targetRuleIds.length });
+          }),
+        ),
+      );
+      toast.success(
+        `${targetRuleIds.length} rule${targetRuleIds.length !== 1 ? 's' : ''} deleted`,
+      );
+      setSelectedIds([]);
+    } catch (err) {
+      debug.error('Failed to bulk delete:', err);
+      toast.error(`Could not delete all rules: ${err.message}`);
+    } finally {
+      setIsDeleting(false);
+      setDeleteProgress({ done: 0, total: 0 });
+      await refetch();
+    }
+  };
+
+  const rows = useMemo(
+    () => shapeRules(vmRules, departmentRules),
+    [vmRules, departmentRules],
+  );
 
   const columns = useMemo(
     () => [
@@ -148,42 +221,33 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
         label: 'Rule',
         sortable: true,
         render: (row) => (
-          <div className="flex items-center gap-2 min-w-0">
-            <span
-              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                row.action === 'ACCEPT' ? 'bg-success' : 'bg-danger'
-              }`}
-            />
-            <span className="truncate text-fg">{row.name || '—'}</span>
-          </div>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <StatusDot status={row.action === 'ACCEPT' ? 'online' : 'offline'} />
+            <span>{row.name || '—'}</span>
+          </ResponsiveStack>
         ),
       },
       {
         key: 'direction',
         label: 'Dir',
-        width: 72,
+        width: 64,
         sortable: true,
-        render: (row) => (
-          <span className="font-mono text-xs text-fg-muted uppercase">{row.direction}</span>
-        ),
+        align: 'center',
+        render: (row) => <span>{directionArrow(row.direction)}</span>,
       },
       {
         key: 'protocol',
         label: 'Proto',
-        width: 72,
+        width: 80,
         sortable: true,
-        render: (row) => (
-          <span className="font-mono text-xs text-fg-muted uppercase">{row.protocol}</span>
-        ),
+        render: (row) => <span>{(row.protocol || '').toUpperCase()}</span>,
       },
       {
         key: 'port',
         label: 'Port',
-        width: 100,
+        width: 110,
         sortable: true,
-        render: (row) => (
-          <span className="font-mono text-xs text-fg">{row.port}</span>
-        ),
+        render: (row) => <span>{row.port}</span>,
       },
       {
         key: 'action',
@@ -215,159 +279,266 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
         width: 80,
         sortable: true,
         align: 'right',
-        render: (row) => (
-          <span className="font-mono text-xs tabular-nums text-fg-muted">{row.priority}</span>
-        ),
+        render: (row) => <span>{row.priority}</span>,
+      },
+      {
+        key: 'actions',
+        label: '',
+        width: 56,
+        align: 'right',
+        render: (row) =>
+          row.source === 'custom' ? (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              reactive={false}
+              label="Delete rule"
+              icon={<Trash2 size={14} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setRuleToDelete(row);
+              }}
+            />
+          ) : null,
       },
     ],
-    []
+    [],
   );
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-56 w-full" />
-      </div>
+      <Page>
+        <Skeleton />
+        <Skeleton />
+        <Skeleton />
+      </Page>
     );
   }
 
   if (error) {
     return (
-      <Alert
-        tone="danger"
-        title="Failed to load firewall configuration"
-        actions={
-          <Button
-            size="sm"
-            onClick={handleRefresh}
-            icon={<RefreshCw className="h-4 w-4" />}
-          >
-            Retry
-          </Button>
-        }
-      >
-        We couldn&apos;t load the firewall rules for this VM. The network may be
-        unstable or the backend service is unreachable.
-      </Alert>
+      <Page>
+        <Alert
+          tone="danger"
+          title="Failed to load firewall configuration"
+          actions={
+            <Button
+              size="sm"
+              variant="primary"
+              icon={<RefreshCw size={14} />}
+              onClick={handleRefresh}
+            >
+              Retry
+            </Button>
+          }
+        >
+          We couldn&apos;t load the firewall rules for this VM.
+        </Alert>
+      </Page>
     );
   }
 
-  const hasNoRules = effectiveRules.length === 0;
+  const hasNoRules = effectiveRules.length === 0 && !isApplyingTemplate;
 
   return (
-    <div className="space-y-6">
-      {hasNoRules && (
-        <NoFirewallRulesWarning
-          isApplying={isApplyingTemplate}
-          isForDepartment={false}
-          onApplyTemplate={() => applyTemplate('desktop-secure')}
-        />
-      )}
-
-      {departmentRules.length > 0 && (
-        <Alert tone="info" title="Department rules apply to this VM">
-          This VM inherits {departmentRules.length} rule{departmentRules.length !== 1 ? 's' : ''} from its department.
-          You can add VM-specific rules or override department rules if needed.
-        </Alert>
-      )}
-
-      {/* Posture summary — 3 stats. */}
-      <div className="grid grid-cols-3 gap-4">
-        <Stat
-          label="Inherited"
-          value={departmentRules.length}
-          icon={<Shield className="h-3.5 w-3.5" />}
-        />
-        <Stat
-          label="Custom"
-          value={vmRules.length}
-          icon={<Shield className="h-3.5 w-3.5" />}
-        />
-        <Stat
-          label="Effective"
-          value={effectiveRules.length}
-          icon={<Shield className="h-3.5 w-3.5" />}
-        />
-      </div>
-
-      {/* Quick profiles — harbor chip row instead of FirewallTemplateSelector. */}
-      <Card variant="glass" className="p-6">
-        <h3 className="flex items-center gap-2 mb-3 text-sm font-semibold text-fg">
-          <Zap className="h-4 w-4 text-warning" />
-          Quick security profiles
-        </h3>
-        <p className="text-xs text-fg-muted mb-4">
-          Apply a pre-configured rule set. Rules from the profile are added on
-          top of anything already in place — nothing is removed automatically.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {FIREWALL_TEMPLATES.map((tpl) => (
-            <Button
-              key={tpl.id}
-              size="sm"
-              variant="secondary"
-              loading={applyingId === tpl.id}
-              disabled={isApplyingTemplate}
-              onClick={() => applyTemplate(tpl.id)}
-            >
-              {tpl.displayName}
-            </Button>
-          ))}
-        </div>
-      </Card>
-
-      {/* Rules table */}
-      <Card variant="default" className="p-0 overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-white/8">
-          <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
-              <Shield className="h-4 w-4 text-accent-2" />
-              Firewall rules
-            </h3>
-            <p className="text-xs text-fg-muted">
-              {departmentRules.length} inherited · {vmRules.length} custom · {effectiveRules.length} effective
-            </p>
-          </div>
-          <Button
-            size="sm"
-            onClick={handleCreateRule}
-            icon={<Plus className="h-4 w-4" />}
-          >
-            Add Rule
-          </Button>
-        </div>
-        <div className="p-2">
-          <DataTable
-            rows={rows}
-            columns={columns}
-            rowKey={(r) => r.id}
-            emptyState={
-              <div className="py-10 text-center text-sm text-fg-muted">
-                No firewall rules configured for this VM yet.
-              </div>
+    <>
+      <Page>
+        {hasNoRules ? (
+          <Alert
+            tone="warning"
+            icon={<Shield size={14} />}
+            title="No firewall rules configured"
+            actions={
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Shield size={14} />}
+                loading={applyingId === 'desktop-secure'}
+                disabled={isApplyingTemplate}
+                onClick={() => applyTemplate('desktop-secure')}
+              >
+                Apply Desktop Secure
+              </Button>
             }
-          />
-        </div>
-      </Card>
+          >
+            Without rules this VM cannot connect to the internet. Start with the{' '}
+            <strong>Desktop Secure</strong> profile for HTTPS, DNS and RDP
+            access.
+          </Alert>
+        ) : null}
 
-      {vmRules.length > 0 && (
-        <Alert tone="warning" title="Custom VM rules are active">
-          This VM has {vmRules.length} custom rule{vmRules.length !== 1 ? 's' : ''} configured.
-          They are applied alongside department rules and can override them when needed.
-        </Alert>
-      )}
+        {departmentRules.length > 0 ? (
+          <Alert
+            tone="info"
+            icon={<Shield size={14} />}
+            title={`${departmentRules.length} inherited rule${departmentRules.length !== 1 ? 's' : ''} from the department`}
+          >
+            VM-specific rules you add apply on top of these. Use{' '}
+            <em>Override</em> to weaken a department rule for this VM only.
+          </Alert>
+        ) : null}
+
+        <Card
+          variant="default"
+          spotlight={false}
+          glow={false}
+          leadingIcon={<Zap size={18} />}
+          leadingIconTone="amber"
+          title="Quick security profiles"
+          description="Apply a pre-configured rule set. Rules from the profile are added on top of what already exists."
+        >
+          <ResponsiveStack direction="row" gap={2} wrap>
+            {FIREWALL_TEMPLATES.map((tpl) => (
+              <Button
+                key={tpl.id}
+                size="sm"
+                variant={applyingId === tpl.id ? 'primary' : 'secondary'}
+                loading={applyingId === tpl.id}
+                disabled={isApplyingTemplate}
+                onClick={() => applyTemplate(tpl.id)}
+              >
+                {tpl.displayName}
+              </Button>
+            ))}
+          </ResponsiveStack>
+        </Card>
+
+        <Card
+          variant="default"
+          spotlight={false}
+          glow={false}
+          leadingIcon={<Shield size={18} />}
+          leadingIconTone="sky"
+          title="Firewall rules"
+          description={`${departmentRules.length} inherited · ${vmRules.length} custom · ${effectiveRules.length} effective`}
+          footer={
+            <ResponsiveStack direction="row" justify="between" align="center">
+              {selectedIds.length > 0 ? (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  icon={<Trash2 size={14} />}
+                  onClick={() => setBulkDeleteOpen(true)}
+                  disabled={isDeleting || isApplyingTemplate}
+                >
+                  Delete {selectedIds.length} selected
+                </Button>
+              ) : (
+                <span />
+              )}
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => setIsCreateDialogOpen(true)}
+                disabled={isApplyingTemplate || isDeleting}
+              >
+                Add rule
+              </Button>
+            </ResponsiveStack>
+          }
+        >
+          {isApplyingTemplate ? (
+            <LoadingOverlay
+              label={`Applying ${
+                applyingId
+                  ? getFirewallTemplate(applyingId)?.displayName
+                  : 'template'
+              }…`}
+              progress={applyProgress}
+            />
+          ) : isDeleting && deleteProgress.total > 0 ? (
+            <LoadingOverlay label="Deleting rules…" progress={deleteProgress} />
+          ) : rows.length === 0 ? (
+            <EmptyState
+              variant="dashed"
+              icon={<Shield size={18} />}
+              title="No firewall rules configured for this VM yet."
+              description="Use a quick profile above or add a custom rule."
+            />
+          ) : (
+            <DataTable
+              rows={rows}
+              columns={columns}
+              rowKey={(r) => r.id}
+              selectable
+              isRowSelectable={(r) => r.source === 'custom'}
+              selected={selectedIds}
+              onSelectionChange={setSelectedIds}
+            />
+          )}
+        </Card>
+      </Page>
 
       <CreateFirewallRuleDialog
         vmId={vmId}
         vmOs={vmOs}
         isOpen={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
-        onSuccess={handleRuleCreated}
+        onSuccess={() => setIsCreateDialogOpen(false)}
         existingRules={effectiveRules}
       />
-    </div>
+
+      <Dialog
+        open={!!ruleToDelete}
+        onClose={() => (!isDeleting ? setRuleToDelete(null) : null)}
+        size="sm"
+        title="Delete firewall rule?"
+        description={
+          ruleToDelete
+            ? `This will permanently remove "${ruleToDelete.name}" from this VM.`
+            : undefined
+        }
+        footer={
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              onClick={() => setRuleToDelete(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              icon={<Trash2 size={14} />}
+              onClick={handleDeleteRule}
+              loading={isDeleting}
+              disabled={isDeleting}
+            >
+              Delete rule
+            </Button>
+          </ResponsiveStack>
+        }
+      />
+
+      <Dialog
+        open={bulkDeleteOpen}
+        onClose={() => (!isDeleting ? setBulkDeleteOpen(false) : null)}
+        size="sm"
+        title={`Delete ${selectedIds.length} firewall rule${selectedIds.length !== 1 ? 's' : ''}?`}
+        description="This will permanently remove the selected custom rules from this VM. Inherited rules are unaffected."
+        footer={
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              onClick={() => setBulkDeleteOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              icon={<Trash2 size={14} />}
+              onClick={handleBulkDelete}
+              loading={isDeleting}
+              disabled={isDeleting}
+            >
+              Delete {selectedIds.length} rule{selectedIds.length !== 1 ? 's' : ''}
+            </Button>
+          </ResponsiveStack>
+        }
+      />
+    </>
   );
 };
 

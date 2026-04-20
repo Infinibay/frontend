@@ -1,68 +1,39 @@
 'use client'
 
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { MultiSelect, FormField } from '@infinibay/harbor'
 import { validateScriptInput } from '@/utils/validateScriptInput'
 
 export function MultiSelectInput({ input, value, onChange, error }) {
   const selectedValues = Array.isArray(value) ? value : []
+  const maxSelections = input.validation?.maxSelections
 
-  const handleToggle = (optionValue) => {
-    const newValue = selectedValues.includes(optionValue)
-      ? selectedValues.filter(v => v !== optionValue)
-      : [...selectedValues, optionValue]
-    onChange(newValue)
-  }
-
-  const selectAll = () => {
-    onChange(input.options?.map(opt => opt.value) || [])
-  }
-
-  const clearAll = () => {
-    onChange([])
+  const handleChange = (next) => {
+    if (maxSelections && next.length > maxSelections) {
+      onChange(next.slice(0, maxSelections))
+      return
+    }
+    onChange(next)
   }
 
   const validationError = validateScriptInput(input, selectedValues)
+  const displayError = error || validationError || undefined
+
+  const options = (input.options || []).map((o) => ({
+    value: String(o.value),
+    label: o.label,
+  }))
+
+  const helper = `${selectedValues.length} selected${maxSelections ? ` / ${maxSelections}` : ''}`
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">
-          {selectedValues.length} selected
-        </span>
-        <div className="space-x-2">
-          <Button size="sm" variant="ghost" onClick={selectAll}>
-            Select All
-          </Button>
-          <Button size="sm" variant="ghost" onClick={clearAll}>
-            Clear
-          </Button>
-        </div>
-      </div>
-      <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
-        {input.options?.map(option => (
-          <div key={option.value} className="flex items-center space-x-2">
-            <Checkbox
-              id={`${input.name}-${option.value}`}
-              checked={selectedValues.includes(option.value)}
-              onCheckedChange={() => handleToggle(option.value)}
-              disabled={
-                !selectedValues.includes(option.value) &&
-                input.validation?.maxSelections &&
-                selectedValues.length >= input.validation.maxSelections
-              }
-            />
-            <Label htmlFor={`${input.name}-${option.value}`} className="cursor-pointer">
-              {option.label}
-            </Label>
-          </div>
-        ))}
-      </div>
-      {(error || validationError) && (
-        <p className="text-xs text-destructive">{error || validationError}</p>
-      )}
-    </div>
+    <FormField error={displayError} helper={helper}>
+      <MultiSelect
+        options={options}
+        value={selectedValues}
+        onChange={handleChange}
+        placeholder={`Select ${input.label}`}
+      />
+    </FormField>
   )
 }
 

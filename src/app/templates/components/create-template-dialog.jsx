@@ -11,6 +11,8 @@ import {
   TextField,
   Textarea,
   Alert,
+  ResponsiveStack,
+  ResponsiveGrid,
 } from "@infinibay/harbor";
 
 import {
@@ -78,19 +80,16 @@ export function CreateTemplateDialog({ children, categoryId }) {
     }
   };
 
-  const trigger = useCallback(
-    (child) => {
-      if (!isValidElement(child)) return null;
-      const prev = child.props.onClick;
-      return cloneElement(child, {
-        onClick: (e) => {
-          prev?.(e);
-          setOpen(true);
-        },
-      });
-    },
-    []
-  );
+  const trigger = useCallback((child) => {
+    if (!isValidElement(child)) return null;
+    const prev = child.props.onClick;
+    return cloneElement(child, {
+      onClick: (e) => {
+        prev?.(e);
+        setOpen(true);
+      },
+    });
+  }, []);
 
   return (
     <>
@@ -101,13 +100,13 @@ export function CreateTemplateDialog({ children, categoryId }) {
         side="right"
         size={480}
         title={
-          <span className="flex items-center gap-2">
-            <Layers className="h-4 w-4 text-accent-2" />
-            New template
-          </span>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <Layers size={16} />
+            <span>New template</span>
+          </ResponsiveStack>
         }
         footer={
-          <ButtonGroup className="justify-end">
+          <ButtonGroup attached={false}>
             <Button variant="secondary" onClick={close} disabled={loading?.create}>
               Cancel
             </Button>
@@ -121,13 +120,15 @@ export function CreateTemplateDialog({ children, categoryId }) {
           </ButtonGroup>
         }
       >
-        <div className="space-y-4">
-          <p className="text-sm text-fg-muted">
-            Pre-configured VM blueprint. Each new VM started from this
-            template inherits these resources and the OS its ISO provides.
-          </p>
+        <ResponsiveStack direction="col" gap={4}>
+          <Alert tone="info" size="sm">
+            Pre-configured VM blueprint. Each new VM started from this template
+            inherits these resources and the OS its ISO provides.
+          </Alert>
 
-          {error?.create && <Alert tone="danger">{String(error.create)}</Alert>}
+          {error?.create ? (
+            <Alert tone="danger">{String(error.create)}</Alert>
+          ) : null}
 
           <TextField
             label="Name"
@@ -137,48 +138,44 @@ export function CreateTemplateDialog({ children, categoryId }) {
             autoFocus
           />
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-fg">Description</label>
-            <Textarea
-              value={form.description}
-              onChange={(e) => update({ description: e.target.value })}
-              rows={2}
-              placeholder="What is this template for?"
-            />
-          </div>
+          <Textarea
+            label="Description"
+            value={form.description}
+            onChange={(e) => update({ description: e.target.value })}
+            rows={2}
+            placeholder="What is this template for?"
+          />
 
-          <div className="grid grid-cols-3 gap-3">
+          <ResponsiveGrid columns={3} gap={3}>
             <TextField
               label="vCPU"
               type="number"
               min={1}
               max={128}
-              icon={<Cpu className="h-4 w-4" />}
+              icon={<Cpu size={14} />}
               value={form.cores}
               onChange={(e) => update({ cores: e.target.value })}
             />
             <TextField
-              label="RAM"
+              label="RAM (GB)"
               type="number"
               min={1}
               max={512}
-              suffix={<span className="text-fg-subtle text-xs">GB</span>}
-              icon={<MemoryStick className="h-4 w-4" />}
+              icon={<MemoryStick size={14} />}
               value={form.ram}
               onChange={(e) => update({ ram: e.target.value })}
             />
             <TextField
-              label="Disk"
+              label="Disk (GB)"
               type="number"
               min={1}
               max={10000}
-              suffix={<span className="text-fg-subtle text-xs">GB</span>}
-              icon={<HardDrive className="h-4 w-4" />}
+              icon={<HardDrive size={14} />}
               value={form.storage}
               onChange={(e) => update({ storage: e.target.value })}
             />
-          </div>
-        </div>
+          </ResponsiveGrid>
+        </ResponsiveStack>
       </Drawer>
     </>
   );

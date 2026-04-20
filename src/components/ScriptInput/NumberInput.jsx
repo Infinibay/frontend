@@ -1,38 +1,32 @@
 'use client'
 
-import { Input } from '@/components/ui/input'
+import { NumberField, FormField } from '@infinibay/harbor'
 import { validateScriptInput } from '@/utils/validateScriptInput'
 
 export function NumberInput({ input, value, onChange, error }) {
-  const handleChange = (e) => {
-    const val = e.target.value
-    onChange(val === '' ? '' : Number(val))
-  }
-
   const validationError = validateScriptInput(input, value)
+  const displayError = error || validationError || undefined
+
+  const min = input.validation?.min
+  const max = input.validation?.max
+  const step = input.validation?.integerOnly ? 1 : (input.validation?.step ?? 1)
+
+  const numericValue = typeof value === 'number' ? value : (value === '' || value === undefined || value === null ? undefined : Number(value))
+
+  const helper = (min !== undefined && max !== undefined)
+    ? `Range: ${min} - ${max}`
+    : undefined
 
   return (
-    <div className="space-y-2">
-      <Input
-        id={input.name}
-        type="number"
-        value={value}
-        onChange={handleChange}
-        min={input.validation?.min}
-        max={input.validation?.max}
-        step={input.validation?.integerOnly ? '1' : input.validation?.step}
-        className={error || validationError ? 'border-destructive' : ''}
-        placeholder={input.description}
+    <FormField error={displayError} helper={helper}>
+      <NumberField
+        value={numericValue}
+        onChange={(v) => onChange(v)}
+        min={min ?? -Infinity}
+        max={max ?? Infinity}
+        step={step}
       />
-      {input.validation?.min !== undefined && input.validation?.max !== undefined && (
-        <p className="text-xs text-muted-foreground">
-          Range: {input.validation.min} - {input.validation.max}
-        </p>
-      )}
-      {(error || validationError) && (
-        <p className="text-xs text-destructive">{error || validationError}</p>
-      )}
-    </div>
+    </FormField>
   )
 }
 

@@ -11,15 +11,19 @@ import {
   AppWindow,
 } from "lucide-react";
 import {
+  Page,
   Card,
   Button,
   Badge,
-  TextField,
+  SearchField,
   Alert,
   EmptyState,
   Spinner,
   DataTable,
   Stat,
+  IconTile,
+  ResponsiveStack,
+  ResponsiveGrid,
 } from "@infinibay/harbor";
 
 import { fetchApplications } from "@/state/slices/applications";
@@ -64,12 +68,12 @@ const ApplicationsPage = () => {
     () => ({
       title: "Applications",
       description: "Per-OS install scripts that VMs can pull on demand.",
-      icon: <Package className="h-5 w-5 text-accent-2" />,
+      icon: <Package size={20} />,
       sections: [
         {
           id: "creating",
           title: "Creating applications",
-          icon: <Package className="h-4 w-4" />,
+          icon: <Package size={16} />,
           content: (
             <p>
               Click <strong>New application</strong> to register one. Each
@@ -81,7 +85,7 @@ const ApplicationsPage = () => {
         {
           id: "details",
           title: "Editing",
-          icon: <Settings className="h-4 w-4" />,
+          icon: <Settings size={16} />,
           content: (
             <p>
               Click a row to open its detail view where the scripts and
@@ -92,7 +96,7 @@ const ApplicationsPage = () => {
         {
           id: "search",
           title: "Searching",
-          icon: <Search className="h-4 w-4" />,
+          icon: <Search size={16} />,
           content: <p>Search matches name and description live.</p>,
         },
       ],
@@ -125,21 +129,17 @@ const ApplicationsPage = () => {
         label: "Application",
         sortable: true,
         render: (row) => (
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="h-8 w-8 rounded-md bg-accent/15 text-accent grid place-items-center shrink-0">
-              <AppWindow className="h-4 w-4" />
-            </span>
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-fg truncate">
-                {row.name}
-              </div>
+          <ResponsiveStack direction="row" gap={3} align="center">
+            <IconTile icon={<AppWindow size={16} />} tone="purple" size="sm" />
+            <ResponsiveStack direction="col" gap={0}>
+              <span>{row.name}</span>
               {row.description ? (
-                <div className="text-xs text-fg-muted truncate">
+                <span style={{ fontSize: 12, opacity: 0.65 }}>
                   {row.description}
-                </div>
+                </span>
               ) : null}
-            </div>
-          </div>
+            </ResponsiveStack>
+          </ResponsiveStack>
         ),
       },
       {
@@ -148,10 +148,9 @@ const ApplicationsPage = () => {
         width: 220,
         render: (row) => {
           const oss = row.os || [];
-          if (!oss.length)
-            return <span className="text-fg-subtle text-xs">—</span>;
+          if (!oss.length) return <span style={{ opacity: 0.4 }}>—</span>;
           return (
-            <div className="flex items-center gap-1 flex-wrap">
+            <ResponsiveStack direction="row" gap={1} wrap>
               {oss.map((o) => (
                 <Badge
                   key={o}
@@ -162,12 +161,11 @@ const ApplicationsPage = () => {
                         ? "success"
                         : "neutral"
                   }
-                  className="text-[10px]"
                 >
                   {o}
                 </Badge>
               ))}
-            </div>
+            </ResponsiveStack>
           );
         },
       },
@@ -178,11 +176,7 @@ const ApplicationsPage = () => {
         align: "right",
         render: (row) => {
           const n = Object.keys(row.parameters || {}).length;
-          return (
-            <span className="font-mono text-xs tabular-nums text-fg-muted">
-              {n}
-            </span>
-          );
+          return <span style={{ fontFamily: "monospace" }}>{n}</span>;
         },
       },
     ],
@@ -190,31 +184,51 @@ const ApplicationsPage = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <Card variant="glass" className="relative">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-xl bg-accent/15 grid place-items-center shrink-0">
-              <Package className="h-5 w-5 text-accent" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-fg">Applications</h1>
-              <p className="text-sm text-fg-muted mt-1">
-                Install-script catalogue that VMs can pull from when
-                provisioning or updating.
-              </p>
-            </div>
-          </div>
+    <Page gap="lg">
+      <Card
+        variant="default"
+        leadingIcon={<Package size={20} />}
+        leadingIconTone="purple"
+        title="Applications"
+        description="Install-script catalogue that VMs can pull from when provisioning or updating."
+      >
+        <ResponsiveStack
+          direction={{ base: "col", lg: "row" }}
+          gap={4}
+          justify="between"
+          align="stretch"
+        >
+          <ResponsiveGrid columns={3} gap={3}>
+            <Stat
+              label="Total"
+              value={applications?.length || 0}
+              icon={<Package size={14} />}
+              variant="plain"
+            />
+            <Stat
+              label="Cross-OS"
+              value={
+                (applications || []).filter((a) => (a.os || []).length > 1)
+                  .length
+              }
+              variant="plain"
+            />
+            <Stat
+              label="Parametrised"
+              value={
+                (applications || []).filter(
+                  (a) => Object.keys(a.parameters || {}).length > 0
+                ).length
+              }
+              variant="plain"
+            />
+          </ResponsiveGrid>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <ResponsiveStack direction="row" gap={2} align="center">
             <Button
               variant="secondary"
               size="sm"
-              icon={
-                <RefreshCw
-                  className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-                />
-              }
+              icon={<RefreshCw size={16} />}
               onClick={refresh}
               disabled={isLoading}
             >
@@ -222,36 +236,13 @@ const ApplicationsPage = () => {
             </Button>
             <Button
               size="sm"
-              icon={<Plus className="h-4 w-4" />}
+              icon={<Plus size={16} />}
               onClick={() => router.push("/applications/new")}
             >
               New application
             </Button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 mt-4">
-          <Stat
-            label="Total"
-            value={applications?.length || 0}
-            icon={<Package className="h-3.5 w-3.5" />}
-          />
-          <Stat
-            label="Cross-OS"
-            value={
-              (applications || []).filter((a) => (a.os || []).length > 1)
-                .length
-            }
-          />
-          <Stat
-            label="Parametrised"
-            value={
-              (applications || []).filter(
-                (a) => Object.keys(a.parameters || {}).length > 0
-              ).length
-            }
-          />
-        </div>
+          </ResponsiveStack>
+        </ResponsiveStack>
       </Card>
 
       {error && (
@@ -262,7 +253,7 @@ const ApplicationsPage = () => {
             <Button
               size="sm"
               onClick={refresh}
-              icon={<RefreshCw className="h-4 w-4" />}
+              icon={<RefreshCw size={16} />}
             >
               Retry
             </Button>
@@ -272,25 +263,24 @@ const ApplicationsPage = () => {
         </Alert>
       )}
 
-      <Card variant="default" className="!p-4">
-        <div className="max-w-md">
-          <TextField
-            placeholder="Search applications…"
-            icon={<Search className="h-4 w-4" />}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+      <Card variant="default">
+        <SearchField
+          placeholder="Search applications…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </Card>
 
       {isLoading && !(applications || []).length ? (
-        <div className="py-10 flex items-center justify-center gap-3 text-fg-muted">
-          <Spinner /> Loading applications…
-        </div>
+        <Card variant="default">
+          <ResponsiveStack direction="row" gap={3} justify="center" align="center">
+            <Spinner /> Loading applications…
+          </ResponsiveStack>
+        </Card>
       ) : filtered.length === 0 ? (
-        <Card variant="default" className="!p-0">
+        <Card variant="default">
           <EmptyState
-            icon={<Package className="h-10 w-10 text-fg-subtle" />}
+            icon={<Package size={40} />}
             title={
               (applications || []).length ? "No matches" : "No applications yet"
             }
@@ -303,7 +293,7 @@ const ApplicationsPage = () => {
               !(applications || []).length ? (
                 <Button
                   size="sm"
-                  icon={<Plus className="h-4 w-4" />}
+                  icon={<Plus size={16} />}
                   onClick={() => router.push("/applications/new")}
                 >
                   New application
@@ -313,7 +303,7 @@ const ApplicationsPage = () => {
           />
         </Card>
       ) : (
-        <Card variant="default" className="!p-2">
+        <Card variant="default">
           <DataTable
             rows={filtered}
             columns={columns}
@@ -322,7 +312,7 @@ const ApplicationsPage = () => {
           />
         </Card>
       )}
-    </div>
+    </Page>
   );
 };
 

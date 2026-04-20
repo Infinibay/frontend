@@ -1,38 +1,53 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { gql, useApolloClient } from '@apollo/client';
+import { useSelector } from 'react-redux';
+import { toast } from 'sonner';
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction
-} from '@/components/ui/alert-dialog'
-import { Plus, Trash2, Search, Edit, AlertCircle, Calendar } from 'lucide-react'
-import { useScriptsQuery, useDepartmentScriptsQuery, useAssignScriptToDepartmentMutation, useUnassignScriptFromDepartmentMutation, useCancelScriptExecutionMutation } from '@/gql/hooks'
-import { toast } from 'sonner'
-import { useSelector } from 'react-redux'
-import { ScriptListItem } from '@/app/scripts/components/ScriptListItem'
-import { gql, useApolloClient } from '@apollo/client'
-import ScheduleScriptDialog from './components/ScheduleScriptDialog'
+  AlertCircle,
+  Calendar,
+  Edit3,
+  FileCode,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Dialog,
+  Drawer,
+  IconButton,
+  IconTile,
+  LoadingOverlay,
+  Page,
+  ResponsiveStack,
+  TextField,
+} from '@infinibay/harbor';
 
-// GraphQL query to check active schedules - server-side filtered by department and status
+import {
+  useAssignScriptToDepartmentMutation,
+  useCancelScriptExecutionMutation,
+  useDepartmentScriptsQuery,
+  useScriptsQuery,
+  useUnassignScriptFromDepartmentMutation,
+} from '@/gql/hooks';
+import { ScriptListItem } from '@/app/scripts/components/ScriptListItem';
+import ScheduleScriptDialog from './components/ScheduleScriptDialog';
+
 const GET_ACTIVE_SCHEDULES = gql`
   query GetActiveSchedules($scriptId: ID!, $departmentId: ID!) {
-    scheduledScripts(filters: {
-      scriptId: $scriptId,
-      departmentId: $departmentId,
-      status: [PENDING, RUNNING]
-    }) {
+    scheduledScripts(
+      filters: {
+        scriptId: $scriptId
+        departmentId: $departmentId
+        status: [PENDING, RUNNING]
+      }
+    ) {
       id
       status
       machine {
@@ -40,335 +55,366 @@ const GET_ACTIVE_SCHEDULES = gql`
       }
     }
   }
-`
+`;
 
 export default function DepartmentScriptsPage() {
-  const params = useParams()
-  const router = useRouter()
-  const apolloClient = useApolloClient()
-  const departmentName = params.name
-  const currentUser = useSelector((state) => state.auth.user)
-  const isAdmin = currentUser?.role === 'ADMIN'
+  const params = useParams();
+  const router = useRouter();
+  const apolloClient = useApolloClient();
+  const departmentName = params.name;
+  const currentUser = useSelector((state) => state.auth.user);
+  const isAdmin = currentUser?.role === 'ADMIN';
 
-  // Get department ID from Redux
-  const departments = useSelector((state) => state.departments.items)
-  const department = departments.find(d => d.name.toLowerCase() === departmentName?.toLowerCase())
-  const departmentId = department?.id
+  const departments = useSelector((state) => state.departments.items);
+  const department = departments.find(
+    (d) => d.name.toLowerCase() === departmentName?.toLowerCase(),
+  );
+  const departmentId = department?.id;
 
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showAssignDialog, setShowAssignDialog] = useState(false)
-  const [unassignConfirm, setUnassignConfirm] = useState(null) // { scriptId, scriptName, activeSchedulesCount, affectedVMs, scheduleIds }
-  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
-  const [selectedScriptForSchedule, setSelectedScriptForSchedule] = useState(null) // { id, name }
-  const [isUnassigning, setIsUnassigning] = useState(false)
-  const [isCheckingSchedules, setIsCheckingSchedules] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [unassignConfirm, setUnassignConfirm] = useState(null);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [selectedScriptForSchedule, setSelectedScriptForSchedule] =
+    useState(null);
+  const [isUnassigning, setIsUnassigning] = useState(false);
+  const [isCheckingSchedules, setIsCheckingSchedules] = useState(false);
 
-  // Fetch all scripts and department scripts
-  const { data: allScriptsData, loading: allScriptsLoading } = useScriptsQuery()
-  const { data: deptScriptsData, loading: deptScriptsLoading, refetch: refetchDeptScripts } = useDepartmentScriptsQuery({
+  const { data: allScriptsData, loading: allScriptsLoading } = useScriptsQuery();
+  const {
+    data: deptScriptsData,
+    loading: deptScriptsLoading,
+    refetch: refetchDeptScripts,
+  } = useDepartmentScriptsQuery({
     variables: { departmentId: departmentId || '' },
-    skip: !departmentId
-  })
+    skip: !departmentId,
+  });
 
-  const [assignScript] = useAssignScriptToDepartmentMutation()
-  const [unassignScript] = useUnassignScriptFromDepartmentMutation()
-  const [cancelScriptExecution] = useCancelScriptExecutionMutation()
+  const [assignScript] = useAssignScriptToDepartmentMutation();
+  const [unassignScript] = useUnassignScriptFromDepartmentMutation();
+  const [cancelScriptExecution] = useCancelScriptExecutionMutation();
 
-  const assignedScriptIds = new Set(deptScriptsData?.departmentScripts?.map(s => s.id) || [])
-  const availableScripts = allScriptsData?.scripts?.filter(s => !assignedScriptIds.has(s.id)) || []
-  const filteredAvailableScripts = availableScripts.filter(s =>
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const assignedScriptIds = new Set(
+    deptScriptsData?.departmentScripts?.map((s) => s.id) || [],
+  );
+  const availableScripts =
+    allScriptsData?.scripts?.filter((s) => !assignedScriptIds.has(s.id)) || [];
+  const filteredAvailableScripts = availableScripts.filter(
+    (s) =>
+      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   const handleAssign = async (scriptId) => {
     try {
-      await assignScript({
-        variables: { scriptId, departmentId }
-      })
-      toast.success('Script assigned to department')
-      refetchDeptScripts()
-      setShowAssignDialog(false)
+      await assignScript({ variables: { scriptId, departmentId } });
+      toast.success('Script assigned to department');
+      refetchDeptScripts();
+      setShowAssignDialog(false);
     } catch (error) {
-      toast.error(`Failed to assign script: ${error.message}`)
+      toast.error(`Failed to assign script: ${error.message}`);
     }
-  }
+  };
 
-  // Check for active schedules before unassigning
   const handleUnassign = async (script) => {
-    if (isCheckingSchedules || isUnassigning) return
-
+    if (isCheckingSchedules || isUnassigning) return;
     try {
-      setIsCheckingSchedules(true)
-      // Query for active schedules in this department (server-side filtered)
+      setIsCheckingSchedules(true);
       const { data } = await apolloClient.query({
         query: GET_ACTIVE_SCHEDULES,
         variables: { scriptId: script.id, departmentId },
-        fetchPolicy: 'network-only'
-      })
-
-      // Server returns only PENDING/RUNNING schedules for this department
-      const activeSchedules = data?.scheduledScripts || []
-
+        fetchPolicy: 'network-only',
+      });
+      const activeSchedules = data?.scheduledScripts || [];
       if (activeSchedules.length > 0) {
-        // Extract affected VMs and schedule IDs
-        const affectedVMs = [...new Set(activeSchedules.map(s => s.machine?.name).filter(Boolean))]
-        const scheduleIds = activeSchedules.map(s => s.id)
-
+        const affectedVMs = [
+          ...new Set(
+            activeSchedules.map((s) => s.machine?.name).filter(Boolean),
+          ),
+        ];
+        const scheduleIds = activeSchedules.map((s) => s.id);
         setUnassignConfirm({
           scriptId: script.id,
           scriptName: script.name,
           activeSchedulesCount: activeSchedules.length,
-          affectedVMs: affectedVMs.slice(0, 5), // Show max 5 VMs
-          scheduleIds
-        })
+          affectedVMs: affectedVMs.slice(0, 5),
+          scheduleIds,
+        });
       } else {
-        // No active schedules, proceed directly
-        await handleUnassignConfirm(script.id)
+        await handleUnassignConfirm(script.id);
       }
     } catch (error) {
-      toast.error(`Failed to check schedules: ${error.message}`)
+      toast.error(`Failed to check schedules: ${error.message}`);
     } finally {
-      setIsCheckingSchedules(false)
+      setIsCheckingSchedules(false);
     }
-  }
+  };
 
-  // Actually unassign after confirmation
   const handleUnassignConfirm = async (scriptId) => {
-    if (isUnassigning) return
-
+    if (isUnassigning) return;
     try {
-      setIsUnassigning(true)
-
-      // Cancel all active schedules if any
-      const scheduleIds = unassignConfirm?.scheduleIds || []
+      setIsUnassigning(true);
+      const scheduleIds = unassignConfirm?.scheduleIds || [];
       if (scheduleIds.length > 0) {
-        const cancelPromises = scheduleIds.map(scheduleId =>
-          cancelScriptExecution({
-            variables: { id: scheduleId }
-          }).catch(error => {
-            console.error(`Failed to cancel schedule ${scheduleId}:`, error)
-            // Continue with other cancellations even if one fails
-            return { error }
-          })
-        )
-
-        await Promise.all(cancelPromises)
+        await Promise.all(
+          scheduleIds.map((id) =>
+            cancelScriptExecution({ variables: { id } }).catch((error) => {
+              console.error(`Failed to cancel schedule ${id}:`, error);
+              return { error };
+            }),
+          ),
+        );
       }
-
-      // Unassign the script
       await unassignScript({
-        variables: { scriptId: scriptId || unassignConfirm?.scriptId, departmentId }
-      })
-
-      const message = scheduleIds.length > 0
-        ? `Script removed from department and ${scheduleIds.length} schedule${scheduleIds.length > 1 ? 's' : ''} cancelled`
-        : 'Script removed from department'
-
-      toast.success(message)
-      setUnassignConfirm(null)
-      refetchDeptScripts()
+        variables: {
+          scriptId: scriptId || unassignConfirm?.scriptId,
+          departmentId,
+        },
+      });
+      const message =
+        scheduleIds.length > 0
+          ? `Script removed from department and ${scheduleIds.length} schedule${scheduleIds.length > 1 ? 's' : ''} cancelled`
+          : 'Script removed from department';
+      toast.success(message);
+      setUnassignConfirm(null);
+      refetchDeptScripts();
     } catch (error) {
-      toast.error(`Failed to remove script: ${error.message}`)
-      setUnassignConfirm(null)
+      toast.error(`Failed to remove script: ${error.message}`);
+      setUnassignConfirm(null);
     } finally {
-      setIsUnassigning(false)
+      setIsUnassigning(false);
     }
-  }
+  };
 
-  // Schedule dialog handlers
   const handleOpenScheduleDialog = (script) => {
-    setSelectedScriptForSchedule({ id: script.id, name: script.name })
-    setScheduleDialogOpen(true)
-  }
-
-  const handleCloseScheduleDialog = () => {
-    setScheduleDialogOpen(false)
-    setSelectedScriptForSchedule(null)
-  }
+    setSelectedScriptForSchedule({ id: script.id, name: script.name });
+    setScheduleDialogOpen(true);
+  };
 
   if (!isAdmin) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-muted-foreground">Only administrators can manage department scripts.</p>
-        </CardContent>
-      </Card>
-    )
+      <Page>
+        <Alert tone="warning" title="Admins only">
+          Only administrators can manage department scripts.
+        </Alert>
+      </Page>
+    );
   }
 
+  const assigned = deptScriptsData?.departmentScripts || [];
+
   return (
-    <div className="space-y-6">
-      {/* Assigned Scripts */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Assigned Scripts</CardTitle>
-          <Button onClick={() => setShowAssignDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Assign Script
+    <Page>
+      <Card
+        variant="default"
+        leadingIcon={<FileCode size={18} />}
+        leadingIconTone="fuchsia"
+        title="Assigned scripts"
+        description={`${assigned.length} script${assigned.length === 1 ? '' : 's'} available to machines in this department.`}
+        actions={
+          <Button
+            variant="primary"
+            leadingIcon={<Plus size={14} />}
+            onClick={() => setShowAssignDialog(true)}
+          >
+            Assign script
           </Button>
-        </CardHeader>
-        <CardContent>
-          {deptScriptsLoading ? (
-            <div className="text-center py-8">Loading...</div>
-          ) : deptScriptsData?.departmentScripts?.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No scripts assigned to this department yet
-            </div>
-          ) : (
-            <div className="glass-subtle rounded-lg border border-border/20 p-3 space-y-2">
-              {deptScriptsData?.departmentScripts?.map(script => (
-                <div key={script.id} className="relative">
-                  <ScriptListItem
-                    script={script}
-                    compact={true}
-                    onClick={() => router.push(`/departments/${departmentName}/scripts/${script.id}`)}
-                    customActions={
-                      <div className="flex items-center gap-2 ml-auto" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/scripts/${script.id}`)
-                          }}
-                          className="flex-shrink-0"
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleOpenScheduleDialog(script)
-                          }}
-                          className="flex-shrink-0"
-                        >
-                          <Calendar className="h-4 w-4 mr-1" />
-                          Schedule
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleUnassign(script)
-                          }}
-                          disabled={isCheckingSchedules || isUnassigning}
-                          className="flex-shrink-0"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    }
-                  />
-                </div>
+        }
+      >
+        <LoadingOverlay active={deptScriptsLoading} label="Loading scripts…">
+          {!deptScriptsLoading && assigned.length === 0 ? (
+            <ResponsiveStack direction="col" gap={2} align="center">
+              <IconTile
+                icon={<FileCode size={18} />}
+                tone="neutral"
+                size="lg"
+              />
+              <span>No scripts assigned to this department yet</span>
+            </ResponsiveStack>
+          ) : null}
+
+          {assigned.length > 0 ? (
+            <ResponsiveStack direction="col" gap={2}>
+              {assigned.map((script) => (
+                <ScriptListItem
+                  key={script.id}
+                  script={script}
+                  compact
+                  onClick={() =>
+                    router.push(
+                      `/departments/${departmentName}/scripts/${script.id}`,
+                    )
+                  }
+                  customActions={
+                    <ResponsiveStack direction="row" gap={2} align="center">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leadingIcon={<Edit3 size={14} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/scripts/${script.id}`);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        leadingIcon={<Calendar size={14} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenScheduleDialog(script);
+                        }}
+                      >
+                        Schedule
+                      </Button>
+                      <IconButton
+                        label="Remove script"
+                        tone="danger"
+                        size="sm"
+                        quiet
+                        icon={<Trash2 size={14} />}
+                        disabled={isCheckingSchedules || isUnassigning}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUnassign(script);
+                        }}
+                      />
+                    </ResponsiveStack>
+                  }
+                />
               ))}
-            </div>
-          )}
-        </CardContent>
+            </ResponsiveStack>
+          ) : null}
+        </LoadingOverlay>
       </Card>
 
-      {/* Assign Script Dialog */}
-      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Assign Script to Department</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search scripts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            {allScriptsLoading ? (
-              <div className="text-center py-8">Loading scripts...</div>
-            ) : filteredAvailableScripts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {searchQuery ? 'No scripts found matching your search' : 'All scripts are already assigned'}
-              </div>
-            ) : (
-              <div className="glass-subtle rounded-lg border border-border/20 p-3 space-y-2 max-h-96 overflow-y-auto">
-                {filteredAvailableScripts.map(script => (
+      <Drawer
+        open={showAssignDialog}
+        onClose={() => setShowAssignDialog(false)}
+        side="right"
+        size={560}
+        title={
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <FileCode size={14} />
+            <span>Assign script</span>
+          </ResponsiveStack>
+        }
+        footer={
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              onClick={() => setShowAssignDialog(false)}
+            >
+              Close
+            </Button>
+          </ResponsiveStack>
+        }
+      >
+        <ResponsiveStack direction="col" gap={4}>
+          <TextField
+            placeholder="Search scripts…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            leadingIcon={<Search size={14} />}
+          />
+          <LoadingOverlay active={allScriptsLoading} label="Loading scripts…">
+            {!allScriptsLoading && filteredAvailableScripts.length === 0 ? (
+              <Alert tone="info" size="sm">
+                {searchQuery
+                  ? 'No scripts match your search.'
+                  : 'All scripts are already assigned.'}
+              </Alert>
+            ) : null}
+            {filteredAvailableScripts.length > 0 ? (
+              <ResponsiveStack direction="col" gap={2}>
+                {filteredAvailableScripts.map((script) => (
                   <ScriptListItem
                     key={script.id}
                     script={script}
-                    compact={true}
+                    compact
                     customActions={
                       <Button
                         size="sm"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          handleAssign(script.id)
+                          e.stopPropagation();
+                          handleAssign(script.id);
                         }}
-                        className="flex-shrink-0"
                       >
                         Assign
                       </Button>
                     }
                   />
                 ))}
-              </div>
-            )}
-          </div>
+              </ResponsiveStack>
+            ) : null}
+          </LoadingOverlay>
+        </ResponsiveStack>
+      </Drawer>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAssignDialog(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
+      <Dialog
+        open={unassignConfirm !== null}
+        onClose={() => !isUnassigning && setUnassignConfirm(null)}
+        size="md"
+        title={
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <AlertCircle size={16} />
+            <span>Script has active schedules</span>
+          </ResponsiveStack>
+        }
+        footerAlign="end"
+        footer={
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              disabled={isUnassigning}
+              onClick={() => setUnassignConfirm(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              loading={isUnassigning}
+              disabled={isUnassigning}
+              onClick={() => handleUnassignConfirm()}
+            >
+              {isUnassigning
+                ? 'Unassigning…'
+                : 'Unassign & cancel schedules'}
+            </Button>
+          </ResponsiveStack>
+        }
+      >
+        <ResponsiveStack direction="col" gap={3}>
+          <Alert tone="warning" size="sm">
+            This script has{' '}
+            <strong>{unassignConfirm?.activeSchedulesCount}</strong> active
+            schedule
+            {unassignConfirm?.activeSchedulesCount > 1 ? 's' : ''} in this
+            department.
+          </Alert>
+          {unassignConfirm?.affectedVMs &&
+          unassignConfirm.affectedVMs.length > 0 ? (
+            <ResponsiveStack direction="col" gap={1}>
+              <strong>Affected VMs</strong>
+              <ResponsiveStack direction="row" gap={1} wrap>
+                {unassignConfirm.affectedVMs.map((vm) => (
+                  <Badge key={vm} tone="neutral">
+                    {vm}
+                  </Badge>
+                ))}
+              </ResponsiveStack>
+            </ResponsiveStack>
+          ) : null}
+          <span>
+            Unassigning will cancel all active schedules for this script in
+            this department.
+          </span>
+        </ResponsiveStack>
       </Dialog>
 
-      {/* Confirmation Dialog for Unassigning Script with Active Schedules */}
-      <AlertDialog open={unassignConfirm !== null} onOpenChange={(open) => !open && setUnassignConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-500" />
-              Script Has Active Schedules
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>
-                This script has <strong>{unassignConfirm?.activeSchedulesCount}</strong> active schedule
-                {unassignConfirm?.activeSchedulesCount > 1 ? 's' : ''} in this department.
-              </p>
-              {unassignConfirm?.affectedVMs && unassignConfirm.affectedVMs.length > 0 && (
-                <div>
-                  <p className="font-medium mb-1">Affected VMs:</p>
-                  <ul className="list-disc list-inside ml-2">
-                    {unassignConfirm.affectedVMs.map(vmName => (
-                      <li key={vmName}>{vmName}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground">
-                Unassigning will cancel all active schedules for this script in this department.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isUnassigning}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => handleUnassignConfirm()}
-              disabled={isUnassigning}
-              variant="destructive"
-            >
-              {isUnassigning ? 'Unassigning...' : 'Unassign & Cancel Schedules'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Schedule Script Dialog */}
-      {selectedScriptForSchedule && (
+      {selectedScriptForSchedule ? (
         <ScheduleScriptDialog
           open={scheduleDialogOpen}
           onOpenChange={setScheduleDialogOpen}
@@ -377,7 +423,7 @@ export default function DepartmentScriptsPage() {
           departmentId={departmentId}
           departmentName={departmentName}
         />
-      )}
-    </div>
-  )
+      ) : null}
+    </Page>
+  );
 }

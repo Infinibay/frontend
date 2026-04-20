@@ -1,7 +1,6 @@
 'use client'
 
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { TextField } from '@infinibay/harbor'
 import { validateScriptInput } from '@/utils/validateScriptInput'
 
 export function TextInput({ input, value, onChange, error }) {
@@ -10,20 +9,16 @@ export function TextInput({ input, value, onChange, error }) {
   }
 
   const validationError = validateScriptInput(input, value)
+  const displayError = error || validationError || undefined
 
   return (
-    <div className="space-y-2">
-      <Input
-        id={input.name}
-        value={value}
-        onChange={handleChange}
-        className={error || validationError ? 'border-destructive' : ''}
-        placeholder={input.description}
-      />
-      {(error || validationError) && (
-        <p className="text-xs text-destructive">{error || validationError}</p>
-      )}
-    </div>
+    <TextField
+      id={input.name}
+      value={value ?? ''}
+      onChange={handleChange}
+      placeholder={input.description}
+      error={displayError}
+    />
   )
 }
 

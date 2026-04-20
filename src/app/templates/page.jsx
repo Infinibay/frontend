@@ -12,12 +12,10 @@ import {
   Pencil,
   Trash2,
   RefreshCw,
-  Cpu,
-  MemoryStick,
-  HardDrive,
   AlertCircle,
 } from 'lucide-react';
 import {
+  Page,
   Card,
   Button,
   ButtonGroup,
@@ -27,6 +25,12 @@ import {
   Spinner,
   Dialog,
   Stat,
+  IconButton,
+  IconTile,
+  ResponsiveStack,
+  ResponsiveGrid,
+  Tooltip,
+  PropertyList,
 } from '@infinibay/harbor';
 
 import { CreateTemplateDialog } from './components/create-template-dialog';
@@ -47,75 +51,68 @@ import { createDebugger } from '@/utils/debug';
 
 const debug = createDebugger('frontend:pages:templates');
 
-/** Harbor-native tile for a single template (no context-menu dep). */
+/** Harbor-native tile for a single template. */
 function TemplateTile({ template, onEdit, onDelete }) {
   const inUse = (template.totalMachines || 0) > 0;
+
+  const editBtn = (
+    <IconButton
+      size="sm"
+      variant="ghost"
+      label="Edit template"
+      icon={<Pencil size={14} />}
+      onClick={onEdit}
+    />
+  );
+
+  const deleteBtn = (
+    <IconButton
+      size="sm"
+      variant="ghost"
+      label="Delete template"
+      icon={<Trash2 size={14} />}
+      disabled={inUse}
+      onClick={() => !inUse && onDelete?.(template)}
+    />
+  );
+
   return (
     <Card
       variant="default"
       interactive
-      className="flex flex-col gap-3 !p-4 relative group"
+      title={template.name}
+      description={template.description || undefined}
+      footer={
+        <ResponsiveStack direction="row" gap={2} justify="between" align="center">
+          {inUse ? (
+            <Badge tone="info">
+              {template.totalMachines} in use
+            </Badge>
+          ) : (
+            <span />
+          )}
+          <ResponsiveStack direction="row" gap={1}>
+            {editBtn}
+            {inUse ? (
+              <Tooltip
+                content={`In use by ${template.totalMachines} machine${template.totalMachines !== 1 ? 's' : ''}`}
+              >
+                <span>{deleteBtn}</span>
+              </Tooltip>
+            ) : (
+              deleteBtn
+            )}
+          </ResponsiveStack>
+        </ResponsiveStack>
+      }
     >
-      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          type="button"
-          onClick={onEdit}
-          className="p-1.5 rounded-md bg-surface-2 text-fg-muted hover:text-fg hover:bg-white/10"
-          aria-label="Edit template"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => !inUse && onDelete?.(template)}
-          disabled={inUse}
-          className={
-            inUse
-              ? 'p-1.5 rounded-md bg-surface-2 text-fg-subtle cursor-not-allowed opacity-50'
-              : 'p-1.5 rounded-md bg-surface-2 text-fg-muted hover:text-danger hover:bg-danger/10'
-          }
-          title={
-            inUse
-              ? `In use by ${template.totalMachines} machine${template.totalMachines !== 1 ? 's' : ''}`
-              : 'Delete template'
-          }
-          aria-label="Delete template"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      <div>
-        <h3 className="font-semibold text-fg truncate">{template.name}</h3>
-        {template.description ? (
-          <p className="text-xs text-fg-muted line-clamp-2 mt-1">
-            {template.description}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 mt-auto">
-        <div className="flex items-center gap-1.5 text-xs text-fg-muted">
-          <Cpu className="h-3.5 w-3.5" />
-          <span className="font-mono tabular-nums">{template.cores}</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-fg-muted">
-          <MemoryStick className="h-3.5 w-3.5" />
-          <span className="font-mono tabular-nums">{template.ram}</span>
-          <span className="text-fg-subtle">GB</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-fg-muted">
-          <HardDrive className="h-3.5 w-3.5" />
-          <span className="font-mono tabular-nums">{template.storage}</span>
-          <span className="text-fg-subtle">GB</span>
-        </div>
-      </div>
-
-      {inUse ? (
-        <Badge tone="info" className="self-start">
-          {template.totalMachines} in use
-        </Badge>
-      ) : null}
+      <PropertyList
+        items={[
+          { key: 'cores', label: 'vCPU', value: String(template.cores) },
+          { key: 'ram', label: 'RAM', value: `${template.ram} GB` },
+          { key: 'storage', label: 'Disk', value: `${template.storage} GB` },
+        ]}
+      />
     </Card>
   );
 }
@@ -215,12 +212,12 @@ export default function TemplatesPage() {
     () => ({
       title: 'Templates',
       description: 'VM blueprints grouped by category.',
-      icon: <Layers className="h-5 w-5 text-accent-2" />,
+      icon: <Layers size={20} />,
       sections: [
         {
           id: 'templates',
           title: 'What templates are',
-          icon: <Layers className="h-4 w-4" />,
+          icon: <Layers size={16} />,
           content: (
             <p>
               Pre-configured VM blueprints: OS, CPU, RAM, storage. Creating a
@@ -231,7 +228,7 @@ export default function TemplatesPage() {
         {
           id: 'categories',
           title: 'Categories',
-          icon: <FolderTree className="h-4 w-4" />,
+          icon: <FolderTree size={16} />,
           content: (
             <p>
               Group templates by purpose (Dev, Production, Testing) or by
@@ -242,7 +239,7 @@ export default function TemplatesPage() {
         {
           id: 'lifecycle',
           title: 'Lifecycle',
-          icon: <Copy className="h-4 w-4" />,
+          icon: <Copy size={16} />,
           content: (
             <p>
               Templates in use by VMs can&apos;t be deleted until every VM that
@@ -253,9 +250,9 @@ export default function TemplatesPage() {
         {
           id: 'conventions',
           title: 'Conventions',
-          icon: <Settings className="h-4 w-4" />,
+          icon: <Settings size={16} />,
           content: (
-            <ul className="list-disc list-inside space-y-0.5">
+            <ul>
               <li>Use descriptive names (OS + purpose + resource tier)</li>
               <li>Keep ISOs current with security patches</li>
               <li>Document edge cases in the template description</li>
@@ -286,186 +283,225 @@ export default function TemplatesPage() {
     []
   );
 
-  return (
-    <div className="space-y-6">
-      {/* Hero */}
-      <Card variant="glass" className="relative">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-xl bg-accent/15 grid place-items-center shrink-0">
-              <Layers className="h-5 w-5 text-accent" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-fg">Templates</h1>
-              <p className="text-sm text-fg-muted mt-1">
+  const heroCard = (
+    <Card variant="default">
+      <ResponsiveStack direction="col" gap={4}>
+        <ResponsiveStack
+          direction={{ base: 'col', lg: 'row' }}
+          gap={4}
+          justify="between"
+          align="start"
+        >
+          <ResponsiveStack direction="row" gap={3} align="start">
+            <IconTile icon={<Layers size={20} />} tone="purple" size="md" />
+            <ResponsiveStack direction="col" gap={1}>
+              <h1>Templates</h1>
+              <p>
                 VM blueprints grouped by category. Use them to skip manual
                 wiring when creating a new VM.
               </p>
-            </div>
-          </div>
+            </ResponsiveStack>
+          </ResponsiveStack>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <ResponsiveStack direction="row" gap={2} align="center">
             <Button
               variant="secondary"
               size="sm"
-              icon={
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              }
+              icon={<RefreshCw size={14} />}
               onClick={handleRefresh}
               disabled={loading}
             >
               Refresh
             </Button>
             <CreateCategoryDialog>
-              <Button size="sm" icon={<Plus className="h-4 w-4" />}>
+              <Button size="sm" icon={<Plus size={14} />}>
                 New category
               </Button>
             </CreateCategoryDialog>
-          </div>
-        </div>
+          </ResponsiveStack>
+        </ResponsiveStack>
 
-        <div className="grid grid-cols-3 gap-3 mt-4">
+        <ResponsiveGrid columns={3} gap={3}>
           <Stat
             label="Categories"
             value={stats.categories}
-            icon={<FolderTree className="h-3.5 w-3.5" />}
+            variant="plain"
+            icon={<FolderTree size={14} />}
           />
           <Stat
             label="Templates"
             value={stats.templates}
-            icon={<Layers className="h-3.5 w-3.5" />}
+            variant="plain"
+            icon={<Layers size={14} />}
           />
           <Stat
             label="In use"
             value={stats.inUse}
-            icon={<Copy className="h-3.5 w-3.5" />}
+            variant="plain"
+            icon={<Copy size={14} />}
           />
-        </div>
-      </Card>
+        </ResponsiveGrid>
+      </ResponsiveStack>
+    </Card>
+  );
 
-      {error && (
-        <Alert
-          tone="danger"
-          title="Couldn't load templates"
-          actions={
-            <Button
-              size="sm"
-              onClick={handleRefresh}
-              icon={<RefreshCw className="h-4 w-4" />}
-            >
-              Retry
-            </Button>
-          }
+  const errorBlock = error ? (
+    <Alert
+      tone="danger"
+      title="Couldn't load templates"
+      actions={
+        <Button
+          size="sm"
+          onClick={handleRefresh}
+          icon={<RefreshCw size={14} />}
         >
-          {String(error.message || error)}
-        </Alert>
-      )}
+          Retry
+        </Button>
+      }
+    >
+      {String(error.message || error)}
+    </Alert>
+  ) : null;
 
-      {loading && (templates || []).length === 0 ? (
-        <div className="py-10 flex items-center justify-center gap-3 text-fg-muted">
-          <Spinner /> Loading templates…
-        </div>
-      ) : (categories || []).length === 0 ? (
-        <Card variant="default" className="p-0">
-          <EmptyState
-            icon={<FolderTree className="h-10 w-10 text-fg-subtle" />}
-            title="No categories yet"
-            description="Create a category to start organising templates."
-            actions={
-              <CreateCategoryDialog>
-                <Button size="sm" icon={<Plus className="h-4 w-4" />}>
-                  New category
-                </Button>
-              </CreateCategoryDialog>
-            }
-          />
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          {(categories || []).map((category) => {
-            const list = templatesByCategory[category.id] || [];
-            const canDelete = (category.totalTemplates || 0) === 0;
-            return (
-              <Card key={category.id} variant="default" className="!p-0 overflow-hidden">
-                <div className="flex items-start justify-between gap-3 p-4 border-b border-white/8">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-base font-semibold text-fg">
-                        {category.name}
-                      </h2>
-                      <Badge tone="neutral">
-                        {list.length} template{list.length !== 1 ? 's' : ''}
-                      </Badge>
-                    </div>
-                    {category.description ? (
-                      <p className="text-sm text-fg-muted mt-1 line-clamp-2">
-                        {category.description}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setEditingCategory(category)}
-                      className="p-1.5 rounded-md text-fg-muted hover:text-fg hover:bg-white/5"
-                      aria-label="Edit category"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        canDelete && setDeleteCategoryTarget(category)
-                      }
-                      disabled={!canDelete}
-                      title={
-                        canDelete
-                          ? 'Delete category'
-                          : `Contains ${category.totalTemplates} template${category.totalTemplates !== 1 ? 's' : ''}`
-                      }
-                      className={
-                        canDelete
-                          ? 'p-1.5 rounded-md text-fg-muted hover:text-danger hover:bg-danger/10'
-                          : 'p-1.5 rounded-md text-fg-subtle cursor-not-allowed opacity-50'
-                      }
-                      aria-label="Delete category"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+  let body;
+  if (loading && (templates || []).length === 0) {
+    body = (
+      <Card variant="default">
+        <ResponsiveStack direction="row" gap={3} align="center" justify="center">
+          <Spinner />
+          <span>Loading templates…</span>
+        </ResponsiveStack>
+      </Card>
+    );
+  } else if ((categories || []).length === 0) {
+    body = (
+      <Card variant="default">
+        <EmptyState
+          icon={<FolderTree size={40} />}
+          title="No categories yet"
+          description="Create a category to start organising templates."
+          actions={
+            <CreateCategoryDialog>
+              <Button size="sm" icon={<Plus size={14} />}>
+                New category
+              </Button>
+            </CreateCategoryDialog>
+          }
+        />
+      </Card>
+    );
+  } else {
+    body = (
+      <ResponsiveStack direction="col" gap={5}>
+        {(categories || []).map((category) => {
+          const list = templatesByCategory[category.id] || [];
+          const canDelete = (category.totalTemplates || 0) === 0;
+
+          const header = (
+            <ResponsiveStack
+              direction="row"
+              gap={3}
+              justify="between"
+              align="start"
+            >
+              <ResponsiveStack direction="col" gap={1}>
+                <ResponsiveStack direction="row" gap={2} align="center" wrap>
+                  <h2>{category.name}</h2>
+                  <Badge tone="neutral">
+                    {list.length} template{list.length !== 1 ? 's' : ''}
+                  </Badge>
+                </ResponsiveStack>
+                {category.description ? (
+                  <p>{category.description}</p>
+                ) : null}
+              </ResponsiveStack>
+              <ResponsiveStack direction="row" gap={1} align="center">
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  label="Edit category"
+                  icon={<Pencil size={14} />}
+                  onClick={() => setEditingCategory(category)}
+                />
+                {canDelete ? (
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    label="Delete category"
+                    icon={<Trash2 size={14} />}
+                    onClick={() => setDeleteCategoryTarget(category)}
+                  />
+                ) : (
+                  <Tooltip
+                    content={`Contains ${category.totalTemplates} template${category.totalTemplates !== 1 ? 's' : ''}`}
+                  >
+                    <span>
+                      <IconButton
+                        size="sm"
+                        variant="ghost"
+                        label="Delete category"
+                        icon={<Trash2 size={14} />}
+                        disabled
+                      />
+                    </span>
+                  </Tooltip>
+                )}
+                <CreateTemplateDialog categoryId={category.id}>
+                  <Button size="sm" icon={<Plus size={14} />}>
+                    Template
+                  </Button>
+                </CreateTemplateDialog>
+              </ResponsiveStack>
+            </ResponsiveStack>
+          );
+
+          return (
+            <Card
+              key={category.id}
+              variant="default"
+              header={header}
+            >
+              {list.length === 0 ? (
+                <EmptyState
+                  variant="dashed"
+                  icon={<Layers size={20} />}
+                  title="No templates in this category yet"
+                  actions={
                     <CreateTemplateDialog categoryId={category.id}>
-                      <Button size="sm" icon={<Plus className="h-4 w-4" />}>
-                        Template
+                      <Button size="sm" icon={<Plus size={14} />}>
+                        Add template
                       </Button>
                     </CreateTemplateDialog>
-                  </div>
-                </div>
+                  }
+                />
+              ) : (
+                <ResponsiveGrid
+                  columns={{ base: 1, sm: 2, md: 3, xl: 4 }}
+                  gap={3}
+                >
+                  {list.map((template) => (
+                    <TemplateTile
+                      key={template.id}
+                      template={template}
+                      onEdit={() => setEditingTemplate(template)}
+                      onDelete={setDeleteTemplateTarget}
+                    />
+                  ))}
+                </ResponsiveGrid>
+              )}
+            </Card>
+          );
+        })}
+      </ResponsiveStack>
+    );
+  }
 
-                <div className="p-4">
-                  {list.length === 0 ? (
-                    <div className="text-sm text-fg-muted text-center py-6">
-                      No templates in this category yet.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-                      {list.map((template) => (
-                        <TemplateTile
-                          key={template.id}
-                          template={template}
-                          onEdit={() => setEditingTemplate(template)}
-                          onDelete={setDeleteTemplateTarget}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+  return (
+    <Page size="xl" gap="lg">
+      {heroCard}
+      {errorBlock}
+      {body}
 
-      {/* Edit dialogs — rendered only when a target is set so the
-          shadcn internals don't mount in the background. */}
       {editingTemplate ? (
         <EditTemplateDialog
           template={editingTemplate}
@@ -481,16 +517,15 @@ export default function TemplatesPage() {
         />
       ) : null}
 
-      {/* Delete confirmations in Harbor Dialog. */}
       <Dialog
         open={!!deleteTemplateTarget}
         onClose={() => setDeleteTemplateTarget(null)}
         size="sm"
         title={
-          <span className="flex items-center gap-2 text-danger">
-            <AlertCircle className="h-4 w-4" />
-            Delete template
-          </span>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <AlertCircle size={16} />
+            <span>Delete template</span>
+          </ResponsiveStack>
         }
         description={
           deleteTemplateTarget
@@ -498,7 +533,7 @@ export default function TemplatesPage() {
             : ''
         }
         footer={
-          <ButtonGroup className="justify-end">
+          <ButtonGroup attached={false}>
             <Button
               variant="secondary"
               onClick={() => setDeleteTemplateTarget(null)}
@@ -517,7 +552,7 @@ export default function TemplatesPage() {
           </ButtonGroup>
         }
       >
-        <p className="text-sm text-fg-muted">
+        <p>
           This cannot be undone. Only the blueprint is removed; existing VMs
           keep running.
         </p>
@@ -528,10 +563,10 @@ export default function TemplatesPage() {
         onClose={() => setDeleteCategoryTarget(null)}
         size="sm"
         title={
-          <span className="flex items-center gap-2 text-danger">
-            <AlertCircle className="h-4 w-4" />
-            Delete category
-          </span>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <AlertCircle size={16} />
+            <span>Delete category</span>
+          </ResponsiveStack>
         }
         description={
           deleteCategoryTarget
@@ -539,7 +574,7 @@ export default function TemplatesPage() {
             : ''
         }
         footer={
-          <ButtonGroup className="justify-end">
+          <ButtonGroup attached={false}>
             <Button
               variant="secondary"
               onClick={() => setDeleteCategoryTarget(null)}
@@ -558,11 +593,12 @@ export default function TemplatesPage() {
           </ButtonGroup>
         }
       >
-        <p className="text-sm text-fg-muted">
+        <p>
           The category must be empty. Templates inside must be removed or
           moved first.
         </p>
       </Dialog>
-    </div>
+    </Page>
   );
 }
+

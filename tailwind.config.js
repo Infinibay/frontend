@@ -1,6 +1,4 @@
 // tailwind.config.js
-const { nextui } = require("@nextui-org/react");
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
@@ -9,7 +7,6 @@ module.exports = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}",
     // Harbor library source — transpilePackages feeds these to SWC,
     // Tailwind scans them so utilities like bg-surface / text-fg /
     // shadow-harbor-glow land in the bundle.
@@ -152,5 +149,5 @@ module.exports = {
       "2xl":"1536px",
     },
   },
-  plugins: [nextui()],
+  plugins: [],
 };

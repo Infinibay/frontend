@@ -17,6 +17,7 @@ import {
   TextField,
   Textarea,
   Alert,
+  ResponsiveStack,
 } from "@infinibay/harbor";
 
 import {
@@ -26,12 +27,11 @@ import {
 } from "@/state/slices/templateCategories";
 
 /**
- * EditCategoryDialog — Harbor-native. Supports both API shapes the
- * callers use:
+ * EditCategoryDialog — Harbor-native. Supports both API shapes:
  *   • `<EditCategoryDialog category={cat}>{trigger}</EditCategoryDialog>`
- *     — children click opens the dialog (internal state).
+ *     — internal open state, children act as the trigger.
  *   • `<EditCategoryDialog category={cat} open onOpenChange={...} />`
- *     — controlled mode; no children trigger needed.
+ *     — controlled mode; no trigger child needed.
  */
 export function EditCategoryDialog({ children, category, open, onOpenChange }) {
   const dispatch = useDispatch();
@@ -98,14 +98,14 @@ export function EditCategoryDialog({ children, category, open, onOpenChange }) {
         onClose={close}
         size="sm"
         title={
-          <span className="flex items-center gap-2">
-            <FolderTree className="h-4 w-4 text-accent-2" />
-            Edit category
-          </span>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <FolderTree size={16} />
+            <span>Edit category</span>
+          </ResponsiveStack>
         }
         description="Update the name and description."
         footer={
-          <ButtonGroup className="justify-end">
+          <ButtonGroup attached={false}>
             <Button
               variant="secondary"
               onClick={close}
@@ -123,23 +123,23 @@ export function EditCategoryDialog({ children, category, open, onOpenChange }) {
           </ButtonGroup>
         }
       >
-        <div className="space-y-3">
-          {error?.update && <Alert tone="danger">{String(error.update)}</Alert>}
+        <ResponsiveStack direction="col" gap={3}>
+          {error?.update ? (
+            <Alert tone="danger">{String(error.update)}</Alert>
+          ) : null}
           <TextField
             label="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
           />
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-fg">Description (optional)</label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-            />
-          </div>
-        </div>
+          <Textarea
+            label="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+          />
+        </ResponsiveStack>
       </Dialog>
     </>
   );

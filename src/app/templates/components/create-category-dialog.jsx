@@ -11,6 +11,7 @@ import {
   TextField,
   Textarea,
   Alert,
+  ResponsiveStack,
 } from "@infinibay/harbor";
 
 import {
@@ -20,9 +21,8 @@ import {
 } from "@/state/slices/templateCategories";
 
 /**
- * CreateCategoryDialog — Harbor-native. Accepts a single `children`
- * that acts as the trigger; click it to open. Exposes the same
- * children-as-trigger API the caller expects.
+ * CreateCategoryDialog — Harbor-native. The `children` prop is cloned
+ * and its click handler wired to open the dialog.
  */
 export function CreateCategoryDialog({ children }) {
   const dispatch = useDispatch();
@@ -54,20 +54,16 @@ export function CreateCategoryDialog({ children }) {
     }
   };
 
-  // Wire the trigger `children` so clicking it opens the dialog.
-  const trigger = useCallback(
-    (child) => {
-      if (!isValidElement(child)) return null;
-      const prev = child.props.onClick;
-      return cloneElement(child, {
-        onClick: (e) => {
-          prev?.(e);
-          setOpen(true);
-        },
-      });
-    },
-    []
-  );
+  const trigger = useCallback((child) => {
+    if (!isValidElement(child)) return null;
+    const prev = child.props.onClick;
+    return cloneElement(child, {
+      onClick: (e) => {
+        prev?.(e);
+        setOpen(true);
+      },
+    });
+  }, []);
 
   return (
     <>
@@ -77,14 +73,14 @@ export function CreateCategoryDialog({ children }) {
         onClose={close}
         size="sm"
         title={
-          <span className="flex items-center gap-2">
-            <FolderTree className="h-4 w-4 text-accent-2" />
-            New category
-          </span>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <FolderTree size={16} />
+            <span>New category</span>
+          </ResponsiveStack>
         }
         description="Group related templates so they're easier to find."
         footer={
-          <ButtonGroup className="justify-end">
+          <ButtonGroup attached={false}>
             <Button variant="secondary" onClick={close} disabled={loading?.create}>
               Cancel
             </Button>
@@ -98,8 +94,10 @@ export function CreateCategoryDialog({ children }) {
           </ButtonGroup>
         }
       >
-        <div className="space-y-3">
-          {error?.create && <Alert tone="danger">{String(error.create)}</Alert>}
+        <ResponsiveStack direction="col" gap={3}>
+          {error?.create ? (
+            <Alert tone="danger">{String(error.create)}</Alert>
+          ) : null}
           <TextField
             label="Name"
             placeholder="Production, Development, Testing…"
@@ -107,16 +105,14 @@ export function CreateCategoryDialog({ children }) {
             onChange={(e) => setName(e.target.value)}
             autoFocus
           />
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-fg">Description (optional)</label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              placeholder="Short blurb so other admins understand when to use this category"
-            />
-          </div>
-        </div>
+          <Textarea
+            label="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            placeholder="Short blurb so other admins understand when to use this category"
+          />
+        </ResponsiveStack>
       </Dialog>
     </>
   );

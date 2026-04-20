@@ -7,13 +7,45 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { Mail, ArrowLeft, Send } from "lucide-react";
 import {
+  Page,
   Card,
   Button,
   TextField,
+  FormField,
   Alert,
+  ResponsiveStack,
 } from "@infinibay/harbor";
 
-const Page = () => {
+const pageShell = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "2rem 1rem",
+};
+
+const brandRow = { display: "flex", justifyContent: "center", marginBottom: "1.25rem" };
+const heading = { fontSize: "1.5rem", fontWeight: 600, textAlign: "center", margin: 0 };
+const subtle = { fontSize: "0.875rem", opacity: 0.7, textAlign: "center", margin: "0.25rem 0 0 0" };
+const backLink = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.5rem",
+  fontSize: "0.875rem",
+  opacity: 0.7,
+  marginBottom: "0.5rem",
+};
+const dividerFoot = {
+  borderTop: "1px solid rgba(255,255,255,0.08)",
+  marginTop: "1.25rem",
+  paddingTop: "1.25rem",
+  textAlign: "center",
+  fontSize: "0.875rem",
+  opacity: 0.7,
+};
+const linkAccent = { color: "rgb(232,121,249)", fontWeight: 500 };
+
+const ForgotPasswordPage = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -33,107 +65,74 @@ const Page = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
-      <div className="mesh-bg">
-        <div
-          className="blob"
-          style={{
-            width: 520, height: 520, left: "-8%", top: "10%",
-            background: "rgb(168 85 247 / 0.38)",
-            animation: "mesh 20s ease-in-out infinite",
-          }}
-        />
-        <div
-          className="blob"
-          style={{
-            width: 480, height: 480, right: "-5%", bottom: "-5%",
-            background: "rgb(56 189 248 / 0.35)",
-            animation: "mesh 24s ease-in-out infinite reverse",
-          }}
-        />
-      </div>
+    <div style={pageShell}>
+      <Page size="sm" gap="md" padded={false}>
+        <Link href="/auth/sign-in" style={backLink}>
+          <ArrowLeft size={16} /> Back to sign in
+        </Link>
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-md mx-auto">
-          <Link
-            href="/auth/sign-in"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg mb-6 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to sign in
-          </Link>
-
-          <Card variant="glass" className="p-8 spotlight-soft">
-            <div className="flex justify-center mb-6">
-              <Image
-                alt="Infinibay"
-                src="/images/logo.png"
-                width={56}
-                height={56}
-                priority
-              />
+        <Card variant="default">
+          <ResponsiveStack direction="col" gap={5}>
+            <div style={brandRow}>
+              <Image alt="Infinibay" src="/images/logo.png" width={56} height={56} priority />
             </div>
 
-            <div className="space-y-2 text-center mb-6">
-              <h1 className="text-2xl font-semibold text-fg">Forgot password?</h1>
-              <p className="text-sm text-fg-muted">
+            <div>
+              <h1 style={heading}>Forgot password?</h1>
+              <p style={subtle}>
                 Enter the email you signed up with — we&apos;ll send a recovery code.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <Controller
-                name="email"
-                control={control}
-                defaultValue=""
-                rules={{
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Enter a valid email address",
-                  },
-                }}
-                render={({ field, fieldState }) => (
-                  <TextField
-                    label="Email address"
-                    type="email"
-                    placeholder="you@example.com"
-                    icon={<Mail className="h-4 w-4" />}
-                    error={fieldState.error?.message}
-                    {...field}
-                  />
-                )}
-              />
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <ResponsiveStack direction="col" gap={4}>
+                <Controller
+                  name="email"
+                  control={control}
+                  defaultValue=""
+                  rules={{
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Enter a valid email address",
+                    },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <FormField label="Email address" error={fieldState.error?.message}>
+                      <TextField
+                        type="email"
+                        placeholder="you@example.com"
+                        icon={<Mail size={16} />}
+                        {...field}
+                      />
+                    </FormField>
+                  )}
+                />
 
-              {error && <Alert tone="danger">{error}</Alert>}
+                {error && <Alert tone="danger">{error}</Alert>}
 
-              <Button
-                type="submit"
-                size="lg"
-                loading={isLoading}
-                disabled={isLoading}
-                icon={<Send className="h-4 w-4" />}
-                className="w-full"
-              >
-                {isLoading ? "Sending…" : "Send recovery code"}
-              </Button>
+                <Button
+                  type="submit"
+                  size="lg"
+                  fullWidth
+                  loading={isLoading}
+                  disabled={isLoading}
+                  icon={<Send size={16} />}
+                >
+                  {isLoading ? "Sending…" : "Send recovery code"}
+                </Button>
+              </ResponsiveStack>
             </form>
 
-            <div className="text-center pt-6 mt-6 border-t border-white/8">
-              <p className="text-sm text-fg-muted">
-                Don&apos;t have an account?{" "}
-                <Link
-                  href="/auth/sign-up"
-                  className="font-medium text-accent-2 hover:text-accent-2/80 transition-colors"
-                >
-                  Sign up
-                </Link>
-              </p>
+            <div style={dividerFoot}>
+              <span>Don&apos;t have an account? </span>
+              <Link href="/auth/sign-up" style={linkAccent}>Sign up</Link>
             </div>
-          </Card>
-        </div>
-      </div>
+          </ResponsiveStack>
+        </Card>
+      </Page>
     </div>
   );
 };
 
-export default Page;
+export default ForgotPasswordPage;

@@ -1,188 +1,106 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  Network,
-  Server,
-  Route,
-  Shield,
-  CheckCircle,
-  XCircle,
-  ChevronDown,
-  ChevronUp,
-  HelpCircle,
-  Copy,
   Check,
+  CheckCircle,
+  Copy,
+  HelpCircle,
+  Network,
+  Route,
+  Server,
+  Shield,
+  XCircle,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
+  Alert,
+  Badge,
+  Card,
+  CodeBlock,
+  IconButton,
+  PropertyList,
+  ResponsiveGrid,
+  ResponsiveStack,
   Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '@infinibay/harbor';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
-import { getGlassClasses } from '@/utils/glass-effects';
-import { COMPONENT_INFO, FIELD_TOOLTIPS, getComponentStatus } from './networkDiagnosticsHelp';
+  COMPONENT_INFO,
+  FIELD_TOOLTIPS,
+  getComponentStatus,
+} from './networkDiagnosticsHelp';
 
-const MetricRow = ({ label, value, type = 'text', tooltip }) => {
-  let displayValue = value;
-
+const metricValue = (value, type) => {
   if (type === 'boolean') {
-    displayValue = value ? (
-      <Badge className="bg-green-100 text-green-800 border-green-300 text-xs">
-        <CheckCircle className="w-3 h-3 mr-1" />
+    return value ? (
+      <Badge tone="success" icon={<CheckCircle size={10} />}>
         Yes
       </Badge>
     ) : (
-      <Badge variant="secondary" className="text-xs">
-        <XCircle className="w-3 h-3 mr-1" />
+      <Badge tone="neutral" icon={<XCircle size={10} />}>
         No
       </Badge>
     );
-  } else if (type === 'path') {
-    displayValue = (
-      <code className="text-xs bg-muted px-2 py-0.5 rounded font-mono truncate max-w-[200px] block">
-        {value}
-      </code>
-    );
   }
-
-  return (
-    <div className="flex justify-between items-center py-1.5 text-sm">
-      <span className="text-muted-foreground flex items-center gap-1">
-        {label}
-        {tooltip && (
-          <Tooltip>
-            <TooltipTrigger>
-              <HelpCircle className="w-3 h-3 text-muted-foreground/60" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              <p className="text-xs">{tooltip}</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </span>
-      <span>{displayValue}</span>
-    </div>
-  );
+  if (type === 'path') {
+    return <span>{value}</span>;
+  }
+  return <span>{value}</span>;
 };
 
-const StatusCard = ({ icon: Icon, title, isHealthy, issues, metrics, extraContent, info }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const StatusCard = ({ icon, title, isHealthy, issues, metrics, extraContent, info }) => {
+  const items = metrics.map((m, idx) => ({
+    key: `m-${idx}`,
+    label: m.tooltip ? (
+      <Tooltip content={m.tooltip}>
+        <ResponsiveStack direction="row" gap={1} align="center">
+          <span>{m.label}</span>
+          <HelpCircle size={10} />
+        </ResponsiveStack>
+      </Tooltip>
+    ) : (
+      m.label
+    ),
+    value: metricValue(m.value, m.type),
+  }));
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border-2 transition-all duration-200',
-        isHealthy
-          ? 'bg-green-50/50 border-green-200 hover:border-green-300'
-          : 'bg-red-50/50 border-red-200 hover:border-red-300'
-      )}
+    <Card
+      variant="default"
+      spotlight={false}
+      glow={false}
+      fullHeight
+      leadingIcon={icon}
+      leadingIconTone={isHealthy ? 'green' : 'rose'}
+      title={
+        <ResponsiveStack direction="row" gap={2} align="center" wrap>
+          <span>{title}</span>
+          {isHealthy ? (
+            <Badge tone="success" icon={<CheckCircle size={10} />}>
+              OK
+            </Badge>
+          ) : (
+            <Badge tone="danger" icon={<XCircle size={10} />}>
+              Issue
+            </Badge>
+          )}
+        </ResponsiveStack>
+      }
+      description={info.description}
     >
-      {/* Header */}
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                'p-2.5 rounded-lg',
-                isHealthy ? 'bg-green-100' : 'bg-red-100'
-              )}
-            >
-              <Icon className={cn('w-5 h-5', isHealthy ? 'text-green-700' : 'text-red-700')} />
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground">{title}</h4>
-              <p className="text-xs text-muted-foreground">{info.description}</p>
-            </div>
-          </div>
-          <Badge
-            className={cn(
-              isHealthy
-                ? 'bg-green-100 text-green-800 border-green-300'
-                : 'bg-red-100 text-red-800 border-red-300'
-            )}
-          >
-            {isHealthy ? (
-              <>
-                <CheckCircle className="w-3 h-3 mr-1" />
-                OK
-              </>
-            ) : (
-              <>
-                <XCircle className="w-3 h-3 mr-1" />
-                Issue
-              </>
-            )}
-          </Badge>
-        </div>
-
-        {/* Issues list if any */}
-        {issues.length > 0 && (
-          <div className="mb-3 p-2 rounded-lg bg-red-100/50 border border-red-200">
-            <ul className="space-y-1">
+      <ResponsiveStack direction="col" gap={3}>
+        {issues.length > 0 ? (
+          <Alert tone="danger" size="sm" icon={<XCircle size={12} />}>
+            <ResponsiveStack direction="col" gap={1}>
               {issues.map((issue, idx) => (
-                <li key={idx} className="text-xs text-red-700 flex items-start gap-1">
-                  <XCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  {issue}
-                </li>
+                <span key={idx}>• {issue}</span>
               ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Key metrics (always visible) */}
-        <div className="space-y-1 border-t pt-3">
-          {metrics.slice(0, 3).map((metric, idx) => (
-            <MetricRow key={idx} {...metric} />
-          ))}
-        </div>
-      </div>
-
-      {/* Expandable section for more details */}
-      {(metrics.length > 3 || extraContent) && (
-        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full rounded-t-none border-t text-xs text-muted-foreground hover:text-foreground"
-            >
-              {isExpanded ? (
-                <>
-                  <ChevronUp className="w-4 h-4 mr-1" />
-                  Show less
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4 mr-1" />
-                  Show more details
-                </>
-              )}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="px-4 pb-4">
-            {/* Additional metrics */}
-            {metrics.length > 3 && (
-              <div className="space-y-1 pt-2">
-                {metrics.slice(3).map((metric, idx) => (
-                  <MetricRow key={idx} {...metric} />
-                ))}
-              </div>
-            )}
-            {/* Extra content (logs, etc.) */}
-            {extraContent}
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-    </div>
+            </ResponsiveStack>
+          </Alert>
+        ) : null}
+        <PropertyList items={items} />
+        {extraContent}
+      </ResponsiveStack>
+    </Card>
   );
 };
 
@@ -200,168 +118,148 @@ const ComponentStatusCards = ({ diagnostics }) => {
   const natStatus = getComponentStatus('nat', diagnostics);
   const brNetfilterStatus = getComponentStatus('brNetfilter', diagnostics);
 
-  // Guard for null/undefined data
   const bridge = diagnostics?.bridge || {};
   const dnsmasq = diagnostics?.dnsmasq || {};
   const nat = diagnostics?.nat || {};
   const brNetfilter = diagnostics?.brNetfilter || {};
 
   return (
-    <TooltipProvider>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Bridge Card */}
-        <StatusCard
-          icon={Network}
-          title="Network Bridge"
-          isHealthy={bridgeStatus.isHealthy}
-          issues={bridgeStatus.issues}
-          info={COMPONENT_INFO.bridge}
-          metrics={[
-            { label: 'Status', value: bridge.isUp, type: 'boolean', tooltip: FIELD_TOOLTIPS.bridge.isUp },
-            { label: 'State', value: bridge.state || 'Unknown', tooltip: FIELD_TOOLTIPS.bridge.state },
-            { label: 'IP Address', value: bridge.ipAddresses?.join(', ') || 'None', tooltip: FIELD_TOOLTIPS.bridge.ipAddresses },
-            { label: 'MTU', value: bridge.mtu || 'Unknown', tooltip: FIELD_TOOLTIPS.bridge.mtu },
-            { label: 'Interfaces', value: bridge.attachedInterfaces?.length || 0, tooltip: FIELD_TOOLTIPS.bridge.attachedInterfaces },
-          ]}
-          extraContent={
-            bridge.attachedInterfaces?.length > 0 && (
-              <div className="mt-3 pt-3 border-t">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Connected Interfaces</p>
-                <div className="flex flex-wrap gap-1">
-                  {bridge.attachedInterfaces.map((iface, idx) => (
-                    <Badge key={idx} variant="outline" className="text-xs font-mono">
-                      {iface}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )
-          }
-        />
+    <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={4}>
+      <StatusCard
+        icon={<Network size={18} />}
+        title="Network bridge"
+        isHealthy={bridgeStatus.isHealthy}
+        issues={bridgeStatus.issues}
+        info={COMPONENT_INFO.bridge}
+        metrics={[
+          { label: 'Status', value: bridge.isUp, type: 'boolean', tooltip: FIELD_TOOLTIPS.bridge.isUp },
+          { label: 'State', value: bridge.state || 'Unknown', tooltip: FIELD_TOOLTIPS.bridge.state },
+          { label: 'IP address', value: bridge.ipAddresses?.join(', ') || 'None', tooltip: FIELD_TOOLTIPS.bridge.ipAddresses },
+          { label: 'MTU', value: bridge.mtu || 'Unknown', tooltip: FIELD_TOOLTIPS.bridge.mtu },
+          { label: 'Interfaces', value: bridge.attachedInterfaces?.length || 0, tooltip: FIELD_TOOLTIPS.bridge.attachedInterfaces },
+        ]}
+        extraContent={
+          bridge.attachedInterfaces?.length > 0 ? (
+            <Card
+              variant="default"
+              spotlight={false}
+              glow={false}
+              title="Connected interfaces"
+            >
+              <ResponsiveStack direction="row" gap={2} wrap>
+                {bridge.attachedInterfaces.map((iface, idx) => (
+                  <Badge key={idx} tone="neutral">
+                    {iface}
+                  </Badge>
+                ))}
+              </ResponsiveStack>
+            </Card>
+          ) : null
+        }
+      />
 
-        {/* DNSMASQ Card */}
-        <StatusCard
-          icon={Server}
-          title="DHCP & DNS Server"
-          isHealthy={dnsmasqStatus.isHealthy}
-          issues={dnsmasqStatus.issues}
-          info={COMPONENT_INFO.dnsmasq}
-          metrics={[
-            { label: 'Running', value: dnsmasq.isRunning, type: 'boolean', tooltip: FIELD_TOOLTIPS.dnsmasq.isRunning },
-            { label: 'DHCP Port', value: dnsmasq.listeningPort, type: 'boolean', tooltip: FIELD_TOOLTIPS.dnsmasq.listeningPort },
-            { label: 'PID', value: dnsmasq.pid || 'N/A', tooltip: FIELD_TOOLTIPS.dnsmasq.pid },
-            { label: 'PID Match', value: dnsmasq.pidMatches, type: 'boolean', tooltip: FIELD_TOOLTIPS.dnsmasq.pidMatches },
-            { label: 'Config', value: dnsmasq.configExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.dnsmasq.configExists },
-            { label: 'Leases', value: dnsmasq.leaseFileExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.dnsmasq.leaseFileExists },
-          ]}
-          extraContent={
-            <div className="mt-3 pt-3 border-t space-y-2">
-              {dnsmasq.configPath && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Config Path</span>
-                  <div className="flex items-center gap-1">
-                    <code className="bg-muted px-2 py-0.5 rounded font-mono truncate max-w-[180px]">
-                      {dnsmasq.configPath}
-                    </code>
-                    <button
+      <StatusCard
+        icon={<Server size={18} />}
+        title="DHCP & DNS server"
+        isHealthy={dnsmasqStatus.isHealthy}
+        issues={dnsmasqStatus.issues}
+        info={COMPONENT_INFO.dnsmasq}
+        metrics={[
+          { label: 'Running', value: dnsmasq.isRunning, type: 'boolean', tooltip: FIELD_TOOLTIPS.dnsmasq.isRunning },
+          { label: 'DHCP port', value: dnsmasq.listeningPort, type: 'boolean', tooltip: FIELD_TOOLTIPS.dnsmasq.listeningPort },
+          { label: 'PID', value: dnsmasq.pid || 'N/A', tooltip: FIELD_TOOLTIPS.dnsmasq.pid },
+          { label: 'PID match', value: dnsmasq.pidMatches, type: 'boolean', tooltip: FIELD_TOOLTIPS.dnsmasq.pidMatches },
+          { label: 'Config', value: dnsmasq.configExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.dnsmasq.configExists },
+          { label: 'Leases', value: dnsmasq.leaseFileExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.dnsmasq.leaseFileExists },
+        ]}
+        extraContent={
+          dnsmasq.configPath || dnsmasq.leasePath ? (
+            <ResponsiveStack direction="col" gap={2}>
+              {dnsmasq.configPath ? (
+                <ResponsiveStack direction="row" gap={2} align="center" justify="between">
+                  <span>Config path</span>
+                  <ResponsiveStack direction="row" gap={1} align="center">
+                    <Badge tone="neutral">{dnsmasq.configPath}</Badge>
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      label="Copy config path"
+                      icon={copiedPath === 'config' ? <Check size={12} /> : <Copy size={12} />}
                       onClick={() => copyToClipboard(dnsmasq.configPath, 'config')}
-                      className="p-1 hover:bg-muted rounded"
-                    >
-                      {copiedPath === 'config' ? (
-                        <Check className="w-3 h-3 text-green-600" />
-                      ) : (
-                        <Copy className="w-3 h-3 text-muted-foreground" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-              {dnsmasq.leasePath && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Lease Path</span>
-                  <div className="flex items-center gap-1">
-                    <code className="bg-muted px-2 py-0.5 rounded font-mono truncate max-w-[180px]">
-                      {dnsmasq.leasePath}
-                    </code>
-                    <button
+                    />
+                  </ResponsiveStack>
+                </ResponsiveStack>
+              ) : null}
+              {dnsmasq.leasePath ? (
+                <ResponsiveStack direction="row" gap={2} align="center" justify="between">
+                  <span>Lease path</span>
+                  <ResponsiveStack direction="row" gap={1} align="center">
+                    <Badge tone="neutral">{dnsmasq.leasePath}</Badge>
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      label="Copy lease path"
+                      icon={copiedPath === 'lease' ? <Check size={12} /> : <Copy size={12} />}
                       onClick={() => copyToClipboard(dnsmasq.leasePath, 'lease')}
-                      className="p-1 hover:bg-muted rounded"
-                    >
-                      {copiedPath === 'lease' ? (
-                        <Check className="w-3 h-3 text-green-600" />
-                      ) : (
-                        <Copy className="w-3 h-3 text-muted-foreground" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          }
-        />
+                    />
+                  </ResponsiveStack>
+                </ResponsiveStack>
+              ) : null}
+            </ResponsiveStack>
+          ) : null
+        }
+      />
 
-        {/* NAT Card */}
-        <StatusCard
-          icon={Route}
-          title="NAT Gateway"
-          isHealthy={natStatus.isHealthy}
-          issues={natStatus.issues}
-          info={COMPONENT_INFO.nat}
-          metrics={[
-            { label: 'IP Forwarding', value: nat.ipForwardingEnabled, type: 'boolean', tooltip: FIELD_TOOLTIPS.nat.ipForwardingEnabled },
-            { label: 'NAT Rule', value: nat.ruleExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.nat.ruleExists },
-            { label: 'Table', value: nat.tableExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.nat.tableExists },
-            { label: 'Chain', value: nat.chainExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.nat.chainExists },
-          ]}
-          extraContent={
-            nat.ruleDetails && (
-              <div className="mt-3 pt-3 border-t">
-                <p className="text-xs font-medium text-muted-foreground mb-2">NAT Rule</p>
-                <div className="bg-muted p-2 rounded-md">
-                  <pre className="text-xs font-mono whitespace-pre-wrap break-all">
-                    {nat.ruleDetails}
-                  </pre>
-                </div>
-              </div>
-            )
-          }
-        />
+      <StatusCard
+        icon={<Route size={18} />}
+        title="NAT gateway"
+        isHealthy={natStatus.isHealthy}
+        issues={natStatus.issues}
+        info={COMPONENT_INFO.nat}
+        metrics={[
+          { label: 'IP forwarding', value: nat.ipForwardingEnabled, type: 'boolean', tooltip: FIELD_TOOLTIPS.nat.ipForwardingEnabled },
+          { label: 'NAT rule', value: nat.ruleExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.nat.ruleExists },
+          { label: 'Table', value: nat.tableExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.nat.tableExists },
+          { label: 'Chain', value: nat.chainExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.nat.chainExists },
+        ]}
+        extraContent={
+          nat.ruleDetails ? (
+            <Card
+              variant="default"
+              spotlight={false}
+              glow={false}
+              title="NAT rule"
+            >
+              <CodeBlock code={nat.ruleDetails} />
+            </Card>
+          ) : null
+        }
+      />
 
-        {/* br_netfilter Card */}
-        <StatusCard
-          icon={Shield}
-          title="Bridge Firewall"
-          isHealthy={brNetfilterStatus.isHealthy}
-          issues={brNetfilterStatus.issues}
-          info={COMPONENT_INFO.brNetfilter}
-          metrics={[
-            { label: 'Module Loaded', value: brNetfilter.moduleLoaded, type: 'boolean', tooltip: FIELD_TOOLTIPS.brNetfilter.moduleLoaded },
-            { label: 'Persistence', value: brNetfilter.persistenceFileExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.brNetfilter.persistenceFile },
-            { label: 'IPv4 iptables', value: brNetfilter.callIptables === 0 ? 'Disabled' : 'Enabled', tooltip: FIELD_TOOLTIPS.brNetfilter.callIptables },
-          ]}
-          extraContent={
-            <div className="mt-3 pt-3 border-t space-y-1">
-              <MetricRow
-                label="IPv6 ip6tables"
-                value={brNetfilter.callIp6tables === 0 ? 'Disabled' : 'Enabled'}
-                tooltip={FIELD_TOOLTIPS.brNetfilter.callIp6tables}
-              />
-              <MetricRow
-                label="ARP arptables"
-                value={brNetfilter.callArptables === 0 ? 'Disabled' : 'Enabled'}
-                tooltip={FIELD_TOOLTIPS.brNetfilter.callArptables}
-              />
-              <div className="mt-2 p-2 rounded-lg bg-blue-50 border border-blue-200">
-                <p className="text-xs text-blue-700">
-                  <HelpCircle className="w-3 h-3 inline mr-1" />
-                  "Disabled" values are typically correct. This prevents host firewall rules from interfering with VM traffic.
-                </p>
-              </div>
-            </div>
-          }
-        />
-      </div>
-    </TooltipProvider>
+      <StatusCard
+        icon={<Shield size={18} />}
+        title="Bridge firewall"
+        isHealthy={brNetfilterStatus.isHealthy}
+        issues={brNetfilterStatus.issues}
+        info={COMPONENT_INFO.brNetfilter}
+        metrics={[
+          { label: 'Module loaded', value: brNetfilter.moduleLoaded, type: 'boolean', tooltip: FIELD_TOOLTIPS.brNetfilter.moduleLoaded },
+          { label: 'Persistence', value: brNetfilter.persistenceFileExists, type: 'boolean', tooltip: FIELD_TOOLTIPS.brNetfilter.persistenceFile },
+          { label: 'IPv4 iptables', value: brNetfilter.callIptables === 0 ? 'Disabled' : 'Enabled', tooltip: FIELD_TOOLTIPS.brNetfilter.callIptables },
+          { label: 'IPv6 ip6tables', value: brNetfilter.callIp6tables === 0 ? 'Disabled' : 'Enabled', tooltip: FIELD_TOOLTIPS.brNetfilter.callIp6tables },
+          { label: 'ARP arptables', value: brNetfilter.callArptables === 0 ? 'Disabled' : 'Enabled', tooltip: FIELD_TOOLTIPS.brNetfilter.callArptables },
+        ]}
+        extraContent={
+          <Alert
+            tone="info"
+            size="sm"
+            icon={<HelpCircle size={12} />}
+          >
+            &quot;Disabled&quot; values are typically correct. This prevents host firewall rules from interfering with VM traffic.
+          </Alert>
+        }
+      />
+    </ResponsiveGrid>
   );
 };
 

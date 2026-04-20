@@ -6,13 +6,53 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { ArrowLeft, MailCheck, KeyRound } from "lucide-react";
 import {
+  Page,
   Card,
   Button,
   TextField,
+  FormField,
   Alert,
+  ResponsiveStack,
+  IconTile,
 } from "@infinibay/harbor";
 
-const Page = () => {
+const pageShell = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "2rem 1rem",
+};
+const iconRow = { display: "flex", justifyContent: "center", marginBottom: "1rem" };
+const heading = { fontSize: "1.5rem", fontWeight: 600, textAlign: "center", margin: 0 };
+const subtle = { fontSize: "0.875rem", opacity: 0.7, textAlign: "center", margin: "0.25rem 0 0 0" };
+const backLink = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.5rem",
+  fontSize: "0.875rem",
+  opacity: 0.7,
+  marginBottom: "0.5rem",
+};
+const dividerFoot = {
+  borderTop: "1px solid rgba(255,255,255,0.08)",
+  marginTop: "1.25rem",
+  paddingTop: "1.25rem",
+  textAlign: "center",
+  fontSize: "0.875rem",
+  opacity: 0.7,
+};
+const resendBtn = {
+  background: "transparent",
+  border: 0,
+  color: "rgb(232,121,249)",
+  fontWeight: 500,
+  cursor: "pointer",
+  padding: 0,
+  font: "inherit",
+};
+
+const EmailVerificationPage = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -42,100 +82,78 @@ const Page = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
-      <div className="mesh-bg">
-        <div
-          className="blob"
-          style={{
-            width: 520, height: 520, left: "-8%", top: "10%",
-            background: "rgb(56 189 248 / 0.4)",
-            animation: "mesh 20s ease-in-out infinite",
-          }}
-        />
-        <div
-          className="blob"
-          style={{
-            width: 480, height: 480, right: "-5%", bottom: "-5%",
-            background: "rgb(244 114 182 / 0.3)",
-            animation: "mesh 24s ease-in-out infinite reverse",
-          }}
-        />
-      </div>
+    <div style={pageShell}>
+      <Page size="sm" gap="md" padded={false}>
+        <Link href="/auth/forgot-password" style={backLink}>
+          <ArrowLeft size={16} /> Back
+        </Link>
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-md mx-auto">
-          <Link
-            href="/auth/forgot-password"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg mb-6 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back
-          </Link>
-
-          <Card variant="glass" className="p-8 spotlight-soft">
-            <div className="flex justify-center mb-6">
-              <div className="rounded-full bg-accent-2/15 p-4 text-accent-2">
-                <MailCheck className="h-8 w-8" />
-              </div>
+        <Card variant="default">
+          <ResponsiveStack direction="col" gap={5}>
+            <div style={iconRow}>
+              <IconTile icon={<MailCheck size={20} />} tone="sky" size="lg" />
             </div>
 
-            <div className="space-y-2 text-center mb-6">
-              <h1 className="text-2xl font-semibold text-fg">Check your email</h1>
-              <p className="text-sm text-fg-muted">
+            <div>
+              <h1 style={heading}>Check your email</h1>
+              <p style={subtle}>
                 We sent a recovery code to your inbox. Enter it below to continue.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <Controller
-                name="code"
-                control={control}
-                defaultValue=""
-                rules={{
-                  required: "Code is required",
-                  maxLength: { value: 10, message: "Max 10 characters" },
-                }}
-                render={({ field, fieldState }) => (
-                  <TextField
-                    label="Recovery code"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="123456"
-                    icon={<KeyRound className="h-4 w-4" />}
-                    error={fieldState.error?.message}
-                    {...field}
-                  />
-                )}
-              />
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <ResponsiveStack direction="col" gap={4}>
+                <Controller
+                  name="code"
+                  control={control}
+                  defaultValue=""
+                  rules={{
+                    required: "Code is required",
+                    maxLength: { value: 10, message: "Max 10 characters" },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <FormField label="Recovery code" error={fieldState.error?.message}>
+                      <TextField
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="123456"
+                        icon={<KeyRound size={16} />}
+                        {...field}
+                      />
+                    </FormField>
+                  )}
+                />
 
-              {error && <Alert tone="danger">{error}</Alert>}
+                {error && <Alert tone="danger">{error}</Alert>}
 
-              <Button
-                type="submit"
-                size="lg"
-                loading={isLoading}
-                disabled={isLoading}
-                className="w-full"
-              >
-                {isLoading ? "Verifying…" : "Confirm"}
-              </Button>
+                <Button
+                  type="submit"
+                  size="lg"
+                  fullWidth
+                  loading={isLoading}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Verifying…" : "Confirm"}
+                </Button>
+              </ResponsiveStack>
             </form>
 
-            <div className="text-center pt-6 mt-6 border-t border-white/8 text-sm text-fg-muted">
+            <div style={dividerFoot}>
               Didn&apos;t receive the email?{" "}
               <button
                 type="button"
                 onClick={onResend}
                 disabled={resending}
-                className="font-medium text-accent-2 hover:text-accent-2/80 transition-colors disabled:opacity-50"
+                style={resendBtn}
               >
                 {resending ? "Resending…" : "Resend"}
               </button>
             </div>
-          </Card>
-        </div>
-      </div>
+          </ResponsiveStack>
+        </Card>
+      </Page>
     </div>
   );
 };
 
-export default Page;
+export default EmailVerificationPage;

@@ -10,9 +10,7 @@ import EmailInput from './EmailInput'
 import UrlInput from './UrlInput'
 import MultiSelectInput from './MultiSelectInput'
 import TextareaInput from './TextareaInput'
-import { Label } from '@/components/ui/label'
-import { HelpCircle } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { FormField } from '@infinibay/harbor'
 
 export function ScriptInputRenderer({ input, value, onChange, error }) {
   const renderInput = () => {
@@ -49,27 +47,13 @@ export function ScriptInputRenderer({ input, value, onChange, error }) {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <Label htmlFor={input.name}>
-          {input.label}
-          {input.required && <span className="text-destructive ml-1">*</span>}
-        </Label>
-        {input.description && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-xs">{input.description}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-      </div>
+    <FormField
+      label={input.label}
+      required={input.required}
+      helper={input.description}
+    >
       {renderInput()}
-    </div>
+    </FormField>
   )
 }
 

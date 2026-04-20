@@ -6,20 +6,25 @@ import { Controller, useForm } from 'react-hook-form';
 import { useMutation } from '@apollo/client';
 import { toast } from 'sonner';
 import {
+  Page,
   Card,
   Button,
+  ButtonGroup,
+  IconButton,
   TextField,
   Avatar,
   Alert,
-  ButtonGroup,
+  RoleBadge,
+  PasswordStrength,
+  ResponsiveStack,
+  ResponsiveGrid,
+  Spinner,
 } from '@infinibay/harbor';
 import {
-  User,
   Lock,
   ExternalLink,
   Eye,
   EyeOff,
-  UserRound,
 } from 'lucide-react';
 
 import { UpdateUserDocument } from '@/gql/hooks';
@@ -134,273 +139,266 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="min-h-[40vh] flex items-center justify-center text-fg-muted">
-        Loading profile…
-      </div>
+      <Page size="md" gap="md">
+        <Card variant="default">
+          <ResponsiveStack direction="row" gap={3} align="center" justify="center">
+            <Spinner />
+            <span>Loading profile…</span>
+          </ResponsiveStack>
+        </Card>
+      </Page>
     );
   }
 
+  const roleKey = user.role
+    ? String(user.role).toLowerCase() === 'admin'
+      ? 'admin'
+      : 'viewer'
+    : null;
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Identity */}
-        <Card variant="glass" className="p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <Avatar name={displayName} src={gravatarUrl} size="xl" />
-            <div className="min-w-0">
-              <h2 className="text-lg font-semibold text-fg truncate">{displayName}</h2>
-              <p className="text-sm text-fg-muted truncate">{user.email}</p>
-              {user.role && (
-                <p className="text-xs text-fg-subtle uppercase tracking-wider mt-1">
-                  {user.role}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 mb-5">
-            <div className="h-8 w-8 rounded-lg bg-accent-2/15 flex items-center justify-center">
-              <User className="h-4 w-4 text-accent-2" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-fg">Basic information</h3>
-              <p className="text-xs text-fg-muted">
-                Update your personal information. Only fill the fields you want to change.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Controller
-              name="firstName"
-              control={control}
-              rules={{ required: 'First name is required' }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  label="First name"
-                  placeholder="Your first name"
-                  error={fieldState.error?.message}
-                  {...field}
-                />
-              )}
-            />
-            <Controller
-              name="lastName"
-              control={control}
-              rules={{ required: 'Last name is required' }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  label="Last name"
-                  placeholder="Your last name"
-                  error={fieldState.error?.message}
-                  {...field}
-                />
-              )}
-            />
-          </div>
-
-          <div className="mt-4">
-            <Controller
-              name="email"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  label="Email address"
-                  type="email"
-                  disabled
-                  hint="Email address cannot be changed"
-                  {...field}
-                />
-              )}
-            />
-          </div>
-        </Card>
-
-        {/* Password change */}
-        <Card variant="glass" className="p-6">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="h-8 w-8 rounded-lg bg-accent/15 flex items-center justify-center">
-              <Lock className="h-4 w-4 text-accent" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-fg">Change password</h3>
-              <p className="text-xs text-fg-muted">
-                Leave all password fields blank to keep your current password.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Controller
-              name="currentPassword"
-              control={control}
-              rules={{
-                required: isPasswordSection ? 'Current password is required' : false,
-              }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  label="Current password"
-                  type={hideCurrent ? 'password' : 'text'}
-                  suffix={
-                    <button
-                      type="button"
-                      onClick={() => setHideCurrent((s) => !s)}
-                      className="text-fg-muted hover:text-fg"
-                    >
-                      {hideCurrent ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  }
-                  onFocus={() => setIsPasswordSection(true)}
-                  error={fieldState.error?.message}
-                  {...field}
-                />
-              )}
-            />
-
-            <Controller
-              name="newPassword"
-              control={control}
-              rules={{
-                required: isPasswordSection ? 'New password is required' : false,
-                minLength: isPasswordSection
-                  ? { value: 8, message: 'At least 8 characters' }
-                  : undefined,
-              }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  label="New password"
-                  type={hideNew ? 'password' : 'text'}
-                  suffix={
-                    <button
-                      type="button"
-                      onClick={() => setHideNew((s) => !s)}
-                      className="text-fg-muted hover:text-fg"
-                    >
-                      {hideNew ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  }
-                  onFocus={() => setIsPasswordSection(true)}
-                  error={fieldState.error?.message}
-                  {...field}
-                />
-              )}
-            />
-
-            <Controller
-              name="confirmPassword"
-              control={control}
-              rules={{
-                required: isPasswordSection ? 'Please confirm your new password' : false,
-                validate: isPasswordSection
-                  ? (v) => v === newPassword || 'Passwords do not match'
-                  : undefined,
-              }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  label="Confirm new password"
-                  type={hideConfirm ? 'password' : 'text'}
-                  suffix={
-                    <button
-                      type="button"
-                      onClick={() => setHideConfirm((s) => !s)}
-                      className="text-fg-muted hover:text-fg"
-                    >
-                      {hideConfirm ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  }
-                  onFocus={() => setIsPasswordSection(true)}
-                  error={fieldState.error?.message}
-                  {...field}
-                />
-              )}
-            />
-          </div>
-
-          {isPasswordSection && (
-            <div className="mt-4">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setIsPasswordSection(false);
-                  setValue('currentPassword', '');
-                  setValue('newPassword', '');
-                  setValue('confirmPassword', '');
-                }}
-              >
-                Cancel password change
-              </Button>
-            </div>
-          )}
-        </Card>
-
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            size="lg"
-            loading={updateLoading}
-            disabled={updateLoading}
+    <Page size="lg" gap="lg">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <ResponsiveStack direction="col" gap={6}>
+          {/* Identity */}
+          <Card
+            variant="default"
+            title="Basic information"
+            description="Update your personal information. Only fill the fields you want to change."
           >
-            {updateLoading ? 'Saving…' : 'Save changes'}
-          </Button>
-        </div>
+            <ResponsiveStack direction="col" gap={5}>
+              <ResponsiveStack direction="row" gap={4} align="center">
+                <Avatar name={displayName} src={gravatarUrl} size="xl" />
+                <ResponsiveStack direction="col" gap={1}>
+                  <span style={{ fontSize: 18, fontWeight: 600 }}>
+                    {displayName}
+                  </span>
+                  <span style={{ opacity: 0.7 }}>{user.email}</span>
+                  {roleKey ? (
+                    <span>
+                      <RoleBadge role={roleKey} label={user.role} size="sm" />
+                    </span>
+                  ) : null}
+                </ResponsiveStack>
+              </ResponsiveStack>
+
+              <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={4}>
+                <Controller
+                  name="firstName"
+                  control={control}
+                  rules={{ required: 'First name is required' }}
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      label="First name"
+                      placeholder="Your first name"
+                      error={fieldState.error?.message}
+                      {...field}
+                    />
+                  )}
+                />
+                <Controller
+                  name="lastName"
+                  control={control}
+                  rules={{ required: 'Last name is required' }}
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      label="Last name"
+                      placeholder="Your last name"
+                      error={fieldState.error?.message}
+                      {...field}
+                    />
+                  )}
+                />
+              </ResponsiveGrid>
+
+              <Controller
+                name="email"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    label="Email address"
+                    type="email"
+                    disabled
+                    hint="Email address cannot be changed. Ask an administrator to change it."
+                    {...field}
+                  />
+                )}
+              />
+            </ResponsiveStack>
+          </Card>
+
+          {/* Password change */}
+          <Card
+            variant="default"
+            leadingIcon={<Lock size={18} />}
+            leadingIconTone="purple"
+            title="Change password"
+            description="Leave all password fields blank to keep your current password."
+          >
+            <ResponsiveStack direction="col" gap={4}>
+              <ResponsiveGrid columns={{ base: 1, md: 3 }} gap={4}>
+                <Controller
+                  name="currentPassword"
+                  control={control}
+                  rules={{
+                    required: isPasswordSection ? 'Current password is required' : false,
+                  }}
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      label="Current password"
+                      type={hideCurrent ? 'password' : 'text'}
+                      suffix={
+                        <IconButton
+                          size="sm"
+                          variant="ghost"
+                          label={hideCurrent ? 'Show password' : 'Hide password'}
+                          icon={hideCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                          onClick={() => setHideCurrent((s) => !s)}
+                          type="button"
+                        />
+                      }
+                      onFocus={() => setIsPasswordSection(true)}
+                      error={fieldState.error?.message}
+                      {...field}
+                    />
+                  )}
+                />
+
+                <Controller
+                  name="newPassword"
+                  control={control}
+                  rules={{
+                    required: isPasswordSection ? 'New password is required' : false,
+                    minLength: isPasswordSection
+                      ? { value: 8, message: 'At least 8 characters' }
+                      : undefined,
+                  }}
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      label="New password"
+                      type={hideNew ? 'password' : 'text'}
+                      suffix={
+                        <IconButton
+                          size="sm"
+                          variant="ghost"
+                          label={hideNew ? 'Show password' : 'Hide password'}
+                          icon={hideNew ? <EyeOff size={16} /> : <Eye size={16} />}
+                          onClick={() => setHideNew((s) => !s)}
+                          type="button"
+                        />
+                      }
+                      onFocus={() => setIsPasswordSection(true)}
+                      error={fieldState.error?.message}
+                      {...field}
+                    />
+                  )}
+                />
+
+                <Controller
+                  name="confirmPassword"
+                  control={control}
+                  rules={{
+                    required: isPasswordSection ? 'Please confirm your new password' : false,
+                    validate: isPasswordSection
+                      ? (v) => v === newPassword || 'Passwords do not match'
+                      : undefined,
+                  }}
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      label="Confirm new password"
+                      type={hideConfirm ? 'password' : 'text'}
+                      suffix={
+                        <IconButton
+                          size="sm"
+                          variant="ghost"
+                          label={hideConfirm ? 'Show password' : 'Hide password'}
+                          icon={hideConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                          onClick={() => setHideConfirm((s) => !s)}
+                          type="button"
+                        />
+                      }
+                      onFocus={() => setIsPasswordSection(true)}
+                      error={fieldState.error?.message}
+                      {...field}
+                    />
+                  )}
+                />
+              </ResponsiveGrid>
+
+              {newPassword ? (
+                <PasswordStrength value={newPassword} />
+              ) : null}
+
+              {isPasswordSection && (
+                <div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setIsPasswordSection(false);
+                      setValue('currentPassword', '');
+                      setValue('newPassword', '');
+                      setValue('confirmPassword', '');
+                    }}
+                  >
+                    Cancel password change
+                  </Button>
+                </div>
+              )}
+            </ResponsiveStack>
+          </Card>
+
+          <ResponsiveStack direction="row" justify="end">
+            <Button
+              type="submit"
+              size="lg"
+              loading={updateLoading}
+              disabled={updateLoading}
+            >
+              {updateLoading ? 'Saving…' : 'Save changes'}
+            </Button>
+          </ResponsiveStack>
+        </ResponsiveStack>
       </form>
 
       {/* Gravatar info — decoupled from the save form. */}
-      <Card variant="default" className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-8 w-8 rounded-lg bg-success/15 flex items-center justify-center">
-            <UserRound className="h-4 w-4 text-success" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-fg">Profile avatar</h3>
-            <p className="text-xs text-fg-muted">
-              Your avatar is managed through Gravatar, based on your email address.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-start gap-6 p-4 rounded-xl bg-surface-1 border border-white/8">
+      <Card
+        variant="default"
+        title="Profile avatar"
+        description="Your avatar is managed through Gravatar, based on your email address."
+      >
+        <ResponsiveStack
+          direction={{ base: 'col', sm: 'row' }}
+          gap={6}
+          align={{ base: 'stretch', sm: 'start' }}
+        >
           <Avatar name={displayName} src={gravatarUrl} size="xl" />
-
-          <div className="flex-1 space-y-3">
-            <p className="text-sm text-fg-muted">
+          <ResponsiveStack direction="col" gap={3}>
+            <p style={{ margin: 0, opacity: 0.7 }}>
               The avatar is automatically generated from{' '}
-              <span className="font-mono text-fg">{user.email}</span> via Gravatar.
-              Change it by creating a Gravatar account with this email and uploading a picture.
+              <code style={{ fontFamily: 'monospace' }}>{user.email}</code> via
+              Gravatar. Change it by creating a Gravatar account with this
+              email and uploading a picture.
             </p>
-
             <ButtonGroup>
               <Button
                 variant="secondary"
                 size="sm"
-                icon={<ExternalLink className="h-4 w-4" />}
+                icon={<ExternalLink size={16} />}
                 onClick={() => window.open('https://gravatar.com', '_blank')}
               >
                 Manage on Gravatar
               </Button>
             </ButtonGroup>
-          </div>
-        </div>
+          </ResponsiveStack>
+        </ResponsiveStack>
       </Card>
 
       <Alert tone="info">
         Need to change your email address? Ask an administrator — it can&apos;t be
         self-serviced.
       </Alert>
-    </div>
+    </Page>
   );
 }

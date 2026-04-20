@@ -1,32 +1,36 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Card,
-  CardGrid,
-  Button,
-  ButtonGroup,
+  Alert,
   Badge,
+  Button,
+  Card,
+  CodeBlock,
   Dialog,
+  EmptyState,
+  FormField,
+  LoadingOverlay,
+  Page,
+  ResponsiveGrid,
+  ResponsiveStack,
   Select,
   Spinner,
-  Alert,
-  EmptyState,
   Timeline,
 } from '@infinibay/harbor';
 import {
-  Play,
-  Clock,
-  CheckCircle,
-  XCircle,
   AlertCircle,
+  CheckCircle,
+  Clock,
   Eye,
   FileCode,
+  Play,
+  XCircle,
 } from 'lucide-react';
 import {
   useDepartmentScriptsQuery,
-  useScriptExecutionsQuery,
   useExecuteScriptMutation,
+  useScriptExecutionsQuery,
   useScriptQuery,
   useVmUsersQuery,
 } from '@/gql/hooks';
@@ -36,7 +40,6 @@ import { toast } from 'sonner';
 import { validateScriptInput } from '@/utils/validateScriptInput';
 import { parseScriptError } from '@/utils/parseScriptError';
 
-/** Map execution status → Timeline event tone. */
 const statusToTone = (status) => {
   switch (status) {
     case 'SUCCESS':
@@ -54,22 +57,20 @@ const statusToTone = (status) => {
   }
 };
 
-/** Pick an icon for a given status. */
-const StatusIcon = ({ status, className }) => {
+const StatusIcon = ({ status }) => {
   switch (status) {
     case 'RUNNING':
-      return <Clock className={`${className} animate-spin`} />;
     case 'PENDING':
-      return <Clock className={className} />;
+      return <Clock size={14} />;
     case 'SUCCESS':
-      return <CheckCircle className={className} />;
+      return <CheckCircle size={14} />;
     case 'FAILED':
     case 'TIMEOUT':
-      return <XCircle className={className} />;
+      return <XCircle size={14} />;
     case 'CANCELLED':
-      return <AlertCircle className={className} />;
+      return <AlertCircle size={14} />;
     default:
-      return <Clock className={className} />;
+      return <Clock size={14} />;
   }
 };
 
@@ -107,7 +108,6 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
 
   const [executeScript, { loading: executing }] = useExecuteScriptMutation();
 
-  // Live WebSocket subscription for script events.
   useEffect(() => {
     const socketService = getSocketService();
     const unsubscribe = socketService.subscribeToAllResourceEvents(
@@ -132,7 +132,11 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
           }
         }
       },
-      ['script_execution_started', 'script_execution_completed', 'script_execution_cancelled']
+      [
+        'script_execution_started',
+        'script_execution_completed',
+        'script_execution_cancelled',
+      ],
     );
     return () => unsubscribe();
   }, [vmId, refetchExecutions]);
@@ -170,7 +174,6 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
       toast.error('Please fix validation errors before executing');
       return;
     }
-
     try {
       await executeScript({
         variables: {
@@ -191,10 +194,9 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
     }
   };
 
-  const runAsOptions = (usersData?.vmUsers || ['system', 'administrator']).map((u) => ({
-    value: u,
-    label: u,
-  }));
+  const runAsOptions = (usersData?.vmUsers || ['system', 'administrator']).map(
+    (u) => ({ value: u, label: u }),
+  );
 
   const scripts = scriptsData?.departmentScripts || [];
   const executions = executionsData?.scriptExecutions || [];
@@ -206,21 +208,21 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
     return {
       id: exec.id,
       title: (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-fg">{exec.script.name}</span>
+        <ResponsiveStack direction="row" gap={2} align="center" wrap>
+          <span>{exec.script.name}</span>
           <Badge tone={statusToTone(exec.status)}>{exec.status}</Badge>
-        </div>
+        </ResponsiveStack>
       ),
       description: (
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-xs text-fg-muted">
+        <ResponsiveStack direction="row" gap={3} align="center" justify="between">
+          <span>
             {who} · {new Date(exec.createdAt).toLocaleString()}
           </span>
-          {(exec.status === 'SUCCESS' || exec.status === 'FAILED') && (
+          {exec.status === 'SUCCESS' || exec.status === 'FAILED' ? (
             <Button
               size="sm"
               variant="ghost"
-              icon={<Eye className="h-3.5 w-3.5" />}
+              icon={<Eye size={12} />}
               onClick={() => {
                 setSelectedExecution(exec);
                 setShowLogsDialog(true);
@@ -228,110 +230,108 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
             >
               Logs
             </Button>
-          )}
-        </div>
+          ) : null}
+        </ResponsiveStack>
       ),
       time: new Date(exec.createdAt).toLocaleTimeString(),
-      icon: <StatusIcon status={exec.status} className="h-4 w-4" />,
+      icon: <StatusIcon status={exec.status} />,
       tone: statusToTone(exec.status),
     };
   });
 
   return (
-    <div className="space-y-6">
-      {/* Available scripts */}
-      <section>
-        <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-fg">
-          <FileCode className="h-4 w-4 text-accent-2" />
-          Available scripts
-          <span className="text-xs text-fg-muted font-normal">
-            ({scripts.length})
-          </span>
-        </div>
+    <>
+      <Page>
+        <Card
+          variant="default"
+          spotlight={false}
+          glow={false}
+          leadingIcon={<FileCode size={18} />}
+          leadingIconTone="purple"
+          title="Available scripts"
+          description={`${scripts.length} script${scripts.length === 1 ? '' : 's'}`}
+        >
+          {scriptsLoading ? (
+            <LoadingOverlay label="Loading scripts…" />
+          ) : scripts.length === 0 ? (
+            <EmptyState
+              variant="dashed"
+              icon={<FileCode size={18} />}
+              title="No scripts available for this department"
+              description="Ask an admin to publish a script to your department to run it here."
+            />
+          ) : (
+            <ResponsiveGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
+              {scripts.map((script) => (
+                <Card
+                  key={script.id}
+                  variant="default"
+                  spotlight={false}
+                  glow={false}
+                  fullHeight
+                  interactive
+                  leadingIcon={<FileCode size={18} />}
+                  leadingIconTone="sky"
+                  title={script.name}
+                  description={script.description || 'No description'}
+                  footer={
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon={<Play size={12} />}
+                      onClick={() => openExecute(script)}
+                      disabled={vmStatus !== 'running'}
+                    >
+                      Run
+                    </Button>
+                  }
+                >
+                  <ResponsiveStack direction="row" gap={2} wrap>
+                    {script.os.map((os) => (
+                      <Badge key={os} tone="neutral">
+                        {os}
+                      </Badge>
+                    ))}
+                  </ResponsiveStack>
+                </Card>
+              ))}
+            </ResponsiveGrid>
+          )}
+        </Card>
 
-        {scriptsLoading ? (
-          <div className="flex items-center justify-center py-10 gap-2 text-fg-muted">
-            <Spinner />
-            <span>Loading scripts…</span>
-          </div>
-        ) : scripts.length === 0 ? (
-          <EmptyState
-            icon={<FileCode className="h-10 w-10 text-fg-subtle" />}
-            title="No scripts available for this department"
-            description="Ask an admin to publish a script to your department to run it here."
-          />
-        ) : (
-          <CardGrid cols={3}>
-            {scripts.map((script) => (
-              <Card
-                key={script.id}
-                variant="solid"
-                interactive
-                className="p-4 flex flex-col gap-3"
-              >
-                <div>
-                  <h3 className="font-medium text-fg truncate">{script.name}</h3>
-                  <p className="text-xs text-fg-muted line-clamp-2 mt-1">
-                    {script.description || 'No description'}
-                  </p>
-                </div>
-                <div className="flex gap-1.5 flex-wrap">
-                  {script.os.map((os) => (
-                    <Badge key={os} tone="neutral" className="text-[10px]">
-                      {os}
-                    </Badge>
-                  ))}
-                </div>
-                <div className="mt-auto">
-                  <Button
-                    size="sm"
-                    icon={<Play className="h-3.5 w-3.5" />}
-                    onClick={() => openExecute(script)}
-                    disabled={vmStatus !== 'running'}
-                  >
-                    Run
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </CardGrid>
-        )}
-      </section>
-
-      {/* Execution history */}
-      <section>
-        <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-fg">
-          <Clock className="h-4 w-4 text-fg-muted" />
-          Execution history
-        </div>
-
-        {executionsLoading ? (
-          <div className="flex items-center justify-center py-10 gap-2 text-fg-muted">
-            <Spinner />
-            <span>Loading history…</span>
-          </div>
-        ) : executions.length === 0 ? (
-          <EmptyState
-            icon={<Clock className="h-10 w-10 text-fg-subtle" />}
-            title="No script executions yet"
-            description="Run a script from the list above to see its history here."
-          />
-        ) : (
-          <Card variant="default" className="p-6">
+        <Card
+          variant="default"
+          spotlight={false}
+          glow={false}
+          leadingIcon={<Clock size={18} />}
+          leadingIconTone="neutral"
+          title="Execution history"
+        >
+          {executionsLoading ? (
+            <LoadingOverlay label="Loading history…" />
+          ) : executions.length === 0 ? (
+            <EmptyState
+              variant="dashed"
+              icon={<Clock size={18} />}
+              title="No script executions yet"
+              description="Run a script from the list above to see its history here."
+            />
+          ) : (
             <Timeline events={timelineEvents} />
-          </Card>
-        )}
-      </section>
+          )}
+        </Card>
+      </Page>
 
-      {/* Execute dialog */}
       <Dialog
         open={showExecuteDialog}
         onClose={() => setShowExecuteDialog(false)}
         size="lg"
-        title={selectedScript ? `Execute: ${selectedScript.name}` : 'Execute script'}
+        title={
+          selectedScript ? `Execute: ${selectedScript.name}` : 'Execute script'
+        }
         description={selectedScript?.description}
         footer={
-          <ButtonGroup className="justify-end">
+          <ResponsiveStack direction="row" gap={2} justify="end">
             <Button
               variant="secondary"
               onClick={() => setShowExecuteDialog(false)}
@@ -339,23 +339,28 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
               Cancel
             </Button>
             <Button
+              variant="primary"
               onClick={handleExecute}
               loading={executing}
-              disabled={executing || scriptLoading || Object.keys(validationErrors).length > 0}
+              disabled={
+                executing ||
+                scriptLoading ||
+                Object.keys(validationErrors).length > 0
+              }
             >
               {executing ? 'Executing…' : 'Execute'}
             </Button>
-          </ButtonGroup>
+          </ResponsiveStack>
         }
       >
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+        <ResponsiveStack direction="col" gap={4}>
           {scriptLoading ? (
-            <div className="flex items-center justify-center py-8 gap-2 text-fg-muted">
+            <ResponsiveStack direction="row" gap={3} align="center" justify="center">
               <Spinner />
               <span>Loading script details…</span>
-            </div>
+            </ResponsiveStack>
           ) : scriptData?.script?.parsedInputs?.length > 0 ? (
-            <div className="space-y-4">
+            <ResponsiveStack direction="col" gap={4}>
               {scriptData.script.parsedInputs.map((input) => (
                 <ScriptInputRenderer
                   key={input.name}
@@ -367,63 +372,81 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
                   error={validationErrors[input.name]}
                 />
               ))}
-            </div>
+            </ResponsiveStack>
           ) : (
-            <p className="text-fg-muted text-sm">This script has no input parameters.</p>
+            <EmptyState
+              variant="inline"
+              icon={<FileCode size={14} />}
+              title="This script has no input parameters."
+            />
           )}
 
-          {Object.keys(validationErrors).length > 0 && (
+          {Object.keys(validationErrors).length > 0 ? (
             <Alert tone="warning">
               Please fix the errors above before executing.
             </Alert>
-          )}
+          ) : null}
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-fg">Run as</label>
+          <FormField
+            label="Run as"
+            helper="On Windows, selecting Administrator or System runs with elevated privileges. Linux Run As support coming in a future update."
+          >
             <Select
               value={runAsUser}
               onChange={setRunAsUser}
               options={runAsOptions}
               placeholder="Select user"
             />
-            <p className="text-xs text-fg-muted">
-              On Windows, selecting Administrator or System runs with elevated privileges.
-              Linux Run As support coming in a future update.
-            </p>
-          </div>
-        </div>
+          </FormField>
+        </ResponsiveStack>
       </Dialog>
 
-      {/* Logs dialog */}
       <Dialog
         open={showLogsDialog}
         onClose={() => setShowLogsDialog(false)}
         size="lg"
         title="Execution logs"
         description={selectedExecution?.script?.name}
+        footer={
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button variant="primary" onClick={() => setShowLogsDialog(false)}>
+              Close
+            </Button>
+          </ResponsiveStack>
+        }
       >
-        <div className="space-y-4 max-h-[65vh] overflow-y-auto">
-          {selectedExecution?.stdout && (
-            <div>
-              <h3 className="font-medium text-fg mb-2 text-sm">Standard output</h3>
-              <pre className="p-4 bg-surface-1 border border-white/8 rounded-lg text-xs font-mono overflow-x-auto text-fg whitespace-pre-wrap">
-                {selectedExecution.stdout}
-              </pre>
-            </div>
-          )}
-          {selectedExecution?.stderr && (
-            <div>
-              <h3 className="font-medium text-danger mb-2 text-sm">Standard error</h3>
-              <pre className="p-4 bg-danger/10 border border-danger/30 rounded-lg text-xs font-mono overflow-x-auto text-fg whitespace-pre-wrap">
-                {selectedExecution.stderr}
-              </pre>
-            </div>
-          )}
-          {!selectedExecution?.stdout && !selectedExecution?.stderr && (
-            <p className="text-fg-muted text-sm">No logs available for this execution.</p>
-          )}
-        </div>
+        <ResponsiveStack direction="col" gap={4}>
+          {selectedExecution?.stdout ? (
+            <Card
+              variant="default"
+              spotlight={false}
+              glow={false}
+              title="Standard output"
+            >
+              <CodeBlock language="bash">{selectedExecution.stdout}</CodeBlock>
+            </Card>
+          ) : null}
+          {selectedExecution?.stderr ? (
+            <Card
+              variant="default"
+              spotlight={false}
+              glow={false}
+              leadingIcon={<XCircle size={18} />}
+              leadingIconTone="rose"
+              title="Standard error"
+            >
+              <CodeBlock language="bash">{selectedExecution.stderr}</CodeBlock>
+            </Card>
+          ) : null}
+          {!selectedExecution?.stdout && !selectedExecution?.stderr ? (
+            <EmptyState
+              variant="inline"
+              icon={<FileCode size={14} />}
+              title="No logs available for this execution."
+            />
+          ) : null}
+        </ResponsiveStack>
       </Dialog>
-    </div>
+    </>
   );
 }
