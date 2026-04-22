@@ -1,0 +1,45 @@
+fragment RecommendationResolutionFields on RecommendationResolutionType {
+  id
+  recommendationId
+  machineId
+  actionKey
+  status
+  progress
+  progressMessage
+  params
+  result
+  error
+  triggeredByUserId
+  startedAt
+  completedAt
+  createdAt
+  updatedAt
+}
+
+mutation resolveRecommendation(
+  $id: ID!
+  $actionKey: String!
+  $params: ResolveRecommendationParamsInput
+) {
+  resolveRecommendation(id: $id, actionKey: $actionKey, params: $params) {
+    ...RecommendationResolutionFields
+  }
+}
+
+mutation cancelResolution($id: ID!) {
+  cancelResolution(id: $id) {
+    ...RecommendationResolutionFields
+  }
+}
+
+query recommendationResolution($id: ID!) {
+  recommendationResolution(id: $id) {
+    ...RecommendationResolutionFields
+  }
+}
+
+query activeResolutionsForMachine($machineId: ID!) {
+  activeResolutionsForMachine(machineId: $machineId) {
+    ...RecommendationResolutionFields
+  }
+}

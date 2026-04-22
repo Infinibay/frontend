@@ -92,6 +92,99 @@ type BackgroundHealthServiceStatus {
   totalVMsMonitored: Int!
 }
 
+type Backup {
+  backupId: String!
+  completedAt: DateTimeISO
+  compression: BackupCompression!
+  createdAt: DateTimeISO!
+  description: String
+  disks: [BackupDiskInfo!]
+  durationMs: Float
+  errorMessage: String
+  id: ID!
+  parentBackupId: String
+  progressPercent: Float
+  status: BackupStatus!
+  tags: [String!]
+  totalOriginalSize: Float!
+  totalSize: Float!
+  type: BackupType!
+  vmId: String!
+}
+
+enum BackupCompression {
+  GZIP
+  NONE
+  QCOW2
+}
+
+type BackupDiskInfo {
+  backingFile: String
+  backupPath: String!
+  backupSize: Float!
+  format: String!
+  originalSize: Float!
+  sourcePath: String!
+}
+
+type BackupListResult {
+  backups: [Backup!]!
+  message: String!
+  success: Boolean!
+}
+
+type BackupRestoreResult {
+  backupId: String
+  durationMs: Float
+  error: String
+  restoredDiskPaths: [String!]
+  success: Boolean!
+  vmId: String
+}
+
+type BackupResult {
+  backupId: String
+  disks: [BackupDiskInfo!]
+  durationMs: Float
+  error: String
+  success: Boolean!
+  totalSize: Float
+  type: BackupType
+  vmId: String
+}
+
+type BackupSchedule {
+  compression: BackupCompression!
+  createdAt: DateTimeISO!
+  cronExpression: String!
+  destinationDir: String!
+  enabled: Boolean!
+  id: ID!
+  label: String
+  lastBackupId: String
+  lastRunAt: DateTimeISO
+  nextRunAt: DateTimeISO
+  retentionCount: Float!
+  scheduleId: String!
+  type: BackupType!
+  updatedAt: DateTimeISO!
+  vmId: String!
+}
+
+enum BackupStatus {
+  CANCELLED
+  COMPLETED
+  FAILED
+  IN_PROGRESS
+  PENDING
+}
+
+enum BackupType {
+  FULL
+  INCREMENTAL
+  SNAPSHOT
+}
+
 type BrNetfilterDiagnosticsType {
   callArptables: Int!
   callIp6tables: Int!
@@ -160,6 +253,17 @@ input CreateApplicationInputType {
   parameters: JSONObject = null
 }
 
+input CreateBackupInput {
+  compression: BackupCompression
+  description: String
+  destinationDir: String
+  diskPaths: [String!]!
+  parentBackupId: String
+  tags: [String!]
+  type: BackupType!
+  vmId: String!
+}
+
 input CreateDepartmentFirewallInput {
   firewallCustomRules: JSON
   firewallDefaultConfig: String = "allow_outbound"
@@ -225,6 +329,17 @@ input CreateNetworkInput {
   name: String! = ""
 }
 
+input CreateScheduleInput {
+  compression: BackupCompression
+  cronExpression: String!
+  destinationDir: String
+  enabled: Boolean
+  label: String
+  retentionCount: Float
+  type: BackupType!
+  vmId: String!
+}
+
 input CreateScriptInput {
   category: String
   content: String!
@@ -265,6 +380,11 @@ type DefenderScanResult {
   threatsFound: Int!
   timestamp: DateTimeISO!
   vmId: ID!
+}
+
+input DeleteBackupInput {
+  backupId: String!
+  vmId: String!
 }
 
 input DeleteNetworkInput {
@@ -909,10 +1029,19 @@ type Mutation {
 
   """Calculate ISO checksum"""
   calculateISOChecksum(isoId: String!): String!
+
+  """Cancel a pending or running resolution. No-op on terminal resolutions."""
+  cancelResolution(id: ID!): RecommendationResolutionType!
   cancelScheduledScript(executionId: ID!): ScheduleScriptResponseType!
   cancelScriptExecution(id: ID!): ScriptExecutionResponseType!
   cleanupInfinibayFirewall: CleanupResultType!
   createApplication(input: CreateApplicationInputType!): ApplicationType!
+
+  """Create a backup of a VM"""
+  createBackup(input: CreateBackupInput!): BackupResult!
+
+  """Create a backup schedule"""
+  createBackupSchedule(input: CreateScheduleInput!): BackupSchedule!
   createDepartment(firewallConfig: CreateDepartmentFirewallInput, name: String!): DepartmentType!
   createDepartmentFirewallRule(departmentId: ID!, input: CreateFirewallRuleInput!): FirewallRuleType!
   createMachine(input: CreateMachineInputType!): Machine!
@@ -927,6 +1056,12 @@ type Mutation {
   createUser(input: CreateUserInputType!): UserType!
   createVMFirewallRule(input: CreateFirewallRuleInput!, vmId: ID!): FirewallRuleType!
   deleteApplication(id: String!): Boolean!
+
+  """Delete a backup"""
+  deleteBackup(input: DeleteBackupInput!): SuccessType!
+
+  """Delete a backup schedule"""
+  deleteBackupSchedule(id: ID!): SuccessType!
   deleteFirewallRule(ruleId: ID!): Boolean!
   deleteMaintenanceTask(id: ID!): MaintenanceTaskResponse!
   deleteNetwork(input: DeleteNetworkInput!): Boolean!
@@ -985,7 +1120,15 @@ type Mutation {
   """Remove a package from a virtual machine (legacy compatibility)"""
   removePackage(machineId: ID!, packageName: String!): CommandResult!
   resetMachine(id: String!): SuccessType!
+
+  """
+  Trigger auto-resolution for a recommendation. Idempotent: returns the in-flight resolution if one is already running.
+  """
+  resolveRecommendation(actionKey: String!, id: ID!, params: ResolveRecommendationParamsInput): RecommendationResolutionType!
   restartMachine(id: String!): SuccessType!
+
+  """Restore a VM from a backup"""
+  restoreBackup(input: RestoreBackupInput!): BackupRestoreResult!
 
   """Restore a virtual machine to a snapshot"""
   restoreSnapshot(input: RestoreSnapshotInput!): SuccessType!
@@ -1022,6 +1165,9 @@ type Mutation {
   uninstallPackage(name: String!): Boolean!
   updateAppSettings(input: AppSettingsInput!): AppSettings!
   updateApplication(id: String!, input: CreateApplicationInputType!): ApplicationType!
+
+  """Update a backup schedule"""
+  updateBackupSchedule(id: ID!, input: UpdateScheduleInput!): BackupSchedule!
   updateDepartmentFirewallPolicy(departmentId: String!, input: UpdateDepartmentFirewallPolicyInput!): DepartmentType!
   updateDepartmentName(input: UpdateDepartmentNameInput!): DepartmentType!
   updateDepartmentNetwork(input: UpdateDepartmentNetworkInput!): DepartmentType!
@@ -1259,6 +1405,9 @@ type ProcessControlResult {
 }
 
 type Query {
+  """Return active (non-terminal) resolutions for a machine"""
+  activeResolutionsForMachine(machineId: ID!): [RecommendationResolutionType!]!
+
   """Get all ISOs (available and unavailable)"""
   allISOs: [ISO!]!
   application(id: String!): ApplicationType
@@ -1267,6 +1416,15 @@ type Query {
   """Get all available ISOs"""
   availableISOs: [ISO!]!
   backgroundHealthServiceStatus: BackgroundHealthServiceStatus!
+
+  """Get a single backup by its database ID"""
+  backup(id: ID!): Backup
+
+  """List backup schedules for a VM (or all if vmId omitted)"""
+  backupSchedules(vmId: String): ScheduleListResult!
+
+  """List all backups for a VM"""
+  backups(vmId: String!): BackupListResult!
   captureDepartmentDhcpTraffic(departmentId: String!, durationSeconds: Int! = 30): DhcpTrafficCaptureType!
 
   """Check for application updates on a VM"""
@@ -1381,6 +1539,9 @@ type Query {
   """
   pendingRecommendationCount: Int!
 
+  """Fetch a single resolution. Poll this query to track progress."""
+  recommendationResolution(id: ID!): RecommendationResolutionType
+
   """Run a specific health check on a VM"""
   runHealthCheck(checkName: HealthCheckName!, vmId: ID!): GenericHealthCheckResponse!
   scheduledScript(id: ID!): ScheduledScriptType
@@ -1444,6 +1605,30 @@ input RecommendationFilterInput {
   types: [RecommendationType!]
 }
 
+"""Auto-resolve execution for a VM recommendation"""
+type RecommendationResolutionType {
+  """
+  Key identifying which resolver handler ran (e.g. install_updates, reboot)
+  """
+  actionKey: String!
+  completedAt: DateTimeISO
+  createdAt: DateTimeISO!
+  error: String
+  id: ID!
+  machineId: ID!
+  params: JSONObject
+
+  """0-100 progress indicator"""
+  progress: Int!
+  progressMessage: String
+  recommendationId: ID!
+  result: JSONObject
+  startedAt: DateTimeISO
+  status: ResolutionStatus!
+  triggeredByUserId: ID!
+  updatedAt: DateTimeISO!
+}
+
 """
 Types of VM recommendations that can be generated by the system based on health checks and system analysis
 """
@@ -1502,6 +1687,33 @@ enum RecommendationType {
   UNDER_PROVISIONED
 }
 
+"""Lifecycle state of an auto-resolve execution for a VM recommendation"""
+enum ResolutionStatus {
+  CANCELLED
+  FAILED
+  PENDING
+  REQUIRES_REBOOT
+  RUNNING
+  SUCCEEDED
+}
+
+"""
+Parameters for resolveRecommendation. Pass confirmed=true for destructive actions.
+"""
+input ResolveRecommendationParamsInput {
+  """User confirmation for destructive actions (reboot, install updates)"""
+  confirmed: Boolean
+
+  """Specific package names to update (defaults to all)"""
+  packages: [String!]
+
+  """When to run the action (for schedule_reboot)"""
+  scheduledAt: DateTimeISO
+
+  """Filter to security updates only"""
+  securityOnly: Boolean
+}
+
 type ResourceOptimizationInfo {
   error: String
   evaluationWindowDays: Float
@@ -1519,6 +1731,13 @@ type ResourceRecommendation {
   recommendedValue: Float!
   resource: String!
   unit: String!
+}
+
+input RestoreBackupInput {
+  backupId: String!
+  diskPaths: [String!]!
+  overwriteExisting: Boolean
+  vmId: String!
 }
 
 input RestoreSnapshotInput {
@@ -1550,6 +1769,12 @@ enum RuleDirection {
 enum RuleSetType {
   DEPARTMENT
   VM
+}
+
+type ScheduleListResult {
+  message: String!
+  schedules: [BackupSchedule!]!
+  success: Boolean!
 }
 
 input ScheduleScriptInput {
@@ -1890,6 +2115,16 @@ input UpdateMaintenanceTaskInput {
   name: String
   parameters: JSONObject
   runAt: DateTimeISO
+}
+
+input UpdateScheduleInput {
+  compression: BackupCompression
+  cronExpression: String
+  destinationDir: String
+  enabled: Boolean
+  label: String
+  retentionCount: Float
+  type: BackupType
 }
 
 input UpdateScheduledScriptInput {

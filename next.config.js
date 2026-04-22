@@ -3,6 +3,9 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Allow LAN devices to access the dev server (HMR/WebSocket).
+  // Add your device IP here if it changes, e.g. '192.168.0.42'.
+  allowedDevOrigins: ['192.168.0.199'],
   typescript: {
     // Warning: This allows production builds to successfully complete even if
     // your project has type errors.

@@ -19,6 +19,7 @@ import dynamic from 'next/dynamic';
 import { createDebugger } from '@/utils/debug';
 import {
   Cpu,
+  Database,
   FileCode,
   LayoutDashboard,
   Lightbulb,
@@ -53,6 +54,10 @@ const VMSecurityTab = dynamic(
 const VMScriptsTab = dynamic(() => import('./components/VMScriptsTab'), {
   ssr: false,
   loading: () => <TabLoading label="Loading scripts…" />,
+});
+const VMBackupsTab = dynamic(() => import('./components/VMBackupsTab'), {
+  ssr: false,
+  loading: () => <TabLoading label="Loading backups…" />,
 });
 
 function TabLoading({ label }) {
@@ -306,6 +311,9 @@ const VMDetailPage = () => {
               <Tab value="scripts" icon={<FileCode size={14} />}>
                 Scripts
               </Tab>
+              <Tab value="backups" icon={<Database size={14} />}>
+                Backups
+              </Tab>
             </TabList>
 
             <TabPanel value="overview">
@@ -332,6 +340,9 @@ const VMDetailPage = () => {
                 vmStatus={vm?.status}
                 departmentId={vm?.department?.id}
               />
+            </TabPanel>
+            <TabPanel value="backups">
+              <VMBackupsTab vmId={vmId} vmStatus={vm?.status} />
             </TabPanel>
           </Tabs>
         </ResponsiveStack>

@@ -1,23 +1,19 @@
 import { useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import {
   Alert,
   Badge,
   Button,
   Card,
-  Divider,
   EmptyState,
   LoadingOverlay,
   Page,
   ResponsiveStack,
-  SegmentedControl,
+  Select,
   TextField,
 } from '@infinibay/harbor';
 import {
   AlertTriangle,
   CheckCircle,
-  ChevronDown,
-  ChevronRight,
   Lightbulb,
   RefreshCw,
   Search,
@@ -25,9 +21,7 @@ import {
 } from 'lucide-react';
 
 import useVMRecommendations from '@/hooks/useVMRecommendations';
-import RecommendationHelp, {
-  RecommendationsGeneralHelp,
-} from './RecommendationHelp';
+import { RecommendationsGeneralHelp } from './RecommendationHelp';
 import RecommendationActions from './RecommendationActions';
 import {
   CATEGORIES,
@@ -38,19 +32,6 @@ import {
   getRecommendationInfo,
   isFallbackType,
 } from '@/utils/recommendationTypeMapper';
-
-const priorityToAlertTone = (priority) => {
-  switch (priority) {
-    case PRIORITY_LEVELS.CRITICAL:
-      return 'danger';
-    case PRIORITY_LEVELS.HIGH:
-      return 'warning';
-    case PRIORITY_LEVELS.MEDIUM:
-      return 'info';
-    default:
-      return 'info';
-  }
-};
 
 const priorityToBadgeTone = (priority) => {
   switch (priority) {
@@ -67,6 +48,21 @@ const priorityToBadgeTone = (priority) => {
   }
 };
 
+const priorityToCardTone = (priority) => {
+  switch (priority) {
+    case PRIORITY_LEVELS.CRITICAL:
+      return 'rose';
+    case PRIORITY_LEVELS.HIGH:
+      return 'amber';
+    case PRIORITY_LEVELS.MEDIUM:
+      return 'sky';
+    case PRIORITY_LEVELS.LOW:
+      return 'neutral';
+    default:
+      return 'purple';
+  }
+};
+
 const priorityLabel = (priority) => {
   if (priority === PRIORITY_LEVELS.CRITICAL) return 'Critical';
   if (priority === PRIORITY_LEVELS.HIGH) return 'High';
@@ -76,7 +72,6 @@ const priorityLabel = (priority) => {
 };
 
 const VMRecommendationsTab = ({ vmId, vmStatus }) => {
-  const [expandedRec, setExpandedRec] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -120,33 +115,118 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
     return list;
   }, [recommendations, searchTerm, filterPriority, filterCategory]);
 
-  const toggleExpanded = (id) =>
-    setExpandedRec((prev) => (prev === id ? null : id));
+  const priorityCounts = useMemo(() => {
+    const counts = {
+      [PRIORITY_LEVELS.CRITICAL]: 0,
+      [PRIORITY_LEVELS.HIGH]: 0,
+      [PRIORITY_LEVELS.MEDIUM]: 0,
+      [PRIORITY_LEVELS.LOW]: 0,
+    };
+    recommendations.forEach((rec) => {
+      const p = getRecommendationInfo(rec.type).priority;
+      if (counts[p] !== undefined) counts[p] += 1;
+    });
+    return counts;
+  }, [recommendations]);
 
-  const priorityItems = useMemo(
+  const priorityOptions = useMemo(
     () => [
-      { value: 'all', label: `All (${recommendations.length})` },
-      { value: PRIORITY_LEVELS.CRITICAL, label: 'Critical' },
-      { value: PRIORITY_LEVELS.HIGH, label: 'High' },
-      { value: PRIORITY_LEVELS.MEDIUM, label: 'Medium' },
-      { value: PRIORITY_LEVELS.LOW, label: 'Low' },
+      { value: 'all', label: `All priorities · ${recommendations.length}` },
+      {
+        value: PRIORITY_LEVELS.CRITICAL,
+        label: `Critical · ${priorityCounts[PRIORITY_LEVELS.CRITICAL]}`,
+      },
+      {
+        value: PRIORITY_LEVELS.HIGH,
+        label: `High · ${priorityCounts[PRIORITY_LEVELS.HIGH]}`,
+      },
+      {
+        value: PRIORITY_LEVELS.MEDIUM,
+        label: `Medium · ${priorityCounts[PRIORITY_LEVELS.MEDIUM]}`,
+      },
+      {
+        value: PRIORITY_LEVELS.LOW,
+        label: `Low · ${priorityCounts[PRIORITY_LEVELS.LOW]}`,
+      },
     ],
-    [recommendations.length],
+    [recommendations.length, priorityCounts],
   );
 
-  const categoryItems = useMemo(() => {
-    const base = [{ value: 'all', label: 'All categories' }];
+  const categoryOptions = useMemo(() => {
+    const opts = [{ value: 'all', label: 'All categories' }];
     Object.values(CATEGORIES).forEach((c) => {
       const count = categoryStats?.[c] || 0;
       if (count > 0) {
-        base.push({
+        opts.push({
           value: c,
           label: `${getCategoryInfo(c).label} · ${count}`,
         });
       }
     });
-    return base;
+    return opts;
   }, [categoryStats]);
+
+  const renderHeader = () => (
+    <Card
+      variant="default"
+      spotlight={false}
+      glow={false}
+      leadingIcon={<Lightbulb size={18} />}
+      leadingIconTone="amber"
+      title={
+        <ResponsiveStack direction="row" gap={2} align="center" wrap>
+          <span>Recommendations</span>
+          {requiresImmediateAttention ? (
+            <Badge tone="danger" pulse icon={<AlertTriangle size={12} />}>
+              Needs attention
+            </Badge>
+          ) : null}
+        </ResponsiveStack>
+      }
+      description={
+        <ResponsiveStack direction="row" gap={3} wrap align="center">
+          <span>{summary?.total ?? recommendations.length} from last scan</span>
+          {summary?.urgent > 0 ? (
+            <Badge tone="danger" pulse>
+              {summary.urgent} urgent
+            </Badge>
+          ) : null}
+          {summary?.rebootPending > 0 ? (
+            <Badge tone="warning">{summary.rebootPending} reboot pending</Badge>
+          ) : null}
+          {summary?.securityUpdates > 0 ? (
+            <Badge tone="warning" icon={<Shield size={12} />}>
+              {summary.securityUpdates} security updates
+            </Badge>
+          ) : null}
+          {summary?.activeThreats > 0 ? (
+            <Badge tone="danger" pulse>
+              {summary.activeThreats} active threats
+            </Badge>
+          ) : null}
+          {lastUpdateTime ? (
+            <span style={{ opacity: 0.7 }}>
+              updated {new Date(lastUpdateTime).toLocaleTimeString('en-US')}
+            </span>
+          ) : null}
+        </ResponsiveStack>
+      }
+      footer={
+        <ResponsiveStack direction="row" gap={2} align="center" wrap>
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<RefreshCw size={14} />}
+            onClick={refreshRecommendations}
+            disabled={isRefreshing}
+            loading={isRefreshing}
+          >
+            {isRefreshing ? 'Scanning…' : 'Scan now'}
+          </Button>
+        </ResponsiveStack>
+      }
+    />
+  );
 
   if (isLoading) {
     return (
@@ -215,236 +295,167 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
 
   return (
     <Page>
-        <RecommendationsGeneralHelp />
+      <RecommendationsGeneralHelp />
 
-        <Card
-          variant="default"
-          spotlight={false}
-          glow={false}
-          leadingIcon={<Lightbulb size={18} />}
-          leadingIconTone="amber"
-          title={
-            <ResponsiveStack direction="row" gap={2} align="center">
-              <span>Recommendations</span>
-              {requiresImmediateAttention ? (
-                <Badge tone="danger" pulse icon={<AlertTriangle size={12} />}>
-                  Attention
-                </Badge>
-              ) : null}
-            </ResponsiveStack>
-          }
-          description={
-            <ResponsiveStack direction="row" gap={3} wrap align="center">
-              <span>{summary?.total ?? recommendations.length} from last scan</span>
-              {summary?.urgent > 0 ? (
-                <Badge tone="danger" pulse>
-                  {summary.urgent} urgent
-                </Badge>
-              ) : null}
-              {summary?.rebootPending > 0 ? (
-                <Badge tone="warning">{summary.rebootPending} reboot pending</Badge>
-              ) : null}
-              {summary?.securityUpdates > 0 ? (
-                <Badge tone="warning" icon={<Shield size={12} />}>
-                  {summary.securityUpdates} security updates
-                </Badge>
-              ) : null}
-              {summary?.activeThreats > 0 ? (
-                <Badge tone="danger" pulse>
-                  {summary.activeThreats} active threats
-                </Badge>
-              ) : null}
-              {lastUpdateTime ? (
-                <span>
-                  updated {new Date(lastUpdateTime).toLocaleTimeString('en-US')}
-                </span>
-              ) : null}
-            </ResponsiveStack>
-          }
-          footer={
-            <ResponsiveStack
-              direction={{ base: 'col', md: 'row' }}
-              gap={3}
-              align={{ base: 'stretch', md: 'center' }}
-            >
-              <SegmentedControl
-                items={priorityItems}
-                value={filterPriority}
-                onChange={setFilterPriority}
-                size="sm"
-              />
-              {categoryItems.length > 1 ? (
-                <SegmentedControl
-                  items={categoryItems}
-                  value={filterCategory}
-                  onChange={setFilterCategory}
-                  size="sm"
-                />
-              ) : null}
-              <TextField
-                placeholder="Search recommendations…"
-                icon={<Search size={14} />}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Button
-                size="sm"
-                variant="primary"
-                icon={<RefreshCw size={14} />}
-                onClick={refreshRecommendations}
-                disabled={isRefreshing}
-                loading={isRefreshing}
-              >
-                {isRefreshing ? 'Scanning…' : 'Scan now'}
-              </Button>
-            </ResponsiveStack>
-          }
-        />
+      {renderHeader()}
 
-        <ResponsiveStack direction="col" gap={3}>
-          {filtered.length === 0 ? (
-            <EmptyState
-              variant="dashed"
-              icon={<Search size={18} />}
-              title="No matching recommendations"
-              description="None of the current recommendations match your filters."
-            />
-          ) : (
-            filtered.map((rec) => {
-              const info = getRecommendationInfo(rec.type, rec);
-              const metadata = extractRecommendationMetadata(rec);
-              const urgencyBadgeConfig = info.urgencyBadge
-                ? URGENCY_BADGES[info.urgencyBadge]
-                : null;
-              const isExpanded = expandedRec === rec.id;
-              const IconComp = info.icon;
-
-              return (
-                <Alert
-                  key={rec.id}
-                  tone={priorityToAlertTone(info.priority)}
-                  icon={IconComp ? <IconComp size={14} /> : undefined}
-                  title={
-                    <ResponsiveStack direction="row" gap={2} align="center" wrap>
-                      <span>{info.label}</span>
-                      {urgencyBadgeConfig ? (
-                        <Badge tone={priorityToBadgeTone(info.priority)}>
-                          {urgencyBadgeConfig.text}
-                        </Badge>
-                      ) : null}
-                      <Badge tone={priorityToBadgeTone(info.priority)}>
-                        {priorityLabel(info.priority)}
-                      </Badge>
-                      <Badge tone="neutral">
-                        {getCategoryInfo(info.category).label}
-                      </Badge>
-                      {isFallbackType(rec.type) ? (
-                        <Badge tone="neutral">{rec.type}</Badge>
-                      ) : null}
-                    </ResponsiveStack>
-                  }
-                  actions={
-                    <ResponsiveStack direction="row" gap={2} wrap>
-                      <RecommendationActions
-                        recommendation={rec}
-                        vmId={vmId}
-                        vmStatus={vmStatus}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={
-                          isExpanded ? (
-                            <ChevronDown size={14} />
-                          ) : (
-                            <ChevronRight size={14} />
-                          )
-                        }
-                        onClick={() => toggleExpanded(rec.id)}
-                      >
-                        {isExpanded ? 'Less' : 'More'}
-                      </Button>
-                    </ResponsiveStack>
-                  }
-                >
-                  <ResponsiveStack direction="col" gap={2}>
-                    <span>{rec.text || info.description}</span>
-
-                    {(rec.type === 'OS_UPDATE_AVAILABLE' ||
-                      rec.type === 'SYSTEM_UPDATE_AVAILABLE') &&
-                      metadata?.rebootDays ? (
-                      <Badge tone="warning" icon={<AlertTriangle size={12} />}>
-                        Waiting {metadata.rebootDays} day
-                        {metadata.rebootDays !== 1 ? 's' : ''} for reboot
-                      </Badge>
-                    ) : null}
-                    {rec.type === 'APP_UPDATE_AVAILABLE' &&
-                      metadata?.securityUpdateCount > 0 ? (
-                      <Badge tone="warning" icon={<Shield size={12} />}>
-                        {metadata.securityUpdateCount} security update
-                        {metadata.securityUpdateCount !== 1 ? 's' : ''} pending
-                        {metadata.totalUpdateCount > metadata.securityUpdateCount
-                          ? ` · ${metadata.totalUpdateCount} total`
-                          : ''}
-                      </Badge>
-                    ) : null}
-                    {rec.type === 'PORT_BLOCKED' &&
-                    metadata?.blockedPorts?.length > 0 ? (
-                      <ResponsiveStack direction="col" gap={1}>
-                        {metadata.blockedPorts.map((port, idx) => (
-                          <Badge
-                            key={idx}
-                            tone="warning"
-                            icon={<Shield size={12} />}
-                          >
-                            Port {port.port} ({port.protocol}) · {port.processName}
-                          </Badge>
-                        ))}
-                      </ResponsiveStack>
-                    ) : null}
-                    {rec.type === 'DEFENDER_THREAT' && metadata?.threatCount > 0 ? (
-                      <Badge tone="danger" icon={<AlertTriangle size={12} />}>
-                        {metadata.threatCount} threat
-                        {metadata.threatCount !== 1 ? 's' : ''} detected
-                        {metadata.activeThreats > 0
-                          ? ` · ${metadata.activeThreats} active`
-                          : ''}
-                      </Badge>
-                    ) : null}
-
-                    <AnimatePresence initial={false}>
-                      {isExpanded ? (
-                        <motion.div
-                          key="expanded"
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.18 }}
-                          style={{ overflow: 'hidden' }}
-                        >
-                          <Divider />
-                          <RecommendationHelp
-                            recommendationType={rec.type}
-                            recommendation={rec}
-                            showDetailed
-                          />
-                        </motion.div>
-                      ) : null}
-                    </AnimatePresence>
-                  </ResponsiveStack>
-                </Alert>
-              );
-            })
-          )}
-        </ResponsiveStack>
-
-        {filtered.length > 0 ? (
-          <EmptyState
-            variant="inline"
-            icon={<CheckCircle size={14} />}
-            title={`Showing ${filtered.length} of ${recommendations.length} recommendations`}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 8,
+          alignItems: 'center',
+          background: 'rgb(var(--harbor-bg-elev-1))',
+          border: '1px solid rgba(255,255,255,0.10)',
+          borderRadius: 12,
+          padding: 10,
+        }}
+      >
+        <div style={{ flex: '1 1 220px', minWidth: 200, maxWidth: 360 }}>
+          <TextField
+            placeholder="Search recommendations…"
+            icon={<Search size={14} />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
+        </div>
+        <div style={{ minWidth: 180 }}>
+          <Select
+            options={priorityOptions}
+            value={filterPriority}
+            onChange={setFilterPriority}
+          />
+        </div>
+        {categoryOptions.length > 1 ? (
+          <div style={{ minWidth: 180 }}>
+            <Select
+              options={categoryOptions}
+              value={filterCategory}
+              onChange={setFilterCategory}
+            />
+          </div>
         ) : null}
+        <div style={{ marginLeft: 'auto', opacity: 0.7, fontSize: 12 }}>
+          {filtered.length} of {recommendations.length}
+        </div>
+      </div>
+
+      <ResponsiveStack direction="col" gap={3}>
+        {filtered.length === 0 ? (
+          <EmptyState
+            variant="dashed"
+            icon={<Search size={18} />}
+            title="No matching recommendations"
+            description="None of the current recommendations match your filters."
+          />
+        ) : (
+          filtered.map((rec) => {
+            const info = getRecommendationInfo(rec.type, rec);
+            const metadata = extractRecommendationMetadata(rec);
+            const urgencyBadgeConfig = info.urgencyBadge
+              ? URGENCY_BADGES[info.urgencyBadge]
+              : null;
+            const IconComp = info.icon;
+
+            return (
+              <Card
+                key={rec.id}
+                variant="default"
+                spotlight={false}
+                glow={false}
+                leadingIcon={IconComp ? <IconComp size={16} /> : <Lightbulb size={16} />}
+                leadingIconTone={priorityToCardTone(info.priority)}
+                title={
+                  <ResponsiveStack direction="row" gap={2} align="center" wrap>
+                    <span>{info.label}</span>
+                    <Badge tone={priorityToBadgeTone(info.priority)}>
+                      {priorityLabel(info.priority)}
+                    </Badge>
+                    {urgencyBadgeConfig ? (
+                      <Badge tone={priorityToBadgeTone(info.priority)}>
+                        {urgencyBadgeConfig.text}
+                      </Badge>
+                    ) : null}
+                    <Badge tone="neutral">
+                      {getCategoryInfo(info.category).label}
+                    </Badge>
+                    {isFallbackType(rec.type) ? (
+                      <Badge tone="neutral">{rec.type}</Badge>
+                    ) : null}
+                  </ResponsiveStack>
+                }
+                description={
+                  <span style={{ display: 'block', lineHeight: 1.5 }}>
+                    {rec.text || info.description}
+                  </span>
+                }
+                footer={
+                  <RecommendationActions
+                    recommendation={rec}
+                    vmId={vmId}
+                    vmStatus={vmStatus}
+                  />
+                }
+              >
+                {(rec.type === 'OS_UPDATE_AVAILABLE' ||
+                  rec.type === 'SYSTEM_UPDATE_AVAILABLE') &&
+                metadata?.rebootDays ? (
+                  <div style={{ marginTop: 8 }}>
+                    <Badge tone="warning" icon={<AlertTriangle size={12} />}>
+                      Waiting {metadata.rebootDays} day
+                      {metadata.rebootDays !== 1 ? 's' : ''} for reboot
+                    </Badge>
+                  </div>
+                ) : null}
+                {rec.type === 'APP_UPDATE_AVAILABLE' &&
+                metadata?.securityUpdateCount > 0 ? (
+                  <div style={{ marginTop: 8 }}>
+                    <Badge tone="warning" icon={<Shield size={12} />}>
+                      {metadata.securityUpdateCount} security update
+                      {metadata.securityUpdateCount !== 1 ? 's' : ''} pending
+                      {metadata.totalUpdateCount > metadata.securityUpdateCount
+                        ? ` · ${metadata.totalUpdateCount} total`
+                        : ''}
+                    </Badge>
+                  </div>
+                ) : null}
+                {rec.type === 'PORT_BLOCKED' &&
+                metadata?.blockedPorts?.length > 0 ? (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 6,
+                    }}
+                  >
+                    {metadata.blockedPorts.map((port, idx) => (
+                      <Badge
+                        key={idx}
+                        tone="warning"
+                        icon={<Shield size={12} />}
+                      >
+                        Port {port.port} ({port.protocol}) · {port.processName}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
+                {rec.type === 'DEFENDER_THREAT' && metadata?.threatCount > 0 ? (
+                  <div style={{ marginTop: 8 }}>
+                    <Badge tone="danger" icon={<AlertTriangle size={12} />}>
+                      {metadata.threatCount} threat
+                      {metadata.threatCount !== 1 ? 's' : ''} detected
+                      {metadata.activeThreats > 0
+                        ? ` · ${metadata.activeThreats} active`
+                        : ''}
+                    </Badge>
+                  </div>
+                ) : null}
+              </Card>
+            );
+          })
+        )}
+      </ResponsiveStack>
     </Page>
   );
 };

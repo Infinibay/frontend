@@ -86,7 +86,7 @@ export function GlobalHeader() {
   const left = (
     <ResponsiveStack direction="row" gap={3} align="center">
       {backButton ? (
-        <Link href={backButton.href} legacyBehavior passHref>
+        <Link href={backButton.href}>
           <Button variant="ghost" size="sm" icon={<ChevronLeft size={14} />}>
             {backButton.label || 'Back'}
           </Button>

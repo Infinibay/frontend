@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useQuery, gql, useMutation } from "@apollo/client";
+import { gql } from "@apollo/client";
+import { useQuery, useMutation } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 

@@ -25,6 +25,8 @@ import {
   extractRecommendationMetadata,
   getRecommendationInfo,
 } from '@/utils/recommendationTypeMapper';
+import useResolveRecommendation from '@/hooks/useResolveRecommendation';
+import RecommendationResolutionBadge from './RecommendationResolutionBadge';
 
 const variantMap = {
   default: 'primary',
@@ -46,6 +48,7 @@ const RecommendationActions = ({ recommendation }) => {
 
   const info = getRecommendationInfo(recommendation.type, recommendation);
   const metadata = extractRecommendationMetadata(recommendation);
+  const { resolve, resolution, isStarting, isRunning } = useResolveRecommendation(recommendation.id);
 
   const getActionConfig = (type) => {
     const actions = [];
@@ -58,7 +61,6 @@ const RecommendationActions = ({ recommendation }) => {
             label: 'Reboot Now',
             variant: 'destructive',
             icon: AlertTriangle,
-            comingSoon: true,
           });
         } else if (metadata?.rebootDays >= 3) {
           actions.push({
@@ -66,7 +68,6 @@ const RecommendationActions = ({ recommendation }) => {
             label: 'Schedule Reboot',
             variant: 'default',
             icon: Calendar,
-            comingSoon: true,
           });
         }
         actions.push({
@@ -74,14 +75,12 @@ const RecommendationActions = ({ recommendation }) => {
           label: 'Install Updates',
           variant: 'default',
           icon: RefreshCw,
-          comingSoon: true,
         });
         actions.push({
           action: 'list',
           label: 'View Updates',
           variant: 'default',
           icon: List,
-          comingSoon: true,
         });
         break;
       case 'APP_UPDATE_AVAILABLE':
@@ -91,9 +90,14 @@ const RecommendationActions = ({ recommendation }) => {
             label: `Install Security Updates (${metadata.securityUpdateCount})`,
             variant: 'destructive',
             icon: Shield,
-            comingSoon: true,
           });
         }
+        actions.push({
+          action: 'install_updates',
+          label: 'Install All Updates',
+          variant: 'default',
+          icon: RefreshCw,
+        });
         actions.push({
           action: 'list',
           label: `View All (${metadata?.totalUpdateCount || 0})`,
@@ -113,7 +117,7 @@ const RecommendationActions = ({ recommendation }) => {
           label: 'Run Full Scan',
           variant: 'default',
           icon: Shield,
-          comingSoon: true,
+          comingSoon: true, // requires RunDefenderFullScan in infiniservice (phase 2)
         });
         break;
       case 'PORT_BLOCKED': {
@@ -135,6 +139,19 @@ const RecommendationActions = ({ recommendation }) => {
         break;
       }
       case 'DEFENDER_DISABLED':
+        actions.push({
+          action: 'enable_defender',
+          label: 'Enable Defender',
+          variant: 'default',
+          icon: Shield,
+        });
+        actions.push({
+          label: 'View Details',
+          icon: Info,
+          variant: 'default',
+          action: 'info',
+        });
+        break;
       case 'FIREWALL_DISABLED':
       case 'ANTIVIRUS_OUTDATED':
         actions.push({
@@ -323,6 +340,9 @@ const RecommendationActions = ({ recommendation }) => {
         });
         setShowConfirmDialog(true);
         break;
+      case 'enable_defender':
+        resolve('enable_defender').catch(() => {});
+        break;
       case 'firewall':
         setDialogContent({
           title: 'Firewall Configuration',
@@ -390,70 +410,65 @@ const RecommendationActions = ({ recommendation }) => {
   const handleConfirm = async () => {
     if (!confirmAction) return;
     setShowConfirmDialog(false);
-    switch (confirmAction.type) {
-      case 'reboot':
-        toast({
-          title: 'Reboot scheduled',
-          description:
-            'The VM will reboot shortly. You will receive a notification when complete.',
-          variant: 'default',
-        });
-        break;
-      case 'install_updates':
-      case 'install_security_updates':
-        toast({
-          title: 'Installation started',
-          description:
-            'Updates are being installed. This may take several minutes.',
-          variant: 'default',
-        });
-        break;
-      case 'run_full_scan':
-        toast({
-          title: 'Scan started',
-          description: 'Windows Defender is running a full scan.',
-          variant: 'default',
-        });
-        break;
-      default:
-        toast({
-          title: 'Action completed',
-          description: 'The action was executed successfully.',
-          variant: 'default',
-        });
-    }
+    const action = confirmAction.type;
     setConfirmAction(null);
+
+    const resolvableActions = new Set([
+      'reboot',
+      'install_updates',
+      'install_security_updates',
+    ]);
+
+    if (resolvableActions.has(action)) {
+      try {
+        await resolve(action, { confirmed: true });
+      } catch {
+        // toast already shown by the hook
+      }
+      return;
+    }
+
+    // Non-auto-resolvable confirmations keep the legacy informational toast
+    toast({
+      title: 'Action completed',
+      description: 'The action was executed successfully.',
+      variant: 'default',
+    });
   };
 
   const actionConfig = getActionConfig(recommendation.type);
 
   return (
     <>
-      <ResponsiveStack direction="row" gap={2} align="center" wrap>
-        {actionConfig.actions.map((action, index) => {
-          const IconComp = action.icon;
-          const btn = (
-            <Button
-              key={index}
-              size="sm"
-              variant={variantMap[action.variant] || 'primary'}
-              disabled={action.comingSoon}
-              icon={IconComp ? <IconComp size={12} /> : undefined}
-              onClick={
-                action.comingSoon ? undefined : () => handleAction(action.action)
-              }
-            >
-              {action.label}
-            </Button>
-          );
-          return action.comingSoon ? (
-            <Tooltip key={index} content="Coming soon">
-              <span>{btn}</span>
-            </Tooltip>
-          ) : (
-            btn
-          );
-        })}
+      <ResponsiveStack direction="col" gap={2}>
+        <ResponsiveStack direction="row" gap={2} align="center" wrap>
+          {actionConfig.actions.map((action, index) => {
+            const IconComp = action.icon;
+            const busy = isStarting || isRunning;
+            const btn = (
+              <Button
+                key={index}
+                size="sm"
+                variant={variantMap[action.variant] || 'primary'}
+                disabled={action.comingSoon || busy}
+                icon={IconComp ? <IconComp size={12} /> : undefined}
+                onClick={
+                  action.comingSoon || busy ? undefined : () => handleAction(action.action)
+                }
+              >
+                {action.label}
+              </Button>
+            );
+            return action.comingSoon ? (
+              <Tooltip key={index} content="Coming soon">
+                <span>{btn}</span>
+              </Tooltip>
+            ) : (
+              btn
+            );
+          })}
+        </ResponsiveStack>
+        {resolution ? <RecommendationResolutionBadge resolution={resolution} /> : null}
       </ResponsiveStack>
 
       <Dialog
