@@ -11,18 +11,15 @@ import {
   Dialog,
   EmptyState,
   IconButton,
-  IconTile,
   LoadingOverlay,
   Page,
   ResponsiveGrid,
   ResponsiveStack,
-  Stat,
   StatusDot,
   TextField,
 } from '@infinibay/harbor';
 import {
   AlertTriangle,
-  ArrowRight,
   Building2,
   Cpu,
   Plus,
@@ -46,8 +43,6 @@ const toneFor = (name) => {
   }
   return ACCENT_TONES[Math.abs(hash) % ACCENT_TONES.length];
 };
-
-const pluralize = (n, one, many) => (n === 1 ? `1 ${one}` : `${n} ${many}`);
 
 const DepartmentsPage = () => {
   const router = useRouter();
@@ -188,72 +183,51 @@ const DepartmentsPage = () => {
           </Alert>
         )}
 
-        <Card
-          variant="default"
-          spotlight
-          glow={false}
-          leadingIcon={<Building2 size={22} />}
-          leadingIconTone="sky"
-          title="Departments"
-          description="Organize your virtual machines by team, project or function."
-          footer={
-            <ResponsiveGrid columns={{ base: 1, sm: 3 }} gap={3}>
-              <Stat
-                label="Departments"
-                value={totalDepartments}
-                icon={<Building2 size={12} />}
-                tone="sky"
-              />
-              <Stat
-                label="Virtual machines"
-                value={totalMachines}
-                icon={<Server size={12} />}
-                tone="purple"
-              />
-              <Stat
-                label="Running now"
-                value={totalRunning}
-                icon={<Cpu size={12} />}
-                tone="success"
-              />
-            </ResponsiveGrid>
-          }
+        <ResponsiveStack
+          direction={{ base: 'col', md: 'row' }}
+          gap={3}
+          align={{ base: 'stretch', md: 'center' }}
+          justify="between"
+          wrap
         >
-          <ResponsiveStack
-            direction={{ base: 'col', md: 'row' }}
-            gap={3}
-            align={{ base: 'stretch', md: 'center' }}
-            justify="between"
-          >
+          <ResponsiveStack direction="row" gap={4} align="center" wrap>
+            <Badge tone="sky" icon={<Building2 size={12} />}>
+              {totalDepartments} {totalDepartments === 1 ? 'department' : 'departments'}
+            </Badge>
+            <Badge tone="purple" icon={<Server size={12} />}>
+              {totalMachines} {totalMachines === 1 ? 'VM' : 'VMs'}
+            </Badge>
+            <Badge tone="success" icon={<Cpu size={12} />}>
+              {totalRunning} running
+            </Badge>
+          </ResponsiveStack>
+          <ResponsiveStack direction="row" gap={2} align="center">
             <TextField
-              placeholder="Search departments by name…"
+              placeholder="Search…"
               icon={<Search size={14} />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              fullWidth
+              size="sm"
             />
-            <ResponsiveStack direction="row" gap={2} justify="end">
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<RefreshCw size={14} />}
-                onClick={refreshDepartments}
-                disabled={isLoading}
-                loading={isLoading}
-              >
-                Refresh
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                icon={<Plus size={14} />}
-                onClick={() => setIsCreateDeptDialogOpen(true)}
-              >
-                New department
-              </Button>
-            </ResponsiveStack>
+            <IconButton
+              size="sm"
+              variant="secondary"
+              label="Refresh"
+              icon={<RefreshCw size={14} />}
+              onClick={refreshDepartments}
+              disabled={isLoading}
+              loading={isLoading}
+            />
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Plus size={14} />}
+              onClick={() => setIsCreateDeptDialogOpen(true)}
+            >
+              New
+            </Button>
           </ResponsiveStack>
-        </Card>
+        </ResponsiveStack>
 
         {isLoading && filteredDepartments.length === 0 ? (
           <LoadingOverlay label="Loading departments…" />
@@ -281,7 +255,7 @@ const DepartmentsPage = () => {
             }
           />
         ) : (
-          <ResponsiveGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} gap={4}>
+          <ResponsiveGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} gap={2}>
             {filteredDepartments.map((dept) => {
               const tone = toneFor(dept.name);
               const key = dept.name?.toLowerCase();
@@ -289,7 +263,6 @@ const DepartmentsPage = () => {
                 total: getMachineCount(dept.name),
                 running: 0,
               };
-              const stopped = Math.max(0, counts.total - counts.running);
               const statusDotKind = counts.running > 0
                 ? 'online'
                 : counts.total > 0
@@ -301,78 +274,38 @@ const DepartmentsPage = () => {
                   key={dept.id}
                   variant="default"
                   interactive
-                  spotlight
+                  spotlight={false}
                   glow={false}
-                  fullHeight
+                  padding="sm"
                   onClick={() =>
                     router.push(`/departments/${encodeURIComponent(dept.name)}`)
                   }
-                  footer={
-                    <ResponsiveStack
-                      direction="row"
-                      align="center"
-                      justify="between"
-                    >
-                      <ResponsiveStack direction="row" gap={2} align="center">
-                        <StatusDot status={statusDotKind} />
-                        <span>
-                          {counts.total === 0
-                            ? 'No VMs yet'
-                            : `${counts.running}/${counts.total} running`}
-                        </span>
-                      </ResponsiveStack>
-                      <Badge tone={tone} icon={<ArrowRight size={10} />}>
-                        Open
+                >
+                  <ResponsiveStack
+                    direction="row"
+                    gap={2}
+                    align="center"
+                    justify="between"
+                  >
+                    <ResponsiveStack direction="row" gap={2} align="center">
+                      <StatusDot status={statusDotKind} />
+                      <span>{dept.name}</span>
+                      <Badge tone={tone} size="sm">
+                        {counts.total === 0
+                          ? 'empty'
+                          : `${counts.running}/${counts.total}`}
                       </Badge>
                     </ResponsiveStack>
-                  }
-                >
-                  <ResponsiveStack direction="col" gap={3}>
-                    <ResponsiveStack
-                      direction="row"
-                      gap={3}
-                      align="start"
-                      justify="between"
-                    >
-                      <ResponsiveStack direction="row" gap={3} align="center">
-                        <IconTile
-                          icon={<Building2 size={20} />}
-                          tone={tone}
-                          size="md"
-                        />
-                        <ResponsiveStack direction="col" gap={0}>
-                          <span>{dept.name}</span>
-                          <span>
-                            {pluralize(counts.total, 'virtual machine', 'virtual machines')}
-                          </span>
-                        </ResponsiveStack>
-                      </ResponsiveStack>
-                      <IconButton
-                        size="sm"
-                        variant="ghost"
-                        label={`Delete ${dept.name}`}
-                        icon={<Trash2 size={14} />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteTarget(dept);
-                        }}
-                      />
-                    </ResponsiveStack>
-
-                    {counts.total > 0 ? (
-                      <ResponsiveGrid columns={2} gap={2}>
-                        <Stat
-                          label="Running"
-                          value={counts.running}
-                          tone="success"
-                        />
-                        <Stat
-                          label="Stopped"
-                          value={stopped}
-                          tone={stopped > 0 ? 'warning' : 'neutral'}
-                        />
-                      </ResponsiveGrid>
-                    ) : null}
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      label={`Delete ${dept.name}`}
+                      icon={<Trash2 size={14} />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget(dept);
+                      }}
+                    />
                   </ResponsiveStack>
                 </Card>
               );
