@@ -3,10 +3,12 @@
 import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
 import {
   AlertCircle,
   ArrowLeft,
   Building2,
+  ExternalLink,
   FileCode,
   Monitor,
   Network,
@@ -23,9 +25,13 @@ import {
   Badge,
   Button,
   ClusterView,
+  ContextMenu,
   Dialog,
   EmptyState,
   LoadingOverlay,
+  MenuItem,
+  MenuLabel,
+  MenuSeparator,
   Page,
   ResponsiveGrid,
   ResponsiveStack,
@@ -148,11 +154,14 @@ const DepartmentPage = () => {
     handlePlayAction,
     handlePauseAction,
     handleStopAction,
+    handleDeleteAction,
     deleteConfirmation,
     confirmDelete,
     cancelDelete,
     isDeleting,
   } = useDepartmentPage(departmentName);
+
+  const pendingActions = useSelector((state) => state.vms?.pendingActions || {});
 
   const helpConfig = useMemo(
     () => ({
@@ -384,6 +393,63 @@ const DepartmentPage = () => {
                 onHostClick={(host) => {
                   const raw = hosts.find((h) => h.id === host.id)?._raw;
                   if (raw) handlePcSelect(raw);
+                }}
+                renderHost={(host, card) => {
+                  const raw = hosts.find((h) => h.id === host.id)?._raw;
+                  if (!raw) return card;
+                  const status = (raw.status || '').toLowerCase();
+                  const isRunning = status === 'running';
+                  const isPaused = status === 'paused' || status === 'suspended';
+                  const isStopped = !isRunning && !isPaused;
+                  const isPending = !!pendingActions?.[raw.id];
+                  return (
+                    <ContextMenu
+                      menu={
+                        <>
+                          <MenuLabel>{raw.name}</MenuLabel>
+                          <MenuSeparator />
+                          <MenuItem
+                            icon={<Play size={14} />}
+                            disabled={isPending || isRunning}
+                            onClick={() => handlePlayAction(raw)}
+                          >
+                            Start
+                          </MenuItem>
+                          <MenuItem
+                            icon={<Pause size={14} />}
+                            disabled={isPending || !isRunning}
+                            onClick={() => handlePauseAction(raw)}
+                          >
+                            Pause
+                          </MenuItem>
+                          <MenuItem
+                            icon={<Square size={14} />}
+                            disabled={isPending || isStopped}
+                            onClick={() => handleStopAction(raw)}
+                          >
+                            Stop
+                          </MenuItem>
+                          <MenuSeparator />
+                          <MenuItem
+                            icon={<ExternalLink size={14} />}
+                            onClick={() => handlePcSelect(raw)}
+                          >
+                            Open
+                          </MenuItem>
+                          <MenuSeparator />
+                          <MenuItem
+                            icon={<Trash2 size={14} />}
+                            danger
+                            onClick={() => handleDeleteAction(raw)}
+                          >
+                            Delete
+                          </MenuItem>
+                        </>
+                      }
+                    >
+                      {card}
+                    </ContextMenu>
+                  );
                 }}
               />
             )}
