@@ -50,6 +50,7 @@ import {
   useUpdateBackupScheduleMutation,
   useDeleteBackupScheduleMutation,
 } from '@/gql/hooks';
+import { getSocketService } from '@/services/socketService';
 
 // User-facing presets that bundle backup type + compression into a single
 // intent-based choice. Power-users can still pick raw values via a future
@@ -394,6 +395,31 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
     else backupsQ.stopPolling?.();
     return () => backupsQ.stopPolling?.();
   }, [showProgress, backupsQ]);
+
+  // Live updates from backend BackupEventManager — saves a round-trip
+  // compared to the 3s poll once the backup finishes.
+  useEffect(() => {
+    if (!vmId) return undefined;
+    const socketService = getSocketService();
+    const unsubBackups = socketService.subscribeToAllResourceEvents(
+      'backups',
+      (_action, event) => {
+        if (event?.data?.vmId !== vmId) return;
+        backupsQ.refetch().catch(() => {});
+      },
+    );
+    const unsubSchedules = socketService.subscribeToAllResourceEvents(
+      'backup_schedules',
+      (_action, event) => {
+        if (event?.data?.vmId !== vmId) return;
+        schedulesQ.refetch().catch(() => {});
+      },
+    );
+    return () => {
+      unsubBackups?.();
+      unsubSchedules?.();
+    };
+  }, [vmId, backupsQ, schedulesQ]);
 
   const [createBackup, createBackupState] = useCreateBackupMutation();
   const [restoreBackup, restoreBackupState] = useRestoreBackupMutation();
