@@ -24,6 +24,7 @@ import {
   IconTile,
   ResponsiveStack,
   ResponsiveGrid,
+  Tooltip,
 } from "@infinibay/harbor";
 
 import { fetchApplications } from "@/state/slices/applications";
@@ -234,13 +235,18 @@ const ApplicationsPage = () => {
             >
               Refresh
             </Button>
-            <Button
-              size="sm"
-              icon={<Plus size={16} />}
-              onClick={() => router.push("/applications/new")}
-            >
-              New application
-            </Button>
+            <Tooltip content="New application">
+              <span>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={<Plus size={14} />}
+                  onClick={() => router.push("/applications/new")}
+                >
+                  New
+                </Button>
+              </span>
+            </Tooltip>
           </ResponsiveStack>
         </ResponsiveStack>
       </Card>
@@ -291,13 +297,18 @@ const ApplicationsPage = () => {
             }
             actions={
               !(applications || []).length ? (
-                <Button
-                  size="sm"
-                  icon={<Plus size={16} />}
-                  onClick={() => router.push("/applications/new")}
-                >
-                  New application
-                </Button>
+                <Tooltip content="New application">
+                  <span>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon={<Plus size={14} />}
+                      onClick={() => router.push("/applications/new")}
+                    >
+                      New
+                    </Button>
+                  </span>
+                </Tooltip>
               ) : null
             }
           />

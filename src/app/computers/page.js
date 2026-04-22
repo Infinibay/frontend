@@ -1,38 +1,37 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import {
-  Page,
-  Card,
-  Button,
-  IconButton,
-  Dialog,
-  ButtonGroup,
   Alert,
-  EmptyState,
-  Stat,
+  Badge,
+  Button,
+  ButtonGroup,
   ClusterView,
-  Spinner,
-  ResponsiveStack,
-  ResponsiveGrid,
   ContextMenu,
+  Dialog,
+  EmptyState,
+  IconButton,
   MenuItem,
   MenuLabel,
   MenuSeparator,
+  Page,
+  ResponsiveStack,
+  Spinner,
+  Tooltip,
 } from "@infinibay/harbor";
 import {
   AlertCircle,
-  Monitor,
-  Plus,
-  RefreshCw,
-  Play,
-  Pause,
-  Square,
   Cpu,
-  Power,
   ExternalLink,
+  Monitor,
+  Pause,
+  Play,
+  Plus,
+  Power,
+  RefreshCw,
+  Square,
   Trash2,
 } from "lucide-react";
 import { createDebugger } from "@/utils/debug";
@@ -309,78 +308,63 @@ export default function ComputersPage() {
   if (loading && !machines?.length) {
     return (
       <Page gap="lg">
-        <Card variant="default">
-          <ResponsiveStack direction="row" gap={3} justify="center" align="center">
-            <Spinner /> Loading computers…
-          </ResponsiveStack>
-        </Card>
+        <ResponsiveStack direction="row" gap={3} justify="center" align="center">
+          <Spinner /> Loading computers…
+        </ResponsiveStack>
       </Page>
     );
   }
 
   return (
     <Page gap="lg">
-      <Card
-        variant="default"
-        leadingIcon={<Monitor size={20} />}
-        leadingIconTone="sky"
-        title="Computers"
-        description={`${hosts.length} virtual machine${hosts.length !== 1 ? "s" : ""} across ${departments?.length || 0} department${(departments?.length || 0) !== 1 ? "s" : ""}`}
+      <ResponsiveStack
+        direction={{ base: "col", md: "row" }}
+        gap={3}
+        align={{ base: "stretch", md: "center" }}
+        justify="between"
+        wrap
       >
-        <ResponsiveStack
-          direction={{ base: "col", lg: "row" }}
-          gap={4}
-          justify="between"
-          align="stretch"
-        >
-          <ResponsiveGrid columns={{ base: 2, md: 4 }} gap={3}>
-            <Stat
-              label="Running"
-              value={statusCounts.online}
-              icon={<Power size={14} />}
-              variant="plain"
-            />
-            <Stat label="Paused" value={statusCounts.degraded} variant="plain" />
-            <Stat label="Stopped" value={statusCounts.offline} variant="plain" />
-            <Stat
-              label="Provisioning"
-              value={statusCounts.provisioning}
-              variant="plain"
-            />
-          </ResponsiveGrid>
-
-          <ResponsiveStack direction="row" gap={2} align="center">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<RefreshCw size={16} />}
-              onClick={refreshVms}
-              disabled={vmsLoading}
-            >
-              Refresh
-            </Button>
-            {hasISOs ? (
-              <Button
-                size="sm"
-                icon={<Plus size={16} />}
-                onClick={handleNewVM}
-              >
-                New VM
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<AlertCircle size={16} />}
-                disabled
-                title="Upload an ISO image first"
-              >
-                New VM
-              </Button>
-            )}
-          </ResponsiveStack>
+        <ResponsiveStack direction="row" gap={3} align="center" wrap>
+          <Badge tone="purple" icon={<Monitor size={12} />}>
+            {hosts.length} {hosts.length === 1 ? "VM" : "VMs"}
+          </Badge>
+          <Badge tone="success" icon={<Power size={12} />}>
+            {statusCounts.online} running
+          </Badge>
+          {statusCounts.degraded > 0 ? (
+            <Badge tone="warning">{statusCounts.degraded} paused</Badge>
+          ) : null}
+          {statusCounts.offline > 0 ? (
+            <Badge tone="neutral">{statusCounts.offline} stopped</Badge>
+          ) : null}
+          {statusCounts.provisioning > 0 ? (
+            <Badge tone="info">{statusCounts.provisioning} provisioning</Badge>
+          ) : null}
         </ResponsiveStack>
-      </Card>
+        <ResponsiveStack direction="row" gap={2} align="center">
+          <IconButton
+            variant="secondary"
+            size="sm"
+            label="Refresh"
+            icon={<RefreshCw size={14} />}
+            onClick={refreshVms}
+            disabled={vmsLoading}
+          />
+          <Tooltip content={hasISOs ? "New VM" : "Upload an ISO image first"}>
+            <span>
+              <Button
+                size="sm"
+                variant="primary"
+                icon={hasISOs ? <Plus size={14} /> : <AlertCircle size={14} />}
+                onClick={hasISOs ? handleNewVM : undefined}
+                disabled={!hasISOs}
+              >
+                New
+              </Button>
+            </span>
+          </Tooltip>
+        </ResponsiveStack>
+      </ResponsiveStack>
 
       {error && (
         <Alert
@@ -397,28 +381,32 @@ export default function ComputersPage() {
       )}
 
       {hosts.length === 0 ? (
-        <Card variant="default">
-          <EmptyState
-            icon={<Monitor size={40} />}
-            title="No virtual machines yet"
-            description={
-              hasISOs
-                ? "Create your first VM to see it here."
-                : "Upload an ISO in Settings, then create your first VM."
-            }
-            actions={
-              hasISOs ? (
-                <Button
-                  size="sm"
-                  icon={<Plus size={16} />}
-                  onClick={handleNewVM}
-                >
-                  New VM
-                </Button>
-              ) : null
-            }
-          />
-        </Card>
+        <EmptyState
+          variant="dashed"
+          icon={<Monitor size={18} />}
+          title="No virtual machines yet"
+          description={
+            hasISOs
+              ? "Create your first VM to see it here."
+              : "Upload an ISO in Settings, then create your first VM."
+          }
+          actions={
+            hasISOs ? (
+              <Tooltip content="New VM">
+                <span>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={<Plus size={14} />}
+                    onClick={handleNewVM}
+                  >
+                    New
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : null
+          }
+        />
       ) : (
         <ClusterView
           hosts={hosts.map((h) => ({

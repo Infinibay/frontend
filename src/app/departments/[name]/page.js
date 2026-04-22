@@ -34,6 +34,7 @@ import {
   TabList,
   TabPanel,
   Tabs,
+  Tooltip,
 } from '@infinibay/harbor';
 
 import { useDepartmentPage } from './hooks/useDepartmentPage';
@@ -321,14 +322,18 @@ const DepartmentPage = () => {
               <Badge tone="warning">{stats.busy} busy</Badge>
             ) : null}
           </ResponsiveStack>
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Plus size={14} />}
-            onClick={() => router.push(newComputerHref)}
-          >
-            New VM
-          </Button>
+          <Tooltip content="New VM">
+            <span>
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => router.push(newComputerHref)}
+              >
+                New
+              </Button>
+            </span>
+          </Tooltip>
         </ResponsiveStack>
 
         <Tabs
@@ -359,14 +364,18 @@ const DepartmentPage = () => {
                 title="No VMs in this department yet"
                 description="Create your first VM to start populating this department."
                 actions={
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    icon={<Plus size={14} />}
-                    onClick={() => router.push(newComputerHref)}
-                  >
-                    New VM
-                  </Button>
+                  <Tooltip content="New VM">
+                    <span>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={<Plus size={14} />}
+                        onClick={() => router.push(newComputerHref)}
+                      >
+                        New
+                      </Button>
+                    </span>
+                  </Tooltip>
                 }
               />
             ) : (

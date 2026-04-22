@@ -17,6 +17,7 @@ import {
   ResponsiveStack,
   StatusDot,
   TextField,
+  Tooltip,
 } from '@infinibay/harbor';
 import {
   AlertTriangle,
@@ -218,14 +219,18 @@ const DepartmentsPage = () => {
               disabled={isLoading}
               loading={isLoading}
             />
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<Plus size={14} />}
-              onClick={() => setIsCreateDeptDialogOpen(true)}
-            >
-              New department
-            </Button>
+            <Tooltip content="New department">
+              <span>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Plus size={14} />}
+                  onClick={() => setIsCreateDeptDialogOpen(true)}
+                >
+                  New
+                </Button>
+              </span>
+            </Tooltip>
           </ResponsiveStack>
         </ResponsiveStack>
 
@@ -243,14 +248,18 @@ const DepartmentsPage = () => {
             }
             actions={
               !searchQuery ? (
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={<Plus size={14} />}
-                  onClick={() => setIsCreateDeptDialogOpen(true)}
-                >
-                  New department
-                </Button>
+                <Tooltip content="New department">
+                  <span>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon={<Plus size={14} />}
+                      onClick={() => setIsCreateDeptDialogOpen(true)}
+                    >
+                      New
+                    </Button>
+                  </span>
+                </Tooltip>
               ) : null
             }
           />

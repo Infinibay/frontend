@@ -32,6 +32,7 @@ import {
   ResponsiveStack,
   ResponsiveGrid,
   LoadingOverlay,
+  Tooltip,
 } from '@infinibay/harbor'
 
 import { useScriptsQuery, useDeleteScriptMutation } from '@/gql/hooks'
@@ -327,13 +328,18 @@ export default function ScriptsPage() {
             >
               Import
             </Button>
-            <Button
-              size="sm"
-              icon={<Plus size={14} />}
-              onClick={() => router.push('/scripts/new')}
-            >
-              New script
-            </Button>
+            <Tooltip content="New script">
+              <span>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={<Plus size={14} />}
+                  onClick={() => router.push('/scripts/new')}
+                >
+                  New
+                </Button>
+              </span>
+            </Tooltip>
           </ResponsiveStack>
         }
       >
@@ -415,13 +421,18 @@ export default function ScriptsPage() {
             }
             actions={
               scripts.length === 0 ? (
-                <Button
-                  size="sm"
-                  icon={<Plus size={14} />}
-                  onClick={() => router.push('/scripts/new')}
-                >
-                  New script
-                </Button>
+                <Tooltip content="New script">
+                  <span>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon={<Plus size={14} />}
+                      onClick={() => router.push('/scripts/new')}
+                    >
+                      New
+                    </Button>
+                  </span>
+                </Tooltip>
               ) : null
             }
           />
