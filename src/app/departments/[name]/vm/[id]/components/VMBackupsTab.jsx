@@ -801,19 +801,30 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
         }
         footer={
           <ResponsiveStack direction="row" gap={2} wrap>
-            <Tooltip content={backupBlockedReason || undefined} disabled={!backupBlockedReason}>
-              <span>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={<Plus size={14} />}
-                  onClick={() => setCreateOpen(true)}
-                  disabled={showProgress || vmIsRunning}
-                >
-                  Create backup
-                </Button>
-              </span>
-            </Tooltip>
+            {backupBlockedReason ? (
+              <Tooltip content={backupBlockedReason}>
+                <span>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={<Plus size={14} />}
+                    disabled
+                  >
+                    Create backup
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : (
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => setCreateOpen(true)}
+                disabled={showProgress}
+              >
+                Create backup
+              </Button>
+            )}
             <Button
               size="sm"
               variant="secondary"
@@ -837,19 +848,29 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
           title="No backups yet"
           description="Create your first backup to protect this VM against data loss."
           action={
-            <Tooltip content={backupBlockedReason || undefined} disabled={!backupBlockedReason}>
-              <span>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={<Plus size={14} />}
-                  onClick={() => setCreateOpen(true)}
-                  disabled={vmIsRunning}
-                >
-                  Create backup
-                </Button>
-              </span>
-            </Tooltip>
+            backupBlockedReason ? (
+              <Tooltip content={backupBlockedReason}>
+                <span>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={<Plus size={14} />}
+                    disabled
+                  >
+                    Create backup
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : (
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => setCreateOpen(true)}
+              >
+                Create backup
+              </Button>
+            )
           }
         />
       ) : (
