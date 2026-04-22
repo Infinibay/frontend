@@ -1,603 +1,510 @@
 'use client';
 
-import React, { useState } from 'react';
-import { AlertCircle, Shield, Settings } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Settings, Shield } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
+  Alert,
+  Badge,
+  Bento,
+  BentoItem,
+  Button,
+  Checkbox,
+  Drawer,
+  FormField,
+  ResponsiveStack,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+  TextField,
+  Textarea,
+} from '@infinibay/harbor';
+import { toast } from 'sonner';
+
 import { useCreateVmFirewallRuleMutation } from '@/gql/hooks';
 import { createDebugger } from '@/utils/debug';
-import { toast } from 'sonner';
-import {
-  validateFirewallRule,
-  detectRuleConflicts,
-  getPriorityFromLabel
-} from '@/utils/firewallHelpers';
+import { getPriorityFromLabel } from '@/utils/firewallHelpers';
 import { SERVICE_PRESETS } from '@/config/servicePresets';
 
 const debug = createDebugger('frontend:components:create-firewall-rule-dialog');
 
-/**
- * Parses validation error messages from backend into structured objects
- * Handles both single and multiple error messages separated by ". Port overlap:"
- */
 const parseValidationErrors = (errorMessage) => {
   if (!errorMessage) return [];
-
-  // Split by ". Port overlap:" or ". Destination port" to handle multiple errors
-  const errorParts = errorMessage.split(/\. (?=Port overlap:|Destination port|Source port|Priority |Protocol )/);
-
-  return errorParts.map((part, index) => {
+  const parts = errorMessage.split(
+    /\. (?=Port overlap:|Destination port|Source port|Priority |Protocol )/,
+  );
+  return parts.map((part, i) => {
     const isOverlap = part.includes('Port overlap:');
-    const suggestsOverride = part.includes('overridesDept=true');
-    const suggestsConsolidate = part.includes('consolidating');
-
     return {
-      id: `error-${index}`,
+      id: `err-${i}`,
       message: part.trim(),
       type: isOverlap ? 'overlap' : 'validation',
-      canOverride: suggestsOverride,
-      canConsolidate: suggestsConsolidate
+      canOverride: part.includes('overridesDept=true'),
+      canConsolidate: part.includes('consolidating'),
     };
   });
 };
 
-const CreateFirewallRuleDialog = ({ vmId, vmOs, isOpen, onClose, onSuccess, existingRules }) => {
-  const [mode, setMode] = useState('simple'); // 'simple' or 'advanced'
+const EMPTY_FORM = {
+  name: '',
+  description: '',
+  action: 'ACCEPT',
+  direction: 'IN',
+  priorityLabel: 'MEDIUM',
+  customPriority: '',
+  protocol: 'TCP',
+  dstPortStart: '',
+  dstPortEnd: '',
+  srcPortStart: '',
+  srcPortEnd: '',
+  srcIpAddr: '',
+  srcIpMask: '',
+  dstIpAddr: '',
+  dstIpMask: '',
+  overridesDept: false,
+};
+
+const ACTION_OPTIONS = [
+  { value: 'ACCEPT', label: '✓ Allow traffic' },
+  { value: 'DROP', label: '✗ Block traffic' },
+];
+const DIRECTION_OPTIONS = [
+  { value: 'IN', label: '↓ Inbound' },
+  { value: 'OUT', label: '↑ Outbound' },
+  { value: 'INOUT', label: '↔ Bidirectional' },
+];
+const PROTOCOL_OPTIONS = [
+  { value: 'TCP', label: 'TCP' },
+  { value: 'UDP', label: 'UDP' },
+  { value: 'ICMP', label: 'ICMP' },
+];
+const PRIORITY_OPTIONS = [
+  { value: 'HIGH', label: '● High (200)' },
+  { value: 'MEDIUM', label: '● Medium (500)' },
+  { value: 'LOW', label: '● Low (800)' },
+  { value: 'CUSTOM', label: '⚙ Custom' },
+];
+
+const CreateFirewallRuleDialog = ({
+  vmId,
+  vmOs,
+  isOpen,
+  onClose,
+  onSuccess,
+}) => {
+  const [mode, setMode] = useState('simple');
+  const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
-  const [conflicts, setConflicts] = useState([]);
-  const [validationErrors, setValidationErrors] = useState([]); // Array of parsed validation errors
-
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    action: 'ACCEPT',
-    direction: 'IN',
-    priorityLabel: 'MEDIUM',
-    customPriority: '',
-    protocol: 'TCP',
-    dstPortStart: '',
-    dstPortEnd: '',
-    srcPortStart: '',
-    srcPortEnd: '',
-    srcIpAddr: '',
-    srcIpMask: '',
-    dstIpAddr: '',
-    dstIpMask: '',
-    overridesDept: false
-  });
-
-  // Simple mode: service preset selection
+  const [validationErrors, setValidationErrors] = useState([]);
   const [selectedPreset, setSelectedPreset] = useState('');
 
-  // Mutation without refetchQueries - real-time events handle updates
   const [createRule, { loading }] = useCreateVmFirewallRuleMutation();
 
-  const handleFieldChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error for this field
+  const presetOptions = useMemo(
+    () => [
+      { value: '', label: '— select a service —' },
+      ...SERVICE_PRESETS.map((p) => ({
+        value: p.id,
+        label: `${p.icon ? p.icon + ' ' : ''}${p.displayName} · ${p.category}`,
+      })),
+    ],
+    [],
+  );
+
+  const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
+  const clearFieldError = (field) => {
     if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
       });
     }
-    // Clear validation errors when user makes changes
-    if (validationErrors.length > 0) {
-      setValidationErrors([]);
-    }
+    if (validationErrors.length) setValidationErrors([]);
   };
 
   const handlePresetChange = (presetId) => {
     setSelectedPreset(presetId);
-    const preset = SERVICE_PRESETS.find(p => p.id === presetId);
-    if (preset && preset.rules.length > 0) {
-      const firstRule = preset.rules[0];
-      setFormData(prev => ({
-        ...prev,
-        name: `Allow ${preset.displayName}`,
-        description: preset.description,
-        action: 'ACCEPT',
-        direction: firstRule.direction,
-        protocol: firstRule.protocol.toUpperCase(),
-        dstPortStart: firstRule.port?.toString() || firstRule.portRange?.start?.toString() || '',
-        dstPortEnd: firstRule.port?.toString() || firstRule.portRange?.end?.toString() || '',
-        srcPortStart: '',
-        srcPortEnd: '',
-        srcIpAddr: '',
-        srcIpMask: '',
-        dstIpAddr: '',
-        dstIpMask: ''
-      }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Rule name is required';
-    }
-
-    if (mode === 'simple' && !selectedPreset) {
-      newErrors.preset = 'Please select a service';
-    }
-
-    if (mode === 'advanced') {
-      // Port validation
-      if (formData.dstPortStart && (isNaN(formData.dstPortStart) || formData.dstPortStart < 1 || formData.dstPortStart > 65535)) {
-        newErrors.dstPortStart = 'Invalid port (1-65535)';
-      }
-      if (formData.dstPortEnd && (isNaN(formData.dstPortEnd) || formData.dstPortEnd < 1 || formData.dstPortEnd > 65535)) {
-        newErrors.dstPortEnd = 'Invalid port (1-65535)';
-      }
-      if (formData.dstPortStart && formData.dstPortEnd && parseInt(formData.dstPortStart) > parseInt(formData.dstPortEnd)) {
-        newErrors.dstPortEnd = 'End port must be >= start port';
-      }
-
-      // Custom priority validation
-      if (formData.priorityLabel === 'CUSTOM' && (!formData.customPriority || isNaN(formData.customPriority) || formData.customPriority < 1 || formData.customPriority > 1000)) {
-        newErrors.customPriority = 'Priority must be 1-1000';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      toast.error('Please fix form errors');
-      return;
-    }
-
-    debug.log('Creating firewall rule:', formData);
-
-    try {
-      // Determine priority
-      const priority = formData.priorityLabel === 'CUSTOM'
-        ? parseInt(formData.customPriority)
-        : getPriorityFromLabel(formData.priorityLabel);
-
-      // Build input
-      const input = {
-        name: formData.name,
-        description: formData.description || null,
-        action: formData.action,
-        direction: formData.direction,
-        priority,
-        protocol: formData.protocol.toLowerCase(),
-        dstPortStart: formData.dstPortStart ? parseInt(formData.dstPortStart) : null,
-        dstPortEnd: formData.dstPortEnd ? parseInt(formData.dstPortEnd) : null,
-        srcPortStart: formData.srcPortStart ? parseInt(formData.srcPortStart) : null,
-        srcPortEnd: formData.srcPortEnd ? parseInt(formData.srcPortEnd) : null,
-        srcIpAddr: formData.srcIpAddr || null,
-        srcIpMask: formData.srcIpMask || null,
-        dstIpAddr: formData.dstIpAddr || null,
-        dstIpMask: formData.dstIpMask || null,
-        overridesDept: formData.overridesDept
-      };
-
-      debug.log('Submitting input:', input);
-
-      await createRule({
-        variables: { vmId, input }
-      });
-
-      toast.success('Firewall rule created');
-      onSuccess();
-      resetForm();
-    } catch (error) {
-      debug.error('Failed to create rule:', error);
-
-      const errorMessage = error.message || '';
-
-      // Check if it's a validation/overlap error
-      if (errorMessage.includes('Port overlap:') || errorMessage.includes('overridesDept=true')) {
-        // Parse validation errors into structured format
-        const parsedErrors = parseValidationErrors(errorMessage);
-        setValidationErrors(parsedErrors);
-
-        // Show toast with count of conflicts
-        const overlapCount = parsedErrors.filter(e => e.type === 'overlap').length;
-        if (overlapCount === 1) {
-          toast.error('Rule conflicts with existing rule');
-        } else {
-          toast.error(`${overlapCount} rule conflicts detected`);
-        }
-      } else {
-        // Generic error (port validation, IP validation, etc.)
-        toast.error(`Failed to create rule: ${errorMessage}`);
-      }
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
+    if (!presetId) return;
+    const preset = SERVICE_PRESETS.find((p) => p.id === presetId);
+    if (!preset || !preset.rules.length) return;
+    const r = preset.rules[0];
+    update({
+      name: `Allow ${preset.displayName}`,
+      description: preset.description,
       action: 'ACCEPT',
-      direction: 'IN',
-      priorityLabel: 'MEDIUM',
-      customPriority: '',
-      protocol: 'TCP',
-      dstPortStart: '',
-      dstPortEnd: '',
+      direction: r.direction,
+      protocol: r.protocol.toUpperCase(),
+      dstPortStart:
+        r.port?.toString() || r.portRange?.start?.toString() || '',
+      dstPortEnd: r.port?.toString() || r.portRange?.end?.toString() || '',
       srcPortStart: '',
       srcPortEnd: '',
       srcIpAddr: '',
       srcIpMask: '',
       dstIpAddr: '',
       dstIpMask: '',
-      overridesDept: false
     });
+  };
+
+  const validateForm = () => {
+    const next = {};
+    if (!form.name.trim()) next.name = 'Rule name is required';
+    if (mode === 'simple' && !selectedPreset)
+      next.preset = 'Pick a service first';
+    if (mode === 'advanced') {
+      const ds = Number(form.dstPortStart);
+      const de = Number(form.dstPortEnd);
+      if (form.dstPortStart && (isNaN(ds) || ds < 1 || ds > 65535))
+        next.dstPortStart = 'Port must be 1–65535';
+      if (form.dstPortEnd && (isNaN(de) || de < 1 || de > 65535))
+        next.dstPortEnd = 'Port must be 1–65535';
+      if (form.dstPortStart && form.dstPortEnd && ds > de)
+        next.dstPortEnd = 'End ≥ start';
+      if (form.priorityLabel === 'CUSTOM') {
+        const p = Number(form.customPriority);
+        if (!form.customPriority || isNaN(p) || p < 1 || p > 1000)
+          next.customPriority = '1–1000';
+      }
+    }
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const reset = () => {
+    setForm(EMPTY_FORM);
     setSelectedPreset('');
     setErrors({});
-    setConflicts([]);
     setValidationErrors([]);
     setMode('simple');
   };
 
   const handleClose = () => {
-    resetForm();
-    onClose();
+    reset();
+    onClose?.();
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      toast.error('Please fix the errors above');
+      return;
+    }
+    debug.log('Creating firewall rule', form);
+    try {
+      const priority =
+        form.priorityLabel === 'CUSTOM'
+          ? parseInt(form.customPriority, 10)
+          : getPriorityFromLabel(form.priorityLabel);
+      const input = {
+        name: form.name,
+        description: form.description || null,
+        action: form.action,
+        direction: form.direction,
+        priority,
+        protocol: form.protocol.toLowerCase(),
+        dstPortStart: form.dstPortStart ? parseInt(form.dstPortStart, 10) : null,
+        dstPortEnd: form.dstPortEnd ? parseInt(form.dstPortEnd, 10) : null,
+        srcPortStart: form.srcPortStart ? parseInt(form.srcPortStart, 10) : null,
+        srcPortEnd: form.srcPortEnd ? parseInt(form.srcPortEnd, 10) : null,
+        srcIpAddr: form.srcIpAddr || null,
+        srcIpMask: form.srcIpMask || null,
+        dstIpAddr: form.dstIpAddr || null,
+        dstIpMask: form.dstIpMask || null,
+        overridesDept: form.overridesDept,
+      };
+      await createRule({ variables: { vmId, input } });
+      toast.success('Firewall rule created');
+      onSuccess?.();
+      reset();
+    } catch (err) {
+      const msg = err.message || '';
+      if (msg.includes('Port overlap:') || msg.includes('overridesDept=true')) {
+        const parsed = parseValidationErrors(msg);
+        setValidationErrors(parsed);
+        const overlaps = parsed.filter((e) => e.type === 'overlap').length;
+        toast.error(
+          overlaps === 1
+            ? 'Rule conflicts with an existing rule'
+            : `${overlaps} rule conflicts detected`,
+        );
+      } else {
+        toast.error(`Could not create rule: ${msg}`);
+      }
+    }
   };
 
   const handleOverrideAndRetry = () => {
-    debug.log('User chose to override department rule');
-    // Set overridesDept to true and retry submission
-    setFormData(prev => ({ ...prev, overridesDept: true }));
+    update({ overridesDept: true });
     setValidationErrors([]);
-    // Automatically retry submission
-    setTimeout(() => {
-      handleSubmit();
-    }, 100);
+    setTimeout(handleSubmit, 0);
   };
 
-  // Check if any errors can be resolved with override
-  const canOverrideErrors = validationErrors.some(e => e.canOverride);
-  const hasConsolidationSuggestions = validationErrors.some(e => e.canConsolidate);
+  const canOverride = validationErrors.some((e) => e.canOverride);
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="size-icon" />
-            Create Firewall Rule
-          </DialogTitle>
-          <DialogDescription>
-            Add a new firewall rule to control network traffic for this VM
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Validation Errors Banner */}
-        {validationErrors.length > 0 && (
-          <div className="rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950 p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
-              <div className="flex-1 space-y-3">
-                <div>
-                  <h4 className="font-semibold text-sm text-orange-800 dark:text-orange-200 mb-2">
-                    {validationErrors.length === 1 ? 'Rule Conflict Detected' : `${validationErrors.length} Rule Conflicts Detected`}
-                  </h4>
-                  <div className="space-y-2">
-                    {validationErrors.map((error) => (
-                      <div key={error.id} className="text-sm text-orange-700 dark:text-orange-300 pl-3 border-l-2 border-orange-300 dark:border-orange-700">
-                        {error.message}
-                      </div>
-                    ))}
-                  </div>
-                  {hasConsolidationSuggestions && (
-                    <div className="mt-3 p-2 rounded bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
-                      <p className="text-xs text-blue-700 dark:text-blue-300">
-                        💡 <strong>Tip:</strong> Some rules have the same action. Consider consolidating them to simplify your firewall configuration.
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setValidationErrors([])}
-                    className="border-orange-300 dark:border-orange-700"
-                  >
-                    Cancel
-                  </Button>
-                  {canOverrideErrors && (
-                    <Button
-                      size="sm"
-                      onClick={handleOverrideAndRetry}
-                      className="bg-orange-600 hover:bg-orange-700 text-white"
-                    >
-                      Override Department Rules
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <Tabs value={mode} onValueChange={setMode} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="simple">
-              <Shield className="size-icon mr-2" />
-              Simple Mode
-            </TabsTrigger>
-            <TabsTrigger value="advanced">
-              <Settings className="size-icon mr-2" />
-              Advanced Mode
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Simple Mode */}
-          <TabsContent value="simple" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="preset">Service</Label>
-              <Select value={selectedPreset} onValueChange={handlePresetChange}>
-                <SelectTrigger id="preset" className={errors.preset ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Select a common service" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SERVICE_PRESETS.map(preset => (
-                    <SelectItem key={preset.id} value={preset.id}>
-                      <div className="flex items-center gap-2">
-                        <span>{preset.icon}</span>
-                        <span>{preset.displayName}</span>
-                        <Badge variant="outline" className="text-xs ml-2">
-                          {preset.category}
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.preset && (
-                <p className="text-xs text-destructive">{errors.preset}</p>
-              )}
-              {selectedPreset && (
-                <p className="text-xs text-muted-foreground">
-                  {SERVICE_PRESETS.find(p => p.id === selectedPreset)?.description}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="simple-name">Rule Name</Label>
-              <Input
-                id="simple-name"
-                value={formData.name}
-                onChange={(e) => handleFieldChange('name', e.target.value)}
-                placeholder="e.g., Allow HTTPS"
-                className={errors.name ? 'border-destructive' : ''}
-              />
-              {errors.name && (
-                <p className="text-xs text-destructive">{errors.name}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="simple-action">Action</Label>
-              <Select value={formData.action} onValueChange={(v) => handleFieldChange('action', v)}>
-                <SelectTrigger id="simple-action">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACCEPT">✅ Allow Traffic</SelectItem>
-                  <SelectItem value="DROP">🚫 Block Traffic</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="simple-override"
-                checked={formData.overridesDept}
-                onCheckedChange={(checked) => handleFieldChange('overridesDept', checked)}
-              />
-              <Label htmlFor="simple-override" className="text-sm font-normal cursor-pointer">
-                Override department rules (Admin only)
-              </Label>
-            </div>
-          </TabsContent>
-
-          {/* Advanced Mode */}
-          <TabsContent value="advanced" className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="adv-name">Rule Name *</Label>
-                <Input
-                  id="adv-name"
-                  value={formData.name}
-                  onChange={(e) => handleFieldChange('name', e.target.value)}
-                  placeholder="e.g., Allow Custom App"
-                  className={errors.name ? 'border-destructive' : ''}
-                />
-                {errors.name && (
-                  <p className="text-xs text-destructive">{errors.name}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="adv-action">Action</Label>
-                <Select value={formData.action} onValueChange={(v) => handleFieldChange('action', v)}>
-                  <SelectTrigger id="adv-action">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACCEPT">✅ Allow</SelectItem>
-                    <SelectItem value="DROP">🚫 Block</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="adv-desc">Description (optional)</Label>
-              <Textarea
-                id="adv-desc"
-                value={formData.description}
-                onChange={(e) => handleFieldChange('description', e.target.value)}
-                placeholder="Describe the purpose of this rule"
-                rows={2}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="adv-direction">Direction</Label>
-                <Select value={formData.direction} onValueChange={(v) => handleFieldChange('direction', v)}>
-                  <SelectTrigger id="adv-direction">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="IN">⬇️ Inbound (Incoming)</SelectItem>
-                    <SelectItem value="OUT">⬆️ Outbound (Outgoing)</SelectItem>
-                    <SelectItem value="INOUT">↔️ Bidirectional</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="adv-protocol">Protocol</Label>
-                <Select value={formData.protocol} onValueChange={(v) => handleFieldChange('protocol', v)}>
-                  <SelectTrigger id="adv-protocol">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TCP">TCP</SelectItem>
-                    <SelectItem value="UDP">UDP</SelectItem>
-                    <SelectItem value="ICMP">ICMP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Destination Ports</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Input
-                    placeholder="Start port"
-                    value={formData.dstPortStart}
-                    onChange={(e) => handleFieldChange('dstPortStart', e.target.value)}
-                    className={errors.dstPortStart ? 'border-destructive' : ''}
-                  />
-                  {errors.dstPortStart && (
-                    <p className="text-xs text-destructive mt-1">{errors.dstPortStart}</p>
-                  )}
-                </div>
-                <div>
-                  <Input
-                    placeholder="End port (optional)"
-                    value={formData.dstPortEnd}
-                    onChange={(e) => handleFieldChange('dstPortEnd', e.target.value)}
-                    className={errors.dstPortEnd ? 'border-destructive' : ''}
-                  />
-                  {errors.dstPortEnd && (
-                    <p className="text-xs text-destructive mt-1">{errors.dstPortEnd}</p>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Leave end port empty for a single port. Use range for multiple ports.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Select
-                  value={formData.priorityLabel}
-                  onValueChange={(v) => handleFieldChange('priorityLabel', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="HIGH">🔴 High (200) - Processed first</SelectItem>
-                    <SelectItem value="MEDIUM">🟡 Medium (500) - Standard</SelectItem>
-                    <SelectItem value="LOW">🟢 Low (800) - Processed last</SelectItem>
-                    <SelectItem value="CUSTOM">⚙️ Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-                {formData.priorityLabel === 'CUSTOM' && (
-                  <div>
-                    <Input
-                      type="number"
-                      placeholder="1-1000"
-                      value={formData.customPriority}
-                      onChange={(e) => handleFieldChange('customPriority', e.target.value)}
-                      min="1"
-                      max="1000"
-                      className={errors.customPriority ? 'border-destructive' : ''}
-                    />
-                    {errors.customPriority && (
-                      <p className="text-xs text-destructive mt-1">{errors.customPriority}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Lower numbers = higher priority (processed first)
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-2 pt-2">
-              <Checkbox
-                id="adv-override"
-                checked={formData.overridesDept}
-                onCheckedChange={(checked) => handleFieldChange('overridesDept', checked)}
-              />
-              <Label htmlFor="adv-override" className="text-sm font-normal cursor-pointer">
-                Override department rules (Admin only)
-              </Label>
-            </div>
-
-            {formData.overridesDept && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
-                <AlertCircle className="size-icon text-orange-600 dark:text-orange-400 mt-0.5" />
-                <p className="text-xs text-orange-700 dark:text-orange-300">
-                  This rule will override similar department rules. Use with caution as this may reduce security.
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={loading}>
+    <Drawer
+      open={!!isOpen}
+      onClose={handleClose}
+      side="right"
+      size={520}
+      title={
+        <ResponsiveStack direction="row" gap={2} align="center">
+          <Shield size={14} />
+          <span>New firewall rule</span>
+        </ResponsiveStack>
+      }
+      footer={
+        <ResponsiveStack direction="row" gap={2} justify="end">
+          <Button variant="secondary" onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Creating...' : 'Create Rule'}
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            loading={loading}
+            disabled={loading}
+          >
+            {loading ? 'Creating…' : 'Create rule'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveStack>
+      }
+    >
+      <ResponsiveStack direction="col" gap={5}>
+        <span>
+          Control network traffic for this VM. Rules here apply on top of the
+          department defaults.
+        </span>
+
+        {validationErrors.length > 0 ? (
+          <Alert
+            tone="warning"
+            title={
+              validationErrors.length === 1
+                ? 'Rule conflict detected'
+                : `${validationErrors.length} rule conflicts detected`
+            }
+            actions={
+              <ResponsiveStack direction="row" gap={2}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setValidationErrors([])}
+                >
+                  Cancel
+                </Button>
+                {canOverride ? (
+                  <Button size="sm" variant="primary" onClick={handleOverrideAndRetry}>
+                    Override department rules
+                  </Button>
+                ) : null}
+              </ResponsiveStack>
+            }
+          >
+            <ResponsiveStack direction="col" gap={1}>
+              {validationErrors.map((e) => (
+                <span key={e.id}>• {e.message}</span>
+              ))}
+            </ResponsiveStack>
+          </Alert>
+        ) : null}
+
+        <Tabs value={mode} onValueChange={setMode} variant="pill">
+          <TabList>
+            <Tab value="simple" icon={<Shield size={12} />}>
+              Simple
+            </Tab>
+            <Tab value="advanced" icon={<Settings size={12} />}>
+              Advanced
+            </Tab>
+          </TabList>
+
+          <TabPanel value="simple">
+            <ResponsiveStack direction="col" gap={4}>
+              <FormField
+                label="Service"
+                error={errors.preset}
+                helper={
+                  selectedPreset
+                    ? SERVICE_PRESETS.find((p) => p.id === selectedPreset)
+                        ?.description
+                    : undefined
+                }
+              >
+                <Select
+                  value={selectedPreset}
+                  onChange={handlePresetChange}
+                  options={presetOptions}
+                  placeholder="Pick a common service"
+                />
+              </FormField>
+
+              <FormField label="Rule name" error={errors.name}>
+                <TextField
+                  placeholder="e.g. Allow HTTPS"
+                  value={form.name}
+                  onChange={(e) => {
+                    update({ name: e.target.value });
+                    clearFieldError('name');
+                  }}
+                />
+              </FormField>
+
+              <FormField label="Action">
+                <Select
+                  value={form.action}
+                  onChange={(v) => update({ action: v })}
+                  options={ACTION_OPTIONS}
+                />
+              </FormField>
+
+              <Checkbox
+                checked={form.overridesDept}
+                onChange={(e) => update({ overridesDept: e.target.checked })}
+                label="Override department rules (admin only)"
+              />
+            </ResponsiveStack>
+          </TabPanel>
+
+          <TabPanel value="advanced">
+            <ResponsiveStack direction="col" gap={4}>
+              <Bento columns={{ base: 1, md: 2 }} gap={12}>
+                <BentoItem>
+                  <FormField label="Rule name" required error={errors.name}>
+                    <TextField
+                      placeholder="e.g. Allow custom app"
+                      value={form.name}
+                      onChange={(e) => {
+                        update({ name: e.target.value });
+                        clearFieldError('name');
+                      }}
+                    />
+                  </FormField>
+                </BentoItem>
+                <BentoItem>
+                  <FormField label="Action">
+                    <Select
+                      value={form.action}
+                      onChange={(v) => update({ action: v })}
+                      options={ACTION_OPTIONS}
+                    />
+                  </FormField>
+                </BentoItem>
+              </Bento>
+
+              <FormField label="Description" optional>
+                <Textarea
+                  value={form.description}
+                  onChange={(e) => update({ description: e.target.value })}
+                  placeholder="What does this rule do?"
+                  rows={2}
+                />
+              </FormField>
+
+              <Bento columns={{ base: 1, md: 2 }} gap={12}>
+                <BentoItem>
+                  <FormField label="Direction">
+                    <Select
+                      value={form.direction}
+                      onChange={(v) => update({ direction: v })}
+                      options={DIRECTION_OPTIONS}
+                    />
+                  </FormField>
+                </BentoItem>
+                <BentoItem>
+                  <FormField label="Protocol">
+                    <Select
+                      value={form.protocol}
+                      onChange={(v) => update({ protocol: v })}
+                      options={PROTOCOL_OPTIONS}
+                    />
+                  </FormField>
+                </BentoItem>
+              </Bento>
+
+              <FormField
+                label="Destination ports"
+                helper="Leave end empty for a single port."
+              >
+                <Bento columns={{ base: 1, md: 2 }} gap={8}>
+                  <BentoItem>
+                    <TextField
+                      placeholder="Start"
+                      value={form.dstPortStart}
+                      onChange={(e) => {
+                        update({ dstPortStart: e.target.value });
+                        clearFieldError('dstPortStart');
+                      }}
+                      error={errors.dstPortStart}
+                    />
+                  </BentoItem>
+                  <BentoItem>
+                    <TextField
+                      placeholder="End (optional)"
+                      value={form.dstPortEnd}
+                      onChange={(e) => {
+                        update({ dstPortEnd: e.target.value });
+                        clearFieldError('dstPortEnd');
+                      }}
+                      error={errors.dstPortEnd}
+                    />
+                  </BentoItem>
+                </Bento>
+              </FormField>
+
+              <FormField
+                label="Priority"
+                helper="Lower numbers evaluate first."
+              >
+                <Bento columns={{ base: 1, md: 2 }} gap={8}>
+                  <BentoItem>
+                    <Select
+                      value={form.priorityLabel}
+                      onChange={(v) => update({ priorityLabel: v })}
+                      options={PRIORITY_OPTIONS}
+                    />
+                  </BentoItem>
+                  {form.priorityLabel === 'CUSTOM' ? (
+                    <BentoItem>
+                      <TextField
+                        type="number"
+                        placeholder="1–1000"
+                        value={form.customPriority}
+                        onChange={(e) => {
+                          update({ customPriority: e.target.value });
+                          clearFieldError('customPriority');
+                        }}
+                        error={errors.customPriority}
+                      />
+                    </BentoItem>
+                  ) : null}
+                </Bento>
+              </FormField>
+
+              <Checkbox
+                checked={form.overridesDept}
+                onChange={(e) => update({ overridesDept: e.target.checked })}
+                label="Override department rules (admin only)"
+              />
+
+              {form.overridesDept ? (
+                <Alert tone="warning">
+                  This rule will override matching department rules. Use sparingly
+                  — it can weaken the department baseline.
+                </Alert>
+              ) : null}
+            </ResponsiveStack>
+          </TabPanel>
+        </Tabs>
+
+        {vmOs ? (
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <span>Target OS:</span>
+            <Badge tone="neutral">{vmOs}</Badge>
+          </ResponsiveStack>
+        ) : null}
+      </ResponsiveStack>
+    </Drawer>
   );
 };
 

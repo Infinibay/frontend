@@ -1,29 +1,26 @@
 'use client'
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, FormField } from '@infinibay/harbor'
 import { validateScriptInput } from '@/utils/validateScriptInput'
 
 export function SelectInput({ input, value, onChange, error }) {
   const validationError = validateScriptInput(input, value)
+  const displayError = error || validationError || undefined
+
+  const options = (input.options || []).map((o) => ({
+    value: String(o.value),
+    label: o.label,
+  }))
 
   return (
-    <div className="space-y-2">
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className={error || validationError ? 'border-destructive' : ''}>
-          <SelectValue placeholder={`Select ${input.label}`} />
-        </SelectTrigger>
-        <SelectContent>
-          {input.options?.map(option => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {(error || validationError) && (
-        <p className="text-xs text-destructive">{error || validationError}</p>
-      )}
-    </div>
+    <FormField error={displayError}>
+      <Select
+        options={options}
+        value={value}
+        onChange={onChange}
+        placeholder={`Select ${input.label}`}
+      />
+    </FormField>
   )
 }
 

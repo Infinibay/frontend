@@ -1,0 +1,55 @@
+query backups($vmId: String!) {
+  backups(vmId: $vmId) {
+    success
+    message
+    backups {
+      id
+      backupId
+      vmId
+      type
+      status
+      disks {
+        sourcePath
+        backupPath
+        originalSize
+        backupSize
+        format
+      }
+      totalSize
+      totalOriginalSize
+      compression
+      description
+      tags
+      parentBackupId
+      errorMessage
+      progressPercent
+      durationMs
+      createdAt
+      completedAt
+    }
+  }
+}
+
+query backupSchedules($vmId: String) {
+  backupSchedules(vmId: $vmId) {
+    success
+    message
+    schedules {
+      id
+      scheduleId
+      vmId
+      type
+      cronExpression
+      retentionCount
+      destinationDir
+      compression
+      enabled
+      label
+      lastRunAt
+      nextRunAt
+      lastBackupId
+      createdAt
+      updatedAt
+    }
+  }
+}

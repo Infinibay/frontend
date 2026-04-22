@@ -1,27 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Upload, Download } from 'lucide-react'
-import { useCreateScriptMutation } from '@/gql/hooks'
+import {
+  Dialog,
+  Button,
+  FileDrop,
+  EmptyState,
+  ResponsiveStack,
+  Alert,
+  Badge,
+} from '@infinibay/harbor'
+import { Upload, Download, FileCode } from 'lucide-react'
 import { toast } from 'sonner'
+import { useCreateScriptMutation } from '@/gql/hooks'
 
 export function ImportExportDialog({ isOpen, onClose, mode, selectedScripts, onImportComplete }) {
   const [files, setFiles] = useState([])
   const [importing, setImporting] = useState(false)
   const [createScript] = useCreateScriptMutation()
-
-  const handleFileSelect = (e) => {
-    const selectedFiles = Array.from(e.target.files)
-    setFiles(selectedFiles)
-  }
-
-  const handleDrop = (e) => {
-    e.preventDefault()
-    const droppedFiles = Array.from(e.dataTransfer.files)
-    setFiles(droppedFiles)
-  }
 
   const handleImport = async () => {
     setImporting(true)
@@ -32,15 +28,14 @@ export function ImportExportDialog({ isOpen, onClose, mode, selectedScripts, onI
       try {
         const content = await file.text()
         const format = file.name.endsWith('.json') ? 'json' : 'yaml'
-
         await createScript({
           variables: {
             input: {
               content,
               format,
-              name: file.name.replace(/\.(yaml|yml|json)$/, '')
-            }
-          }
+              name: file.name.replace(/\.(yaml|yml|json)$/, ''),
+            },
+          },
         })
         successCount++
       } catch (error) {
@@ -68,12 +63,11 @@ export function ImportExportDialog({ isOpen, onClose, mode, selectedScripts, onI
       return
     }
 
-    selectedScripts.forEach(script => {
+    selectedScripts.forEach((script) => {
       if (!script.content) {
         console.warn(`Script ${script.name} has no content`)
         return
       }
-
       const blob = new Blob([script.content], { type: 'text/yaml' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -94,80 +88,73 @@ export function ImportExportDialog({ isOpen, onClose, mode, selectedScripts, onI
     onClose()
   }
 
+  const isImport = mode === 'import'
+  const count = selectedScripts?.length || 0
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {mode === 'import' ? 'Import Scripts' : 'Export Scripts'}
-          </DialogTitle>
-        </DialogHeader>
-
-        {mode === 'import' ? (
-          <div
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-            className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
-          >
-            <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="font-medium mb-1">Drag and drop YAML/JSON files here</p>
-            <p className="text-sm text-muted-foreground mb-4">or</p>
-            <input
-              type="file"
-              accept=".yaml,.yml,.json"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-              id="file-input"
-            />
-            <Button
-              variant="outline"
-              onClick={() => document.getElementById('file-input').click()}
-              type="button"
-            >
-              Browse Files
-            </Button>
-            {files.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm font-medium">{files.length} file(s) selected</p>
-                <ul className="text-xs text-muted-foreground mt-2">
-                  {files.map((file, i) => (
-                    <li key={i}>{file.name}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm">Ready to export {selectedScripts?.length || 0} script(s):</p>
-            <ul className="text-sm text-muted-foreground max-h-48 overflow-y-auto border rounded-lg p-3">
-              {selectedScripts?.map((script, i) => (
-                <li key={i} className="py-1">
-                  • {script.name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>Cancel</Button>
-          <Button
-            onClick={mode === 'import' ? handleImport : handleExport}
-            disabled={mode === 'import' && (files.length === 0 || importing)}
-          >
-            {mode === 'import' ? (
-              importing ? 'Importing...' : 'Import'
-            ) : (
-              <>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </>
-            )}
+    <Dialog
+      open={!!isOpen}
+      onClose={handleClose}
+      size="md"
+      title={isImport ? 'Import scripts' : 'Export scripts'}
+      description={
+        isImport
+          ? 'Upload YAML or JSON script files. Each becomes a new script in the library.'
+          : `Download ${count} script${count === 1 ? '' : 's'} as YAML files.`
+      }
+      footer={
+        <ResponsiveStack direction="row" gap={2} justify="end">
+          <Button variant="secondary" onClick={handleClose} disabled={importing}>
+            Cancel
           </Button>
-        </DialogFooter>
-      </DialogContent>
+          <Button
+            onClick={isImport ? handleImport : handleExport}
+            disabled={isImport && (files.length === 0 || importing)}
+            loading={isImport && importing}
+            icon={isImport ? <Upload size={14} /> : <Download size={14} />}
+          >
+            {isImport ? (importing ? 'Importing…' : 'Import') : 'Export'}
+          </Button>
+        </ResponsiveStack>
+      }
+    >
+      {isImport ? (
+        <ResponsiveStack direction="col" gap={3}>
+          <FileDrop
+            accept=".yaml,.yml,.json"
+            multiple
+            hint="Drop YAML or JSON files, or click to browse"
+            onFiles={(list) => setFiles(list)}
+          />
+          {files.length > 0 ? (
+            <Alert tone="info" size="sm" title={`${files.length} file(s) ready to import`}>
+              <ResponsiveStack direction="row" gap={1} wrap>
+                {files.map((f, i) => (
+                  <Badge key={i} tone="neutral" icon={<FileCode size={12} />}>
+                    {f.name}
+                  </Badge>
+                ))}
+              </ResponsiveStack>
+            </Alert>
+          ) : null}
+        </ResponsiveStack>
+      ) : count === 0 ? (
+        <EmptyState
+          variant="dashed"
+          icon={<Download size={24} />}
+          title="No scripts selected"
+          description="Select one or more scripts from the list to export them."
+        />
+      ) : (
+        <ResponsiveStack direction="col" gap={2}>
+          {selectedScripts.map((script, i) => (
+            <ResponsiveStack key={i} direction="row" gap={2} align="center">
+              <FileCode size={14} />
+              <span>{script.name}</span>
+            </ResponsiveStack>
+          ))}
+        </ResponsiveStack>
+      )}
     </Dialog>
   )
 }

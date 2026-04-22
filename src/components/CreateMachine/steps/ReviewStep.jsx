@@ -1,19 +1,35 @@
 'use client';
 
-import React from 'react';
-import { Card } from '@/components/ui/card';
-import { useWizardContext } from '@/components/ui/wizard';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, Package } from 'lucide-react';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  Page,
+  PropertyList,
+  ResponsiveGrid,
+  ResponsiveStack,
+} from '@infinibay/harbor';
+import { useWizardContext } from '../wizard/wizard';
+import {
+  CheckCircle2,
+  Cpu,
+  Monitor,
+  Package,
+  Settings2,
+  User,
+  Zap,
+} from 'lucide-react';
 import { useSelector } from 'react-redux';
-import { cn } from '@/lib/utils';
 import { selectDepartments } from '@/state/slices/departments';
 
 const operatingSystems = {
   ubuntu20: 'Ubuntu 20.04 LTS',
   ubuntu22: 'Ubuntu 22.04 LTS',
-  windows10: 'Windows 10 Pro',
-  windows11: 'Windows 11 Pro',
+  UBUNTU: 'Ubuntu',
+  FEDORA: 'Fedora',
+  WINDOWS10: 'Windows 10 Pro',
+  WINDOWS11: 'Windows 11 Pro',
 };
 
 const formatMemory = (memory) => {
@@ -25,273 +41,213 @@ const formatMemory = (memory) => {
   return `${Math.round(memory)}GB VRAM`;
 };
 
-export function ReviewStep({ id }) {
+export function ReviewStep() {
   const { values } = useWizardContext();
   const templates = useSelector((state) => state.templates.items);
   const applications = useSelector((state) => state.applications.items);
   const departments = useSelector(selectDepartments);
 
-  const selectedTemplate = templates.find(t => t.id === values.resources?.templateId);
+  const selectedTemplate = templates.find(
+    (t) => t.id === values.resources?.templateId,
+  );
   const selectedApps = values.applications?.applications || [];
-  const selectedAppDetails = applications.filter(app => selectedApps.includes(app.id));
-  const selectedDepartment = departments.find(d => d.id === parseInt(values.basicInfo?.departmentId));
+  const selectedAppDetails = applications.filter((app) =>
+    selectedApps.includes(app.id),
+  );
+  const selectedDepartment = departments.find(
+    (d) => String(d.id) === String(values.basicInfo?.departmentId),
+  );
+
+  const isCustom = values.resources?.templateId === 'custom';
+  const cores = isCustom
+    ? values.resources?.customCores || 4
+    : selectedTemplate?.cores;
+  const ram = isCustom
+    ? values.resources?.customRam || 8
+    : selectedTemplate?.ram;
+  const storage = isCustom
+    ? values.resources?.customStorage || 50
+    : selectedTemplate?.storage;
+
+  const basicInfoItems = [
+    { key: 'name', label: 'Name', value: values.basicInfo?.name || '—' },
+    values.basicInfo?.username && {
+      key: 'username',
+      label: 'Username',
+      value: values.basicInfo.username,
+    },
+    selectedDepartment && {
+      key: 'department',
+      label: 'Department',
+      value: selectedDepartment.name,
+    },
+  ].filter(Boolean);
+
+  const resourceItems = [
+    {
+      key: 'config',
+      label: 'Configuration',
+      value: isCustom ? 'Custom hardware' : selectedTemplate?.name || '—',
+    },
+    cores != null && { key: 'cpu', label: 'CPU', value: `${cores} cores` },
+    ram != null && { key: 'ram', label: 'Memory', value: `${ram} GB` },
+    storage != null && {
+      key: 'disk',
+      label: 'Storage',
+      value: `${storage} GB`,
+    },
+    {
+      key: 'gpu',
+      label: 'Graphics',
+      value: values.gpu?.gpuInfo
+        ? `${values.gpu.gpuInfo.model} · ${formatMemory(values.gpu.gpuInfo.memory)}`
+        : 'No GPU',
+    },
+  ].filter(Boolean);
+
+  const systemItems = [
+    {
+      key: 'os',
+      label: 'Operating system',
+      value: operatingSystems[values.configuration?.os] || values.configuration?.os || '—',
+    },
+  ];
+
+  const featureFlags = [
+    values.configuration?.backup && {
+      tone: 'success',
+      title: 'Backup enabled',
+      body: 'Daily backups will be performed automatically.',
+    },
+    values.configuration?.highAvailability && {
+      tone: 'success',
+      title: 'High availability',
+      body: 'Automatic failover protection is enabled.',
+    },
+    values.configuration?.gpuEnabled && {
+      tone: 'success',
+      title: 'GPU support',
+      body: 'GPU acceleration is enabled for this machine.',
+    },
+  ].filter(Boolean);
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight">Review Configuration</h2>
-        <p className="text-sm text-muted-foreground">
-          Review your machine configuration before creation.
-        </p>
-      </div>
+    <Page size="lg">
+        <ResponsiveGrid columns={{ base: 1, lg: 2 }} gap={6}>
+          <Card
+            variant="default"
+            spotlight={false}
+            glow={false}
+            fullHeight
+            leadingIcon={<User size={18} />}
+            leadingIconTone="purple"
+            title="Basic information"
+          >
+            <PropertyList items={basicInfoItems} />
+          </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card glass="subtle" className={cn("p-6 space-y-4", "glass-subtle border border-border/20")} >
-          <div>
-            <h3 className="font-medium mb-2">Basic Information</h3>
-            <dl className="space-y-2">
-              <div className="flex justify-between">
-                <dt className="text-sm text-muted-foreground">Name</dt>
-                <dd className="text-sm font-medium">{values.basicInfo?.name}</dd>
-              </div>
-              {values.basicInfo?.description && (
-                <div className="flex justify-between">
-                  <dt className="text-sm text-muted-foreground">Description</dt>
-                  <dd className="text-sm font-medium">{values.basicInfo.description}</dd>
-                </div>
-              )}
-              {selectedDepartment && (
-                <div className="flex justify-between">
-                  <dt className="text-sm text-muted-foreground">Department</dt>
-                  <dd className="text-sm font-medium">{selectedDepartment.name}</dd>
-                </div>
-              )}
-            </dl>
-          </div>
-
-          <div>
-            <h3 className="font-medium mb-2">Resources</h3>
-            {values.resources?.templateId === 'custom' ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <dt className="text-sm text-muted-foreground">Configuration</dt>
-                  <dd className="text-sm font-medium">Custom Hardware</dd>
-                </div>
-                <div className={cn("rounded-lg p-4 space-y-3", "glass-subtle border border-border/20", "bg-primary/10 border-primary/20")}>
-                  <div className="text-sm text-muted-foreground">
-                    Custom hardware configuration:
-                  </div>
-                  <dl className="grid gap-3">
-                    <div className="flex items-center justify-between border-b pb-2 border-primary/10">
-                      <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M6 12c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M18 18c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M8.59 13.51l6.82 3.98"/>
-                          <path d="M15.41 6.51l-6.82 3.98"/>
-                        </svg>
-                        CPU Cores
-                      </dt>
-                      <dd className="text-sm font-medium">{values.resources?.customCores || 4} Cores</dd>
-                    </div>
-                    <div className="flex items-center justify-between border-b pb-2 border-primary/10">
-                      <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                        </svg>
-                        Memory
-                      </dt>
-                      <dd className="text-sm font-medium">{values.resources?.customRam || 8} GB RAM</dd>
-                    </div>
-                    <div className="flex items-center justify-between border-b pb-2 border-primary/10">
-                      <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5z"/>
-                          <path d="M9 5v14"/>
-                          <path d="M15 5v14"/>
-                          <path d="M5 9h14"/>
-                          <path d="M5 15h14"/>
-                        </svg>
-                        Storage
-                      </dt>
-                      <dd className="text-sm font-medium">{values.resources?.customStorage || 50} GB</dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M6 19h12V5H6v14zm5-8h4m4-5h3v4h-3m-7 5h4"/>
-                        </svg>
-                        Graphics Card
-                      </dt>
-                      <dd className="text-sm font-medium">
-                        {values.gpu?.gpuInfo ? (
-                          <div className="text-right">
-                            <div>{values.gpu.gpuInfo.model}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {values.gpu.gpuInfo.vendor} - {formatMemory(values.gpu.gpuInfo.memory)}
-                            </div>
-                          </div>
-                        ) : (
-                          "No GPU"
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-              </div>
-            ) : selectedTemplate ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <dt className="text-sm text-muted-foreground">Selected Template</dt>
-                  <dd className="text-sm font-medium">{selectedTemplate.name}</dd>
-                </div>
-                <div className={cn("rounded-lg p-4 space-y-3", "glass-subtle border border-border/20", "bg-primary/5")}>
-                  <div className="text-sm text-muted-foreground">
-                    This template allocates the following resources:
-                  </div>
-                  <dl className="grid gap-3">
-                    <div className="flex items-center justify-between border-b pb-2 border-primary/10">
-                      <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M6 12c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M18 18c0 2-1 3-3 3s-3-1-3-3 1-3 3-3 3 1 3 3Z"/>
-                          <path d="M8.59 13.51l6.82 3.98"/>
-                          <path d="M15.41 6.51l-6.82 3.98"/>
-                        </svg>
-                        CPU Cores
-                      </dt>
-                      <dd className="text-sm font-medium">{selectedTemplate.cores} Cores</dd>
-                    </div>
-                    <div className="flex items-center justify-between border-b pb-2 border-primary/10">
-                      <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                        </svg>
-                        Memory
-                      </dt>
-                      <dd className="text-sm font-medium">{selectedTemplate.ram} GB RAM</dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M6 19h12V5H6v14zm5-8h4m4-5h3v4h-3m-7 5h4"/>
-                        </svg>
-                        Graphics Card
-                      </dt>
-                      <dd className="text-sm font-medium">
-                        {values.gpu?.gpuInfo ? (
-                          <div className="text-right">
-                            <div>{values.gpu.gpuInfo.model}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {values.gpu.gpuInfo.vendor} - {formatMemory(values.gpu.gpuInfo.memory)}
-                            </div>
-                          </div>
-                        ) : (
-                          "No GPU"
-                        )}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-sm text-muted-foreground flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5z"/>
-                          <path d="M9 5v14"/>
-                          <path d="M15 5v14"/>
-                          <path d="M5 9h14"/>
-                          <path d="M5 15h14"/>
-                        </svg>
-                        Storage
-                      </dt>
-                      <dd className="text-sm font-medium">{selectedTemplate.storage} GB</dd>
-                    </div>
-                  </dl>
-                </div>
-                {selectedTemplate.description && (
-                  <div className="text-sm text-muted-foreground mt-2">
-                    {selectedTemplate.description}
-                  </div>
-                )}
-              </div>
+          <Card
+            variant="default"
+            spotlight={false}
+            glow={false}
+            fullHeight
+            leadingIcon={isCustom ? <Settings2 size={18} /> : <Cpu size={18} />}
+            leadingIconTone="sky"
+            title="Resources"
+            description={selectedTemplate?.description}
+          >
+            {resourceItems.length > 1 ? (
+              <PropertyList items={resourceItems} />
             ) : (
-              <div className="text-sm text-muted-foreground">
-                No resources selected
-              </div>
+              <EmptyState
+                variant="inline"
+                icon={<Cpu size={14} />}
+                title="No resources selected"
+              />
             )}
-          </div>
-        </Card>
+          </Card>
 
-        <Card glass="subtle" className={cn("p-6 space-y-4", "glass-subtle border border-border/20")} >
-          <div>
-            <h3 className="font-medium mb-2">System Configuration</h3>
-            <dl className="space-y-2">
-              <div className="flex justify-between">
-                <dt className="text-sm text-muted-foreground">Operating System</dt>
-                <dd className="text-sm font-medium">
-                  {operatingSystems[values.configuration?.os]}
-                </dd>
-              </div>
-            </dl>
-          </div>
+          <Card
+            variant="default"
+            spotlight={false}
+            glow={false}
+            fullHeight
+            leadingIcon={<Monitor size={18} />}
+            leadingIconTone="green"
+            title="System configuration"
+          >
+            <PropertyList items={systemItems} />
+          </Card>
 
-          {selectedAppDetails.length > 0 && (
-            <div>
-              <h3 className="font-medium mb-2">Applications to Install</h3>
-              <div className="space-y-3">
+          <Card
+            variant="default"
+            spotlight={false}
+            glow={false}
+            fullHeight
+            leadingIcon={<Package size={18} />}
+            leadingIconTone="amber"
+            title="Applications"
+            description={
+              selectedAppDetails.length > 0
+                ? `${selectedAppDetails.length} selected`
+                : undefined
+            }
+          >
+            {selectedAppDetails.length > 0 ? (
+              <ResponsiveStack direction="row" gap={2} wrap>
                 {selectedAppDetails.map((app) => (
-                  <div key={app.id} className={cn("flex items-start gap-3 rounded-lg p-3", "glass-subtle border border-border/20", "bg-primary/5")}>
-                    <Package className="h-5 w-5 text-primary mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">{app.name}</div>
-                      {app.description && (
-                        <div className="text-sm text-muted-foreground truncate">
-                          {app.description}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <Badge key={app.id} tone="purple" icon={<Package size={12} />}>
+                    {app.name}
+                  </Badge>
                 ))}
-              </div>
-            </div>
-          )}
+              </ResponsiveStack>
+            ) : (
+              <EmptyState
+                variant="inline"
+                icon={<Package size={14} />}
+                title="No applications selected"
+              />
+            )}
+          </Card>
+        </ResponsiveGrid>
 
-          <div>
-            <h3 className="font-medium mb-2">Additional Features</h3>
-            <div className="space-y-2">
-              {values.configuration?.backup && (
-                <Alert variant="default" className={cn("border-primary/50 bg-primary/10", "glass-subtle border border-border/20")}>
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <AlertTitle>Backup Enabled</AlertTitle>
-                  <AlertDescription>
-                    Daily backups will be performed automatically
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {values.configuration?.highAvailability && (
-                <Alert variant="default" className={cn("border-primary/50 bg-primary/10", "glass-subtle border border-border/20")}>
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <AlertTitle>High Availability</AlertTitle>
-                  <AlertDescription>
-                    Automatic failover protection is enabled
-                  </AlertDescription>
-                </Alert>
-              )}
+        {values.gpu?.gpuInfo && (
+          <Card
+            variant="default"
+            spotlight={false}
+            glow={false}
+            leadingIcon={<Zap size={18} />}
+            leadingIconTone="purple"
+            title="GPU passthrough"
+          >
+            <PropertyList
+              items={[
+                { key: 'model', label: 'Model', value: values.gpu.gpuInfo.model },
+                { key: 'vendor', label: 'Vendor', value: values.gpu.gpuInfo.vendor },
+                {
+                  key: 'memory',
+                  label: 'Memory',
+                  value: formatMemory(values.gpu.gpuInfo.memory),
+                },
+              ]}
+            />
+          </Card>
+        )}
 
-              {values.configuration?.gpuEnabled && (
-                <Alert variant="default" className={cn("border-primary/50 bg-primary/10", "glass-subtle border border-border/20")}>
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <AlertTitle>GPU Support</AlertTitle>
-                  <AlertDescription>
-                    GPU acceleration is enabled for this machine
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </div>
-        </Card>
-      </div>
-    </div>
+        {featureFlags.length > 0 && (
+          <ResponsiveStack direction="col" gap={3}>
+            {featureFlags.map((f) => (
+              <Alert
+                key={f.title}
+                tone={f.tone}
+                icon={<CheckCircle2 size={14} />}
+                title={f.title}
+              >
+                {f.body}
+              </Alert>
+            ))}
+          </ResponsiveStack>
+        )}
+    </Page>
   );
 }

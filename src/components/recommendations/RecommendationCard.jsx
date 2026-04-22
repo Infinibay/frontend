@@ -9,37 +9,35 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Button,
+  ButtonGroup,
+  Dialog,
+  IconButton,
+  Menu,
+  MenuItem,
+  ResponsiveStack,
+} from '@infinibay/harbor';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  useExecuteRecommendationMutation,
   useDismissRecommendationMutation,
   useSnoozeRecommendationMutation,
 } from '@/gql/hooks';
-import { Play, Clock, X, ChevronDown, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import {
+  Play,
+  Clock,
+  X,
+  ChevronDown,
+  Loader2,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
-const SEVERITY_STYLES = {
-  CRITICAL: 'bg-red-500',
-  HIGH: 'bg-orange-500',
-  MEDIUM: 'bg-yellow-500',
-  LOW: 'bg-blue-500',
+const SEVERITY_COLORS = {
+  CRITICAL: 'rgb(239, 68, 68)',
+  HIGH: 'rgb(249, 115, 22)',
+  MEDIUM: 'rgb(234, 179, 8)',
+  LOW: 'rgb(59, 130, 246)',
 };
 
 const SNOOZE_OPTIONS = [
@@ -54,37 +52,21 @@ export function RecommendationCard({ recommendation, onActionComplete }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [executionResult, setExecutionResult] = useState(null);
 
-  // Get script name for display
   const scriptName =
     recommendation.script?.name ||
     recommendation.systemScript?.displayName ||
     'Script';
 
-  const [executeRec] = useExecuteRecommendationMutation({
-    onCompleted: (data) => {
-      const status = data.executeRecommendation?.scriptExecution?.status;
-      if (status === 'COMPLETED') {
-        setExecutionResult('success');
-        toast.success(`"${scriptName}" ejecutado correctamente`, {
-          description: `En ${recommendation.machine?.name}`,
-        });
-      } else if (status === 'FAILED') {
-        setExecutionResult('error');
-        toast.error(`Error ejecutando "${scriptName}"`, {
-          description: 'Revisa los logs para mas detalles',
-        });
-      } else {
-        toast.info(`"${scriptName}" iniciado`, {
-          description: 'La ejecucion esta en progreso...',
-        });
-      }
-      onActionComplete?.();
-    },
-    onError: (err) => {
-      setExecutionResult('error');
-      toast.error(`Error: ${err.message}`);
-    },
-  });
+  // `executeRecommendation` mutation doesn't exist in the backend schema
+  // yet — stub it out so the component compiles. Replace with the real
+  // useExecuteRecommendationMutation hook when available.
+  const executeRec = async () => {
+    setExecutionResult('error');
+    toast.info(`"${scriptName}" — execute from the VM Scripts tab`, {
+      description: 'One-click remediation is not wired up yet.',
+    });
+    onActionComplete?.();
+  };
 
   const [dismissRec] = useDismissRecommendationMutation({
     onCompleted: () => {
@@ -102,15 +84,13 @@ export function RecommendationCard({ recommendation, onActionComplete }) {
     onError: (err) => toast.error(err.message),
   });
 
-  const handleExecuteClick = () => {
-    setShowConfirmDialog(true);
-  };
+  const handleExecuteClick = () => setShowConfirmDialog(true);
 
   const handleConfirmExecute = async () => {
     setShowConfirmDialog(false);
     setExecuting(true);
     setExecutionResult(null);
-    await executeRec({ variables: { id: recommendation.id } });
+    await executeRec();
     setExecuting(false);
   };
 
@@ -127,107 +107,115 @@ export function RecommendationCard({ recommendation, onActionComplete }) {
     locale: es,
   });
 
+  const dotStyle = {
+    width: 8,
+    height: 8,
+    borderRadius: 9999,
+    marginTop: 6,
+    flexShrink: 0,
+    background: SEVERITY_COLORS[recommendation.severity] || 'rgb(107, 114, 128)',
+  };
+
   return (
     <>
-      <div className="px-4 py-3 hover:bg-muted/50 transition-colors">
-        {/* Header with severity indicator */}
-        <div className="flex items-start gap-3">
-          <span
-            className={cn(
-              'w-2 h-2 rounded-full mt-2 flex-shrink-0',
-              SEVERITY_STYLES[recommendation.severity]
-            )}
-            aria-label={`Severidad: ${recommendation.severity}`}
-          />
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <ResponsiveStack direction="row" gap={3} align="start">
+          <span style={dotStyle} aria-label={`Severidad: ${recommendation.severity}`} />
 
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm truncate">{recommendation.title}</p>
-            <p className="text-xs text-muted-foreground">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 500, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {recommendation.title}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.65 }}>
               {recommendation.machine?.name} &middot; {timeAgo}
-            </p>
+            </div>
           </div>
 
-          {/* Execution result indicator */}
           {executionResult === 'success' && (
-            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+            <CheckCircle size={16} color="rgb(34, 197, 94)" />
           )}
           {executionResult === 'error' && (
-            <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+            <XCircle size={16} color="rgb(239, 68, 68)" />
           )}
-        </div>
+        </ResponsiveStack>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 mt-2 ml-5">
-          <Button
-            size="sm"
-            variant="default"
-            className="h-7 text-xs max-w-[180px]"
-            onClick={handleExecuteClick}
-            disabled={executing || executionResult === 'success'}
-          >
-            {executing ? (
-              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-            ) : (
-              <Play className="h-3 w-3 mr-1" />
-            )}
-            <span className="truncate">Ejecutar &ldquo;{scriptName}&rdquo;</span>
-          </Button>
+        <div style={{ marginTop: 8, marginLeft: 20 }}>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <Button
+              size="sm"
+              variant="primary"
+              icon={
+                executing ? (
+                  <Loader2 size={12} />
+                ) : (
+                  <Play size={12} />
+                )
+              }
+              onClick={handleExecuteClick}
+              disabled={executing || executionResult === 'success'}
+            >
+              {`Ejecutar "${scriptName}"`}
+            </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" className="h-7 text-xs">
-                <Clock className="h-3 w-3 mr-1" />
-                Posponer
-                <ChevronDown className="h-3 w-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
+            <Menu
+              align="start"
+              trigger={
+                <Button size="sm" variant="secondary" icon={<Clock size={12} />}>
+                  <ResponsiveStack direction="row" gap={1} align="center">
+                    <span>Posponer</span>
+                    <ChevronDown size={12} />
+                  </ResponsiveStack>
+                </Button>
+              }
+            >
               {SNOOZE_OPTIONS.map((opt) => (
-                <DropdownMenuItem
-                  key={opt.value}
-                  onClick={() => handleSnooze(opt.value)}
-                >
+                <MenuItem key={opt.value} onClick={() => handleSnooze(opt.value)}>
                   {opt.label}
-                </DropdownMenuItem>
+                </MenuItem>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </Menu>
 
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs text-muted-foreground"
-            onClick={handleDismiss}
-          >
-            <X className="h-3 w-3" />
-          </Button>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              icon={<X size={12} />}
+              onClick={handleDismiss}
+              aria-label="Descartar"
+            />
+          </ResponsiveStack>
         </div>
       </div>
 
-      {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Ejecutar &ldquo;{scriptName}&rdquo;?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se ejecutara este script en{' '}
-              <strong>{recommendation.machine?.name}</strong>.
-              {recommendation.description && (
-                <span className="block mt-2 text-muted-foreground">
-                  {recommendation.description}
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmExecute}>
-              <Play className="h-4 w-4 mr-2" />
+      <Dialog
+        open={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        size="sm"
+        title={`Ejecutar "${scriptName}"?`}
+        description={
+          <span>
+            Se ejecutara este script en <strong>{recommendation.machine?.name}</strong>.
+            {recommendation.description ? (
+              <span style={{ display: 'block', marginTop: 8, opacity: 0.65 }}>
+                {recommendation.description}
+              </span>
+            ) : null}
+          </span>
+        }
+        footer={
+          <ButtonGroup>
+            <Button variant="secondary" onClick={() => setShowConfirmDialog(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              icon={<Play size={14} />}
+              onClick={handleConfirmExecute}
+            >
               Ejecutar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </ButtonGroup>
+        }
+      />
     </>
   );
 }

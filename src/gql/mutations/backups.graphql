@@ -1,0 +1,71 @@
+mutation createBackup($input: CreateBackupInput!) {
+  createBackup(input: $input) {
+    success
+    backupId
+    vmId
+    type
+    totalSize
+    durationMs
+    error
+  }
+}
+
+mutation restoreBackup($input: RestoreBackupInput!) {
+  restoreBackup(input: $input) {
+    success
+    backupId
+    vmId
+    restoredDiskPaths
+    durationMs
+    error
+  }
+}
+
+mutation deleteBackup($input: DeleteBackupInput!) {
+  deleteBackup(input: $input) {
+    success
+    message
+  }
+}
+
+mutation createBackupSchedule($input: CreateScheduleInput!) {
+  createBackupSchedule(input: $input) {
+    id
+    scheduleId
+    vmId
+    type
+    cronExpression
+    retentionCount
+    destinationDir
+    compression
+    enabled
+    label
+    nextRunAt
+    createdAt
+    updatedAt
+  }
+}
+
+mutation updateBackupSchedule($id: ID!, $input: UpdateScheduleInput!) {
+  updateBackupSchedule(id: $id, input: $input) {
+    id
+    scheduleId
+    vmId
+    type
+    cronExpression
+    retentionCount
+    destinationDir
+    compression
+    enabled
+    label
+    nextRunAt
+    updatedAt
+  }
+}
+
+mutation deleteBackupSchedule($id: ID!) {
+  deleteBackupSchedule(id: $id) {
+    success
+    message
+  }
+}

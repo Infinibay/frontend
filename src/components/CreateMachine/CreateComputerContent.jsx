@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { Card, LoadingOverlay, Page } from '@infinibay/harbor';
 import { fetchDepartmentByName } from '@/state/slices/departments';
 import CreateMachineWizard from './CreateMachineWizard';
-import { Spinner } from '@nextui-org/react';
 
 export default function CreateComputerContent({ departmentSlug = null }) {
   const dispatch = useDispatch();
@@ -29,20 +29,22 @@ export default function CreateComputerContent({ departmentSlug = null }) {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 relative z-30 flex items-center justify-center min-h-[400px]">
-        <Spinner size="lg" />
-      </div>
+      <Page>
+        <LoadingOverlay label="Loading department…" size={32} />
+      </Page>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 relative z-30">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-8 max-w-7xl mx-auto">
-        <div className="w-full">
-          <h1 className="text-2xl font-bold mb-6">Create New Machine</h1>
-          <CreateMachineWizard departmentId={departmentId} />
-        </div>
-      </div>
-    </div>
+    <Page>
+      <Card
+        variant="glass"
+        spotlight={false}
+        glow={false}
+        title="Create New Machine"
+        description="Follow the steps below to provision and configure your virtual machine."
+      />
+      <CreateMachineWizard departmentId={departmentId} />
+    </Page>
   );
 }

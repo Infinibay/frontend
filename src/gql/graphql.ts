@@ -1,6 +1,6 @@
 /* eslint-disable */
 export type Maybe<T> = T | null;
-export type InputMaybe<T> = Maybe<T>;
+export type InputMaybe<T> = T | null | undefined;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
@@ -119,6 +119,105 @@ export type BackgroundHealthServiceStatus = {
   totalVMsMonitored: Scalars['Int']['output'];
 };
 
+export type Backup = {
+  __typename?: 'Backup';
+  backupId: Scalars['String']['output'];
+  completedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  compression: BackupCompression;
+  createdAt: Scalars['DateTimeISO']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  disks?: Maybe<Array<BackupDiskInfo>>;
+  durationMs?: Maybe<Scalars['Float']['output']>;
+  errorMessage?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  parentBackupId?: Maybe<Scalars['String']['output']>;
+  progressPercent?: Maybe<Scalars['Float']['output']>;
+  status: BackupStatus;
+  tags?: Maybe<Array<Scalars['String']['output']>>;
+  totalOriginalSize: Scalars['Float']['output'];
+  totalSize: Scalars['Float']['output'];
+  type: BackupType;
+  vmId: Scalars['String']['output'];
+};
+
+export enum BackupCompression {
+  Gzip = 'GZIP',
+  None = 'NONE',
+  Qcow2 = 'QCOW2'
+}
+
+export type BackupDiskInfo = {
+  __typename?: 'BackupDiskInfo';
+  backingFile?: Maybe<Scalars['String']['output']>;
+  backupPath: Scalars['String']['output'];
+  backupSize: Scalars['Float']['output'];
+  format: Scalars['String']['output'];
+  originalSize: Scalars['Float']['output'];
+  sourcePath: Scalars['String']['output'];
+};
+
+export type BackupListResult = {
+  __typename?: 'BackupListResult';
+  backups: Array<Backup>;
+  message: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+};
+
+export type BackupRestoreResult = {
+  __typename?: 'BackupRestoreResult';
+  backupId?: Maybe<Scalars['String']['output']>;
+  durationMs?: Maybe<Scalars['Float']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  restoredDiskPaths?: Maybe<Array<Scalars['String']['output']>>;
+  success: Scalars['Boolean']['output'];
+  vmId?: Maybe<Scalars['String']['output']>;
+};
+
+export type BackupResult = {
+  __typename?: 'BackupResult';
+  backupId?: Maybe<Scalars['String']['output']>;
+  disks?: Maybe<Array<BackupDiskInfo>>;
+  durationMs?: Maybe<Scalars['Float']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  totalSize?: Maybe<Scalars['Float']['output']>;
+  type?: Maybe<BackupType>;
+  vmId?: Maybe<Scalars['String']['output']>;
+};
+
+export type BackupSchedule = {
+  __typename?: 'BackupSchedule';
+  compression: BackupCompression;
+  createdAt: Scalars['DateTimeISO']['output'];
+  cronExpression: Scalars['String']['output'];
+  destinationDir: Scalars['String']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  label?: Maybe<Scalars['String']['output']>;
+  lastBackupId?: Maybe<Scalars['String']['output']>;
+  lastRunAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  nextRunAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  retentionCount: Scalars['Float']['output'];
+  scheduleId: Scalars['String']['output'];
+  type: BackupType;
+  updatedAt: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['String']['output'];
+};
+
+export enum BackupStatus {
+  Cancelled = 'CANCELLED',
+  Completed = 'COMPLETED',
+  Failed = 'FAILED',
+  InProgress = 'IN_PROGRESS',
+  Pending = 'PENDING'
+}
+
+export enum BackupType {
+  Full = 'FULL',
+  Incremental = 'INCREMENTAL',
+  Snapshot = 'SNAPSHOT'
+}
+
 export type BrNetfilterDiagnosticsType = {
   __typename?: 'BrNetfilterDiagnosticsType';
   callArptables: Scalars['Int']['output'];
@@ -188,6 +287,17 @@ export type CreateApplicationInputType = {
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
 };
 
+export type CreateBackupInput = {
+  compression?: InputMaybe<BackupCompression>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  destinationDir?: InputMaybe<Scalars['String']['input']>;
+  diskPaths: Array<Scalars['String']['input']>;
+  parentBackupId?: InputMaybe<Scalars['String']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+  type: BackupType;
+  vmId: Scalars['String']['input'];
+};
+
 export type CreateDepartmentFirewallInput = {
   firewallCustomRules?: InputMaybe<Scalars['JSON']['input']>;
   firewallDefaultConfig?: InputMaybe<Scalars['String']['input']>;
@@ -253,6 +363,17 @@ export type CreateNetworkInput = {
   name?: Scalars['String']['input'];
 };
 
+export type CreateScheduleInput = {
+  compression?: InputMaybe<BackupCompression>;
+  cronExpression: Scalars['String']['input'];
+  destinationDir?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  label?: InputMaybe<Scalars['String']['input']>;
+  retentionCount?: InputMaybe<Scalars['Float']['input']>;
+  type: BackupType;
+  vmId: Scalars['String']['input'];
+};
+
 export type CreateScriptInput = {
   category?: InputMaybe<Scalars['String']['input']>;
   content: Scalars['String']['input'];
@@ -289,6 +410,11 @@ export type DefenderScanResult = {
   threatsFound: Scalars['Int']['output'];
   timestamp: Scalars['DateTimeISO']['output'];
   vmId: Scalars['ID']['output'];
+};
+
+export type DeleteBackupInput = {
+  backupId: Scalars['String']['input'];
+  vmId: Scalars['String']['input'];
 };
 
 export type DeleteNetworkInput = {
@@ -936,10 +1062,16 @@ export type Mutation = {
   assignScriptToDepartment: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
+  /** Cancel a pending or running resolution. No-op on terminal resolutions. */
+  cancelResolution: RecommendationResolutionType;
   cancelScheduledScript: ScheduleScriptResponseType;
   cancelScriptExecution: ScriptExecutionResponseType;
   cleanupInfinibayFirewall: CleanupResultType;
   createApplication: ApplicationType;
+  /** Create a backup of a VM */
+  createBackup: BackupResult;
+  /** Create a backup schedule */
+  createBackupSchedule: BackupSchedule;
   createDepartment: DepartmentType;
   createDepartmentFirewallRule: FirewallRuleType;
   createMachine: Machine;
@@ -953,6 +1085,10 @@ export type Mutation = {
   createUser: UserType;
   createVMFirewallRule: FirewallRuleType;
   deleteApplication: Scalars['Boolean']['output'];
+  /** Delete a backup */
+  deleteBackup: SuccessType;
+  /** Delete a backup schedule */
+  deleteBackupSchedule: SuccessType;
   deleteFirewallRule: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
@@ -999,7 +1135,11 @@ export type Mutation = {
   /** Remove a package from a virtual machine (legacy compatibility) */
   removePackage: CommandResult;
   resetMachine: SuccessType;
+  /** Trigger auto-resolution for a recommendation. Idempotent: returns the in-flight resolution if one is already running. */
+  resolveRecommendation: RecommendationResolutionType;
   restartMachine: SuccessType;
+  /** Restore a VM from a backup */
+  restoreBackup: BackupRestoreResult;
   /** Restore a virtual machine to a snapshot */
   restoreSnapshot: SuccessType;
   /** Run Windows Defender quick scan on a VM */
@@ -1024,6 +1164,8 @@ export type Mutation = {
   uninstallPackage: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
+  /** Update a backup schedule */
+  updateBackupSchedule: BackupSchedule;
   updateDepartmentFirewallPolicy: DepartmentType;
   updateDepartmentName: DepartmentType;
   updateDepartmentNetwork: DepartmentType;
@@ -1055,6 +1197,11 @@ export type MutationCalculateIsoChecksumArgs = {
 };
 
 
+export type MutationCancelResolutionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationCancelScheduledScriptArgs = {
   executionId: Scalars['ID']['input'];
 };
@@ -1067,6 +1214,16 @@ export type MutationCancelScriptExecutionArgs = {
 
 export type MutationCreateApplicationArgs = {
   input: CreateApplicationInputType;
+};
+
+
+export type MutationCreateBackupArgs = {
+  input: CreateBackupInput;
+};
+
+
+export type MutationCreateBackupScheduleArgs = {
+  input: CreateScheduleInput;
 };
 
 
@@ -1130,6 +1287,16 @@ export type MutationCreateVmFirewallRuleArgs = {
 
 export type MutationDeleteApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationDeleteBackupArgs = {
+  input: DeleteBackupInput;
+};
+
+
+export type MutationDeleteBackupScheduleArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1308,8 +1475,20 @@ export type MutationResetMachineArgs = {
 };
 
 
+export type MutationResolveRecommendationArgs = {
+  actionKey: Scalars['String']['input'];
+  id: Scalars['ID']['input'];
+  params?: InputMaybe<ResolveRecommendationParamsInput>;
+};
+
+
 export type MutationRestartMachineArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationRestoreBackupArgs = {
+  input: RestoreBackupInput;
 };
 
 
@@ -1384,6 +1563,12 @@ export type MutationUpdateAppSettingsArgs = {
 export type MutationUpdateApplicationArgs = {
   id: Scalars['String']['input'];
   input: CreateApplicationInputType;
+};
+
+
+export type MutationUpdateBackupScheduleArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateScheduleInput;
 };
 
 
@@ -1666,6 +1851,8 @@ export type ProcessControlResult = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Return active (non-terminal) resolutions for a machine */
+  activeResolutionsForMachine: Array<RecommendationResolutionType>;
   /** Get all ISOs (available and unavailable) */
   allISOs: Array<Iso>;
   application?: Maybe<ApplicationType>;
@@ -1673,6 +1860,12 @@ export type Query = {
   /** Get all available ISOs */
   availableISOs: Array<Iso>;
   backgroundHealthServiceStatus: BackgroundHealthServiceStatus;
+  /** Get a single backup by its database ID */
+  backup?: Maybe<Backup>;
+  /** List backup schedules for a VM (or all if vmId omitted) */
+  backupSchedules: ScheduleListResult;
+  /** List all backups for a VM */
+  backups: BackupListResult;
   captureDepartmentDhcpTraffic: DhcpTrafficCaptureType;
   /** Check for application updates on a VM */
   checkApplicationUpdates: ApplicationUpdates;
@@ -1748,6 +1941,8 @@ export type Query = {
   packages: Array<PackageType>;
   /** Get the count of pending (non-dismissed, non-snoozed) recommendations across all VMs */
   pendingRecommendationCount: Scalars['Int']['output'];
+  /** Fetch a single resolution. Poll this query to track progress. */
+  recommendationResolution?: Maybe<RecommendationResolutionType>;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
   scheduledScript?: Maybe<ScheduledScriptType>;
@@ -1773,8 +1968,28 @@ export type Query = {
 };
 
 
+export type QueryActiveResolutionsForMachineArgs = {
+  machineId: Scalars['ID']['input'];
+};
+
+
 export type QueryApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryBackupArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryBackupSchedulesArgs = {
+  vmId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryBackupsArgs = {
+  vmId: Scalars['String']['input'];
 };
 
 
@@ -1976,6 +2191,11 @@ export type QueryPackageArgs = {
 };
 
 
+export type QueryRecommendationResolutionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QueryRunHealthCheckArgs = {
   checkName: HealthCheckName;
   vmId: Scalars['ID']['input'];
@@ -2101,6 +2321,28 @@ export type RecommendationFilterInput = {
   types?: InputMaybe<Array<RecommendationType>>;
 };
 
+/** Auto-resolve execution for a VM recommendation */
+export type RecommendationResolutionType = {
+  __typename?: 'RecommendationResolutionType';
+  /** Key identifying which resolver handler ran (e.g. install_updates, reboot) */
+  actionKey: Scalars['String']['output'];
+  completedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  machineId: Scalars['ID']['output'];
+  params?: Maybe<Scalars['JSONObject']['output']>;
+  /** 0-100 progress indicator */
+  progress: Scalars['Int']['output'];
+  progressMessage?: Maybe<Scalars['String']['output']>;
+  recommendationId: Scalars['ID']['output'];
+  result?: Maybe<Scalars['JSONObject']['output']>;
+  startedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  status: ResolutionStatus;
+  triggeredByUserId: Scalars['ID']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
 /** Types of VM recommendations that can be generated by the system based on health checks and system analysis */
 export enum RecommendationType {
   /** Generated when application updates, especially security updates, are available */
@@ -2127,6 +2369,28 @@ export enum RecommendationType {
   UnderProvisioned = 'UNDER_PROVISIONED'
 }
 
+/** Lifecycle state of an auto-resolve execution for a VM recommendation */
+export enum ResolutionStatus {
+  Cancelled = 'CANCELLED',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  RequiresReboot = 'REQUIRES_REBOOT',
+  Running = 'RUNNING',
+  Succeeded = 'SUCCEEDED'
+}
+
+/** Parameters for resolveRecommendation. Pass confirmed=true for destructive actions. */
+export type ResolveRecommendationParamsInput = {
+  /** User confirmation for destructive actions (reboot, install updates) */
+  confirmed?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Specific package names to update (defaults to all) */
+  packages?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** When to run the action (for schedule_reboot) */
+  scheduledAt?: InputMaybe<Scalars['DateTimeISO']['input']>;
+  /** Filter to security updates only */
+  securityOnly?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 export type ResourceOptimizationInfo = {
   __typename?: 'ResourceOptimizationInfo';
   error?: Maybe<Scalars['String']['output']>;
@@ -2146,6 +2410,13 @@ export type ResourceRecommendation = {
   recommendedValue: Scalars['Float']['output'];
   resource: Scalars['String']['output'];
   unit: Scalars['String']['output'];
+};
+
+export type RestoreBackupInput = {
+  backupId: Scalars['String']['input'];
+  diskPaths: Array<Scalars['String']['input']>;
+  overwriteExisting?: InputMaybe<Scalars['Boolean']['input']>;
+  vmId: Scalars['String']['input'];
 };
 
 export type RestoreSnapshotInput = {
@@ -2179,6 +2450,13 @@ export enum RuleSetType {
   Department = 'DEPARTMENT',
   Vm = 'VM'
 }
+
+export type ScheduleListResult = {
+  __typename?: 'ScheduleListResult';
+  message: Scalars['String']['output'];
+  schedules: Array<BackupSchedule>;
+  success: Scalars['Boolean']['output'];
+};
 
 export type ScheduleScriptInput = {
   departmentId?: InputMaybe<Scalars['ID']['input']>;
@@ -2526,6 +2804,16 @@ export type UpdateMaintenanceTaskInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
   runAt?: InputMaybe<Scalars['DateTimeISO']['input']>;
+};
+
+export type UpdateScheduleInput = {
+  compression?: InputMaybe<BackupCompression>;
+  cronExpression?: InputMaybe<Scalars['String']['input']>;
+  destinationDir?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  label?: InputMaybe<Scalars['String']['input']>;
+  retentionCount?: InputMaybe<Scalars['Float']['input']>;
+  type?: InputMaybe<BackupType>;
 };
 
 export type UpdateScheduledScriptInput = {

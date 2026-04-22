@@ -1,109 +1,199 @@
-"use client"
+"use client";
 
-// React and hooks
-import React, { useState, useEffect, useRef, useMemo } from "react"
-import { useDispatch, useSelector } from "react-redux"
-import { cn } from "@/lib/utils"
-import { createDebugger } from "@/utils/debug"
-
-const debug = createDebugger('frontend:pages:computers')
-
-// UI Components
-import { useSizeContext, sizeVariants } from "@/components/ui/size-provider";
+import React, { useEffect, useMemo } from "react";
+import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import {
-  Toast,
-  ToastTitle,
-  ToastDescription,
-  ToastProvider,
-  ToastViewport,
-} from "@/components/ui/toast";
-import {
+  Page,
+  Card,
+  Button,
+  IconButton,
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { AlertCircle, Monitor, Power, HardDrive, Network, Filter } from "lucide-react";
+  ButtonGroup,
+  Alert,
+  EmptyState,
+  Stat,
+  ClusterView,
+  Spinner,
+  ResponsiveStack,
+  ResponsiveGrid,
+  ContextMenu,
+  MenuItem,
+  MenuLabel,
+  MenuSeparator,
+} from "@infinibay/harbor";
+import {
+  AlertCircle,
+  Monitor,
+  Plus,
+  RefreshCw,
+  Play,
+  Pause,
+  Square,
+  Cpu,
+  Power,
+  ExternalLink,
+  Trash2,
+} from "lucide-react";
+import { createDebugger } from "@/utils/debug";
 
-// Local components and hooks
-import { ComputersList } from "@/components/ui/computers-list";
 import { useComputerActions } from "./hooks/useComputerActions";
-import { groupMachinesByDepartment } from "./utils/groupMachines";
-
-// Redux actions
 import { fetchVms } from "@/state/slices/vms";
 import { fetchDepartments } from "@/state/slices/departments";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
-import { usePageHeader } from '@/hooks/usePageHeader';
-import { useRouter } from "next/navigation";
+import { usePageHeader } from "@/hooks/usePageHeader";
 
-/**
- * ComputersPage component for managing virtual machines
- * Features data fetching, error handling, and machine operations
- */
+const debug = createDebugger("frontend:pages:computers");
+
+/** Map QEMU-style status string → Harbor HostStatus. */
+const vmStatusToHarbor = (status) => {
+  switch ((status || "").toLowerCase()) {
+    case "running":
+      return "online";
+    case "paused":
+    case "suspended":
+      return "degraded";
+    case "starting":
+    case "provisioning":
+    case "building":
+      return "provisioning";
+    case "stopped":
+    case "shutoff":
+    case "off":
+    case "powered_off":
+    case "error":
+    default:
+      return "offline";
+  }
+};
+
+/** Map an OS string → simple-icons CDN slug + brand color. */
+const OS_ICON_MAP = [
+  { match: /windows|win\b|win10|win11|server/i, slug: "windows", color: "0078D6" },
+  { match: /ubuntu/i, slug: "ubuntu", color: "E95420" },
+  { match: /debian/i, slug: "debian", color: "A81D33" },
+  { match: /fedora/i, slug: "fedora", color: "51A2DA" },
+  { match: /centos/i, slug: "centos", color: "262577" },
+  { match: /rhel|red\s?hat/i, slug: "redhat", color: "EE0000" },
+  { match: /arch/i, slug: "archlinux", color: "1793D1" },
+  { match: /alpine/i, slug: "alpinelinux", color: "0D597F" },
+  { match: /macos|osx|darwin|apple/i, slug: "apple", color: "FFFFFF" },
+  { match: /freebsd|bsd/i, slug: "freebsd", color: "AB2B28" },
+  { match: /linux|gnu/i, slug: "linux", color: "FCC624" },
+];
+
+const osIconFor = (os) => {
+  if (!os) return null;
+  const hit = OS_ICON_MAP.find((m) => m.match.test(os));
+  if (!hit) return null;
+  return (
+    <img
+      src={`https://cdn.simpleicons.org/${hit.slug}/${hit.color}`}
+      alt={os}
+      title={os}
+      width={16}
+      height={16}
+    />
+  );
+};
+
+/** Compose a HostCard subtitle line from VM metadata. */
+const vmSubtitle = (vm) => {
+  const bits = [];
+  const os = vm?.configuration?.os || vm?.os;
+  if (os) bits.push(os);
+  if (vm?.cpuCores) bits.push(`${vm.cpuCores} vCPU`);
+  if (vm?.ramGB) bits.push(`${vm.ramGB} GB`);
+  return bits.join(" · ");
+};
+
+const InlinePowerButtons = ({ vm, pending, onPlay, onPause, onStop }) => {
+  const status = (vm.status || "").toLowerCase();
+  const stop = (e) => {
+    e.stopPropagation();
+  };
+  const isPending = pending?.[vm.id];
+
+  if (isPending) {
+    return (
+      <ResponsiveStack direction="row" gap={1} align="center">
+        <Spinner />
+      </ResponsiveStack>
+    );
+  }
+
+  if (status === "running") {
+    return (
+      <ButtonGroup onClick={stop}>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          icon={<Pause size={14} />}
+          onClick={(e) => {
+            stop(e);
+            onPause?.(vm);
+          }}
+          aria-label="Pause"
+        />
+        <IconButton
+          variant="ghost"
+          size="sm"
+          icon={<Square size={14} />}
+          onClick={(e) => {
+            stop(e);
+            onStop?.(vm);
+          }}
+          aria-label="Stop"
+        />
+      </ButtonGroup>
+    );
+  }
+
+  return (
+    <IconButton
+      variant="ghost"
+      size="sm"
+      icon={<Play size={14} />}
+      onClick={(e) => {
+        stop(e);
+        onPlay?.(vm);
+      }}
+      aria-label="Start"
+    />
+  );
+};
+
 export default function ComputersPage() {
-  // Context and size
-  const { size } = useSizeContext();
   const router = useRouter();
-
-  // UI State
-  const [grid, setGrid] = useState(false);
-  const [byDepartment, setByDepartment] = useState(true);
-
-  // Redux state
-  const dispatch = useDispatch();
-  const selectedPc = useSelector((state) => state.vms.selectedMachine);
   const pendingActions = useSelector((state) => state.vms.pendingActions);
 
-  // Use optimized data loading for VMs and departments
   const {
     data: machines,
     isLoading: vmsLoading,
     error: vmsError,
-    refresh: refreshVms
-  } = useEnsureData('vms', fetchVms, {
+    refresh: refreshVms,
+  } = useEnsureData("vms", fetchVms, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
-    ttl: 2 * 60 * 1000, // 2 minutes
+    ttl: 2 * 60 * 1000,
   });
 
   const {
     data: departments,
     isLoading: departmentsLoading,
-    error: departmentsError
-  } = useEnsureData('departments', fetchDepartments, {
+    error: departmentsError,
+  } = useEnsureData("departments", fetchDepartments, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
-    ttl: 10 * 60 * 1000, // 10 minutes
+    ttl: 10 * 60 * 1000,
   });
 
-  // Combine loading and error states
   const loading = vmsLoading || departmentsLoading;
   const error = vmsError || departmentsError;
 
-  // Check ISO availability
   const { isReady: hasISOs } = useSystemStatus({ checkOnMount: true });
 
-  React.useEffect(() => {
-    debug.log('render', 'ComputersPage rendered:', {
-      machineCount: machines?.length || 0,
-      departmentCount: departments?.length || 0,
-      loading,
-      hasError: !!error,
-      hasISOs,
-      viewMode: { grid, byDepartment }
-    })
-  }, [machines?.length, departments?.length, loading, error, hasISOs, grid, byDepartment])
-
-  // Actions and handlers
   const {
-    showToast,
-    toastProps,
-    setShowToast,
     handlePcSelect,
-    handleDetailsClose,
     handlePlay,
     handlePause,
     handleStop,
@@ -113,244 +203,328 @@ export default function ComputersPage() {
     cancelDelete,
   } = useComputerActions();
 
-  // Group machines by department
-  const groupedMachines = groupMachinesByDepartment(byDepartment, machines || [], departments || []);
+  const hosts = useMemo(
+    () =>
+      (machines || []).map((vm) => {
+        const os = vm?.configuration?.os || vm?.os;
+        return {
+          id: vm.id,
+          name: vm.name,
+          status: vmStatusToHarbor(vm.status),
+          subtitle: vmSubtitle(vm),
+          tags: vm.department?.name ? [vm.department.name] : [],
+          region: vm.department?.name || undefined,
+          osIcon: osIconFor(os),
+          _raw: vm,
+        };
+      }),
+    [machines]
+  );
 
-  // Enhanced refresh that uses the new data loading strategy
-  const handleEnhancedRefresh = () => {
-    debug.info('data', 'Refreshing VMs data via optimized loader');
-    refreshVms();
-  };
+  const statusCounts = useMemo(() => {
+    const counts = { online: 0, degraded: 0, offline: 0, provisioning: 0 };
+    hosts.forEach((h) => {
+      counts[h.status] = (counts[h.status] || 0) + 1;
+    });
+    return counts;
+  }, [hosts]);
 
-  const handleNewVM = () => {
-    debug.info('navigation', 'Create VM navigation triggered');
-    router.push('/computers/create');
-  };
-
-  // Help configuration
-  const helpConfig = useMemo(() => ({
-    title: "Computers Help",
-    description: "Learn how to manage virtual machines and computer resources",
-    icon: <Monitor className="h-5 w-5 text-primary" />,
-    sections: [
-      {
-        id: "managing-vms",
-        title: "Managing Virtual Machines",
-        icon: <Monitor className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Creating VMs</p>
-              <p>The "New" button creates VMs. Note that at least one ISO must be uploaded before creating VMs.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Viewing VMs</p>
-              <p>VMs are displayed in grid or table view, grouped by department for easier management.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">VM Operations</p>
-              <p>Control VMs using power buttons (play to start, pause to suspend, stop to shut down), edit settings, or delete VMs.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "power-management",
-        title: "Power Management",
-        icon: <Power className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Starting VMs</p>
-              <p>Click the play button to boot a stopped VM.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Pausing VMs</p>
-              <p>Temporarily suspend VM execution to free resources.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Stopping VMs</p>
-              <p>Gracefully shut down running VMs.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Status Indicators</p>
-              <p>Color-coded badges show VM state: running (green), stopped (red), or paused (yellow).</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "organization",
-        title: "Organization",
-        icon: <HardDrive className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Department Grouping</p>
-              <p>VMs are organized by department for easier management and access control.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">View Modes</p>
-              <p>Toggle between grid (visual cards) and table (detailed list) views.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Filtering</p>
-              <p>Filter VMs by status, department, or user assignment to quickly find what you need.</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "requirements",
-        title: "System Requirements",
-        icon: <Network className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">ISO Images</p>
-              <p>At least one ISO must be uploaded before creating VMs. Upload ISOs in Settings.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Templates</p>
-              <p>VMs are created from templates that define the base configuration.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Resources</p>
-              <p>Ensure sufficient host resources (CPU, RAM, storage) are available for VM allocation.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Network</p>
-              <p>VMs require network configuration for connectivity to other systems.</p>
-            </div>
-          </div>
-        ),
-      },
-    ],
-    quickTips: [
-      "Upload an ISO in Settings before creating your first VM",
-      "Use department grouping to organize VMs by team or project",
-      "Click on a VM card to view detailed information and controls",
-      "The refresh button reloads the VM list to show latest changes",
-    ],
-  }), []);
-
-  // Configure header
-  usePageHeader({
-    breadcrumbs: [
-      { label: 'Home', href: '/' },
-      { label: 'Computers', isCurrent: true }
-    ],
-    title: 'Computers',
-    actions: [
-      {
-        id: 'refresh',
-        label: '',
-        icon: 'RefreshCw',
-        variant: 'outline',
-        size: 'sm',
-        onClick: handleEnhancedRefresh,
-        loading: vmsLoading,
-        disabled: vmsLoading,
-        tooltip: vmsLoading ? 'Refreshing...' : vmsError ? 'Retry loading machines' : 'Refresh machines',
-        className: vmsError ? 'border-destructive text-destructive hover:bg-destructive/10 whitespace-nowrap' : 'whitespace-nowrap'
-      },
-      ...(hasISOs ? [{
-        id: 'new-vm',
-        label: 'New',
-        icon: 'Plus',
-        variant: 'default',
-        size: 'sm',
-        onClick: handleNewVM,
-        tooltip: 'Create new VM',
-        className: 'whitespace-nowrap'
-      }] : [{
-        id: 'new-vm-disabled',
-        label: 'New',
-        icon: 'AlertCircle',
-        variant: 'secondary',
-        size: 'sm',
-        onClick: () => {}, // No action when disabled
-        disabled: true,
-        tooltip: 'Upload an ISO image first to create VMs',
-        className: 'whitespace-nowrap'
-      }])
-    ],
-    helpConfig: helpConfig,
-    helpTooltip: 'Computers help'
-  }, [vmsLoading, vmsError, hasISOs]);
-
-  // Handle Escape key
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape" && selectedPc) {
-        handleDetailsClose(false);
-      }
-    };
+    debug.log("render", "ComputersPage rendered:", {
+      machineCount: machines?.length || 0,
+      departmentCount: departments?.length || 0,
+      loading,
+      hasError: !!error,
+      hasISOs,
+    });
+  }, [machines?.length, departments?.length, loading, error, hasISOs]);
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedPc, handleDetailsClose]);
+  const handleNewVM = () => router.push("/computers/create");
+
+  const helpConfig = useMemo(
+    () => ({
+      title: "Computers",
+      description: "Manage your fleet of virtual machines.",
+      icon: <Monitor size={20} />,
+      sections: [
+        {
+          id: "managing",
+          title: "Managing VMs",
+          icon: <Monitor size={16} />,
+          content: (
+            <p>
+              Click a VM card to open its detail view. Use the inline Play /
+              Pause / Stop buttons for quick power control without leaving the
+              list.
+            </p>
+          ),
+        },
+        {
+          id: "filters",
+          title: "Filters",
+          icon: <Cpu size={16} />,
+          content: (
+            <p>
+              Filter chips at the top of the grid narrow by status, region
+              (department) or tag. The density toggle on the right switches
+              between comfortable and compact card sizes.
+            </p>
+          ),
+        },
+        {
+          id: "new",
+          title: "Creating VMs",
+          icon: <Plus size={16} />,
+          content: (
+            <p>
+              Upload at least one ISO in Settings before creating your first
+              VM. The New button is disabled until that&apos;s done.
+            </p>
+          ),
+        },
+      ],
+      quickTips: [
+        "Click a card to open the VM detail view",
+        "Use filter chips to narrow by status or department",
+        "Toggle density for a denser view of many hosts",
+      ],
+    }),
+    []
+  );
+
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: "Home", href: "/" },
+        { label: "Computers", isCurrent: true },
+      ],
+      title: "Computers",
+      actions: [],
+      helpConfig,
+      helpTooltip: "Computers help",
+    },
+    []
+  );
+
+  if (loading && !machines?.length) {
+    return (
+      <Page gap="lg">
+        <Card variant="default">
+          <ResponsiveStack direction="row" gap={3} justify="center" align="center">
+            <Spinner /> Loading computers…
+          </ResponsiveStack>
+        </Card>
+      </Page>
+    );
+  }
 
   return (
-    <ToastProvider>
-      {showToast && (
-        <Toast variant={toastProps.variant} onOpenChange={setShowToast}>
-          <ToastTitle>{toastProps.title}</ToastTitle>
-          <ToastDescription>{toastProps.description}</ToastDescription>
-        </Toast>
+    <Page gap="lg">
+      <Card
+        variant="default"
+        leadingIcon={<Monitor size={20} />}
+        leadingIconTone="sky"
+        title="Computers"
+        description={`${hosts.length} virtual machine${hosts.length !== 1 ? "s" : ""} across ${departments?.length || 0} department${(departments?.length || 0) !== 1 ? "s" : ""}`}
+      >
+        <ResponsiveStack
+          direction={{ base: "col", lg: "row" }}
+          gap={4}
+          justify="between"
+          align="stretch"
+        >
+          <ResponsiveGrid columns={{ base: 2, md: 4 }} gap={3}>
+            <Stat
+              label="Running"
+              value={statusCounts.online}
+              icon={<Power size={14} />}
+              variant="plain"
+            />
+            <Stat label="Paused" value={statusCounts.degraded} variant="plain" />
+            <Stat label="Stopped" value={statusCounts.offline} variant="plain" />
+            <Stat
+              label="Provisioning"
+              value={statusCounts.provisioning}
+              variant="plain"
+            />
+          </ResponsiveGrid>
+
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RefreshCw size={16} />}
+              onClick={refreshVms}
+              disabled={vmsLoading}
+            >
+              Refresh
+            </Button>
+            {hasISOs ? (
+              <Button
+                size="sm"
+                icon={<Plus size={16} />}
+                onClick={handleNewVM}
+              >
+                New VM
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<AlertCircle size={16} />}
+                disabled
+                title="Upload an ISO image first"
+              >
+                New VM
+              </Button>
+            )}
+          </ResponsiveStack>
+        </ResponsiveStack>
+      </Card>
+
+      {error && (
+        <Alert
+          tone="danger"
+          title="Couldn't load VMs"
+          actions={
+            <Button size="sm" onClick={refreshVms} icon={<RefreshCw size={16} />}>
+              Retry
+            </Button>
+          }
+        >
+          {String(error?.message || error)}
+        </Alert>
       )}
-      <ToastViewport />
 
-      <section className="flex-1 w-full">
-        <div className={sizeVariants[size].layout.section}>
-          <ComputersList
-            loading={loading}
-            error={error}
-            groupedMachines={groupedMachines}
-            byDepartment={byDepartment}
-            grid={grid}
-            selectedPc={selectedPc}
-            onSelectMachine={handlePcSelect}
-            size={size}
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onStop={handleStop}
-            onDelete={handleDelete}
-            pendingActions={pendingActions}
+      {hosts.length === 0 ? (
+        <Card variant="default">
+          <EmptyState
+            icon={<Monitor size={40} />}
+            title="No virtual machines yet"
+            description={
+              hasISOs
+                ? "Create your first VM to see it here."
+                : "Upload an ISO in Settings, then create your first VM."
+            }
+            actions={
+              hasISOs ? (
+                <Button
+                  size="sm"
+                  icon={<Plus size={16} />}
+                  onClick={handleNewVM}
+                >
+                  New VM
+                </Button>
+              ) : null
+            }
           />
-        </div>
+        </Card>
+      ) : (
+        <ClusterView
+          hosts={hosts.map((h) => ({
+            ...h,
+            actions: (
+              <InlinePowerButtons
+                vm={h._raw}
+                pending={pendingActions}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onStop={handleStop}
+              />
+            ),
+          }))}
+          onHostClick={(host) => {
+            const raw = hosts.find((h) => h.id === host.id)?._raw;
+            if (raw) handlePcSelect(raw);
+          }}
+          renderHost={(host, card) => {
+            const raw = hosts.find((h) => h.id === host.id)?._raw;
+            if (!raw) return card;
+            const status = (raw.status || "").toLowerCase();
+            const isRunning = status === "running";
+            const isPaused = status === "paused" || status === "suspended";
+            const isStopped = !isRunning && !isPaused;
+            const isPending = !!pendingActions?.[raw.id];
+            return (
+              <ContextMenu
+                menu={
+                  <>
+                    <MenuLabel>{raw.name}</MenuLabel>
+                    <MenuSeparator />
+                    <MenuItem
+                      icon={<Play size={14} />}
+                      disabled={isPending || isRunning}
+                      onClick={() => handlePlay(raw)}
+                    >
+                      Start
+                    </MenuItem>
+                    <MenuItem
+                      icon={<Pause size={14} />}
+                      disabled={isPending || !isRunning}
+                      onClick={() => handlePause(raw)}
+                    >
+                      Pause
+                    </MenuItem>
+                    <MenuItem
+                      icon={<Square size={14} />}
+                      disabled={isPending || isStopped}
+                      onClick={() => handleStop(raw)}
+                    >
+                      Stop
+                    </MenuItem>
+                    <MenuSeparator />
+                    <MenuItem
+                      icon={<ExternalLink size={14} />}
+                      onClick={() => handlePcSelect(raw)}
+                    >
+                      Open
+                    </MenuItem>
+                    <MenuSeparator />
+                    <MenuItem
+                      icon={<Trash2 size={14} />}
+                      danger
+                      onClick={() => handleDelete(raw)}
+                    >
+                      Delete
+                    </MenuItem>
+                  </>
+                }
+              >
+                {card}
+              </ContextMenu>
+            );
+          }}
+        />
+      )}
 
-      </section>
-
-      {/* Delete Confirmation Modal */}
-      <Dialog open={deleteConfirmation.isOpen} onOpenChange={cancelDelete}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-              </div>
-              <DialogTitle>Delete Virtual Machine</DialogTitle>
-            </div>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{deleteConfirmation.machine?.name}</strong>?
-              This action cannot be undone and all data associated with this virtual machine will be permanently removed.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="gap-2 sm:gap-0 mt-6">
-            <Button variant="outline" onClick={cancelDelete}>
+      <Dialog
+        open={!!deleteConfirmation?.isOpen}
+        onClose={cancelDelete}
+        size="sm"
+        title={
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <AlertCircle size={16} />
+            Delete virtual machine
+          </ResponsiveStack>
+        }
+        description={
+          deleteConfirmation?.machine
+            ? `This permanently removes ${deleteConfirmation.machine.name} and all its data.`
+            : "This action cannot be undone."
+        }
+        footer={
+          <ButtonGroup>
+            <Button variant="secondary" onClick={cancelDelete}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
-            >
+            <Button variant="destructive" onClick={confirmDelete}>
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </ButtonGroup>
+        }
+      >
+        <p>All snapshots, volumes and attached configuration will be lost.</p>
       </Dialog>
-    </ToastProvider>
+    </Page>
   );
 }

@@ -1,53 +1,69 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem } from '@/components/ui/context-menu';
-import { FaMicrochip, FaMemory, FaHdd, FaTrash } from 'react-icons/fa';
+import { Trash2 } from 'lucide-react';
+import {
+  Card,
+  Badge,
+  IconButton,
+  PropertyList,
+  ResponsiveStack,
+  Tooltip,
+} from '@infinibay/harbor';
 
+/**
+ * TemplateCard — Harbor-native. Presentational card for a template row.
+ * Uses PropertyList for the spec line and an IconButton delete affordance
+ * (disabled + tooltipped when the template is in use).
+ */
 export function TemplateCard({ template, onDelete }) {
+  const inUse = (template.totalMachines || 0) > 0;
+
+  const deleteBtn = (
+    <IconButton
+      size="sm"
+      variant="ghost"
+      label="Delete template"
+      icon={<Trash2 size={14} />}
+      disabled={inUse}
+      onClick={() => !inUse && onDelete?.(template.id)}
+    />
+  );
+
   return (
-    <ContextMenu>
-      <ContextMenuTrigger>
-        <Card className="p-4 hover:shadow-lg transition-shadow">
-          <h3 className="font-semibold text-lg mb-2">{template.name}</h3>
-          <p className="text-sm text-muted-foreground mb-4">{template.description}</p>
-          <div className="space-y-2">
-            <div className="flex items-center text-sm">
-              <FaMicrochip className="w-4 h-4 mr-2" />
-              <span>{template.cores} Cores</span>
-            </div>
-            <div className="flex items-center text-sm">
-              <FaMemory className="w-4 h-4 mr-2" />
-              <span>{template.ram} GB RAM</span>
-            </div>
-            <div className="flex items-center text-sm">
-              <FaHdd className="w-4 h-4 mr-2" />
-              <span>{template.storage} GB Storage</span>
-            </div>
-            {template.totalMachines > 0 && (
-              <Badge variant="secondary" className="mt-2">
-                {template.totalMachines} machine{template.totalMachines !== 1 ? 's' : ''} using this template
-              </Badge>
-            )}
-          </div>
-        </Card>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem 
-          className={`${template.totalMachines > 0 ? 'text-destructive/50 cursor-not-allowed' : 'text-destructive'}`}
-          disabled={template.totalMachines > 0}
-          onClick={() => !template.totalMachines && onDelete?.(template.id)}
-        >
-          <FaTrash className="w-4 h-4 mr-2" />
-          Delete Template
-          {template.totalMachines > 0 && (
-            <span className="ml-2 text-xs">
-              ({template.totalMachines} machine{template.totalMachines !== 1 ? 's' : ''} in use)
-            </span>
+    <Card
+      variant="default"
+      interactive
+      title={template.name}
+      description={template.description}
+      footer={
+        inUse ? (
+          <Badge tone="info">
+            {template.totalMachines} machine
+            {template.totalMachines !== 1 ? 's' : ''} in use
+          </Badge>
+        ) : null
+      }
+    >
+      <ResponsiveStack direction="col" gap={3}>
+        <PropertyList
+          items={[
+            { key: 'cores', label: 'Cores', value: `${template.cores}` },
+            { key: 'ram', label: 'RAM', value: `${template.ram} GB` },
+            { key: 'storage', label: 'Storage', value: `${template.storage} GB` },
+          ]}
+        />
+        <ResponsiveStack direction="row" gap={2} justify="end">
+          {inUse ? (
+            <Tooltip
+              content={`In use by ${template.totalMachines} machine${template.totalMachines !== 1 ? 's' : ''}`}
+            >
+              <span>{deleteBtn}</span>
+            </Tooltip>
+          ) : (
+            deleteBtn
           )}
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+        </ResponsiveStack>
+      </ResponsiveStack>
+    </Card>
   );
 }

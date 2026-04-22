@@ -1,61 +1,52 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { Button, ResponsiveStack, Skeleton } from '@infinibay/harbor';
 import { fetchInitialData, SERVICE_CONFIG } from '@/init';
-import { Skeleton } from '@/components/ui/skeleton';
 import { selectAppSettingsInitialized, selectAppSettingsLoading } from '@/state/slices/appSettings';
 import { createDebugger } from '@/utils/debug';
 
 const LoadingSkeleton = () => {
   return (
-    <div className="flex h-screen bg-background">
+    <div style={{ display: 'flex', height: '100vh', background: 'rgb(var(--harbor-bg, 10 10 14))' }}>
       {/* Left Sidebar */}
-      <div className="w-64 border-r border-border bg-card p-4">
-        {/* Logo area */}
-        <div className="mb-8">
-          <Skeleton className="h-8 w-32" />
+      <div style={{ width: 256, borderRight: '1px solid rgba(255,255,255,0.08)', padding: 16 }}>
+        <div style={{ marginBottom: 32 }}>
+          <Skeleton height={32} width={128} />
         </div>
-
-        {/* Navigation items */}
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
+        <ResponsiveStack direction="col" gap={4}>
+          <Skeleton height={40} />
+          <Skeleton height={40} />
+          <Skeleton height={40} />
+        </ResponsiveStack>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        {/* Top navigation bar */}
-        <div className="border-b border-border p-4">
-          <div className="flex items-center justify-between">
-            {/* Breadcrumb */}
-            <div className="flex items-center space-x-2">
-              <Skeleton className="h-6 w-24" />
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {/* Top nav */}
+        <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', padding: 16 }}>
+          <ResponsiveStack direction="row" gap={2} align="center" justify="between">
+            <ResponsiveStack direction="row" gap={2} align="center">
+              <Skeleton height={24} width={96} />
               <span>/</span>
-              <Skeleton className="h-6 w-32" />
-            </div>
-
-            {/* User menu */}
-            <Skeleton className="h-10 w-10 rounded-full" />
-          </div>
+              <Skeleton height={24} width={128} />
+            </ResponsiveStack>
+            <Skeleton circle width={40} height={40} />
+          </ResponsiveStack>
         </div>
 
-        {/* Main content area */}
-        <div className="p-6">
-          {/* Section title */}
-          <div className="mb-6">
-            <Skeleton className="h-8 w-48" />
+        {/* Main */}
+        <div style={{ padding: 24 }}>
+          <div style={{ marginBottom: 24 }}>
+            <Skeleton height={32} width={192} />
           </div>
-
-          {/* Grid of computers */}
-          <div className="grid grid-cols-4 gap-8">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 32 }}>
             {[...Array(12)].map((_, i) => (
-              <div key={i} className="space-y-4">
-                <Skeleton className="h-48 w-full rounded-lg" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
+              <ResponsiveStack key={i} direction="col" gap={3}>
+                <Skeleton height={192} />
+                <Skeleton height={16} width="75%" />
+                <Skeleton height={16} width="50%" />
+              </ResponsiveStack>
             ))}
           </div>
         </div>
@@ -68,14 +59,13 @@ const debug = createDebugger('frontend:components:initial-data-loader');
 
 export const InitialDataLoader = ({ children }) => {
   const dispatch = useDispatch();
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [, setIsInitializing] = useState(true);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const [hasTimedOut, setHasTimedOut] = useState(false);
-  const [deferredLoading, setDeferredLoading] = useState(false);
-  const [deferredServices, setDeferredServices] = useState([]);
+  const [, setDeferredLoading] = useState(false);
+  const [, setDeferredServices] = useState([]);
 
-  // Only check loading states that are critical for initial app functionality
   const authLoading = useSelector(state => state.auth.loading?.fetchUser);
   const appSettingsLoading = useSelector(selectAppSettingsLoading);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
@@ -85,22 +75,18 @@ export const InitialDataLoader = ({ children }) => {
       debug.info('Starting application initialization...');
 
       try {
-        // Set a timeout for the initialization process
         const timeoutId = setTimeout(() => {
           debug.warn('Initialization timeout reached, proceeding with partial data');
           setHasTimedOut(true);
           setIsInitializing(false);
-        }, 15000); // 15 second timeout
+        }, 15000);
 
-        // First, restore auth from localStorage if available
         debug.info('Restoring authentication from storage...');
         const { restoreAuthFromStorage } = await import('@/state/slices/auth');
         dispatch(restoreAuthFromStorage());
 
-        // Track deferred services for status display
         setDeferredServices(SERVICE_CONFIG.deferred.map(s => ({ name: s.name, status: 'pending', description: s.description })));
 
-        // Then fetch initial data with error boundaries
         try {
           debug.info('Fetching critical initial data...');
           const results = await dispatch(fetchInitialData()).unwrap();
@@ -110,7 +96,6 @@ export const InitialDataLoader = ({ children }) => {
             failures: results.failures?.map(f => f.service) || []
           });
 
-          // Update deferred services status based on results
           if (results.deferred) {
             setDeferredServices(current =>
               current.map(service => {
@@ -124,7 +109,6 @@ export const InitialDataLoader = ({ children }) => {
             );
             setDeferredLoading(false);
           } else {
-            // Deferred services are loading in background
             setDeferredLoading(true);
           }
         } catch (initError) {
@@ -144,7 +128,6 @@ export const InitialDataLoader = ({ children }) => {
     initialize();
   }, [dispatch, retryCount]);
 
-  // Only wait for critical loading states - app can start with just these
   const isCriticalLoading = authLoading || appSettingsLoading?.fetch || !appSettingsInitialized;
 
   const handleRetry = () => {
@@ -164,14 +147,13 @@ export const InitialDataLoader = ({ children }) => {
 
   if (isCriticalLoading && !hasTimedOut) {
     return (
-      <div className="relative">
+      <div style={{ position: 'relative' }}>
         <LoadingSkeleton />
       </div>
     );
   }
 
   if (error && !hasTimedOut) {
-    // Don't show error modal for authentication errors - let the auth flow handle it
     const isAuthError = error?.message?.toLowerCase().includes('not authorized') ||
                        error?.message?.toLowerCase().includes('unauthorized') ||
                        error?.message?.toLowerCase().includes('401') ||
@@ -183,7 +165,6 @@ export const InitialDataLoader = ({ children }) => {
 
     if (isAuthError) {
       debug.info('Authentication error detected, skipping error modal and continuing to auth flow');
-      // Continue to children to allow auth redirect to happen
       return children;
     }
 
@@ -191,66 +172,59 @@ export const InitialDataLoader = ({ children }) => {
       SERVICE_CONFIG.critical.some(s => error?.message?.includes(s.name));
 
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center space-y-4 max-w-md">
-          <div className="text-xl text-red-500">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <ResponsiveStack direction="col" gap={4} align="center">
+          <div style={{ fontSize: 20, color: 'rgb(239, 68, 68)', textAlign: 'center' }}>
             {isCriticalError ? 'Failed to load critical application data' : 'Some features may be limited'}
           </div>
-          <div className="text-sm text-muted-foreground">
+          <div style={{ fontSize: 14, opacity: 0.65, maxWidth: 448, textAlign: 'center' }}>
             {isCriticalError
               ? 'The application requires certain data to function properly.'
               : 'Non-essential features failed to load, but you can continue using the app.'
             }
             {error?.message}
           </div>
-          <div className="flex gap-2 justify-center">
-            <button
-              onClick={handleRetry}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-            >
+          <ResponsiveStack direction="row" gap={2} justify="center">
+            <Button variant="primary" onClick={handleRetry}>
               Retry
-            </button>
+            </Button>
             {!isCriticalError && (
-              <button
-                onClick={handleContinueWithLimitedFunctionality}
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90"
-              >
+              <Button variant="secondary" onClick={handleContinueWithLimitedFunctionality}>
                 Continue Anyway
-              </button>
+              </Button>
             )}
-          </div>
-        </div>
+          </ResponsiveStack>
+        </ResponsiveStack>
       </div>
     );
   }
 
   if (hasTimedOut) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center space-y-4 max-w-md">
-          <div className="text-xl text-yellow-600">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <ResponsiveStack direction="col" gap={4} align="center">
+          <div style={{ fontSize: 20, color: 'rgb(202, 138, 4)', textAlign: 'center' }}>
             Loading is taking longer than usual
           </div>
-          <div className="text-sm text-muted-foreground">
+          <div style={{ fontSize: 14, opacity: 0.65, maxWidth: 448, textAlign: 'center' }}>
             The application will continue to load additional features in the background.
             You can start using core features now.
           </div>
-          <button
+          <Button
+            variant="secondary"
             onClick={() => {
               debug.info('User chose to continue after timeout');
               setHasTimedOut(false);
               setIsInitializing(false);
             }}
-            className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90"
           >
             Continue to App
-          </button>
-        </div>
+          </Button>
+        </ResponsiveStack>
       </div>
     );
   }
 
-  // Show deferred loading indicator if services are still loading in background
   return (
     <>
       {children}

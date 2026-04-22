@@ -1,192 +1,180 @@
 "use client";
-import AuthHeader from "@/components/auth/AuthHeader";
-import { Button, Input } from "@nextui-org/react";
-import Image from "next/image";
+
+import React, { useState } from "react";
 import Link from "next/link";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { FaCheckCircle, FaRegEyeSlash } from "react-icons/fa";
-import { IoEye } from "react-icons/io5";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { ArrowLeft, Eye, EyeOff, Lock, Check } from "lucide-react";
+import {
+  Page,
+  Card,
+  Button,
+  IconButton,
+  TextField,
+  FormField,
+  Alert,
+  ResponsiveStack,
+  PasswordStrength,
+} from "@infinibay/harbor";
 
-const Page = () => {
-  const [hidePass, setHidePass] = useState(false);
-  const [hidePass1, setHidePass1] = useState(false);
-  const handleeyeIcon = () => {
-    setHidePass(!hidePass);
+const pageShell = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "2rem 1rem",
+};
+const brandRow = { display: "flex", justifyContent: "center", marginBottom: "1.25rem" };
+const heading = { fontSize: "1.5rem", fontWeight: 600, textAlign: "center", margin: 0 };
+const subtle = { fontSize: "0.875rem", opacity: 0.7, textAlign: "center", margin: "0.25rem 0 0 0" };
+const backLink = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.5rem",
+  fontSize: "0.875rem",
+  opacity: 0.7,
+  marginBottom: "0.5rem",
+};
+const matchRow = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  fontSize: "0.75rem",
+  opacity: 0.7,
+};
+
+const CreateNewPasswordPage = () => {
+  const [hidePass, setHidePass] = useState(true);
+  const [hidePass2, setHidePass2] = useState(true);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const { handleSubmit, control, watch, getValues } = useForm();
+
+  const onSubmit = async (_data) => {
+    setError("");
+    setIsLoading(true);
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+      router.push("/auth/sign-in");
+    } catch (_err) {
+      setError("Couldn't update the password. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
-  const handleeyeIcon1 = () => {
-    setHidePass1(!hidePass1);
-  };
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    getValues,
-    reset,
-    watch,
-    setValue,
-  } = useForm();
-  // handle form submit
-  const onSubmit = async (data, event) => {
-    event.preventDefault();
-  };
+
+  const pass = watch("password") || "";
+  const confirm = watch("confirmpass");
+  const match = !!pass && pass === confirm;
+
   return (
-    <>
-      <div className="auth_bg min-h-screen mt-16 px-10">
-        {/* header */}
-        <div className="flex group container mt-16 mx-auto cursor-pointer items-center  gap-4">
-          <Link href="/">
-            <AuthHeader text={"Return Home"} className="" />
-          </Link>
-        </div>
-        <div
-          className="container mx-auto px-2 flex flex-wrap lg:flex-nowrap justify-center lg:gap-10 gap-4 xl:pt-20 lg:pt-16 pt-12 
-          items-center"
-        >
-          {/* image */}
-          <div className=" 4xl:max-w-[1300px] lg:max-w-[650px] lg:min-w-[750px] w-full px-16 xl:block hidden ">
-            <div className="4xl:max-w-[1300px] w-full xl:max-w-[700px] lg:max-w-[600px] ">
-              <Image
-                width={900}
-                height={900}
-                src="/images/auth/forgotpassword.png"
-                alt="forgetpassword"
-                className="w-full h-full object-cover"
-              />
+    <div style={pageShell}>
+      <Page size="sm" gap="md" padded={false}>
+        <Link href="/" style={backLink}>
+          <ArrowLeft size={16} /> Return home
+        </Link>
+
+        <Card variant="default">
+          <ResponsiveStack direction="col" gap={5}>
+            <div style={brandRow}>
+              <Image alt="Infinibay" src="/images/logo.png" width={56} height={56} priority />
             </div>
-          </div>
-          {/* form */}
-          <div className=" flex-1 lg:max-w-[550px] 4xl:max-w-[1500px]  w-full px-5">
-            <div className="flex justify-center flex-1 mx-auto">
-              <div className="border border-[#DEDEDE] dark:border-border 5xl:max-w-[1200px] 4xl:max-w-[1000px] 2xl:max-w-[700px] 4xl:h-[1000px] 4xl:py-[100px] flex-1  max-w-[600px] sm:px-6 px-4 py-6 rounded-2xl custom_shadow bg-white dark:bg-background/90">
-                <Image
-                  className="max-w-[280px] 4xl:mt-7 4xl:max-w-[400px]"
-                  width={300}
-                  height={300}
-                  alt="laptop-infinibay"
-                  src="/images/logo_1.png"
+
+            <div>
+              <h1 style={heading}>Create a new password</h1>
+              <p style={subtle}>Pick something different from your previous password.</p>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <ResponsiveStack direction="col" gap={4}>
+                <Controller
+                  name="password"
+                  control={control}
+                  defaultValue=""
+                  rules={{
+                    required: "Password is required",
+                    maxLength: { value: 20, message: "Max 20 characters" },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <FormField label="New password" error={fieldState.error?.message}>
+                      <TextField
+                        type={hidePass ? "password" : "text"}
+                        icon={<Lock size={16} />}
+                        suffix={
+                          <IconButton
+                            size="sm"
+                            variant="ghost"
+                            label={hidePass ? "Show password" : "Hide password"}
+                            icon={hidePass ? <EyeOff size={16} /> : <Eye size={16} />}
+                            onClick={() => setHidePass((s) => !s)}
+                            type="button"
+                          />
+                        }
+                        {...field}
+                      />
+                      <PasswordStrength value={pass} />
+                    </FormField>
+                  )}
                 />
-                <div className="py-4 4xl:mt-5">
-                  <div className="flex gap-2 justify-between mb-2 4xl:mt-5">
-                    <h2 className="4xl:text-4xl xl:text-2xl font-bold lg:text-xl xs:text-lg">
-                      Create a New Password
-                    </h2>
-                  </div>
-                  <p className="text-sm 4xl:text-2xl">
-                    Your new password will be different from the existing &
-                    previous ones.
-                  </p>
-                  <form onSubmit={handleSubmit(onSubmit)}>
-                    <div className="w-full 4xl:mt-16">
-                      <label
-                        htmlFor="password"
-                        className="relative block rounded-3xl border dark:border-border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite dark:bg-transparent"
-                      >
-                        <input
-                          type={!hidePass ? "password" : "text"}
-                          id="password"
-                          {...register("password", {
-                            required: true,
-                            maxLength: 20,
-                          })}
-                          aria-invalid={errors.password ? "true" : "false"}
-                          className="peer 4xl:text-3xl 4xl:p-6 border-none rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] focus:border-web_lightGrey focus:outline-none w-full"
-                          placeholder="**********"
-                        />
-                        <span className="pointer-events-none absolute start-4 4xl:text-3xl text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
-                          Password
-                        </span>
-                        <span
-                          className="absolute right-3 top-5"
-                          onClick={handleeyeIcon}
-                        >
-                          {hidePass ? (
-                            <IoEye className="4xl:text-3xl" />
-                          ) : (
-                            <FaRegEyeSlash className="4xl:text-2xl" />
-                          )}
-                        </span>
-                      </label>
-                      <div className="h-2 mt-2">
-                        {errors.password?.type === "required" && (
-                          <p
-                            role="alert"
-                            className="text-red-600 text-[13px] font-bold"
-                          >
-                            Your password is required
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="w-full 4xl:mt-10">
-                      <label
-                        htmlFor="confirmpass"
-                        className="relative block rounded-3xl border dark:border-border shadow-sm mt-7 peer-placeholder-shown bg-web_lightwhite dark:bg-transparent"
-                      >
-                        <input
-                          type={!hidePass1 ? "password" : "text"}
-                          id="confirmpass"
-                          {...register("confirmpass", {
-                            required: true,
-                            maxLength: 20,
-                          })}
-                          aria-invalid={errors.confirmpass ? "true" : "false"}
-                          placeholder="**********"
-                          className="peer border-none 4xl:p-6 4xl:text-3xl rounded-3xl sm:px-8 p-4 placeholder:text-[#BABABA] placeholder:my-9 focus:border-web_lightGrey focus:outline-none w-full placeholder-px-4 placeholder-py-2"
-                        />
 
-                        <span className="pointer-events-none 4xl:text-3xl absolute start-4 text-lg font-semibold top-0 -translate-y-1/2 pl-4.5 text-gray-700 dark:text-gray-300 transition-all">
-                          Confirm Password
-                        </span>
-                        <span
-                          className="absolute right-3 top-5 "
-                          onClick={handleeyeIcon1}
-                        >
-                          {hidePass1 ? (
-                            <IoEye className="4xl:text-2xl" />
-                          ) : (
-                            <FaRegEyeSlash className="4xl:text-3xl" />
-                          )}
-                        </span>
-                      </label>
-                      <div className="h-2 mt-2">
-                        {watch("confirmpass") !== watch("password") &&
-                        getValues("confirmpass") ? (
-                          <p
-                            role="alert"
-                            className="text-red-600 text-[13px] font-bold 4xl:text-xl"
-                          >
-                            password not match
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
+                <Controller
+                  name="confirmpass"
+                  control={control}
+                  defaultValue=""
+                  rules={{
+                    required: "Please confirm the password",
+                    validate: (v) => v === getValues("password") || "Passwords don't match",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <FormField label="Confirm new password" error={fieldState.error?.message}>
+                      <TextField
+                        type={hidePass2 ? "password" : "text"}
+                        icon={<Lock size={16} />}
+                        suffix={
+                          <IconButton
+                            size="sm"
+                            variant="ghost"
+                            label={hidePass2 ? "Show password" : "Hide password"}
+                            icon={hidePass2 ? <EyeOff size={16} /> : <Eye size={16} />}
+                            onClick={() => setHidePass2((s) => !s)}
+                            type="button"
+                          />
+                        }
+                        {...field}
+                      />
+                    </FormField>
+                  )}
+                />
 
-                    <div className="flex justify-between items-center sm:flex-nowrap flex-wrap  mt-4 4xl:mt-10 pl-3">
-                      <div className="gap-x-3 flex sm:text-end sm:text-base text-sm text-center">
-                        <lable className="4xl:text-2xl font-medium">
-                          Both passwords must match.
-                        </lable>
-                      </div>
-                      <FaCheckCircle className="text-web_green text-lg 4xl:text-2xl" />
-                    </div>
-                    <Button
-                      as={Link}
-                      href="/auth/sign-in"
-                      type="submit"
-                      className="mt-4 4xl:mt-10 4xl:p-10 4xl:text-2xl  GradientBlue text-white w-full p-3 rounded-2xl"
-                    >
-                      Confirm
-                    </Button>
-                  </form>
+                <div style={matchRow}>
+                  <span>Both passwords must match.</span>
+                  <Check
+                    size={16}
+                    color={match ? "rgb(74,222,128)" : "rgba(255,255,255,0.3)"}
+                  />
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+
+                {error && <Alert tone="danger">{error}</Alert>}
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  fullWidth
+                  loading={isLoading}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Updating…" : "Confirm"}
+                </Button>
+              </ResponsiveStack>
+            </form>
+          </ResponsiveStack>
+        </Card>
+      </Page>
+    </div>
   );
 };
 
-export default Page;
+export default CreateNewPasswordPage;

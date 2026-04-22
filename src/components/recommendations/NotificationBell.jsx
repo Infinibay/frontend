@@ -9,10 +9,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Bell } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@infinibay/harbor';
 import { useGetPendingRecommendationCountQuery } from '@/gql/hooks';
 import { RecommendationDropdown } from './RecommendationDropdown';
-import { cn } from '@/lib/utils';
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,36 +52,40 @@ export function NotificationBell() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen]);
 
+  const badgeStyle = {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    padding: '0 5px',
+    borderRadius: 9999,
+    background: 'rgb(239, 68, 68)',
+    color: 'white',
+    fontSize: 11,
+    fontWeight: 500,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+    pointerEvents: 'none',
+  };
+
   return (
-    <div className="relative" ref={dropdownRef}>
-      <Button
+    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block' }}>
+      <IconButton
         variant="ghost"
-        size="icon"
-        className="relative h-9 w-9"
+        size="sm"
+        icon={<Bell size={16} />}
         onClick={() => setIsOpen(!isOpen)}
         aria-label={`${count} recomendaciones pendientes`}
         aria-expanded={isOpen}
         aria-haspopup="true"
-      >
-        <Bell className="h-5 w-5" />
+      />
+      {count > 0 && (
+        <span style={badgeStyle}>{count > 99 ? '99+' : count}</span>
+      )}
 
-        {/* Badge */}
-        {count > 0 && (
-          <span
-            className={cn(
-              'absolute -top-1 -right-1 flex items-center justify-center',
-              'min-w-[18px] h-[18px] px-1 rounded-full',
-              'text-xs font-medium text-white',
-              'bg-destructive',
-              'animate-in zoom-in-50 duration-200'
-            )}
-          >
-            {count > 99 ? '99+' : count}
-          </span>
-        )}
-      </Button>
-
-      {/* Dropdown */}
       {isOpen && (
         <RecommendationDropdown
           onClose={() => setIsOpen(false)}

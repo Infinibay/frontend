@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
-import * as ApolloReactCommon from '@apollo/client';
-import * as ApolloReactHooks from '@apollo/client';
+import * as ApolloReactCommon from '@apollo/client/react';
+import * as ApolloReactHooks from '@apollo/client/react';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | null;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -122,6 +122,105 @@ export type BackgroundHealthServiceStatus = {
   totalVMsMonitored: Scalars['Int']['output'];
 };
 
+export type Backup = {
+  __typename?: 'Backup';
+  backupId: Scalars['String']['output'];
+  completedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  compression: BackupCompression;
+  createdAt: Scalars['DateTimeISO']['output'];
+  description: Maybe<Scalars['String']['output']>;
+  disks: Maybe<Array<BackupDiskInfo>>;
+  durationMs: Maybe<Scalars['Float']['output']>;
+  errorMessage: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  parentBackupId: Maybe<Scalars['String']['output']>;
+  progressPercent: Maybe<Scalars['Float']['output']>;
+  status: BackupStatus;
+  tags: Maybe<Array<Scalars['String']['output']>>;
+  totalOriginalSize: Scalars['Float']['output'];
+  totalSize: Scalars['Float']['output'];
+  type: BackupType;
+  vmId: Scalars['String']['output'];
+};
+
+export enum BackupCompression {
+  Gzip = 'GZIP',
+  None = 'NONE',
+  Qcow2 = 'QCOW2'
+}
+
+export type BackupDiskInfo = {
+  __typename?: 'BackupDiskInfo';
+  backingFile: Maybe<Scalars['String']['output']>;
+  backupPath: Scalars['String']['output'];
+  backupSize: Scalars['Float']['output'];
+  format: Scalars['String']['output'];
+  originalSize: Scalars['Float']['output'];
+  sourcePath: Scalars['String']['output'];
+};
+
+export type BackupListResult = {
+  __typename?: 'BackupListResult';
+  backups: Array<Backup>;
+  message: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+};
+
+export type BackupRestoreResult = {
+  __typename?: 'BackupRestoreResult';
+  backupId: Maybe<Scalars['String']['output']>;
+  durationMs: Maybe<Scalars['Float']['output']>;
+  error: Maybe<Scalars['String']['output']>;
+  restoredDiskPaths: Maybe<Array<Scalars['String']['output']>>;
+  success: Scalars['Boolean']['output'];
+  vmId: Maybe<Scalars['String']['output']>;
+};
+
+export type BackupResult = {
+  __typename?: 'BackupResult';
+  backupId: Maybe<Scalars['String']['output']>;
+  disks: Maybe<Array<BackupDiskInfo>>;
+  durationMs: Maybe<Scalars['Float']['output']>;
+  error: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  totalSize: Maybe<Scalars['Float']['output']>;
+  type: Maybe<BackupType>;
+  vmId: Maybe<Scalars['String']['output']>;
+};
+
+export type BackupSchedule = {
+  __typename?: 'BackupSchedule';
+  compression: BackupCompression;
+  createdAt: Scalars['DateTimeISO']['output'];
+  cronExpression: Scalars['String']['output'];
+  destinationDir: Scalars['String']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  label: Maybe<Scalars['String']['output']>;
+  lastBackupId: Maybe<Scalars['String']['output']>;
+  lastRunAt: Maybe<Scalars['DateTimeISO']['output']>;
+  nextRunAt: Maybe<Scalars['DateTimeISO']['output']>;
+  retentionCount: Scalars['Float']['output'];
+  scheduleId: Scalars['String']['output'];
+  type: BackupType;
+  updatedAt: Scalars['DateTimeISO']['output'];
+  vmId: Scalars['String']['output'];
+};
+
+export enum BackupStatus {
+  Cancelled = 'CANCELLED',
+  Completed = 'COMPLETED',
+  Failed = 'FAILED',
+  InProgress = 'IN_PROGRESS',
+  Pending = 'PENDING'
+}
+
+export enum BackupType {
+  Full = 'FULL',
+  Incremental = 'INCREMENTAL',
+  Snapshot = 'SNAPSHOT'
+}
+
 export type BrNetfilterDiagnosticsType = {
   __typename?: 'BrNetfilterDiagnosticsType';
   callArptables: Scalars['Int']['output'];
@@ -191,6 +290,17 @@ export type CreateApplicationInputType = {
   parameters: InputMaybe<Scalars['JSONObject']['input']>;
 };
 
+export type CreateBackupInput = {
+  compression: InputMaybe<BackupCompression>;
+  description: InputMaybe<Scalars['String']['input']>;
+  destinationDir: InputMaybe<Scalars['String']['input']>;
+  diskPaths: Array<Scalars['String']['input']>;
+  parentBackupId: InputMaybe<Scalars['String']['input']>;
+  tags: InputMaybe<Array<Scalars['String']['input']>>;
+  type: BackupType;
+  vmId: Scalars['String']['input'];
+};
+
 export type CreateDepartmentFirewallInput = {
   firewallCustomRules: InputMaybe<Scalars['JSON']['input']>;
   firewallDefaultConfig: InputMaybe<Scalars['String']['input']>;
@@ -256,6 +366,17 @@ export type CreateNetworkInput = {
   name: Scalars['String']['input'];
 };
 
+export type CreateScheduleInput = {
+  compression: InputMaybe<BackupCompression>;
+  cronExpression: Scalars['String']['input'];
+  destinationDir: InputMaybe<Scalars['String']['input']>;
+  enabled: InputMaybe<Scalars['Boolean']['input']>;
+  label: InputMaybe<Scalars['String']['input']>;
+  retentionCount: InputMaybe<Scalars['Float']['input']>;
+  type: BackupType;
+  vmId: Scalars['String']['input'];
+};
+
 export type CreateScriptInput = {
   category: InputMaybe<Scalars['String']['input']>;
   content: Scalars['String']['input'];
@@ -292,6 +413,11 @@ export type DefenderScanResult = {
   threatsFound: Scalars['Int']['output'];
   timestamp: Scalars['DateTimeISO']['output'];
   vmId: Scalars['ID']['output'];
+};
+
+export type DeleteBackupInput = {
+  backupId: Scalars['String']['input'];
+  vmId: Scalars['String']['input'];
 };
 
 export type DeleteNetworkInput = {
@@ -939,10 +1065,16 @@ export type Mutation = {
   assignScriptToDepartment: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
+  /** Cancel a pending or running resolution. No-op on terminal resolutions. */
+  cancelResolution: RecommendationResolutionType;
   cancelScheduledScript: ScheduleScriptResponseType;
   cancelScriptExecution: ScriptExecutionResponseType;
   cleanupInfinibayFirewall: CleanupResultType;
   createApplication: ApplicationType;
+  /** Create a backup of a VM */
+  createBackup: BackupResult;
+  /** Create a backup schedule */
+  createBackupSchedule: BackupSchedule;
   createDepartment: DepartmentType;
   createDepartmentFirewallRule: FirewallRuleType;
   createMachine: Machine;
@@ -956,6 +1088,10 @@ export type Mutation = {
   createUser: UserType;
   createVMFirewallRule: FirewallRuleType;
   deleteApplication: Scalars['Boolean']['output'];
+  /** Delete a backup */
+  deleteBackup: SuccessType;
+  /** Delete a backup schedule */
+  deleteBackupSchedule: SuccessType;
   deleteFirewallRule: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
@@ -1002,7 +1138,11 @@ export type Mutation = {
   /** Remove a package from a virtual machine (legacy compatibility) */
   removePackage: CommandResult;
   resetMachine: SuccessType;
+  /** Trigger auto-resolution for a recommendation. Idempotent: returns the in-flight resolution if one is already running. */
+  resolveRecommendation: RecommendationResolutionType;
   restartMachine: SuccessType;
+  /** Restore a VM from a backup */
+  restoreBackup: BackupRestoreResult;
   /** Restore a virtual machine to a snapshot */
   restoreSnapshot: SuccessType;
   /** Run Windows Defender quick scan on a VM */
@@ -1027,6 +1167,8 @@ export type Mutation = {
   uninstallPackage: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
   updateApplication: ApplicationType;
+  /** Update a backup schedule */
+  updateBackupSchedule: BackupSchedule;
   updateDepartmentFirewallPolicy: DepartmentType;
   updateDepartmentName: DepartmentType;
   updateDepartmentNetwork: DepartmentType;
@@ -1058,6 +1200,11 @@ export type MutationCalculateIsoChecksumArgs = {
 };
 
 
+export type MutationCancelResolutionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationCancelScheduledScriptArgs = {
   executionId: Scalars['ID']['input'];
 };
@@ -1070,6 +1217,16 @@ export type MutationCancelScriptExecutionArgs = {
 
 export type MutationCreateApplicationArgs = {
   input: CreateApplicationInputType;
+};
+
+
+export type MutationCreateBackupArgs = {
+  input: CreateBackupInput;
+};
+
+
+export type MutationCreateBackupScheduleArgs = {
+  input: CreateScheduleInput;
 };
 
 
@@ -1133,6 +1290,16 @@ export type MutationCreateVmFirewallRuleArgs = {
 
 export type MutationDeleteApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationDeleteBackupArgs = {
+  input: DeleteBackupInput;
+};
+
+
+export type MutationDeleteBackupScheduleArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1311,8 +1478,20 @@ export type MutationResetMachineArgs = {
 };
 
 
+export type MutationResolveRecommendationArgs = {
+  actionKey: Scalars['String']['input'];
+  id: Scalars['ID']['input'];
+  params: InputMaybe<ResolveRecommendationParamsInput>;
+};
+
+
 export type MutationRestartMachineArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationRestoreBackupArgs = {
+  input: RestoreBackupInput;
 };
 
 
@@ -1387,6 +1566,12 @@ export type MutationUpdateAppSettingsArgs = {
 export type MutationUpdateApplicationArgs = {
   id: Scalars['String']['input'];
   input: CreateApplicationInputType;
+};
+
+
+export type MutationUpdateBackupScheduleArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateScheduleInput;
 };
 
 
@@ -1669,6 +1854,8 @@ export type ProcessControlResult = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Return active (non-terminal) resolutions for a machine */
+  activeResolutionsForMachine: Array<RecommendationResolutionType>;
   /** Get all ISOs (available and unavailable) */
   allISOs: Array<Iso>;
   application: Maybe<ApplicationType>;
@@ -1676,6 +1863,12 @@ export type Query = {
   /** Get all available ISOs */
   availableISOs: Array<Iso>;
   backgroundHealthServiceStatus: BackgroundHealthServiceStatus;
+  /** Get a single backup by its database ID */
+  backup: Maybe<Backup>;
+  /** List backup schedules for a VM (or all if vmId omitted) */
+  backupSchedules: ScheduleListResult;
+  /** List all backups for a VM */
+  backups: BackupListResult;
   captureDepartmentDhcpTraffic: DhcpTrafficCaptureType;
   /** Check for application updates on a VM */
   checkApplicationUpdates: ApplicationUpdates;
@@ -1751,6 +1944,8 @@ export type Query = {
   packages: Array<PackageType>;
   /** Get the count of pending (non-dismissed, non-snoozed) recommendations across all VMs */
   pendingRecommendationCount: Scalars['Int']['output'];
+  /** Fetch a single resolution. Poll this query to track progress. */
+  recommendationResolution: Maybe<RecommendationResolutionType>;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
   scheduledScript: Maybe<ScheduledScriptType>;
@@ -1776,8 +1971,28 @@ export type Query = {
 };
 
 
+export type QueryActiveResolutionsForMachineArgs = {
+  machineId: Scalars['ID']['input'];
+};
+
+
 export type QueryApplicationArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryBackupArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryBackupSchedulesArgs = {
+  vmId: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryBackupsArgs = {
+  vmId: Scalars['String']['input'];
 };
 
 
@@ -1979,6 +2194,11 @@ export type QueryPackageArgs = {
 };
 
 
+export type QueryRecommendationResolutionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QueryRunHealthCheckArgs = {
   checkName: HealthCheckName;
   vmId: Scalars['ID']['input'];
@@ -2104,6 +2324,28 @@ export type RecommendationFilterInput = {
   types: InputMaybe<Array<RecommendationType>>;
 };
 
+/** Auto-resolve execution for a VM recommendation */
+export type RecommendationResolutionType = {
+  __typename?: 'RecommendationResolutionType';
+  /** Key identifying which resolver handler ran (e.g. install_updates, reboot) */
+  actionKey: Scalars['String']['output'];
+  completedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  error: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  machineId: Scalars['ID']['output'];
+  params: Maybe<Scalars['JSONObject']['output']>;
+  /** 0-100 progress indicator */
+  progress: Scalars['Int']['output'];
+  progressMessage: Maybe<Scalars['String']['output']>;
+  recommendationId: Scalars['ID']['output'];
+  result: Maybe<Scalars['JSONObject']['output']>;
+  startedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  status: ResolutionStatus;
+  triggeredByUserId: Scalars['ID']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
 /** Types of VM recommendations that can be generated by the system based on health checks and system analysis */
 export enum RecommendationType {
   /** Generated when application updates, especially security updates, are available */
@@ -2130,6 +2372,28 @@ export enum RecommendationType {
   UnderProvisioned = 'UNDER_PROVISIONED'
 }
 
+/** Lifecycle state of an auto-resolve execution for a VM recommendation */
+export enum ResolutionStatus {
+  Cancelled = 'CANCELLED',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  RequiresReboot = 'REQUIRES_REBOOT',
+  Running = 'RUNNING',
+  Succeeded = 'SUCCEEDED'
+}
+
+/** Parameters for resolveRecommendation. Pass confirmed=true for destructive actions. */
+export type ResolveRecommendationParamsInput = {
+  /** User confirmation for destructive actions (reboot, install updates) */
+  confirmed: InputMaybe<Scalars['Boolean']['input']>;
+  /** Specific package names to update (defaults to all) */
+  packages: InputMaybe<Array<Scalars['String']['input']>>;
+  /** When to run the action (for schedule_reboot) */
+  scheduledAt: InputMaybe<Scalars['DateTimeISO']['input']>;
+  /** Filter to security updates only */
+  securityOnly: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 export type ResourceOptimizationInfo = {
   __typename?: 'ResourceOptimizationInfo';
   error: Maybe<Scalars['String']['output']>;
@@ -2149,6 +2413,13 @@ export type ResourceRecommendation = {
   recommendedValue: Scalars['Float']['output'];
   resource: Scalars['String']['output'];
   unit: Scalars['String']['output'];
+};
+
+export type RestoreBackupInput = {
+  backupId: Scalars['String']['input'];
+  diskPaths: Array<Scalars['String']['input']>;
+  overwriteExisting: InputMaybe<Scalars['Boolean']['input']>;
+  vmId: Scalars['String']['input'];
 };
 
 export type RestoreSnapshotInput = {
@@ -2182,6 +2453,13 @@ export enum RuleSetType {
   Department = 'DEPARTMENT',
   Vm = 'VM'
 }
+
+export type ScheduleListResult = {
+  __typename?: 'ScheduleListResult';
+  message: Scalars['String']['output'];
+  schedules: Array<BackupSchedule>;
+  success: Scalars['Boolean']['output'];
+};
 
 export type ScheduleScriptInput = {
   departmentId: InputMaybe<Scalars['ID']['input']>;
@@ -2529,6 +2807,16 @@ export type UpdateMaintenanceTaskInput = {
   name: InputMaybe<Scalars['String']['input']>;
   parameters: InputMaybe<Scalars['JSONObject']['input']>;
   runAt: InputMaybe<Scalars['DateTimeISO']['input']>;
+};
+
+export type UpdateScheduleInput = {
+  compression: InputMaybe<BackupCompression>;
+  cronExpression: InputMaybe<Scalars['String']['input']>;
+  destinationDir: InputMaybe<Scalars['String']['input']>;
+  enabled: InputMaybe<Scalars['Boolean']['input']>;
+  label: InputMaybe<Scalars['String']['input']>;
+  retentionCount: InputMaybe<Scalars['Float']['input']>;
+  type: InputMaybe<BackupType>;
 };
 
 export type UpdateScheduledScriptInput = {
@@ -3123,6 +3411,49 @@ export type CancelScheduledScriptMutationVariables = Exact<{
 
 export type CancelScheduledScriptMutation = { __typename?: 'Mutation', cancelScheduledScript: { __typename?: 'ScheduleScriptResponseType', success: boolean, message: string | null, error: string | null } };
 
+export type CreateBackupMutationVariables = Exact<{
+  input: CreateBackupInput;
+}>;
+
+
+export type CreateBackupMutation = { __typename?: 'Mutation', createBackup: { __typename?: 'BackupResult', success: boolean, backupId: string | null, vmId: string | null, type: BackupType | null, totalSize: number | null, durationMs: number | null, error: string | null } };
+
+export type RestoreBackupMutationVariables = Exact<{
+  input: RestoreBackupInput;
+}>;
+
+
+export type RestoreBackupMutation = { __typename?: 'Mutation', restoreBackup: { __typename?: 'BackupRestoreResult', success: boolean, backupId: string | null, vmId: string | null, restoredDiskPaths: Array<string> | null, durationMs: number | null, error: string | null } };
+
+export type DeleteBackupMutationVariables = Exact<{
+  input: DeleteBackupInput;
+}>;
+
+
+export type DeleteBackupMutation = { __typename?: 'Mutation', deleteBackup: { __typename?: 'SuccessType', success: boolean, message: string } };
+
+export type CreateBackupScheduleMutationVariables = Exact<{
+  input: CreateScheduleInput;
+}>;
+
+
+export type CreateBackupScheduleMutation = { __typename?: 'Mutation', createBackupSchedule: { __typename?: 'BackupSchedule', id: string, scheduleId: string, vmId: string, type: BackupType, cronExpression: string, retentionCount: number, destinationDir: string, compression: BackupCompression, enabled: boolean, label: string | null, nextRunAt: string | null, createdAt: string, updatedAt: string } };
+
+export type UpdateBackupScheduleMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateScheduleInput;
+}>;
+
+
+export type UpdateBackupScheduleMutation = { __typename?: 'Mutation', updateBackupSchedule: { __typename?: 'BackupSchedule', id: string, scheduleId: string, vmId: string, type: BackupType, cronExpression: string, retentionCount: number, destinationDir: string, compression: BackupCompression, enabled: boolean, label: string | null, nextRunAt: string | null, updatedAt: string } };
+
+export type DeleteBackupScheduleMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteBackupScheduleMutation = { __typename?: 'Mutation', deleteBackupSchedule: { __typename?: 'SuccessType', success: boolean, message: string } };
+
 export type EnablePackageMutationVariables = Exact<{
   name: Scalars['String']['input'];
 }>;
@@ -3143,6 +3474,38 @@ export type UninstallPackageMutationVariables = Exact<{
 
 
 export type UninstallPackageMutation = { __typename?: 'Mutation', uninstallPackage: boolean };
+
+export type RecommendationResolutionFieldsFragment = { __typename?: 'RecommendationResolutionType', id: string, recommendationId: string, machineId: string, actionKey: string, status: ResolutionStatus, progress: number, progressMessage: string | null, params: { [key: string]: any } | null, result: { [key: string]: any } | null, error: string | null, triggeredByUserId: string, startedAt: string | null, completedAt: string | null, createdAt: string, updatedAt: string };
+
+export type ResolveRecommendationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  actionKey: Scalars['String']['input'];
+  params: InputMaybe<ResolveRecommendationParamsInput>;
+}>;
+
+
+export type ResolveRecommendationMutation = { __typename?: 'Mutation', resolveRecommendation: { __typename?: 'RecommendationResolutionType', id: string, recommendationId: string, machineId: string, actionKey: string, status: ResolutionStatus, progress: number, progressMessage: string | null, params: { [key: string]: any } | null, result: { [key: string]: any } | null, error: string | null, triggeredByUserId: string, startedAt: string | null, completedAt: string | null, createdAt: string, updatedAt: string } };
+
+export type CancelResolutionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type CancelResolutionMutation = { __typename?: 'Mutation', cancelResolution: { __typename?: 'RecommendationResolutionType', id: string, recommendationId: string, machineId: string, actionKey: string, status: ResolutionStatus, progress: number, progressMessage: string | null, params: { [key: string]: any } | null, result: { [key: string]: any } | null, error: string | null, triggeredByUserId: string, startedAt: string | null, completedAt: string | null, createdAt: string, updatedAt: string } };
+
+export type RecommendationResolutionQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RecommendationResolutionQuery = { __typename?: 'Query', recommendationResolution: { __typename?: 'RecommendationResolutionType', id: string, recommendationId: string, machineId: string, actionKey: string, status: ResolutionStatus, progress: number, progressMessage: string | null, params: { [key: string]: any } | null, result: { [key: string]: any } | null, error: string | null, triggeredByUserId: string, startedAt: string | null, completedAt: string | null, createdAt: string, updatedAt: string } | null };
+
+export type ActiveResolutionsForMachineQueryVariables = Exact<{
+  machineId: Scalars['ID']['input'];
+}>;
+
+
+export type ActiveResolutionsForMachineQuery = { __typename?: 'Query', activeResolutionsForMachine: Array<{ __typename?: 'RecommendationResolutionType', id: string, recommendationId: string, machineId: string, actionKey: string, status: ResolutionStatus, progress: number, progressMessage: string | null, params: { [key: string]: any } | null, result: { [key: string]: any } | null, error: string | null, triggeredByUserId: string, startedAt: string | null, completedAt: string | null, createdAt: string, updatedAt: string }> };
 
 export type CreateMaintenanceTaskMutationVariables = Exact<{
   input: CreateMaintenanceTaskInput;
@@ -3566,6 +3929,20 @@ export type CaptureDepartmentDhcpTrafficQueryVariables = Exact<{
 
 export type CaptureDepartmentDhcpTrafficQuery = { __typename?: 'Query', captureDepartmentDhcpTraffic: { __typename?: 'DhcpTrafficCaptureType', bridgeName: string, duration: number, packets: Array<string>, summary: { __typename?: 'DhcpPacketSummaryType', totalPackets: number, discoverPackets: number, offerPackets: number, requestPackets: number, ackPackets: number } } };
 
+export type BackupsQueryVariables = Exact<{
+  vmId: Scalars['String']['input'];
+}>;
+
+
+export type BackupsQuery = { __typename?: 'Query', backups: { __typename?: 'BackupListResult', success: boolean, message: string, backups: Array<{ __typename?: 'Backup', id: string, backupId: string, vmId: string, type: BackupType, status: BackupStatus, totalSize: number, totalOriginalSize: number, compression: BackupCompression, description: string | null, tags: Array<string> | null, parentBackupId: string | null, errorMessage: string | null, progressPercent: number | null, durationMs: number | null, createdAt: string, completedAt: string | null, disks: Array<{ __typename?: 'BackupDiskInfo', sourcePath: string, backupPath: string, originalSize: number, backupSize: number, format: string }> | null }> } };
+
+export type BackupSchedulesQueryVariables = Exact<{
+  vmId: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type BackupSchedulesQuery = { __typename?: 'Query', backupSchedules: { __typename?: 'ScheduleListResult', success: boolean, message: string, schedules: Array<{ __typename?: 'BackupSchedule', id: string, scheduleId: string, vmId: string, type: BackupType, cronExpression: string, retentionCount: number, destinationDir: string, compression: BackupCompression, enabled: boolean, label: string | null, lastRunAt: string | null, nextRunAt: string | null, lastBackupId: string | null, createdAt: string, updatedAt: string }> } };
+
 export type PackagesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3611,7 +3988,25 @@ export type GlobalPendingRecommendationsQueryVariables = Exact<{
 
 export type GlobalPendingRecommendationsQuery = { __typename?: 'Query', globalPendingRecommendations: Array<{ __typename?: 'GlobalRecommendationType', id: string, machineId: string, machineName: string, type: RecommendationType, text: string, actionText: string, severity: string, data: { [key: string]: any } | null, createdAt: string }> };
 
-
+export const RecommendationResolutionFieldsFragmentDoc = gql`
+    fragment RecommendationResolutionFields on RecommendationResolutionType {
+  id
+  recommendationId
+  machineId
+  actionKey
+  status
+  progress
+  progressMessage
+  params
+  result
+  error
+  triggeredByUserId
+  startedAt
+  completedAt
+  createdAt
+  updatedAt
+}
+    `;
 export const CreateUserDocument = gql`
     mutation createUser($input: CreateUserInputType!) {
   createUser(input: $input) {
@@ -5727,6 +6122,241 @@ export function useCancelScheduledScriptMutation(baseOptions?: ApolloReactHooks.
 export type CancelScheduledScriptMutationHookResult = ReturnType<typeof useCancelScheduledScriptMutation>;
 export type CancelScheduledScriptMutationResult = ApolloReactCommon.MutationResult<CancelScheduledScriptMutation>;
 export type CancelScheduledScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<CancelScheduledScriptMutation, CancelScheduledScriptMutationVariables>;
+export const CreateBackupDocument = gql`
+    mutation createBackup($input: CreateBackupInput!) {
+  createBackup(input: $input) {
+    success
+    backupId
+    vmId
+    type
+    totalSize
+    durationMs
+    error
+  }
+}
+    `;
+export type CreateBackupMutationFn = ApolloReactCommon.MutationFunction<CreateBackupMutation, CreateBackupMutationVariables>;
+
+/**
+ * __useCreateBackupMutation__
+ *
+ * To run a mutation, you first call `useCreateBackupMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateBackupMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createBackupMutation, { data, loading, error }] = useCreateBackupMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateBackupMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateBackupMutation, CreateBackupMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateBackupMutation, CreateBackupMutationVariables>(CreateBackupDocument, options);
+      }
+export type CreateBackupMutationHookResult = ReturnType<typeof useCreateBackupMutation>;
+export type CreateBackupMutationResult = ApolloReactCommon.MutationResult<CreateBackupMutation>;
+export type CreateBackupMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateBackupMutation, CreateBackupMutationVariables>;
+export const RestoreBackupDocument = gql`
+    mutation restoreBackup($input: RestoreBackupInput!) {
+  restoreBackup(input: $input) {
+    success
+    backupId
+    vmId
+    restoredDiskPaths
+    durationMs
+    error
+  }
+}
+    `;
+export type RestoreBackupMutationFn = ApolloReactCommon.MutationFunction<RestoreBackupMutation, RestoreBackupMutationVariables>;
+
+/**
+ * __useRestoreBackupMutation__
+ *
+ * To run a mutation, you first call `useRestoreBackupMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRestoreBackupMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [restoreBackupMutation, { data, loading, error }] = useRestoreBackupMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRestoreBackupMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RestoreBackupMutation, RestoreBackupMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RestoreBackupMutation, RestoreBackupMutationVariables>(RestoreBackupDocument, options);
+      }
+export type RestoreBackupMutationHookResult = ReturnType<typeof useRestoreBackupMutation>;
+export type RestoreBackupMutationResult = ApolloReactCommon.MutationResult<RestoreBackupMutation>;
+export type RestoreBackupMutationOptions = ApolloReactCommon.BaseMutationOptions<RestoreBackupMutation, RestoreBackupMutationVariables>;
+export const DeleteBackupDocument = gql`
+    mutation deleteBackup($input: DeleteBackupInput!) {
+  deleteBackup(input: $input) {
+    success
+    message
+  }
+}
+    `;
+export type DeleteBackupMutationFn = ApolloReactCommon.MutationFunction<DeleteBackupMutation, DeleteBackupMutationVariables>;
+
+/**
+ * __useDeleteBackupMutation__
+ *
+ * To run a mutation, you first call `useDeleteBackupMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteBackupMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteBackupMutation, { data, loading, error }] = useDeleteBackupMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useDeleteBackupMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteBackupMutation, DeleteBackupMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteBackupMutation, DeleteBackupMutationVariables>(DeleteBackupDocument, options);
+      }
+export type DeleteBackupMutationHookResult = ReturnType<typeof useDeleteBackupMutation>;
+export type DeleteBackupMutationResult = ApolloReactCommon.MutationResult<DeleteBackupMutation>;
+export type DeleteBackupMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteBackupMutation, DeleteBackupMutationVariables>;
+export const CreateBackupScheduleDocument = gql`
+    mutation createBackupSchedule($input: CreateScheduleInput!) {
+  createBackupSchedule(input: $input) {
+    id
+    scheduleId
+    vmId
+    type
+    cronExpression
+    retentionCount
+    destinationDir
+    compression
+    enabled
+    label
+    nextRunAt
+    createdAt
+    updatedAt
+  }
+}
+    `;
+export type CreateBackupScheduleMutationFn = ApolloReactCommon.MutationFunction<CreateBackupScheduleMutation, CreateBackupScheduleMutationVariables>;
+
+/**
+ * __useCreateBackupScheduleMutation__
+ *
+ * To run a mutation, you first call `useCreateBackupScheduleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateBackupScheduleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createBackupScheduleMutation, { data, loading, error }] = useCreateBackupScheduleMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateBackupScheduleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateBackupScheduleMutation, CreateBackupScheduleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateBackupScheduleMutation, CreateBackupScheduleMutationVariables>(CreateBackupScheduleDocument, options);
+      }
+export type CreateBackupScheduleMutationHookResult = ReturnType<typeof useCreateBackupScheduleMutation>;
+export type CreateBackupScheduleMutationResult = ApolloReactCommon.MutationResult<CreateBackupScheduleMutation>;
+export type CreateBackupScheduleMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateBackupScheduleMutation, CreateBackupScheduleMutationVariables>;
+export const UpdateBackupScheduleDocument = gql`
+    mutation updateBackupSchedule($id: ID!, $input: UpdateScheduleInput!) {
+  updateBackupSchedule(id: $id, input: $input) {
+    id
+    scheduleId
+    vmId
+    type
+    cronExpression
+    retentionCount
+    destinationDir
+    compression
+    enabled
+    label
+    nextRunAt
+    updatedAt
+  }
+}
+    `;
+export type UpdateBackupScheduleMutationFn = ApolloReactCommon.MutationFunction<UpdateBackupScheduleMutation, UpdateBackupScheduleMutationVariables>;
+
+/**
+ * __useUpdateBackupScheduleMutation__
+ *
+ * To run a mutation, you first call `useUpdateBackupScheduleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateBackupScheduleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateBackupScheduleMutation, { data, loading, error }] = useUpdateBackupScheduleMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateBackupScheduleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateBackupScheduleMutation, UpdateBackupScheduleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateBackupScheduleMutation, UpdateBackupScheduleMutationVariables>(UpdateBackupScheduleDocument, options);
+      }
+export type UpdateBackupScheduleMutationHookResult = ReturnType<typeof useUpdateBackupScheduleMutation>;
+export type UpdateBackupScheduleMutationResult = ApolloReactCommon.MutationResult<UpdateBackupScheduleMutation>;
+export type UpdateBackupScheduleMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateBackupScheduleMutation, UpdateBackupScheduleMutationVariables>;
+export const DeleteBackupScheduleDocument = gql`
+    mutation deleteBackupSchedule($id: ID!) {
+  deleteBackupSchedule(id: $id) {
+    success
+    message
+  }
+}
+    `;
+export type DeleteBackupScheduleMutationFn = ApolloReactCommon.MutationFunction<DeleteBackupScheduleMutation, DeleteBackupScheduleMutationVariables>;
+
+/**
+ * __useDeleteBackupScheduleMutation__
+ *
+ * To run a mutation, you first call `useDeleteBackupScheduleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteBackupScheduleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteBackupScheduleMutation, { data, loading, error }] = useDeleteBackupScheduleMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteBackupScheduleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteBackupScheduleMutation, DeleteBackupScheduleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteBackupScheduleMutation, DeleteBackupScheduleMutationVariables>(DeleteBackupScheduleDocument, options);
+      }
+export type DeleteBackupScheduleMutationHookResult = ReturnType<typeof useDeleteBackupScheduleMutation>;
+export type DeleteBackupScheduleMutationResult = ApolloReactCommon.MutationResult<DeleteBackupScheduleMutation>;
+export type DeleteBackupScheduleMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteBackupScheduleMutation, DeleteBackupScheduleMutationVariables>;
 export const EnablePackageDocument = gql`
     mutation EnablePackage($name: String!) {
   enablePackage(name: $name) {
@@ -5860,6 +6490,166 @@ export function useUninstallPackageMutation(baseOptions?: ApolloReactHooks.Mutat
 export type UninstallPackageMutationHookResult = ReturnType<typeof useUninstallPackageMutation>;
 export type UninstallPackageMutationResult = ApolloReactCommon.MutationResult<UninstallPackageMutation>;
 export type UninstallPackageMutationOptions = ApolloReactCommon.BaseMutationOptions<UninstallPackageMutation, UninstallPackageMutationVariables>;
+export const ResolveRecommendationDocument = gql`
+    mutation resolveRecommendation($id: ID!, $actionKey: String!, $params: ResolveRecommendationParamsInput) {
+  resolveRecommendation(id: $id, actionKey: $actionKey, params: $params) {
+    ...RecommendationResolutionFields
+  }
+}
+    ${RecommendationResolutionFieldsFragmentDoc}`;
+export type ResolveRecommendationMutationFn = ApolloReactCommon.MutationFunction<ResolveRecommendationMutation, ResolveRecommendationMutationVariables>;
+
+/**
+ * __useResolveRecommendationMutation__
+ *
+ * To run a mutation, you first call `useResolveRecommendationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useResolveRecommendationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [resolveRecommendationMutation, { data, loading, error }] = useResolveRecommendationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      actionKey: // value for 'actionKey'
+ *      params: // value for 'params'
+ *   },
+ * });
+ */
+export function useResolveRecommendationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ResolveRecommendationMutation, ResolveRecommendationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ResolveRecommendationMutation, ResolveRecommendationMutationVariables>(ResolveRecommendationDocument, options);
+      }
+export type ResolveRecommendationMutationHookResult = ReturnType<typeof useResolveRecommendationMutation>;
+export type ResolveRecommendationMutationResult = ApolloReactCommon.MutationResult<ResolveRecommendationMutation>;
+export type ResolveRecommendationMutationOptions = ApolloReactCommon.BaseMutationOptions<ResolveRecommendationMutation, ResolveRecommendationMutationVariables>;
+export const CancelResolutionDocument = gql`
+    mutation cancelResolution($id: ID!) {
+  cancelResolution(id: $id) {
+    ...RecommendationResolutionFields
+  }
+}
+    ${RecommendationResolutionFieldsFragmentDoc}`;
+export type CancelResolutionMutationFn = ApolloReactCommon.MutationFunction<CancelResolutionMutation, CancelResolutionMutationVariables>;
+
+/**
+ * __useCancelResolutionMutation__
+ *
+ * To run a mutation, you first call `useCancelResolutionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCancelResolutionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [cancelResolutionMutation, { data, loading, error }] = useCancelResolutionMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useCancelResolutionMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CancelResolutionMutation, CancelResolutionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CancelResolutionMutation, CancelResolutionMutationVariables>(CancelResolutionDocument, options);
+      }
+export type CancelResolutionMutationHookResult = ReturnType<typeof useCancelResolutionMutation>;
+export type CancelResolutionMutationResult = ApolloReactCommon.MutationResult<CancelResolutionMutation>;
+export type CancelResolutionMutationOptions = ApolloReactCommon.BaseMutationOptions<CancelResolutionMutation, CancelResolutionMutationVariables>;
+export const RecommendationResolutionDocument = gql`
+    query recommendationResolution($id: ID!) {
+  recommendationResolution(id: $id) {
+    ...RecommendationResolutionFields
+  }
+}
+    ${RecommendationResolutionFieldsFragmentDoc}`;
+
+/**
+ * __useRecommendationResolutionQuery__
+ *
+ * To run a query within a React component, call `useRecommendationResolutionQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRecommendationResolutionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRecommendationResolutionQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRecommendationResolutionQuery(baseOptions: ApolloReactHooks.QueryHookOptions<RecommendationResolutionQuery, RecommendationResolutionQueryVariables> & ({ variables: RecommendationResolutionQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RecommendationResolutionQuery, RecommendationResolutionQueryVariables>(RecommendationResolutionDocument, options);
+      }
+export function useRecommendationResolutionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RecommendationResolutionQuery, RecommendationResolutionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RecommendationResolutionQuery, RecommendationResolutionQueryVariables>(RecommendationResolutionDocument, options);
+        }
+// @ts-ignore
+export function useRecommendationResolutionSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<RecommendationResolutionQuery, RecommendationResolutionQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<RecommendationResolutionQuery, RecommendationResolutionQueryVariables>;
+export function useRecommendationResolutionSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<RecommendationResolutionQuery, RecommendationResolutionQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<RecommendationResolutionQuery | undefined, RecommendationResolutionQueryVariables>;
+export function useRecommendationResolutionSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<RecommendationResolutionQuery, RecommendationResolutionQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<RecommendationResolutionQuery, RecommendationResolutionQueryVariables>(RecommendationResolutionDocument, options);
+        }
+export type RecommendationResolutionQueryHookResult = ReturnType<typeof useRecommendationResolutionQuery>;
+export type RecommendationResolutionLazyQueryHookResult = ReturnType<typeof useRecommendationResolutionLazyQuery>;
+export type RecommendationResolutionSuspenseQueryHookResult = ReturnType<typeof useRecommendationResolutionSuspenseQuery>;
+export type RecommendationResolutionQueryResult = ApolloReactCommon.QueryResult<RecommendationResolutionQuery, RecommendationResolutionQueryVariables>;
+export function refetchRecommendationResolutionQuery(variables: RecommendationResolutionQueryVariables) {
+      return { query: RecommendationResolutionDocument, variables: variables }
+    }
+export const ActiveResolutionsForMachineDocument = gql`
+    query activeResolutionsForMachine($machineId: ID!) {
+  activeResolutionsForMachine(machineId: $machineId) {
+    ...RecommendationResolutionFields
+  }
+}
+    ${RecommendationResolutionFieldsFragmentDoc}`;
+
+/**
+ * __useActiveResolutionsForMachineQuery__
+ *
+ * To run a query within a React component, call `useActiveResolutionsForMachineQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActiveResolutionsForMachineQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActiveResolutionsForMachineQuery({
+ *   variables: {
+ *      machineId: // value for 'machineId'
+ *   },
+ * });
+ */
+export function useActiveResolutionsForMachineQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables> & ({ variables: ActiveResolutionsForMachineQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables>(ActiveResolutionsForMachineDocument, options);
+      }
+export function useActiveResolutionsForMachineLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables>(ActiveResolutionsForMachineDocument, options);
+        }
+// @ts-ignore
+export function useActiveResolutionsForMachineSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables>;
+export function useActiveResolutionsForMachineSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ActiveResolutionsForMachineQuery | undefined, ActiveResolutionsForMachineQueryVariables>;
+export function useActiveResolutionsForMachineSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables>(ActiveResolutionsForMachineDocument, options);
+        }
+export type ActiveResolutionsForMachineQueryHookResult = ReturnType<typeof useActiveResolutionsForMachineQuery>;
+export type ActiveResolutionsForMachineLazyQueryHookResult = ReturnType<typeof useActiveResolutionsForMachineLazyQuery>;
+export type ActiveResolutionsForMachineSuspenseQueryHookResult = ReturnType<typeof useActiveResolutionsForMachineSuspenseQuery>;
+export type ActiveResolutionsForMachineQueryResult = ApolloReactCommon.QueryResult<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables>;
+export function refetchActiveResolutionsForMachineQuery(variables: ActiveResolutionsForMachineQueryVariables) {
+      return { query: ActiveResolutionsForMachineDocument, variables: variables }
+    }
 export const CreateMaintenanceTaskDocument = gql`
     mutation createMaintenanceTask($input: CreateMaintenanceTaskInput!) {
   createMaintenanceTask(input: $input) {
@@ -6945,6 +7735,9 @@ export function useCurrentUserLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<CurrentUserQuery, CurrentUserQueryVariables>(CurrentUserDocument, options);
         }
+// @ts-ignore
+export function useCurrentUserSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<CurrentUserQuery, CurrentUserQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<CurrentUserQuery, CurrentUserQueryVariables>;
+export function useCurrentUserSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<CurrentUserQuery, CurrentUserQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<CurrentUserQuery | undefined, CurrentUserQueryVariables>;
 export function useCurrentUserSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<CurrentUserQuery, CurrentUserQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<CurrentUserQuery, CurrentUserQueryVariables>(CurrentUserDocument, options);
@@ -6994,6 +7787,9 @@ export function useUserLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOpt
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<UserQuery, UserQueryVariables>(UserDocument, options);
         }
+// @ts-ignore
+export function useUserSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<UserQuery, UserQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<UserQuery, UserQueryVariables>;
+export function useUserSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<UserQuery, UserQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<UserQuery | undefined, UserQueryVariables>;
 export function useUserSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<UserQuery, UserQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<UserQuery, UserQueryVariables>(UserDocument, options);
@@ -7044,6 +7840,9 @@ export function useUsersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOp
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<UsersQuery, UsersQueryVariables>(UsersDocument, options);
         }
+// @ts-ignore
+export function useUsersSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<UsersQuery, UsersQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<UsersQuery, UsersQueryVariables>;
+export function useUsersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<UsersQuery, UsersQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<UsersQuery | undefined, UsersQueryVariables>;
 export function useUsersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<UsersQuery, UsersQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<UsersQuery, UsersQueryVariables>(UsersDocument, options);
@@ -7095,6 +7894,9 @@ export function useMachineTemplateLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<MachineTemplateQuery, MachineTemplateQueryVariables>(MachineTemplateDocument, options);
         }
+// @ts-ignore
+export function useMachineTemplateSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplateQuery, MachineTemplateQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachineTemplateQuery, MachineTemplateQueryVariables>;
+export function useMachineTemplateSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplateQuery, MachineTemplateQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachineTemplateQuery | undefined, MachineTemplateQueryVariables>;
 export function useMachineTemplateSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplateQuery, MachineTemplateQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<MachineTemplateQuery, MachineTemplateQueryVariables>(MachineTemplateDocument, options);
@@ -7147,6 +7949,9 @@ export function useMachineTemplatesLazyQuery(baseOptions?: ApolloReactHooks.Lazy
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<MachineTemplatesQuery, MachineTemplatesQueryVariables>(MachineTemplatesDocument, options);
         }
+// @ts-ignore
+export function useMachineTemplatesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplatesQuery, MachineTemplatesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachineTemplatesQuery, MachineTemplatesQueryVariables>;
+export function useMachineTemplatesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplatesQuery, MachineTemplatesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachineTemplatesQuery | undefined, MachineTemplatesQueryVariables>;
 export function useMachineTemplatesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplatesQuery, MachineTemplatesQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<MachineTemplatesQuery, MachineTemplatesQueryVariables>(MachineTemplatesDocument, options);
@@ -7226,6 +8031,9 @@ export function useMachineLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<MachineQuery, MachineQueryVariables>(MachineDocument, options);
         }
+// @ts-ignore
+export function useMachineSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<MachineQuery, MachineQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachineQuery, MachineQueryVariables>;
+export function useMachineSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachineQuery, MachineQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachineQuery | undefined, MachineQueryVariables>;
 export function useMachineSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachineQuery, MachineQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<MachineQuery, MachineQueryVariables>(MachineDocument, options);
@@ -7306,6 +8114,9 @@ export function useMachinesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<MachinesQuery, MachinesQueryVariables>(MachinesDocument, options);
         }
+// @ts-ignore
+export function useMachinesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<MachinesQuery, MachinesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachinesQuery, MachinesQueryVariables>;
+export function useMachinesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachinesQuery, MachinesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachinesQuery | undefined, MachinesQueryVariables>;
 export function useMachinesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachinesQuery, MachinesQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<MachinesQuery, MachinesQueryVariables>(MachinesDocument, options);
@@ -7351,6 +8162,9 @@ export function useGraphicConnectionLazyQuery(baseOptions?: ApolloReactHooks.Laz
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<GraphicConnectionQuery, GraphicConnectionQueryVariables>(GraphicConnectionDocument, options);
         }
+// @ts-ignore
+export function useGraphicConnectionSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GraphicConnectionQuery, GraphicConnectionQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GraphicConnectionQuery, GraphicConnectionQueryVariables>;
+export function useGraphicConnectionSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GraphicConnectionQuery, GraphicConnectionQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GraphicConnectionQuery | undefined, GraphicConnectionQueryVariables>;
 export function useGraphicConnectionSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GraphicConnectionQuery, GraphicConnectionQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<GraphicConnectionQuery, GraphicConnectionQueryVariables>(GraphicConnectionDocument, options);
@@ -7393,6 +8207,9 @@ export function useCheckSetupStatusLazyQuery(baseOptions?: ApolloReactHooks.Lazy
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<CheckSetupStatusQuery, CheckSetupStatusQueryVariables>(CheckSetupStatusDocument, options);
         }
+// @ts-ignore
+export function useCheckSetupStatusSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<CheckSetupStatusQuery, CheckSetupStatusQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<CheckSetupStatusQuery, CheckSetupStatusQueryVariables>;
+export function useCheckSetupStatusSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<CheckSetupStatusQuery, CheckSetupStatusQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<CheckSetupStatusQuery | undefined, CheckSetupStatusQueryVariables>;
 export function useCheckSetupStatusSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<CheckSetupStatusQuery, CheckSetupStatusQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<CheckSetupStatusQuery, CheckSetupStatusQueryVariables>(CheckSetupStatusDocument, options);
@@ -7442,6 +8259,9 @@ export function useDepartmentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<DepartmentsQuery, DepartmentsQueryVariables>(DepartmentsDocument, options);
         }
+// @ts-ignore
+export function useDepartmentsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<DepartmentsQuery, DepartmentsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<DepartmentsQuery, DepartmentsQueryVariables>;
+export function useDepartmentsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentsQuery, DepartmentsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<DepartmentsQuery | undefined, DepartmentsQueryVariables>;
 export function useDepartmentsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentsQuery, DepartmentsQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<DepartmentsQuery, DepartmentsQueryVariables>(DepartmentsDocument, options);
@@ -7492,6 +8312,9 @@ export function useDepartmentLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<DepartmentQuery, DepartmentQueryVariables>(DepartmentDocument, options);
         }
+// @ts-ignore
+export function useDepartmentSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<DepartmentQuery, DepartmentQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<DepartmentQuery, DepartmentQueryVariables>;
+export function useDepartmentSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentQuery, DepartmentQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<DepartmentQuery | undefined, DepartmentQueryVariables>;
 export function useDepartmentSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentQuery, DepartmentQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<DepartmentQuery, DepartmentQueryVariables>(DepartmentDocument, options);
@@ -7542,6 +8365,9 @@ export function useFindDepartmentByNameLazyQuery(baseOptions?: ApolloReactHooks.
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<FindDepartmentByNameQuery, FindDepartmentByNameQueryVariables>(FindDepartmentByNameDocument, options);
         }
+// @ts-ignore
+export function useFindDepartmentByNameSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<FindDepartmentByNameQuery, FindDepartmentByNameQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<FindDepartmentByNameQuery, FindDepartmentByNameQueryVariables>;
+export function useFindDepartmentByNameSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<FindDepartmentByNameQuery, FindDepartmentByNameQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<FindDepartmentByNameQuery | undefined, FindDepartmentByNameQueryVariables>;
 export function useFindDepartmentByNameSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<FindDepartmentByNameQuery, FindDepartmentByNameQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<FindDepartmentByNameQuery, FindDepartmentByNameQueryVariables>(FindDepartmentByNameDocument, options);
@@ -7589,6 +8415,9 @@ export function useMachineTemplateCategoriesLazyQuery(baseOptions?: ApolloReactH
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<MachineTemplateCategoriesQuery, MachineTemplateCategoriesQueryVariables>(MachineTemplateCategoriesDocument, options);
         }
+// @ts-ignore
+export function useMachineTemplateCategoriesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplateCategoriesQuery, MachineTemplateCategoriesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachineTemplateCategoriesQuery, MachineTemplateCategoriesQueryVariables>;
+export function useMachineTemplateCategoriesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplateCategoriesQuery, MachineTemplateCategoriesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachineTemplateCategoriesQuery | undefined, MachineTemplateCategoriesQueryVariables>;
 export function useMachineTemplateCategoriesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplateCategoriesQuery, MachineTemplateCategoriesQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<MachineTemplateCategoriesQuery, MachineTemplateCategoriesQueryVariables>(MachineTemplateCategoriesDocument, options);
@@ -7637,6 +8466,9 @@ export function useMachineTemplateCategoryLazyQuery(baseOptions?: ApolloReactHoo
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<MachineTemplateCategoryQuery, MachineTemplateCategoryQueryVariables>(MachineTemplateCategoryDocument, options);
         }
+// @ts-ignore
+export function useMachineTemplateCategorySuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplateCategoryQuery, MachineTemplateCategoryQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachineTemplateCategoryQuery, MachineTemplateCategoryQueryVariables>;
+export function useMachineTemplateCategorySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplateCategoryQuery, MachineTemplateCategoryQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MachineTemplateCategoryQuery | undefined, MachineTemplateCategoryQueryVariables>;
 export function useMachineTemplateCategorySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MachineTemplateCategoryQuery, MachineTemplateCategoryQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<MachineTemplateCategoryQuery, MachineTemplateCategoryQueryVariables>(MachineTemplateCategoryDocument, options);
@@ -7686,6 +8518,9 @@ export function useApplicationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ApplicationsQuery, ApplicationsQueryVariables>(ApplicationsDocument, options);
         }
+// @ts-ignore
+export function useApplicationsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ApplicationsQuery, ApplicationsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ApplicationsQuery, ApplicationsQueryVariables>;
+export function useApplicationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ApplicationsQuery, ApplicationsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ApplicationsQuery | undefined, ApplicationsQueryVariables>;
 export function useApplicationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ApplicationsQuery, ApplicationsQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ApplicationsQuery, ApplicationsQueryVariables>(ApplicationsDocument, options);
@@ -7736,6 +8571,9 @@ export function useApplicationLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ApplicationQuery, ApplicationQueryVariables>(ApplicationDocument, options);
         }
+// @ts-ignore
+export function useApplicationSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ApplicationQuery, ApplicationQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ApplicationQuery, ApplicationQueryVariables>;
+export function useApplicationSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ApplicationQuery, ApplicationQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ApplicationQuery | undefined, ApplicationQueryVariables>;
 export function useApplicationSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ApplicationQuery, ApplicationQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ApplicationQuery, ApplicationQueryVariables>(ApplicationDocument, options);
@@ -7781,6 +8619,9 @@ export function useGetGraphicsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<GetGraphicsQuery, GetGraphicsQueryVariables>(GetGraphicsDocument, options);
         }
+// @ts-ignore
+export function useGetGraphicsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetGraphicsQuery, GetGraphicsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetGraphicsQuery, GetGraphicsQueryVariables>;
+export function useGetGraphicsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetGraphicsQuery, GetGraphicsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetGraphicsQuery | undefined, GetGraphicsQueryVariables>;
 export function useGetGraphicsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetGraphicsQuery, GetGraphicsQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<GetGraphicsQuery, GetGraphicsQueryVariables>(GetGraphicsDocument, options);
@@ -7835,6 +8676,9 @@ export function useGetSystemResourcesLazyQuery(baseOptions?: ApolloReactHooks.La
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<GetSystemResourcesQuery, GetSystemResourcesQueryVariables>(GetSystemResourcesDocument, options);
         }
+// @ts-ignore
+export function useGetSystemResourcesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetSystemResourcesQuery, GetSystemResourcesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetSystemResourcesQuery, GetSystemResourcesQueryVariables>;
+export function useGetSystemResourcesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetSystemResourcesQuery, GetSystemResourcesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetSystemResourcesQuery | undefined, GetSystemResourcesQueryVariables>;
 export function useGetSystemResourcesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetSystemResourcesQuery, GetSystemResourcesQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<GetSystemResourcesQuery, GetSystemResourcesQueryVariables>(GetSystemResourcesDocument, options);
@@ -7894,6 +8738,9 @@ export function useNetworksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<NetworksQuery, NetworksQueryVariables>(NetworksDocument, options);
         }
+// @ts-ignore
+export function useNetworksSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<NetworksQuery, NetworksQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<NetworksQuery, NetworksQueryVariables>;
+export function useNetworksSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<NetworksQuery, NetworksQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<NetworksQuery | undefined, NetworksQueryVariables>;
 export function useNetworksSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<NetworksQuery, NetworksQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<NetworksQuery, NetworksQueryVariables>(NetworksDocument, options);
@@ -7954,6 +8801,9 @@ export function useNetworkLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<NetworkQuery, NetworkQueryVariables>(NetworkDocument, options);
         }
+// @ts-ignore
+export function useNetworkSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<NetworkQuery, NetworkQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<NetworkQuery, NetworkQueryVariables>;
+export function useNetworkSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<NetworkQuery, NetworkQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<NetworkQuery | undefined, NetworkQueryVariables>;
 export function useNetworkSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<NetworkQuery, NetworkQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<NetworkQuery, NetworkQueryVariables>(NetworkDocument, options);
@@ -8029,6 +8879,9 @@ export function useGetDepartmentFirewallRulesLazyQuery(baseOptions?: ApolloReact
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<GetDepartmentFirewallRulesQuery, GetDepartmentFirewallRulesQueryVariables>(GetDepartmentFirewallRulesDocument, options);
         }
+// @ts-ignore
+export function useGetDepartmentFirewallRulesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetDepartmentFirewallRulesQuery, GetDepartmentFirewallRulesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetDepartmentFirewallRulesQuery, GetDepartmentFirewallRulesQueryVariables>;
+export function useGetDepartmentFirewallRulesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetDepartmentFirewallRulesQuery, GetDepartmentFirewallRulesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetDepartmentFirewallRulesQuery | undefined, GetDepartmentFirewallRulesQueryVariables>;
 export function useGetDepartmentFirewallRulesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetDepartmentFirewallRulesQuery, GetDepartmentFirewallRulesQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<GetDepartmentFirewallRulesQuery, GetDepartmentFirewallRulesQueryVariables>(GetDepartmentFirewallRulesDocument, options);
@@ -8104,6 +8957,9 @@ export function useGetVmFirewallRulesLazyQuery(baseOptions?: ApolloReactHooks.La
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<GetVmFirewallRulesQuery, GetVmFirewallRulesQueryVariables>(GetVmFirewallRulesDocument, options);
         }
+// @ts-ignore
+export function useGetVmFirewallRulesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetVmFirewallRulesQuery, GetVmFirewallRulesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetVmFirewallRulesQuery, GetVmFirewallRulesQueryVariables>;
+export function useGetVmFirewallRulesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetVmFirewallRulesQuery, GetVmFirewallRulesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetVmFirewallRulesQuery | undefined, GetVmFirewallRulesQueryVariables>;
 export function useGetVmFirewallRulesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetVmFirewallRulesQuery, GetVmFirewallRulesQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<GetVmFirewallRulesQuery, GetVmFirewallRulesQueryVariables>(GetVmFirewallRulesDocument, options);
@@ -8228,6 +9084,9 @@ export function useGetEffectiveFirewallRulesLazyQuery(baseOptions?: ApolloReactH
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<GetEffectiveFirewallRulesQuery, GetEffectiveFirewallRulesQueryVariables>(GetEffectiveFirewallRulesDocument, options);
         }
+// @ts-ignore
+export function useGetEffectiveFirewallRulesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetEffectiveFirewallRulesQuery, GetEffectiveFirewallRulesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetEffectiveFirewallRulesQuery, GetEffectiveFirewallRulesQueryVariables>;
+export function useGetEffectiveFirewallRulesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetEffectiveFirewallRulesQuery, GetEffectiveFirewallRulesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetEffectiveFirewallRulesQuery | undefined, GetEffectiveFirewallRulesQueryVariables>;
 export function useGetEffectiveFirewallRulesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetEffectiveFirewallRulesQuery, GetEffectiveFirewallRulesQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<GetEffectiveFirewallRulesQuery, GetEffectiveFirewallRulesQueryVariables>(GetEffectiveFirewallRulesDocument, options);
@@ -8271,6 +9130,9 @@ export function useListInfinibayFiltersLazyQuery(baseOptions?: ApolloReactHooks.
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ListInfinibayFiltersQuery, ListInfinibayFiltersQueryVariables>(ListInfinibayFiltersDocument, options);
         }
+// @ts-ignore
+export function useListInfinibayFiltersSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ListInfinibayFiltersQuery, ListInfinibayFiltersQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ListInfinibayFiltersQuery, ListInfinibayFiltersQueryVariables>;
+export function useListInfinibayFiltersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ListInfinibayFiltersQuery, ListInfinibayFiltersQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ListInfinibayFiltersQuery | undefined, ListInfinibayFiltersQueryVariables>;
 export function useListInfinibayFiltersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ListInfinibayFiltersQuery, ListInfinibayFiltersQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ListInfinibayFiltersQuery, ListInfinibayFiltersQueryVariables>(ListInfinibayFiltersDocument, options);
@@ -8331,6 +9193,9 @@ export function useScriptsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ScriptsQuery, ScriptsQueryVariables>(ScriptsDocument, options);
         }
+// @ts-ignore
+export function useScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ScriptsQuery, ScriptsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScriptsQuery, ScriptsQueryVariables>;
+export function useScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptsQuery, ScriptsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScriptsQuery | undefined, ScriptsQueryVariables>;
 export function useScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptsQuery, ScriptsQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ScriptsQuery, ScriptsQueryVariables>(ScriptsDocument, options);
@@ -8405,6 +9270,9 @@ export function useScriptLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookO
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ScriptQuery, ScriptQueryVariables>(ScriptDocument, options);
         }
+// @ts-ignore
+export function useScriptSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ScriptQuery, ScriptQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScriptQuery, ScriptQueryVariables>;
+export function useScriptSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptQuery, ScriptQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScriptQuery | undefined, ScriptQueryVariables>;
 export function useScriptSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptQuery, ScriptQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ScriptQuery, ScriptQueryVariables>(ScriptDocument, options);
@@ -8478,6 +9346,9 @@ export function useDepartmentScriptsLazyQuery(baseOptions?: ApolloReactHooks.Laz
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>(DepartmentScriptsDocument, options);
         }
+// @ts-ignore
+export function useDepartmentScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>;
+export function useDepartmentScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<DepartmentScriptsQuery | undefined, DepartmentScriptsQueryVariables>;
 export function useDepartmentScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<DepartmentScriptsQuery, DepartmentScriptsQueryVariables>(DepartmentScriptsDocument, options);
@@ -8548,6 +9419,9 @@ export function useScriptExecutionsLazyQuery(baseOptions?: ApolloReactHooks.Lazy
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>(ScriptExecutionsDocument, options);
         }
+// @ts-ignore
+export function useScriptExecutionsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>;
+export function useScriptExecutionsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScriptExecutionsQuery | undefined, ScriptExecutionsQueryVariables>;
 export function useScriptExecutionsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ScriptExecutionsQuery, ScriptExecutionsQueryVariables>(ScriptExecutionsDocument, options);
@@ -8616,6 +9490,9 @@ export function useScriptExecutionLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ScriptExecutionQuery, ScriptExecutionQueryVariables>(ScriptExecutionDocument, options);
         }
+// @ts-ignore
+export function useScriptExecutionSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionQuery, ScriptExecutionQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScriptExecutionQuery, ScriptExecutionQueryVariables>;
+export function useScriptExecutionSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionQuery, ScriptExecutionQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScriptExecutionQuery | undefined, ScriptExecutionQueryVariables>;
 export function useScriptExecutionSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionQuery, ScriptExecutionQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ScriptExecutionQuery, ScriptExecutionQueryVariables>(ScriptExecutionDocument, options);
@@ -8697,6 +9574,9 @@ export function useScriptExecutionsFilteredLazyQuery(baseOptions?: ApolloReactHo
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ScriptExecutionsFilteredQuery, ScriptExecutionsFilteredQueryVariables>(ScriptExecutionsFilteredDocument, options);
         }
+// @ts-ignore
+export function useScriptExecutionsFilteredSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionsFilteredQuery, ScriptExecutionsFilteredQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScriptExecutionsFilteredQuery, ScriptExecutionsFilteredQueryVariables>;
+export function useScriptExecutionsFilteredSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionsFilteredQuery, ScriptExecutionsFilteredQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScriptExecutionsFilteredQuery | undefined, ScriptExecutionsFilteredQueryVariables>;
 export function useScriptExecutionsFilteredSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScriptExecutionsFilteredQuery, ScriptExecutionsFilteredQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ScriptExecutionsFilteredQuery, ScriptExecutionsFilteredQueryVariables>(ScriptExecutionsFilteredDocument, options);
@@ -8738,6 +9618,9 @@ export function useVmUsersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<VmUsersQuery, VmUsersQueryVariables>(VmUsersDocument, options);
         }
+// @ts-ignore
+export function useVmUsersSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<VmUsersQuery, VmUsersQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<VmUsersQuery, VmUsersQueryVariables>;
+export function useVmUsersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<VmUsersQuery, VmUsersQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<VmUsersQuery | undefined, VmUsersQueryVariables>;
 export function useVmUsersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<VmUsersQuery, VmUsersQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<VmUsersQuery, VmUsersQueryVariables>(VmUsersDocument, options);
@@ -8808,6 +9691,9 @@ export function useScheduledScriptsLazyQuery(baseOptions?: ApolloReactHooks.Lazy
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ScheduledScriptsQuery, ScheduledScriptsQueryVariables>(ScheduledScriptsDocument, options);
         }
+// @ts-ignore
+export function useScheduledScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ScheduledScriptsQuery, ScheduledScriptsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScheduledScriptsQuery, ScheduledScriptsQueryVariables>;
+export function useScheduledScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScheduledScriptsQuery, ScheduledScriptsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScheduledScriptsQuery | undefined, ScheduledScriptsQueryVariables>;
 export function useScheduledScriptsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScheduledScriptsQuery, ScheduledScriptsQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ScheduledScriptsQuery, ScheduledScriptsQueryVariables>(ScheduledScriptsDocument, options);
@@ -8878,6 +9764,9 @@ export function useScheduledScriptLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ScheduledScriptQuery, ScheduledScriptQueryVariables>(ScheduledScriptDocument, options);
         }
+// @ts-ignore
+export function useScheduledScriptSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ScheduledScriptQuery, ScheduledScriptQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScheduledScriptQuery, ScheduledScriptQueryVariables>;
+export function useScheduledScriptSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScheduledScriptQuery, ScheduledScriptQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ScheduledScriptQuery | undefined, ScheduledScriptQueryVariables>;
 export function useScheduledScriptSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ScheduledScriptQuery, ScheduledScriptQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ScheduledScriptQuery, ScheduledScriptQueryVariables>(ScheduledScriptDocument, options);
@@ -8960,6 +9849,9 @@ export function useDepartmentNetworkDiagnosticsLazyQuery(baseOptions?: ApolloRea
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>(DepartmentNetworkDiagnosticsDocument, options);
         }
+// @ts-ignore
+export function useDepartmentNetworkDiagnosticsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>;
+export function useDepartmentNetworkDiagnosticsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<DepartmentNetworkDiagnosticsQuery | undefined, DepartmentNetworkDiagnosticsQueryVariables>;
 export function useDepartmentNetworkDiagnosticsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<DepartmentNetworkDiagnosticsQuery, DepartmentNetworkDiagnosticsQueryVariables>(DepartmentNetworkDiagnosticsDocument, options);
@@ -9016,6 +9908,9 @@ export function useCaptureDepartmentDhcpTrafficLazyQuery(baseOptions?: ApolloRea
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>(CaptureDepartmentDhcpTrafficDocument, options);
         }
+// @ts-ignore
+export function useCaptureDepartmentDhcpTrafficSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>;
+export function useCaptureDepartmentDhcpTrafficSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<CaptureDepartmentDhcpTrafficQuery | undefined, CaptureDepartmentDhcpTrafficQueryVariables>;
 export function useCaptureDepartmentDhcpTrafficSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>(CaptureDepartmentDhcpTrafficDocument, options);
@@ -9026,6 +9921,142 @@ export type CaptureDepartmentDhcpTrafficSuspenseQueryHookResult = ReturnType<typ
 export type CaptureDepartmentDhcpTrafficQueryResult = ApolloReactCommon.QueryResult<CaptureDepartmentDhcpTrafficQuery, CaptureDepartmentDhcpTrafficQueryVariables>;
 export function refetchCaptureDepartmentDhcpTrafficQuery(variables: CaptureDepartmentDhcpTrafficQueryVariables) {
       return { query: CaptureDepartmentDhcpTrafficDocument, variables: variables }
+    }
+export const BackupsDocument = gql`
+    query backups($vmId: String!) {
+  backups(vmId: $vmId) {
+    success
+    message
+    backups {
+      id
+      backupId
+      vmId
+      type
+      status
+      disks {
+        sourcePath
+        backupPath
+        originalSize
+        backupSize
+        format
+      }
+      totalSize
+      totalOriginalSize
+      compression
+      description
+      tags
+      parentBackupId
+      errorMessage
+      progressPercent
+      durationMs
+      createdAt
+      completedAt
+    }
+  }
+}
+    `;
+
+/**
+ * __useBackupsQuery__
+ *
+ * To run a query within a React component, call `useBackupsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBackupsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBackupsQuery({
+ *   variables: {
+ *      vmId: // value for 'vmId'
+ *   },
+ * });
+ */
+export function useBackupsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<BackupsQuery, BackupsQueryVariables> & ({ variables: BackupsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BackupsQuery, BackupsQueryVariables>(BackupsDocument, options);
+      }
+export function useBackupsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BackupsQuery, BackupsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BackupsQuery, BackupsQueryVariables>(BackupsDocument, options);
+        }
+// @ts-ignore
+export function useBackupsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<BackupsQuery, BackupsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<BackupsQuery, BackupsQueryVariables>;
+export function useBackupsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<BackupsQuery, BackupsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<BackupsQuery | undefined, BackupsQueryVariables>;
+export function useBackupsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<BackupsQuery, BackupsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<BackupsQuery, BackupsQueryVariables>(BackupsDocument, options);
+        }
+export type BackupsQueryHookResult = ReturnType<typeof useBackupsQuery>;
+export type BackupsLazyQueryHookResult = ReturnType<typeof useBackupsLazyQuery>;
+export type BackupsSuspenseQueryHookResult = ReturnType<typeof useBackupsSuspenseQuery>;
+export type BackupsQueryResult = ApolloReactCommon.QueryResult<BackupsQuery, BackupsQueryVariables>;
+export function refetchBackupsQuery(variables: BackupsQueryVariables) {
+      return { query: BackupsDocument, variables: variables }
+    }
+export const BackupSchedulesDocument = gql`
+    query backupSchedules($vmId: String) {
+  backupSchedules(vmId: $vmId) {
+    success
+    message
+    schedules {
+      id
+      scheduleId
+      vmId
+      type
+      cronExpression
+      retentionCount
+      destinationDir
+      compression
+      enabled
+      label
+      lastRunAt
+      nextRunAt
+      lastBackupId
+      createdAt
+      updatedAt
+    }
+  }
+}
+    `;
+
+/**
+ * __useBackupSchedulesQuery__
+ *
+ * To run a query within a React component, call `useBackupSchedulesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBackupSchedulesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBackupSchedulesQuery({
+ *   variables: {
+ *      vmId: // value for 'vmId'
+ *   },
+ * });
+ */
+export function useBackupSchedulesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<BackupSchedulesQuery, BackupSchedulesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BackupSchedulesQuery, BackupSchedulesQueryVariables>(BackupSchedulesDocument, options);
+      }
+export function useBackupSchedulesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BackupSchedulesQuery, BackupSchedulesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BackupSchedulesQuery, BackupSchedulesQueryVariables>(BackupSchedulesDocument, options);
+        }
+// @ts-ignore
+export function useBackupSchedulesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<BackupSchedulesQuery, BackupSchedulesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<BackupSchedulesQuery, BackupSchedulesQueryVariables>;
+export function useBackupSchedulesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<BackupSchedulesQuery, BackupSchedulesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<BackupSchedulesQuery | undefined, BackupSchedulesQueryVariables>;
+export function useBackupSchedulesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<BackupSchedulesQuery, BackupSchedulesQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<BackupSchedulesQuery, BackupSchedulesQueryVariables>(BackupSchedulesDocument, options);
+        }
+export type BackupSchedulesQueryHookResult = ReturnType<typeof useBackupSchedulesQuery>;
+export type BackupSchedulesLazyQueryHookResult = ReturnType<typeof useBackupSchedulesLazyQuery>;
+export type BackupSchedulesSuspenseQueryHookResult = ReturnType<typeof useBackupSchedulesSuspenseQuery>;
+export type BackupSchedulesQueryResult = ApolloReactCommon.QueryResult<BackupSchedulesQuery, BackupSchedulesQueryVariables>;
+export function refetchBackupSchedulesQuery(variables?: BackupSchedulesQueryVariables) {
+      return { query: BackupSchedulesDocument, variables: variables }
     }
 export const PackagesDocument = gql`
     query Packages {
@@ -9076,6 +10107,9 @@ export function usePackagesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<PackagesQuery, PackagesQueryVariables>(PackagesDocument, options);
         }
+// @ts-ignore
+export function usePackagesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<PackagesQuery, PackagesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<PackagesQuery, PackagesQueryVariables>;
+export function usePackagesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PackagesQuery, PackagesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<PackagesQuery | undefined, PackagesQueryVariables>;
 export function usePackagesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PackagesQuery, PackagesQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<PackagesQuery, PackagesQueryVariables>(PackagesDocument, options);
@@ -9137,6 +10171,9 @@ export function usePackageLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<PackageQuery, PackageQueryVariables>(PackageDocument, options);
         }
+// @ts-ignore
+export function usePackageSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<PackageQuery, PackageQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<PackageQuery, PackageQueryVariables>;
+export function usePackageSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PackageQuery, PackageQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<PackageQuery | undefined, PackageQueryVariables>;
 export function usePackageSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PackageQuery, PackageQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<PackageQuery, PackageQueryVariables>(PackageDocument, options);
@@ -9185,6 +10222,9 @@ export function usePackageStatusesLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<PackageStatusesQuery, PackageStatusesQueryVariables>(PackageStatusesDocument, options);
         }
+// @ts-ignore
+export function usePackageStatusesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<PackageStatusesQuery, PackageStatusesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<PackageStatusesQuery, PackageStatusesQueryVariables>;
+export function usePackageStatusesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PackageStatusesQuery, PackageStatusesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<PackageStatusesQuery | undefined, PackageStatusesQueryVariables>;
 export function usePackageStatusesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PackageStatusesQuery, PackageStatusesQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<PackageStatusesQuery, PackageStatusesQueryVariables>(PackageStatusesDocument, options);
@@ -9255,6 +10295,9 @@ export function useVmDetailedInfoLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<VmDetailedInfoQuery, VmDetailedInfoQueryVariables>(VmDetailedInfoDocument, options);
         }
+// @ts-ignore
+export function useVmDetailedInfoSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<VmDetailedInfoQuery, VmDetailedInfoQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<VmDetailedInfoQuery, VmDetailedInfoQueryVariables>;
+export function useVmDetailedInfoSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<VmDetailedInfoQuery, VmDetailedInfoQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<VmDetailedInfoQuery | undefined, VmDetailedInfoQueryVariables>;
 export function useVmDetailedInfoSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<VmDetailedInfoQuery, VmDetailedInfoQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<VmDetailedInfoQuery, VmDetailedInfoQueryVariables>(VmDetailedInfoDocument, options);
@@ -9307,6 +10350,9 @@ export function useGetVmRecommendationsLazyQuery(baseOptions?: ApolloReactHooks.
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<GetVmRecommendationsQuery, GetVmRecommendationsQueryVariables>(GetVmRecommendationsDocument, options);
         }
+// @ts-ignore
+export function useGetVmRecommendationsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetVmRecommendationsQuery, GetVmRecommendationsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetVmRecommendationsQuery, GetVmRecommendationsQueryVariables>;
+export function useGetVmRecommendationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetVmRecommendationsQuery, GetVmRecommendationsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetVmRecommendationsQuery | undefined, GetVmRecommendationsQueryVariables>;
 export function useGetVmRecommendationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetVmRecommendationsQuery, GetVmRecommendationsQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<GetVmRecommendationsQuery, GetVmRecommendationsQueryVariables>(GetVmRecommendationsDocument, options);
@@ -9347,6 +10393,9 @@ export function useGetPendingRecommendationCountLazyQuery(baseOptions?: ApolloRe
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>(GetPendingRecommendationCountDocument, options);
         }
+// @ts-ignore
+export function useGetPendingRecommendationCountSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>;
+export function useGetPendingRecommendationCountSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetPendingRecommendationCountQuery | undefined, GetPendingRecommendationCountQueryVariables>;
 export function useGetPendingRecommendationCountSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<GetPendingRecommendationCountQuery, GetPendingRecommendationCountQueryVariables>(GetPendingRecommendationCountDocument, options);
@@ -9398,6 +10447,9 @@ export function useGlobalPendingRecommendationsLazyQuery(baseOptions?: ApolloRea
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>(GlobalPendingRecommendationsDocument, options);
         }
+// @ts-ignore
+export function useGlobalPendingRecommendationsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>;
+export function useGlobalPendingRecommendationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GlobalPendingRecommendationsQuery | undefined, GlobalPendingRecommendationsQueryVariables>;
 export function useGlobalPendingRecommendationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<GlobalPendingRecommendationsQuery, GlobalPendingRecommendationsQueryVariables>(GlobalPendingRecommendationsDocument, options);

@@ -1,251 +1,378 @@
-"use client";
+'use client';
 
-import React, { useMemo } from "react";
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  ToastProvider,
-  Toast,
-  ToastTitle,
-  ToastDescription,
-  ToastViewport
-} from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, AlertTriangle, Building2 } from "lucide-react";
-import { useSizeContext, sizeVariants, getTypographyClass, getGridClasses, getLayoutSpacing } from "@/components/ui/size-provider";
-import { usePageHeader } from "@/hooks/usePageHeader";
-import { getGlassClasses } from "@/utils/glass-effects";
-import { cn } from "@/lib/utils";
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Dialog,
+  EmptyState,
+  IconButton,
+  IconTile,
+  LoadingOverlay,
+  Page,
+  ResponsiveGrid,
+  ResponsiveStack,
+  Stat,
+  TextField,
+} from '@infinibay/harbor';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+} from 'lucide-react';
 
-// Custom hooks
-import { useDepartmentsPage } from "./hooks/useDepartmentsPage";
+import { useDepartmentsPage } from './hooks/useDepartmentsPage';
+import { usePageHeader } from '@/hooks/usePageHeader';
 
-// Components
-import DepartmentCard from "./components/DepartmentCard";
-import EmptyState from "./components/EmptyState";
-import { DepartmentGridSkeleton } from "./components/DepartmentCardSkeleton";
-import { Skeleton } from "@/components/ui/skeleton";
-import ErrorState from "./components/ErrorState";
-import CreateDepartmentDialog from "./components/CreateDepartmentDialog";
-
-/**
- * Departments Page Component
- * Displays all departments and allows creating new ones
- */
 const DepartmentsPage = () => {
-  const { size } = useSizeContext();
+  const router = useRouter();
   const {
-    // State
     isLoading,
     hasError,
     searchQuery,
     isCreateDeptDialogOpen,
     newDepartmentName,
-    showToast,
-    toastProps,
     filteredDepartments,
     useMockData,
     isCreating,
     createError,
-
-    // Actions
     retryLoading,
     setSearchQuery,
     setIsCreateDeptDialogOpen,
     setNewDepartmentName,
-    setShowToast,
     handleCreateDepartment,
     handleDeleteDepartment,
     refreshDepartments,
     getMachineCount,
-    getDepartmentColor
   } = useDepartmentsPage();
 
-  // Help configuration
-  const helpConfig = useMemo(() => ({
-    title: "Departments Help",
-    description: "Learn how to manage departments and organize your resources",
-    icon: <Building2 className="h-5 w-5 text-primary" />,
-    sections: [
-      {
-        id: "managing-departments",
-        title: "Managing Departments",
-        icon: <Building2 className="h-4 w-4" />,
-        content: (
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-foreground mb-1">Creating Departments</p>
-              <p>Use the "New Department" button to create organizational units for grouping VMs.</p>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Department Purpose</p>
-              <p>Departments help organize VMs by team, project, or function for easier management.</p>
-            </div>
-          </div>
-        ),
-      },
-    ],
-    quickTips: [
-      "Create departments to organize VMs by team or project",
-      "Each department can have its own security policies",
-      "Click on a department card to view its VMs",
-    ],
-  }), []);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // Configure header using the global header system
-  usePageHeader({
-    breadcrumbs: [
-      { label: 'Home', href: '/' },
-      { label: 'Departments', isCurrent: true }
-    ],
-    title: 'Departments',
-    actions: [
-      {
-        id: 'refresh',
-        label: '',
-        icon: 'RefreshCw',
-        variant: 'outline',
-        size: 'sm',
-        onClick: refreshDepartments,
-        loading: isLoading,
-        disabled: isLoading,
-        tooltip: isLoading ? 'Refreshing...' : 'Refresh departments',
-        className: 'whitespace-nowrap'
-      },
-      {
-        id: 'new-department',
-        label: 'New Department',
-        icon: 'Plus',
-        variant: 'default',
-        size: 'sm',
-        onClick: () => setIsCreateDeptDialogOpen(true),
-        disabled: isLoading,
-        tooltip: 'Create a new department',
-        className: 'whitespace-nowrap'
-      }
-    ],
-    helpConfig: helpConfig,
-    helpTooltip: 'Departments help'
-  }, [isLoading, refreshDepartments, setIsCreateDeptDialogOpen]);
+  const helpConfig = useMemo(
+    () => ({
+      title: 'Departments',
+      description: 'Organize your VMs by team, project or function.',
+      icon: <Building2 size={14} />,
+      sections: [
+        {
+          id: 'managing',
+          title: 'Managing departments',
+          icon: <Building2 size={14} />,
+          content:
+            'Use "New department" to create an organizational unit. Click any card to open its VMs, firewall rules and scripts.',
+        },
+      ],
+      quickTips: [
+        'Click a card to open a department',
+        'Each department has its own firewall rules and scripts',
+        'Use the search box to narrow a long list',
+      ],
+    }),
+    [],
+  );
 
-  // Loading state - maintains page structure with skeleton placeholders
-  if (isLoading) {
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: 'Home', href: '/' },
+        { label: 'Departments', isCurrent: true },
+      ],
+      title: 'Departments',
+      actions: [],
+      helpConfig,
+      helpTooltip: 'Departments help',
+    },
+    [],
+  );
+
+  const totalDepartments = filteredDepartments?.length || 0;
+  const totalMachines = useMemo(
+    () =>
+      (filteredDepartments || []).reduce(
+        (acc, d) => acc + (getMachineCount(d.name) || 0),
+        0,
+      ),
+    [filteredDepartments, getMachineCount],
+  );
+
+  const submitDelete = async () => {
+    if (!deleteTarget) return;
+    await handleDeleteDepartment(deleteTarget.id);
+    setDeleteTarget(null);
+  };
+
+  if (hasError) {
     return (
-      <div className="w-full">
-        {/* Content container with glass effect */}
-        <div className={cn(
-          getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
-          "size-container size-padding mt-4"
-        )}>
-          {/* Search skeleton */}
-          <div className={`relative size-margin-sm ${sizeVariants[size].layout.maxWidth}`}>
-            <Skeleton className="h-10 w-full rounded-md" />
-          </div>
-
-          <DepartmentGridSkeleton count={4} />
-        </div>
-      </div>
+      <Page>
+        <Alert
+          tone="danger"
+          icon={<AlertTriangle size={14} />}
+          title="Couldn't load departments"
+          actions={
+            <Button
+              size="sm"
+              variant="primary"
+              icon={<RefreshCw size={14} />}
+              onClick={retryLoading}
+            >
+              Retry
+            </Button>
+          }
+        >
+          The departments API is unreachable. Check the backend service or retry.
+        </Alert>
+      </Page>
     );
   }
-  
-  // Error state
-  if (hasError) {
-    return <ErrorState onRetry={retryLoading} />;
-  }
-  
+
   return (
-    <ToastProvider>
-      <div className="w-full">
-        {/* Mock Data Banner */}
+    <>
+      <Page>
         {useMockData && (
-          <div className="bg-amber-50 border border-amber-200 rounded-md flex items-center size-container size-margin-sm">
-            <AlertTriangle className={`${sizeVariants[size].icon.size} text-amber-500 ${sizeVariants[size].spacing.marginSm} flex-shrink-0`} />
-            <div>
-              <p className={`text-amber-800 font-medium ${sizeVariants[size].typography.text}`}>Using Mock Data</p>
-              <p className={`text-amber-700 ${sizeVariants[size].text}`}>
-                Could not connect to the API. Displaying mock data for development.
-                <Button
-                  variant="link"
-                  className={`p-0 h-auto text-amber-800 underline ${sizeVariants[size].spacing.marginStartXs}`}
-                  onClick={retryLoading}
-                >
-                  Try again
-                </Button>
-              </p>
-            </div>
-          </div>
+          <Alert
+            tone="warning"
+            icon={<AlertTriangle size={14} />}
+            title="Using mock data"
+            actions={
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<RefreshCw size={14} />}
+                onClick={retryLoading}
+              >
+                Retry
+              </Button>
+            }
+          >
+            Could not connect to the departments API. Showing mock data.
+          </Alert>
         )}
 
-        {/* Content container with glass effect */}
-        <div className={cn(
-          getGlassClasses({ glass: 'medium', elevation: 3, radius: 'lg' }),
-          "size-container size-padding mt-4"
-        )}>
-          {/* Search */}
-          <div className={`relative size-margin-sm ${sizeVariants[size].layout.maxWidth}`}>
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className={`${sizeVariants[size].icon.size} text-muted-foreground`} />
-            </div>
-            <Input
-              type="text"
-              placeholder="Search departments..."
-              className={sizeVariants[size].input.withIconLeftPadding}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+        <Card
+          variant="default"
+          spotlight={false}
+          glow={false}
+          leadingIcon={<Building2 size={18} />}
+          leadingIconTone="sky"
+          title="Departments"
+          description="Organize VMs by team, project or function."
+          footer={
+            <ResponsiveGrid columns={{ base: 1, sm: 2 }} gap={3}>
+              <Stat
+                label="Departments"
+                value={totalDepartments}
+                icon={<Building2 size={12} />}
+              />
+              <Stat label="Virtual machines" value={totalMachines} />
+            </ResponsiveGrid>
+          }
+        >
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RefreshCw size={14} />}
+              onClick={refreshDepartments}
+              disabled={isLoading}
+              loading={isLoading}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Plus size={14} />}
+              onClick={() => setIsCreateDeptDialogOpen(true)}
+            >
+              New department
+            </Button>
+          </ResponsiveStack>
+        </Card>
 
-          {/* Departments List */}
-          {filteredDepartments.length > 0 ? (
-            <div className={cn(getGridClasses('departments', size), "mt-6")}>
-              {filteredDepartments.map((dept) => (
-                <DepartmentCard
+        <Card variant="default" spotlight={false} glow={false}>
+          <TextField
+            placeholder="Search departments…"
+            icon={<Search size={14} />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </Card>
+
+        {isLoading && filteredDepartments.length === 0 ? (
+          <LoadingOverlay label="Loading departments…" />
+        ) : filteredDepartments.length === 0 ? (
+          <EmptyState
+            variant="dashed"
+            icon={<Building2 size={18} />}
+            title={searchQuery ? 'No matches' : 'No departments yet'}
+            description={
+              searchQuery
+                ? 'No departments match your search.'
+                : 'Create a department to start organizing VMs.'
+            }
+            actions={
+              !searchQuery ? (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={<Plus size={14} />}
+                  onClick={() => setIsCreateDeptDialogOpen(true)}
+                >
+                  New department
+                </Button>
+              ) : null
+            }
+          />
+        ) : (
+          <ResponsiveGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
+            {filteredDepartments.map((dept) => {
+              const count = getMachineCount(dept.name);
+              return (
+                <Card
                   key={dept.id}
-                  department={dept}
-                  machineCount={getMachineCount(dept.name)}
-                  colorClass={getDepartmentColor(dept.name)}
-                  size={size}
-                  onDelete={handleDeleteDepartment}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              searchQuery={searchQuery}
-              onCreateDepartment={() => setIsCreateDeptDialogOpen(true)}
-              size={size}
-            />
-          )}
-        </div>
-      </div>
-      
-      {/* Create Department Dialog */}
-      <CreateDepartmentDialog
-        isOpen={isCreateDeptDialogOpen}
-        onOpenChange={setIsCreateDeptDialogOpen}
-        departmentName={newDepartmentName}
-        onDepartmentNameChange={setNewDepartmentName}
-        onSubmit={handleCreateDepartment}
-        onCancel={() => {
-          setNewDepartmentName("");
+                  variant="default"
+                  interactive
+                  spotlight={false}
+                  glow={false}
+                  fullHeight
+                  onClick={() =>
+                    router.push(`/departments/${encodeURIComponent(dept.name)}`)
+                  }
+                  footer={
+                    <ResponsiveStack direction="row" align="center" justify="between">
+                      {dept.id ? (
+                        <Badge tone="neutral">{dept.id.slice(0, 6)}</Badge>
+                      ) : (
+                        <span />
+                      )}
+                      <Badge tone="info" icon={<ArrowRight size={10} />}>
+                        Open
+                      </Badge>
+                    </ResponsiveStack>
+                  }
+                >
+                  <ResponsiveStack
+                    direction="row"
+                    gap={3}
+                    align="start"
+                    justify="between"
+                  >
+                    <ResponsiveStack direction="row" gap={3} align="start">
+                      <IconTile
+                        icon={<Building2 size={18} />}
+                        tone="purple"
+                        size="md"
+                      />
+                      <ResponsiveStack direction="col" gap={1}>
+                        <span>{dept.name}</span>
+                        <span>
+                          {count === 0
+                            ? 'No VMs'
+                            : count === 1
+                              ? '1 VM'
+                              : `${count} VMs`}
+                        </span>
+                      </ResponsiveStack>
+                    </ResponsiveStack>
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      label="Delete department"
+                      icon={<Trash2 size={14} />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget(dept);
+                      }}
+                    />
+                  </ResponsiveStack>
+                </Card>
+              );
+            })}
+          </ResponsiveGrid>
+        )}
+      </Page>
+
+      <Dialog
+        open={isCreateDeptDialogOpen}
+        onClose={() => {
+          setNewDepartmentName('');
           setIsCreateDeptDialogOpen(false);
         }}
-        isLoading={isCreating}
-        error={createError}
-      />
-      
-      {/* Toast Notification */}
-      {showToast && (
-        <Toast
-          variant={toastProps.variant}
-          onOpenChange={(open) => !open && setShowToast(false)}
-        >
-          <ToastTitle>{toastProps.title}</ToastTitle>
-          <ToastDescription>{toastProps.description}</ToastDescription>
-        </Toast>
-      )}
-      
-      <ToastViewport />
-    </ToastProvider>
+        size="sm"
+        title="New department"
+        description="Create an organizational unit to group VMs, firewall rules and scripts."
+        footer={
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setNewDepartmentName('');
+                setIsCreateDeptDialogOpen(false);
+              }}
+              disabled={isCreating}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreateDepartment}
+              loading={isCreating}
+              disabled={isCreating || !newDepartmentName.trim()}
+            >
+              Create
+            </Button>
+          </ResponsiveStack>
+        }
+      >
+        <ResponsiveStack direction="col" gap={3}>
+          <TextField
+            label="Name"
+            placeholder="Engineering"
+            value={newDepartmentName}
+            onChange={(e) => setNewDepartmentName(e.target.value)}
+            autoFocus
+          />
+          {createError ? <Alert tone="danger" size="sm">{createError}</Alert> : null}
+        </ResponsiveStack>
+      </Dialog>
+
+      <Dialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        size="sm"
+        title="Delete department"
+        description={
+          deleteTarget
+            ? `Remove "${deleteTarget.name}"? Its VMs will need to be reassigned to another department.`
+            : undefined
+        }
+        footer={
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              icon={<Trash2 size={14} />}
+              onClick={submitDelete}
+            >
+              Delete
+            </Button>
+          </ResponsiveStack>
+        }
+      >
+        <Alert tone="danger" size="sm" icon={<AlertTriangle size={14} />}>
+          This action cannot be undone.
+        </Alert>
+      </Dialog>
+    </>
   );
 };
 

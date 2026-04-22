@@ -1,206 +1,355 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useParams } from "next/navigation";
-import { fetchApplicationById, updateApplication } from "@/state/slices/applications";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import {
+  Package,
+  Plus,
+  Trash2,
+  Save,
+  AppWindow,
+  ArrowLeft,
+} from "lucide-react";
+import {
+  Page,
+  Card,
+  Button,
+  IconButton,
+  TextField,
+  Textarea,
+  Select,
+  Checkbox,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanel,
+  Alert,
+  Spinner,
+  FormField,
+  ResponsiveStack,
+} from "@infinibay/harbor";
 
-const Page = () => {
+import {
+  fetchApplicationById,
+  updateApplication,
+} from "@/state/slices/applications";
+import { usePageHeader } from "@/hooks/usePageHeader";
+
+const PARAM_TYPE_OPTIONS = [
+  { value: "string", label: "String" },
+  { value: "number", label: "Number" },
+];
+
+const OS_TABS = [
+  { id: "windows", label: "Windows" },
+  { id: "ubuntu", label: "Ubuntu" },
+  { id: "fedora", label: "Fedora" },
+];
+
+export default function EditApplicationPage() {
   const dispatch = useDispatch();
-  const urlParams = useParams();
   const router = useRouter();
+  const urlParams = useParams();
   const id = urlParams.id;
-  const application = useSelector((state) => state.applications.items.find((app) => app.id === id));
 
-  const [params, setParams] = useState([{ name: "", type: "string", required: false }]);
-  const [windowsScript, setWindowsScript] = useState("");
-  const [ubuntuScript, setUbuntuScript] = useState("");
-  const [fedoraScript, setFedoraScript] = useState("");
-  const [applicationName, setApplicationName] = useState("");
+  const application = useSelector((state) =>
+    state.applications.items.find((a) => a.id === id)
+  );
+
+  const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [params, setParams] = useState([]);
+  const [scripts, setScripts] = useState({
+    windows: "",
+    ubuntu: "",
+    fedora: "",
+  });
+  const [activeTab, setActiveTab] = useState("windows");
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      dispatch(fetchApplicationById(id));
-    }
+    if (!id) return;
+    setLoading(true);
+    dispatch(fetchApplicationById(id)).finally(() => setLoading(false));
   }, [id, dispatch]);
 
   useEffect(() => {
-    if (application) {
-      setApplicationName(application.name);
-      setDescription(application.description);
-      setParams(Object.keys(application.parameters).map((key) => ({
+    if (!application) return;
+    setName(application.name || "");
+    setDescription(application.description || "");
+    setParams(
+      Object.keys(application.parameters || {}).map((key) => ({
         name: key,
         type: application.parameters[key].type,
-        required: application.parameters[key].required,
-      })));
-      const installCommand = JSON.parse(application.installCommand);
-      setWindowsScript(installCommand.windows);
-      setUbuntuScript(installCommand.ubuntu);
-      setFedoraScript(installCommand.fedora);
+        required: !!application.parameters[key].required,
+      }))
+    );
+    try {
+      const cmd = JSON.parse(application.installCommand || "{}");
+      setScripts({
+        windows: cmd.windows || "",
+        ubuntu: cmd.ubuntu || "",
+        fedora: cmd.fedora || "",
+      });
+    } catch (_err) {
+      setScripts({ windows: "", ubuntu: "", fedora: "" });
     }
   }, [application]);
 
-  const handleAddParam = () => {
-    setParams([...params, { name: "", type: "string", required: false }]);
-  };
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: "Home", href: "/" },
+        { label: "Applications", href: "/applications" },
+        { label: application?.name || "Application", isCurrent: true },
+      ],
+      title: application?.name || "Application",
+      backButton: { href: "/applications", label: "Back" },
+      actions: [],
+    },
+    [application?.name]
+  );
 
-  const handleParamChange = (index, field, value) => {
-    const newParams = [...params];
-    newParams[index][field] = value;
-    setParams(newParams);
-  };
+  const addParam = () =>
+    setParams((prev) => [...prev, { name: "", type: "string", required: false }]);
+  const removeParam = (i) =>
+    setParams((prev) => prev.filter((_, idx) => idx !== i));
+  const updateParam = (i, patch) =>
+    setParams((prev) => prev.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
 
-  const handleRemoveParam = (index) => {
-    const newParams = params.filter((_, i) => i !== index);
-    setParams(newParams);
-  };
+  const scriptHasContent = useMemo(
+    () => Object.values(scripts).some((s) => s.trim().length > 0),
+    [scripts]
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const filteredParams = params.filter((param) => param.name.trim() !== "");
-    const parameters = filteredParams.reduce((acc, param) => {
-      acc[param.name] = { type: param.type, required: param.required };
+    if (!name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+
+    const filtered = params.filter((p) => p.name.trim() !== "");
+    const parameters = filtered.reduce((acc, p) => {
+      acc[p.name] = { type: p.type, required: p.required };
       return acc;
     }, {});
-    const payload = {
-      id,
-      input: {
-        name: applicationName,
-        description,
-        parameters,
-        os: ["windows", "ubuntu", "fedora"],
-        installCommand: JSON.stringify({
-          windows: windowsScript,
-          ubuntu: ubuntuScript,
-          fedora: fedoraScript,
-        }),
-      },
-    };
+
+    setSaving(true);
     try {
-      await dispatch(updateApplication(payload)).unwrap();
-      // Optionally, redirect or show success message
-    } catch (error) {
-      console.error("Failed to update application:", error);
-      // Optionally add error handling UI here
+      await dispatch(
+        updateApplication({
+          id,
+          input: {
+            name: name.trim(),
+            description: description.trim(),
+            parameters,
+            os: ["windows", "ubuntu", "fedora"],
+            installCommand: JSON.stringify(scripts),
+          },
+        })
+      ).unwrap();
+      toast.success("Application updated");
+    } catch (err) {
+      toast.error(`Could not save: ${err.message || err}`);
+    } finally {
+      setSaving(false);
     }
   };
 
-  return (
-    <div className="flex flex-1 justify-between overflow-hidden w-[800px]">
-      <div className="flex pb-10 border border-b-0 flex-col justify-between flex-1">
-        <div className="border-b py-6">
-          <div className="dashboard_container flex items-center justify-between w-full">
-            <h1 className="5xl:text-3xl text-lg sm:text-2xl flex-1 font-medium text-gray-800">
-              Update Application
-            </h1>
-          </div>
-        </div>
-        <div className="dashboard_container flex-1">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Label htmlFor="applicationName" className="block mb-2">Application Name</Label>
-            <Input
-              id="applicationName"
-              value={applicationName}
-              onChange={(e) => setApplicationName(e.target.value)}
-              required
-            />
-            <Label htmlFor="description" className="block mb-2">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
-            <div>
-              <h2 className="font-bold text-xl 4xl:text-3xl">Parameters</h2>
-              {params.map((param, index) => (
-                <div key={index} className="flex space-x-4 mb-4">
-                  <Input
-                    label="Name"
-                    value={param.name}
-                    onChange={(e) => handleParamChange(index, "name", e.target.value)}
-                    required
-                  />
-                  <select
-                    value={param.type}
-                    onChange={(e) => handleParamChange(index, "type", e.target.value)}
-                    className="border p-2 rounded"
-                  >
-                    <option value="string">String</option>
-                    <option value="number">Number</option>
-                  </select>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={param.required}
-                      onChange={(e) => handleParamChange(index, "required", e.target.checked)}
-                    />
-                    <span>Required</span>
-                  </label>
-                  <Button type="button" onClick={() => handleRemoveParam(index)}>Remove</Button>
-                </div>
-              ))}
-              <Button type="button" onClick={handleAddParam}>Add Parameter</Button>
-            </div>
-            <Tabs defaultValue="windows" className="w-[400px]">
-              <TabsList>
-                <TabsTrigger value="windows">Windows</TabsTrigger>
-                <TabsTrigger value="ubuntu">Ubuntu</TabsTrigger>
-                <TabsTrigger value="fedora">Fedora</TabsTrigger>
-              </TabsList>
-              <TabsContent value="windows">
-                <Label htmlFor="windowsScript" className="block mb-2">Windows Script</Label>
-                <Textarea
-                  id="windowsScript"
-                  placeholder="Windows Script"
-                  value={windowsScript}
-                  onChange={(e) => setWindowsScript(e.target.value)}
-                  rows={10}
-                  className="w-full"
-                  required
-                />
-              </TabsContent>
-              <TabsContent value="ubuntu">
-                <Label htmlFor="ubuntuScript" className="block mb-2">Ubuntu Script</Label>
-                <Textarea
-                  id="ubuntuScript"
-                  placeholder="Ubuntu Script"
-                  value={ubuntuScript}
-                  onChange={(e) => setUbuntuScript(e.target.value)}
-                  rows={10}
-                  required
-                />
-              </TabsContent>
-              <TabsContent value="fedora">
-                <Label htmlFor="fedoraScript" className="block mb-2">Fedora Script</Label>
-                <Textarea
-                  id="fedoraScript"
-                  placeholder="Fedora Script"
-                  value={fedoraScript}
-                  onChange={(e) => setFedoraScript(e.target.value)}
-                  rows={10}
-                  required
-                />
-              </TabsContent>
-            </Tabs>
-            <div className="mt-4 p-4 bg-gray-100 rounded">
-              <h3 className="font-bold text-lg">Help</h3>
-              <p>
-                In the script, you can access the parameters using <code className="bg-gray-300 p-1 rounded">{"{{param_name}}"}</code>.
-              </p>
-            </div>
-            <Button type="submit">Update Application</Button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
+  if (loading && !application) {
+    return (
+      <Page size="lg" gap="lg">
+        <Card variant="default">
+          <ResponsiveStack direction="row" gap={3} justify="center" align="center">
+            <Spinner /> Loading application…
+          </ResponsiveStack>
+        </Card>
+      </Page>
+    );
+  }
 
-export default Page;
+  if (!application) {
+    return (
+      <Page size="lg" gap="lg">
+        <Alert
+          tone="warning"
+          title="Application not found"
+          actions={
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<ArrowLeft size={16} />}
+              onClick={() => router.push("/applications")}
+            >
+              Back to applications
+            </Button>
+          }
+        >
+          We couldn&apos;t find an application with id <strong>{id}</strong>.
+        </Alert>
+      </Page>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <Page size="lg" gap="lg">
+        <Card
+          variant="default"
+          leadingIcon={<AppWindow size={20} />}
+          leadingIconTone="purple"
+          title={name || application.name}
+          description="Edit the install scripts and parameter schema. Changes take effect on the next VM that pulls this app."
+        >
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<ArrowLeft size={16} />}
+              type="button"
+              onClick={() => router.push("/applications")}
+            >
+              Back
+            </Button>
+          </ResponsiveStack>
+        </Card>
+
+        <Card
+          variant="default"
+          leadingIcon={<Package size={18} />}
+          title="Identity"
+        >
+          <ResponsiveStack direction="col" gap={3}>
+            <FormField label="Name" required>
+              <TextField
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </FormField>
+            <FormField label="Description">
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+              />
+            </FormField>
+          </ResponsiveStack>
+        </Card>
+
+        <Card variant="default" title="Parameters">
+          <ResponsiveStack direction="row" gap={2} justify="end">
+            <Button
+              size="sm"
+              variant="secondary"
+              type="button"
+              icon={<Plus size={16} />}
+              onClick={addParam}
+            >
+              Add parameter
+            </Button>
+          </ResponsiveStack>
+
+          {params.length === 0 ? (
+            <p>No parameters configured.</p>
+          ) : (
+            <ResponsiveStack direction="col" gap={2}>
+              {params.map((p, i) => (
+                <Card key={i} variant="default">
+                  <ResponsiveStack direction="row" gap={2} align="center">
+                    <TextField
+                      placeholder="name"
+                      value={p.name}
+                      onChange={(e) => updateParam(i, { name: e.target.value })}
+                    />
+                    <Select
+                      value={p.type}
+                      onChange={(v) => updateParam(i, { type: v })}
+                      options={PARAM_TYPE_OPTIONS}
+                    />
+                    <Checkbox
+                      checked={p.required}
+                      onChange={(e) => updateParam(i, { required: e.target.checked })}
+                      label="Required"
+                    />
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      type="button"
+                      icon={<Trash2 size={14} />}
+                      onClick={() => removeParam(i)}
+                      aria-label="Remove parameter"
+                    />
+                  </ResponsiveStack>
+                </Card>
+              ))}
+            </ResponsiveStack>
+          )}
+
+          <Alert tone="info" size="sm">
+            Use <code>{"{{param_name}}"}</code> inside any script to interpolate values at install time.
+          </Alert>
+        </Card>
+
+        <Card
+          variant="default"
+          leadingIcon={<AppWindow size={18} />}
+          title="Install scripts"
+        >
+          <Tabs value={activeTab} onValueChange={setActiveTab} variant="pill">
+            <TabList>
+              {OS_TABS.map((os) => (
+                <Tab key={os.id} value={os.id}>
+                  {os.label}
+                  {scripts[os.id]?.trim() ? " ●" : ""}
+                </Tab>
+              ))}
+            </TabList>
+
+            {OS_TABS.map((os) => (
+              <TabPanel key={os.id} value={os.id}>
+                <Textarea
+                  placeholder={`${os.label} install script`}
+                  value={scripts[os.id]}
+                  onChange={(e) =>
+                    setScripts((prev) => ({ ...prev, [os.id]: e.target.value }))
+                  }
+                  rows={10}
+                />
+              </TabPanel>
+            ))}
+          </Tabs>
+
+          {!scriptHasContent && (
+            <Alert tone="info">
+              No scripts defined for any OS yet.
+            </Alert>
+          )}
+        </Card>
+
+        <ResponsiveStack direction="row" gap={2} justify="end">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => router.push("/applications")}
+            disabled={saving}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            icon={<Save size={16} />}
+            loading={saving}
+            disabled={saving}
+          >
+            Save changes
+          </Button>
+        </ResponsiveStack>
+      </Page>
+    </form>
+  );
+}

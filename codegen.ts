@@ -49,8 +49,8 @@ const config: CodegenConfig = {
           JSONObject: "{ [key: string]: any }",
           Upload: "File"
         },
-        apolloReactHooksImportFrom: "@apollo/client",
-        apolloReactCommonImportFrom: "@apollo/client"
+        apolloReactHooksImportFrom: "@apollo/client/react",
+        apolloReactCommonImportFrom: "@apollo/client/react"
       }
     }
   },

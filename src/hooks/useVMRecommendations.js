@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { createDebugger } from '@/utils/debug';
 
 const debug = createDebugger('frontend:hooks:useVMRecommendations');

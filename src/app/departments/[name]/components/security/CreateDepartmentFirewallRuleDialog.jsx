@@ -1,537 +1,387 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { AlertCircle, Shield, Settings, Check, ChevronsUpDown } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Settings, Shield } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
+  Alert,
+  Badge,
+  Button,
+  Drawer,
+  FormField,
+  ResponsiveGrid,
+  ResponsiveStack,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+  TextField,
+  Textarea,
+} from '@infinibay/harbor';
+import { toast } from 'sonner';
+
 import { useCreateDepartmentFirewallRuleMutation } from '@/gql/hooks';
 import { createDebugger } from '@/utils/debug';
-import { toast } from 'sonner';
 import { getPriorityFromLabel } from '@/utils/firewallHelpers';
 import { SERVICE_PRESETS } from '@/config/servicePresets';
-import { cn } from '@/lib/utils';
 
-const debug = createDebugger('frontend:components:create-department-firewall-rule-dialog');
+const debug = createDebugger(
+  'frontend:components:create-dept-firewall-rule-dialog',
+);
 
-// Service Combobox Component
-const ServiceCombobox = ({ value, onValueChange, error }) => {
-  const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const inputRef = useRef(null);
-
-  const selectedPreset = SERVICE_PRESETS.find(p => p.id === value);
-
-  // Manual filtering when search query is not empty
-  const filteredPresets = searchQuery.trim() === ''
-    ? SERVICE_PRESETS
-    : SERVICE_PRESETS.filter(preset => {
-        const searchLower = searchQuery.toLowerCase();
-        return preset.displayName.toLowerCase().includes(searchLower) ||
-               preset.description.toLowerCase().includes(searchLower) ||
-               preset.category.toLowerCase().includes(searchLower);
-      });
-
-  const handleSelect = (presetId) => {
-    onValueChange(presetId);
-    setOpen(false);
-    setSearchQuery('');
-  };
-
-  // Focus input when popover opens
-  useEffect(() => {
-    if (open) {
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        const input = document.querySelector('[cmdk-input]');
-        if (input) {
-          input.focus();
-          debug.log('Input focused');
-        }
-      });
-    }
-  }, [open]);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen} modal={true}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            "w-full justify-between hover:bg-accent/50",
-            error && "border-destructive"
-          )}
-        >
-          {selectedPreset ? (
-            <span className="flex items-center gap-2">
-              <span className="text-lg">{selectedPreset.icon}</span>
-              <span>{selectedPreset.displayName}</span>
-            </span>
-          ) : (
-            <span className="text-muted-foreground">Select a service...</span>
-          )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-[400px] p-0 !z-[9999]"
-        align="start"
-        sideOffset={5}
-        onOpenAutoFocus={(e) => {
-          e.preventDefault();
-          // Focus the input after preventing default
-          requestAnimationFrame(() => {
-            const input = document.querySelector('[cmdk-input]');
-            if (input) {
-              input.focus();
-            }
-          });
-        }}
-      >
-        <Command shouldFilter={false}>
-          <CommandInput
-            ref={inputRef}
-            placeholder="Search services..."
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-          />
-          <CommandList>
-            {filteredPresets.length === 0 ? (
-              <CommandEmpty>No service found.</CommandEmpty>
-            ) : (
-              <CommandGroup>
-                {filteredPresets.map((preset) => (
-                  <CommandItem
-                    key={preset.id}
-                    value={`${preset.id} ${preset.displayName} ${preset.description}`}
-                    onSelect={() => handleSelect(preset.id)}
-                    className="cursor-pointer hover:bg-accent !opacity-100"
-                    style={{ opacity: 1 }}
-                  >
-                    <div className="flex items-center gap-2 w-full">
-                      <div className="flex items-center justify-center h-4 w-4">
-                        <Check
-                          className={cn(
-                            "h-4 w-4",
-                            value === preset.id ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                      </div>
-                      <span className="text-lg">{preset.icon}</span>
-                      <div className="flex-1">
-                        <div className="font-medium text-foreground" style={{ opacity: 1 }}>
-                          {preset.displayName}
-                        </div>
-                        <div className="text-xs text-muted-foreground line-clamp-1" style={{ opacity: 1 }}>
-                          {preset.description}
-                        </div>
-                      </div>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
+const EMPTY_FORM = {
+  name: '',
+  description: '',
+  action: 'ACCEPT',
+  direction: 'IN',
+  priorityLabel: 'MEDIUM',
+  customPriority: '',
+  protocol: 'TCP',
+  dstPortStart: '',
+  dstPortEnd: '',
+  srcIpAddr: '',
+  srcIpMask: '',
+  dstIpAddr: '',
+  dstIpMask: '',
 };
 
-const CreateDepartmentFirewallRuleDialog = ({ departmentId, isOpen, onClose, onSuccess, existingRules }) => {
+const ACTION_OPTIONS = [
+  { value: 'ACCEPT', label: '✓ Allow traffic' },
+  { value: 'DROP', label: '✗ Block traffic' },
+];
+const DIRECTION_OPTIONS = [
+  { value: 'IN', label: '↓ Inbound' },
+  { value: 'OUT', label: '↑ Outbound' },
+  { value: 'INOUT', label: '↔ Bidirectional' },
+];
+const PROTOCOL_OPTIONS = [
+  { value: 'TCP', label: 'TCP' },
+  { value: 'UDP', label: 'UDP' },
+  { value: 'ICMP', label: 'ICMP' },
+];
+const PRIORITY_OPTIONS = [
+  { value: 'HIGH', label: '● High (200)' },
+  { value: 'MEDIUM', label: '● Medium (500)' },
+  { value: 'LOW', label: '● Low (800)' },
+  { value: 'CUSTOM', label: '⚙ Custom' },
+];
+
+const CreateDepartmentFirewallRuleDialog = ({
+  departmentId,
+  isOpen,
+  onClose,
+  onSuccess,
+}) => {
   const [mode, setMode] = useState('simple');
+  const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
-
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    action: 'ACCEPT',
-    direction: 'IN',
-    priorityLabel: 'MEDIUM',
-    customPriority: '',
-    protocol: 'TCP',
-    dstPortStart: '',
-    dstPortEnd: '',
-    srcPortStart: '',
-    srcPortEnd: '',
-    srcIpAddr: '',
-    srcIpMask: '',
-    dstIpAddr: '',
-    dstIpMask: ''
-  });
-
   const [selectedPreset, setSelectedPreset] = useState('');
-  // Mutation without refetchQueries - real-time events handle updates
+
   const [createRule, { loading }] = useCreateDepartmentFirewallRuleMutation();
 
-  const handleFieldChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const presetOptions = useMemo(
+    () => [
+      { value: '', label: '— select a service —' },
+      ...SERVICE_PRESETS.map((p) => ({
+        value: p.id,
+        label: `${p.icon ? p.icon + ' ' : ''}${p.displayName} · ${p.category}`,
+      })),
+    ],
+    [],
+  );
+
+  const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
+  const clearFieldError = (field) => {
     if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
       });
     }
   };
 
   const handlePresetChange = (presetId) => {
     setSelectedPreset(presetId);
-    const preset = SERVICE_PRESETS.find(p => p.id === presetId);
-    if (preset && preset.rules.length > 0) {
-      const firstRule = preset.rules[0];
-      setFormData(prev => ({
-        ...prev,
-        name: `Allow ${preset.displayName}`,
-        description: preset.description,
-        action: 'ACCEPT',
-        direction: firstRule.direction,
-        protocol: firstRule.protocol.toUpperCase(),
-        dstPortStart: firstRule.port?.toString() || firstRule.portRange?.start?.toString() || '',
-        dstPortEnd: firstRule.port?.toString() || firstRule.portRange?.end?.toString() || '',
-        srcPortStart: '',
-        srcPortEnd: '',
-        srcIpAddr: '',
-        srcIpMask: '',
-        dstIpAddr: '',
-        dstIpMask: ''
-      }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Rule name is required';
-    }
-
-    if (mode === 'simple' && !selectedPreset) {
-      newErrors.preset = 'Please select a service';
-    }
-
-    if (mode === 'advanced') {
-      if (formData.dstPortStart && (isNaN(formData.dstPortStart) || formData.dstPortStart < 1 || formData.dstPortStart > 65535)) {
-        newErrors.dstPortStart = 'Invalid port (1-65535)';
-      }
-      if (formData.dstPortEnd && (isNaN(formData.dstPortEnd) || formData.dstPortEnd < 1 || formData.dstPortEnd > 65535)) {
-        newErrors.dstPortEnd = 'Invalid port (1-65535)';
-      }
-      if (formData.dstPortStart && formData.dstPortEnd && parseInt(formData.dstPortStart) > parseInt(formData.dstPortEnd)) {
-        newErrors.dstPortEnd = 'End port must be >= start port';
-      }
-
-      if (formData.priorityLabel === 'CUSTOM' && (!formData.customPriority || isNaN(formData.customPriority) || formData.customPriority < 1 || formData.customPriority > 1000)) {
-        newErrors.customPriority = 'Priority must be 1-1000';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      toast.error('Please fix form errors');
-      return;
-    }
-
-    debug.log('Creating department firewall rule:', formData);
-
-    try {
-      const priority = formData.priorityLabel === 'CUSTOM'
-        ? parseInt(formData.customPriority)
-        : getPriorityFromLabel(formData.priorityLabel);
-
-      const input = {
-        name: formData.name,
-        description: formData.description || null,
-        action: formData.action,
-        direction: formData.direction,
-        priority,
-        protocol: formData.protocol.toLowerCase(),
-        dstPortStart: formData.dstPortStart ? parseInt(formData.dstPortStart) : null,
-        dstPortEnd: formData.dstPortEnd ? parseInt(formData.dstPortEnd) : null,
-        srcPortStart: formData.srcPortStart ? parseInt(formData.srcPortStart) : null,
-        srcPortEnd: formData.srcPortEnd ? parseInt(formData.srcPortEnd) : null,
-        srcIpAddr: formData.srcIpAddr || null,
-        srcIpMask: formData.srcIpMask || null,
-        dstIpAddr: formData.dstIpAddr || null,
-        dstIpMask: formData.dstIpMask || null,
-        overridesDept: false
-      };
-
-      debug.log('Submitting department rule input:', input);
-
-      await createRule({
-        variables: { departmentId, input }
-      });
-
-      toast.success('Department firewall rule created');
-      onSuccess();
-      resetForm();
-    } catch (error) {
-      debug.error('Failed to create department rule:', error);
-      toast.error(`Failed to create rule: ${error.message}`);
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
+    if (!presetId) return;
+    const preset = SERVICE_PRESETS.find((p) => p.id === presetId);
+    if (!preset || !preset.rules.length) return;
+    const r = preset.rules[0];
+    update({
+      name: `Allow ${preset.displayName}`,
+      description: preset.description,
       action: 'ACCEPT',
-      direction: 'IN',
-      priorityLabel: 'MEDIUM',
-      customPriority: '',
-      protocol: 'TCP',
-      dstPortStart: '',
-      dstPortEnd: '',
-      srcPortStart: '',
-      srcPortEnd: '',
+      direction: r.direction,
+      protocol: r.protocol.toUpperCase(),
+      dstPortStart:
+        r.port?.toString() || r.portRange?.start?.toString() || '',
+      dstPortEnd: r.port?.toString() || r.portRange?.end?.toString() || '',
       srcIpAddr: '',
       srcIpMask: '',
       dstIpAddr: '',
-      dstIpMask: ''
+      dstIpMask: '',
     });
+  };
+
+  const validateForm = () => {
+    const next = {};
+    if (!form.name.trim()) next.name = 'Rule name is required';
+    if (mode === 'simple' && !selectedPreset)
+      next.preset = 'Pick a service first';
+    if (mode === 'advanced') {
+      const ds = Number(form.dstPortStart);
+      const de = Number(form.dstPortEnd);
+      if (form.dstPortStart && (isNaN(ds) || ds < 1 || ds > 65535))
+        next.dstPortStart = 'Port must be 1–65535';
+      if (form.dstPortEnd && (isNaN(de) || de < 1 || de > 65535))
+        next.dstPortEnd = 'Port must be 1–65535';
+      if (form.dstPortStart && form.dstPortEnd && ds > de)
+        next.dstPortEnd = 'End ≥ start';
+      if (form.priorityLabel === 'CUSTOM') {
+        const p = Number(form.customPriority);
+        if (!form.customPriority || isNaN(p) || p < 1 || p > 1000)
+          next.customPriority = '1–1000';
+      }
+    }
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const reset = () => {
+    setForm(EMPTY_FORM);
     setSelectedPreset('');
     setErrors({});
     setMode('simple');
   };
 
   const handleClose = () => {
-    resetForm();
-    onClose();
+    reset();
+    onClose?.();
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      toast.error('Please fix the errors above');
+      return;
+    }
+    debug.log('Creating department firewall rule', form);
+    try {
+      const priority =
+        form.priorityLabel === 'CUSTOM'
+          ? parseInt(form.customPriority, 10)
+          : getPriorityFromLabel(form.priorityLabel);
+      const input = {
+        name: form.name,
+        description: form.description || null,
+        action: form.action,
+        direction: form.direction,
+        priority,
+        protocol: form.protocol.toLowerCase(),
+        dstPortStart: form.dstPortStart ? parseInt(form.dstPortStart, 10) : null,
+        dstPortEnd: form.dstPortEnd ? parseInt(form.dstPortEnd, 10) : null,
+        srcIpAddr: form.srcIpAddr || null,
+        srcIpMask: form.srcIpMask || null,
+        dstIpAddr: form.dstIpAddr || null,
+        dstIpMask: form.dstIpMask || null,
+      };
+      await createRule({ variables: { departmentId, input } });
+      toast.success('Department firewall rule created');
+      onSuccess?.();
+      reset();
+    } catch (err) {
+      toast.error(`Could not create rule: ${err.message || err}`);
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent glass="strong" className="max-w-2xl max-h-[90vh] overflow-y-auto space-y-6">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="size-icon" />
-            Create Department Firewall Rule
-          </DialogTitle>
-          <DialogDescription>
-            Add a department-wide firewall rule that will be inherited by all VMs
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800">
-          <AlertCircle className="size-icon text-purple-600 dark:text-purple-400 mt-0.5" />
-          <p className="text-xs text-purple-700 dark:text-purple-300">
-            This rule will apply to all VMs in this department. Individual VMs can override it if needed.
-          </p>
-        </div>
-
-        <Tabs value={mode} onValueChange={setMode} className="w-full space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="simple">
-              <Shield className="size-icon mr-2" />
-              Simple Mode
-            </TabsTrigger>
-            <TabsTrigger value="advanced">
-              <Settings className="size-icon mr-2" />
-              Advanced Mode
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Simple Mode - Searchable combobox */}
-          <TabsContent value="simple" className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="preset">Service</Label>
-              <ServiceCombobox
-                value={selectedPreset}
-                onValueChange={handlePresetChange}
-                error={errors.preset}
-              />
-              {errors.preset && <p className="text-xs text-destructive">{errors.preset}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="simple-name">Rule Name</Label>
-              <Input
-                id="simple-name"
-                value={formData.name}
-                onChange={(e) => handleFieldChange('name', e.target.value)}
-                placeholder="e.g., Allow HTTPS"
-                className={errors.name ? 'border-destructive' : ''}
-              />
-              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="simple-action">Action</Label>
-              <Select value={formData.action} onValueChange={(v) => handleFieldChange('action', v)}>
-                <SelectTrigger id="simple-action">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACCEPT">✅ Allow Traffic</SelectItem>
-                  <SelectItem value="DROP">🚫 Block Traffic</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </TabsContent>
-
-          {/* Advanced Mode - Simplified, no override option */}
-          <TabsContent value="advanced" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="adv-name">Rule Name *</Label>
-                <Input
-                  id="adv-name"
-                  value={formData.name}
-                  onChange={(e) => handleFieldChange('name', e.target.value)}
-                  placeholder="e.g., Allow Custom App"
-                  className={errors.name ? 'border-destructive' : ''}
-                />
-                {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="adv-action">Action</Label>
-                <Select value={formData.action} onValueChange={(v) => handleFieldChange('action', v)}>
-                  <SelectTrigger id="adv-action">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACCEPT">✅ Allow</SelectItem>
-                    <SelectItem value="DROP">🚫 Block</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="adv-desc">Description (optional)</Label>
-              <Textarea
-                id="adv-desc"
-                value={formData.description}
-                onChange={(e) => handleFieldChange('description', e.target.value)}
-                placeholder="Describe the purpose of this rule"
-                rows={2}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="adv-direction">Direction</Label>
-                <Select value={formData.direction} onValueChange={(v) => handleFieldChange('direction', v)}>
-                  <SelectTrigger id="adv-direction">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="IN">⬇️ Inbound</SelectItem>
-                    <SelectItem value="OUT">⬆️ Outbound</SelectItem>
-                    <SelectItem value="INOUT">↔️ Bidirectional</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="adv-protocol">Protocol</Label>
-                <Select value={formData.protocol} onValueChange={(v) => handleFieldChange('protocol', v)}>
-                  <SelectTrigger id="adv-protocol">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TCP">TCP</SelectItem>
-                    <SelectItem value="UDP">UDP</SelectItem>
-                    <SelectItem value="ICMP">ICMP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Destination Ports</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  placeholder="Start port"
-                  value={formData.dstPortStart}
-                  onChange={(e) => handleFieldChange('dstPortStart', e.target.value)}
-                  className={errors.dstPortStart ? 'border-destructive' : ''}
-                />
-                <Input
-                  placeholder="End port (optional)"
-                  value={formData.dstPortEnd}
-                  onChange={(e) => handleFieldChange('dstPortEnd', e.target.value)}
-                  className={errors.dstPortEnd ? 'border-destructive' : ''}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Select value={formData.priorityLabel} onValueChange={(v) => handleFieldChange('priorityLabel', v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="HIGH">🔴 High (200)</SelectItem>
-                    <SelectItem value="MEDIUM">🟡 Medium (500)</SelectItem>
-                    <SelectItem value="LOW">🟢 Low (800)</SelectItem>
-                    <SelectItem value="CUSTOM">⚙️ Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-                {formData.priorityLabel === 'CUSTOM' && (
-                  <Input
-                    type="number"
-                    placeholder="1-1000"
-                    value={formData.customPriority}
-                    onChange={(e) => handleFieldChange('customPriority', e.target.value)}
-                    className={errors.customPriority ? 'border-destructive' : ''}
-                  />
-                )}
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={loading}>
+    <Drawer
+      open={!!isOpen}
+      onClose={handleClose}
+      side="right"
+      size={520}
+      title={
+        <ResponsiveStack direction="row" gap={2} align="center">
+          <Shield size={14} />
+          <span>New department rule</span>
+        </ResponsiveStack>
+      }
+      footer={
+        <ResponsiveStack direction="row" gap={2} justify="end">
+          <Button variant="secondary" onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Creating...' : 'Create Department Rule'}
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            loading={loading}
+            disabled={loading}
+          >
+            {loading ? 'Creating…' : 'Create rule'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveStack>
+      }
+    >
+      <ResponsiveStack direction="col" gap={5}>
+        <Alert tone="info" icon={<Shield size={14} />}>
+          Rules created here apply to <strong>every VM</strong> in this
+          department. Individual VMs can still override with the{' '}
+          <Badge tone="neutral">overrides department</Badge> flag.
+        </Alert>
+
+        <Tabs value={mode} onValueChange={setMode} variant="pill">
+          <TabList>
+            <Tab value="simple" icon={<Shield size={12} />}>
+              Simple
+            </Tab>
+            <Tab value="advanced" icon={<Settings size={12} />}>
+              Advanced
+            </Tab>
+          </TabList>
+
+          <TabPanel value="simple">
+            <ResponsiveStack direction="col" gap={4}>
+              <FormField
+                label="Service"
+                error={errors.preset}
+                helper={
+                  selectedPreset
+                    ? SERVICE_PRESETS.find((p) => p.id === selectedPreset)
+                        ?.description
+                    : undefined
+                }
+              >
+                <Select
+                  value={selectedPreset}
+                  onChange={handlePresetChange}
+                  options={presetOptions}
+                  placeholder="Pick a common service"
+                />
+              </FormField>
+
+              <FormField label="Rule name" error={errors.name}>
+                <TextField
+                  placeholder="e.g. Allow HTTPS"
+                  value={form.name}
+                  onChange={(e) => {
+                    update({ name: e.target.value });
+                    clearFieldError('name');
+                  }}
+                />
+              </FormField>
+
+              <FormField label="Action">
+                <Select
+                  value={form.action}
+                  onChange={(v) => update({ action: v })}
+                  options={ACTION_OPTIONS}
+                />
+              </FormField>
+            </ResponsiveStack>
+          </TabPanel>
+
+          <TabPanel value="advanced">
+            <ResponsiveStack direction="col" gap={4}>
+              <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={3}>
+                <FormField label="Rule name" required error={errors.name}>
+                  <TextField
+                    placeholder="e.g. Allow custom app"
+                    value={form.name}
+                    onChange={(e) => {
+                      update({ name: e.target.value });
+                      clearFieldError('name');
+                    }}
+                  />
+                </FormField>
+                <FormField label="Action">
+                  <Select
+                    value={form.action}
+                    onChange={(v) => update({ action: v })}
+                    options={ACTION_OPTIONS}
+                  />
+                </FormField>
+              </ResponsiveGrid>
+
+              <FormField label="Description" optional>
+                <Textarea
+                  value={form.description}
+                  onChange={(e) => update({ description: e.target.value })}
+                  placeholder="What does this rule do?"
+                  rows={2}
+                />
+              </FormField>
+
+              <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={3}>
+                <FormField label="Direction">
+                  <Select
+                    value={form.direction}
+                    onChange={(v) => update({ direction: v })}
+                    options={DIRECTION_OPTIONS}
+                  />
+                </FormField>
+                <FormField label="Protocol">
+                  <Select
+                    value={form.protocol}
+                    onChange={(v) => update({ protocol: v })}
+                    options={PROTOCOL_OPTIONS}
+                  />
+                </FormField>
+              </ResponsiveGrid>
+
+              <FormField
+                label="Destination ports"
+                helper="Leave end empty for a single port."
+              >
+                <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={2}>
+                  <TextField
+                    placeholder="Start"
+                    value={form.dstPortStart}
+                    onChange={(e) => {
+                      update({ dstPortStart: e.target.value });
+                      clearFieldError('dstPortStart');
+                    }}
+                    error={errors.dstPortStart}
+                  />
+                  <TextField
+                    placeholder="End (optional)"
+                    value={form.dstPortEnd}
+                    onChange={(e) => {
+                      update({ dstPortEnd: e.target.value });
+                      clearFieldError('dstPortEnd');
+                    }}
+                    error={errors.dstPortEnd}
+                  />
+                </ResponsiveGrid>
+              </FormField>
+
+              <FormField
+                label="Priority"
+                helper="Lower numbers evaluate first."
+              >
+                <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={2}>
+                  <Select
+                    value={form.priorityLabel}
+                    onChange={(v) => update({ priorityLabel: v })}
+                    options={PRIORITY_OPTIONS}
+                  />
+                  {form.priorityLabel === 'CUSTOM' ? (
+                    <TextField
+                      type="number"
+                      placeholder="1–1000"
+                      value={form.customPriority}
+                      onChange={(e) => {
+                        update({ customPriority: e.target.value });
+                        clearFieldError('customPriority');
+                      }}
+                      error={errors.customPriority}
+                    />
+                  ) : null}
+                </ResponsiveGrid>
+              </FormField>
+            </ResponsiveStack>
+          </TabPanel>
+        </Tabs>
+      </ResponsiveStack>
+    </Drawer>
   );
 };
 

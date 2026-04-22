@@ -3,11 +3,9 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
+  // Allow LAN devices to access the dev server (HMR/WebSocket).
+  // Add your device IP here if it changes, e.g. '192.168.0.42'.
+  allowedDevOrigins: ['192.168.0.199'],
   typescript: {
     // Warning: This allows production builds to successfully complete even if
     // your project has type errors.
@@ -18,16 +16,29 @@ const nextConfig = {
     NEXT_PUBLIC_GRAPHQL_API_URL: process.env.NEXT_PUBLIC_GRAPHQL_API_URL,
   },
   images: {
-    domains: ["api.dicebear.com", "cdn.simpleicons.org", "i.pravatar.cc", "www.gravatar.com"],
+    remotePatterns: [
+      { protocol: "https", hostname: "api.dicebear.com" },
+      { protocol: "https", hostname: "cdn.simpleicons.org" },
+      { protocol: "https", hostname: "i.pravatar.cc" },
+      { protocol: "https", hostname: "www.gravatar.com" },
+    ],
   },
   transpilePackages: [
     "@nextui-org/react",
     "@nextui-org/theme",
     "@nextui-org/system",
-    "@nextui-org/shared-utils"
+    "@nextui-org/shared-utils",
+    "@infinibay/harbor"
   ],
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
+  },
+  // Empty turbopack config silences the Next 16 warning when migrating from
+  // a legacy webpack config. Turbopack is used by default for dev+build.
+  turbopack: {
+    resolveAlias: {
+      '@components': './src/components',
+    },
   },
   async rewrites() {
     return [
@@ -37,6 +48,7 @@ const nextConfig = {
       },
     ];
   },
+  // Kept for legacy fallbacks; the Turbopack-equivalent is in `turbopack` above.
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,

@@ -1,122 +1,119 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger,
-  DialogFooter,
-  DialogDescription
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { createTemplateCategory } from '@/state/slices/templateCategories';
-import { 
-  selectTemplateCategoriesLoading, 
-  selectTemplateCategoriesError 
-} from '@/state/slices/templateCategories';
+import { useState, cloneElement, isValidElement, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
+import { FolderTree } from "lucide-react";
+import {
+  Dialog,
+  Button,
+  ButtonGroup,
+  TextField,
+  Textarea,
+  Alert,
+  ResponsiveStack,
+} from "@infinibay/harbor";
 
+import {
+  createTemplateCategory,
+  selectTemplateCategoriesLoading,
+  selectTemplateCategoriesError,
+} from "@/state/slices/templateCategories";
+
+/**
+ * CreateCategoryDialog — Harbor-native. The `children` prop is cloned
+ * and its click handler wired to open the dialog.
+ */
 export function CreateCategoryDialog({ children }) {
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   const loading = useSelector(selectTemplateCategoriesLoading);
   const error = useSelector(selectTemplateCategoriesError);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-  });
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  const close = () => {
+    setOpen(false);
+    setName("");
+    setDescription("");
+  };
 
   const handleCreate = async () => {
+    if (!name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
     try {
-      await dispatch(createTemplateCategory(formData)).unwrap();
-      setOpen(false);
-      setFormData({
-        name: '',
-        description: '',
-      });
+      await dispatch(
+        createTemplateCategory({ name: name.trim(), description: description.trim() })
+      ).unwrap();
+      toast.success(`Category "${name}" created`);
+      close();
     } catch (err) {
-      console.error('Failed to create category:', err);
+      toast.error(`Could not create category: ${err.message || err}`);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const isFormValid = () => {
-    return formData.name && formData.description;
-  };
+  const trigger = useCallback((child) => {
+    if (!isValidElement(child)) return null;
+    const prev = child.props.onClick;
+    return cloneElement(child, {
+      onClick: (e) => {
+        prev?.(e);
+        setOpen(true);
+      },
+    });
+  }, []);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Create New Category</DialogTitle>
-          <DialogDescription>
-            Create a new category to organize your machine templates.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-4">
-          {error?.create && (
-            <div className="text-sm text-red-500">
-              Error creating category: {error.create}
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Category name"
-              required
-              disabled={loading.create}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Category description"
-              required
-              disabled={loading.create}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => setOpen(false)}
-            disabled={loading.create}
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="button"
-            onClick={handleCreate}
-            disabled={loading.create || !isFormValid()}
-            variant="success"
-          >
-            {loading.create ? 'Creating...' : 'Create Category'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      {trigger(children)}
+      <Dialog
+        open={open}
+        onClose={close}
+        size="sm"
+        title={
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <FolderTree size={16} />
+            <span>New category</span>
+          </ResponsiveStack>
+        }
+        description="Group related templates so they're easier to find."
+        footer={
+          <ButtonGroup attached={false}>
+            <Button variant="secondary" onClick={close} disabled={loading?.create}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              loading={loading?.create}
+              disabled={loading?.create || !name.trim()}
+            >
+              Create
+            </Button>
+          </ButtonGroup>
+        }
+      >
+        <ResponsiveStack direction="col" gap={3}>
+          {error?.create ? (
+            <Alert tone="danger">{String(error.create)}</Alert>
+          ) : null}
+          <TextField
+            label="Name"
+            placeholder="Production, Development, Testing…"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
+          <Textarea
+            label="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            placeholder="Short blurb so other admins understand when to use this category"
+          />
+        </ResponsiveStack>
+      </Dialog>
+    </>
   );
 }
