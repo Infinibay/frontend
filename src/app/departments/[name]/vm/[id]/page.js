@@ -23,6 +23,7 @@ import {
   FileCode,
   LayoutDashboard,
   Lightbulb,
+  Monitor,
   Power,
   PowerOff,
   RefreshCw,
@@ -32,6 +33,8 @@ import {
 } from 'lucide-react';
 import { useVMDetail } from './hooks/useVMDetail';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { openSpiceClient } from '@/utils/spiceConnect';
+import { toast } from '@/hooks/use-toast';
 
 import LoadingState from './components/LoadingState';
 import ErrorState from './components/ErrorState';
@@ -222,6 +225,25 @@ const VMDetailPage = () => {
   const isRunning = status === 'online';
   const isBusy = status === 'provisioning' || status === 'maintenance';
   const os = vm?.configuration?.os;
+  const graphicUrl = typeof vm?.configuration?.graphic === 'string' ? vm.configuration.graphic : null;
+  const canConnect = isRunning && graphicUrl?.startsWith('spice://');
+
+  const handleConnect = () => {
+    try {
+      openSpiceClient(graphicUrl, { vmName: vm?.name });
+      toast({
+        title: 'Opening SPICE client',
+        description: 'A .vv file was downloaded. Your OS should open it with virt-viewer or the default SPICE client.',
+        variant: 'default',
+      });
+    } catch (err) {
+      toast({
+        title: 'Could not open SPICE client',
+        description: err?.message || 'Invalid connection info',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <>
@@ -266,6 +288,16 @@ const VMDetailPage = () => {
                 >
                   Refresh
                 </Button>
+                {canConnect ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<Monitor size={14} />}
+                    onClick={handleConnect}
+                  >
+                    Connect
+                  </Button>
+                ) : null}
                 {isRunning ? (
                   <Button
                     variant="destructive"

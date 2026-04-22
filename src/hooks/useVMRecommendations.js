@@ -1,6 +1,7 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@apollo/client/react';
 import { createDebugger } from '@/utils/debug';
+import { getSocketService } from '@/services/socketService';
 
 const debug = createDebugger('frontend:hooks:useVMRecommendations');
 
@@ -118,6 +119,22 @@ const useVMRecommendations = (vmId, options = {}) => {
     notifyOnNetworkStatusChange: true,
     errorPolicy: 'all' // Better handling when no health snapshots exist
   });
+
+  // Real-time: refetch as soon as the backend finishes generating
+  // recommendations for this VM, instead of waiting for the poll tick.
+  useEffect(() => {
+    if (!vmId || skip) return undefined;
+    const socketService = getSocketService();
+    const unsubscribe = socketService.subscribeToAllResourceEvents(
+      'recommendations',
+      (action, event) => {
+        if (action !== 'completed') return;
+        if (event?.data?.machineId !== vmId) return;
+        refetch({ vmId, filter, refresh: false }).catch(() => {});
+      },
+    );
+    return () => unsubscribe?.();
+  }, [vmId, skip, filter, refetch]);
 
   // Raw recommendations data with client-side deduplication
   const recommendations = useMemo(() => {
