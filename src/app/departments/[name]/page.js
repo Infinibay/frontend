@@ -13,6 +13,7 @@ import {
   Pause,
   Play,
   Plus,
+  Power,
   Shield,
   Square,
   Trash2,
@@ -21,17 +22,14 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   ClusterView,
   Dialog,
   EmptyState,
-  IconTile,
   LoadingOverlay,
   Page,
   ResponsiveGrid,
   ResponsiveStack,
   Skeleton,
-  Stat,
   Tab,
   TabList,
   TabPanel,
@@ -300,55 +298,38 @@ const DepartmentPage = () => {
   return (
     <>
       <Page>
-        <Card
-          variant="default"
-          spotlight={false}
-          glow={false}
-          title={
-            <ResponsiveStack direction="row" gap={3} align="center">
-              <IconTile
-                icon={<Building2 size={22} />}
-                tone="purple"
-                size="lg"
-              />
-              <ResponsiveStack direction="col" gap={1}>
-                <span>{department?.name || 'Department'}</span>
-                <ResponsiveStack direction="row" gap={2} align="center" wrap>
-                  <span>
-                    {stats.total}{' '}
-                    {stats.total === 1 ? 'virtual machine' : 'virtual machines'}
-                  </span>
-                  {department?.id ? (
-                    <Badge tone="neutral">{department.id.slice(0, 6)}</Badge>
-                  ) : null}
-                </ResponsiveStack>
-              </ResponsiveStack>
-            </ResponsiveStack>
-          }
-          footer={
-            <ResponsiveGrid columns={{ base: 2, md: 4 }} gap={3}>
-              <Stat
-                label="Total"
-                value={stats.total}
-                icon={<Monitor size={12} />}
-              />
-              <Stat label="Running" value={stats.running} />
-              <Stat label="Stopped" value={stats.stopped} />
-              <Stat label="Busy" value={stats.busy} />
-            </ResponsiveGrid>
-          }
+        <ResponsiveStack
+          direction={{ base: 'col', md: 'row' }}
+          gap={3}
+          align={{ base: 'stretch', md: 'center' }}
+          justify="between"
+          wrap
         >
-          <ResponsiveStack direction="row" justify="end">
-            <Button
-              size="sm"
-              variant="primary"
-              icon={<Plus size={14} />}
-              onClick={() => router.push(newComputerHref)}
-            >
-              New computer
-            </Button>
+          <ResponsiveStack direction="row" gap={3} align="center" wrap>
+            <Badge tone="purple" icon={<Monitor size={12} />}>
+              {stats.total} {stats.total === 1 ? 'VM' : 'VMs'}
+            </Badge>
+            <Badge tone="success" icon={<Play size={12} />}>
+              {stats.running} running
+            </Badge>
+            {stats.stopped > 0 ? (
+              <Badge tone="neutral" icon={<Power size={12} />}>
+                {stats.stopped} stopped
+              </Badge>
+            ) : null}
+            {stats.busy > 0 ? (
+              <Badge tone="warning">{stats.busy} busy</Badge>
+            ) : null}
           </ResponsiveStack>
-        </Card>
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<Plus size={14} />}
+            onClick={() => router.push(newComputerHref)}
+          >
+            New computer
+          </Button>
+        </ResponsiveStack>
 
         <Tabs
           value={activeTab || 'computers'}
