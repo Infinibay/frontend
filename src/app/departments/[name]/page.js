@@ -327,7 +327,7 @@ const DepartmentPage = () => {
             icon={<Plus size={14} />}
             onClick={() => router.push(newComputerHref)}
           >
-            New computer
+            New VM
           </Button>
         </ResponsiveStack>
 
@@ -365,7 +365,7 @@ const DepartmentPage = () => {
                     icon={<Plus size={14} />}
                     onClick={() => router.push(newComputerHref)}
                   >
-                    New computer
+                    New VM
                   </Button>
                 }
               />

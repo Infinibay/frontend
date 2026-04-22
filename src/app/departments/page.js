@@ -224,7 +224,7 @@ const DepartmentsPage = () => {
               icon={<Plus size={14} />}
               onClick={() => setIsCreateDeptDialogOpen(true)}
             >
-              New
+              New department
             </Button>
           </ResponsiveStack>
         </ResponsiveStack>
