@@ -43,7 +43,7 @@ export const useDepartmentPage = (departmentName) => {
   // UI State
   const [showToast, setShowToast] = useState(false);
   const [toastProps, setToastProps] = useState({});
-  const [activeTab, setActiveTab] = useState("computers");
+  const [activeTab, setActiveTab] = useState("overview");
   const [viewMode, setViewMode] = useState("grid"); // grid or table
   const [sortBy, setSortBy] = useState("name");
   const [sortDirection, setSortDirection] = useState("asc");
@@ -124,7 +124,7 @@ export const useDepartmentPage = (departmentName) => {
     if (!machine) return;
     
     // Navigate to VM view instead of opening the deprecated panel
-    router.push(`/departments/${encodeURIComponent(departmentName)}/vm/${machine.id}`);
+    router.push(`/departments/${encodeURIComponent(departmentName)}/desktops/${machine.id}`);
   };
 
   // Handle details sheet close - kept for compatibility but simplified
@@ -170,8 +170,8 @@ export const useDepartmentPage = (departmentName) => {
           setSelectedPc(null);
           setToastProps({
             variant: "success",
-            title: "VM Deleted",
-            description: "The virtual machine has been successfully deleted."
+            title: "Desktop deleted",
+            description: "The desktop has been successfully deleted."
           });
           setShowToast(true);
         },

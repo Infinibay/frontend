@@ -158,7 +158,7 @@ export function ConfigurationStep({ id }) {
               </Button>
             }
           >
-            You need to upload at least one ISO image to create virtual machines.
+            You need to upload at least one ISO image to create desktops.
           </Alert>
         )}
 

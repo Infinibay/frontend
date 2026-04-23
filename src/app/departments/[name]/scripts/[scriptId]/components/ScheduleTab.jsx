@@ -307,7 +307,7 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
     }
 
     if (!selectAllVMs && selectedVMs.length === 0) {
-      toast.error('Please select at least one VM')
+      toast.error('Please select at least one desktop')
       return
     }
 
@@ -661,7 +661,7 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
                         <IconButton
                           variant="ghost"
                           size="sm"
-                          label="Cannot edit schedule while VM is offline"
+                          label="Cannot edit schedule while desktop is offline"
                           icon={<Edit3 size={16} />}
                           disabled
                         />
@@ -705,12 +705,12 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
 
           {/* VM Selection */}
           {!editingSchedule && (
-            <FormField label="Target Virtual Machines">
+            <FormField label="Target desktops">
               <ResponsiveStack direction="column" gap={3}>
                 <Checkbox
                   checked={selectAllVMs}
                   onChange={(e) => setSelectAllVMs(e.target.checked)}
-                  label={`Select all VMs in department (${departmentVMs.length} VMs)`}
+                  label={`Select all desktops in department (${departmentVMs.length} desktop${departmentVMs.length === 1 ? '' : 's'})`}
                 />
                 {!selectAllVMs && (
                   <Card variant="default">

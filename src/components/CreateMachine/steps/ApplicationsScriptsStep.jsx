@@ -261,7 +261,7 @@ export function ApplicationsScriptsStep({ id }) {
               <span>
                 To enable application installation, configure the department&apos;s
                 firewall rules to allow outbound traffic on ports 443 and 80 before
-                creating this VM.
+                creating this desktop.
               </span>
               {missingPortsMessage && (
                 <Badge tone="warning">{missingPortsMessage}</Badge>

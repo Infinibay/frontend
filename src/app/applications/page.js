@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Package,
@@ -12,20 +12,19 @@ import {
 } from "lucide-react";
 import {
   Page,
-  Card,
   Button,
-  Badge,
+  IconButton,
   SearchField,
   Alert,
   EmptyState,
   Spinner,
   DataTable,
-  Stat,
   IconTile,
   ResponsiveStack,
-  ResponsiveGrid,
   Tooltip,
 } from "@infinibay/harbor";
+import { PageHeader } from "@/components/common/PageHeader";
+import { OsBadge } from "@/components/common/OsBadge";
 
 import { fetchApplications } from "@/state/slices/applications";
 import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
@@ -68,7 +67,7 @@ const ApplicationsPage = () => {
   const helpConfig = useMemo(
     () => ({
       title: "Applications",
-      description: "Per-OS install scripts that VMs can pull on demand.",
+      description: "Per-OS install scripts that desktops can pull on demand.",
       icon: <Package size={20} />,
       sections: [
         {
@@ -131,11 +130,23 @@ const ApplicationsPage = () => {
         sortable: true,
         render: (row) => (
           <ResponsiveStack direction="row" gap={3} align="center">
-            <IconTile icon={<AppWindow size={16} />} tone="purple" size="sm" />
+            {row.icon ? (
+              <span className="inline-flex w-7 h-7 rounded-md bg-white/5 border border-white/10 items-center justify-center overflow-hidden shrink-0">
+                <img
+                  src={row.icon}
+                  alt=""
+                  width={20}
+                  height={20}
+                  style={{ display: "block", objectFit: "contain" }}
+                />
+              </span>
+            ) : (
+              <IconTile icon={<AppWindow size={16} />} tone="purple" size="sm" />
+            )}
             <ResponsiveStack direction="col" gap={0}>
-              <span>{row.name}</span>
+              <span className="font-medium">{row.name}</span>
               {row.description ? (
-                <span style={{ fontSize: 12, opacity: 0.65 }}>
+                <span className="text-fg-muted text-xs truncate">
                   {row.description}
                 </span>
               ) : null}
@@ -146,25 +157,15 @@ const ApplicationsPage = () => {
       {
         key: "os",
         label: "OS",
-        width: 220,
+        width: 260,
         render: (row) => {
           const oss = row.os || [];
-          if (!oss.length) return <span style={{ opacity: 0.4 }}>—</span>;
+          if (!oss.length)
+            return <span className="text-fg-subtle">—</span>;
           return (
             <ResponsiveStack direction="row" gap={1} wrap>
               {oss.map((o) => (
-                <Badge
-                  key={o}
-                  tone={
-                    o === "windows"
-                      ? "info"
-                      : o === "ubuntu" || o === "fedora"
-                        ? "success"
-                        : "neutral"
-                  }
-                >
-                  {o}
-                </Badge>
+                <OsBadge key={o} os={o} />
               ))}
             </ResponsiveStack>
           );
@@ -184,83 +185,64 @@ const ApplicationsPage = () => {
     []
   );
 
+  const total = applications?.length || 0;
+  const crossOs = (applications || []).filter((a) => (a.os || []).length > 1).length;
+  const parametrised = (applications || []).filter(
+    (a) => Object.keys(a.parameters || {}).length > 0
+  ).length;
+
+  const countText = total === 0
+    ? null
+    : [
+        `${total}`,
+        crossOs > 0 ? `${crossOs} cross-OS` : null,
+        parametrised > 0 ? `${parametrised} parameterised` : null,
+      ].filter(Boolean).join(" · ");
+
   return (
     <Page gap="lg">
-      <Card
-        variant="default"
-        leadingIcon={<Package size={20} />}
-        leadingIconTone="purple"
+      <PageHeader
         title="Applications"
-        description="Install-script catalogue that VMs can pull from when provisioning or updating."
-      >
-        <ResponsiveStack
-          direction={{ base: "col", lg: "row" }}
-          gap={4}
-          justify="between"
-          align="stretch"
-        >
-          <ResponsiveGrid columns={3} gap={3}>
-            <Stat
-              label="Total"
-              value={applications?.length || 0}
-              icon={<Package size={14} />}
-              variant="plain"
-            />
-            <Stat
-              label="Cross-OS"
-              value={
-                (applications || []).filter((a) => (a.os || []).length > 1)
-                  .length
-              }
-              variant="plain"
-            />
-            <Stat
-              label="Parametrised"
-              value={
-                (applications || []).filter(
-                  (a) => Object.keys(a.parameters || {}).length > 0
-                ).length
-              }
-              variant="plain"
-            />
-          </ResponsiveGrid>
-
-          <ResponsiveStack direction="row" gap={2} align="center">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<RefreshCw size={16} />}
-              onClick={refresh}
-              disabled={isLoading}
-            >
-              Refresh
-            </Button>
-            <Tooltip content="New application">
-              <span>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={<Plus size={14} />}
-                  onClick={() => router.push("/applications/new")}
-                >
-                  New
-                </Button>
-              </span>
-            </Tooltip>
-          </ResponsiveStack>
-        </ResponsiveStack>
-      </Card>
+        count={countText}
+        secondary={
+          <IconButton
+            size="sm"
+            variant="ghost"
+            label="Refresh"
+            icon={<RefreshCw size={14} />}
+            onClick={refresh}
+            disabled={isLoading}
+          />
+        }
+        primary={
+          <Tooltip content="New Application">
+            <span>
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => router.push("/applications/new")}
+              >
+                New Application
+              </Button>
+            </span>
+          </Tooltip>
+        }
+        filters={
+          <SearchField
+            placeholder="Search applications…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        }
+      />
 
       {error && (
         <Alert
           tone="danger"
           title="Couldn't load applications"
           actions={
-            <Button
-              size="sm"
-              onClick={refresh}
-              icon={<RefreshCw size={16} />}
-            >
+            <Button size="sm" onClick={refresh} icon={<RefreshCw size={16} />}>
               Retry
             </Button>
           }
@@ -269,59 +251,45 @@ const ApplicationsPage = () => {
         </Alert>
       )}
 
-      <Card variant="default">
-        <SearchField
-          placeholder="Search applications…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </Card>
-
       {isLoading && !(applications || []).length ? (
-        <Card variant="default">
-          <ResponsiveStack direction="row" gap={3} justify="center" align="center">
-            <Spinner /> Loading applications…
-          </ResponsiveStack>
-        </Card>
+        <ResponsiveStack direction="row" gap={3} justify="center" align="center">
+          <Spinner /> Loading applications…
+        </ResponsiveStack>
       ) : filtered.length === 0 ? (
-        <Card variant="default">
-          <EmptyState
-            icon={<Package size={40} />}
-            title={
-              (applications || []).length ? "No matches" : "No applications yet"
-            }
-            description={
-              (applications || []).length
-                ? "No applications match your search."
-                : "Register your first application to see it here."
-            }
-            actions={
-              !(applications || []).length ? (
-                <Tooltip content="New application">
-                  <span>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      icon={<Plus size={14} />}
-                      onClick={() => router.push("/applications/new")}
-                    >
-                      New
-                    </Button>
-                  </span>
-                </Tooltip>
-              ) : null
-            }
-          />
-        </Card>
+        <EmptyState
+          icon={<Package size={18} />}
+          title={
+            (applications || []).length ? "No matches" : "No applications yet"
+          }
+          description={
+            (applications || []).length
+              ? "No applications match your search."
+              : "Register your first application to see it here."
+          }
+          actions={
+            !(applications || []).length ? (
+              <Tooltip content="New Application">
+                <span>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={<Plus size={14} />}
+                    onClick={() => router.push("/applications/new")}
+                  >
+                    New Application
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : null
+          }
+        />
       ) : (
-        <Card variant="default">
-          <DataTable
-            rows={filtered}
-            columns={columns}
-            rowKey={(r) => r.id}
-            onRowClick={(row) => router.push(`/applications/${row.id}`)}
-          />
-        </Card>
+        <DataTable
+          rows={filtered}
+          columns={columns}
+          rowKey={(r) => r.id}
+          onRowClick={(row) => router.push(`/applications/${row.id}`)}
+        />
       )}
     </Page>
   );

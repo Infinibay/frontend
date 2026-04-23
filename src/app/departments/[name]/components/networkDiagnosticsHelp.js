@@ -10,30 +10,30 @@ export const COMPONENT_INFO = {
   bridge: {
     name: 'Network Bridge',
     icon: 'bridge',
-    description: 'Virtual switch that connects all VMs in this department to a shared network.',
-    whatItDoes: 'The bridge acts as a virtual switch, allowing VMs to communicate with each other and with the outside network.',
-    ifFails: 'VMs will lose all network connectivity. They cannot communicate with each other or access the internet.',
+    description: 'Virtual switch that connects all desktops in this department to a shared network.',
+    whatItDoes: 'The bridge acts as a virtual switch, allowing desktops to communicate with each other and with the outside network.',
+    ifFails: 'Desktops will lose all network connectivity. They cannot communicate with each other or access the internet.',
   },
   dnsmasq: {
     name: 'DHCP & DNS',
     icon: 'server',
-    description: 'Server that automatically assigns IP addresses to VMs and resolves domain names.',
-    whatItDoes: 'DNSMASQ provides DHCP (automatic IP assignment) and DNS (domain name resolution) services to VMs.',
-    ifFails: 'New VMs will not receive IP addresses automatically. Existing VMs may lose DNS resolution.',
+    description: 'Server that automatically assigns IP addresses to desktops and resolves domain names.',
+    whatItDoes: 'DNSMASQ provides DHCP (automatic IP assignment) and DNS (domain name resolution) services to desktops.',
+    ifFails: 'New desktops will not receive IP addresses automatically. Existing desktops may lose DNS resolution.',
   },
   nat: {
     name: 'NAT Gateway',
     icon: 'route',
-    description: 'Allows VMs with private IPs to access the internet through the host.',
-    whatItDoes: 'Network Address Translation (NAT) translates private VM addresses to the host\'s public address for internet access.',
-    ifFails: 'VMs will only have local network access. They cannot reach the internet.',
+    description: 'Allows desktops with private IPs to access the internet through the host.',
+    whatItDoes: 'Network Address Translation (NAT) translates private desktop addresses to the host\'s public address for internet access.',
+    ifFails: 'Desktops will only have local network access. They cannot reach the internet.',
   },
   brNetfilter: {
     name: 'Bridge Firewall',
     icon: 'shield',
     description: 'Kernel module that enables firewall rules for bridge traffic.',
     whatItDoes: 'The br_netfilter module allows iptables to inspect and filter traffic passing through the bridge.',
-    ifFails: 'NAT rules may not work correctly. VMs might lose internet connectivity.',
+    ifFails: 'NAT rules may not work correctly. Desktops might lose internet connectivity.',
   },
 };
 
@@ -43,8 +43,8 @@ export const FIELD_TOOLTIPS = {
     isUp: 'The bridge must be in UP state to transmit network traffic.',
     state: 'Operational state of the bridge: UP (working), DOWN (disabled), or UNKNOWN.',
     mtu: 'Maximum Transmission Unit - the largest packet size in bytes (typically 1500).',
-    ipAddresses: 'IP addresses assigned to the bridge. This IP serves as the gateway for VMs.',
-    attachedInterfaces: 'Virtual interfaces (vnetX) connected to this bridge. Each running VM should have one.',
+    ipAddresses: 'IP addresses assigned to the bridge. This IP serves as the gateway for desktops.',
+    attachedInterfaces: 'Virtual interfaces (vnetX) connected to this bridge. Each running desktop should have one.',
   },
   dnsmasq: {
     isRunning: 'Whether the DNSMASQ service is currently running and serving requests.',
@@ -53,7 +53,7 @@ export const FIELD_TOOLTIPS = {
     listeningPort: 'Port 67 is the standard DHCP port. DNSMASQ must listen here to serve IP addresses.',
     configExists: 'The configuration file defines the IP range, lease time, and DHCP options.',
     configPath: 'Location of the DNSMASQ configuration file.',
-    leaseFileExists: 'The lease file tracks which IPs have been assigned to which VMs.',
+    leaseFileExists: 'The lease file tracks which IPs have been assigned to which desktops.',
     leasePath: 'Location of the DHCP lease database file.',
   },
   brNetfilter: {
@@ -75,17 +75,17 @@ export const FIELD_TOOLTIPS = {
 export const STATUS_MESSAGES = {
   healthy: {
     title: 'Network Operational',
-    description: 'All systems are working correctly. VMs can obtain IP addresses and access the internet.',
+    description: 'All systems are working correctly. Desktops can obtain IP addresses and access the internet.',
     color: 'green',
   },
   degraded: {
     title: 'Network Degraded',
-    description: 'Some components have issues. VMs may experience connectivity problems.',
+    description: 'Some components have issues. Desktops may experience connectivity problems.',
     color: 'yellow',
   },
   critical: {
     title: 'Network Critical',
-    description: 'Major components are failing. VMs cannot connect to the network properly.',
+    description: 'Major components are failing. Desktops cannot connect to the network properly.',
     color: 'red',
   },
 };

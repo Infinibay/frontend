@@ -16,7 +16,14 @@ const defaultSettings = {
 	theme: 'system',
 	wallpaper: null,
 	logoUrl: null,
-	interfaceSize: 'md'
+	interfaceSize: 'md',
+	// Whitelabel — applied at runtime via CSS vars. null = use Harbor default.
+	accentColor: null,
+	brandName: null,
+	// UI view modes — persist the operator's preferred layout for lists that
+	// support both. 'table' is the operator default per design guideline §6.1.
+	desktopsView: 'table',
+	departmentsView: 'grid',
 };
 
 // Initial state
@@ -50,6 +57,21 @@ const appSettingsSlice = createSlice({
 		setSizePreference: (state, action) => {
 			// Optimistic update for immediate UI response
 			state.settings.interfaceSize = action.payload;
+		},
+		setAccentColor: (state, action) => {
+			state.settings.accentColor = action.payload || null;
+		},
+		setBrandName: (state, action) => {
+			state.settings.brandName = action.payload || null;
+		},
+		setLogoUrl: (state, action) => {
+			state.settings.logoUrl = action.payload || null;
+		},
+		setDesktopsView: (state, action) => {
+			state.settings.desktopsView = action.payload === 'grid' ? 'grid' : 'table';
+		},
+		setDepartmentsView: (state, action) => {
+			state.settings.departmentsView = action.payload === 'table' ? 'table' : 'grid';
 		},
 		clearErrors: (state) => {
 			state.error.fetch = null;
@@ -111,7 +133,22 @@ export const selectAppSettingsError = (state) => state.appSettings.error;
 export const selectAppSettingsInitialized = (state) => state.appSettings.initialized;
 export const selectTheme = (state) => state.appSettings.settings.theme;
 export const selectInterfaceSize = (state) => state.appSettings.settings.interfaceSize;
+export const selectAccentColor = (state) => state.appSettings.settings.accentColor;
+export const selectBrandName = (state) => state.appSettings.settings.brandName;
+export const selectLogoUrl = (state) => state.appSettings.settings.logoUrl;
+export const selectDesktopsView = (state) => state.appSettings.settings.desktopsView || 'table';
+export const selectDepartmentsView = (state) => state.appSettings.settings.departmentsView || 'grid';
 
-export const { resetSettings, setThemePreference, setSizePreference, clearErrors } = appSettingsSlice.actions;
+export const {
+	resetSettings,
+	setThemePreference,
+	setSizePreference,
+	setAccentColor,
+	setBrandName,
+	setLogoUrl,
+	setDesktopsView,
+	setDepartmentsView,
+	clearErrors,
+} = appSettingsSlice.actions;
 export { fetchAppSettings, updateAppSettings };
 export default appSettingsSlice.reducer;

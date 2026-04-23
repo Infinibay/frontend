@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
@@ -15,7 +15,6 @@ import {
 } from 'lucide-react'
 import {
   Page,
-  Card,
   Button,
   IconButton,
   IconTile,
@@ -27,13 +26,12 @@ import {
   Spinner,
   Dialog,
   DataTable,
-  Stat,
   SegmentedControl,
   ResponsiveStack,
-  ResponsiveGrid,
   LoadingOverlay,
   Tooltip,
 } from '@infinibay/harbor'
+import { PageHeader } from '@/components/common/PageHeader'
 
 import { useScriptsQuery, useDeleteScriptMutation } from '@/gql/hooks'
 import { usePageHeader } from '@/hooks/usePageHeader'
@@ -97,7 +95,7 @@ export default function ScriptsPage() {
   const helpConfig = useMemo(
     () => ({
       title: 'Scripts library',
-      description: 'Automation scripts that can run on any VM or be scheduled.',
+      description: 'Automation scripts that can run on any desktop or be scheduled.',
       icon: <FileCode size={16} />,
       sections: [
         {
@@ -300,56 +298,84 @@ export default function ScriptsPage() {
     [router],
   )
 
+  const countText = stats.total === 0
+    ? null
+    : [
+        `${stats.total}`,
+        stats.windows > 0 ? `${stats.windows} Windows` : null,
+        stats.linux > 0 ? `${stats.linux} Linux` : null,
+        stats.scheduled > 0 ? `${stats.scheduled} scheduled` : null,
+      ].filter(Boolean).join(' · ');
+
   return (
     <Page size="xl" gap={6}>
-      <Card
-        variant="default"
-        leadingIcon={<FileCode size={20} />}
-        leadingIconTone="sky"
+      <PageHeader
         title="Scripts"
-        description="Reusable automation that can run on any VM, department-wide or on a schedule."
-        header={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
-              variant="secondary"
+        count={countText}
+        secondary={
+          <ResponsiveStack direction="row" gap={1} align="center">
+            <IconButton
               size="sm"
+              variant="ghost"
+              label="Refresh"
               icon={<RefreshCw size={14} />}
-              loading={loading}
               onClick={() => refetch()}
-            >
-              Refresh
-            </Button>
-            <Button
-              variant="secondary"
+              disabled={loading}
+            />
+            <IconButton
               size="sm"
+              variant="ghost"
+              label="Import — coming soon"
               icon={<Download size={14} />}
               disabled
-              title="Import coming soon"
-            >
-              Import
-            </Button>
-            <Tooltip content="New script">
-              <span>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={<Plus size={14} />}
-                  onClick={() => router.push('/scripts/new')}
-                >
-                  New
-                </Button>
-              </span>
-            </Tooltip>
+            />
           </ResponsiveStack>
         }
-      >
-        <ResponsiveGrid columns={{ base: 2, md: 4 }} gap={3}>
-          <Stat label="Total" value={stats.total} icon={<FileCode size={14} />} />
-          <Stat label="Windows" value={stats.windows} />
-          <Stat label="Linux" value={stats.linux} />
-          <Stat label="Scheduled" value={stats.scheduled} />
-        </ResponsiveGrid>
-      </Card>
+        primary={
+          <Tooltip content="New Script">
+            <span>
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => router.push('/scripts/new')}
+              >
+                New Script
+              </Button>
+            </span>
+          </Tooltip>
+        }
+        filters={
+          <>
+            <SearchField
+              placeholder="Search name, description, tags…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <SegmentedControl
+              items={OS_FILTER_OPTIONS}
+              value={osFilter}
+              onChange={setOsFilter}
+              size="sm"
+            />
+            <Select
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+              options={CATEGORY_FILTER_OPTIONS}
+            />
+            {selected.length > 0 ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                icon={<Trash2 size={14} />}
+                onClick={handleBulkDelete}
+              >
+                Delete {selected.length}
+              </Button>
+            ) : null}
+          </>
+        }
+      />
 
       {error ? (
         <Alert
@@ -365,92 +391,49 @@ export default function ScriptsPage() {
         </Alert>
       ) : null}
 
-      <Card variant="default">
-        <ResponsiveStack
-          direction={{ base: 'col', md: 'row' }}
-          gap={3}
-          align={{ base: 'stretch', md: 'center' }}
-        >
-          <SearchField
-            placeholder="Search name, description, tags…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <SegmentedControl
-            items={OS_FILTER_OPTIONS}
-            value={osFilter}
-            onChange={setOsFilter}
-            size="sm"
-          />
-          <Select
-            value={categoryFilter}
-            onChange={setCategoryFilter}
-            options={CATEGORY_FILTER_OPTIONS}
-          />
-          <ResponsiveStack direction="row" gap={2} align="center" justify="end">
-            {selected.length > 0 ? (
-              <Button
-                variant="destructive"
-                size="sm"
-                icon={<Trash2 size={14} />}
-                onClick={handleBulkDelete}
-              >
-                Delete {selected.length}
-              </Button>
-            ) : null}
-          </ResponsiveStack>
-        </ResponsiveStack>
-      </Card>
-
       {loading && scripts.length === 0 ? (
-        <Card variant="default">
-          <ResponsiveStack direction="row" gap={2} align="center" justify="center">
-            <Spinner />
-            <span>Loading scripts…</span>
-          </ResponsiveStack>
-        </Card>
+        <ResponsiveStack direction="row" gap={2} align="center" justify="center">
+          <Spinner />
+          <span>Loading scripts…</span>
+        </ResponsiveStack>
       ) : filtered.length === 0 ? (
-        <Card variant="default">
-          <EmptyState
-            icon={<FileCode size={32} />}
-            title={scripts.length ? 'No matches' : 'No scripts yet'}
-            description={
-              scripts.length
-                ? 'No scripts match the current search or filters.'
-                : 'Create your first automation script to see it here.'
-            }
-            actions={
-              scripts.length === 0 ? (
-                <Tooltip content="New script">
-                  <span>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      icon={<Plus size={14} />}
-                      onClick={() => router.push('/scripts/new')}
-                    >
-                      New
-                    </Button>
-                  </span>
-                </Tooltip>
-              ) : null
-            }
-          />
-        </Card>
+        <EmptyState
+          icon={<FileCode size={18} />}
+          title={scripts.length ? 'No matches' : 'No scripts yet'}
+          description={
+            scripts.length
+              ? 'No scripts match the current search or filters.'
+              : 'Create your first automation script to see it here.'
+          }
+          actions={
+            scripts.length === 0 ? (
+              <Tooltip content="New Script">
+                <span>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={<Plus size={14} />}
+                    onClick={() => router.push('/scripts/new')}
+                  >
+                    New Script
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : null
+          }
+        />
       ) : (
-        <Card variant="default">
-          <LoadingOverlay active={loading && scripts.length > 0} label="Refreshing…">
-            <DataTable
-              rows={filtered}
-              columns={columns}
-              rowKey={(r) => r.id}
-              selectable
-              selected={selected}
-              onSelectionChange={setSelected}
-              onRowClick={(row) => router.push(`/scripts/${row.id}`)}
-            />
-          </LoadingOverlay>
-        </Card>
+        <LoadingOverlay active={loading && scripts.length > 0} label="Refreshing…">
+          <DataTable
+            rows={filtered}
+            columns={columns}
+            rowKey={(r) => r.id}
+            selectable
+            selected={selected}
+            onSelectionChange={setSelected}
+            onRowClick={(row) => router.push(`/scripts/${row.id}`)}
+          />
+        </LoadingOverlay>
       )}
 
       <Dialog

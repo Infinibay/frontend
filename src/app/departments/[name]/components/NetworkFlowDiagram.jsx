@@ -154,7 +154,7 @@ const NetworkFlowDiagram = ({ diagnostics }) => {
       title={
         <ResponsiveStack direction="row" gap={2} align="center">
           <span>Network flow</span>
-          <Tooltip content="This diagram shows the path network traffic takes from your VMs to the internet. Click on each component to see details.">
+          <Tooltip content="This diagram shows the path network traffic takes from your desktops to the internet. Click on each component to see details.">
             <span>
               <HelpCircle size={12} />
             </span>

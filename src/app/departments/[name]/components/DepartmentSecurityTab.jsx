@@ -152,8 +152,11 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
 
   useEffect(() => {
     if (open) {
+      // Intentional: re-prime modal state to current policy when reopened.
+      /* eslint-disable react-hooks/set-state-in-effect */
       setPolicy(current);
       setConfig(currentConfig);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [open, current, currentConfig]);
 
@@ -533,13 +536,13 @@ const DepartmentSecurityTab = ({ department }) => {
         <Alert
           tone="info"
           icon={<Shield size={14} />}
-          title="Inherited by all VMs"
+          title="Inherited by all desktops"
         >
-          Every VM in{' '}
+          Every desktop in{' '}
           <strong>{department?.name || 'this department'}</strong> starts
-          with these rules applied on top of its own stack. Individual VMs
-          can mark their own rules with “overrides department” and take
-          precedence for matching traffic.
+          with these rules applied on top of its own stack. Individual
+          desktops can mark their own rules with “overrides department” and
+          take precedence for matching traffic.
         </Alert>
 
         <Card

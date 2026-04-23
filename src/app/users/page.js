@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import {
   UserPlus,
@@ -16,9 +16,7 @@ import {
 } from "lucide-react";
 import {
   Page,
-  Card,
   Button,
-  ButtonGroup,
   IconButton,
   TextField,
   Select,
@@ -30,12 +28,12 @@ import {
   DataTable,
   EmptyState,
   Spinner,
-  Stat,
   RoleBadge,
   PasswordStrength,
   ResponsiveStack,
   ResponsiveGrid,
 } from "@infinibay/harbor";
+import { PageHeader } from "@/components/common/PageHeader";
 
 import {
   fetchUsers,
@@ -248,7 +246,7 @@ export default function UsersPage() {
           content: (
             <p>
               <strong>Admin</strong> can manage all resources and users.{" "}
-              <strong>User</strong> can only operate the VMs assigned to them.
+              <strong>User</strong> can only operate the desktops assigned to them.
             </p>
           ),
         },
@@ -436,63 +434,75 @@ export default function UsersPage() {
     selected: selected.length,
   });
 
+  const countText = stats.total === 0
+    ? null
+    : [
+        `${stats.total}`,
+        stats.admins > 0 ? `${stats.admins} ${stats.admins === 1 ? "admin" : "admins"}` : null,
+      ].filter(Boolean).join(" · ");
+
   return (
     <Page size="xl" gap="lg">
-      {/* Hero / actions strip */}
-      <Card variant="default">
-        <ResponsiveStack
-          direction={{ base: "col", lg: "row" }}
-          gap={4}
-          justify="between"
-          align={{ base: "stretch", lg: "center" }}
-        >
-          <ResponsiveStack direction="col" gap={1}>
-            <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>Users</h1>
-            <p style={{ opacity: 0.7, margin: 0 }}>
-              Manage sign-in accounts and permissions.
-            </p>
-          </ResponsiveStack>
-          <ButtonGroup>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<RefreshCw size={16} />}
-              onClick={refresh}
-              disabled={isLoading}
-            >
-              Refresh
-            </Button>
-            <Button
-              size="sm"
-              icon={<UserPlus size={16} />}
-              onClick={openCreate}
-            >
-              Add user
-            </Button>
-          </ButtonGroup>
-        </ResponsiveStack>
-
-        <ResponsiveGrid columns={{ base: 1, sm: 3 }} gap={3}>
-          <Stat label="Total users" value={stats.total} />
-          <Stat
-            label="Admins"
-            value={stats.admins}
-            icon={<Shield size={14} />}
+      <PageHeader
+        title="Users"
+        count={countText}
+        secondary={
+          <IconButton
+            size="sm"
+            variant="ghost"
+            label="Refresh"
+            icon={<RefreshCw size={14} />}
+            onClick={refresh}
+            disabled={isLoading}
           />
-          <Stat label="Users" value={stats.users} />
-        </ResponsiveGrid>
-      </Card>
+        }
+        primary={
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<UserPlus size={14} />}
+            onClick={openCreate}
+          >
+            New User
+          </Button>
+        }
+        filters={
+          <>
+            <div style={{ flex: "1 1 320px", minWidth: 0 }}>
+              <TextField
+                placeholder="Search users by name or email…"
+                icon={<Search size={16} />}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div style={{ flex: "0 0 220px", minWidth: 0 }}>
+              <Select
+                value={roleFilter}
+                onChange={setRoleFilter}
+                options={ROLE_FILTER_OPTIONS}
+              />
+            </div>
+            {selected.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                icon={<Trash2 size={14} />}
+                onClick={() => setDeleteTarget("bulk")}
+              >
+                Delete {selected.length}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {error && (
         <Alert
           tone="danger"
           title="Couldn't load users"
           actions={
-            <Button
-              size="sm"
-              onClick={refresh}
-              icon={<RefreshCw size={16} />}
-            >
+            <Button size="sm" onClick={refresh} icon={<RefreshCw size={16} />}>
               Retry
             </Button>
           }
@@ -501,87 +511,41 @@ export default function UsersPage() {
         </Alert>
       )}
 
-      {/* Search + filters + bulk actions */}
-      <Card variant="default">
-        <ResponsiveStack
-          direction={{ base: "col", md: "row" }}
-          gap={3}
-          align={{ base: "stretch", md: "center" }}
-        >
-          <div style={{ flex: "1 1 320px", minWidth: 0 }}>
-            <TextField
-              placeholder="Search users by name or email…"
-              icon={<Search size={16} />}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div style={{ flex: "0 0 220px", minWidth: 0 }}>
-            <Select
-              value={roleFilter}
-              onChange={setRoleFilter}
-              options={ROLE_FILTER_OPTIONS}
-            />
-          </div>
-          {selected.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              icon={<Trash2 size={16} />}
-              onClick={() => setDeleteTarget("bulk")}
-            >
-              Delete {selected.length}
-            </Button>
-          )}
-        </ResponsiveStack>
-      </Card>
-
-      {/* Users table */}
       {isLoading && !users?.length ? (
-        <Card variant="default">
-          <ResponsiveStack
-            direction="row"
-            gap={3}
-            align="center"
-            justify="center"
-          >
-            <Spinner />
-            <span>Loading users…</span>
-          </ResponsiveStack>
-        </Card>
+        <ResponsiveStack direction="row" gap={3} align="center" justify="center">
+          <Spinner />
+          <span>Loading users…</span>
+        </ResponsiveStack>
       ) : filtered.length === 0 ? (
-        <Card variant="default">
-          <EmptyState
-            icon={<UsersIcon size={40} />}
-            title={users?.length ? "No matches" : "No users yet"}
-            description={
-              users?.length
-                ? "No users match the current search or filter."
-                : "Create the first user to get started."
-            }
-            actions={
-              <Button
-                size="sm"
-                icon={<UserPlus size={16} />}
-                onClick={openCreate}
-              >
-                Add user
-              </Button>
-            }
-          />
-        </Card>
+        <EmptyState
+          icon={<UsersIcon size={18} />}
+          title={users?.length ? "No matches" : "No users yet"}
+          description={
+            users?.length
+              ? "No users match the current search or filter."
+              : "Create the first user to get started."
+          }
+          actions={
+            <Button
+              size="sm"
+              variant="primary"
+              icon={<UserPlus size={14} />}
+              onClick={openCreate}
+            >
+              New User
+            </Button>
+          }
+        />
       ) : (
-        <Card variant="default">
-          <DataTable
-            rows={filtered}
-            columns={columns}
-            rowKey={(r) => r.id}
-            selectable
-            selected={selected}
-            onSelectionChange={setSelected}
-            onRowClick={openEdit}
-          />
-        </Card>
+        <DataTable
+          rows={filtered}
+          columns={columns}
+          rowKey={(r) => r.id}
+          selectable
+          selected={selected}
+          onSelectionChange={setSelected}
+          onRowClick={openEdit}
+        />
       )}
 
       {/* Create/Edit Drawer */}
@@ -648,7 +612,7 @@ export default function UsersPage() {
       >
         <p style={{ margin: 0, opacity: 0.7 }}>
           This cannot be undone. The account will no longer be able to sign in
-          and any VMs they own will be orphaned unless reassigned first.
+          and any desktops they own will be orphaned unless reassigned first.
         </p>
       </Dialog>
     </Page>

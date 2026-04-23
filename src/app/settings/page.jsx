@@ -35,9 +35,12 @@ import {
   Progress,
   ResponsiveStack,
   ResponsiveGrid,
+  TextField,
+  ColorPicker,
 } from "@infinibay/harbor";
 
 import { usePageHeader } from "@/hooks/usePageHeader";
+import { PageHeader } from "@/components/common/PageHeader";
 import ScriptsSection from "@/components/settings/ScriptsSection";
 import PackagesSection from "@/components/settings/PackagesSection";
 import { useAppTheme } from "@/contexts/ThemeProvider";
@@ -48,6 +51,9 @@ import {
   selectAppSettings,
   selectAppSettingsInitialized,
   setThemePreference,
+  setAccentColor,
+  setBrandName,
+  setLogoUrl,
 } from "@/state/slices/appSettings";
 
 const OS_CARDS = [
@@ -176,11 +182,110 @@ function AppearanceTab() {
         />
       </Card>
 
-      <Alert tone="info">
-        Wallpapers and custom logo are tracked for a dedicated revamp — the
-        old uploaders are parked while the Harbor equivalents land.
-      </Alert>
+      <BrandingSection />
     </ResponsiveStack>
+  );
+}
+
+// ─── Branding (whitelabel) sub-section ────────────────────────────
+
+function BrandingSection() {
+  const dispatch = useDispatch();
+  const appSettings = useSelector(selectAppSettings);
+
+  // Local form state. Initialised from appSettings on mount; the post-save
+  // update propagates through Redux which already feeds the live preview,
+  // so we don't need a sync effect here.
+  const [logo, setLogo] = useState(appSettings?.logoUrl || "");
+  const [brand, setBrand] = useState(appSettings?.brandName || "");
+  const [accent, setAccent] = useState(appSettings?.accentColor || "");
+
+  const dirty =
+    (logo || "") !== (appSettings?.logoUrl || "") ||
+    (brand || "") !== (appSettings?.brandName || "") ||
+    (accent || "") !== (appSettings?.accentColor || "");
+
+  const handleSave = async () => {
+    const next = {
+      logoUrl: logo || null,
+      brandName: brand || null,
+      accentColor: accent || null,
+    };
+    // Optimistic local update — makes the applier react instantly.
+    dispatch(setLogoUrl(next.logoUrl));
+    dispatch(setBrandName(next.brandName));
+    dispatch(setAccentColor(next.accentColor));
+    try {
+      await dispatch(updateAppSettings(next)).unwrap();
+      toast.success("Branding saved");
+    } catch (err) {
+      toast.error(`Could not save branding: ${err.message || err}`);
+    }
+  };
+
+  const handleReset = () => {
+    setLogo("");
+    setBrand("");
+    setAccent("");
+  };
+
+  return (
+    <Card
+      variant="default"
+      leadingIcon={<Palette size={20} />}
+      leadingIconTone="purple"
+      title="Branding"
+      description="Override the Infinibay look for this instance: logo, brand name and accent color. Applied to every user of this instance."
+    >
+      <ResponsiveStack direction="col" gap={4}>
+        <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={3}>
+          <TextField
+            label="Logo URL"
+            placeholder="https://cdn.example.com/logo.svg"
+            value={logo}
+            onChange={(e) => setLogo(e.target.value)}
+            helper="Shown in the sidebar and on the login page."
+          />
+          <TextField
+            label="Brand name"
+            placeholder="Acme Cloud"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            helper="Replaces “Infinibay” in the topbar and tab titles."
+          />
+        </ResponsiveGrid>
+
+        <ResponsiveStack direction="col" gap={2}>
+          <span className="text-fg-muted">Accent color</span>
+          <ColorPicker
+            value={accent || "#d946ef"}
+            onChange={(hex) => setAccent(hex)}
+          />
+          {accent ? (
+            <span className="text-fg-subtle font-mono">{accent}</span>
+          ) : null}
+        </ResponsiveStack>
+
+        <ResponsiveStack direction="row" gap={2} justify="end">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleReset}
+            disabled={!dirty}
+          >
+            Reset
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleSave}
+            disabled={!dirty}
+          >
+            Save branding
+          </Button>
+        </ResponsiveStack>
+      </ResponsiveStack>
+    </Card>
   );
 }
 
@@ -507,13 +612,7 @@ export default function SettingsPage() {
 
   return (
     <Page gap="lg">
-      <Card
-        variant="default"
-        leadingIcon={<SettingsIcon size={20} />}
-        leadingIconTone="purple"
-        title="Settings"
-        description="Appearance, ISOs, scripts and packages. Everything the system pulls from configuration lives here."
-      />
+      <PageHeader title="Settings" />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} variant="underline">
         <TabList>
@@ -538,14 +637,10 @@ export default function SettingsPage() {
           <IsosTab />
         </TabPanel>
         <TabPanel value="scripts">
-          <Card variant="default">
-            <ScriptsSection embedded />
-          </Card>
+          <ScriptsSection embedded />
         </TabPanel>
         <TabPanel value="packages">
-          <Card variant="default">
-            <PackagesSection embedded />
-          </Card>
+          <PackagesSection embedded />
         </TabPanel>
       </Tabs>
 

@@ -61,7 +61,7 @@ const TYPE_OPTIONS = [
 
 const GROUP_OPTIONS = [
   { value: 'none', label: 'No Grouping' },
-  { value: 'vm', label: 'By VM' },
+  { value: 'vm', label: 'By desktop' },
   { value: 'schedule', label: 'By Schedule' },
   { value: 'date', label: 'By Date' },
 ]
@@ -199,7 +199,7 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
     if (filters.groupBy === 'vm') {
       const groups = {}
       executions.forEach((e) => {
-        const name = e.machine?.name || 'Unknown VM'
+        const name = e.machine?.name || 'Unknown desktop'
         if (!groups[name]) groups[name] = []
         groups[name].push(e)
       })
@@ -328,9 +328,9 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
             onChange={(v) => handleFilterChange('status', v === 'all' ? null : v)}
           />
           <Select
-            label="VM"
+            label="Desktop"
             options={[
-              { value: 'all', label: 'All VMs' },
+              { value: 'all', label: 'All desktops' },
               ...departmentVMs.map((vm) => ({ value: vm.id, label: vm.name })),
             ]}
             value={filters.machineId || 'all'}
@@ -416,7 +416,7 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
               <ResponsiveStack direction="row" gap={1} align="center">
                 <span>VM: {departmentVMs.find((v) => v.id === filters.machineId)?.name}</span>
                 <IconButton
-                  label="Remove VM filter"
+                  label="Remove desktop filter"
                   icon={<X size={12} />}
                   size="sm"
                   variant="ghost"

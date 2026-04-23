@@ -32,7 +32,7 @@ export function PathInput({ input, value, onChange, error }) {
     )
   }
   if (input.mustExist) {
-    helperParts.push('Path must exist on the target VM')
+    helperParts.push('Path must exist on the target desktop')
   }
   const helper = helperParts.length > 0 ? helperParts.join(' — ') : undefined
 

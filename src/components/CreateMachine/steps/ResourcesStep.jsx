@@ -191,7 +191,7 @@ export function ResourcesStep({ id }) {
           value={mode}
           onChange={handleModeChange}
           items={[
-            { value: 'template', label: 'From template', icon: <Server size={14} /> },
+            { value: 'template', label: 'From blueprint', icon: <Server size={14} /> },
             { value: 'custom', label: 'Custom hardware', icon: <Settings2 size={14} /> },
           ]}
         />

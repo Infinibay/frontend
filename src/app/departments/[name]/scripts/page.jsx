@@ -398,7 +398,7 @@ export default function DepartmentScriptsPage() {
           {unassignConfirm?.affectedVMs &&
           unassignConfirm.affectedVMs.length > 0 ? (
             <ResponsiveStack direction="col" gap={1}>
-              <strong>Affected VMs</strong>
+              <strong>Affected desktops</strong>
               <ResponsiveStack direction="row" gap={1} wrap>
                 {unassignConfirm.affectedVMs.map((vm) => (
                   <Badge key={vm} tone="neutral">

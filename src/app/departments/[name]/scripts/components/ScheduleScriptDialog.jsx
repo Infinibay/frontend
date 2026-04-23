@@ -187,6 +187,8 @@ export default function ScheduleScriptDialog({
 
   useEffect(() => {
     if (open) {
+      // Intentional: reset all dialog state to defaults when re-opened.
+      /* eslint-disable react-hooks/set-state-in-effect */
       setScheduleMode('immediate');
       setSelectAllVMs(true);
       setSelectedVMs([]);
@@ -197,6 +199,7 @@ export default function ScheduleScriptDialog({
       setRunIndefinitely(false);
       setInputValues({});
       setValidationErrors({});
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [open]);
 
@@ -222,7 +225,7 @@ export default function ScheduleScriptDialog({
       return;
     }
     if (!selectAllVMs && selectedVMs.length === 0) {
-      toast.error('Please select at least one VM');
+      toast.error('Please select at least one desktop');
       return;
     }
     const machineIds = selectAllVMs
@@ -377,8 +380,8 @@ export default function ScheduleScriptDialog({
           </FormField>
 
           <FormField
-            label="Target virtual machines"
-            helper={`${departmentVMs.length} VM${departmentVMs.length === 1 ? '' : 's'} in ${departmentName}`}
+            label="Target desktops"
+            helper={`${departmentVMs.length} desktop${departmentVMs.length === 1 ? '' : 's'} in ${departmentName}`}
           >
             <ResponsiveStack direction="col" gap={2}>
               <Checkbox

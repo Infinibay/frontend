@@ -223,8 +223,8 @@ const CreateDepartmentFirewallRuleDialog = ({
     >
       <ResponsiveStack direction="col" gap={5}>
         <Alert tone="info" icon={<Shield size={14} />}>
-          Rules created here apply to <strong>every VM</strong> in this
-          department. Individual VMs can still override with the{' '}
+          Rules created here apply to <strong>every desktop</strong> in this
+          department. Individual desktops can still override with the{' '}
           <Badge tone="neutral">overrides department</Badge> flag.
         </Alert>
 

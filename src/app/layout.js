@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Montserrat } from 'next/font/google';
 import { ApolloProvider } from '@apollo/client/react';
 import { Provider } from 'react-redux';
@@ -26,12 +26,14 @@ import {
 } from '@/state/slices/appSettings';
 import { RealTimeProvider } from '@/components/RealTimeProvider';
 import { SocketNamespaceGuard } from '@/components/SocketNamespaceGuard';
+import { isEndUser } from '@/lib/roles';
 import { createThemeScript } from '@/utils/theme';
 import { ThemeProvider, useAppTheme } from '@/contexts/ThemeProvider';
 import { HelpProvider } from '@/contexts/HelpProvider';
 import { HeaderActionProvider } from '@/contexts/HeaderActionContext';
 import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { GlobalCommandPalette } from '@/components/layout/GlobalCommandPalette';
+import { BrandingApplier } from '@/components/layout/BrandingApplier';
 import '@/utils/debugInit';
 import '@/utils/debugPanelStatus';
 
@@ -42,8 +44,23 @@ const monst = Montserrat({
   display: 'swap',
 });
 
+/**
+ * Paths that an end-user (role USER) is allowed to reach directly. Everything
+ * else gets kicked back to /workspace. Operator routes aren't meant to be
+ * visible to end users, so the guard is both a security signal and UX.
+ */
+const END_USER_ALLOWED_PREFIXES = ['/workspace', '/profile', '/auth/'];
+
+function isAllowedForEndUser(pathname) {
+  if (!pathname || pathname === '/') return true; // home redirects by role
+  return END_USER_ALLOWED_PREFIXES.some(
+    (p) => pathname === p.replace(/\/$/, '') || pathname.startsWith(p),
+  );
+}
+
 function AppContent({ children, isAuthenticated }) {
   const pathname = usePathname();
+  const router = useRouter();
   const user = useSelector((state) => state.auth.user);
   const interfaceSize = useSelector(selectInterfaceSize);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
@@ -57,6 +74,15 @@ function AppContent({ children, isAuthenticated }) {
     });
   }, [isAuthenticated, pathname, user, interfaceSize, appSettingsInitialized]);
 
+  // End-user route guard: bounce USERs off operator surfaces.
+  React.useEffect(() => {
+    if (!isAuthenticated) return;
+    if (!isEndUser(user)) return;
+    if (isAllowedForEndUser(pathname)) return;
+    debug.warn('routing', 'Redirecting end-user away from operator route', { pathname });
+    router.replace('/workspace');
+  }, [isAuthenticated, user, pathname, router]);
+
   const handleLogout = () => {
     debug.info('auth', 'Logout initiated');
     auth.clearToken();
@@ -64,7 +90,12 @@ function AppContent({ children, isAuthenticated }) {
   };
 
   if (!isAuthenticated || pathname?.startsWith('/auth/')) {
-    return children;
+    return (
+      <>
+        <BrandingApplier />
+        {children}
+      </>
+    );
   }
 
   return (
@@ -88,6 +119,7 @@ function AppContent({ children, isAuthenticated }) {
       header={<GlobalHeader />}
       contentPadding="none"
     >
+      <BrandingApplier />
       {children}
       <GlobalCommandPalette />
     </AppShell>
@@ -107,13 +139,11 @@ function ThemeApplier({ desiredTheme }) {
 function ThemeProviderWrapper({ children }) {
   const theme = useSelector(selectTheme);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
-  const currentTheme = 'dark';
-  void theme;
-  void appSettingsInitialized;
+  const desired = appSettingsInitialized && theme ? theme : 'system';
 
   return (
-    <ThemeProvider defaultTheme={currentTheme} enableSystem={false}>
-      <ThemeApplier desiredTheme={currentTheme} />
+    <ThemeProvider defaultTheme={desired} enableSystem>
+      <ThemeApplier desiredTheme={desired} />
       {children}
     </ThemeProvider>
   );

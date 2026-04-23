@@ -12,8 +12,8 @@ const fetchCurrentUser = createAsyncThunk('auth/fetchCurrentUser', async (_, { g
 const loginUser = createAsyncThunk('auth/login', async ({ email, password }, { dispatch }) => {
 	const token = await auth.login(email, password);
 	if (token) {
-		// redirect to /computers using browser url
-		window.location.href = '/computers';
+		// redirect to /desktops using browser url
+		window.location.href = '/desktops';
 	}
 	return token;
 });

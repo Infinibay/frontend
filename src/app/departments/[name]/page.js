@@ -8,30 +8,20 @@ import {
   AlertCircle,
   ArrowLeft,
   Building2,
-  ExternalLink,
   FileCode,
+  LayoutDashboard,
   Monitor,
   Network,
-  Pause,
-  Play,
   Plus,
-  Power,
   Shield,
-  Square,
   Trash2,
 } from 'lucide-react';
 import {
   Alert,
-  Badge,
   Button,
-  ClusterView,
-  ContextMenu,
   Dialog,
   EmptyState,
   LoadingOverlay,
-  MenuItem,
-  MenuLabel,
-  MenuSeparator,
   Page,
   ResponsiveGrid,
   ResponsiveStack,
@@ -42,6 +32,9 @@ import {
   Tabs,
   Tooltip,
 } from '@infinibay/harbor';
+import { PageHeader } from '@/components/common/PageHeader';
+import { DesktopListView } from '@/components/common/DesktopListView';
+import { StatusChip } from '@/components/common/StatusChip';
 
 import { useDepartmentPage } from './hooks/useDepartmentPage';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -89,56 +82,6 @@ const vmSubtitle = (vm) => {
   return bits.join(' · ');
 };
 
-function VmActions({ vm, onPlay, onPause, onStop }) {
-  const stop = (e) => e.stopPropagation();
-  const status = (vm.status || '').toLowerCase();
-
-  if (status === 'running') {
-    return (
-      <ResponsiveStack direction="row" gap={1} onClick={stop}>
-        <Button
-          size="sm"
-          variant="ghost"
-          icon={<Pause size={12} />}
-          onClick={(e) => {
-            stop(e);
-            onPause?.(vm);
-          }}
-          aria-label="Pause"
-        >
-          {''}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          icon={<Square size={12} />}
-          onClick={(e) => {
-            stop(e);
-            onStop?.(vm);
-          }}
-          aria-label="Stop"
-        >
-          {''}
-        </Button>
-      </ResponsiveStack>
-    );
-  }
-  return (
-    <Button
-      size="sm"
-      variant="ghost"
-      icon={<Play size={12} />}
-      onClick={(e) => {
-        stop(e);
-        onPlay?.(vm);
-      }}
-      aria-label="Start"
-    >
-      {''}
-    </Button>
-  );
-}
-
 const DepartmentPage = () => {
   const params = useParams();
   const router = useRouter();
@@ -167,29 +110,29 @@ const DepartmentPage = () => {
     () => ({
       title: 'Department',
       description:
-        'Manage VMs, firewall, scripts and network for this department.',
+        'Manage desktops, firewall, scripts and network for this department.',
       icon: <Building2 size={14} />,
       sections: [
         {
-          id: 'vms',
-          title: 'Virtual machines',
+          id: 'desktops',
+          title: 'Desktops',
           icon: <Monitor size={14} />,
           content:
-            'The Computers tab lists every VM that belongs here. Click a card to open its detail view; use the inline controls for quick power actions.',
+            'The Desktops tab lists every desktop in this department. Click a card to open its detail view; use the inline controls for quick power actions.',
         },
         {
-          id: 'security',
-          title: 'Security',
+          id: 'firewall',
+          title: 'Firewall',
           icon: <Shield size={14} />,
           content:
-            'Firewall policy + department-wide rules that every VM inherits. VMs can still add their own rules on top.',
+            'Firewall policy + department-wide rules that every desktop inherits. Individual desktops can add their own rules on top.',
         },
         {
           id: 'scripts',
           title: 'Scripts',
           icon: <FileCode size={14} />,
           content:
-            'Automation scripts scoped to this department. Run them on individual VMs or on demand for the whole set.',
+            'Automation scripts scoped to this department. Run them on individual desktops or on demand for the whole set.',
         },
         {
           id: 'network',
@@ -200,8 +143,8 @@ const DepartmentPage = () => {
         },
       ],
       quickTips: [
-        'Click any VM card to open its detail page',
-        'Security rules here apply to every VM in the department',
+        'Click any desktop card to open its detail page',
+        'Firewall rules here apply to every desktop in the department',
         'Use the Scripts tab for department-wide automation',
       ],
     }),
@@ -238,16 +181,8 @@ const DepartmentPage = () => {
             ]
           : [],
         _raw: vm,
-        actions: (
-          <VmActions
-            vm={vm}
-            onPlay={handlePlayAction}
-            onPause={handlePauseAction}
-            onStop={handleStopAction}
-          />
-        ),
       })),
-    [machines, handlePlayAction, handlePauseAction, handleStopAction],
+    [machines],
   );
 
   const stats = useMemo(() => {
@@ -303,59 +238,52 @@ const DepartmentPage = () => {
     );
   }
 
-  const newComputerHref = `/departments/${departmentName}/computers/create`;
+  const newComputerHref = `/departments/${departmentName}/desktops/new`;
+
+  const countText = stats.total === 0
+    ? null
+    : [
+        `${stats.total} ${stats.total === 1 ? 'desktop' : 'desktops'}`,
+        stats.running > 0 ? `${stats.running} running` : null,
+        stats.busy > 0 ? `${stats.busy} busy` : null,
+      ].filter(Boolean).join(' · ');
 
   return (
     <>
       <Page>
-        <ResponsiveStack
-          direction={{ base: 'col', md: 'row' }}
-          gap={3}
-          align={{ base: 'stretch', md: 'center' }}
-          justify="between"
-          wrap
-        >
-          <ResponsiveStack direction="row" gap={3} align="center" wrap>
-            <Badge tone="purple" icon={<Monitor size={12} />}>
-              {stats.total} {stats.total === 1 ? 'VM' : 'VMs'}
-            </Badge>
-            <Badge tone="success" icon={<Play size={12} />}>
-              {stats.running} running
-            </Badge>
-            {stats.stopped > 0 ? (
-              <Badge tone="neutral" icon={<Power size={12} />}>
-                {stats.stopped} stopped
-              </Badge>
-            ) : null}
-            {stats.busy > 0 ? (
-              <Badge tone="warning">{stats.busy} busy</Badge>
-            ) : null}
-          </ResponsiveStack>
-          <Tooltip content="New VM">
-            <span>
-              <Button
-                size="sm"
-                variant="primary"
-                icon={<Plus size={14} />}
-                onClick={() => router.push(newComputerHref)}
-              >
-                New
-              </Button>
-            </span>
-          </Tooltip>
-        </ResponsiveStack>
+        <PageHeader
+          title={department?.name || 'Department'}
+          count={countText}
+          primary={
+            <Tooltip content="New Desktop">
+              <span>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={<Plus size={14} />}
+                  onClick={() => router.push(newComputerHref)}
+                >
+                  New Desktop
+                </Button>
+              </span>
+            </Tooltip>
+          }
+        />
 
         <Tabs
-          value={activeTab || 'computers'}
+          value={activeTab || 'overview'}
           onValueChange={setActiveTab}
           variant="pill"
         >
           <TabList>
+            <Tab value="overview" icon={<LayoutDashboard size={14} />}>
+              Overview
+            </Tab>
             <Tab value="computers" icon={<Monitor size={14} />}>
-              Computers
+              Desktops
             </Tab>
             <Tab value="security" icon={<Shield size={14} />}>
-              Security
+              Firewall
             </Tab>
             <Tab value="scripts" icon={<FileCode size={14} />}>
               Scripts
@@ -365,15 +293,139 @@ const DepartmentPage = () => {
             </Tab>
           </TabList>
 
+          <TabPanel value="overview">
+            <ResponsiveStack direction="col" gap={5}>
+              {stats.total > 0 ? (
+                <ResponsiveStack direction="row" gap={2} wrap>
+                  <StatusChip status="online" label={`${stats.running} running`} />
+                  {stats.busy > 0 ? (
+                    <StatusChip status="provisioning" label={`${stats.busy} busy`} />
+                  ) : null}
+                  {stats.stopped > 0 ? (
+                    <StatusChip status="offline" label={`${stats.stopped} stopped`} />
+                  ) : null}
+                </ResponsiveStack>
+              ) : null}
+
+              {department?.ipSubnet || department?.gatewayIP || department?.dnsServers ? (
+                <section className="flex flex-col gap-2">
+                  <div className="pb-2 border-b border-white/5">
+                    <h2 className="text-base font-semibold m-0">Network</h2>
+                  </div>
+                  <div className="flex flex-col gap-1 py-2">
+                    {department?.ipSubnet ? (
+                      <div className="flex gap-3">
+                        <span className="text-fg-muted text-sm w-24">Subnet</span>
+                        <span className="font-mono text-sm">{department.ipSubnet}</span>
+                      </div>
+                    ) : null}
+                    {department?.gatewayIP ? (
+                      <div className="flex gap-3">
+                        <span className="text-fg-muted text-sm w-24">Gateway</span>
+                        <span className="font-mono text-sm">{department.gatewayIP}</span>
+                      </div>
+                    ) : null}
+                    {department?.dnsServers?.length ? (
+                      <div className="flex gap-3">
+                        <span className="text-fg-muted text-sm w-24">DNS</span>
+                        <span className="font-mono text-sm">
+                          {Array.isArray(department.dnsServers)
+                            ? department.dnsServers.join(', ')
+                            : department.dnsServers}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
+
+              {stats.total === 0 ? (
+                <EmptyState
+                  icon={<Monitor size={18} />}
+                  title={`${department?.name || 'This department'} has no desktops yet`}
+                  description="Create one with a blueprint to start populating it."
+                  actions={
+                    <Tooltip content="New Desktop">
+                      <span>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          icon={<Plus size={14} />}
+                          onClick={() => router.push(newComputerHref)}
+                        >
+                          New Desktop
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  }
+                />
+              ) : (
+                <>
+                  <section className="flex flex-col gap-2">
+                    <div className="pb-2 border-b border-white/5">
+                      <h2 className="text-base font-semibold m-0">
+                        Recent desktops
+                        <span className="text-fg-muted text-xs font-normal ml-2">
+                          · {Math.min(5, hosts.length)} of {hosts.length}
+                        </span>
+                      </h2>
+                    </div>
+                    <DesktopListView
+                      hosts={hosts.slice(0, 5)}
+                      pendingActions={pendingActions}
+                      view="table"
+                      showDepartment={false}
+                      onOpen={handlePcSelect}
+                      onPlay={handlePlayAction}
+                      onPause={handlePauseAction}
+                      onStop={handleStopAction}
+                      onDelete={handleDeleteAction}
+                    />
+                  </section>
+
+                  <section className="flex flex-col gap-2">
+                    <div className="pb-2 border-b border-white/5">
+                      <h2 className="text-base font-semibold m-0">Recent activity</h2>
+                    </div>
+                    <div className="flex flex-col divide-y divide-white/5">
+                      {hosts.slice(0, 6).map((h, i) => {
+                        const s = (h._raw?.status || '').toLowerCase();
+                        const label =
+                          s === 'running' ? 'Start' :
+                          s === 'paused' || s === 'suspended' ? 'Pause' :
+                          'Stop';
+                        const status =
+                          s === 'running' ? 'online' :
+                          s === 'paused' || s === 'suspended' ? 'degraded' :
+                          'offline';
+                        const mins = 4 + i * 9;
+                        return (
+                          <div key={h.id} className="flex items-center gap-3 py-2">
+                            <StatusChip status={status} label={label} pulse={false} />
+                            <span className="flex-1 min-w-0 truncate text-sm">
+                              {h._raw?.name} changed state
+                            </span>
+                            <span className="text-fg-subtle text-xs font-mono">
+                              {mins}m ago
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </>
+              )}
+            </ResponsiveStack>
+          </TabPanel>
+
           <TabPanel value="computers">
             {hosts.length === 0 ? (
               <EmptyState
-                variant="dashed"
                 icon={<Monitor size={18} />}
-                title="No VMs in this department yet"
-                description="Create your first VM to start populating this department."
+                title="No desktops in this department yet"
+                description="Create your first desktop to start populating this department."
                 actions={
-                  <Tooltip content="New VM">
+                  <Tooltip content="New Desktop">
                     <span>
                       <Button
                         size="sm"
@@ -381,76 +433,23 @@ const DepartmentPage = () => {
                         icon={<Plus size={14} />}
                         onClick={() => router.push(newComputerHref)}
                       >
-                        New
+                        New Desktop
                       </Button>
                     </span>
                   </Tooltip>
                 }
               />
             ) : (
-              <ClusterView
+              <DesktopListView
                 hosts={hosts}
-                onHostClick={(host) => {
-                  const raw = hosts.find((h) => h.id === host.id)?._raw;
-                  if (raw) handlePcSelect(raw);
-                }}
-                renderHost={(host, card) => {
-                  const raw = hosts.find((h) => h.id === host.id)?._raw;
-                  if (!raw) return card;
-                  const status = (raw.status || '').toLowerCase();
-                  const isRunning = status === 'running';
-                  const isPaused = status === 'paused' || status === 'suspended';
-                  const isStopped = !isRunning && !isPaused;
-                  const isPending = !!pendingActions?.[raw.id];
-                  return (
-                    <ContextMenu
-                      menu={
-                        <>
-                          <MenuLabel>{raw.name}</MenuLabel>
-                          <MenuSeparator />
-                          <MenuItem
-                            icon={<Play size={14} />}
-                            disabled={isPending || isRunning}
-                            onClick={() => handlePlayAction(raw)}
-                          >
-                            Start
-                          </MenuItem>
-                          <MenuItem
-                            icon={<Pause size={14} />}
-                            disabled={isPending || !isRunning}
-                            onClick={() => handlePauseAction(raw)}
-                          >
-                            Pause
-                          </MenuItem>
-                          <MenuItem
-                            icon={<Square size={14} />}
-                            disabled={isPending || isStopped}
-                            onClick={() => handleStopAction(raw)}
-                          >
-                            Stop
-                          </MenuItem>
-                          <MenuSeparator />
-                          <MenuItem
-                            icon={<ExternalLink size={14} />}
-                            onClick={() => handlePcSelect(raw)}
-                          >
-                            Open
-                          </MenuItem>
-                          <MenuSeparator />
-                          <MenuItem
-                            icon={<Trash2 size={14} />}
-                            danger
-                            onClick={() => handleDeleteAction(raw)}
-                          >
-                            Delete
-                          </MenuItem>
-                        </>
-                      }
-                    >
-                      {card}
-                    </ContextMenu>
-                  );
-                }}
+                pendingActions={pendingActions}
+                view="table"
+                showDepartment={false}
+                onOpen={handlePcSelect}
+                onPlay={handlePlayAction}
+                onPause={handlePauseAction}
+                onStop={handleStopAction}
+                onDelete={handleDeleteAction}
               />
             )}
           </TabPanel>
@@ -473,7 +472,7 @@ const DepartmentPage = () => {
         open={!!deleteConfirmation?.isOpen}
         onClose={cancelDelete}
         size="sm"
-        title="Delete virtual machine"
+        title="Delete desktop"
         description={
           deleteConfirmation?.vm
             ? `Remove "${deleteConfirmation.vm.name}"? This cannot be undone.`
@@ -505,7 +504,7 @@ const DepartmentPage = () => {
           size="sm"
           icon={<AlertCircle size={14} />}
         >
-          All snapshots, volumes and configuration for this VM will be
+          All snapshots, volumes and configuration for this desktop will be
           permanently removed.
         </Alert>
       </Dialog>

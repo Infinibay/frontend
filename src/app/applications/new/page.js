@@ -68,7 +68,7 @@ export default function NewApplicationPage() {
         { label: "Applications", href: "/applications" },
         { label: "New", isCurrent: true },
       ],
-      title: "New application",
+      title: "New Application",
       backButton: { href: "/applications", label: "Back" },
       actions: [],
     },
@@ -135,8 +135,8 @@ export default function NewApplicationPage() {
           variant="default"
           leadingIcon={<AppWindow size={20} />}
           leadingIconTone="purple"
-          title="New application"
-          description="Register an install-script catalogue entry that VMs can pull and run with parameters."
+          title="New Application"
+          description="Register an install-script catalogue entry that desktops can pull and run with parameters."
         >
           <ResponsiveStack direction="row" gap={2} justify="end">
             <Button

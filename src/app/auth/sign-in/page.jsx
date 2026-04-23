@@ -87,7 +87,7 @@ const Page_ = () => {
     try {
       await dispatch(loginUser({ email: data.email, password: data.password })).unwrap();
       await dispatch(fetchCurrentUser()).unwrap();
-      router.push("/computers");
+      router.push("/desktops");
     } catch (err) {
       if (
         err.status === 401 ||
@@ -121,7 +121,7 @@ const Page_ = () => {
           <ResponsiveStack direction="col" gap={5}>
             <div>
               <h2 style={heading}>Welcome back</h2>
-              <p style={subtle}>Sign in to access your virtual machines.</p>
+              <p style={subtle}>Sign in to access your desktops.</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)}>

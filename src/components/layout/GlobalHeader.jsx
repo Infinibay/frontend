@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import {
   Plus,
@@ -28,7 +29,9 @@ import { useHelp } from '@/hooks/useHelp';
 import { HelpSheet } from '@/components/layout/HelpSheet';
 import { useHeaderActions } from '@/contexts/HeaderActionContext';
 import { NotificationBell } from '@/components/recommendations/NotificationBell';
+import { UserMenu } from '@/components/layout/UserMenu';
 import { selectUser } from '@/state/slices/auth';
+import { isOperator } from '@/lib/roles';
 import {
   selectHeaderBreadcrumbs,
   selectHeaderSubtitle,
@@ -51,6 +54,58 @@ const iconMap = {
   AlertCircle,
 };
 
+/**
+ * Friendly labels for path segments in auto-breadcrumbs.
+ * Unknown segments get capitalized as-is.
+ */
+const SEGMENT_LABELS = {
+  overview: 'Overview',
+  departments: 'Departments',
+  desktops: 'Desktops',
+  computers: 'Desktops',
+  blueprints: 'Blueprints',
+  templates: 'Blueprints',
+  applications: 'Applications',
+  scripts: 'Scripts',
+  users: 'Users',
+  events: 'Events',
+  infrastructure: 'Infrastructure',
+  hosts: 'Hosts',
+  networks: 'Networks',
+  settings: 'Settings',
+  profile: 'Profile',
+  notification: 'Notifications',
+  workspace: 'Workspace',
+  new: 'New',
+  vm: 'Desktop',
+};
+
+function labelForSegment(segment) {
+  if (SEGMENT_LABELS[segment]) return SEGMENT_LABELS[segment];
+  try {
+    const decoded = decodeURIComponent(segment);
+    return decoded.charAt(0).toUpperCase() + decoded.slice(1);
+  } catch {
+    return segment;
+  }
+}
+
+function autoBreadcrumbsFromPath(pathname) {
+  if (!pathname || pathname === '/') return [];
+  const segments = pathname.split('/').filter(Boolean);
+  const crumbs = [];
+  let acc = '';
+  segments.forEach((segment, idx) => {
+    acc += `/${segment}`;
+    const isLast = idx === segments.length - 1;
+    crumbs.push({
+      label: labelForSegment(segment),
+      href: isLast ? undefined : acc,
+    });
+  });
+  return crumbs;
+}
+
 function harborVariant(v) {
   switch (v) {
     case 'destructive':
@@ -67,21 +122,23 @@ function harborVariant(v) {
 }
 
 export function GlobalHeader() {
-  const breadcrumbs = useSelector(selectHeaderBreadcrumbs);
+  const pathname = usePathname();
+  const reduxBreadcrumbs = useSelector(selectHeaderBreadcrumbs);
   const subtitle = useSelector(selectHeaderSubtitle);
   const actions = useSelector(selectHeaderActions);
   const helpTooltip = useSelector(selectHeaderHelpTooltip);
   const backButton = useSelector(selectHeaderBackButton);
   const user = useSelector(selectUser);
 
-  const isAdmin = user?.role === 'ADMIN';
+  const operator = isOperator(user);
   const { helpConfig } = useHelp();
   const { triggerAction } = useHeaderActions();
   const [helpSheetOpen, setHelpSheetOpen] = useState(false);
 
-  if (!breadcrumbs.length && !actions.length && !helpConfig && !backButton) {
-    return null;
-  }
+  const breadcrumbs = useMemo(() => {
+    if (reduxBreadcrumbs.length > 0) return reduxBreadcrumbs;
+    return autoBreadcrumbsFromPath(pathname);
+  }, [reduxBreadcrumbs, pathname]);
 
   const left = (
     <ResponsiveStack direction="row" gap={3} align="center">
@@ -108,7 +165,7 @@ export function GlobalHeader() {
 
   const right = (
     <ResponsiveStack direction="row" gap={2} align="center">
-      {isAdmin ? <NotificationBell /> : null}
+      {operator ? <NotificationBell /> : null}
 
       {helpConfig ? (
         <Button
@@ -144,6 +201,8 @@ export function GlobalHeader() {
           </Button>
         );
       })}
+
+      <UserMenu />
     </ResponsiveStack>
   );
 

@@ -60,7 +60,7 @@ export const handleStop = async (dispatch, pc) => {
 export const handleDelete = async (dispatch, vmId, onSuccess, onError) => {
   if (!vmId) {
     console.error("Cannot delete VM: No VM ID provided");
-    onError?.("Failed to delete the virtual machine: No VM ID provided.");
+    onError?.("Failed to delete the desktop: No VM ID provided.");
     return;
   }
   
@@ -71,6 +71,6 @@ export const handleDelete = async (dispatch, vmId, onSuccess, onError) => {
     onSuccess?.();
   } catch (error) {
     console.error("Failed to delete VM:", error);
-    onError?.("Failed to delete the virtual machine. Please try again.");
+    onError?.("Failed to delete the desktop. Please try again.");
   }
 };

@@ -41,8 +41,8 @@ export default function CreateComputerContent({ departmentSlug = null }) {
         variant="glass"
         spotlight={false}
         glow={false}
-        title="Create New Machine"
-        description="Follow the steps below to provision and configure your virtual machine."
+        title="New Desktop"
+        description="Follow the steps below to provision and configure the desktop."
       />
       <CreateMachineWizard departmentId={departmentId} />
     </Page>

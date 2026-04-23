@@ -41,9 +41,9 @@ export default function CreateMachineWizard({ departmentId }) {
         ? String(departmentId)
         : String(departments[0].id);
 
-      // Only set validatedDepartmentId if the provided ID actually exists
+      // Intentional: one-shot wizard initialisation when deps load.
+      /* eslint-disable react-hooks/set-state-in-effect */
       setValidatedDepartmentId(departmentExists ? departmentId : null);
-
       setInitialValues({
         basicInfo: {
           departmentId: selectedDepartmentId
@@ -54,6 +54,7 @@ export default function CreateMachineWizard({ departmentId }) {
           gpuInfo: null
         }
       });
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [departments, departmentId, initialValues]);
 
@@ -95,16 +96,16 @@ export default function CreateMachineWizard({ departmentId }) {
       toast({
         variant: "success",
         title: "Success!",
-        description: `Virtual machine "${values.basicInfo.name}" has been created successfully.`
+        description: `Desktop "${values.basicInfo.name}" has been created successfully.`
       });
 
-      router.push('/computers');
+      router.push('/desktops');
     } catch (error) {
       console.error('Failed to create machine:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: createError || "Failed to create virtual machine. Please try again."
+        description: createError || "Failed to create desktop. Please try again."
       });
     }
   };
@@ -121,7 +122,7 @@ export default function CreateMachineWizard({ departmentId }) {
   return (
     <>
       {isCreating && (
-        <LoadingOverlay label="Creating your virtual machine…" fill size={32} />
+        <LoadingOverlay label="Creating your desktop…" fill size={32} />
       )}
       <Wizard onComplete={handleComplete} initialValues={initialValues}>
         <BasicInfoStep

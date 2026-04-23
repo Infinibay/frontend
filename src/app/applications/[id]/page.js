@@ -72,12 +72,16 @@ export default function EditApplicationPage() {
 
   useEffect(() => {
     if (!id) return;
+    // Intentional: loading flag flips on id change while we refetch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     dispatch(fetchApplicationById(id)).finally(() => setLoading(false));
   }, [id, dispatch]);
 
   useEffect(() => {
     if (!application) return;
+    // Intentional: hydrate local form state when the record arrives.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setName(application.name || "");
     setDescription(application.description || "");
     setParams(
@@ -97,6 +101,7 @@ export default function EditApplicationPage() {
     } catch (_err) {
       setScripts({ windows: "", ubuntu: "", fedora: "" });
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [application]);
 
   usePageHeader(
@@ -203,7 +208,7 @@ export default function EditApplicationPage() {
           leadingIcon={<AppWindow size={20} />}
           leadingIconTone="purple"
           title={name || application.name}
-          description="Edit the install scripts and parameter schema. Changes take effect on the next VM that pulls this app."
+          description="Edit the install scripts and parameter schema. Changes take effect on the next desktop that pulls this app."
         >
           <ResponsiveStack direction="row" gap={2} justify="end">
             <Button
