@@ -83,5 +83,8 @@
     "src/gql/**/*.graphql": [
       "npm run codegen:validate"
     ]
+  },
+  "overrides": {
+    "dompurify": "^3.4.0"
   }
 }
