@@ -1,7 +1,9 @@
 "use client";
 
+import { use } from "react";
 import CreateComputerContent from "@/components/CreateMachine/CreateComputerContent";
 
 export default function CreateMachinePage({ params }) {
-  return <CreateComputerContent departmentSlug={params.name} />;
+  const { name } = use(params);
+  return <CreateComputerContent departmentSlug={name} />;
 }

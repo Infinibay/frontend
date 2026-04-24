@@ -56,7 +56,7 @@ export function UserMenu() {
     : 'Account';
 
   const handleLogout = useCallback(() => {
-    auth.clearToken();
+    auth.logout();
     window.location.href = '/auth/sign-in';
   }, []);
 

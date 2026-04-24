@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSelector } from 'react-redux';
@@ -121,7 +121,7 @@ function harborVariant(v) {
   }
 }
 
-export function GlobalHeader() {
+function GlobalHeaderInner() {
   const pathname = usePathname();
   const reduxBreadcrumbs = useSelector(selectHeaderBreadcrumbs);
   const subtitle = useSelector(selectHeaderSubtitle);
@@ -217,3 +217,5 @@ export function GlobalHeader() {
     </>
   );
 }
+
+export const GlobalHeader = memo(GlobalHeaderInner);

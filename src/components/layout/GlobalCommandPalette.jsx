@@ -57,7 +57,7 @@ export function GlobalCommandPalette() {
 
   const handleLogout = useCallback(() => {
     setOpen(false);
-    auth.clearToken();
+    auth.logout();
     window.location.href = '/auth/sign-in';
   }, []);
 

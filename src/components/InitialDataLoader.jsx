@@ -1,59 +1,14 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Button, ResponsiveStack, Skeleton } from '@infinibay/harbor';
+import { Button, ResponsiveStack } from '@infinibay/harbor';
 import { fetchInitialData, SERVICE_CONFIG } from '@/init';
 import { selectAppSettingsInitialized, selectAppSettingsLoading } from '@/state/slices/appSettings';
 import { createDebugger } from '@/utils/debug';
 
-const LoadingSkeleton = () => {
-  return (
-    <div style={{ display: 'flex', height: '100vh', background: 'rgb(var(--harbor-bg, 10 10 14))' }}>
-      {/* Left Sidebar */}
-      <div style={{ width: 256, borderRight: '1px solid rgba(255,255,255,0.08)', padding: 16 }}>
-        <div style={{ marginBottom: 32 }}>
-          <Skeleton height={32} width={128} />
-        </div>
-        <ResponsiveStack direction="col" gap={4}>
-          <Skeleton height={40} />
-          <Skeleton height={40} />
-          <Skeleton height={40} />
-        </ResponsiveStack>
-      </div>
-
-      {/* Main content */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        {/* Top nav */}
-        <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', padding: 16 }}>
-          <ResponsiveStack direction="row" gap={2} align="center" justify="between">
-            <ResponsiveStack direction="row" gap={2} align="center">
-              <Skeleton height={24} width={96} />
-              <span>/</span>
-              <Skeleton height={24} width={128} />
-            </ResponsiveStack>
-            <Skeleton circle width={40} height={40} />
-          </ResponsiveStack>
-        </div>
-
-        {/* Main */}
-        <div style={{ padding: 24 }}>
-          <div style={{ marginBottom: 24 }}>
-            <Skeleton height={32} width={192} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 32 }}>
-            {[...Array(12)].map((_, i) => (
-              <ResponsiveStack key={i} direction="col" gap={3}>
-                <Skeleton height={192} />
-                <Skeleton height={16} width="75%" />
-                <Skeleton height={16} width="50%" />
-              </ResponsiveStack>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+/* BootSplash removed — bootstrap now renders nothing while loading so
+   the shell (sidebar/header + empty main) comes in cleanly via
+   ContentSwap's initial fade-in. */
 
 const debug = createDebugger('frontend:components:initial-data-loader');
 
@@ -130,6 +85,16 @@ export const InitialDataLoader = ({ children }) => {
 
   const isCriticalLoading = authLoading || appSettingsLoading?.fetch || !appSettingsInitialized;
 
+  // Once we've shown content at least once, never gate again — Apollo /
+  // auth loading flags tickle true briefly on navigation and we don't
+  // want to blank the whole app for 100ms every time.
+  const [hasBootstrapped, setHasBootstrapped] = useState(false);
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!isCriticalLoading && !hasBootstrapped) setHasBootstrapped(true);
+  }, [isCriticalLoading, hasBootstrapped]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   const handleRetry = () => {
     debug.info(`Retrying initialization (attempt ${retryCount + 1})...`);
     setError(null);
@@ -145,12 +110,11 @@ export const InitialDataLoader = ({ children }) => {
     setIsInitializing(false);
   };
 
-  if (isCriticalLoading && !hasTimedOut) {
-    return (
-      <div style={{ position: 'relative' }}>
-        <LoadingSkeleton />
-      </div>
-    );
+  if (isCriticalLoading && !hasTimedOut && !hasBootstrapped) {
+    // Render nothing while the initial auth/settings bootstrap is in
+    // flight — we don't want any loading animation. The shell will
+    // appear (and fade in via RouteFade) as soon as data is ready.
+    return null;
   }
 
   if (error && !hasTimedOut) {

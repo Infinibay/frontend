@@ -29,11 +29,14 @@ import { SocketNamespaceGuard } from '@/components/SocketNamespaceGuard';
 import { isEndUser } from '@/lib/roles';
 import { createThemeScript } from '@/utils/theme';
 import { ThemeProvider, useAppTheme } from '@/contexts/ThemeProvider';
+import { HarborThemeBridge } from '@/components/layout/HarborThemeBridge';
 import { HelpProvider } from '@/contexts/HelpProvider';
 import { HeaderActionProvider } from '@/contexts/HeaderActionContext';
 import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { GlobalCommandPalette } from '@/components/layout/GlobalCommandPalette';
 import { BrandingApplier } from '@/components/layout/BrandingApplier';
+import { NavigationProgress } from '@/components/layout/NavigationProgress';
+import { RouteFade } from '@/components/layout/RouteFade';
 import '@/utils/debugInit';
 import '@/utils/debugPanelStatus';
 
@@ -64,6 +67,18 @@ function AppContent({ children, isAuthenticated }) {
   const user = useSelector((state) => state.auth.user);
   const interfaceSize = useSelector(selectInterfaceSize);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
+  // React Compiler auto-memoises pure derivations, so just let it see the
+  // shape; AppSidebar is React.memo'd and will skip re-render when the
+  // user identity is stable.
+  const sidebarUser = user?.firstName
+    ? {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+      }
+    : null;
   React.useEffect(() => {
     debug.info('layout', 'AppContent rendered:', {
       isAuthenticated,
@@ -83,44 +98,31 @@ function AppContent({ children, isAuthenticated }) {
     router.replace('/workspace');
   }, [isAuthenticated, user, pathname, router]);
 
-  const handleLogout = () => {
+  const handleLogout = React.useCallback(() => {
     debug.info('auth', 'Logout initiated');
-    auth.clearToken();
+    auth.logout();
     window.location.href = '/auth/sign-in';
-  };
+  }, []);
 
   if (!isAuthenticated || pathname?.startsWith('/auth/')) {
     return (
       <>
         <BrandingApplier />
-        {children}
+        <NavigationProgress />
+        <RouteFade>{children}</RouteFade>
       </>
     );
   }
 
   return (
     <AppShell
-      sidebar={
-        <AppSidebar
-          user={
-            user?.firstName
-              ? {
-                  firstName: user.firstName,
-                  lastName: user.lastName,
-                  email: user.email,
-                  role: user.role,
-                  avatar: user.avatar,
-                }
-              : null
-          }
-          onLogOut={handleLogout}
-        />
-      }
+      sidebar={<AppSidebar user={sidebarUser} onLogOut={handleLogout} />}
       header={<GlobalHeader />}
       contentPadding="none"
     >
       <BrandingApplier />
-      {children}
+      <NavigationProgress />
+      <RouteFade>{children}</RouteFade>
       <GlobalCommandPalette />
     </AppShell>
   );
@@ -144,7 +146,7 @@ function ThemeProviderWrapper({ children }) {
   return (
     <ThemeProvider defaultTheme={desired} enableSystem>
       <ThemeApplier desiredTheme={desired} />
-      {children}
+      <HarborThemeBridge>{children}</HarborThemeBridge>
     </ThemeProvider>
   );
 }

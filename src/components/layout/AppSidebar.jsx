@@ -82,7 +82,7 @@ function activeId(items, pathname) {
   return null;
 }
 
-const AppSidebar = React.forwardRef(function AppSidebar({ user, onLogOut }, _ref) {
+const AppSidebarInner = React.forwardRef(function AppSidebar({ user, onLogOut }, _ref) {
   const pathname = usePathname();
   const router = useRouter();
   const appSettings = useSelector(selectAppSettings);
@@ -176,4 +176,5 @@ const AppSidebar = React.forwardRef(function AppSidebar({ user, onLogOut }, _ref
   );
 });
 
+const AppSidebar = React.memo(AppSidebarInner);
 export { AppSidebar };

@@ -91,16 +91,22 @@ export default function EditApplicationPage() {
         required: !!application.parameters[key].required,
       }))
     );
-    try {
-      const cmd = JSON.parse(application.installCommand || "{}");
-      setScripts({
-        windows: cmd.windows || "",
-        ubuntu: cmd.ubuntu || "",
-        fedora: cmd.fedora || "",
-      });
-    } catch (_err) {
-      setScripts({ windows: "", ubuntu: "", fedora: "" });
-    }
+    const raw = application.installCommand;
+    const cmd =
+      typeof raw === "string"
+        ? (() => {
+            try {
+              return JSON.parse(raw || "{}");
+            } catch {
+              return {};
+            }
+          })()
+        : raw || {};
+    setScripts({
+      windows: cmd.windows || "",
+      ubuntu: cmd.ubuntu || "",
+      fedora: cmd.fedora || "",
+    });
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [application]);
 
@@ -153,7 +159,7 @@ export default function EditApplicationPage() {
             description: description.trim(),
             parameters,
             os: ["windows", "ubuntu", "fedora"],
-            installCommand: JSON.stringify(scripts),
+            installCommand: scripts,
           },
         })
       ).unwrap();
