@@ -17,9 +17,11 @@ import {
   Checkbox,
   Alert,
   ResponsiveStack,
+  Aurora,
 } from "@infinibay/harbor";
 
 import { loginUser, fetchCurrentUser } from "@/state/slices/auth";
+import { useAccentTrio } from "@/hooks/useAccentTrio";
 
 const pageShell = {
   minHeight: "100vh",
@@ -80,6 +82,8 @@ const Page_ = () => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch();
+  const trio = useAccentTrio();
+  const auroraPalette = [trio.accent, trio.accent2, trio.accent3, trio.accent2];
 
   const onSubmit = async (data) => {
     setError("");
@@ -106,6 +110,27 @@ const Page_ = () => {
 
   return (
     <div style={pageShell}>
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          overflow: "hidden",
+        }}
+      >
+        <Aurora
+          bands={4}
+          amplitude={0.28}
+          speed={0.6}
+          intensity={0.55}
+          palette={auroraPalette}
+          pauseWhenHidden
+          style={{ width: "100%", height: "100%" }}
+        />
+      </div>
+      <div style={{ position: "relative", zIndex: 1, width: "100%" }}>
       <Page size="sm" gap="md" padded={false}>
         <div style={brandRow}>
           <Image
@@ -223,6 +248,7 @@ const Page_ = () => {
           By signing in you agree to our Terms of Service and Privacy Policy.
         </p>
       </Page>
+      </div>
     </div>
   );
 };

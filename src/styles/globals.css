@@ -44,7 +44,10 @@
       rgb(var(--harbor-accent) / 0.06),
       transparent 55%
     );
-    backdrop-filter: blur(10px);
+    /* isolation: isolate creates a stacking context so the backdrop
+       doesn't recomposite on every child repaint, avoiding the flicker
+       that was visible on route changes. */
+    isolation: isolate;
   }
   /* Prevent horizontal scrollbar bleed in the sidebar when an item's badge
      momentarily grows (hover, long labels). */
@@ -96,12 +99,14 @@
   /* Operator mode: blobs act as ambient light, not decoration.
      See plan Fase 4 — content sits on a solid surface and blobs whisper
      through sidebar/header gaps. */
+  /* Lightspots follow the active accent trio so the whole ambient field
+     re-tints when the user picks a theme / custom accent. */
   .app-bg__blob--1 {
     top: -22%;
     left: -12%;
     width: 55vw;
     height: 55vw;
-    background: rgb(168 85 247); /* fucsia */
+    background: rgb(var(--harbor-accent));
     opacity: 0.18;
     animation: app-bg-drift-1 62s ease-in-out infinite alternate;
   }
@@ -110,7 +115,7 @@
     right: -14%;
     width: 50vw;
     height: 50vw;
-    background: rgb(56 189 248); /* sky */
+    background: rgb(var(--harbor-accent-2));
     opacity: 0.14;
     animation: app-bg-drift-2 74s ease-in-out infinite alternate;
   }
@@ -119,7 +124,7 @@
     right: -10%;
     width: 55vw;
     height: 55vw;
-    background: rgb(244 114 182); /* pink */
+    background: rgb(var(--harbor-accent-3));
     opacity: 0.14;
     animation: app-bg-drift-3 82s ease-in-out infinite alternate;
   }
@@ -128,7 +133,7 @@
     left: -14%;
     width: 50vw;
     height: 50vw;
-    background: rgb(139 92 246); /* violet */
+    background: rgb(var(--harbor-accent));
     opacity: 0.18;
     animation: app-bg-drift-4 68s ease-in-out infinite alternate;
   }

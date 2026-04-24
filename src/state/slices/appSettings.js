@@ -18,7 +18,10 @@ const defaultSettings = {
 	logoUrl: null,
 	interfaceSize: 'md',
 	// Whitelabel — applied at runtime via CSS vars. null = use Harbor default.
+	themePreset: null,   // named preset id (e.g. 'violet'); null = custom or default
 	accentColor: null,
+	accent2Color: null,  // if null, derived from accentColor or preset
+	accent3Color: null,
 	brandName: null,
 	// UI view modes — persist the operator's preferred layout for lists that
 	// support both. 'table' is the operator default per design guideline §6.1.
@@ -60,6 +63,15 @@ const appSettingsSlice = createSlice({
 		},
 		setAccentColor: (state, action) => {
 			state.settings.accentColor = action.payload || null;
+		},
+		setAccent2Color: (state, action) => {
+			state.settings.accent2Color = action.payload || null;
+		},
+		setAccent3Color: (state, action) => {
+			state.settings.accent3Color = action.payload || null;
+		},
+		setThemePreset: (state, action) => {
+			state.settings.themePreset = action.payload || null;
 		},
 		setBrandName: (state, action) => {
 			state.settings.brandName = action.payload || null;
@@ -134,6 +146,9 @@ export const selectAppSettingsInitialized = (state) => state.appSettings.initial
 export const selectTheme = (state) => state.appSettings.settings.theme;
 export const selectInterfaceSize = (state) => state.appSettings.settings.interfaceSize;
 export const selectAccentColor = (state) => state.appSettings.settings.accentColor;
+export const selectAccent2Color = (state) => state.appSettings.settings.accent2Color;
+export const selectAccent3Color = (state) => state.appSettings.settings.accent3Color;
+export const selectThemePreset = (state) => state.appSettings.settings.themePreset;
 export const selectBrandName = (state) => state.appSettings.settings.brandName;
 export const selectLogoUrl = (state) => state.appSettings.settings.logoUrl;
 export const selectDesktopsView = (state) => state.appSettings.settings.desktopsView || 'table';
@@ -144,6 +159,9 @@ export const {
 	setThemePreference,
 	setSizePreference,
 	setAccentColor,
+	setAccent2Color,
+	setAccent3Color,
+	setThemePreset,
 	setBrandName,
 	setLogoUrl,
 	setDesktopsView,

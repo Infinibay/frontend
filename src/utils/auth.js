@@ -39,6 +39,11 @@ const GetAppSettingsDocument = gql`
       wallpaper
       logoUrl
       interfaceSize
+      brandName
+      themePreset
+      accentColor
+      accent2Color
+      accent3Color
       createdAt
       updatedAt
     }
@@ -53,6 +58,11 @@ const UpdateAppSettingsDocument = gql`
       wallpaper
       logoUrl
       interfaceSize
+      brandName
+      themePreset
+      accentColor
+      accent2Color
+      accent3Color
       createdAt
       updatedAt
     }
