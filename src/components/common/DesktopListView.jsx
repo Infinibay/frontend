@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ButtonGroup,
   ClusterView,
+  ContentSwap,
   ContextMenu,
   DataTable,
   IconButton,
@@ -264,9 +266,8 @@ export function DesktopListView({
     return cols;
   }, [pendingActions, showDepartment, onPlay, onPause, onStop, onOpen, onDelete]);
 
-  if (view === 'grid') {
-    return (
-      <ClusterView
+  const inner = view === 'grid' ? (
+    <ClusterView
         hosts={hosts.map((h) => ({
           ...h,
           actions: (
@@ -345,19 +346,168 @@ export function DesktopListView({
           );
         }}
       />
+    ) : (
+      <TableWithContextMenu
+        hosts={hosts}
+        columns={columns}
+        pendingActions={pendingActions}
+        onOpen={onOpen}
+        onPlay={onPlay}
+        onPause={onPause}
+        onStop={onStop}
+        onDelete={onDelete}
+      />
     );
-  }
 
   return (
-    <DataTable
-      rows={hosts}
-      columns={columns}
-      rowKey={(r) => r.id}
-      dense
-      onRowClick={(row) => {
-        const raw = row._raw;
-        if (raw && onOpen) onOpen(raw);
-      }}
-    />
+    <ContentSwap id={view} variant="fade" duration={160}>
+      {inner}
+    </ContentSwap>
+  );
+}
+
+function TableWithContextMenu({
+  hosts,
+  columns,
+  pendingActions,
+  onOpen,
+  onPlay,
+  onPause,
+  onStop,
+  onDelete,
+}) {
+  const wrapRef = useRef(null);
+  const menuRef = useRef(null);
+  const [ctx, setCtx] = useState(null);
+
+  useEffect(() => {
+    if (!ctx) return;
+    function down(e) {
+      if (!menuRef.current?.contains(e.target)) setCtx(null);
+    }
+    function key(e) {
+      if (e.key === 'Escape') setCtx(null);
+    }
+    document.addEventListener('mousedown', down);
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('mousedown', down);
+      document.removeEventListener('keydown', key);
+    };
+  }, [ctx]);
+
+  function onContextMenu(e) {
+    const tr = e.target.closest('tbody tr');
+    if (!tr || !wrapRef.current?.contains(tr)) return;
+    const allRows = Array.from(
+      wrapRef.current.querySelectorAll('tbody tr')
+    );
+    const idx = allRows.indexOf(tr);
+    const host = hosts[idx];
+    const raw = host?._raw;
+    if (!raw) return;
+    e.preventDefault();
+    let x = e.clientX;
+    let y = e.clientY;
+    const W = 220;
+    const H = 280;
+    if (x + W > window.innerWidth - 8) x = window.innerWidth - W - 8;
+    if (y + H > window.innerHeight - 8) y = window.innerHeight - H - 8;
+    setCtx({ x, y, raw });
+  }
+
+  const status = (ctx?.raw?.status || '').toLowerCase();
+  const isRunning = status === 'running';
+  const isPaused = status === 'paused' || status === 'suspended';
+  const isStopped = !isRunning && !isPaused;
+  const isPending = !!(ctx && pendingActions?.[ctx.raw?.id]);
+
+  return (
+    <div ref={wrapRef} onContextMenu={onContextMenu}>
+      <DataTable
+        rows={hosts}
+        columns={columns}
+        rowKey={(r) => r.id}
+        dense
+        onRowClick={(row) => {
+          const raw = row._raw;
+          if (raw && onOpen) onOpen(raw);
+        }}
+      />
+      {ctx && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              ref={menuRef}
+              style={{
+                position: 'fixed',
+                left: ctx.x,
+                top: ctx.y,
+                zIndex: 9999,
+                minWidth: 200,
+              }}
+              className="rounded-xl bg-[#14141c] border border-white/10 shadow-2xl p-1"
+            >
+              <MenuLabel>{ctx.raw?.name}</MenuLabel>
+              <MenuSeparator />
+              <MenuItem
+                icon={<Play size={14} />}
+                disabled={isPending || isRunning}
+                onClick={() => {
+                  setCtx(null);
+                  onPlay?.(ctx.raw);
+                }}
+              >
+                Start
+              </MenuItem>
+              <MenuItem
+                icon={<Pause size={14} />}
+                disabled={isPending || !isRunning}
+                onClick={() => {
+                  setCtx(null);
+                  onPause?.(ctx.raw);
+                }}
+              >
+                Pause
+              </MenuItem>
+              <MenuItem
+                icon={<Square size={14} />}
+                disabled={isPending || isStopped}
+                onClick={() => {
+                  setCtx(null);
+                  onStop?.(ctx.raw);
+                }}
+              >
+                Stop
+              </MenuItem>
+              <MenuSeparator />
+              <MenuItem
+                icon={<ExternalLink size={14} />}
+                onClick={() => {
+                  setCtx(null);
+                  onOpen?.(ctx.raw);
+                }}
+              >
+                Open
+              </MenuItem>
+              {onDelete ? (
+                <>
+                  <MenuSeparator />
+                  <MenuItem
+                    icon={<Trash2 size={14} />}
+                    danger
+                    onClick={() => {
+                      setCtx(null);
+                      onDelete(ctx.raw);
+                    }}
+                  >
+                    Delete
+                  </MenuItem>
+                </>
+              ) : null}
+            </div>,
+            document.body
+          )
+        : null}
+    </div>
   );
 }

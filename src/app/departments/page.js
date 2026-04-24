@@ -21,11 +21,13 @@ import { StatusChip } from '@/components/common/StatusChip';
 import {
   AlertTriangle,
   Building2,
+  ExternalLink,
   Plus,
   RefreshCw,
   Search,
   Trash2,
 } from 'lucide-react';
+import { RowContextMenu } from '@/components/common/RowContextMenu';
 
 import { useDepartmentsPage } from './hooks/useDepartmentsPage';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -190,7 +192,6 @@ const DepartmentsPage = () => {
               icon={<RefreshCw size={14} />}
               onClick={refreshDepartments}
               disabled={isLoading}
-              loading={isLoading}
             />
           }
           primary={
@@ -246,16 +247,37 @@ const DepartmentsPage = () => {
               ) : null
             }
           />
-        ) : (
+        ) : (() => {
+          const tableRows = filteredDepartments.map((dept) => {
+            const key = dept.name?.toLowerCase();
+            const counts = runningByDept.get(key) || {
+              total: getMachineCount(dept.name),
+              running: 0,
+            };
+            return { ...dept, _counts: counts };
+          });
+          return (
+          <RowContextMenu
+            rows={tableRows}
+            labelFor={(r) => r.name}
+            buildItems={(r) => [
+              {
+                label: 'Open',
+                icon: <ExternalLink size={14} />,
+                onSelect: () =>
+                  router.push(`/departments/${encodeURIComponent(r.name)}`),
+              },
+              { separator: true },
+              {
+                label: 'Delete',
+                icon: <Trash2 size={14} />,
+                danger: true,
+                onSelect: () => setDeleteTarget(r),
+              },
+            ]}
+          >
           <DataTable
-            rows={filteredDepartments.map((dept) => {
-              const key = dept.name?.toLowerCase();
-              const counts = runningByDept.get(key) || {
-                total: getMachineCount(dept.name),
-                running: 0,
-              };
-              return { ...dept, _counts: counts };
-            })}
+            rows={tableRows}
             columns={[
               {
                 key: 'name',
@@ -342,7 +364,9 @@ const DepartmentsPage = () => {
               router.push(`/departments/${encodeURIComponent(r.name)}`)
             }
           />
-        )}
+          </RowContextMenu>
+          );
+        })()}
       </Page>
 
       <Dialog

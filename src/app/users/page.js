@@ -14,6 +14,7 @@ import {
   EyeOff,
   Lock,
 } from "lucide-react";
+import { RowContextMenu } from "@/components/common/RowContextMenu";
 import {
   Page,
   Button,
@@ -537,15 +538,34 @@ export default function UsersPage() {
           }
         />
       ) : (
-        <DataTable
+        <RowContextMenu
           rows={filtered}
-          columns={columns}
-          rowKey={(r) => r.id}
-          selectable
-          selected={selected}
-          onSelectionChange={setSelected}
-          onRowClick={openEdit}
-        />
+          labelFor={(r) => r.email || r.namespace || "User"}
+          buildItems={(r) => [
+            {
+              label: "Edit",
+              icon: <Pencil size={14} />,
+              onSelect: () => openEdit(r),
+            },
+            { separator: true },
+            {
+              label: "Delete",
+              icon: <Trash2 size={14} />,
+              danger: true,
+              onSelect: () => setDeleteTarget(r),
+            },
+          ]}
+        >
+          <DataTable
+            rows={filtered}
+            columns={columns}
+            rowKey={(r) => r.id}
+            selectable
+            selected={selected}
+            onSelectionChange={setSelected}
+            onRowClick={openEdit}
+          />
+        </RowContextMenu>
       )}
 
       {/* Create/Edit Drawer */}

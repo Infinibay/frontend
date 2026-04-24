@@ -12,7 +12,9 @@ import {
   Download,
   RefreshCw,
   AlertCircle,
+  ExternalLink,
 } from 'lucide-react'
+import { RowContextMenu } from '@/components/common/RowContextMenu'
 import {
   Page,
   Button,
@@ -28,7 +30,6 @@ import {
   DataTable,
   SegmentedControl,
   ResponsiveStack,
-  LoadingOverlay,
   Tooltip,
 } from '@infinibay/harbor'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -423,7 +424,24 @@ export default function ScriptsPage() {
           }
         />
       ) : (
-        <LoadingOverlay active={loading && scripts.length > 0} label="Refreshing…">
+        <RowContextMenu
+          rows={filtered}
+          labelFor={(r) => r.name}
+          buildItems={(r) => [
+            {
+              label: 'Open',
+              icon: <ExternalLink size={14} />,
+              onSelect: () => router.push(`/scripts/${r.id}`),
+            },
+            { separator: true },
+            {
+              label: 'Delete',
+              icon: <Trash2 size={14} />,
+              danger: true,
+              onSelect: () => setDeleteTarget(r),
+            },
+          ]}
+        >
           <DataTable
             rows={filtered}
             columns={columns}
@@ -433,7 +451,7 @@ export default function ScriptsPage() {
             onSelectionChange={setSelected}
             onRowClick={(row) => router.push(`/scripts/${row.id}`)}
           />
-        </LoadingOverlay>
+        </RowContextMenu>
       )}
 
       <Dialog

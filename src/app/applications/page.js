@@ -9,6 +9,7 @@ import {
   Plus,
   RefreshCw,
   AppWindow,
+  ExternalLink,
 } from "lucide-react";
 import {
   Page,
@@ -25,6 +26,7 @@ import {
 } from "@infinibay/harbor";
 import { PageHeader } from "@/components/common/PageHeader";
 import { OsBadge } from "@/components/common/OsBadge";
+import { RowContextMenu } from "@/components/common/RowContextMenu";
 
 import { fetchApplications } from "@/state/slices/applications";
 import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
@@ -129,52 +131,53 @@ const ApplicationsPage = () => {
         label: "Application",
         sortable: true,
         render: (row) => (
-          <ResponsiveStack direction="row" gap={3} align="center">
+          <div className="flex items-center gap-3 min-w-0">
             {row.icon ? (
-              <span className="inline-flex w-7 h-7 rounded-md bg-white/5 border border-white/10 items-center justify-center overflow-hidden shrink-0">
+              <span className="inline-flex w-6 h-6 rounded bg-white/5 border border-white/10 items-center justify-center overflow-hidden shrink-0">
                 <img
                   src={row.icon}
                   alt=""
-                  width={20}
-                  height={20}
+                  width={16}
+                  height={16}
                   style={{ display: "block", objectFit: "contain" }}
                 />
               </span>
             ) : (
-              <IconTile icon={<AppWindow size={16} />} tone="purple" size="sm" />
+              <IconTile icon={<AppWindow size={14} />} tone="purple" size="sm" />
             )}
-            <ResponsiveStack direction="col" gap={0}>
-              <span className="font-medium">{row.name}</span>
-              {row.description ? (
-                <span className="text-fg-muted text-xs truncate">
-                  {row.description}
-                </span>
-              ) : null}
-            </ResponsiveStack>
-          </ResponsiveStack>
+            <span className="font-medium truncate">{row.name}</span>
+          </div>
+        ),
+      },
+      {
+        key: "description",
+        label: "Description",
+        render: (row) => (
+          <span className="text-fg-muted text-xs line-clamp-1">
+            {row.description || "—"}
+          </span>
         ),
       },
       {
         key: "os",
         label: "OS",
-        width: 260,
         render: (row) => {
           const oss = row.os || [];
           if (!oss.length)
             return <span className="text-fg-subtle">—</span>;
           return (
-            <ResponsiveStack direction="row" gap={1} wrap>
+            <div className="flex items-center gap-1 flex-nowrap">
               {oss.map((o) => (
                 <OsBadge key={o} os={o} />
               ))}
-            </ResponsiveStack>
+            </div>
           );
         },
       },
       {
         key: "params",
         label: "Params",
-        width: 100,
+        width: 80,
         align: "right",
         render: (row) => {
           const n = Object.keys(row.parameters || {}).length;
@@ -284,12 +287,24 @@ const ApplicationsPage = () => {
           }
         />
       ) : (
-        <DataTable
+        <RowContextMenu
           rows={filtered}
-          columns={columns}
-          rowKey={(r) => r.id}
-          onRowClick={(row) => router.push(`/applications/${row.id}`)}
-        />
+          labelFor={(r) => r.name}
+          buildItems={(r) => [
+            {
+              label: "Open",
+              icon: <ExternalLink size={14} />,
+              onSelect: () => router.push(`/applications/${r.id}`),
+            },
+          ]}
+        >
+          <DataTable
+            rows={filtered}
+            columns={columns}
+            rowKey={(r) => r.id}
+            onRowClick={(row) => router.push(`/applications/${row.id}`)}
+          />
+        </RowContextMenu>
       )}
     </Page>
   );
