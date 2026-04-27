@@ -12,8 +12,8 @@ import {
   Search,
   Eye,
   EyeOff,
-  Lock,
-} from "lucide-react";
+  Lock } from
+"lucide-react";
 import { RowContextMenu } from "@/components/common/RowContextMenu";
 import {
   Page,
@@ -32,16 +32,16 @@ import {
   RoleBadge,
   PasswordStrength,
   ResponsiveStack,
-  ResponsiveGrid,
-} from "@infinibay/harbor";
+  ResponsiveGrid } from
+"@infinibay/harbor";
 import { PageHeader } from "@/components/common/PageHeader";
 
 import {
   fetchUsers,
   createUser,
   updateUser,
-  deleteUser,
-} from "@/state/slices/users";
+  deleteUser } from
+"@/state/slices/users";
 import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { createDebugger } from "@/utils/debug";
@@ -50,14 +50,14 @@ import { toast } from "sonner";
 const debug = createDebugger("frontend:pages:users");
 
 const ROLE_OPTIONS = [
-  { value: "USER", label: "User" },
-  { value: "ADMIN", label: "Admin" },
-];
+{ value: "USER", label: "User" },
+{ value: "ADMIN", label: "Admin" }];
+
 const ROLE_FILTER_OPTIONS = [
-  { value: "all", label: "All roles" },
-  { value: "USER", label: "User" },
-  { value: "ADMIN", label: "Admin" },
-];
+{ value: "all", label: "All roles" },
+{ value: "USER", label: "User" },
+{ value: "ADMIN", label: "Admin" }];
+
 
 const EMPTY_FORM = {
   firstName: "",
@@ -65,7 +65,7 @@ const EMPTY_FORM = {
   email: "",
   password: "",
   passwordConfirmation: "",
-  role: "USER",
+  role: "USER"
 };
 
 /** User create/edit form shared between both drawer modes. */
@@ -84,23 +84,23 @@ function UserFormFields({ form, setForm, mode }) {
         <TextField
           label="First name"
           value={form.firstName}
-          onChange={update("firstName")}
-        />
+          onChange={update("firstName")} />
+        
         <TextField
           label="Last name"
           value={form.lastName}
-          onChange={update("lastName")}
-        />
+          onChange={update("lastName")} />
+        
       </ResponsiveGrid>
 
-      {mode === "create" && (
-        <TextField
-          label="Email"
-          type="email"
-          value={form.email}
-          onChange={update("email")}
-        />
-      )}
+      {mode === "create" &&
+      <TextField
+        label="Email"
+        type="email"
+        value={form.email}
+        onChange={update("email")} />
+
+      }
 
       <ResponsiveGrid columns={{ base: 1, sm: 2 }} gap={3}>
         <TextField
@@ -108,48 +108,48 @@ function UserFormFields({ form, setForm, mode }) {
           type={hideA ? "password" : "text"}
           icon={<Lock size={16} />}
           suffix={
-            <IconButton
-              size="sm"
-              variant="ghost"
-              label={hideA ? "Show password" : "Hide password"}
-              icon={hideA ? <EyeOff size={16} /> : <Eye size={16} />}
-              onClick={() => setHideA((s) => !s)}
-            />
+          <IconButton
+            size="sm"
+            variant="ghost"
+            label={hideA ? "Show password" : "Hide password"}
+            icon={hideA ? <EyeOff size={16} /> : <Eye size={16} />}
+            onClick={() => setHideA((s) => !s)} />
+
           }
           value={form.password || ""}
-          onChange={update("password")}
-        />
+          onChange={update("password")} />
+        
         <TextField
           label="Confirm password"
           type={hideB ? "password" : "text"}
           icon={<Lock size={16} />}
           suffix={
-            <IconButton
-              size="sm"
-              variant="ghost"
-              label={hideB ? "Show password" : "Hide password"}
-              icon={hideB ? <EyeOff size={16} /> : <Eye size={16} />}
-              onClick={() => setHideB((s) => !s)}
-            />
+          <IconButton
+            size="sm"
+            variant="ghost"
+            label={hideB ? "Show password" : "Hide password"}
+            icon={hideB ? <EyeOff size={16} /> : <Eye size={16} />}
+            onClick={() => setHideB((s) => !s)} />
+
           }
           value={form.passwordConfirmation || ""}
-          onChange={update("passwordConfirmation")}
-        />
+          onChange={update("passwordConfirmation")} />
+        
       </ResponsiveGrid>
 
-      {form.password ? (
-        <PasswordStrength value={form.password} />
-      ) : null}
+      {form.password ?
+      <PasswordStrength value={form.password} /> :
+      null}
 
       <FormField label="Role">
         <Select
           value={form.role}
           onChange={(v) => setForm((prev) => ({ ...prev, role: v }))}
-          options={ROLE_OPTIONS}
-        />
+          options={ROLE_OPTIONS} />
+        
       </FormField>
-    </ResponsiveStack>
-  );
+    </ResponsiveStack>);
+
 }
 
 export default function UsersPage() {
@@ -159,10 +159,10 @@ export default function UsersPage() {
     data: users,
     isLoading,
     error,
-    refresh,
+    refresh
   } = useEnsureData("users", fetchUsers, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
-    ttl: 3 * 60 * 1000,
+    ttl: 3 * 60 * 1000
   });
 
   const [search, setSearch] = useState("");
@@ -188,7 +188,7 @@ export default function UsersPage() {
       email: user.email || "",
       password: "",
       passwordConfirmation: "",
-      role: user.role || "USER",
+      role: user.role || "USER"
     });
     setEditingId(user.id);
     setDrawerMode("edit");
@@ -209,8 +209,8 @@ export default function UsersPage() {
       return (
         u.email?.toLowerCase().includes(q) ||
         u.firstName?.toLowerCase().includes(q) ||
-        u.lastName?.toLowerCase().includes(q)
-      );
+        u.lastName?.toLowerCase().includes(q));
+
     });
   }, [users, search, roleFilter]);
 
@@ -219,7 +219,7 @@ export default function UsersPage() {
     return {
       total: list.length,
       admins: list.filter((u) => u.role === "ADMIN").length,
-      users: list.filter((u) => u.role === "USER").length,
+      users: list.filter((u) => u.role === "USER").length
     };
   }, [users]);
 
@@ -229,34 +229,34 @@ export default function UsersPage() {
       description: "Manage who can sign into Infinibay and what they can do.",
       icon: <UsersIcon size={20} />,
       sections: [
-        {
-          id: "creating",
-          title: "Creating users",
-          icon: <UserPlus size={16} />,
-          content: (
-            <p>
+      {
+        id: "creating",
+        title: "Creating users",
+        icon: <UserPlus size={16} />,
+        content:
+        <p>
               Click <strong>Add user</strong> to open a drawer with first
               name, last name, email, password and role.
             </p>
-          ),
-        },
-        {
-          id: "roles",
-          title: "Roles",
-          icon: <Shield size={16} />,
-          content: (
-            <p>
+
+      },
+      {
+        id: "roles",
+        title: "Roles",
+        icon: <Shield size={16} />,
+        content:
+        <p>
               <strong>Admin</strong> can manage all resources and users.{" "}
               <strong>User</strong> can only operate the desktops assigned to them.
             </p>
-          ),
-        },
-      ],
+
+      }],
+
       quickTips: [
-        "Click a row to open the edit drawer",
-        "Search filters by name and email",
-        "Select rows to delete in bulk",
-      ],
+      "Click a row to open the edit drawer",
+      "Search filters by name and email",
+      "Select rows to delete in bulk"]
+
     }),
     []
   );
@@ -264,13 +264,13 @@ export default function UsersPage() {
   usePageHeader(
     {
       breadcrumbs: [
-        { label: "Home", href: "/" },
-        { label: "Users", isCurrent: true },
-      ],
+      { label: "Home", href: "/" },
+      { label: "Users", isCurrent: true }],
+
       title: "Users",
       actions: [],
       helpConfig,
-      helpTooltip: "Users help",
+      helpTooltip: "Users help"
     },
     []
   );
@@ -317,12 +317,12 @@ export default function UsersPage() {
       firstName: form.firstName,
       lastName: form.lastName,
       role: form.role,
-      ...(form.password && form.passwordConfirmation
-        ? {
-            password: form.password,
-            passwordConfirmation: form.passwordConfirmation,
-          }
-        : {}),
+      ...(form.password && form.passwordConfirmation ?
+      {
+        password: form.password,
+        passwordConfirmation: form.passwordConfirmation
+      } :
+      {})
     };
     setSaving(true);
     try {
@@ -361,16 +361,16 @@ export default function UsersPage() {
 
   const columns = useMemo(
     () => [
-      {
-        key: "name",
-        label: "User",
-        sortable: true,
-        render: (row) => (
-          <ResponsiveStack direction="row" gap={3} align="center">
+    {
+      id: "name",
+      header: "User",
+      sortable: true,
+      cell: ({ row }) =>
+      <ResponsiveStack direction="row" gap={3} align="center">
             <Avatar
-              name={`${row.firstName || ""} ${row.lastName || ""}`.trim() || row.email}
-              size="sm"
-            />
+          name={`${row.firstName || ""} ${row.lastName || ""}`.trim() || row.email}
+          size="sm" />
+        
             <ResponsiveStack direction="col" gap={0}>
               <span>
                 {`${row.firstName || ""} ${row.lastName || ""}`.trim() || "—"}
@@ -378,69 +378,69 @@ export default function UsersPage() {
               <span style={{ fontSize: 12, opacity: 0.6 }}>{row.email}</span>
             </ResponsiveStack>
           </ResponsiveStack>
-        ),
-      },
-      {
-        key: "role",
-        label: "Role",
-        width: 120,
-        sortable: true,
-        render: (row) =>
-          row.role === "ADMIN" ? (
-            <RoleBadge role="admin" />
-          ) : (
-            <RoleBadge role="viewer" label="User" />
-          ),
-      },
-      {
-        key: "actions",
-        label: "",
-        width: 120,
-        align: "right",
-        render: (row) => (
-          <ResponsiveStack
-            direction="row"
-            gap={1}
-            justify="end"
-            align="center"
-          >
+
+    },
+    {
+      id: "role",
+      header: "Role",
+      width: 120,
+      sortable: true,
+      cell: ({ row }) =>
+      row.role === "ADMIN" ?
+      <RoleBadge role="admin" /> :
+
+      <RoleBadge role="viewer" label="User" />
+
+    },
+    {
+      id: "actions",
+      header: "",
+      width: 120,
+      align: "right",
+      cell: ({ row }) =>
+      <ResponsiveStack
+        direction="row"
+        gap={1}
+        justify="end"
+        align="center">
+        
             <span onClick={(e) => e.stopPropagation()}>
               <IconButton
-                size="sm"
-                variant="ghost"
-                label="Edit user"
-                icon={<Pencil size={14} />}
-                onClick={() => openEdit(row)}
-              />
+            size="sm"
+            variant="ghost"
+            label="Edit user"
+            icon={<Pencil size={14} />}
+            onClick={() => openEdit(row)} />
+          
             </span>
             <span onClick={(e) => e.stopPropagation()}>
               <IconButton
-                size="sm"
-                variant="ghost"
-                label="Delete user"
-                icon={<Trash2 size={14} />}
-                onClick={() => setDeleteTarget(row)}
-              />
+            size="sm"
+            variant="ghost"
+            label="Delete user"
+            icon={<Trash2 size={14} />}
+            onClick={() => setDeleteTarget(row)} />
+          
             </span>
           </ResponsiveStack>
-        ),
-      },
-    ],
+
+    }],
+
     []
   );
 
   debug.info("Users page:", {
     count: users?.length || 0,
     filteredCount: filtered.length,
-    selected: selected.length,
+    selected: selected.length
   });
 
-  const countText = stats.total === 0
-    ? null
-    : [
-        `${stats.total}`,
-        stats.admins > 0 ? `${stats.admins} ${stats.admins === 1 ? "admin" : "admins"}` : null,
-      ].filter(Boolean).join(" · ");
+  const countText = stats.total === 0 ?
+  null :
+  [
+  `${stats.total}`,
+  stats.admins > 0 ? `${stats.admins} ${stats.admins === 1 ? "admin" : "admins"}` : null].
+  filter(Boolean).join(" · ");
 
   return (
     <Page size="xl" gap="lg">
@@ -448,125 +448,126 @@ export default function UsersPage() {
         title="Users"
         count={countText}
         secondary={
-          <IconButton
-            size="sm"
-            variant="ghost"
-            label="Refresh"
-            icon={<RefreshCw size={14} />}
-            onClick={refresh}
-            disabled={isLoading}
-          />
+        <IconButton
+          size="sm"
+          variant="ghost"
+          label="Refresh"
+          icon={<RefreshCw size={14} />}
+          onClick={refresh}
+          disabled={isLoading} />
+
         }
         primary={
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<UserPlus size={14} />}
-            onClick={openCreate}
-          >
+        <Button
+          size="sm"
+          variant="primary"
+          icon={<UserPlus size={14} />}
+          onClick={openCreate}>
+          
             New User
           </Button>
         }
         filters={
-          <>
+        <>
             <div style={{ flex: "1 1 320px", minWidth: 0 }}>
               <TextField
-                placeholder="Search users by name or email…"
-                icon={<Search size={16} />}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              placeholder="Search users by name or email…"
+              icon={<Search size={16} />}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)} />
+            
             </div>
             <div style={{ flex: "0 0 220px", minWidth: 0 }}>
               <Select
-                value={roleFilter}
-                onChange={setRoleFilter}
-                options={ROLE_FILTER_OPTIONS}
-              />
+              value={roleFilter}
+              onChange={setRoleFilter}
+              options={ROLE_FILTER_OPTIONS} />
+            
             </div>
-            {selected.length > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                icon={<Trash2 size={14} />}
-                onClick={() => setDeleteTarget("bulk")}
-              >
+            {selected.length > 0 &&
+          <Button
+            variant="destructive"
+            size="sm"
+            icon={<Trash2 size={14} />}
+            onClick={() => setDeleteTarget("bulk")}>
+            
                 Delete {selected.length}
               </Button>
-            )}
+          }
           </>
-        }
-      />
+        } />
+      
 
-      {error && (
-        <Alert
-          tone="danger"
-          title="Couldn't load users"
-          actions={
-            <Button size="sm" onClick={refresh} icon={<RefreshCw size={16} />}>
+      {error &&
+      <Alert
+        tone="danger"
+        title="Couldn't load users"
+        actions={
+        <Button size="sm" onClick={refresh} icon={<RefreshCw size={16} />}>
               Retry
             </Button>
-          }
-        >
+        }>
+        
           {String(error.message || error)}
         </Alert>
-      )}
+      }
 
-      {isLoading && !users?.length ? (
-        <ResponsiveStack direction="row" gap={3} align="center" justify="center">
+      {isLoading && !users?.length ?
+      <ResponsiveStack direction="row" gap={3} align="center" justify="center">
           <Spinner />
           <span>Loading users…</span>
-        </ResponsiveStack>
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={<UsersIcon size={18} />}
-          title={users?.length ? "No matches" : "No users yet"}
-          description={
-            users?.length
-              ? "No users match the current search or filter."
-              : "Create the first user to get started."
-          }
-          actions={
-            <Button
-              size="sm"
-              variant="primary"
-              icon={<UserPlus size={14} />}
-              onClick={openCreate}
-            >
+        </ResponsiveStack> :
+      filtered.length === 0 ?
+      <EmptyState
+        icon={<UsersIcon size={18} />}
+        title={users?.length ? "No matches" : "No users yet"}
+        description={
+        users?.length ?
+        "No users match the current search or filter." :
+        "Create the first user to get started."
+        }
+        actions={
+        <Button
+          size="sm"
+          variant="primary"
+          icon={<UserPlus size={14} />}
+          onClick={openCreate}>
+          
               New User
             </Button>
-          }
-        />
-      ) : (
-        <RowContextMenu
-          rows={filtered}
-          labelFor={(r) => r.email || r.namespace || "User"}
-          buildItems={(r) => [
-            {
-              label: "Edit",
-              icon: <Pencil size={14} />,
-              onSelect: () => openEdit(r),
-            },
-            { separator: true },
-            {
-              label: "Delete",
-              icon: <Trash2 size={14} />,
-              danger: true,
-              onSelect: () => setDeleteTarget(r),
-            },
-          ]}
-        >
+        } /> :
+
+
+      <RowContextMenu
+        rows={filtered}
+        labelFor={(r) => r.email || r.namespace || "User"}
+        buildItems={(r) => [
+        {
+          label: "Edit",
+          icon: <Pencil size={14} />,
+          onSelect: () => openEdit(r)
+        },
+        { separator: true },
+        {
+          label: "Delete",
+          icon: <Trash2 size={14} />,
+          danger: true,
+          onSelect: () => setDeleteTarget(r)
+        }]
+        }>
+        
           <DataTable
-            rows={filtered}
-            columns={columns}
-            rowKey={(r) => r.id}
-            selectable
-            selected={selected}
-            onSelectionChange={setSelected}
-            onRowClick={openEdit}
-          />
+          rows={filtered}
+          columns={columns}
+          rowId={(r) => r.id}
+          selectable
+          selected={selected}
+          onSelectionChange={setSelected}
+          onRowClick={openEdit}
+          defaultDensity="compact" />
+        
         </RowContextMenu>
-      )}
+      }
 
       {/* Create/Edit Drawer */}
       <Drawer
@@ -576,25 +577,25 @@ export default function UsersPage() {
         size={440}
         title={drawerMode === "create" ? "Add user" : "Edit user"}
         footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
+        <ResponsiveStack direction="row" gap={2} justify="end">
             <Button
-              variant="secondary"
-              onClick={closeDrawer}
-              disabled={saving}
-            >
+            variant="secondary"
+            onClick={closeDrawer}
+            disabled={saving}>
+            
               Cancel
             </Button>
             <Button onClick={handleSave} loading={saving} disabled={saving}>
               {drawerMode === "create" ? "Create user" : "Save changes"}
             </Button>
           </ResponsiveStack>
-        }
-      >
+        }>
+        
         <UserFormFields
           form={drawerForm}
           setForm={setDrawerForm}
-          mode={drawerMode || "create"}
-        />
+          mode={drawerMode || "create"} />
+        
       </Drawer>
 
       {/* Delete confirmation */}
@@ -603,7 +604,7 @@ export default function UsersPage() {
         onClose={() => setDeleteTarget(null)}
         size="sm"
         title={
-          <ResponsiveStack direction="row" gap={2} align="center">
+        <ResponsiveStack direction="row" gap={2} align="center">
             <Trash2 size={16} />
             <span>
               Delete{" "}
@@ -612,29 +613,29 @@ export default function UsersPage() {
           </ResponsiveStack>
         }
         description={
-          deleteTarget && deleteTarget !== "bulk"
-            ? `Remove ${deleteTarget.firstName || ""} ${deleteTarget.lastName || ""} (${deleteTarget.email})?`
-            : "Remove all selected users?"
+        deleteTarget && deleteTarget !== "bulk" ?
+        `Remove ${deleteTarget.firstName || ""} ${deleteTarget.lastName || ""} (${deleteTarget.email})?` :
+        "Remove all selected users?"
         }
         footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
+        <ResponsiveStack direction="row" gap={2} justify="end">
             <Button
-              variant="secondary"
-              onClick={() => setDeleteTarget(null)}
-            >
+            variant="secondary"
+            onClick={() => setDeleteTarget(null)}>
+            
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               Delete
             </Button>
           </ResponsiveStack>
-        }
-      >
+        }>
+        
         <p style={{ margin: 0, opacity: 0.7 }}>
           This cannot be undone. The account will no longer be able to sign in
           and any desktops they own will be orphaned unless reassigned first.
         </p>
       </Dialog>
-    </Page>
-  );
+    </Page>);
+
 }

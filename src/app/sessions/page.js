@@ -7,8 +7,8 @@ import {
   Badge,
   DataTable,
   ResponsiveStack,
-  StatusDot,
-} from '@infinibay/harbor';
+  StatusDot } from
+'@infinibay/harbor';
 
 import { PageHeader } from '@/components/common/PageHeader';
 import { PreviewBanner } from '@/components/common/PreviewBanner';
@@ -38,67 +38,67 @@ export default function SessionsListPage() {
 
   const columns = useMemo(
     () => [
-      {
-        key: 'user',
-        label: 'User',
-        render: (row) => (
-          <ResponsiveStack direction="row" gap={2} align="center">
+    {
+      id: 'user',
+      header: 'User',
+      cell: ({ row }) =>
+      <ResponsiveStack direction="row" gap={2} align="center">
             <StatusDot status="online" size={8} />
             <ResponsiveStack direction="col" gap={0}>
               <span className="font-medium">{row.userName}</span>
               <span className="text-fg-muted text-xs font-mono">{row.userEmail}</span>
             </ResponsiveStack>
           </ResponsiveStack>
-        ),
-      },
-      {
-        key: 'desktop',
-        label: 'Desktop',
-        width: 140,
-        render: (row) => <span className="font-mono text-sm">{row.desktopName}</span>,
-      },
-      {
-        key: 'host',
-        label: 'Host',
-        width: 100,
-        render: (row) => <span className="font-mono text-xs text-fg-muted">{row.host}</span>,
-      },
-      {
-        key: 'clientIp',
-        label: 'Client',
-        width: 140,
-        render: (row) => <span className="font-mono text-xs">{row.clientIp}</span>,
-      },
-      {
-        key: 'protocol',
-        label: 'Protocol',
-        width: 110,
-        render: (row) => <Badge tone="neutral">{row.protocol}</Badge>,
-      },
-      {
-        key: 'connectedAt',
-        label: 'Duration',
-        width: 100,
-        render: (row) => <span className="font-mono text-xs">{duration(row.connectedAt)}</span>,
-      },
-      {
-        key: 'latencyMs',
-        label: 'Latency',
-        width: 90,
-        align: 'right',
-        render: (row) => (
-          <span
-            className={[
-              'font-mono text-xs',
-              row.latencyMs > 60 ? 'text-warning' : '',
-            ].join(' ')}
-          >
+
+    },
+    {
+      id: 'desktop',
+      header: 'Desktop',
+      width: 140,
+      cell: ({ row }) => <span className="font-mono text-sm">{row.desktopName}</span>
+    },
+    {
+      id: 'host',
+      header: 'Host',
+      width: 100,
+      cell: ({ row }) => <span className="font-mono text-xs text-fg-muted">{row.host}</span>
+    },
+    {
+      id: 'clientIp',
+      header: 'Client',
+      width: 140,
+      cell: ({ row }) => <span className="font-mono text-xs">{row.clientIp}</span>
+    },
+    {
+      id: 'protocol',
+      header: 'Protocol',
+      width: 110,
+      cell: ({ row }) => <Badge tone="neutral">{row.protocol}</Badge>
+    },
+    {
+      id: 'connectedAt',
+      header: 'Duration',
+      width: 100,
+      cell: ({ row }) => <span className="font-mono text-xs">{duration(row.connectedAt)}</span>
+    },
+    {
+      id: 'latencyMs',
+      header: 'Latency',
+      width: 90,
+      align: 'right',
+      cell: ({ row }) =>
+      <span
+        className={[
+        'font-mono text-xs',
+        row.latencyMs > 60 ? 'text-warning' : ''].
+        join(' ')}>
+        
             {row.latencyMs} ms
           </span>
-        ),
-      },
-    ],
-    [],
+
+    }],
+
+    []
   );
 
   return (
@@ -107,16 +107,16 @@ export default function SessionsListPage() {
         <PreviewBanner />
         <PageHeader
           title="Sessions"
-          count={`${LIVE_SESSIONS.length} live`}
-        />
+          count={`${LIVE_SESSIONS.length} live`} />
+        
         <DataTable
           rows={LIVE_SESSIONS}
           columns={columns}
-          rowKey={(r) => r.id}
-          dense
-          onRowClick={(r) => router.push(`/sessions/${r.id}`)}
-        />
+          rowId={(r) => r.id}
+          defaultDensity="compact"
+          onRowClick={(r) => router.push(`/sessions/${r.id}`)} />
+        
       </ResponsiveStack>
-    </Page>
-  );
+    </Page>);
+
 }

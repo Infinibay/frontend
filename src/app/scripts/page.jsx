@@ -1,8 +1,8 @@
-'use client'
+'use client';
 
-import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   FileCode,
   Search,
@@ -12,9 +12,9 @@ import {
   Download,
   RefreshCw,
   AlertCircle,
-  ExternalLink,
-} from 'lucide-react'
-import { RowContextMenu } from '@/components/common/RowContextMenu'
+  ExternalLink } from
+'lucide-react';
+import { RowContextMenu } from '@/components/common/RowContextMenu';
 import {
   Page,
   Button,
@@ -30,68 +30,68 @@ import {
   DataTable,
   SegmentedControl,
   ResponsiveStack,
-  Tooltip,
-} from '@infinibay/harbor'
-import { PageHeader } from '@/components/common/PageHeader'
+  Tooltip } from
+'@infinibay/harbor';
+import { PageHeader } from '@/components/common/PageHeader';
 
-import { useScriptsQuery, useDeleteScriptMutation } from '@/gql/hooks'
-import { usePageHeader } from '@/hooks/usePageHeader'
+import { useScriptsQuery, useDeleteScriptMutation } from '@/gql/hooks';
+import { usePageHeader } from '@/hooks/usePageHeader';
 
 const OS_FILTER_OPTIONS = [
-  { value: 'all', label: 'All OS' },
-  { value: 'windows', label: 'Windows' },
-  { value: 'linux', label: 'Linux' },
-]
+{ value: 'all', label: 'All OS' },
+{ value: 'windows', label: 'Windows' },
+{ value: 'linux', label: 'Linux' }];
+
 
 const CATEGORY_FILTER_OPTIONS = [
-  { value: 'all', label: 'All categories' },
-  { value: 'maintenance', label: 'Maintenance' },
-  { value: 'security', label: 'Security' },
-  { value: 'configuration', label: 'Configuration' },
-  { value: 'monitoring', label: 'Monitoring' },
-]
+{ value: 'all', label: 'All categories' },
+{ value: 'maintenance', label: 'Maintenance' },
+{ value: 'security', label: 'Security' },
+{ value: 'configuration', label: 'Configuration' },
+{ value: 'monitoring', label: 'Monitoring' }];
+
 
 export default function ScriptsPage() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const { data, loading, error, refetch } = useScriptsQuery()
-  const [deleteScript, { loading: deleting }] = useDeleteScriptMutation()
+  const { data, loading, error, refetch } = useScriptsQuery();
+  const [deleteScript, { loading: deleting }] = useDeleteScriptMutation();
 
-  const [search, setSearch] = useState('')
-  const [osFilter, setOsFilter] = useState('all')
-  const [categoryFilter, setCategoryFilter] = useState('all')
-  const [selected, setSelected] = useState([])
-  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [search, setSearch] = useState('');
+  const [osFilter, setOsFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [selected, setSelected] = useState([]);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const scripts = data?.scripts || []
+  const scripts = data?.scripts || [];
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
+    const q = search.trim().toLowerCase();
     return scripts.filter((s) => {
       if (
-        q &&
-        !(
-          s.name?.toLowerCase().includes(q) ||
-          s.description?.toLowerCase().includes(q) ||
-          s.tags?.some((t) => t.toLowerCase().includes(q))
-        )
-      )
-        return false
-      if (osFilter !== 'all' && !s.os?.includes(osFilter)) return false
-      if (categoryFilter !== 'all' && s.category !== categoryFilter) return false
-      return true
-    })
-  }, [scripts, search, osFilter, categoryFilter])
+      q &&
+      !(
+      s.name?.toLowerCase().includes(q) ||
+      s.description?.toLowerCase().includes(q) ||
+      s.tags?.some((t) => t.toLowerCase().includes(q))))
+
+
+      return false;
+      if (osFilter !== 'all' && !s.os?.includes(osFilter)) return false;
+      if (categoryFilter !== 'all' && s.category !== categoryFilter) return false;
+      return true;
+    });
+  }, [scripts, search, osFilter, categoryFilter]);
 
   const stats = useMemo(
     () => ({
       total: scripts.length,
       windows: scripts.filter((s) => s.os?.includes('windows')).length,
       linux: scripts.filter((s) => s.os?.includes('linux')).length,
-      scheduled: scripts.filter((s) => (s.scheduleCount || 0) > 0).length,
+      scheduled: scripts.filter((s) => (s.scheduleCount || 0) > 0).length
     }),
-    [scripts],
-  )
+    [scripts]
+  );
 
   const helpConfig = useMemo(
     () => ({
@@ -99,214 +99,214 @@ export default function ScriptsPage() {
       description: 'Automation scripts that can run on any desktop or be scheduled.',
       icon: <FileCode size={16} />,
       sections: [
-        {
-          id: 'create',
-          title: 'Creating scripts',
-          icon: <FileCode size={14} />,
-          content: (
-            <p>
+      {
+        id: 'create',
+        title: 'Creating scripts',
+        icon: <FileCode size={14} />,
+        content:
+        <p>
               Click <strong>New script</strong> to open the editor where you define
               metadata, inputs and the script body. Content is validated before saving.
             </p>
-          ),
-        },
-        {
-          id: 'filter',
-          title: 'Filtering',
-          icon: <Search size={14} />,
-          content: (
-            <p>
+
+      },
+      {
+        id: 'filter',
+        title: 'Filtering',
+        icon: <Search size={14} />,
+        content:
+        <p>
               Search by name / description / tags. The chip filters narrow by OS and
               category. Everything updates live as you type.
             </p>
-          ),
-        },
-      ],
+
+      }],
+
       quickTips: [
-        'Click any row to open the editor',
-        'Schedules cancel automatically when a script is deleted',
-        'Tags help group related scripts across categories',
-      ],
+      'Click any row to open the editor',
+      'Schedules cancel automatically when a script is deleted',
+      'Tags help group related scripts across categories']
+
     }),
-    [],
-  )
+    []
+  );
 
   usePageHeader(
     {
       breadcrumbs: [
-        { label: 'Home', href: '/' },
-        { label: 'Scripts', isCurrent: true },
-      ],
+      { label: 'Home', href: '/' },
+      { label: 'Scripts', isCurrent: true }],
+
       title: 'Scripts',
       actions: [],
       helpConfig,
-      helpTooltip: 'Scripts help',
+      helpTooltip: 'Scripts help'
     },
-    [],
-  )
+    []
+  );
 
   const handleDelete = async () => {
-    if (!deleteTarget) return
+    if (!deleteTarget) return;
     try {
-      await deleteScript({ variables: { id: deleteTarget.id, force: false } })
-      toast.success(`Deleted "${deleteTarget.name}"`)
-      setDeleteTarget(null)
-      await refetch()
+      await deleteScript({ variables: { id: deleteTarget.id, force: false } });
+      toast.success(`Deleted "${deleteTarget.name}"`);
+      setDeleteTarget(null);
+      await refetch();
     } catch (err) {
       if (/schedule/i.test(err.message || '')) {
         const confirmForce = window.confirm(
-          `"${deleteTarget.name}" has active schedules. Delete anyway and cancel them?`,
-        )
+          `"${deleteTarget.name}" has active schedules. Delete anyway and cancel them?`
+        );
         if (confirmForce) {
           try {
             await deleteScript({
-              variables: { id: deleteTarget.id, force: true },
-            })
-            toast.success('Script deleted and schedules cancelled')
-            setDeleteTarget(null)
-            await refetch()
+              variables: { id: deleteTarget.id, force: true }
+            });
+            toast.success('Script deleted and schedules cancelled');
+            setDeleteTarget(null);
+            await refetch();
           } catch (e2) {
-            toast.error(`Could not delete: ${e2.message}`)
+            toast.error(`Could not delete: ${e2.message}`);
           }
-          return
+          return;
         }
       }
-      toast.error(`Could not delete: ${err.message}`)
+      toast.error(`Could not delete: ${err.message}`);
     }
-  }
+  };
 
   const handleBulkDelete = async () => {
-    if (!selected.length) return
-    const names = selected
-      .map((id) => scripts.find((s) => s.id === id)?.name)
-      .filter(Boolean)
-      .slice(0, 3)
-      .join(', ')
+    if (!selected.length) return;
+    const names = selected.
+    map((id) => scripts.find((s) => s.id === id)?.name).
+    filter(Boolean).
+    slice(0, 3).
+    join(', ');
     if (
-      !window.confirm(
-        `Delete ${selected.length} script${selected.length !== 1 ? 's' : ''}${
-          names ? ` (${names}${selected.length > 3 ? ', …' : ''})` : ''
-        }? Active schedules will be cancelled.`,
-      )
-    )
-      return
+    !window.confirm(
+      `Delete ${selected.length} script${selected.length !== 1 ? 's' : ''}${
+      names ? ` (${names}${selected.length > 3 ? ', …' : ''})` : ''}? Active schedules will be cancelled.`
+
+    ))
+
+    return;
     try {
       await Promise.all(
-        selected.map((id) => deleteScript({ variables: { id, force: true } })),
-      )
-      toast.success(`Deleted ${selected.length} scripts`)
-      setSelected([])
-      await refetch()
+        selected.map((id) => deleteScript({ variables: { id, force: true } }))
+      );
+      toast.success(`Deleted ${selected.length} scripts`);
+      setSelected([]);
+      await refetch();
     } catch (err) {
-      toast.error(`Bulk delete failed: ${err.message}`)
+      toast.error(`Bulk delete failed: ${err.message}`);
     }
-  }
+  };
 
   const columns = useMemo(
     () => [
-      {
-        key: 'name',
-        label: 'Script',
-        sortable: true,
-        render: (row) => (
-          <ResponsiveStack direction="row" gap={2} align="center">
+    {
+      id: 'name',
+      header: 'Script',
+      sortable: true,
+      cell: ({ row }) =>
+      <ResponsiveStack direction="row" gap={2} align="center">
             <IconTile icon={<FileCode size={14} />} tone="sky" size="sm" />
             <ResponsiveStack direction="col" gap={0}>
               <span>{row.name}</span>
               {row.description ? <span>{row.description}</span> : null}
             </ResponsiveStack>
           </ResponsiveStack>
-        ),
-      },
-      {
-        key: 'category',
-        label: 'Category',
-        width: 140,
-        sortable: true,
-        render: (row) =>
-          row.category ? (
-            <Badge tone="neutral">{row.category.toLowerCase()}</Badge>
-          ) : (
-            <span>—</span>
-          ),
-      },
-      {
-        key: 'os',
-        label: 'OS',
-        width: 160,
-        render: (row) =>
-          (row.os || []).length ? (
-            <ResponsiveStack direction="row" gap={1} wrap>
-              {row.os.map((o) => (
-                <Badge
-                  key={o}
-                  tone={o === 'windows' ? 'info' : o === 'linux' ? 'success' : 'neutral'}
-                >
+
+    },
+    {
+      id: 'category',
+      header: 'Category',
+      width: 140,
+      sortable: true,
+      cell: ({ row }) =>
+      row.category ?
+      <Badge tone="neutral">{row.category.toLowerCase()}</Badge> :
+
+      <span>—</span>
+
+    },
+    {
+      id: 'os',
+      header: 'OS',
+      width: 160,
+      cell: ({ row }) =>
+      (row.os || []).length ?
+      <ResponsiveStack direction="row" gap={1} wrap>
+              {row.os.map((o) =>
+        <Badge
+          key={o}
+          tone={o === 'windows' ? 'info' : o === 'linux' ? 'success' : 'neutral'}>
+          
                   {o}
                 </Badge>
-              ))}
-            </ResponsiveStack>
-          ) : (
-            <span>—</span>
-          ),
-      },
-      {
-        key: 'tags',
-        label: 'Tags',
-        render: (row) =>
-          (row.tags || []).length ? (
-            <ResponsiveStack direction="row" gap={1} wrap>
-              {(row.tags || []).slice(0, 3).map((t) => (
-                <Badge key={t} tone="purple">
+        )}
+            </ResponsiveStack> :
+
+      <span>—</span>
+
+    },
+    {
+      id: 'tags',
+      header: 'Tags',
+      cell: ({ row }) =>
+      (row.tags || []).length ?
+      <ResponsiveStack direction="row" gap={1} wrap>
+              {(row.tags || []).slice(0, 3).map((t) =>
+        <Badge key={t} tone="purple">
                   {t}
                 </Badge>
-              ))}
-              {(row.tags || []).length > 3 ? (
-                <Badge tone="neutral">+{row.tags.length - 3}</Badge>
-              ) : null}
-            </ResponsiveStack>
-          ) : (
-            <span>—</span>
-          ),
-      },
-      {
-        key: 'actions',
-        label: '',
-        width: 110,
-        align: 'right',
-        render: (row) => (
-          <div onClick={(e) => e.stopPropagation()}>
+        )}
+              {(row.tags || []).length > 3 ?
+        <Badge tone="neutral">+{row.tags.length - 3}</Badge> :
+        null}
+            </ResponsiveStack> :
+
+      <span>—</span>
+
+    },
+    {
+      id: 'actions',
+      header: '',
+      width: 110,
+      align: 'right',
+      cell: ({ row }) =>
+      <div onClick={(e) => e.stopPropagation()}>
             <ResponsiveStack direction="row" gap={1} justify="end">
               <IconButton
-                size="sm"
-                variant="ghost"
-                label="Edit"
-                icon={<Pencil size={14} />}
-                onClick={() => router.push(`/scripts/${row.id}`)}
-              />
+            size="sm"
+            variant="ghost"
+            label="Edit"
+            icon={<Pencil size={14} />}
+            onClick={() => router.push(`/scripts/${row.id}`)} />
+          
               <IconButton
-                size="sm"
-                variant="ghost"
-                label="Delete"
-                icon={<Trash2 size={14} />}
-                onClick={() => setDeleteTarget(row)}
-              />
+            size="sm"
+            variant="ghost"
+            label="Delete"
+            icon={<Trash2 size={14} />}
+            onClick={() => setDeleteTarget(row)} />
+          
             </ResponsiveStack>
           </div>
-        ),
-      },
-    ],
-    [router],
-  )
 
-  const countText = stats.total === 0
-    ? null
-    : [
-        `${stats.total}`,
-        stats.windows > 0 ? `${stats.windows} Windows` : null,
-        stats.linux > 0 ? `${stats.linux} Linux` : null,
-        stats.scheduled > 0 ? `${stats.scheduled} scheduled` : null,
-      ].filter(Boolean).join(' · ');
+    }],
+
+    [router]
+  );
+
+  const countText = stats.total === 0 ?
+  null :
+  [
+  `${stats.total}`,
+  stats.windows > 0 ? `${stats.windows} Windows` : null,
+  stats.linux > 0 ? `${stats.linux} Linux` : null,
+  stats.scheduled > 0 ? `${stats.scheduled} scheduled` : null].
+  filter(Boolean).join(' · ');
 
   return (
     <Page size="xl" gap={6}>
@@ -314,186 +314,187 @@ export default function ScriptsPage() {
         title="Scripts"
         count={countText}
         secondary={
-          <ResponsiveStack direction="row" gap={1} align="center">
+        <ResponsiveStack direction="row" gap={1} align="center">
             <IconButton
-              size="sm"
-              variant="ghost"
-              label="Refresh"
-              icon={<RefreshCw size={14} />}
-              onClick={() => refetch()}
-              disabled={loading}
-            />
+            size="sm"
+            variant="ghost"
+            label="Refresh"
+            icon={<RefreshCw size={14} />}
+            onClick={() => refetch()}
+            disabled={loading} />
+          
             <IconButton
-              size="sm"
-              variant="ghost"
-              label="Import — coming soon"
-              icon={<Download size={14} />}
-              disabled
-            />
+            size="sm"
+            variant="ghost"
+            label="Import — coming soon"
+            icon={<Download size={14} />}
+            disabled />
+          
           </ResponsiveStack>
         }
         primary={
-          <Tooltip content="New Script">
+        <Tooltip content="New Script">
             <span>
               <Button
-                size="sm"
-                variant="primary"
-                icon={<Plus size={14} />}
-                onClick={() => router.push('/scripts/new')}
-              >
+              size="sm"
+              variant="primary"
+              icon={<Plus size={14} />}
+              onClick={() => router.push('/scripts/new')}>
+              
                 New Script
               </Button>
             </span>
           </Tooltip>
         }
         filters={
-          <>
+        <>
             <SearchField
-              placeholder="Search name, description, tags…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            placeholder="Search name, description, tags…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)} />
+          
             <SegmentedControl
-              items={OS_FILTER_OPTIONS}
-              value={osFilter}
-              onChange={setOsFilter}
-              size="sm"
-            />
+            items={OS_FILTER_OPTIONS}
+            value={osFilter}
+            onChange={setOsFilter}
+            size="sm" />
+          
             <Select
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-              options={CATEGORY_FILTER_OPTIONS}
-            />
-            {selected.length > 0 ? (
-              <Button
-                variant="destructive"
-                size="sm"
-                icon={<Trash2 size={14} />}
-                onClick={handleBulkDelete}
-              >
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            options={CATEGORY_FILTER_OPTIONS} />
+          
+            {selected.length > 0 ?
+          <Button
+            variant="destructive"
+            size="sm"
+            icon={<Trash2 size={14} />}
+            onClick={handleBulkDelete}>
+            
                 Delete {selected.length}
-              </Button>
-            ) : null}
+              </Button> :
+          null}
           </>
-        }
-      />
+        } />
+      
 
-      {error ? (
-        <Alert
-          tone="danger"
-          title="Couldn't load scripts"
-          actions={
-            <Button size="sm" icon={<RefreshCw size={14} />} onClick={() => refetch()}>
+      {error ?
+      <Alert
+        tone="danger"
+        title="Couldn't load scripts"
+        actions={
+        <Button size="sm" icon={<RefreshCw size={14} />} onClick={() => refetch()}>
               Retry
             </Button>
-          }
-        >
+        }>
+        
           {String(error.message || error)}
-        </Alert>
-      ) : null}
+        </Alert> :
+      null}
 
-      {loading && scripts.length === 0 ? (
-        <ResponsiveStack direction="row" gap={2} align="center" justify="center">
+      {loading && scripts.length === 0 ?
+      <ResponsiveStack direction="row" gap={2} align="center" justify="center">
           <Spinner />
           <span>Loading scripts…</span>
-        </ResponsiveStack>
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={<FileCode size={18} />}
-          title={scripts.length ? 'No matches' : 'No scripts yet'}
-          description={
-            scripts.length
-              ? 'No scripts match the current search or filters.'
-              : 'Create your first automation script to see it here.'
-          }
-          actions={
-            scripts.length === 0 ? (
-              <Tooltip content="New Script">
+        </ResponsiveStack> :
+      filtered.length === 0 ?
+      <EmptyState
+        icon={<FileCode size={18} />}
+        title={scripts.length ? 'No matches' : 'No scripts yet'}
+        description={
+        scripts.length ?
+        'No scripts match the current search or filters.' :
+        'Create your first automation script to see it here.'
+        }
+        actions={
+        scripts.length === 0 ?
+        <Tooltip content="New Script">
                 <span>
                   <Button
-                    size="sm"
-                    variant="primary"
-                    icon={<Plus size={14} />}
-                    onClick={() => router.push('/scripts/new')}
-                  >
+              size="sm"
+              variant="primary"
+              icon={<Plus size={14} />}
+              onClick={() => router.push('/scripts/new')}>
+              
                     New Script
                   </Button>
                 </span>
-              </Tooltip>
-            ) : null
-          }
-        />
-      ) : (
-        <RowContextMenu
-          rows={filtered}
-          labelFor={(r) => r.name}
-          buildItems={(r) => [
-            {
-              label: 'Open',
-              icon: <ExternalLink size={14} />,
-              onSelect: () => router.push(`/scripts/${r.id}`),
-            },
-            { separator: true },
-            {
-              label: 'Delete',
-              icon: <Trash2 size={14} />,
-              danger: true,
-              onSelect: () => setDeleteTarget(r),
-            },
-          ]}
-        >
+              </Tooltip> :
+        null
+        } /> :
+
+
+      <RowContextMenu
+        rows={filtered}
+        labelFor={(r) => r.name}
+        buildItems={(r) => [
+        {
+          label: 'Open',
+          icon: <ExternalLink size={14} />,
+          onSelect: () => router.push(`/scripts/${r.id}`)
+        },
+        { separator: true },
+        {
+          label: 'Delete',
+          icon: <Trash2 size={14} />,
+          danger: true,
+          onSelect: () => setDeleteTarget(r)
+        }]
+        }>
+        
           <DataTable
-            rows={filtered}
-            columns={columns}
-            rowKey={(r) => r.id}
-            selectable
-            selected={selected}
-            onSelectionChange={setSelected}
-            onRowClick={(row) => router.push(`/scripts/${row.id}`)}
-          />
+          rows={filtered}
+          columns={columns}
+          rowId={(r) => r.id}
+          selectable
+          selected={selected}
+          onSelectionChange={setSelected}
+          onRowClick={(row) => router.push(`/scripts/${row.id}`)}
+          defaultDensity="compact" />
+        
         </RowContextMenu>
-      )}
+      }
 
       <Dialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         size="sm"
         title={
-          <ResponsiveStack direction="row" gap={2} align="center">
+        <ResponsiveStack direction="row" gap={2} align="center">
             <AlertCircle size={16} />
             <span>Delete script</span>
           </ResponsiveStack>
         }
         description={
-          deleteTarget
-            ? `Remove "${deleteTarget.name}"? Any active schedules will be cancelled.`
-            : ''
+        deleteTarget ?
+        `Remove "${deleteTarget.name}"? Any active schedules will be cancelled.` :
+        ''
         }
         footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
+        <ResponsiveStack direction="row" gap={2} justify="end">
             <Button
-              variant="secondary"
-              onClick={() => setDeleteTarget(null)}
-              disabled={deleting}
-            >
+            variant="secondary"
+            onClick={() => setDeleteTarget(null)}
+            disabled={deleting}>
+            
               Cancel
             </Button>
             <Button
-              variant="destructive"
-              onClick={handleDelete}
-              loading={deleting}
-              disabled={deleting}
-            >
+            variant="destructive"
+            onClick={handleDelete}
+            loading={deleting}
+            disabled={deleting}>
+            
               Delete
             </Button>
           </ResponsiveStack>
-        }
-      >
+        }>
+        
         <p>
           Existing execution history is kept. The script body and its schedules are
           removed for good.
         </p>
       </Dialog>
-    </Page>
-  )
+    </Page>);
+
 }

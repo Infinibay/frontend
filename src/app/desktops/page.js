@@ -460,6 +460,7 @@ export default function ComputersPage() {
           onPause={handlePause}
           onStop={handleStop}
           onDelete={handleDelete}
+          onCapture={(vm) => router.push(`/images?capture=${vm.id}`)}
         />
       )}
 

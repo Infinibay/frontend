@@ -14,8 +14,8 @@ import {
   MenuLabel,
   MenuSeparator,
   ResponsiveStack,
-  Spinner,
-} from '@infinibay/harbor';
+  Spinner } from
+'@infinibay/harbor';
 import {
   Pause,
   Play,
@@ -23,7 +23,8 @@ import {
   ExternalLink,
   Trash2,
   MoreHorizontal,
-} from 'lucide-react';
+  Camera } from
+'lucide-react';
 import { StatusChip } from '@/components/common/StatusChip';
 import { OsBadge } from '@/components/common/OsBadge';
 
@@ -36,8 +37,8 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
     return (
       <span onClick={stop}>
         <Spinner />
-      </span>
-    );
+      </span>);
+
   }
 
   if (status === 'running') {
@@ -51,8 +52,8 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
           onClick={(e) => {
             stop(e);
             onPause?.(vm);
-          }}
-        />
+          }} />
+        
         <IconButton
           size="sm"
           variant="ghost"
@@ -61,10 +62,10 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
           onClick={(e) => {
             stop(e);
             onStop?.(vm);
-          }}
-        />
-      </ButtonGroup>
-    );
+          }} />
+        
+      </ButtonGroup>);
+
   }
 
   return (
@@ -76,9 +77,9 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
       onClick={(e) => {
         stop(e);
         onPlay?.(vm);
-      }}
-    />
-  );
+      }} />);
+
+
 }
 
 /**
@@ -105,83 +106,84 @@ export function DesktopListView({
   onPause,
   onStop,
   onDelete,
+  onCapture
 }) {
   const columns = useMemo(() => {
     const cols = [
-      {
-        key: 'status',
-        label: 'Status',
-        width: 110,
-        render: (row) => <StatusChip status={row.status} />,
-      },
-      {
-        key: 'name',
-        label: 'Name',
-        sortable: true,
-        render: (row) => (
-          <span className="font-medium truncate">{row.name}</span>
-        ),
-      },
-    ];
+    {
+      id: 'status',
+      header: 'Status',
+      width: 110,
+      cell: ({ row }) => <StatusChip status={row.status} />
+    },
+    {
+      id: 'name',
+      header: 'Name',
+      sortable: true,
+      cell: ({ row }) =>
+      <span className="font-medium truncate">{row.name}</span>
+
+    }];
+
 
     if (showDepartment) {
       cols.push({
-        key: 'department',
-        label: 'Department',
+        id: 'department',
+        header: 'Department',
         width: 160,
-        render: (row) => {
+        cell: ({ row }) => {
           const name = row._raw?.department?.name;
-          return name ? (
-            <span className="text-sm">{name}</span>
-          ) : (
-            <span className="text-fg-subtle">—</span>
-          );
-        },
+          return name ?
+          <span className="text-sm">{name}</span> :
+
+          <span className="text-fg-subtle">—</span>;
+
+        }
       });
     }
 
     cols.push(
       {
-        key: 'os',
-        label: 'OS',
+        id: 'os',
+        header: 'OS',
         width: 140,
-        render: (row) => {
+        cell: ({ row }) => {
           const os = row._raw?.configuration?.os || row._raw?.os;
           return os ? <OsBadge os={os} /> : <span className="text-fg-subtle">—</span>;
-        },
+        }
       },
       {
-        key: 'blueprint',
-        label: 'Blueprint',
+        id: 'blueprint',
+        header: 'Blueprint',
         width: 160,
-        render: (row) => {
+        cell: ({ row }) => {
           const tpl = row._raw?.template?.name;
-          return tpl ? (
-            <span className="text-sm">{tpl}</span>
-          ) : (
-            <span className="text-fg-subtle">—</span>
-          );
-        },
+          return tpl ?
+          <span className="text-sm">{tpl}</span> :
+
+          <span className="text-fg-subtle">—</span>;
+
+        }
       },
       {
-        key: 'ip',
-        label: 'IP',
+        id: 'ip',
+        header: 'IP',
         width: 140,
-        render: (row) => {
+        cell: ({ row }) => {
           const ip = row._raw?.localIP || row._raw?.publicIP;
-          return ip ? (
-            <span className="font-mono text-xs">{ip}</span>
-          ) : (
-            <span className="text-fg-subtle">—</span>
-          );
-        },
+          return ip ?
+          <span className="font-mono text-xs">{ip}</span> :
+
+          <span className="text-fg-subtle">—</span>;
+
+        }
       },
       {
-        key: 'actions',
-        label: '',
+        id: 'actions',
+        header: '',
         width: 140,
         align: 'right',
-        render: (row) => {
+        cell: ({ row }) => {
           const raw = row._raw;
           const status = (raw?.status || '').toLowerCase();
           const isRunning = status === 'running';
@@ -197,173 +199,174 @@ export function DesktopListView({
                   pending={pendingActions}
                   onPlay={onPlay}
                   onPause={onPause}
-                  onStop={onStop}
-                />
+                  onStop={onStop} />
+                
                 <Menu
                   side="bottom"
                   align="end"
                   trigger={
-                    <button
-                      type="button"
-                      aria-label="More actions"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-white/10 text-fg-muted hover:text-fg transition-colors"
-                      onClick={stop}
-                    >
+                  <button
+                    type="button"
+                    aria-label="More actions"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-white/10 text-fg-muted hover:text-fg transition-colors"
+                    onClick={stop}>
+                    
                       <MoreHorizontal size={14} />
                     </button>
-                  }
-                >
+                  }>
+                  
                   <MenuLabel>{raw?.name}</MenuLabel>
                   <MenuSeparator />
                   <MenuItem
                     icon={<Play size={14} />}
                     disabled={isPending || isRunning}
-                    onClick={() => onPlay?.(raw)}
-                  >
+                    onClick={() => onPlay?.(raw)}>
+                    
                     Start
                   </MenuItem>
                   <MenuItem
                     icon={<Pause size={14} />}
                     disabled={isPending || !isRunning}
-                    onClick={() => onPause?.(raw)}
-                  >
+                    onClick={() => onPause?.(raw)}>
+                    
                     Pause
                   </MenuItem>
                   <MenuItem
                     icon={<Square size={14} />}
                     disabled={isPending || isStopped}
-                    onClick={() => onStop?.(raw)}
-                  >
+                    onClick={() => onStop?.(raw)}>
+                    
                     Stop
                   </MenuItem>
                   <MenuSeparator />
                   <MenuItem
                     icon={<ExternalLink size={14} />}
-                    onClick={() => onOpen?.(raw)}
-                  >
+                    onClick={() => onOpen?.(raw)}>
+                    
                     Open
                   </MenuItem>
-                  {onDelete ? (
-                    <>
+                  {onDelete ?
+                  <>
                       <MenuSeparator />
                       <MenuItem
-                        icon={<Trash2 size={14} />}
-                        danger
-                        onClick={() => onDelete(raw)}
-                      >
+                      icon={<Trash2 size={14} />}
+                      danger
+                      onClick={() => onDelete(raw)}>
+                      
                         Delete
                       </MenuItem>
-                    </>
-                  ) : null}
+                    </> :
+                  null}
                 </Menu>
               </ResponsiveStack>
-            </div>
-          );
-        },
-      },
+            </div>);
+
+        }
+      }
     );
 
     return cols;
   }, [pendingActions, showDepartment, onPlay, onPause, onStop, onOpen, onDelete]);
 
-  const inner = view === 'grid' ? (
-    <ClusterView
-        hosts={hosts.map((h) => ({
-          ...h,
-          actions: (
-            <InlinePowerButtons
-              vm={h._raw}
-              pending={pendingActions}
-              onPlay={onPlay}
-              onPause={onPause}
-              onStop={onStop}
-            />
-          ),
-        }))}
-        onHostClick={(host) => {
-          const raw = hosts.find((h) => h.id === host.id)?._raw;
-          if (raw && onOpen) onOpen(raw);
-        }}
-        renderHost={(host, card) => {
-          const raw = hosts.find((h) => h.id === host.id)?._raw;
-          if (!raw) return card;
-          const status = (raw.status || '').toLowerCase();
-          const isRunning = status === 'running';
-          const isPaused = status === 'paused' || status === 'suspended';
-          const isStopped = !isRunning && !isPaused;
-          const isPending = !!pendingActions?.[raw.id];
-          return (
-            <ContextMenu
-              menu={
-                <>
+  const inner = view === 'grid' ?
+  <ClusterView
+    hosts={hosts.map((h) => ({
+      ...h,
+      actions:
+      <InlinePowerButtons
+        vm={h._raw}
+        pending={pendingActions}
+        onPlay={onPlay}
+        onPause={onPause}
+        onStop={onStop} />
+
+
+    }))}
+    onHostClick={(host) => {
+      const raw = hosts.find((h) => h.id === host.id)?._raw;
+      if (raw && onOpen) onOpen(raw);
+    }}
+    renderHost={(host, card) => {
+      const raw = hosts.find((h) => h.id === host.id)?._raw;
+      if (!raw) return card;
+      const status = (raw.status || '').toLowerCase();
+      const isRunning = status === 'running';
+      const isPaused = status === 'paused' || status === 'suspended';
+      const isStopped = !isRunning && !isPaused;
+      const isPending = !!pendingActions?.[raw.id];
+      return (
+        <ContextMenu
+          menu={
+          <>
                   <MenuLabel>{raw.name}</MenuLabel>
                   <MenuSeparator />
                   <MenuItem
-                    icon={<Play size={14} />}
-                    disabled={isPending || isRunning}
-                    onClick={() => onPlay?.(raw)}
-                  >
+              icon={<Play size={14} />}
+              disabled={isPending || isRunning}
+              onClick={() => onPlay?.(raw)}>
+              
                     Start
                   </MenuItem>
                   <MenuItem
-                    icon={<Pause size={14} />}
-                    disabled={isPending || !isRunning}
-                    onClick={() => onPause?.(raw)}
-                  >
+              icon={<Pause size={14} />}
+              disabled={isPending || !isRunning}
+              onClick={() => onPause?.(raw)}>
+              
                     Pause
                   </MenuItem>
                   <MenuItem
-                    icon={<Square size={14} />}
-                    disabled={isPending || isStopped}
-                    onClick={() => onStop?.(raw)}
-                  >
+              icon={<Square size={14} />}
+              disabled={isPending || isStopped}
+              onClick={() => onStop?.(raw)}>
+              
                     Stop
                   </MenuItem>
                   <MenuSeparator />
                   <MenuItem
-                    icon={<ExternalLink size={14} />}
-                    onClick={() => onOpen?.(raw)}
-                  >
+              icon={<ExternalLink size={14} />}
+              onClick={() => onOpen?.(raw)}>
+              
                     Open
                   </MenuItem>
-                  {onDelete ? (
-                    <>
+                  {onDelete ?
+            <>
                       <MenuSeparator />
                       <MenuItem
-                        icon={<Trash2 size={14} />}
-                        danger
-                        onClick={() => onDelete(raw)}
-                      >
+                icon={<Trash2 size={14} />}
+                danger
+                onClick={() => onDelete(raw)}>
+                
                         Delete
                       </MenuItem>
-                    </>
-                  ) : null}
+                    </> :
+            null}
                 </>
-              }
-            >
+          }>
+          
               {card}
-            </ContextMenu>
-          );
-        }}
-      />
-    ) : (
-      <TableWithContextMenu
-        hosts={hosts}
-        columns={columns}
-        pendingActions={pendingActions}
-        onOpen={onOpen}
-        onPlay={onPlay}
-        onPause={onPause}
-        onStop={onStop}
-        onDelete={onDelete}
-      />
-    );
+            </ContextMenu>);
+
+    }} /> :
+
+
+  <TableWithContextMenu
+    hosts={hosts}
+    columns={columns}
+    pendingActions={pendingActions}
+    onOpen={onOpen}
+    onPlay={onPlay}
+    onPause={onPause}
+    onStop={onStop}
+    onDelete={onDelete}
+    onCapture={onCapture} />;
+
+
 
   return (
     <ContentSwap id={view} variant="fade" duration={160}>
       {inner}
-    </ContentSwap>
-  );
+    </ContentSwap>);
+
 }
 
 function TableWithContextMenu({
@@ -375,6 +378,7 @@ function TableWithContextMenu({
   onPause,
   onStop,
   onDelete,
+  onCapture
 }) {
   const wrapRef = useRef(null);
   const menuRef = useRef(null);
@@ -427,87 +431,101 @@ function TableWithContextMenu({
       <DataTable
         rows={hosts}
         columns={columns}
-        rowKey={(r) => r.id}
-        dense
+        rowId={(r) => r.id}
+        defaultDensity="compact"
         onRowClick={(row) => {
           const raw = row._raw;
           if (raw && onOpen) onOpen(raw);
-        }}
-      />
-      {ctx && typeof document !== 'undefined'
-        ? createPortal(
-            <div
-              ref={menuRef}
-              style={{
-                position: 'fixed',
-                left: ctx.x,
-                top: ctx.y,
-                zIndex: 9999,
-                minWidth: 200,
-              }}
-              className="rounded-xl bg-[#14141c] border border-white/10 shadow-2xl p-1"
-            >
+        }} />
+      
+      {ctx && typeof document !== 'undefined' ?
+      createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            left: ctx.x,
+            top: ctx.y,
+            zIndex: 9999,
+            minWidth: 200
+          }}
+          className="rounded-xl bg-[#14141c] border border-white/10 shadow-2xl p-1">
+          
               <MenuLabel>{ctx.raw?.name}</MenuLabel>
               <MenuSeparator />
               <MenuItem
-                icon={<Play size={14} />}
-                disabled={isPending || isRunning}
-                onClick={() => {
-                  setCtx(null);
-                  onPlay?.(ctx.raw);
-                }}
-              >
+            icon={<Play size={14} />}
+            disabled={isPending || isRunning}
+            onClick={() => {
+              setCtx(null);
+              onPlay?.(ctx.raw);
+            }}>
+            
                 Start
               </MenuItem>
               <MenuItem
-                icon={<Pause size={14} />}
-                disabled={isPending || !isRunning}
-                onClick={() => {
-                  setCtx(null);
-                  onPause?.(ctx.raw);
-                }}
-              >
+            icon={<Pause size={14} />}
+            disabled={isPending || !isRunning}
+            onClick={() => {
+              setCtx(null);
+              onPause?.(ctx.raw);
+            }}>
+            
                 Pause
               </MenuItem>
               <MenuItem
-                icon={<Square size={14} />}
-                disabled={isPending || isStopped}
-                onClick={() => {
-                  setCtx(null);
-                  onStop?.(ctx.raw);
-                }}
-              >
+            icon={<Square size={14} />}
+            disabled={isPending || isStopped}
+            onClick={() => {
+              setCtx(null);
+              onStop?.(ctx.raw);
+            }}>
+            
                 Stop
               </MenuItem>
               <MenuSeparator />
               <MenuItem
-                icon={<ExternalLink size={14} />}
-                onClick={() => {
-                  setCtx(null);
-                  onOpen?.(ctx.raw);
-                }}
-              >
+            icon={<ExternalLink size={14} />}
+            onClick={() => {
+              setCtx(null);
+              onOpen?.(ctx.raw);
+            }}>
+            
                 Open
               </MenuItem>
-              {onDelete ? (
-                <>
+              {onCapture ?
+          <>
                   <MenuSeparator />
                   <MenuItem
-                    icon={<Trash2 size={14} />}
-                    danger
-                    onClick={() => {
-                      setCtx(null);
-                      onDelete(ctx.raw);
-                    }}
-                  >
+              icon={<Camera size={14} />}
+              onClick={() => {
+                setCtx(null);
+                onCapture(ctx.raw);
+              }}>
+              
+                    Capture as Golden Image
+                  </MenuItem>
+                </> :
+          null}
+              {onDelete ?
+          <>
+                  <MenuSeparator />
+                  <MenuItem
+              icon={<Trash2 size={14} />}
+              danger
+              onClick={() => {
+                setCtx(null);
+                onDelete(ctx.raw);
+              }}>
+              
                     Delete
                   </MenuItem>
-                </>
-              ) : null}
+                </> :
+          null}
             </div>,
-            document.body
-          )
-        : null}
-    </div>
-  );
+        document.body
+      ) :
+      null}
+    </div>);
+
 }

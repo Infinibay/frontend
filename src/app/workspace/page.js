@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { gql } from '@apollo/client';
 import { useSelector } from 'react-redux';
 import {
   Alert,
@@ -14,13 +15,43 @@ import {
   Skeleton,
   StatusDot,
 } from '@infinibay/harbor';
-import { Monitor, AlertCircle, RefreshCw, Play } from 'lucide-react';
+import { Monitor, AlertCircle, RefreshCw, Play, Layers } from 'lucide-react';
 
+import client from '@/apollo-client';
 import { fetchVms } from '@/state/slices/vms';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import { selectUser } from '@/state/slices/auth';
 import { openSpiceClient } from '@/utils/spiceConnect';
 import { toast } from '@/hooks/use-toast';
+
+const POOLS_QUERY = gql`
+  query WorkspacePools {
+    pools {
+      id
+      name
+      type
+      draining
+      currentSize
+      sizeMax
+      departmentId
+    }
+  }
+`;
+
+const CONNECT_POOL = gql`
+  mutation ConnectToPool($poolId: ID!) { connectToPool(poolId: $poolId) }
+`;
+
+const MACHINE_QUERY = gql`
+  query WorkspaceMachine($id: String!) {
+    machine(id: $id) {
+      id
+      name
+      status
+      configuration
+    }
+  }
+`;
 
 function statusMeta(status) {
   const s = String(status || '').toLowerCase();
@@ -99,6 +130,50 @@ function DesktopTile({ desktop }) {
   );
 }
 
+function PoolTile({ pool, onConnect, connecting }) {
+  const atCapacity = pool.currentSize >= pool.sizeMax;
+  const disabled = pool.draining || (atCapacity && pool.currentSize === 0);
+  return (
+    <Card
+      variant="default"
+      title={
+        <ResponsiveStack direction="row" gap={2} align="center">
+          <Layers size={14} />
+          <span>{pool.name}</span>
+        </ResponsiveStack>
+      }
+      description={pool.type === 'persistent' ? 'Persistent pool' : 'Non-persistent pool'}
+      footer={
+        <ResponsiveStack direction="row" gap={2} justify="between" align="center">
+          {pool.draining ? (
+            <Badge tone="warning">draining</Badge>
+          ) : atCapacity ? (
+            <Badge tone="neutral">at capacity</Badge>
+          ) : (
+            <Badge tone="success">available</Badge>
+          )}
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Play size={14} />}
+            disabled={disabled}
+            loading={connecting}
+            onClick={() => onConnect(pool)}
+          >
+            Connect
+          </Button>
+        </ResponsiveStack>
+      }
+    >
+      <ResponsiveStack direction="row" gap={3} wrap>
+        <span className="text-fg-muted">
+          {pool.currentSize}/{pool.sizeMax} desktops
+        </span>
+      </ResponsiveStack>
+    </Card>
+  );
+}
+
 export default function WorkspacePage() {
   const user = useSelector(selectUser);
 
@@ -120,6 +195,76 @@ export default function WorkspacePage() {
       (m) => m.userId === uid || m.user?.id === uid,
     );
   }, [machines, user?.id]);
+
+  const [pools, setPools] = useState([]);
+  const [poolsLoading, setPoolsLoading] = useState(true);
+  const [connectingPoolId, setConnectingPoolId] = useState(null);
+
+  const fetchPools = useCallback(async () => {
+    setPoolsLoading(true);
+    try {
+      const { data } = await client.query({
+        query: POOLS_QUERY,
+        fetchPolicy: 'network-only',
+      });
+      setPools(data?.pools ?? []);
+    } catch (err) {
+      // Don't noisy-toast: pools are a bonus, not critical for the
+      // direct-assignment path that already works.
+      setPools([]);
+    } finally {
+      setPoolsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPools();
+  }, [fetchPools]);
+
+  const handlePoolConnect = useCallback(async (pool) => {
+    setConnectingPoolId(pool.id);
+    try {
+      const { data } = await client.mutate({
+        mutation: CONNECT_POOL,
+        variables: { poolId: pool.id },
+      });
+      const machineId = data?.connectToPool;
+      if (!machineId) throw new Error('No desktop returned from pool');
+
+      // Pull the freshly-assigned machine so we have its SPICE URL.
+      const { data: mdata } = await client.query({
+        query: MACHINE_QUERY,
+        variables: { id: machineId },
+        fetchPolicy: 'network-only',
+      });
+      const m = mdata?.machine;
+      const graphic = typeof m?.configuration?.graphic === 'string' ? m.configuration.graphic : null;
+      if (!graphic || !graphic.startsWith('spice://')) {
+        toast({
+          title: 'Desktop is starting',
+          description: 'Give it a few seconds, then refresh and click Connect again.',
+        });
+        refresh();
+        fetchPools();
+        return;
+      }
+      openSpiceClient(graphic, { vmName: m.name });
+      toast({
+        title: 'Opening SPICE client',
+        description: 'A .vv file was downloaded. Open it with virt-viewer.',
+      });
+      refresh();
+      fetchPools();
+    } catch (err) {
+      toast({
+        title: 'Could not connect',
+        description: err?.message || String(err),
+        variant: 'destructive',
+      });
+    } finally {
+      setConnectingPoolId(null);
+    }
+  }, [refresh, fetchPools]);
 
   return (
     <Page>
@@ -164,7 +309,7 @@ export default function WorkspacePage() {
             <Skeleton height={160} />
             <Skeleton height={160} />
           </ResponsiveGrid>
-        ) : myDesktops.length === 0 ? (
+        ) : myDesktops.length === 0 && pools.length === 0 && !poolsLoading ? (
           <EmptyState
             variant="dashed"
             icon={<Monitor size={18} />}
@@ -172,11 +317,38 @@ export default function WorkspacePage() {
             description="Contact your administrator to get one."
           />
         ) : (
-          <ResponsiveGrid columns={{ base: 1, sm: 2, lg: 3 }} gap={3}>
-            {myDesktops.map((d) => (
-              <DesktopTile key={d.id} desktop={d} />
-            ))}
-          </ResponsiveGrid>
+          <>
+            {myDesktops.length > 0 ? (
+              <ResponsiveStack direction="col" gap={2}>
+                <h2 className="text-sm uppercase tracking-wide text-fg-muted">
+                  My desktops
+                </h2>
+                <ResponsiveGrid columns={{ base: 1, sm: 2, lg: 3 }} gap={3}>
+                  {myDesktops.map((d) => (
+                    <DesktopTile key={d.id} desktop={d} />
+                  ))}
+                </ResponsiveGrid>
+              </ResponsiveStack>
+            ) : null}
+
+            {pools.length > 0 ? (
+              <ResponsiveStack direction="col" gap={2}>
+                <h2 className="text-sm uppercase tracking-wide text-fg-muted">
+                  Available pools
+                </h2>
+                <ResponsiveGrid columns={{ base: 1, sm: 2, lg: 3 }} gap={3}>
+                  {pools.map((p) => (
+                    <PoolTile
+                      key={p.id}
+                      pool={p}
+                      onConnect={handlePoolConnect}
+                      connecting={connectingPoolId === p.id}
+                    />
+                  ))}
+                </ResponsiveGrid>
+              </ResponsiveStack>
+            ) : null}
+          </>
         )}
       </ResponsiveStack>
     </Page>

@@ -6,8 +6,8 @@ import {
   Page,
   Badge,
   DataTable,
-  ResponsiveStack,
-} from '@infinibay/harbor';
+  ResponsiveStack } from
+'@infinibay/harbor';
 import { Globe, Network } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/PageHeader';
@@ -27,57 +27,57 @@ export default function PoliciesListPage() {
 
   const columns = useMemo(
     () => [
-      {
-        key: 'name',
-        label: 'Policy',
-        render: (row) => (
-          <ResponsiveStack direction="row" gap={2} align="center">
-            {row.kind === 'web' ? (
-              <Globe size={14} className="text-fg-muted" />
-            ) : (
-              <Network size={14} className="text-fg-muted" />
-            )}
+    {
+      id: 'name',
+      header: 'Policy',
+      cell: ({ row }) =>
+      <ResponsiveStack direction="row" gap={2} align="center">
+            {row.kind === 'web' ?
+        <Globe size={14} className="text-fg-muted" /> :
+
+        <Network size={14} className="text-fg-muted" />
+        }
             <span className="font-medium">{row.name}</span>
           </ResponsiveStack>
-        ),
-      },
-      {
-        key: 'kind',
-        label: 'Kind',
-        width: 120,
-        render: (row) => (
-          <Badge tone="neutral">
+
+    },
+    {
+      id: 'kind',
+      header: 'Kind',
+      width: 120,
+      cell: ({ row }) =>
+      <Badge tone="neutral">
             {row.kind === 'web' ? 'Web filter' : 'Network'}
           </Badge>
-        ),
-      },
-      {
-        key: 'description',
-        label: 'Description',
-        render: (row) => <span className="text-fg-muted text-sm">{row.description}</span>,
-      },
-      {
-        key: 'appliedTo',
-        label: 'Applied to',
-        width: 110,
-        align: 'right',
-        render: (row) =>
-          row.appliedTo === 0 ? (
-            <span className="text-fg-subtle text-sm">—</span>
-          ) : (
-            <span className="text-sm">
+
+    },
+    {
+      id: 'description',
+      header: 'Description',
+      cell: ({ row }) => <span className="text-fg-muted text-sm">{row.description}</span>
+    },
+    {
+      id: 'appliedTo',
+      header: 'Applied to',
+      width: 110,
+      align: 'right',
+      cell: ({ row }) =>
+      row.appliedTo === 0 ?
+      <span className="text-fg-subtle text-sm">—</span> :
+
+      <span className="text-sm">
               {row.appliedTo} department{row.appliedTo !== 1 ? 's' : ''}
             </span>
-          ),
-      },
-      {
-        key: 'lastModifiedAt',
-        label: 'Modified',
-        width: 100,
-        render: (row) => <span className="text-sm">{timeAgo(row.lastModifiedAt)}</span>,
-      },
-    ],
-    [],
+
+    },
+    {
+      id: 'lastModifiedAt',
+      header: 'Modified',
+      width: 100,
+      cell: ({ row }) => <span className="text-sm">{timeAgo(row.lastModifiedAt)}</span>
+    }],
+
+    []
   );
 
   return (
@@ -86,16 +86,16 @@ export default function PoliciesListPage() {
         <PreviewBanner />
         <PageHeader
           title="Policies"
-          count={`${POLICIES.length} templates`}
-        />
+          count={`${POLICIES.length} templates`} />
+        
         <DataTable
           rows={POLICIES}
           columns={columns}
-          rowKey={(r) => r.id}
-          dense
-          onRowClick={(r) => router.push(`/policies/${r.id}`)}
-        />
+          rowId={(r) => r.id}
+          defaultDensity="compact"
+          onRowClick={(r) => router.push(`/policies/${r.id}`)} />
+        
       </ResponsiveStack>
-    </Page>
-  );
+    </Page>);
+
 }

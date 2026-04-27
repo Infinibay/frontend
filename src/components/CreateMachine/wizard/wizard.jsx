@@ -14,7 +14,6 @@ import {
   Mail,
   Settings,
   Info,
-  Monitor,
   Cpu,
   Zap,
   Package,
@@ -246,14 +245,9 @@ function getStepConfig(stepId, index) {
       description: 'Set machine name, credentials and department',
       icon: User,
     },
-    configuration: {
-      title: 'Operating System',
-      description: 'Choose the operating system and configuration',
-      icon: Monitor,
-    },
-    resources: {
-      title: 'Hardware Resources',
-      description: 'Configure CPU, memory and storage',
+    blueprint: {
+      title: 'Blueprint',
+      description: 'Choose a pre-configured blueprint or build from scratch',
       icon: Cpu,
     },
     gpu: {

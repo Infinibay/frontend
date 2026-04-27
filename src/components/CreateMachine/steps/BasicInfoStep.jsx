@@ -24,7 +24,6 @@ import {
   Building2,
   User,
   Lock,
-  KeyRound,
   Server,
   Eye,
   EyeOff,
@@ -95,8 +94,6 @@ export function BasicInfoStep({ id, departmentId = null }) {
     value: String(dept.id),
     label: dept.name,
   }));
-
-  const isWindows = values.configuration?.os?.startsWith('WINDOWS');
 
   const confirmError =
     passwordMismatch && !getError('confirmPassword')
@@ -246,26 +243,6 @@ export function BasicInfoStep({ id, departmentId = null }) {
           </ResponsiveStack>
         </Card>
 
-        {isWindows && (
-          <Card
-            variant="default"
-            spotlight={false}
-            glow={false}
-            title="Product Key (Optional)"
-            description="If you have a Windows product key, enter it here"
-            leadingIcon={<KeyRound size={18} />}
-            leadingIconTone="amber"
-          >
-            <TextField
-              id="productKey"
-              icon={<KeyRound size={14} />}
-              placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
-              value={stepValues.productKey || ''}
-              onChange={(e) => setValue(`${id}.productKey`, e.target.value)}
-              error={getError('productKey') || undefined}
-            />
-          </Card>
-        )}
     </Page>
   );
 }

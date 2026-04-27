@@ -14,8 +14,8 @@ import {
   ShieldOff,
   Trash2,
   Unlock,
-  Zap,
-} from 'lucide-react';
+  Zap } from
+'lucide-react';
 import {
   Alert,
   Badge,
@@ -31,8 +31,8 @@ import {
   SegmentedControl,
   Skeleton,
   Stat,
-  StatusDot,
-} from '@infinibay/harbor';
+  StatusDot } from
+'@infinibay/harbor';
 
 import { createDebugger } from '@/utils/debug';
 import { ENTITY_TYPES } from '@/config/firewallEntityConfig';
@@ -40,8 +40,8 @@ import { useFirewallData } from '@/hooks/useFirewallData';
 import {
   FIREWALL_TEMPLATES,
   expandTemplateToRules,
-  getFirewallTemplate,
-} from '@/config/firewallTemplates';
+  getFirewallTemplate } from
+'@/config/firewallTemplates';
 import { useUpdateDepartmentFirewallPolicyMutation } from '@/gql/hooks';
 import CreateDepartmentFirewallRuleDialog from './security/CreateDepartmentFirewallRuleDialog';
 
@@ -53,30 +53,30 @@ const POLICY_CONFIG = {
     tone: 'danger',
     icon: Shield,
     tagline:
-      'Blocks every inbound and outbound connection unless a rule explicitly allows it.',
+    'Blocks every inbound and outbound connection unless a rule explicitly allows it.',
     recommended: true,
     configs: [
-      {
-        id: 'allow_outbound',
-        label: 'Allow all outbound',
-        description:
-          'VMs reach the internet freely; inbound still gated by rules.',
-        icon: Globe,
-      },
-      {
-        id: 'allow_internet',
-        label: 'Allow only Internet (80/443 + DNS)',
-        description: 'Minimum web + DNS. Needed for OS install / updates.',
-        icon: Globe,
-      },
-      {
-        id: 'block_all',
-        label: 'Block absolutely everything',
-        description: 'No traffic at all. May break automatic OS installation.',
-        icon: Lock,
-        risky: true,
-      },
-    ],
+    {
+      id: 'allow_outbound',
+      header: 'Allow all outbound',
+      description:
+      'VMs reach the internet freely; inbound still gated by rules.',
+      icon: Globe
+    },
+    {
+      id: 'allow_internet',
+      header: 'Allow only Internet (80/443 + DNS)',
+      description: 'Minimum web + DNS. Needed for OS install / updates.',
+      icon: Globe
+    },
+    {
+      id: 'block_all',
+      header: 'Block absolutely everything',
+      description: 'No traffic at all. May break automatic OS installation.',
+      icon: Lock,
+      risky: true
+    }]
+
   },
   ALLOW_ALL: {
     label: 'Allow all',
@@ -84,54 +84,54 @@ const POLICY_CONFIG = {
     icon: ShieldOff,
     tagline: 'Allows every connection unless a rule explicitly blocks it.',
     configs: [
-      {
-        id: 'none',
-        label: 'No extra blocks',
-        description:
-          'Very permissive. Use only for trusted dev / lab networks.',
-        icon: Unlock,
-        risky: true,
-      },
-      {
-        id: 'block_ssh',
-        label: 'Block SSH / SFTP (22, 21)',
-        description: 'Starter block for remote-login protocols.',
-        icon: Lock,
-      },
-      {
-        id: 'block_smb',
-        label: 'Block SMB (445)',
-        description: 'Starter block for Windows file sharing.',
-        icon: Lock,
-      },
-      {
-        id: 'block_databases',
-        label: 'Block databases',
-        description: 'MySQL / PostgreSQL / MongoDB starter block.',
-        icon: Lock,
-      },
-    ],
-  },
+    {
+      id: 'none',
+      header: 'No extra blocks',
+      description:
+      'Very permissive. Use only for trusted dev / lab networks.',
+      icon: Unlock,
+      risky: true
+    },
+    {
+      id: 'block_ssh',
+      header: 'Block SSH / SFTP (22, 21)',
+      description: 'Starter block for remote-login protocols.',
+      icon: Lock
+    },
+    {
+      id: 'block_smb',
+      header: 'Block SMB (445)',
+      description: 'Starter block for Windows file sharing.',
+      icon: Lock
+    },
+    {
+      id: 'block_databases',
+      header: 'Block databases',
+      description: 'MySQL / PostgreSQL / MongoDB starter block.',
+      icon: Lock
+    }]
+
+  }
 };
 
 const getDefaultConfigFor = (policy) =>
-  policy === 'BLOCK_ALL' ? 'allow_outbound' : 'none';
+policy === 'BLOCK_ALL' ? 'allow_outbound' : 'none';
 
 const shapeRules = (rules = []) =>
-  rules.map((r, i) => ({
-    id: r.id || `row-${i}`,
-    raw: r,
-    name: r.name,
-    direction: r.direction,
-    protocol: r.protocol,
-    port: r.dstPortStart
-      ? r.dstPortEnd && r.dstPortEnd !== r.dstPortStart
-        ? `${r.dstPortStart}–${r.dstPortEnd}`
-        : String(r.dstPortStart)
-      : '—',
-    action: r.action,
-    priority: r.priority ?? 500,
-  }));
+rules.map((r, i) => ({
+  id: r.id || `row-${i}`,
+  raw: r,
+  name: r.name,
+  direction: r.direction,
+  protocol: r.protocol,
+  port: r.dstPortStart ?
+  r.dstPortEnd && r.dstPortEnd !== r.dstPortStart ?
+  `${r.dstPortStart}–${r.dstPortEnd}` :
+  String(r.dstPortStart) :
+  '—',
+  action: r.action,
+  priority: r.priority ?? 500
+}));
 
 const directionArrow = (d) => {
   const v = (d || '').toUpperCase();
@@ -144,7 +144,7 @@ const directionArrow = (d) => {
 function PolicyEditor({ open, onClose, department, onSaved }) {
   const current = department?.firewallPolicy || 'BLOCK_ALL';
   const currentConfig =
-    department?.firewallDefaultConfig || getDefaultConfigFor(current);
+  department?.firewallDefaultConfig || getDefaultConfigFor(current);
 
   const [policy, setPolicy] = useState(current);
   const [config, setConfig] = useState(currentConfig);
@@ -161,7 +161,7 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
   }, [open, current, currentConfig]);
 
   const [updatePolicy, { loading }] =
-    useUpdateDepartmentFirewallPolicyMutation();
+  useUpdateDepartmentFirewallPolicyMutation();
   const policyInfo = POLICY_CONFIG[policy];
   const configInfo = policyInfo.configs.find((c) => c.id === config);
   const risky = !!configInfo?.risky;
@@ -182,8 +182,8 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
       await updatePolicy({
         variables: {
           departmentId: department.id,
-          input: { firewallPolicy: policy, firewallDefaultConfig: config },
-        },
+          input: { firewallPolicy: policy, firewallDefaultConfig: config }
+        }
       });
       toast.success('Firewall policy updated · subnet is restarting');
       onSaved?.();
@@ -201,27 +201,27 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
         side="right"
         size={520}
         title={
-          <ResponsiveStack direction="row" gap={2} align="center">
+        <ResponsiveStack direction="row" gap={2} align="center">
             <Shield size={14} />
             <span>Firewall policy</span>
           </ResponsiveStack>
         }
         footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
+        <ResponsiveStack direction="row" gap={2} justify="end">
             <Button variant="secondary" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
             <Button
-              variant="primary"
-              onClick={() => (risky ? setConfirmOpen(true) : handleSave())}
-              loading={loading}
-              disabled={loading || !hasChanges}
-            >
+            variant="primary"
+            onClick={() => risky ? setConfirmOpen(true) : handleSave()}
+            loading={loading}
+            disabled={loading || !hasChanges}>
+            
               {hasChanges ? 'Apply policy' : 'No changes'}
             </Button>
           </ResponsiveStack>
-        }
-      >
+        }>
+        
         <ResponsiveStack direction="col" gap={5}>
           <span>
             The policy defines what the firewall does with traffic that{' '}
@@ -233,32 +233,32 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
             <span>Policy</span>
             <SegmentedControl
               items={[
-                {
-                  value: 'BLOCK_ALL',
-                  label: (
-                    <ResponsiveStack direction="row" gap={1} align="center">
+              {
+                value: 'BLOCK_ALL',
+                label:
+                <ResponsiveStack direction="row" gap={1} align="center">
                       <Shield size={12} />
                       <span>Block all</span>
                     </ResponsiveStack>
-                  ),
-                },
-                {
-                  value: 'ALLOW_ALL',
-                  label: (
-                    <ResponsiveStack direction="row" gap={1} align="center">
+
+              },
+              {
+                value: 'ALLOW_ALL',
+                label:
+                <ResponsiveStack direction="row" gap={1} align="center">
                       <ShieldOff size={12} />
                       <span>Allow all</span>
                     </ResponsiveStack>
-                  ),
-                },
-              ]}
+
+              }]
+              }
               value={policy}
-              onChange={handlePolicyChange}
-            />
+              onChange={handlePolicyChange} />
+            
             <span>{policyInfo.tagline}</span>
-            {policyInfo.recommended ? (
-              <Badge tone="info">Recommended</Badge>
-            ) : null}
+            {policyInfo.recommended ?
+            <Badge tone="info">Recommended</Badge> :
+            null}
           </ResponsiveStack>
 
           <ResponsiveStack direction="col" gap={2}>
@@ -278,30 +278,30 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
                     leadingIcon={<Icon size={16} />}
                     leadingIconTone={c.risky ? 'amber' : 'sky'}
                     title={
-                      <ResponsiveStack direction="row" gap={2} align="center">
+                    <ResponsiveStack direction="row" gap={2} align="center">
                         <span>{c.label}</span>
                         {c.risky ? <Badge tone="warning">Risky</Badge> : null}
                         {active ? <Check size={12} /> : null}
                       </ResponsiveStack>
                     }
                     description={c.description}
-                    onClick={() => setConfig(c.id)}
-                  />
-                );
+                    onClick={() => setConfig(c.id)} />);
+
+
               })}
             </ResponsiveStack>
           </ResponsiveStack>
 
-          {risky ? (
-            <Alert
-              tone="warning"
-              icon={<AlertTriangle size={14} />}
-              title="Risky default selected"
-            >
+          {risky ?
+          <Alert
+            tone="warning"
+            icon={<AlertTriangle size={14} />}
+            title="Risky default selected">
+            
               This config leaves traffic mostly unguarded. Make sure it matches
               this department&apos;s threat model.
-            </Alert>
-          ) : null}
+            </Alert> :
+          null}
         </ResponsiveStack>
       </Drawer>
 
@@ -312,7 +312,7 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
         title="Apply risky policy?"
         description="The selected default behaviour leaves the network broadly open. Confirm to continue."
         footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
+        <ResponsiveStack direction="row" gap={2} justify="end">
             <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
               Cancel
             </Button>
@@ -320,14 +320,14 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
               Apply anyway
             </Button>
           </ResponsiveStack>
-        }
-      >
+        }>
+        
         <Alert tone="warning" size="sm" icon={<AlertTriangle size={12} />}>
           The subnet will restart immediately. In-flight connections may drop.
         </Alert>
       </Dialog>
-    </>
-  );
+    </>);
+
 }
 
 const DepartmentSecurityTab = ({ department }) => {
@@ -346,15 +346,15 @@ const DepartmentSecurityTab = ({ department }) => {
     error,
     createRule,
     deleteRule,
-    refetch,
+    refetch
   } = useFirewallData({
     entityType: ENTITY_TYPES.DEPARTMENT,
-    entityId: departmentId,
+    entityId: departmentId
   });
 
   const policyKey = department?.firewallPolicy || 'BLOCK_ALL';
   const policyCfgId =
-    department?.firewallDefaultConfig || getDefaultConfigFor(policyKey);
+  department?.firewallDefaultConfig || getDefaultConfigFor(policyKey);
   const policyInfo = POLICY_CONFIG[policyKey];
   const PolicyIcon = policyInfo?.icon || Shield;
   const configInfo = policyInfo?.configs.find((c) => c.id === policyCfgId);
@@ -372,7 +372,7 @@ const DepartmentSecurityTab = ({ department }) => {
             input: {
               action: rule.action,
               description:
-                rule.description || `From template: ${template.displayName}`,
+              rule.description || `From template: ${template.displayName}`,
               direction: rule.direction,
               dstIpAddr: rule.dstIpAddr || null,
               dstIpMask: rule.dstIpMask || null,
@@ -385,13 +385,13 @@ const DepartmentSecurityTab = ({ department }) => {
               srcIpAddr: rule.srcIpAddr || null,
               srcIpMask: rule.srcIpMask || null,
               srcPortEnd: rule.srcPortEnd || null,
-              srcPortStart: rule.srcPortStart || null,
-            },
-          },
+              srcPortStart: rule.srcPortStart || null
+            }
+          }
         });
       }
       toast.success(
-        `${template.displayName} applied · ${templateRules.length} rules added`,
+        `${template.displayName} applied · ${templateRules.length} rules added`
       );
     } catch (err) {
       debug.error('Template apply failed:', err);
@@ -416,14 +416,14 @@ const DepartmentSecurityTab = ({ department }) => {
       let done = 0;
       await Promise.all(
         ids.map((ruleId) =>
-          deleteRule({ variables: { ruleId } }).then(() => {
-            done += 1;
-            setDeleteProgress({ done, total: ids.length });
-          }),
-        ),
+        deleteRule({ variables: { ruleId } }).then(() => {
+          done += 1;
+          setDeleteProgress({ done, total: ids.length });
+        })
+        )
       );
       toast.success(
-        `${ids.length} rule${ids.length !== 1 ? 's' : ''} deleted`,
+        `${ids.length} rule${ids.length !== 1 ? 's' : ''} deleted`
       );
       setSelectedIds([]);
     } catch (err) {
@@ -438,63 +438,63 @@ const DepartmentSecurityTab = ({ department }) => {
 
   const columns = useMemo(
     () => [
-      {
-        key: 'name',
-        label: 'Rule',
-        sortable: true,
-        render: (row) => (
-          <ResponsiveStack direction="row" gap={2} align="center">
+    {
+      id: 'name',
+      header: 'Rule',
+      sortable: true,
+      cell: ({ row }) =>
+      <ResponsiveStack direction="row" gap={2} align="center">
             <StatusDot
-              status={row.action === 'ACCEPT' ? 'online' : 'offline'}
-            />
+          status={row.action === 'ACCEPT' ? 'online' : 'offline'} />
+        
             <span>{row.name || '—'}</span>
           </ResponsiveStack>
-        ),
-      },
-      {
-        key: 'direction',
-        label: 'Dir',
-        width: 64,
-        sortable: true,
-        align: 'center',
-        render: (r) => <span>{directionArrow(r.direction)}</span>,
-      },
-      {
-        key: 'protocol',
-        label: 'Proto',
-        width: 80,
-        sortable: true,
-        render: (r) => <span>{(r.protocol || '').toUpperCase()}</span>,
-      },
-      {
-        key: 'port',
-        label: 'Port',
-        width: 110,
-        sortable: true,
-        render: (r) => <span>{r.port}</span>,
-      },
-      {
-        key: 'action',
-        label: 'Action',
-        width: 110,
-        sortable: true,
-        render: (r) =>
-          r.action === 'ACCEPT' ? (
-            <Badge tone="success">Allow</Badge>
-          ) : (
-            <Badge tone="danger">Block</Badge>
-          ),
-      },
-      {
-        key: 'priority',
-        label: 'Priority',
-        width: 80,
-        sortable: true,
-        align: 'right',
-        render: (r) => <span>{r.priority}</span>,
-      },
-    ],
-    [],
+
+    },
+    {
+      id: 'direction',
+      header: 'Dir',
+      width: 64,
+      sortable: true,
+      align: 'center',
+      cell: ({ row: r }) => <span>{directionArrow(r.direction)}</span>
+    },
+    {
+      id: 'protocol',
+      header: 'Proto',
+      width: 80,
+      sortable: true,
+      cell: ({ row: r }) => <span>{(r.protocol || '').toUpperCase()}</span>
+    },
+    {
+      id: 'port',
+      header: 'Port',
+      width: 110,
+      sortable: true,
+      cell: ({ row: r }) => <span>{r.port}</span>
+    },
+    {
+      id: 'action',
+      header: 'Action',
+      width: 110,
+      sortable: true,
+      cell: ({ row: r }) =>
+      r.action === 'ACCEPT' ?
+      <Badge tone="success">Allow</Badge> :
+
+      <Badge tone="danger">Block</Badge>
+
+    },
+    {
+      id: 'priority',
+      header: 'Priority',
+      width: 80,
+      sortable: true,
+      align: 'right',
+      cell: ({ row: r }) => <span>{r.priority}</span>
+    }],
+
+    []
   );
 
   if (loading && rules.length === 0) {
@@ -503,8 +503,8 @@ const DepartmentSecurityTab = ({ department }) => {
         <Skeleton />
         <Skeleton />
         <Skeleton />
-      </ResponsiveStack>
-    );
+      </ResponsiveStack>);
+
   }
 
   if (error) {
@@ -514,20 +514,20 @@ const DepartmentSecurityTab = ({ department }) => {
           tone="danger"
           title="Firewall unavailable"
           actions={
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<RefreshCw size={14} />}
-              onClick={refetch}
-            >
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<RefreshCw size={14} />}
+            onClick={refetch}>
+            
               Retry
             </Button>
-          }
-        >
+          }>
+          
           We couldn&apos;t load the firewall rules for this department.
         </Alert>
-      </ResponsiveStack>
-    );
+      </ResponsiveStack>);
+
   }
 
   return (
@@ -536,8 +536,8 @@ const DepartmentSecurityTab = ({ department }) => {
         <Alert
           tone="info"
           icon={<Shield size={14} />}
-          title="Inherited by all desktops"
-        >
+          title="Inherited by all desktops">
+          
           Every desktop in{' '}
           <strong>{department?.name || 'this department'}</strong> starts
           with these rules applied on top of its own stack. Individual
@@ -552,7 +552,7 @@ const DepartmentSecurityTab = ({ department }) => {
           leadingIcon={<PolicyIcon size={22} />}
           leadingIconTone={policyInfo.tone === 'danger' ? 'rose' : 'green'}
           title={
-            <ResponsiveStack direction="row" gap={2} align="center" wrap>
+          <ResponsiveStack direction="row" gap={2} align="center" wrap>
               <span>Policy</span>
               <Badge tone={policyInfo.tone === 'danger' ? 'danger' : 'success'}>
                 {policyInfo.label}
@@ -563,33 +563,33 @@ const DepartmentSecurityTab = ({ department }) => {
           }
           description={configInfo?.description || policyInfo.tagline}
           footer={
-            <ResponsiveStack direction="row" justify="end">
+          <ResponsiveStack direction="row" justify="end">
               <Button
-                variant="secondary"
-                size="sm"
-                icon={<Pencil size={14} />}
-                onClick={() => setPolicyOpen(true)}
-              >
+              variant="secondary"
+              size="sm"
+              icon={<Pencil size={14} />}
+              onClick={() => setPolicyOpen(true)}>
+              
                 Edit policy
               </Button>
             </ResponsiveStack>
-          }
-        />
+          } />
+        
 
         <ResponsiveGrid columns={{ base: 1, md: 3 }} gap={4}>
           <Stat
             label="Rules"
             value={rules.length}
-            icon={<Shield size={12} />}
-          />
+            icon={<Shield size={12} />} />
+          
           <Stat
             label="Allow"
-            value={rules.filter((r) => r.action === 'ACCEPT').length}
-          />
+            value={rules.filter((r) => r.action === 'ACCEPT').length} />
+          
           <Stat
             label="Block"
-            value={rules.filter((r) => r.action !== 'ACCEPT').length}
-          />
+            value={rules.filter((r) => r.action !== 'ACCEPT').length} />
+          
         </ResponsiveGrid>
 
         <Card
@@ -599,21 +599,21 @@ const DepartmentSecurityTab = ({ department }) => {
           leadingIcon={<Zap size={18} />}
           leadingIconTone="amber"
           title="Quick security profiles"
-          description="Apply a starter set of rules. Existing rules are kept — nothing is removed."
-        >
+          description="Apply a starter set of rules. Existing rules are kept — nothing is removed.">
+          
           <ResponsiveStack direction="row" gap={2} wrap>
-            {FIREWALL_TEMPLATES.map((tpl) => (
-              <Button
-                key={tpl.id}
-                size="sm"
-                variant={applyingId === tpl.id ? 'primary' : 'secondary'}
-                loading={applyingId === tpl.id}
-                disabled={!!applyingId}
-                onClick={() => applyTemplate(tpl.id)}
-              >
+            {FIREWALL_TEMPLATES.map((tpl) =>
+            <Button
+              key={tpl.id}
+              size="sm"
+              variant={applyingId === tpl.id ? 'primary' : 'secondary'}
+              loading={applyingId === tpl.id}
+              disabled={!!applyingId}
+              onClick={() => applyTemplate(tpl.id)}>
+              
                 {tpl.displayName}
               </Button>
-            ))}
+            )}
           </ResponsiveStack>
         </Card>
 
@@ -626,64 +626,65 @@ const DepartmentSecurityTab = ({ department }) => {
           title="Department rules"
           description={`${rules.length} rule${rules.length !== 1 ? 's' : ''} · inherited by every VM in ${department?.name || 'this department'}`}
           footer={
-            <ResponsiveStack direction="row" justify="between" align="center">
-              {selectedIds.length > 0 ? (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  icon={<Trash2 size={14} />}
-                  onClick={() => setBulkDeleteOpen(true)}
-                  disabled={isDeleting || !!applyingId}
-                >
+          <ResponsiveStack direction="row" justify="between" align="center">
+              {selectedIds.length > 0 ?
+            <Button
+              size="sm"
+              variant="destructive"
+              icon={<Trash2 size={14} />}
+              onClick={() => setBulkDeleteOpen(true)}
+              disabled={isDeleting || !!applyingId}>
+              
                   Delete {selectedIds.length} selected
-                </Button>
-              ) : (
-                <span />
-              )}
+                </Button> :
+
+            <span />
+            }
               <Button
-                size="sm"
-                variant="primary"
-                icon={<Plus size={14} />}
-                onClick={() => setCreateOpen(true)}
-                disabled={isDeleting || !!applyingId}
-              >
+              size="sm"
+              variant="primary"
+              icon={<Plus size={14} />}
+              onClick={() => setCreateOpen(true)}
+              disabled={isDeleting || !!applyingId}>
+              
                 Add rule
               </Button>
             </ResponsiveStack>
-          }
-        >
-          {isDeleting && deleteProgress.total > 0 ? (
-            <LoadingOverlay
-              label="Deleting rules…"
-              progress={deleteProgress}
-            />
-          ) : rows.length === 0 ? (
-            <EmptyState
-              variant="dashed"
-              icon={<Shield size={18} />}
-              title="No rules yet"
-              description="Pick a Quick Security Profile above, or add your first rule manually."
-              actions={
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={<Plus size={14} />}
-                  onClick={() => setCreateOpen(true)}
-                >
+          }>
+          
+          {isDeleting && deleteProgress.total > 0 ?
+          <LoadingOverlay
+            label="Deleting rules…"
+            progress={deleteProgress} /> :
+
+          rows.length === 0 ?
+          <EmptyState
+            variant="dashed"
+            icon={<Shield size={18} />}
+            title="No rules yet"
+            description="Pick a Quick Security Profile above, or add your first rule manually."
+            actions={
+            <Button
+              size="sm"
+              variant="primary"
+              icon={<Plus size={14} />}
+              onClick={() => setCreateOpen(true)}>
+              
                   Add rule
                 </Button>
-              }
-            />
-          ) : (
-            <DataTable
-              rows={rows}
-              columns={columns}
-              rowKey={(r) => r.id}
-              selectable
-              selected={selectedIds}
-              onSelectionChange={setSelectedIds}
-            />
-          )}
+            } /> :
+
+
+          <DataTable
+            rows={rows}
+            columns={columns}
+            rowId={(r) => r.id}
+            selectable
+            selected={selectedIds}
+            onSelectionChange={setSelectedIds}
+            defaultDensity="compact" />
+
+          }
         </Card>
 
       </ResponsiveStack>
@@ -692,16 +693,16 @@ const DepartmentSecurityTab = ({ department }) => {
         open={policyOpen}
         onClose={() => setPolicyOpen(false)}
         department={department}
-        onSaved={refetch}
-      />
+        onSaved={refetch} />
+      
 
       <CreateDepartmentFirewallRuleDialog
         departmentId={departmentId}
         isOpen={createOpen}
         onClose={() => setCreateOpen(false)}
         onSuccess={() => setCreateOpen(false)}
-        existingRules={rules}
-      />
+        existingRules={rules} />
+      
 
       <Dialog
         open={bulkDeleteOpen}
@@ -710,35 +711,35 @@ const DepartmentSecurityTab = ({ department }) => {
         title="Delete selected rules?"
         footerAlign="end"
         footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
+        <ResponsiveStack direction="row" gap={2} justify="end">
             <Button
-              variant="secondary"
-              disabled={isDeleting}
-              onClick={() => setBulkDeleteOpen(false)}
-            >
+            variant="secondary"
+            disabled={isDeleting}
+            onClick={() => setBulkDeleteOpen(false)}>
+            
               Cancel
             </Button>
             <Button
-              variant="destructive"
-              loading={isDeleting}
-              disabled={isDeleting}
-              icon={<Trash2 size={14} />}
-              onClick={handleBulkDelete}
-            >
+            variant="destructive"
+            loading={isDeleting}
+            disabled={isDeleting}
+            icon={<Trash2 size={14} />}
+            onClick={handleBulkDelete}>
+            
               Delete {selectedIds.length} rule
               {selectedIds.length !== 1 ? 's' : ''}
             </Button>
           </ResponsiveStack>
-        }
-      >
+        }>
+        
         <Alert tone="warning" size="sm" icon={<AlertTriangle size={14} />}>
           This will permanently remove {selectedIds.length} rule
           {selectedIds.length !== 1 ? 's' : ''} from this department. VMs
           inheriting these rules will lose them immediately.
         </Alert>
       </Dialog>
-    </>
-  );
+    </>);
+
 };
 
 export default DepartmentSecurityTab;

@@ -7,8 +7,8 @@ import {
   Badge,
   DataTable,
   ResponsiveStack,
-  StatusDot,
-} from '@infinibay/harbor';
+  StatusDot } from
+'@infinibay/harbor';
 import { Fingerprint } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/PageHeader';
@@ -20,7 +20,7 @@ const TYPE_LABEL = {
   LDAP: 'LDAP',
   AzureAD: 'Azure AD',
   GoogleWorkspace: 'Google Workspace',
-  Okta: 'Okta',
+  Okta: 'Okta'
 };
 
 function timeAgo(iso) {
@@ -38,62 +38,62 @@ export default function IdentityListPage() {
 
   const columns = useMemo(
     () => [
-      {
-        key: 'name',
-        label: 'Name',
-        render: (row) => (
-          <ResponsiveStack direction="row" gap={2} align="center">
+    {
+      id: 'name',
+      header: 'Name',
+      cell: ({ row }) =>
+      <ResponsiveStack direction="row" gap={2} align="center">
             <Fingerprint size={14} className="text-fg-muted" />
             <span className="font-medium">{row.name}</span>
           </ResponsiveStack>
-        ),
-      },
-      {
-        key: 'type',
-        label: 'Type',
-        width: 170,
-        render: (row) => (
-          <Badge tone="neutral">{TYPE_LABEL[row.type] || row.type}</Badge>
-        ),
-      },
-      {
-        key: 'status',
-        label: 'Sync status',
-        width: 130,
-        render: (row) => (
-          <ResponsiveStack direction="row" gap={2} align="center">
+
+    },
+    {
+      id: 'type',
+      header: 'Type',
+      width: 170,
+      cell: ({ row }) =>
+      <Badge tone="neutral">{TYPE_LABEL[row.type] || row.type}</Badge>
+
+    },
+    {
+      id: 'status',
+      header: 'Sync status',
+      width: 130,
+      cell: ({ row }) =>
+      <ResponsiveStack direction="row" gap={2} align="center">
             <StatusDot
-              status={row.status === 'ok' ? 'online' : row.status === 'error' ? 'degraded' : 'provisioning'}
-              size={8}
-            />
+          status={row.status === 'ok' ? 'online' : row.status === 'error' ? 'degraded' : 'provisioning'}
+          size={8} />
+        
             <span className="capitalize text-sm">
               {row.status === 'ok' ? 'Healthy' : row.status}
             </span>
           </ResponsiveStack>
-        ),
-      },
-      {
-        key: 'lastSyncAt',
-        label: 'Last sync',
-        width: 120,
-        render: (row) => <span className="text-sm">{timeAgo(row.lastSyncAt)}</span>,
-      },
-      {
-        key: 'usersSynced',
-        label: 'Users',
-        width: 80,
-        align: 'right',
-        render: (row) => <span className="font-mono text-xs">{row.usersSynced}</span>,
-      },
-      {
-        key: 'groupsSynced',
-        label: 'Groups',
-        width: 80,
-        align: 'right',
-        render: (row) => <span className="font-mono text-xs">{row.groupsSynced}</span>,
-      },
-    ],
-    [],
+
+    },
+    {
+      id: 'lastSyncAt',
+      header: 'Last sync',
+      width: 120,
+      cell: ({ row }) => <span className="text-sm">{timeAgo(row.lastSyncAt)}</span>
+    },
+    {
+      id: 'usersSynced',
+      header: 'Users',
+      width: 80,
+      align: 'right',
+      cell: ({ row }) => <span className="font-mono text-xs">{row.usersSynced}</span>
+    },
+    {
+      id: 'groupsSynced',
+      header: 'Groups',
+      width: 80,
+      align: 'right',
+      cell: ({ row }) => <span className="font-mono text-xs">{row.groupsSynced}</span>
+    }],
+
+    []
   );
 
   return (
@@ -102,16 +102,16 @@ export default function IdentityListPage() {
         <PreviewBanner />
         <PageHeader
           title="Identity"
-          count={`${IDENTITY_PROVIDERS.length} provider${IDENTITY_PROVIDERS.length !== 1 ? 's' : ''}`}
-        />
+          count={`${IDENTITY_PROVIDERS.length} provider${IDENTITY_PROVIDERS.length !== 1 ? 's' : ''}`} />
+        
         <DataTable
           rows={IDENTITY_PROVIDERS}
           columns={columns}
-          rowKey={(r) => r.id}
-          dense
-          onRowClick={(r) => router.push(`/identity/${r.id}`)}
-        />
+          rowId={(r) => r.id}
+          defaultDensity="compact"
+          onRowClick={(r) => router.push(`/identity/${r.id}`)} />
+        
       </ResponsiveStack>
-    </Page>
-  );
+    </Page>);
+
 }

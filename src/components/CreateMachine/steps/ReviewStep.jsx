@@ -47,8 +47,9 @@ export function ReviewStep() {
   const applications = useSelector((state) => state.applications.items);
   const departments = useSelector(selectDepartments);
 
+  const blueprint = values.blueprint || {};
   const selectedTemplate = templates.find(
-    (t) => t.id === values.resources?.templateId,
+    (t) => t.id === blueprint.templateId,
   );
   const selectedApps = values.applications?.applications || [];
   const selectedAppDetails = applications.filter((app) =>
@@ -58,15 +59,15 @@ export function ReviewStep() {
     (d) => String(d.id) === String(values.basicInfo?.departmentId),
   );
 
-  const isCustom = values.resources?.templateId === 'custom';
+  const isCustom = blueprint.mode === 'custom' || blueprint.templateId === 'custom';
   const cores = isCustom
-    ? values.resources?.customCores || 4
+    ? blueprint.customCores || 4
     : selectedTemplate?.cores;
   const ram = isCustom
-    ? values.resources?.customRam || 8
+    ? blueprint.customRam || 8
     : selectedTemplate?.ram;
   const storage = isCustom
-    ? values.resources?.customStorage || 50
+    ? blueprint.customStorage || 50
     : selectedTemplate?.storage;
 
   const basicInfoItems = [
@@ -109,22 +110,22 @@ export function ReviewStep() {
     {
       key: 'os',
       label: 'Operating system',
-      value: operatingSystems[values.configuration?.os] || values.configuration?.os || '—',
+      value: operatingSystems[blueprint.os] || blueprint.os || '—',
     },
   ];
 
   const featureFlags = [
-    values.configuration?.backup && {
+    blueprint.backup && {
       tone: 'success',
       title: 'Backup enabled',
       body: 'Daily backups will be performed automatically.',
     },
-    values.configuration?.highAvailability && {
+    blueprint.highAvailability && {
       tone: 'success',
       title: 'High availability',
       body: 'Automatic failover protection is enabled.',
     },
-    values.configuration?.gpuEnabled && {
+    (blueprint.gpuEnabled || values.gpu?.gpuInfo) && {
       tone: 'success',
       title: 'GPU support',
       body: 'GPU acceleration is enabled for this machine.',

@@ -35,7 +35,7 @@ const variantMap = {
   ghost: 'ghost',
 };
 
-const RecommendationActions = ({ recommendation }) => {
+const RecommendationActions = ({ recommendation, vmStatus }) => {
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [showListDialog, setShowListDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -46,11 +46,13 @@ const RecommendationActions = ({ recommendation }) => {
   });
   const [confirmAction, setConfirmAction] = useState(null);
 
+  const isRunning = vmStatus === 'running' || vmStatus === 'poweredOn';
+
   const info = getRecommendationInfo(recommendation.type, recommendation);
   const metadata = extractRecommendationMetadata(recommendation);
-  const { resolve, resolution, isStarting, isRunning } = useResolveRecommendation(recommendation.id);
+  const { resolve, resolution, isStarting, isResolving } = useResolveRecommendation(recommendation.id);
 
-  const getActionConfig = (type) => {
+  const getActionConfig = (type, vmRunning) => {
     const actions = [];
     switch (type) {
       case 'OS_UPDATE_AVAILABLE':
@@ -70,12 +72,14 @@ const RecommendationActions = ({ recommendation }) => {
             icon: Calendar,
           });
         }
-        actions.push({
-          action: 'install_updates',
-          label: 'Install Updates',
-          variant: 'default',
-          icon: RefreshCw,
-        });
+        if (vmRunning) {
+          actions.push({
+            action: 'install_updates',
+            label: 'Install Updates',
+            variant: 'default',
+            icon: RefreshCw,
+          });
+        }
         actions.push({
           action: 'list',
           label: 'View Updates',
@@ -92,12 +96,14 @@ const RecommendationActions = ({ recommendation }) => {
             icon: Shield,
           });
         }
-        actions.push({
-          action: 'install_updates',
-          label: 'Install All Updates',
-          variant: 'default',
-          icon: RefreshCw,
-        });
+        if (vmRunning) {
+          actions.push({
+            action: 'install_updates',
+            label: 'Install All Updates',
+            variant: 'default',
+            icon: RefreshCw,
+          });
+        }
         actions.push({
           action: 'list',
           label: `View All (${metadata?.totalUpdateCount || 0})`,
@@ -436,7 +442,7 @@ const RecommendationActions = ({ recommendation }) => {
     });
   };
 
-  const actionConfig = getActionConfig(recommendation.type);
+  const actionConfig = getActionConfig(recommendation.type, isRunning);
 
   return (
     <>

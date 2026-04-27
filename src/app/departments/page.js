@@ -14,8 +14,8 @@ import {
   Page,
   ResponsiveStack,
   TextField,
-  Tooltip,
-} from '@infinibay/harbor';
+  Tooltip } from
+'@infinibay/harbor';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusChip } from '@/components/common/StatusChip';
 import {
@@ -25,8 +25,8 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Trash2,
-} from 'lucide-react';
+  Trash2 } from
+'lucide-react';
 import { RowContextMenu } from '@/components/common/RowContextMenu';
 
 import { useDepartmentsPage } from './hooks/useDepartmentsPage';
@@ -53,7 +53,7 @@ const DepartmentsPage = () => {
     handleCreateDepartment,
     handleDeleteDepartment,
     refreshDepartments,
-    getMachineCount,
+    getMachineCount
   } = useDepartmentsPage();
 
   const vms = useSelector((state) => state.vms?.items || []);
@@ -65,35 +65,35 @@ const DepartmentsPage = () => {
       description: 'Organize your desktops by team, project or function.',
       icon: <Building2 size={14} />,
       sections: [
-        {
-          id: 'managing',
-          title: 'Managing departments',
-          icon: <Building2 size={14} />,
-          content:
-            'Use "New Department" to create an organizational unit. Click any card to open its desktops, firewall rules and scripts.',
-        },
-      ],
+      {
+        id: 'managing',
+        title: 'Managing departments',
+        icon: <Building2 size={14} />,
+        content:
+        'Use "New Department" to create an organizational unit. Click any card to open its desktops, firewall rules and scripts.'
+      }],
+
       quickTips: [
-        'Click a card to open a department',
-        'Each department has its own firewall rules and scripts',
-        'Use the search box to narrow a long list',
-      ],
+      'Click a card to open a department',
+      'Each department has its own firewall rules and scripts',
+      'Use the search box to narrow a long list']
+
     }),
-    [],
+    []
   );
 
   usePageHeader(
     {
       breadcrumbs: [
-        { label: 'Home', href: '/' },
-        { label: 'Departments', isCurrent: true },
-      ],
+      { label: 'Home', href: '/' },
+      { label: 'Departments', isCurrent: true }],
+
       title: 'Departments',
       actions: [],
       helpConfig,
-      helpTooltip: 'Departments help',
+      helpTooltip: 'Departments help'
     },
-    [],
+    []
   );
 
   // Running-count lookup keyed by lowercased department name
@@ -113,11 +113,11 @@ const DepartmentsPage = () => {
   const totalDepartments = filteredDepartments?.length || 0;
   const totalMachines = useMemo(
     () => vms.length,
-    [vms.length],
+    [vms.length]
   );
   const totalRunning = useMemo(
     () => vms.filter((vm) => (vm.status || '').toLowerCase() === 'running').length,
-    [vms],
+    [vms]
   );
 
   const submitDelete = async () => {
@@ -134,217 +134,217 @@ const DepartmentsPage = () => {
           icon={<AlertTriangle size={14} />}
           title="Couldn't load departments"
           actions={
-            <Button
-              size="sm"
-              variant="primary"
-              icon={<RefreshCw size={14} />}
-              onClick={retryLoading}
-            >
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<RefreshCw size={14} />}
+            onClick={retryLoading}>
+            
               Retry
             </Button>
-          }
-        >
+          }>
+          
           The departments API is unreachable. Check the backend service or retry.
         </Alert>
-      </Page>
-    );
+      </Page>);
+
   }
 
   return (
     <>
       <Page>
-        {useMockData && (
-          <Alert
-            tone="warning"
-            icon={<AlertTriangle size={14} />}
-            title="Using mock data"
-            actions={
-              <Button
-                size="sm"
-                variant="primary"
-                icon={<RefreshCw size={14} />}
-                onClick={retryLoading}
-              >
+        {useMockData &&
+        <Alert
+          tone="warning"
+          icon={<AlertTriangle size={14} />}
+          title="Using mock data"
+          actions={
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<RefreshCw size={14} />}
+            onClick={retryLoading}>
+            
                 Retry
               </Button>
-            }
-          >
+          }>
+          
             Could not connect to the departments API. Showing mock data.
           </Alert>
-        )}
+        }
 
         <PageHeader
           title="Departments"
           count={
-            totalDepartments === 0
-              ? null
-              : [
-                  `${totalDepartments} ${totalDepartments === 1 ? 'department' : 'departments'}`,
-                  totalMachines > 0 ? `${totalMachines} ${totalMachines === 1 ? 'desktop' : 'desktops'}` : null,
-                  totalRunning > 0 ? `${totalRunning} running` : null,
-                ].filter(Boolean).join(' · ')
+          totalDepartments === 0 ?
+          null :
+          [
+          `${totalDepartments} ${totalDepartments === 1 ? 'department' : 'departments'}`,
+          totalMachines > 0 ? `${totalMachines} ${totalMachines === 1 ? 'desktop' : 'desktops'}` : null,
+          totalRunning > 0 ? `${totalRunning} running` : null].
+          filter(Boolean).join(' · ')
           }
           secondary={
-            <IconButton
-              size="sm"
-              variant="ghost"
-              label="Refresh"
-              icon={<RefreshCw size={14} />}
-              onClick={refreshDepartments}
-              disabled={isLoading}
-            />
+          <IconButton
+            size="sm"
+            variant="ghost"
+            label="Refresh"
+            icon={<RefreshCw size={14} />}
+            onClick={refreshDepartments}
+            disabled={isLoading} />
+
           }
           primary={
-            <Tooltip content="New Department">
+          <Tooltip content="New Department">
               <span>
                 <Button
-                  variant="primary"
-                  size="sm"
-                  icon={<Plus size={14} />}
-                  onClick={() => setIsCreateDeptDialogOpen(true)}
-                >
+                variant="primary"
+                size="sm"
+                icon={<Plus size={14} />}
+                onClick={() => setIsCreateDeptDialogOpen(true)}>
+                
                   New Department
                 </Button>
               </span>
             </Tooltip>
           }
           filters={
-            <TextField
-              placeholder="Search…"
-              icon={<Search size={14} />}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              size="sm"
-            />
-          }
-        />
+          <TextField
+            placeholder="Search…"
+            icon={<Search size={14} />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            size="sm" />
 
-        {isLoading && filteredDepartments.length === 0 ? (
-          <LoadingOverlay label="Loading departments…" />
-        ) : filteredDepartments.length === 0 ? (
-          <EmptyState
-            icon={<Building2 size={18} />}
-            title={searchQuery ? 'No matches' : 'No departments yet'}
-            description={
-              searchQuery
-                ? `Nothing matches "${searchQuery}". Try a different search.`
-                : 'Create a department to start organizing desktops, firewall rules and scripts.'
-            }
-            actions={
-              !searchQuery ? (
-                <Tooltip content="New Department">
+          } />
+        
+
+        {isLoading && filteredDepartments.length === 0 ?
+        <LoadingOverlay label="Loading departments…" /> :
+        filteredDepartments.length === 0 ?
+        <EmptyState
+          icon={<Building2 size={18} />}
+          title={searchQuery ? 'No matches' : 'No departments yet'}
+          description={
+          searchQuery ?
+          `Nothing matches "${searchQuery}". Try a different search.` :
+          'Create a department to start organizing desktops, firewall rules and scripts.'
+          }
+          actions={
+          !searchQuery ?
+          <Tooltip content="New Department">
                   <span>
                     <Button
-                      size="sm"
-                      variant="primary"
-                      icon={<Plus size={14} />}
-                      onClick={() => setIsCreateDeptDialogOpen(true)}
-                    >
+                size="sm"
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => setIsCreateDeptDialogOpen(true)}>
+                
                       New Department
                     </Button>
                   </span>
-                </Tooltip>
-              ) : null
-            }
-          />
-        ) : (() => {
+                </Tooltip> :
+          null
+          } /> :
+
+        (() => {
           const tableRows = filteredDepartments.map((dept) => {
             const key = dept.name?.toLowerCase();
             const counts = runningByDept.get(key) || {
               total: getMachineCount(dept.name),
-              running: 0,
+              running: 0
             };
             return { ...dept, _counts: counts };
           });
           return (
-          <RowContextMenu
-            rows={tableRows}
-            labelFor={(r) => r.name}
-            buildItems={(r) => [
+            <RowContextMenu
+              rows={tableRows}
+              labelFor={(r) => r.name}
+              buildItems={(r) => [
               {
                 label: 'Open',
                 icon: <ExternalLink size={14} />,
                 onSelect: () =>
-                  router.push(`/departments/${encodeURIComponent(r.name)}`),
+                router.push(`/departments/${encodeURIComponent(r.name)}`)
               },
               { separator: true },
               {
                 label: 'Delete',
                 icon: <Trash2 size={14} />,
                 danger: true,
-                onSelect: () => setDeleteTarget(r),
-              },
-            ]}
-          >
+                onSelect: () => setDeleteTarget(r)
+              }]
+              }>
+              
           <DataTable
-            rows={tableRows}
-            columns={[
-              {
-                key: 'name',
-                label: 'Department',
-                render: (row) => (
+                rows={tableRows}
+                columns={[
+                {
+                  id: 'name',
+                  header: 'Department',
+                  cell: ({ row }) =>
                   <span className="font-medium">{row.name}</span>
-                ),
-              },
-              {
-                key: 'health',
-                label: 'Status',
-                width: 130,
-                render: (row) => {
-                  const { running, total } = row._counts;
-                  if (total === 0) return <span className="text-fg-subtle text-xs">Empty</span>;
-                  const s =
+
+                },
+                {
+                  id: 'health',
+                  header: 'Status',
+                  width: 130,
+                  cell: ({ row }) => {
+                    const { running, total } = row._counts;
+                    if (total === 0) return <span className="text-fg-subtle text-xs">Empty</span>;
+                    const s =
                     running === total ? 'online' :
                     running > 0 ? 'degraded' :
                     'offline';
-                  const label =
+                    const label =
                     running === total ? 'Healthy' :
                     running > 0 ? 'Partial' :
                     'Idle';
-                  return <StatusChip status={s} label={label} pulse={false} />;
+                    return <StatusChip status={s} label={label} pulse={false} />;
+                  }
                 },
-              },
-              {
-                key: 'usage',
-                label: 'Running',
-                width: 200,
-                render: (row) => {
-                  const { running, total } = row._counts;
-                  if (total === 0) return <span className="text-fg-subtle text-xs">—</span>;
-                  const pct = Math.round((running / total) * 100);
-                  return (
-                    <ResponsiveStack direction="col" gap={0}>
+                {
+                  id: 'usage',
+                  header: 'Running',
+                  width: 200,
+                  cell: ({ row }) => {
+                    const { running, total } = row._counts;
+                    if (total === 0) return <span className="text-fg-subtle text-xs">—</span>;
+                    const pct = Math.round(running / total * 100);
+                    return (
+                      <ResponsiveStack direction="col" gap={0}>
                       <span className="font-mono text-xs text-fg-muted">
                         {running} / {total}
                       </span>
                       <div className="h-1 rounded-full bg-white/5 overflow-hidden">
                         <div
-                          className={[
+                            className={[
                             'h-full transition-all duration-300',
-                            pct === 100 ? 'bg-success' : pct > 0 ? 'bg-accent' : 'bg-white/10',
-                          ].join(' ')}
-                          style={{ width: `${Math.max(2, pct)}%` }}
-                        />
+                            pct === 100 ? 'bg-success' : pct > 0 ? 'bg-accent' : 'bg-white/10'].
+                            join(' ')}
+                            style={{ width: `${Math.max(2, pct)}%` }} />
+                          
                       </div>
-                    </ResponsiveStack>
-                  );
+                    </ResponsiveStack>);
+
+                  }
                 },
-              },
-              {
-                key: 'total',
-                label: 'Desktops',
-                width: 100,
-                align: 'right',
-                render: (row) => (
+                {
+                  id: 'total',
+                  header: 'Desktops',
+                  width: 100,
+                  align: 'right',
+                  cell: ({ row }) =>
                   <span className="font-mono text-xs">{row._counts.total}</span>
-                ),
-              },
-              {
-                key: 'actions',
-                label: '',
-                width: 50,
-                align: 'right',
-                render: (row) => (
+
+                },
+                {
+                  id: 'actions',
+                  header: '',
+                  width: 50,
+                  align: 'right',
+                  cell: ({ row }) =>
                   <IconButton
                     size="sm"
                     variant="ghost"
@@ -353,19 +353,19 @@ const DepartmentsPage = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       setDeleteTarget(row);
-                    }}
-                  />
-                ),
-              },
-            ]}
-            rowKey={(r) => r.id}
-            dense
-            onRowClick={(r) =>
-              router.push(`/departments/${encodeURIComponent(r.name)}`)
-            }
-          />
-          </RowContextMenu>
-          );
+                    }} />
+
+
+                }]
+                }
+                rowId={(r) => r.id}
+                defaultDensity="compact"
+                onRowClick={(r) =>
+                router.push(`/departments/${encodeURIComponent(r.name)}`)
+                } />
+              
+          </RowContextMenu>);
+
         })()}
       </Page>
 
@@ -379,36 +379,36 @@ const DepartmentsPage = () => {
         title="New department"
         description="Create an organizational unit to group desktops, firewall rules and scripts."
         footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
+        <ResponsiveStack direction="row" gap={2} justify="end">
             <Button
-              variant="secondary"
-              onClick={() => {
-                setNewDepartmentName('');
-                setIsCreateDeptDialogOpen(false);
-              }}
-              disabled={isCreating}
-            >
+            variant="secondary"
+            onClick={() => {
+              setNewDepartmentName('');
+              setIsCreateDeptDialogOpen(false);
+            }}
+            disabled={isCreating}>
+            
               Cancel
             </Button>
             <Button
-              variant="primary"
-              onClick={handleCreateDepartment}
-              loading={isCreating}
-              disabled={isCreating || !newDepartmentName.trim()}
-            >
+            variant="primary"
+            onClick={handleCreateDepartment}
+            loading={isCreating}
+            disabled={isCreating || !newDepartmentName.trim()}>
+            
               Create
             </Button>
           </ResponsiveStack>
-        }
-      >
+        }>
+        
         <ResponsiveStack direction="col" gap={3}>
           <TextField
             label="Name"
             placeholder="Engineering"
             value={newDepartmentName}
             onChange={(e) => setNewDepartmentName(e.target.value)}
-            autoFocus
-          />
+            autoFocus />
+          
           {createError ? <Alert tone="danger" size="sm">{createError}</Alert> : null}
         </ResponsiveStack>
       </Dialog>
@@ -419,31 +419,31 @@ const DepartmentsPage = () => {
         size="sm"
         title="Delete department"
         description={
-          deleteTarget
-            ? `Remove "${deleteTarget.name}"? Its desktops will need to be reassigned to another department.`
-            : undefined
+        deleteTarget ?
+        `Remove "${deleteTarget.name}"? Its desktops will need to be reassigned to another department.` :
+        undefined
         }
         footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
+        <ResponsiveStack direction="row" gap={2} justify="end">
             <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
             <Button
-              variant="destructive"
-              icon={<Trash2 size={14} />}
-              onClick={submitDelete}
-            >
+            variant="destructive"
+            icon={<Trash2 size={14} />}
+            onClick={submitDelete}>
+            
               Delete
             </Button>
           </ResponsiveStack>
-        }
-      >
+        }>
+        
         <Alert tone="danger" size="sm" icon={<AlertTriangle size={14} />}>
           This action cannot be undone.
         </Alert>
       </Dialog>
-    </>
-  );
+    </>);
+
 };
 
 export default DepartmentsPage;

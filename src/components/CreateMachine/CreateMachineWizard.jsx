@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { createVm, selectVmsLoading, selectVmsError } from '@/state/slices/vms';
@@ -8,8 +8,7 @@ import { EmptyState, LoadingOverlay, Page } from '@infinibay/harbor';
 import { Wizard } from './wizard/wizard';
 import { useToast } from '@/hooks/use-toast';
 import { BasicInfoStep } from './steps/BasicInfoStep';
-import { ResourcesStep } from './steps/ResourcesStep';
-import { ConfigurationStep } from './steps/ConfigurationStep';
+import { BlueprintStep } from './steps/BlueprintStep';
 import { ApplicationsScriptsStep } from './steps/ApplicationsScriptsStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { GpuSelectionStep } from './steps/GpuSelectionStep';
@@ -65,13 +64,13 @@ export default function CreateMachineWizard({ departmentId }) {
         name: values.basicInfo.name,
         username: values.basicInfo.username,
         password: values.basicInfo.password,
-        os: values.configuration.os,
-        productKey: values.configuration.productKey || '',
+        os: values.blueprint?.os,
+        productKey: values.blueprint?.productKey || '',
         pciBus: values.gpu.pciBus,
         departmentId: String(validatedDepartmentId || values.basicInfo.departmentId),
         applications: (values.applications?.applications || []).map(appId => ({
           applicationId: appId,
-          parameters: {} // Add any necessary parameters here
+          parameters: {}
         })),
         firstBootScripts: (values.applications?.scripts || []).map(script => ({
           scriptId: script.scriptId,
@@ -79,16 +78,14 @@ export default function CreateMachineWizard({ departmentId }) {
         }))
       };
 
-      // Add template or custom hardware data
-      if (values.resources.templateId === 'custom') {
-        // Using custom hardware
+      const blueprint = values.blueprint || {};
+      if (blueprint.mode === 'custom' || blueprint.templateId === 'custom') {
         machineData.templateId = null;
-        machineData.customCores = values.resources.customCores;
-        machineData.customRam = values.resources.customRam;
-        machineData.customStorage = values.resources.customStorage;
+        machineData.customCores = blueprint.customCores;
+        machineData.customRam = blueprint.customRam;
+        machineData.customStorage = blueprint.customStorage;
       } else {
-        // Using template
-        machineData.templateId = values.resources.templateId;
+        machineData.templateId = blueprint.templateId;
       }
 
       await dispatch(createVm(machineData)).unwrap();
@@ -152,22 +149,21 @@ export default function CreateMachineWizard({ departmentId }) {
           }}
           departmentId={validatedDepartmentId}
         />
-        <ConfigurationStep
-          id="configuration"
+        <BlueprintStep
+          id="blueprint"
           validate={async (values) => {
             const errors = {};
-            if (!values.os) {
-              errors.os = 'Operating System is required';
-            }
-            if (Object.keys(errors).length > 0) throw errors;
-          }}
-        />
-        <ResourcesStep
-          id="resources"
-          validate={async (values) => {
-            const errors = {};
-            if (!values.templateId) {
-              errors.templateId = 'Template is required';
+            if (values.mode === 'blueprint') {
+              if (!values.templateId) {
+                errors.templateId = 'Please select a blueprint';
+              }
+            } else {
+              if (!values.customOs) {
+                errors.os = 'Please select an operating system';
+              }
+              if (!values.customCores || !values.customRam || !values.customStorage) {
+                errors.hardware = 'Hardware configuration is required';
+              }
             }
             if (Object.keys(errors).length > 0) throw errors;
           }}

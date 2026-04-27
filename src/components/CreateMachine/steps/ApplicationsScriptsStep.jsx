@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Badge,
@@ -47,6 +47,12 @@ export function ApplicationsScriptsStep({ id }) {
   const departmentId = values.basicInfo?.departmentId;
 
   const [selectedScripts, setSelectedScripts] = useState(stepValues.scripts || []);
+
+  // Sync local script state with wizard values (e.g. when a blueprint pre-fills them)
+  useEffect(() => {
+    setSelectedScripts(stepValues.scripts || []);
+  }, [stepValues.scripts]);
+
   const [configureDialogOpen, setConfigureDialogOpen] = useState(false);
   const [currentScript, setCurrentScript] = useState(null);
   const [currentInputValues, setCurrentInputValues] = useState({});

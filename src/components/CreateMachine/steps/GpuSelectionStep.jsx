@@ -10,13 +10,14 @@ import {
   ResponsiveGrid,
   ResponsiveStack,
   Skeleton,
+  Tooltip,
 } from '@infinibay/harbor';
 import { useWizardContext } from '../wizard/wizard';
 import { useFormError } from '../wizard/form-error-provider';
 import { fetchGraphics } from '@/state/slices/system';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import { createDebugger } from '@/utils/debug';
-import { MonitorOff, Zap } from 'lucide-react';
+import { Lock, MonitorOff, Zap } from 'lucide-react';
 
 const debug = createDebugger('frontend:components:gpu-selection-step');
 
@@ -61,6 +62,11 @@ export function GpuSelectionStep({ id }) {
   const pickGpu = (pciBus) => {
     debug.info('GPU selection changed:', pciBus);
     const selectedGpu = allOptions.find((gpu) => gpu.pciBus === pciBus);
+    // Hard-block selection of GPUs the host can't passthrough — the
+    // create-time pre-flight would reject it anyway.
+    if (selectedGpu && pciBus !== 'no-gpu' && selectedGpu.passthroughReady === false) {
+      return;
+    }
     setValue(`${id}.gpuId`, pciBus);
     setValue(`${id}.pciBus`, pciBus === 'no-gpu' ? null : pciBus);
     setValue(
@@ -118,29 +124,48 @@ export function GpuSelectionStep({ id }) {
           {allOptions.map((gpu) => {
             const isSelected = stepValues.gpuId === gpu.pciBus;
             const isNoGpu = gpu.pciBus === 'no-gpu';
-            return (
+            const blocked = !isNoGpu && gpu.passthroughReady === false;
+            const blockedReason = gpu.passthroughBlockedReason
+              || 'Not ready for VFIO passthrough on this host.';
+            const card = (
               <Card
                 key={gpu.pciBus}
                 variant="default"
                 spotlight={false}
                 glow={false}
-                interactive
+                interactive={!blocked}
                 selected={isSelected}
                 fullHeight
                 leadingIcon={
-                  isNoGpu ? <MonitorOff size={18} /> : <Zap size={18} />
+                  isNoGpu
+                    ? <MonitorOff size={18} />
+                    : blocked
+                      ? <Lock size={18} />
+                      : <Zap size={18} />
                 }
-                leadingIconTone={isNoGpu ? 'neutral' : 'purple'}
+                leadingIconTone={
+                  isNoGpu ? 'neutral' : blocked ? 'neutral' : 'purple'
+                }
                 title={isNoGpu ? 'No GPU' : gpu.model}
                 description={
-                  isNoGpu ? 'Continue without graphics acceleration' : undefined
+                  isNoGpu
+                    ? 'Continue without graphics acceleration'
+                    : blocked
+                      ? 'Passthrough unavailable'
+                      : undefined
                 }
-                onClick={() => pickGpu(gpu.pciBus)}
+                onClick={blocked ? undefined : () => pickGpu(gpu.pciBus)}
+                style={blocked ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
               >
                 {!isNoGpu && (
                   <ResponsiveStack direction="col" gap={3}>
                     {formatMemory(gpu.memory) && (
-                      <Badge tone="purple">{formatMemory(gpu.memory)}</Badge>
+                      <Badge tone={blocked ? 'neutral' : 'purple'}>
+                        {formatMemory(gpu.memory)}
+                      </Badge>
+                    )}
+                    {blocked && (
+                      <Badge tone="warning">Passthrough not ready</Badge>
                     )}
                     <PropertyList
                       items={[
@@ -153,6 +178,9 @@ export function GpuSelectionStep({ id }) {
                 )}
               </Card>
             );
+            return blocked
+              ? <Tooltip key={gpu.pciBus} content={blockedReason}><span style={{ display: 'block' }}>{card}</span></Tooltip>
+              : card;
           })}
         </ResponsiveGrid>
       </FormField>

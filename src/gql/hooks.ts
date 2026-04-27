@@ -28,19 +28,29 @@ export type Scalars = {
 
 export type AppSettings = {
   __typename?: 'AppSettings';
+  accent2Color: Maybe<Scalars['String']['output']>;
+  accent3Color: Maybe<Scalars['String']['output']>;
+  accentColor: Maybe<Scalars['String']['output']>;
+  brandName: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTimeISO']['output'];
   id: Scalars['ID']['output'];
   interfaceSize: Scalars['String']['output'];
   logoUrl: Maybe<Scalars['String']['output']>;
   theme: Scalars['String']['output'];
+  themePreset: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTimeISO']['output'];
   wallpaper: Scalars['String']['output'];
 };
 
 export type AppSettingsInput = {
+  accent2Color: InputMaybe<Scalars['String']['input']>;
+  accent3Color: InputMaybe<Scalars['String']['input']>;
+  accentColor: InputMaybe<Scalars['String']['input']>;
+  brandName: InputMaybe<Scalars['String']['input']>;
   interfaceSize: InputMaybe<Scalars['String']['input']>;
   logoUrl: InputMaybe<Scalars['String']['input']>;
   theme: InputMaybe<Scalars['String']['input']>;
+  themePreset: InputMaybe<Scalars['String']['input']>;
   wallpaper: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -245,6 +255,16 @@ export type BridgeNameInput = {
   networkName: Scalars['String']['input'];
 };
 
+export type CaptureGoldenImageFromMachineInput = {
+  destroySource: InputMaybe<Scalars['Boolean']['input']>;
+  hardeningOptions: InputMaybe<Scalars['JSONObject']['input']>;
+  machineId: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  notes: InputMaybe<Scalars['String']['input']>;
+  parentImageId: InputMaybe<Scalars['String']['input']>;
+  sanitizeUserData: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 export type CleanupResultType = {
   __typename?: 'CleanupResultType';
   filterNames: Array<Scalars['String']['output']>;
@@ -326,6 +346,17 @@ export type CreateFirewallRuleInput = {
   srcPortStart: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type CreateGoldenImageFromTemplateInput = {
+  autoDeprecatePrevious: InputMaybe<Scalars['Boolean']['input']>;
+  /** Hardening script toggles — shape is { scriptFileName: boolean }. */
+  hardeningOptions: InputMaybe<Scalars['JSONObject']['input']>;
+  name: Scalars['String']['input'];
+  notes: InputMaybe<Scalars['String']['input']>;
+  /** If set, record this build as a new version of the given family. */
+  parentImageId: InputMaybe<Scalars['String']['input']>;
+  templateId: Scalars['String']['input'];
+};
+
 export type CreateMachineInputType = {
   applications: Array<MachineApplicationInputType>;
   customCores: InputMaybe<Scalars['Int']['input']>;
@@ -364,6 +395,18 @@ export type CreateNetworkInput = {
   enabledServices: InputMaybe<Array<Scalars['String']['input']>>;
   ipConfig: InputMaybe<NetworkIpConfigInput>;
   name: Scalars['String']['input'];
+};
+
+export type CreatePoolInput = {
+  departmentId: Scalars['ID']['input'];
+  goldenImageId: InputMaybe<Scalars['ID']['input']>;
+  idleTimeoutMinutes: InputMaybe<Scalars['Int']['input']>;
+  name: Scalars['String']['input'];
+  resetOnLogoff: InputMaybe<Scalars['Boolean']['input']>;
+  sizeMax: InputMaybe<Scalars['Int']['input']>;
+  sizeMin: InputMaybe<Scalars['Int']['input']>;
+  templateId: Scalars['ID']['input'];
+  type: InputMaybe<PoolType>;
 };
 
 export type CreateScheduleInput = {
@@ -650,6 +693,8 @@ export type Gpu = {
   __typename?: 'GPU';
   memory: Scalars['Float']['output'];
   model: Scalars['String']['output'];
+  passthroughBlockedReason: Maybe<Scalars['String']['output']>;
+  passthroughReady: Scalars['Boolean']['output'];
   pciBus: Scalars['String']['output'];
   vendor: Scalars['String']['output'];
 };
@@ -688,6 +733,55 @@ export type GlobalRecommendationType = {
   /** Category of recommendation */
   type: RecommendationType;
 };
+
+export type GoldenImage = {
+  __typename?: 'GoldenImage';
+  baseDiskPath: Scalars['String']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  createdById: Maybe<Scalars['String']['output']>;
+  deprecatedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  hardeningApplied: Maybe<Scalars['JSONObject']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  notes: Maybe<Scalars['String']['output']>;
+  osType: GoldenImageOsType;
+  osVersion: Maybe<Scalars['String']['output']>;
+  parentImageId: Maybe<Scalars['String']['output']>;
+  sealedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  sizeBytes: Scalars['String']['output'];
+  sourceMachineId: Maybe<Scalars['String']['output']>;
+  sourceTemplateId: Maybe<Scalars['String']['output']>;
+  sourceType: GoldenImageSourceType;
+  status: GoldenImageStatus;
+  updatedAt: Scalars['DateTimeISO']['output'];
+  version: Scalars['Int']['output'];
+};
+
+export enum GoldenImageOsType {
+  Fedora = 'FEDORA',
+  Ubuntu = 'UBUNTU',
+  Windows_10 = 'WINDOWS_10',
+  Windows_11 = 'WINDOWS_11'
+}
+
+export type GoldenImageResult = {
+  __typename?: 'GoldenImageResult';
+  error: Maybe<Scalars['String']['output']>;
+  image: Maybe<GoldenImage>;
+  success: Scalars['Boolean']['output'];
+};
+
+export enum GoldenImageSourceType {
+  Automated = 'AUTOMATED',
+  ManualCapture = 'MANUAL_CAPTURE'
+}
+
+export enum GoldenImageStatus {
+  Building = 'BUILDING',
+  Deprecated = 'DEPRECATED',
+  Draft = 'DRAFT',
+  Published = 'PUBLISHED'
+}
 
 export type GraphicConfigurationType = {
   __typename?: 'GraphicConfigurationType';
@@ -901,6 +995,13 @@ export enum MachineOs {
   Windows11 = 'WINDOWS11'
 }
 
+export type MachineTemplateApplicationLink = {
+  __typename?: 'MachineTemplateApplicationLink';
+  applicationId: Scalars['ID']['output'];
+  name: Maybe<Scalars['String']['output']>;
+  parameters: Maybe<Scalars['JSONObject']['output']>;
+};
+
 export type MachineTemplateCategoryInputType = {
   description: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
@@ -917,18 +1018,30 @@ export type MachineTemplateCategoryType = {
 };
 
 export type MachineTemplateInputType = {
+  /** Apps preinstalled on every VM from this blueprint. */
+  applications: InputMaybe<Array<TemplateApplicationInput>>;
   /** The ID of the category for the machine template */
   categoryId: InputMaybe<Scalars['ID']['input']>;
   /** The number of cores for the machine */
   cores: Scalars['Int']['input'];
   /** A brief description of the machine template */
   description: Scalars['String']['input'];
+  /** Enable full-disk encryption (BitLocker on Windows, LUKS on Linux — LUKS is not yet wired). */
+  encryptDisk: InputMaybe<Scalars['Boolean']['input']>;
   /** The name of the machine template */
   name: Scalars['String']['input'];
+  /** Canonical OS key: 'windows10' | 'windows11' | 'ubuntu' | 'fedora'. Required by the UI for new blueprints. */
+  osType: InputMaybe<Scalars['String']['input']>;
+  /** Power plan token: 'balanced' | 'high-performance' | 'power-saver'. */
+  powerPlan: InputMaybe<Scalars['String']['input']>;
   /** The amount of RAM (in GB) for the machine */
   ram: Scalars['Int']['input'];
+  /** FIRST_BOOT scripts run on every VM from this blueprint. */
+  scripts: InputMaybe<Array<TemplateScriptInput>>;
   /** The storage space (in GB) for the machine */
   storage: Scalars['Int']['input'];
+  /** Desktop wallpaper path/URL applied on first boot. */
+  wallpaperUrl: InputMaybe<Scalars['String']['input']>;
 };
 
 export type MachineTemplateOrderBy = {
@@ -946,17 +1059,31 @@ export enum MachineTemplateOrderByField {
   Storage = 'STORAGE'
 }
 
+export type MachineTemplateScriptLink = {
+  __typename?: 'MachineTemplateScriptLink';
+  inputValues: Maybe<Scalars['JSONObject']['output']>;
+  name: Maybe<Scalars['String']['output']>;
+  order: Scalars['Int']['output'];
+  scriptId: Scalars['ID']['output'];
+};
+
 export type MachineTemplateType = {
   __typename?: 'MachineTemplateType';
+  applications: Maybe<Array<MachineTemplateApplicationLink>>;
   categoryId: Maybe<Scalars['ID']['output']>;
   cores: Scalars['Int']['output'];
   createdAt: Scalars['DateTimeISO']['output'];
   description: Maybe<Scalars['String']['output']>;
+  encryptDisk: Maybe<Scalars['Boolean']['output']>;
   id: Scalars['ID']['output'];
   name: Maybe<Scalars['String']['output']>;
+  osType: Maybe<Scalars['String']['output']>;
+  powerPlan: Maybe<Scalars['String']['output']>;
   ram: Scalars['Int']['output'];
+  scripts: Maybe<Array<MachineTemplateScriptLink>>;
   storage: Scalars['Int']['output'];
   totalMachines: Maybe<Scalars['Int']['output']>;
+  wallpaperUrl: Maybe<Scalars['String']['output']>;
 };
 
 export type MachineType = {
@@ -1069,7 +1196,11 @@ export type Mutation = {
   cancelResolution: RecommendationResolutionType;
   cancelScheduledScript: ScheduleScriptResponseType;
   cancelScriptExecution: ScriptExecutionResponseType;
+  /** Seal an existing VM into a new golden image (long-running). */
+  captureGoldenImageFromMachine: GoldenImageResult;
   cleanupInfinibayFirewall: CleanupResultType;
+  /** Check out a desktop from the pool for the current user. Returns Machine.id. */
+  connectToPool: Scalars['ID']['output'];
   createApplication: ApplicationType;
   /** Create a backup of a VM */
   createBackup: BackupResult;
@@ -1077,11 +1208,14 @@ export type Mutation = {
   createBackupSchedule: BackupSchedule;
   createDepartment: DepartmentType;
   createDepartmentFirewallRule: FirewallRuleType;
+  /** Build a sealed golden image from a blueprint (long-running). */
+  createGoldenImageFromTemplate: GoldenImageResult;
   createMachine: Machine;
   createMachineTemplate: MachineTemplateType;
   createMachineTemplateCategory: MachineTemplateCategoryType;
   createMaintenanceTask: MaintenanceTaskResponse;
   createNetwork: Scalars['Boolean']['output'];
+  createPool: PoolResult;
   createScript: ScriptResponseType;
   /** Create a snapshot of a virtual machine */
   createSnapshot: SnapshotResult;
@@ -1093,11 +1227,14 @@ export type Mutation = {
   /** Delete a backup schedule */
   deleteBackupSchedule: SuccessType;
   deleteFirewallRule: Scalars['Boolean']['output'];
+  deleteGoldenImage: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
+  deletePool: Scalars['Boolean']['output'];
   deleteScript: ScriptResponseType;
   /** Delete a snapshot from a virtual machine */
   deleteSnapshot: SuccessType;
+  deprecateGoldenImage: GoldenImageResult;
   destroyDepartment: DepartmentType;
   destroyMachine: SuccessType;
   destroyMachineTemplate: Scalars['Boolean']['output'];
@@ -1108,6 +1245,7 @@ export type Mutation = {
   dismissAllRecommendations: DismissRecommendationResult;
   /** Dismiss a single recommendation */
   dismissRecommendation: DismissRecommendationResult;
+  drainPool: PoolResult;
   /** Enable a plugin package */
   enablePackage: Maybe<PackageType>;
   executeCommand: CommandExecutionResponseType;
@@ -1130,6 +1268,7 @@ export type Mutation = {
   performDiskCleanup: DiskCleanupResult;
   powerOff: SuccessType;
   powerOn: SuccessType;
+  publishGoldenImage: GoldenImageResult;
   queueAllVMHealthChecks: HealthCheckRoundResult;
   /** Register uploaded ISO */
   registerISO: Iso;
@@ -1147,6 +1286,7 @@ export type Mutation = {
   restoreSnapshot: SuccessType;
   /** Run Windows Defender quick scan on a VM */
   runDefenderQuickScan: DefenderScanResult;
+  scalePool: PoolResult;
   scheduleScript: ScheduleScriptResponseType;
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
@@ -1163,6 +1303,7 @@ export type Mutation = {
   toggleMaintenanceTask: MaintenanceTaskResponse;
   triggerHealthCheckRound: HealthCheckRoundResult;
   unassignScriptFromDepartment: Scalars['Boolean']['output'];
+  undrainPool: PoolResult;
   /** Uninstall an external plugin package (cannot uninstall built-in packages) */
   uninstallPackage: Scalars['Boolean']['output'];
   updateAppSettings: AppSettings;
@@ -1181,6 +1322,7 @@ export type Mutation = {
   updateMaintenanceTask: MaintenanceTaskResponse;
   /** Update a package on a virtual machine (legacy compatibility) */
   updatePackage: CommandResult;
+  updatePool: PoolResult;
   updateScheduledScript: ScheduleScriptResponseType;
   updateScript: ScriptResponseType;
   updateUser: UserType;
@@ -1215,6 +1357,16 @@ export type MutationCancelScriptExecutionArgs = {
 };
 
 
+export type MutationCaptureGoldenImageFromMachineArgs = {
+  input: CaptureGoldenImageFromMachineInput;
+};
+
+
+export type MutationConnectToPoolArgs = {
+  poolId: Scalars['ID']['input'];
+};
+
+
 export type MutationCreateApplicationArgs = {
   input: CreateApplicationInputType;
 };
@@ -1242,6 +1394,11 @@ export type MutationCreateDepartmentFirewallRuleArgs = {
 };
 
 
+export type MutationCreateGoldenImageFromTemplateArgs = {
+  input: CreateGoldenImageFromTemplateInput;
+};
+
+
 export type MutationCreateMachineArgs = {
   input: CreateMachineInputType;
 };
@@ -1264,6 +1421,11 @@ export type MutationCreateMaintenanceTaskArgs = {
 
 export type MutationCreateNetworkArgs = {
   input: CreateNetworkInput;
+};
+
+
+export type MutationCreatePoolArgs = {
+  input: CreatePoolInput;
 };
 
 
@@ -1308,6 +1470,11 @@ export type MutationDeleteFirewallRuleArgs = {
 };
 
 
+export type MutationDeleteGoldenImageArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteMaintenanceTaskArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1315,6 +1482,11 @@ export type MutationDeleteMaintenanceTaskArgs = {
 
 export type MutationDeleteNetworkArgs = {
   input: DeleteNetworkInput;
+};
+
+
+export type MutationDeletePoolArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1326,6 +1498,11 @@ export type MutationDeleteScriptArgs = {
 
 export type MutationDeleteSnapshotArgs = {
   input: DeleteSnapshotInput;
+};
+
+
+export type MutationDeprecateGoldenImageArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1355,6 +1532,11 @@ export type MutationDisablePackageArgs = {
 
 
 export type MutationDismissRecommendationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDrainPoolArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1454,6 +1636,11 @@ export type MutationPowerOnArgs = {
 };
 
 
+export type MutationPublishGoldenImageArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationRegisterIsoArgs = {
   filename: Scalars['String']['input'];
   os: Scalars['String']['input'];
@@ -1505,6 +1692,12 @@ export type MutationRunDefenderQuickScanArgs = {
 };
 
 
+export type MutationScalePoolArgs = {
+  id: Scalars['ID']['input'];
+  targetSize: Scalars['Int']['input'];
+};
+
+
 export type MutationScheduleScriptArgs = {
   input: ScheduleScriptInput;
 };
@@ -1550,6 +1743,11 @@ export type MutationToggleMaintenanceTaskArgs = {
 export type MutationUnassignScriptFromDepartmentArgs = {
   departmentId: Scalars['ID']['input'];
   scriptId: Scalars['ID']['input'];
+};
+
+
+export type MutationUndrainPoolArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1632,6 +1830,12 @@ export type MutationUpdateMaintenanceTaskArgs = {
 export type MutationUpdatePackageArgs = {
   machineId: Scalars['ID']['input'];
   packageName: Scalars['String']['input'];
+};
+
+
+export type MutationUpdatePoolArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdatePoolInput;
 };
 
 
@@ -1843,6 +2047,37 @@ export type PaginationInputType = {
   take: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type Pool = {
+  __typename?: 'Pool';
+  createdAt: Scalars['DateTimeISO']['output'];
+  /** Number of non-archived machines currently in the pool. */
+  currentSize: Scalars['Int']['output'];
+  departmentId: Scalars['ID']['output'];
+  draining: Scalars['Boolean']['output'];
+  goldenImageId: Maybe<Scalars['ID']['output']>;
+  id: Scalars['ID']['output'];
+  idleTimeoutMinutes: Maybe<Scalars['Int']['output']>;
+  name: Scalars['String']['output'];
+  resetOnLogoff: Scalars['Boolean']['output'];
+  sizeMax: Scalars['Int']['output'];
+  sizeMin: Scalars['Int']['output'];
+  templateId: Scalars['ID']['output'];
+  type: PoolType;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type PoolResult = {
+  __typename?: 'PoolResult';
+  error: Maybe<Scalars['String']['output']>;
+  pool: Maybe<Pool>;
+  success: Scalars['Boolean']['output'];
+};
+
+export enum PoolType {
+  NonPersistent = 'NON_PERSISTENT',
+  Persistent = 'PERSISTENT'
+}
+
 export type ProcessControlResult = {
   __typename?: 'ProcessControlResult';
   error: Maybe<Scalars['String']['output']>;
@@ -1915,6 +2150,8 @@ export type Query = {
   getWindowsUpdateHistory: WindowsUpdateHistory;
   /** Get all pending recommendations across all VMs the user has access to */
   globalPendingRecommendations: Array<GlobalRecommendationType>;
+  goldenImage: Maybe<GoldenImage>;
+  goldenImages: Array<GoldenImage>;
   graphicConnection: Maybe<GraphicConfigurationType>;
   healthCheckQueueStats: QueueStatsType;
   healthQueueStatistics: QueueStatistics;
@@ -1944,6 +2181,8 @@ export type Query = {
   packages: Array<PackageType>;
   /** Get the count of pending (non-dismissed, non-snoozed) recommendations across all VMs */
   pendingRecommendationCount: Scalars['Int']['output'];
+  pool: Maybe<Pool>;
+  pools: Array<Pool>;
   /** Fetch a single resolution. Poll this query to track progress. */
   recommendationResolution: Maybe<RecommendationResolutionType>;
   /** Run a specific health check on a VM */
@@ -2113,6 +2352,11 @@ export type QueryGlobalPendingRecommendationsArgs = {
 };
 
 
+export type QueryGoldenImageArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QueryGraphicConnectionArgs = {
   id: Scalars['String']['input'];
 };
@@ -2191,6 +2435,11 @@ export type QueryNetworkArgs = {
 
 export type QueryPackageArgs = {
   name: Scalars['String']['input'];
+};
+
+
+export type QueryPoolArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -2740,6 +2989,17 @@ export type SystemResources = {
   memory: SystemResourceMemory;
 };
 
+export type TemplateApplicationInput = {
+  applicationId: Scalars['ID']['input'];
+  parameters: InputMaybe<Scalars['JSONObject']['input']>;
+};
+
+export type TemplateScriptInput = {
+  inputValues: InputMaybe<Scalars['JSONObject']['input']>;
+  order: InputMaybe<Scalars['Int']['input']>;
+  scriptId: Scalars['ID']['input'];
+};
+
 export type UpdateDepartmentFirewallPolicyInput = {
   firewallCustomRules: InputMaybe<Scalars['JSON']['input']>;
   firewallDefaultConfig: Scalars['String']['input'];
@@ -2807,6 +3067,15 @@ export type UpdateMaintenanceTaskInput = {
   name: InputMaybe<Scalars['String']['input']>;
   parameters: InputMaybe<Scalars['JSONObject']['input']>;
   runAt: InputMaybe<Scalars['DateTimeISO']['input']>;
+};
+
+export type UpdatePoolInput = {
+  draining: InputMaybe<Scalars['Boolean']['input']>;
+  idleTimeoutMinutes: InputMaybe<Scalars['Int']['input']>;
+  name: InputMaybe<Scalars['String']['input']>;
+  resetOnLogoff: InputMaybe<Scalars['Boolean']['input']>;
+  sizeMax: InputMaybe<Scalars['Int']['input']>;
+  sizeMin: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UpdateScheduleInput = {
@@ -3071,7 +3340,7 @@ export type CreateMachineTemplateMutationVariables = Exact<{
 }>;
 
 
-export type CreateMachineTemplateMutation = { __typename?: 'Mutation', createMachineTemplate: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null } };
+export type CreateMachineTemplateMutation = { __typename?: 'Mutation', createMachineTemplate: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null, osType: string | null, wallpaperUrl: string | null, powerPlan: string | null, encryptDisk: boolean | null, applications: Array<{ __typename?: 'MachineTemplateApplicationLink', applicationId: string, name: string | null, parameters: { [key: string]: any } | null }> | null, scripts: Array<{ __typename?: 'MachineTemplateScriptLink', scriptId: string, name: string | null, order: number, inputValues: { [key: string]: any } | null }> | null } };
 
 export type UpdateMachineTemplateMutationVariables = Exact<{
   input: MachineTemplateInputType;
@@ -3079,7 +3348,7 @@ export type UpdateMachineTemplateMutationVariables = Exact<{
 }>;
 
 
-export type UpdateMachineTemplateMutation = { __typename?: 'Mutation', updateMachineTemplate: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null } };
+export type UpdateMachineTemplateMutation = { __typename?: 'Mutation', updateMachineTemplate: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null, osType: string | null, wallpaperUrl: string | null, powerPlan: string | null, encryptDisk: boolean | null, applications: Array<{ __typename?: 'MachineTemplateApplicationLink', applicationId: string, name: string | null, parameters: { [key: string]: any } | null }> | null, scripts: Array<{ __typename?: 'MachineTemplateScriptLink', scriptId: string, name: string | null, order: number, inputValues: { [key: string]: any } | null }> | null } };
 
 export type DestroyMachineTemplateMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3100,7 +3369,7 @@ export type CreateMachineMutationVariables = Exact<{
 }>;
 
 
-export type CreateMachineMutation = { __typename?: 'Mutation', createMachine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
+export type CreateMachineMutation = { __typename?: 'Mutation', createMachine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
 
 export type PowerOnMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3143,21 +3412,21 @@ export type UpdateMachineHardwareMutationVariables = Exact<{
 }>;
 
 
-export type UpdateMachineHardwareMutation = { __typename?: 'Mutation', updateMachineHardware: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
+export type UpdateMachineHardwareMutation = { __typename?: 'Mutation', updateMachineHardware: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
 
 export type UpdateMachineNameMutationVariables = Exact<{
   input: UpdateMachineNameInput;
 }>;
 
 
-export type UpdateMachineNameMutation = { __typename?: 'Mutation', updateMachineName: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
+export type UpdateMachineNameMutation = { __typename?: 'Mutation', updateMachineName: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
 
 export type UpdateMachineUserMutationVariables = Exact<{
   input: UpdateMachineUserInput;
 }>;
 
 
-export type UpdateMachineUserMutation = { __typename?: 'Mutation', updateMachineUser: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
+export type UpdateMachineUserMutation = { __typename?: 'Mutation', updateMachineUser: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
 
 export type MoveMachineMutationVariables = Exact<{
   departmentId: Scalars['String']['input'];
@@ -3165,7 +3434,7 @@ export type MoveMachineMutationVariables = Exact<{
 }>;
 
 
-export type MoveMachineMutation = { __typename?: 'Mutation', moveMachine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
+export type MoveMachineMutation = { __typename?: 'Mutation', moveMachine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
 
 export type SetupNodeMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -3729,14 +3998,14 @@ export type MachineTemplatesQueryVariables = Exact<{
 }>;
 
 
-export type MachineTemplatesQuery = { __typename?: 'Query', machineTemplates: Array<{ __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null }> };
+export type MachineTemplatesQuery = { __typename?: 'Query', machineTemplates: Array<{ __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null, osType: string | null, wallpaperUrl: string | null, powerPlan: string | null, encryptDisk: boolean | null, applications: Array<{ __typename?: 'MachineTemplateApplicationLink', applicationId: string, name: string | null, parameters: { [key: string]: any } | null }> | null, scripts: Array<{ __typename?: 'MachineTemplateScriptLink', scriptId: string, name: string | null, order: number, inputValues: { [key: string]: any } | null }> | null }> };
 
 export type MachineQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type MachineQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } | null };
+export type MachineQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } | null };
 
 export type MachinesQueryVariables = Exact<{
   orderBy: InputMaybe<MachineOrderBy>;
@@ -3744,7 +4013,7 @@ export type MachinesQueryVariables = Exact<{
 }>;
 
 
-export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null, totalMachines: number | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null }> };
+export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null }> };
 
 export type GraphicConnectionQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3804,7 +4073,7 @@ export type ApplicationQuery = { __typename?: 'Query', application: { __typename
 export type GetGraphicsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetGraphicsQuery = { __typename?: 'Query', getGraphics: Array<{ __typename?: 'GPU', pciBus: string, vendor: string, model: string, memory: number }> };
+export type GetGraphicsQuery = { __typename?: 'Query', getGraphics: Array<{ __typename?: 'GPU', pciBus: string, vendor: string, model: string, memory: number, passthroughReady: boolean, passthroughBlockedReason: string | null }> };
 
 export type GetSystemResourcesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4098,6 +4367,21 @@ export const CreateMachineTemplateDocument = gql`
     createdAt
     categoryId
     totalMachines
+    osType
+    wallpaperUrl
+    powerPlan
+    encryptDisk
+    applications {
+      applicationId
+      name
+      parameters
+    }
+    scripts {
+      scriptId
+      name
+      order
+      inputValues
+    }
   }
 }
     `;
@@ -4139,6 +4423,21 @@ export const UpdateMachineTemplateDocument = gql`
     createdAt
     categoryId
     totalMachines
+    osType
+    wallpaperUrl
+    powerPlan
+    encryptDisk
+    applications {
+      applicationId
+      name
+      parameters
+    }
+    scripts {
+      scriptId
+      name
+      order
+      inputValues
+    }
   }
 }
     `;
@@ -4250,7 +4549,6 @@ export const CreateMachineDocument = gql`
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -4489,7 +4787,6 @@ export const UpdateMachineHardwareDocument = gql`
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -4556,7 +4853,6 @@ export const UpdateMachineNameDocument = gql`
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -4623,7 +4919,6 @@ export const UpdateMachineUserDocument = gql`
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -4690,7 +4985,6 @@ export const MoveMachineDocument = gql`
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -7920,6 +8214,21 @@ export const MachineTemplatesDocument = gql`
     createdAt
     categoryId
     totalMachines
+    osType
+    wallpaperUrl
+    powerPlan
+    encryptDisk
+    applications {
+      applicationId
+      name
+      parameters
+    }
+    scripts {
+      scriptId
+      name
+      order
+      inputValues
+    }
   }
 }
     `;
@@ -7984,7 +8293,6 @@ export const MachineDocument = gql`
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -8066,7 +8374,6 @@ export const MachinesDocument = gql`
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -8592,6 +8899,8 @@ export const GetGraphicsDocument = gql`
     vendor
     model
     memory
+    passthroughReady
+    passthroughBlockedReason
   }
 }
     `;

@@ -37,12 +37,24 @@ export function RowContextMenu({ rows, buildItems, labelFor, children }) {
   }, [ctx]);
 
   function onContextMenu(e) {
-    const tr = e.target.closest('tbody tr');
-    if (!tr || !wrapRef.current?.contains(tr)) return;
-    const allRows = Array.from(
-      wrapRef.current.querySelectorAll('tbody tr')
-    );
-    const idx = allRows.indexOf(tr);
+    // Harbor's DataTable renders rows as <div role="row"> (CSS grid),
+    // not <tbody><tr>. Header has aria-rowindex="1"; data rows start at 2.
+    const rowEl = e.target.closest('[role="row"]');
+    if (!rowEl || !wrapRef.current?.contains(rowEl)) return;
+    const ariaIdx = rowEl.getAttribute('aria-rowindex');
+    let idx = -1;
+    if (ariaIdx && ariaIdx !== '1') {
+      idx = parseInt(ariaIdx, 10) - 2;
+    } else if (!ariaIdx) {
+      // Fallback for legacy <tbody><tr> tables
+      const tr = e.target.closest('tbody tr');
+      if (tr && wrapRef.current.contains(tr)) {
+        const allRows = Array.from(
+          wrapRef.current.querySelectorAll('tbody tr')
+        );
+        idx = allRows.indexOf(tr);
+      }
+    }
     const row = rows[idx];
     if (!row) return;
     const items = buildItems(row);
