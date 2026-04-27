@@ -2874,6 +2874,7 @@ export type ScriptType = {
   hasInputs: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   inputCount: Scalars['Int']['output'];
+  isSystem: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   os: Array<Os>;
   parsedInputs: Array<ScriptInputType>;
@@ -4123,14 +4124,14 @@ export type ScriptsQueryVariables = Exact<{
 }>;
 
 
-export type ScriptsQuery = { __typename?: 'Query', scripts: Array<{ __typename?: 'ScriptType', id: string, name: string, description: string | null, fileName: string, category: string | null, tags: Array<string>, os: Array<Os>, shell: ShellType, hasInputs: boolean, inputCount: number, createdAt: string, updatedAt: string, createdBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string, email: string } | null }> };
+export type ScriptsQuery = { __typename?: 'Query', scripts: Array<{ __typename?: 'ScriptType', id: string, name: string, description: string | null, fileName: string, category: string | null, tags: Array<string>, os: Array<Os>, shell: ShellType, hasInputs: boolean, inputCount: number, isSystem: boolean, createdAt: string, updatedAt: string, createdBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string, email: string } | null }> };
 
 export type ScriptQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type ScriptQuery = { __typename?: 'Query', script: { __typename?: 'ScriptType', id: string, name: string, description: string | null, fileName: string, category: string | null, tags: Array<string>, os: Array<Os>, shell: ShellType, hasInputs: boolean, inputCount: number, content: string | null, createdAt: string, updatedAt: string, parsedInputs: Array<{ __typename?: 'ScriptInputType', name: string, type: string, label: string, description: string | null, default: any | null, required: boolean, validation: any | null, options: Array<{ __typename?: 'InputOptionType', label: string, value: string }> | null }>, createdBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string, email: string } | null } | null };
+export type ScriptQuery = { __typename?: 'Query', script: { __typename?: 'ScriptType', id: string, name: string, description: string | null, fileName: string, category: string | null, tags: Array<string>, os: Array<Os>, shell: ShellType, hasInputs: boolean, inputCount: number, isSystem: boolean, content: string | null, createdAt: string, updatedAt: string, parsedInputs: Array<{ __typename?: 'ScriptInputType', name: string, type: string, label: string, description: string | null, default: any | null, required: boolean, validation: any | null, options: Array<{ __typename?: 'InputOptionType', label: string, value: string }> | null }>, createdBy: { __typename?: 'UserType', id: string, firstName: string, lastName: string, email: string } | null } | null };
 
 export type DepartmentScriptsQueryVariables = Exact<{
   departmentId: Scalars['ID']['input'];
@@ -9466,6 +9467,7 @@ export const ScriptsDocument = gql`
     shell
     hasInputs
     inputCount
+    isSystem
     createdAt
     updatedAt
     createdBy {
@@ -9529,6 +9531,7 @@ export const ScriptDocument = gql`
     shell
     hasInputs
     inputCount
+    isSystem
     content
     parsedInputs {
       name

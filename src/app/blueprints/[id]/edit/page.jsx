@@ -79,6 +79,8 @@ export default function EditBlueprintPage({ params }) {
       powerPlan: template.powerPlan || '',
       _activeTab: 'basics',
     });
+     
+    setReady(true);
   }, [template]);
 
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));

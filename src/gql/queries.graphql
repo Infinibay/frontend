@@ -621,6 +621,7 @@ query Scripts($filters: ScriptFiltersInput) {
     shell
     hasInputs
     inputCount
+    isSystem
     createdAt
     updatedAt
     createdBy {
@@ -645,6 +646,7 @@ query Script($id: ID!) {
     shell
     hasInputs
     inputCount
+    isSystem
     content
     parsedInputs {
       name

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Editor from '@monaco-editor/react';
 import yaml from 'js-yaml';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ import {
   Save,
   X as XIcon,
   Copy,
+  Lock,
   Settings as SettingsIcon,
   Eye,
   Code2 } from
@@ -111,8 +112,12 @@ const monacoLanguage = (shell) => {
 export default function ScriptEditorPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const scriptId = params.id;
   const isNew = scriptId === 'new';
+  // When duplicating, /scripts/new?from=<id> seeds the form from <id>.
+  const sourceId = isNew ? searchParams.get('from') : null;
+  const queryId = sourceId || scriptId;
 
   const editorRef = useRef(null);
 
@@ -131,9 +136,14 @@ export default function ScriptEditorPage() {
   const [editingInputIndex, setEditingInputIndex] = useState(null);
 
   const { data, loading } = useScriptQuery({
-    variables: { id: scriptId },
-    skip: isNew
+    variables: { id: queryId },
+    skip: isNew && !sourceId
   });
+
+  // System scripts are read-only — but only when editing them in place.
+  // When duplicating (isNew + sourceId), the new script is editable.
+  const isSystem = !isNew && !!data?.script?.isSystem;
+  const readOnly = isSystem;
 
   const [createScript, { loading: creating }] = useCreateScriptMutation();
   const [updateScript, { loading: updating }] = useUpdateScriptMutation();
@@ -142,8 +152,12 @@ export default function ScriptEditorPage() {
     if (data?.script?.content) {
       try {
         const parsed = yaml.load(data.script.content);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setOriginalYamlData(parsed);
-        setScriptName(parsed?.name || 'New Script');
+        // When duplicating, suffix the name so the user knows which one they're on
+        // and avoids fileName collision on the server side.
+        const baseName = parsed?.name || 'New Script';
+        setScriptName(sourceId ? `${baseName} (Copy)` : baseName);
         setScriptDescription(parsed?.description || '');
         setScriptTags(data.script.tags || []);
         setScriptContent(parsed?.script || '# Write your script here\n');
@@ -165,7 +179,7 @@ export default function ScriptEditorPage() {
         toast.error(`Failed to load script: ${err.message || err}`);
       }
     }
-  }, [data]);
+  }, [data, sourceId]);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -207,6 +221,7 @@ export default function ScriptEditorPage() {
     selectedShell &&
     scriptContent.trim())
     {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setErrors([]);
     }
   }, [scriptName, selectedOS, selectedShell, scriptContent, errors.length]);
@@ -399,7 +414,7 @@ export default function ScriptEditorPage() {
       cell: ({ row }) =>
       row.required ? <Badge tone="danger">Yes</Badge> : <Badge tone="neutral">No</Badge>
     },
-    {
+    ...(readOnly ? [] : [{
       id: 'actions',
       header: '',
       width: 140,
@@ -414,27 +429,27 @@ export default function ScriptEditorPage() {
               label="Edit"
               icon={<Edit size={14} />}
               onClick={() => openEditInput(i)} />
-            
+
               <IconButton
               size="sm"
               variant="ghost"
               label="Duplicate"
               icon={<Copy size={14} />}
               onClick={() => duplicateInput(i)} />
-            
+
               <IconButton
               size="sm"
               variant="ghost"
               label="Remove"
               icon={<Trash2 size={14} />}
               onClick={() => removeInput(i)} />
-            
+
             </ResponsiveStack>);
 
       }
-    }],
+    }])],
 
-    [scriptInputs]
+    [scriptInputs, readOnly]
   );
 
   if (!isNew && loading) {
@@ -468,21 +483,40 @@ export default function ScriptEditorPage() {
             size="sm"
             icon={<XIcon size={14} />}
             onClick={handleCancel}>
-            
-              Cancel
+
+              {readOnly ? 'Back' : 'Cancel'}
             </Button>
-            <Button
-            size="sm"
-            icon={<Save size={14} />}
-            onClick={handleSave}
-            loading={creating || updating}
-            disabled={creating || updating}>
-            
-              Save
-            </Button>
+            {readOnly ? (
+              <Button
+              size="sm"
+              icon={<Copy size={14} />}
+              onClick={() => router.push(`/scripts/new?from=${scriptId}`)}>
+                Duplicate to edit
+              </Button>
+            ) : (
+              <Button
+              size="sm"
+              icon={<Save size={14} />}
+              onClick={handleSave}
+              loading={creating || updating}
+              disabled={creating || updating}>
+
+                Save
+              </Button>
+            )}
           </ResponsiveStack>
         } />
-      
+
+      {readOnly ? (
+        <Alert
+          tone="warning"
+          title="System script — read-only"
+          icon={<Lock size={14} />}
+        >
+          This script ships with Infinibay and stays in sync with system updates.
+          Use <strong>Duplicate to edit</strong> to create your own copy.
+        </Alert>
+      ) : null}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} variant="underline">
         <TabList>
@@ -509,15 +543,17 @@ export default function ScriptEditorPage() {
                     <TextField
                       value={scriptName}
                       onChange={(e) => setScriptName(e.target.value)}
-                      placeholder="e.g. Rotate logs nightly" />
-                    
+                      placeholder="e.g. Rotate logs nightly"
+                      disabled={readOnly} />
+
                   </FormField>
                   <FormField label="Description">
                     <TextField
                       value={scriptDescription}
                       onChange={(e) => setScriptDescription(e.target.value)}
-                      placeholder="What does this script do?" />
-                    
+                      placeholder="What does this script do?"
+                      disabled={readOnly} />
+
                   </FormField>
                 </ResponsiveGrid>
 
@@ -525,8 +561,9 @@ export default function ScriptEditorPage() {
                   <TagInput
                     value={scriptTags}
                     onChange={(next) => setScriptTags(next.slice(0, 10))}
-                    placeholder="Type a tag, press Enter…" />
-                  
+                    placeholder="Type a tag, press Enter…"
+                    disabled={readOnly} />
+
                 </FormField>
 
                 <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={3}>
@@ -534,8 +571,9 @@ export default function ScriptEditorPage() {
                     <SegmentedControl
                       items={OS_OPTIONS}
                       value={selectedOS}
-                      onChange={handleOSChange} />
-                    
+                      onChange={handleOSChange}
+                      disabled={readOnly} />
+
                   </FormField>
                   <FormField
                     label={
@@ -548,8 +586,9 @@ export default function ScriptEditorPage() {
                     <Select
                       value={selectedShell}
                       onChange={handleShellChange}
-                      options={availableShells} />
-                    
+                      options={availableShells}
+                      disabled={readOnly} />
+
                   </FormField>
                 </ResponsiveGrid>
               </ResponsiveStack>
@@ -565,14 +604,16 @@ export default function ScriptEditorPage() {
                 </ResponsiveStack>
               }
               header={
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<Plus size={14} />}
-                onClick={openAddInput}>
-                
+              readOnly ? null : (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<Plus size={14} />}
+                  onClick={openAddInput}>
+
                   Add input
                 </Button>
+              )
               }>
               
               {scriptInputs.length === 0 ?
@@ -582,14 +623,16 @@ export default function ScriptEditorPage() {
                 title="No inputs defined"
                 description="Scripts without inputs run with no extra prompts."
                 actions={
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={<Plus size={14} />}
-                  onClick={openAddInput}>
-                  
+                readOnly ? null : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={<Plus size={14} />}
+                    onClick={openAddInput}>
+
                       Add input
                     </Button>
+                )
                 } /> :
 
 
@@ -624,7 +667,8 @@ export default function ScriptEditorPage() {
                   lineNumbers: 'on',
                   folding: true,
                   wordWrap: 'on',
-                  automaticLayout: true
+                  automaticLayout: true,
+                  readOnly: readOnly
                 }} />
               
             </Card>

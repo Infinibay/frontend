@@ -1,16 +1,95 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+import {
+  Card,
+  Badge,
+  IconButton,
+  ResponsiveStack,
+} from '@infinibay/harbor'
+import { FileCode, Trash2, Calendar, Monitor, Server } from 'lucide-react'
+
 /**
- * @deprecated Use ScriptListItem — it provides a denser Harbor-native layout.
+ * ScriptCard — rich grid-card view for the scripts library.
  *
- * Kept only for backward compatibility. Re-exports a thin `Card` wrapper
- * around `ScriptListItem` so any lingering callers keep working.
- *
- * @see ScriptListItem
+ * Displays a Harbor Card with leading icon, title, description, OS/category
+ * badges, and a footer with schedule info + action buttons.
  */
+export function ScriptCard({
+  script,
+  onEdit,
+  onDelete,
+  selected,
+  onToggleSelect,
+}) {
+  const router = useRouter()
 
-import { ScriptListItem } from './ScriptListItem'
+  const osList = Array.isArray(script.os) ? script.os : []
+  const tags = Array.isArray(script.tags) ? script.tags : []
+  const scheduleCount = script.scheduleCount || 0
 
-export function ScriptCard(props) {
-  return <ScriptListItem {...props} />
+  const handleClick = onEdit
+    ? () => onEdit(script.id)
+    : () => router.push(`/scripts/${script.id}`)
+
+  const osBadges = osList.map((os) => {
+    const isWin = os === 'windows'
+    const isLinux = os === 'linux'
+    return (
+      <Badge
+        key={os}
+        tone={isWin ? 'info' : isLinux ? 'success' : 'neutral'}
+      >
+        {isWin ? <Monitor size={10} /> : isLinux ? <Server size={10} /> : null}
+        <span style={{ marginLeft: isWin || isLinux ? 3 : 0 }}>{os}</span>
+      </Badge>
+    )
+  })
+
+  return (
+    <Card
+      interactive
+      onClick={handleClick}
+      leadingIcon={<FileCode size={18} />}
+      leadingIconTone="sky"
+      title={script.name}
+      description={script.description || 'No description'}
+      footer={
+        <ResponsiveStack direction="row" gap={2} align="center" justify="between">
+          <ResponsiveStack direction="row" gap={1} wrap align="center">
+            {osBadges}
+            {script.category ? (
+              <Badge tone="neutral">{script.category.toLowerCase()}</Badge>
+            ) : null}
+            {tags.slice(0, 2).map((t) => (
+              <Badge key={t} tone="purple">{t}</Badge>
+            ))}
+            {tags.length > 2 ? (
+              <Badge tone="neutral">+{tags.length - 2}</Badge>
+            ) : null}
+          </ResponsiveStack>
+
+          <ResponsiveStack direction="row" gap={1.5} align="center">
+            {scheduleCount > 0 ? (
+              <ResponsiveStack direction="row" gap={1} align="center">
+                <span className="inline-grid place-items-center w-5 h-5 rounded-md bg-emerald-500/15 text-emerald-200 text-xs">
+                  <Calendar size={10} />
+                </span>
+                <span className="text-xs font-medium text-emerald-200">{scheduleCount}</span>
+              </ResponsiveStack>
+            ) : null}
+            <div onClick={(e) => e.stopPropagation()}>
+              <IconButton
+                size="sm"
+                variant="ghost"
+                label="Delete"
+                icon={<Trash2 size={13} />}
+                onClick={() => onDelete?.(script.id)}
+              />
+            </div>
+          </ResponsiveStack>
+        </ResponsiveStack>
+      }
+    />
+  )
 }

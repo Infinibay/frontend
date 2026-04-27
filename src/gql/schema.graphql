@@ -2122,6 +2122,7 @@ type ScriptType {
   hasInputs: Boolean!
   id: ID!
   inputCount: Int!
+  isSystem: Boolean!
   name: String!
   os: [OS!]!
   parsedInputs: [ScriptInputType!]!

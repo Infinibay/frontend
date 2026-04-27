@@ -18,6 +18,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useSelector } from 'react-redux';
 import {
   TextField,
@@ -209,7 +210,7 @@ export function BlueprintForm({ form, onChange }) {
         ) : null}
         {family ? (
           <Tab value="hardening" icon={<ShieldCheck size={14} />}>
-            Hardening{scriptsCount > 0 ? ` · ${scriptsCount}` : ''}
+            First-boot scripts{scriptsCount > 0 ? ` · ${scriptsCount}` : ''}
           </Tab>
         ) : null}
         {family ? (
@@ -319,66 +320,98 @@ export function BlueprintForm({ form, onChange }) {
         </TabPanel>
       ) : null}
 
-      {/* ---------------------------- Hardening --------------------------- */}
+      {/* ------------------------ First-boot scripts ---------------------- */}
       {family ? (
         <TabPanel value="hardening">
-          <ResponsiveStack direction="col" gap={4}>
+          <ResponsiveStack direction="col" gap={5}>
             <Alert tone="info" size="sm">
-              Hardening scripts run as first-boot tasks. Pick individually,
-              group by group, or apply a preset.
+              Scripts in this tab run as first-boot tasks on every desktop
+              created from this blueprint. Hardening below, plus any custom
+              scripts you've authored.
             </Alert>
 
-            <ResponsiveStack direction="row" gap={3} align="center">
-              <span className="text-xs text-fg-muted whitespace-nowrap">Presets:</span>
-              <ResponsiveStack direction="row" gap={2} align="center">
-                {Object.keys(HARDENING_PRESETS).map((name) => (
+            {/* ----- Hardening section ----- */}
+            <ResponsiveStack direction="col" gap={3}>
+              <ResponsiveStack direction="row" gap={2} align="center" justify="between" wrap>
+                <h3 className="text-sm font-semibold m-0">Hardening</h3>
+                <ResponsiveStack direction="row" gap={2} align="center" wrap>
+                  <span className="text-xs text-fg-muted whitespace-nowrap">Presets:</span>
+                  {Object.keys(HARDENING_PRESETS).map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      className="px-2.5 py-1 text-xs rounded-md bg-white/5 hover:bg-white/10 border border-white/5 whitespace-nowrap"
+                      onClick={() => applyPreset(name)}
+                    >
+                      {name}
+                    </button>
+                  ))}
                   <button
-                    key={name}
                     type="button"
-                    className="px-2.5 py-1 text-xs rounded-md bg-white/5 hover:bg-white/10 border border-white/5 whitespace-nowrap"
-                    onClick={() => applyPreset(name)}
+                    className="px-2.5 py-1 text-xs rounded-md text-fg-muted hover:bg-white/5 whitespace-nowrap"
+                    onClick={() => {
+                      // Clear hardening selections only — keep custom script picks.
+                      const hardeningIds = new Set(goldenImageScripts.map((s) => s.id));
+                      const next = (form.scriptIds ?? []).filter((id) => !hardeningIds.has(id));
+                      onChange({ scriptIds: next });
+                    }}
                   >
-                    {name}
+                    Clear hardening
                   </button>
-                ))}
-                <button
-                  type="button"
-                  className="px-2.5 py-1 text-xs rounded-md text-fg-muted hover:bg-white/5 whitespace-nowrap"
-                  onClick={() => onChange({ scriptIds: [] })}
-                >
-                  Clear
-                </button>
+                </ResponsiveStack>
               </ResponsiveStack>
+
+              {goldenImageScripts.length === 0 ? (
+                <div className="text-sm text-fg-muted py-4">
+                  No hardening scripts seeded for {osType}. Run the backend seed
+                  (scripts live in <code>scripts/templates/golden-image/</code>).
+                </div>
+              ) : (
+                <ResponsiveStack direction="col" gap={4}>
+                  {scriptsByGroup.map((group) => (
+                    <ScriptGroup
+                      key={group.id}
+                      title={group.label}
+                      scripts={group.items}
+                      selected={form.scriptIds ?? []}
+                      onToggle={(id) => toggleId('scriptIds', id)}
+                      onShowInfo={setInfoScript}
+                    />
+                  ))}
+                </ResponsiveStack>
+              )}
             </ResponsiveStack>
 
-            {goldenImageScripts.length === 0 ? (
-              <div className="text-sm text-fg-muted py-6 text-center">
-                No hardening scripts seeded for {osType}. Run the backend seed
-                (scripts live in <code>scripts/templates/golden-image/</code>).
+            <div className="border-t border-white/5" />
+
+            {/* ----- Custom scripts section ----- */}
+            <ResponsiveStack direction="col" gap={3}>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-sm font-semibold m-0">Custom scripts</h3>
+                <span className="text-xs text-fg-muted">
+                  Scripts you've authored under <code>/scripts</code> matching
+                  this OS. Pick any to run at first boot alongside hardening.
+                </span>
               </div>
-            ) : (
-              <ResponsiveStack direction="col" gap={4}>
-                {scriptsByGroup.map((group) => (
-                  <ScriptGroup
-                    key={group.id}
-                    title={group.label}
-                    scripts={group.items}
-                    selected={form.scriptIds ?? []}
-                    onToggle={(id) => toggleId('scriptIds', id)}
-                    onShowInfo={setInfoScript}
-                  />
-                ))}
-                {otherScripts.length > 0 ? (
-                  <ScriptGroup
-                    title="Other scripts"
-                    scripts={otherScripts}
-                    selected={form.scriptIds ?? []}
-                    onToggle={(id) => toggleId('scriptIds', id)}
-                    onShowInfo={setInfoScript}
-                  />
-                ) : null}
-              </ResponsiveStack>
-            )}
+
+              {otherScripts.length === 0 ? (
+                <div className="text-sm text-fg-muted py-4">
+                  No custom scripts available for {osType}.{' '}
+                  <Link className="text-accent underline underline-offset-2 hover:no-underline" href="/scripts/new">
+                    Create one
+                  </Link>
+                  .
+                </div>
+              ) : (
+                <ScriptGroup
+                  title="Available"
+                  scripts={otherScripts}
+                  selected={form.scriptIds ?? []}
+                  onToggle={(id) => toggleId('scriptIds', id)}
+                  onShowInfo={setInfoScript}
+                />
+              )}
+            </ResponsiveStack>
           </ResponsiveStack>
         </TabPanel>
       ) : null}

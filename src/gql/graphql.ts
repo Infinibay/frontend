@@ -2871,6 +2871,7 @@ export type ScriptType = {
   hasInputs: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   inputCount: Scalars['Int']['output'];
+  isSystem: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   os: Array<Os>;
   parsedInputs: Array<ScriptInputType>;

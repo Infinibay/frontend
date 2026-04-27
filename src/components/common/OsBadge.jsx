@@ -9,7 +9,7 @@
  */
 
 const OS_MAP = [
-  { match: /windows|\bwin\b|win10|win11|microsoft/i, slug: 'windows', label: 'Windows', tintBg: 'bg-[rgb(0_120_214_/_0.10)]',   tintFg: 'text-[rgb(120_180_240)]', color: '5EB5FF' },
+  { match: /windows|\bwin\b|win10|win11|microsoft/i, slug: 'windows11', label: 'Windows', tintBg: 'bg-[rgb(0_120_214_/_0.10)]',   tintFg: 'text-[rgb(120_180_240)]', color: '5EB5FF' },
   { match: /ubuntu/i,          slug: 'ubuntu',        label: 'Ubuntu',      tintBg: 'bg-[rgb(233_84_32_/_0.10)]', tintFg: 'text-[rgb(233_140_100)]', color: 'E95420' },
   { match: /debian/i,          slug: 'debian',        label: 'Debian',      tintBg: 'bg-[rgb(168_29_51_/_0.10)]', tintFg: 'text-[rgb(220_140_150)]', color: 'DC7B8A' },
   { match: /fedora/i,          slug: 'fedora',        label: 'Fedora',      tintBg: 'bg-[rgb(81_162_218_/_0.10)]',tintFg: 'text-[rgb(120_180_230)]', color: '78B4E6' },
