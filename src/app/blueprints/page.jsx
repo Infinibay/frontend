@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useDispatch } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Layers,
@@ -29,9 +31,10 @@ import {
 import { PageHeader } from '@/components/common/PageHeader';
 import { OsIcon } from '@/components/common/OsBadge';
 
-import { CreateTemplateDialog } from './components/create-template-dialog';
+// Create/Edit drawers retired in favour of dedicated pages — see
+// /blueprints/new and /blueprints/[id]/edit. Keeping the category
+// dialogs because they're still simple enough for a drawer.
 import { CreateCategoryDialog } from './components/create-category-dialog';
-import { EditTemplateDialog } from './components/edit-template-dialog';
 import { EditCategoryDialog } from './components/edit-category-dialog';
 import {
   destroyTemplate,
@@ -53,8 +56,41 @@ function BlueprintRow({ template, onEdit, onDelete }) {
   // Pull OS signal from template name or description (heuristic for mock).
   const osHint = `${template.name} ${template.description || ''}`;
 
+  const [ctx, setCtx] = useState(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!ctx) return;
+    const down = (e) => {
+      if (!menuRef.current?.contains(e.target)) setCtx(null);
+    };
+    const key = (e) => {
+      if (e.key === 'Escape') setCtx(null);
+    };
+    document.addEventListener('mousedown', down);
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('mousedown', down);
+      document.removeEventListener('keydown', key);
+    };
+  }, [ctx]);
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    const W = 200;
+    const H = 100;
+    let x = e.clientX;
+    let y = e.clientY;
+    if (x + W > window.innerWidth - 8) x = window.innerWidth - W - 8;
+    if (y + H > window.innerHeight - 8) y = window.innerHeight - H - 8;
+    setCtx({ x, y });
+  };
+
   return (
-    <div className="group flex items-center gap-3 py-2 px-2 rounded-md hover:bg-white/[0.03] transition-colors duration-150">
+    <div
+      className="group flex items-center gap-3 py-2 px-2 rounded-md hover:bg-white/[0.03] transition-colors duration-150"
+      onContextMenu={handleContextMenu}
+    >
       <div className="shrink-0 h-6 w-6 rounded-md bg-white/5 flex items-center justify-center">
         <OsIcon os={osHint} size={14} />
       </div>
@@ -115,16 +151,52 @@ function BlueprintRow({ template, onEdit, onDelete }) {
           />
         )}
       </div>
+      {ctx && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              ref={menuRef}
+              style={{ position: 'fixed', left: ctx.x, top: ctx.y, zIndex: 9999, minWidth: 180 }}
+              className="rounded-xl bg-[#14141c] border border-white/10 shadow-2xl p-1"
+            >
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md hover:bg-white/5"
+                onClick={() => {
+                  setCtx(null);
+                  onEdit?.();
+                }}
+              >
+                <Pencil size={14} /> Edit
+              </button>
+              <button
+                type="button"
+                className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md ${
+                  inUse ? 'text-fg-subtle cursor-not-allowed' : 'text-danger-fg hover:bg-danger-fg/10'
+                }`}
+                disabled={inUse}
+                title={inUse ? `In use by ${template.totalMachines} desktop(s)` : undefined}
+                onClick={() => {
+                  if (inUse) return;
+                  setCtx(null);
+                  onDelete?.(template);
+                }}
+              >
+                <Trash2 size={14} /> Delete
+              </button>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
 
 export default function TemplatesPage() {
   const dispatch = useDispatch();
+  const router = useRouter();
 
   const [deleteTemplateTarget, setDeleteTemplateTarget] = useState(null);
   const [deleteCategoryTarget, setDeleteCategoryTarget] = useState(null);
-  const [editingTemplate, setEditingTemplate] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
@@ -415,22 +487,26 @@ export default function TemplatesPage() {
                       </span>
                     </Tooltip>
                   )}
-                  <CreateTemplateDialog categoryId={category.id}>
-                    <Button size="sm" variant="secondary" icon={<Plus size={14} />}>
-                      New Blueprint
-                    </Button>
-                  </CreateTemplateDialog>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={<Plus size={14} />}
+                    onClick={() => router.push(`/blueprints/new?category=${category.id}`)}
+                  >
+                    New Blueprint
+                  </Button>
                 </div>
               </div>
 
               {list.length === 0 ? (
                 <div className="py-4 px-2 text-fg-muted text-sm">
                   No blueprints in this category yet.{' '}
-                  <CreateTemplateDialog categoryId={category.id}>
-                    <button className="text-accent underline underline-offset-2 hover:no-underline">
-                      Create one
-                    </button>
-                  </CreateTemplateDialog>
+                  <button
+                    className="text-accent underline underline-offset-2 hover:no-underline"
+                    onClick={() => router.push(`/blueprints/new?category=${category.id}`)}
+                  >
+                    Create one
+                  </button>
                 </div>
               ) : (
                 <div className="flex flex-col divide-y divide-white/5">
@@ -438,7 +514,7 @@ export default function TemplatesPage() {
                     <BlueprintRow
                       key={template.id}
                       template={template}
-                      onEdit={() => setEditingTemplate(template)}
+                      onEdit={() => router.push(`/blueprints/${template.id}/edit`)}
                       onDelete={setDeleteTemplateTarget}
                     />
                   ))}
@@ -457,13 +533,6 @@ export default function TemplatesPage() {
       {errorBlock}
       {body}
 
-      {editingTemplate ? (
-        <EditTemplateDialog
-          template={editingTemplate}
-          open
-          onOpenChange={(o) => !o && setEditingTemplate(null)}
-        />
-      ) : null}
       {editingCategory ? (
         <EditCategoryDialog
           category={editingCategory}

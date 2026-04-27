@@ -66,6 +66,21 @@ query machineTemplates($orderBy: MachineTemplateOrderBy, $pagination: Pagination
     createdAt
     categoryId
     totalMachines
+    osType
+    wallpaperUrl
+    powerPlan
+    encryptDisk
+    applications {
+      applicationId
+      name
+      parameters
+    }
+    scripts {
+      scriptId
+      name
+      order
+      inputValues
+    }
   }
 }
 
@@ -89,7 +104,6 @@ query machine($id: String!) {
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -131,7 +145,6 @@ query machines($orderBy: MachineOrderBy, $pagination: PaginationInputType) {
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -260,6 +273,8 @@ query getGraphics {
     vendor
     model
     memory
+    passthroughReady
+    passthroughBlockedReason
   }
 }
 

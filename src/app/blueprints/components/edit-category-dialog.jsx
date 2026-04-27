@@ -90,6 +90,7 @@ export function EditCategoryDialog({ children, category, open, onOpenChange }) {
         },
       });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [isControlled]
   );
 

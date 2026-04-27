@@ -4,19 +4,29 @@
 # -----------------------------------------------
 
 type AppSettings {
+  accent2Color: String
+  accent3Color: String
+  accentColor: String
+  brandName: String
   createdAt: DateTimeISO!
   id: ID!
   interfaceSize: String!
   logoUrl: String
   theme: String!
+  themePreset: String
   updatedAt: DateTimeISO!
   wallpaper: String!
 }
 
 input AppSettingsInput {
+  accent2Color: String
+  accent3Color: String
+  accentColor: String
+  brandName: String
   interfaceSize: String
   logoUrl: String
   theme: String
+  themePreset: String
   wallpaper: String
 }
 
@@ -207,6 +217,16 @@ input BridgeNameInput {
   networkName: String! = ""
 }
 
+input CaptureGoldenImageFromMachineInput {
+  destroySource: Boolean = false
+  hardeningOptions: JSONObject
+  machineId: String!
+  name: String!
+  notes: String
+  parentImageId: String
+  sanitizeUserData: Boolean = true
+}
+
 type CleanupResultType {
   filterNames: [String!]!
   filtersRemoved: Int!
@@ -289,6 +309,19 @@ input CreateFirewallRuleInput {
   srcPortStart: Int
 }
 
+input CreateGoldenImageFromTemplateInput {
+  autoDeprecatePrevious: Boolean = false
+
+  """Hardening script toggles — shape is { scriptFileName: boolean }."""
+  hardeningOptions: JSONObject
+  name: String!
+  notes: String
+
+  """If set, record this build as a new version of the given family."""
+  parentImageId: String
+  templateId: String!
+}
+
 input CreateMachineInputType {
   applications: [MachineApplicationInputType!]! = []
   customCores: Int
@@ -327,6 +360,18 @@ input CreateNetworkInput {
   enabledServices: [String!]
   ipConfig: NetworkIpConfigInput
   name: String! = ""
+}
+
+input CreatePoolInput {
+  departmentId: ID!
+  goldenImageId: ID
+  idleTimeoutMinutes: Int
+  name: String!
+  resetOnLogoff: Boolean = true
+  sizeMax: Int = 10
+  sizeMin: Int = 0
+  templateId: ID!
+  type: PoolType = NON_PERSISTENT
 }
 
 input CreateScheduleInput {
@@ -603,6 +648,8 @@ type FlushResultType {
 type GPU {
   memory: Float!
   model: String!
+  passthroughBlockedReason: String
+  passthroughReady: Boolean!
   pciBus: String!
   vendor: String!
 }
@@ -648,6 +695,53 @@ type GlobalRecommendationType {
 
   """Category of recommendation"""
   type: RecommendationType!
+}
+
+type GoldenImage {
+  baseDiskPath: String!
+  createdAt: DateTimeISO!
+  createdById: String
+  deprecatedAt: DateTimeISO
+  hardeningApplied: JSONObject
+  id: ID!
+  name: String!
+  notes: String
+  osType: GoldenImageOsType!
+  osVersion: String
+  parentImageId: String
+  sealedAt: DateTimeISO
+  sizeBytes: String!
+  sourceMachineId: String
+  sourceTemplateId: String
+  sourceType: GoldenImageSourceType!
+  status: GoldenImageStatus!
+  updatedAt: DateTimeISO!
+  version: Int!
+}
+
+enum GoldenImageOsType {
+  FEDORA
+  UBUNTU
+  WINDOWS_10
+  WINDOWS_11
+}
+
+type GoldenImageResult {
+  error: String
+  image: GoldenImage
+  success: Boolean!
+}
+
+enum GoldenImageSourceType {
+  AUTOMATED
+  MANUAL_CAPTURE
+}
+
+enum GoldenImageStatus {
+  BUILDING
+  DEPRECATED
+  DRAFT
+  PUBLISHED
 }
 
 type GraphicConfigurationType {
@@ -868,6 +962,12 @@ enum MachineOs {
   WINDOWS11
 }
 
+type MachineTemplateApplicationLink {
+  applicationId: ID!
+  name: String
+  parameters: JSONObject
+}
+
 input MachineTemplateCategoryInputType {
   description: String = null
   name: String! = ""
@@ -883,6 +983,9 @@ type MachineTemplateCategoryType {
 }
 
 input MachineTemplateInputType {
+  """Apps preinstalled on every VM from this blueprint."""
+  applications: [TemplateApplicationInput!]
+
   """The ID of the category for the machine template"""
   categoryId: ID = null
 
@@ -892,14 +995,33 @@ input MachineTemplateInputType {
   """A brief description of the machine template"""
   description: String! = ""
 
+  """
+  Enable full-disk encryption (BitLocker on Windows, LUKS on Linux — LUKS is not yet wired).
+  """
+  encryptDisk: Boolean
+
   """The name of the machine template"""
   name: String! = ""
+
+  """
+  Canonical OS key: 'windows10' | 'windows11' | 'ubuntu' | 'fedora'. Required by the UI for new blueprints.
+  """
+  osType: String
+
+  """Power plan token: 'balanced' | 'high-performance' | 'power-saver'."""
+  powerPlan: String
 
   """The amount of RAM (in GB) for the machine"""
   ram: Int! = 0
 
+  """FIRST_BOOT scripts run on every VM from this blueprint."""
+  scripts: [TemplateScriptInput!]
+
   """The storage space (in GB) for the machine"""
   storage: Int! = 0
+
+  """Desktop wallpaper path/URL applied on first boot."""
+  wallpaperUrl: String
 }
 
 input MachineTemplateOrderBy {
@@ -917,16 +1039,29 @@ enum MachineTemplateOrderByField {
   STORAGE
 }
 
+type MachineTemplateScriptLink {
+  inputValues: JSONObject
+  name: String
+  order: Int!
+  scriptId: ID!
+}
+
 type MachineTemplateType {
+  applications: [MachineTemplateApplicationLink!]
   categoryId: ID
   cores: Int!
   createdAt: DateTimeISO!
   description: String
+  encryptDisk: Boolean
   id: ID!
   name: String
+  osType: String
+  powerPlan: String
   ram: Int!
+  scripts: [MachineTemplateScriptLink!]
   storage: Int!
   totalMachines: Int
+  wallpaperUrl: String
 }
 
 type MachineType {
@@ -1034,7 +1169,15 @@ type Mutation {
   cancelResolution(id: ID!): RecommendationResolutionType!
   cancelScheduledScript(executionId: ID!): ScheduleScriptResponseType!
   cancelScriptExecution(id: ID!): ScriptExecutionResponseType!
+
+  """Seal an existing VM into a new golden image (long-running)."""
+  captureGoldenImageFromMachine(input: CaptureGoldenImageFromMachineInput!): GoldenImageResult!
   cleanupInfinibayFirewall: CleanupResultType!
+
+  """
+  Check out a desktop from the pool for the current user. Returns Machine.id.
+  """
+  connectToPool(poolId: ID!): ID!
   createApplication(input: CreateApplicationInputType!): ApplicationType!
 
   """Create a backup of a VM"""
@@ -1044,11 +1187,15 @@ type Mutation {
   createBackupSchedule(input: CreateScheduleInput!): BackupSchedule!
   createDepartment(firewallConfig: CreateDepartmentFirewallInput, name: String!): DepartmentType!
   createDepartmentFirewallRule(departmentId: ID!, input: CreateFirewallRuleInput!): FirewallRuleType!
+
+  """Build a sealed golden image from a blueprint (long-running)."""
+  createGoldenImageFromTemplate(input: CreateGoldenImageFromTemplateInput!): GoldenImageResult!
   createMachine(input: CreateMachineInputType!): Machine!
   createMachineTemplate(input: MachineTemplateInputType!): MachineTemplateType!
   createMachineTemplateCategory(input: MachineTemplateCategoryInputType!): MachineTemplateCategoryType!
   createMaintenanceTask(input: CreateMaintenanceTaskInput!): MaintenanceTaskResponse!
   createNetwork(input: CreateNetworkInput!): Boolean!
+  createPool(input: CreatePoolInput!): PoolResult!
   createScript(input: CreateScriptInput!): ScriptResponseType!
 
   """Create a snapshot of a virtual machine"""
@@ -1063,12 +1210,15 @@ type Mutation {
   """Delete a backup schedule"""
   deleteBackupSchedule(id: ID!): SuccessType!
   deleteFirewallRule(ruleId: ID!): Boolean!
+  deleteGoldenImage(id: ID!): Boolean!
   deleteMaintenanceTask(id: ID!): MaintenanceTaskResponse!
   deleteNetwork(input: DeleteNetworkInput!): Boolean!
+  deletePool(id: ID!): Boolean!
   deleteScript(force: Boolean = false, id: ID!): ScriptResponseType!
 
   """Delete a snapshot from a virtual machine"""
   deleteSnapshot(input: DeleteSnapshotInput!): SuccessType!
+  deprecateGoldenImage(id: ID!): GoldenImageResult!
   destroyDepartment(id: String!): DepartmentType!
   destroyMachine(id: String!): SuccessType!
   destroyMachineTemplate(id: String!): Boolean!
@@ -1082,6 +1232,7 @@ type Mutation {
 
   """Dismiss a single recommendation"""
   dismissRecommendation(id: ID!): DismissRecommendationResult!
+  drainPool(id: ID!): PoolResult!
 
   """Enable a plugin package"""
   enablePackage(name: String!): PackageType
@@ -1109,6 +1260,7 @@ type Mutation {
   performDiskCleanup(drive: String!, targets: [String!], vmId: ID!): DiskCleanupResult!
   powerOff(id: String!): SuccessType!
   powerOn(id: String!): SuccessType!
+  publishGoldenImage(id: ID!): GoldenImageResult!
   queueAllVMHealthChecks: HealthCheckRoundResult!
 
   """Register uploaded ISO"""
@@ -1135,6 +1287,7 @@ type Mutation {
 
   """Run Windows Defender quick scan on a VM"""
   runDefenderQuickScan(vmId: ID!): DefenderScanResult!
+  scalePool(id: ID!, targetSize: Int!): PoolResult!
   scheduleScript(input: ScheduleScriptInput!): ScheduleScriptResponseType!
   setNetworkBridgeName(input: BridgeNameInput!): Boolean!
   setNetworkIp(input: NetworkIpInput!): Boolean!
@@ -1158,6 +1311,7 @@ type Mutation {
   toggleMaintenanceTask(enabled: Boolean!, id: ID!): MaintenanceTaskResponse!
   triggerHealthCheckRound: HealthCheckRoundResult!
   unassignScriptFromDepartment(departmentId: ID!, scriptId: ID!): Boolean!
+  undrainPool(id: ID!): PoolResult!
 
   """
   Uninstall an external plugin package (cannot uninstall built-in packages)
@@ -1181,6 +1335,7 @@ type Mutation {
 
   """Update a package on a virtual machine (legacy compatibility)"""
   updatePackage(machineId: ID!, packageName: String!): CommandResult!
+  updatePool(id: ID!, input: UpdatePoolInput!): PoolResult!
   updateScheduledScript(input: UpdateScheduledScriptInput!): ScheduleScriptResponseType!
   updateScript(input: UpdateScriptInput!): ScriptResponseType!
   updateUser(id: String!, input: UpdateUserInputType!): UserType!
@@ -1396,6 +1551,36 @@ input PaginationInputType {
   take: Int = 20
 }
 
+type Pool {
+  createdAt: DateTimeISO!
+
+  """Number of non-archived machines currently in the pool."""
+  currentSize: Int!
+  departmentId: ID!
+  draining: Boolean!
+  goldenImageId: ID
+  id: ID!
+  idleTimeoutMinutes: Int
+  name: String!
+  resetOnLogoff: Boolean!
+  sizeMax: Int!
+  sizeMin: Int!
+  templateId: ID!
+  type: PoolType!
+  updatedAt: DateTimeISO!
+}
+
+type PoolResult {
+  error: String
+  pool: Pool
+  success: Boolean!
+}
+
+enum PoolType {
+  NON_PERSISTENT
+  PERSISTENT
+}
+
 type ProcessControlResult {
   error: String
   message: String!
@@ -1501,6 +1686,8 @@ type Query {
 
   """Get all pending recommendations across all VMs the user has access to"""
   globalPendingRecommendations(limit: Int = 50): [GlobalRecommendationType!]!
+  goldenImage(id: ID!): GoldenImage
+  goldenImages: [GoldenImage!]!
   graphicConnection(id: String!): GraphicConfigurationType
   healthCheckQueueStats: QueueStatsType!
   healthQueueStatistics: QueueStatistics!
@@ -1538,6 +1725,8 @@ type Query {
   Get the count of pending (non-dismissed, non-snoozed) recommendations across all VMs
   """
   pendingRecommendationCount: Int!
+  pool(id: ID!): Pool
+  pools: [Pool!]!
 
   """Fetch a single resolution. Poll this query to track progress."""
   recommendationResolution(id: ID!): RecommendationResolutionType
@@ -2039,6 +2228,17 @@ type SystemResources {
   memory: SystemResourceMemory!
 }
 
+input TemplateApplicationInput {
+  applicationId: ID! = ""
+  parameters: JSONObject
+}
+
+input TemplateScriptInput {
+  inputValues: JSONObject
+  order: Int = 0
+  scriptId: ID! = ""
+}
+
 """
 The javascript `Date` as integer. Type represents date and time as number of milliseconds from start of UNIX epoch.
 """
@@ -2115,6 +2315,15 @@ input UpdateMaintenanceTaskInput {
   name: String
   parameters: JSONObject
   runAt: DateTimeISO
+}
+
+input UpdatePoolInput {
+  draining: Boolean
+  idleTimeoutMinutes: Int
+  name: String
+  resetOnLogoff: Boolean
+  sizeMax: Int
+  sizeMin: Int
 }
 
 input UpdateScheduleInput {

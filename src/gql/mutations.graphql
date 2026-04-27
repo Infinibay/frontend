@@ -33,6 +33,21 @@ mutation createMachineTemplate($input: MachineTemplateInputType!) {
     createdAt
     categoryId
     totalMachines
+    osType
+    wallpaperUrl
+    powerPlan
+    encryptDisk
+    applications {
+      applicationId
+      name
+      parameters
+    }
+    scripts {
+      scriptId
+      name
+      order
+      inputValues
+    }
   }
 }
 
@@ -47,6 +62,21 @@ mutation updateMachineTemplate($input: MachineTemplateInputType!, $id: String!) 
     createdAt
     categoryId
     totalMachines
+    osType
+    wallpaperUrl
+    powerPlan
+    encryptDisk
+    applications {
+      applicationId
+      name
+      parameters
+    }
+    scripts {
+      scriptId
+      name
+      order
+      inputValues
+    }
   }
 }
 
@@ -76,7 +106,6 @@ mutation createMachine($input: CreateMachineInputType!) {
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -153,7 +182,6 @@ mutation updateMachineHardware($input: UpdateMachineHardwareInput!) {
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -193,7 +221,6 @@ mutation updateMachineName($input: UpdateMachineNameInput!) {
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -233,7 +260,6 @@ mutation updateMachineUser($input: UpdateMachineUserInput!) {
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id
@@ -273,7 +299,6 @@ mutation moveMachine($departmentId: String!, $id: String!) {
       storage
       createdAt
       categoryId
-      totalMachines
     }
     department {
       id

@@ -1,32 +1,36 @@
-"use client";
+'use client';
 
-import { useState, cloneElement, isValidElement, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { toast } from "sonner";
-import { Cpu, MemoryStick, HardDrive, Layers } from "lucide-react";
+import { useState, cloneElement, isValidElement, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'sonner';
+import { Layers } from 'lucide-react';
 import {
   Drawer,
   Button,
   ButtonGroup,
-  TextField,
-  Textarea,
   Alert,
   ResponsiveStack,
-  ResponsiveGrid,
-} from "@infinibay/harbor";
+} from '@infinibay/harbor';
 
 import {
   createTemplate,
   selectTemplatesLoading,
   selectTemplatesError,
-} from "@/state/slices/templates";
+} from '@/state/slices/templates';
+import { BlueprintForm } from './blueprint-form';
 
 const EMPTY = {
-  name: "",
-  description: "",
-  cores: "",
-  ram: "",
-  storage: "",
+  name: '',
+  description: '',
+  cores: '',
+  ram: '',
+  storage: '',
+  applicationIds: [],
+  scriptIds: [],
+  wallpaperUrl: '',
+  powerPlan: '',
+  encryptDisk: false,
+  _activeTab: 'basics',
 };
 
 export function CreateTemplateDialog({ children, categoryId }) {
@@ -44,15 +48,15 @@ export function CreateTemplateDialog({ children, categoryId }) {
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
 
   const validate = () => {
-    if (!form.name.trim()) return "Name is required";
-    if (!form.description.trim()) return "Description is required";
+    if (!form.name.trim()) return 'Name is required';
+    if (!form.description.trim()) return 'Description is required';
     const cores = Number(form.cores);
     const ram = Number(form.ram);
     const storage = Number(form.storage);
-    if (!cores || cores <= 0 || cores > 128) return "CPU cores must be 1–128";
-    if (!ram || ram <= 0 || ram > 512) return "RAM must be 1–512 GB";
+    if (!cores || cores <= 0 || cores > 128) return 'CPU cores must be 1–128';
+    if (!ram || ram <= 0 || ram > 512) return 'RAM must be 1–512 GB';
     if (!storage || storage <= 0 || storage > 10000)
-      return "Storage must be 1–10 000 GB";
+      return 'Storage must be 1–10 000 GB';
     return null;
   };
 
@@ -71,6 +75,11 @@ export function CreateTemplateDialog({ children, categoryId }) {
           ram: parseInt(form.ram, 10),
           storage: parseInt(form.storage, 10),
           categoryId,
+          wallpaperUrl: form.wallpaperUrl?.trim() || null,
+          powerPlan: form.powerPlan || null,
+          encryptDisk: !!form.encryptDisk,
+          applications: form.applicationIds.map((id) => ({ applicationId: id })),
+          scripts: form.scriptIds.map((id, i) => ({ scriptId: id, order: i })),
         })
       ).unwrap();
       toast.success(`Blueprint "${form.name}" created`);
@@ -98,7 +107,7 @@ export function CreateTemplateDialog({ children, categoryId }) {
         open={open}
         onClose={close}
         side="right"
-        size={480}
+        size={560}
         title={
           <ResponsiveStack direction="row" gap={2} align="center">
             <Layers size={16} />
@@ -120,61 +129,11 @@ export function CreateTemplateDialog({ children, categoryId }) {
           </ButtonGroup>
         }
       >
-        <ResponsiveStack direction="col" gap={4}>
-          <Alert tone="info" size="sm">
-            Reusable desktop configuration. Each new desktop created from this
-            blueprint inherits these resources and the OS its ISO provides.
-          </Alert>
-
+        <ResponsiveStack direction="col" gap={3}>
           {error?.create ? (
             <Alert tone="danger">{String(error.create)}</Alert>
           ) : null}
-
-          <TextField
-            label="Name"
-            placeholder="e.g. Ubuntu · small"
-            value={form.name}
-            onChange={(e) => update({ name: e.target.value })}
-            autoFocus
-          />
-
-          <Textarea
-            label="Description"
-            value={form.description}
-            onChange={(e) => update({ description: e.target.value })}
-            rows={2}
-            placeholder="What is this template for?"
-          />
-
-          <ResponsiveGrid columns={3} gap={3}>
-            <TextField
-              label="vCPU"
-              type="number"
-              min={1}
-              max={128}
-              icon={<Cpu size={14} />}
-              value={form.cores}
-              onChange={(e) => update({ cores: e.target.value })}
-            />
-            <TextField
-              label="RAM (GB)"
-              type="number"
-              min={1}
-              max={512}
-              icon={<MemoryStick size={14} />}
-              value={form.ram}
-              onChange={(e) => update({ ram: e.target.value })}
-            />
-            <TextField
-              label="Disk (GB)"
-              type="number"
-              min={1}
-              max={10000}
-              icon={<HardDrive size={14} />}
-              value={form.storage}
-              onChange={(e) => update({ storage: e.target.value })}
-            />
-          </ResponsiveGrid>
+          <BlueprintForm form={form} onChange={update} />
         </ResponsiveStack>
       </Drawer>
     </>
