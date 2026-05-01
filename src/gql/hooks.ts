@@ -780,6 +780,7 @@ export enum GoldenImageStatus {
   Building = 'BUILDING',
   Deprecated = 'DEPRECATED',
   Draft = 'DRAFT',
+  Failed = 'FAILED',
   Published = 'PUBLISHED'
 }
 
@@ -959,6 +960,7 @@ export type Machine = {
   os: Scalars['String']['output'];
   publicIP: Maybe<Scalars['String']['output']>;
   ramGB: Maybe<Scalars['Int']['output']>;
+  setupComplete: Scalars['Boolean']['output'];
   status: Scalars['String']['output'];
   template: Maybe<MachineTemplateType>;
   templateId: Maybe<Scalars['String']['output']>;
@@ -1284,6 +1286,8 @@ export type Mutation = {
   restoreBackup: BackupRestoreResult;
   /** Restore a virtual machine to a snapshot */
   restoreSnapshot: SuccessType;
+  /** Retry a failed golden image build. Only works for automated (template-based) builds. */
+  retryBuildGoldenImage: GoldenImageResult;
   /** Run Windows Defender quick scan on a VM */
   runDefenderQuickScan: DefenderScanResult;
   scalePool: PoolResult;
@@ -1684,6 +1688,11 @@ export type MutationRestoreBackupArgs = {
 
 export type MutationRestoreSnapshotArgs = {
   input: RestoreSnapshotInput;
+};
+
+
+export type MutationRetryBuildGoldenImageArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -3370,7 +3379,7 @@ export type CreateMachineMutationVariables = Exact<{
 }>;
 
 
-export type CreateMachineMutation = { __typename?: 'Mutation', createMachine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
+export type CreateMachineMutation = { __typename?: 'Mutation', createMachine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
 
 export type PowerOnMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3413,21 +3422,21 @@ export type UpdateMachineHardwareMutationVariables = Exact<{
 }>;
 
 
-export type UpdateMachineHardwareMutation = { __typename?: 'Mutation', updateMachineHardware: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
+export type UpdateMachineHardwareMutation = { __typename?: 'Mutation', updateMachineHardware: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
 
 export type UpdateMachineNameMutationVariables = Exact<{
   input: UpdateMachineNameInput;
 }>;
 
 
-export type UpdateMachineNameMutation = { __typename?: 'Mutation', updateMachineName: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
+export type UpdateMachineNameMutation = { __typename?: 'Mutation', updateMachineName: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
 
 export type UpdateMachineUserMutationVariables = Exact<{
   input: UpdateMachineUserInput;
 }>;
 
 
-export type UpdateMachineUserMutation = { __typename?: 'Mutation', updateMachineUser: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
+export type UpdateMachineUserMutation = { __typename?: 'Mutation', updateMachineUser: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
 
 export type MoveMachineMutationVariables = Exact<{
   departmentId: Scalars['String']['input'];
@@ -3435,7 +3444,7 @@ export type MoveMachineMutationVariables = Exact<{
 }>;
 
 
-export type MoveMachineMutation = { __typename?: 'Mutation', moveMachine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
+export type MoveMachineMutation = { __typename?: 'Mutation', moveMachine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } };
 
 export type SetupNodeMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -4006,7 +4015,7 @@ export type MachineQueryVariables = Exact<{
 }>;
 
 
-export type MachineQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } | null };
+export type MachineQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } | null };
 
 export type MachinesQueryVariables = Exact<{
   orderBy: InputMaybe<MachineOrderBy>;
@@ -4014,7 +4023,7 @@ export type MachinesQueryVariables = Exact<{
 }>;
 
 
-export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null }> };
+export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null }> };
 
 export type GraphicConnectionQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -4235,7 +4244,7 @@ export type VmDetailedInfoQueryVariables = Exact<{
 }>;
 
 
-export type VmDetailedInfoQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, status: string, userId: string | null, templateId: string | null, createdAt: string | null, configuration: { [key: string]: any } | null, localIP: string | null, publicIP: string | null, department: { __typename?: 'DepartmentType', id: string, name: string } | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number } | null, user: { __typename?: 'UserType', id: string, email: string, firstName: string, lastName: string, role: string } | null } | null };
+export type VmDetailedInfoQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, configuration: { [key: string]: any } | null, localIP: string | null, publicIP: string | null, department: { __typename?: 'DepartmentType', id: string, name: string } | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number } | null, user: { __typename?: 'UserType', id: string, email: string, firstName: string, lastName: string, role: string } | null } | null };
 
 export type GetVmRecommendationsQueryVariables = Exact<{
   vmId: Scalars['ID']['input'];
@@ -4538,6 +4547,7 @@ export const CreateMachineDocument = gql`
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -4776,6 +4786,7 @@ export const UpdateMachineHardwareDocument = gql`
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -4842,6 +4853,7 @@ export const UpdateMachineNameDocument = gql`
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -4908,6 +4920,7 @@ export const UpdateMachineUserDocument = gql`
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -4974,6 +4987,7 @@ export const MoveMachineDocument = gql`
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -8280,6 +8294,7 @@ export const MachineDocument = gql`
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -8361,6 +8376,7 @@ export const MachinesDocument = gql`
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -10554,6 +10570,7 @@ export const VmDetailedInfoDocument = gql`
     id
     name
     status
+    setupComplete
     userId
     templateId
     createdAt

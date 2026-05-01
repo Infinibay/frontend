@@ -9,6 +9,10 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   EmptyState,
   ResponsiveStack,
 } from '@infinibay/harbor';
@@ -198,26 +202,28 @@ export default function SessionDetailPage() {
         open={shadowOpen}
         onClose={() => setShadowOpen(false)}
         size="lg"
-        title={
+      >
+        <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
             <Eye size={16} />
             <span>Shadow · {session.desktopName}</span>
           </ResponsiveStack>
-        }
-        description={`Viewing ${session.userName}'s session (read-only). User has been notified.`}
-        footer={
+        </DialogTitle>
+        <DialogDescription>{`Viewing ${session.userName}'s session (read-only). User has been notified.`}</DialogDescription>
+        <DialogBody>
+          <Alert tone="info" icon={<Eye size={14} />}>
+            Preview only — this would stream the desktop's framebuffer read-only,
+            with visible notification to the user and an entry in /events.
+          </Alert>
+          <div className="mt-3 h-56 rounded-md bg-black/40 flex items-center justify-center text-fg-subtle text-xs font-mono border border-white/10">
+            [ live framebuffer preview ]
+          </div>
+        </DialogBody>
+        <DialogButtons align="end">
           <Button variant="secondary" onClick={() => setShadowOpen(false)}>
             Stop shadowing
           </Button>
-        }
-      >
-        <Alert tone="info" icon={<Eye size={14} />}>
-          Preview only — this would stream the desktop's framebuffer read-only,
-          with visible notification to the user and an entry in /events.
-        </Alert>
-        <div className="mt-3 h-56 rounded-md bg-black/40 flex items-center justify-center text-fg-subtle text-xs font-mono border border-white/10">
-          [ live framebuffer preview ]
-        </div>
+        </DialogButtons>
       </Dialog>
     </Page>
   );

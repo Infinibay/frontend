@@ -7,6 +7,9 @@ import {
   Button,
   Card,
   Dialog,
+  DialogTitle,
+  DialogBody,
+  DialogButtons,
   EmptyState,
   FormField,
   IconTile,
@@ -50,6 +53,7 @@ export function ApplicationsScriptsStep({ id }) {
 
   // Sync local script state with wizard values (e.g. when a blueprint pre-fills them)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedScripts(stepValues.scripts || []);
   }, [stepValues.scripts]);
 
@@ -487,38 +491,38 @@ export function ApplicationsScriptsStep({ id }) {
         open={configureDialogOpen}
         onClose={() => setConfigureDialogOpen(false)}
         size="lg"
-        title={currentScript ? `Configure Script: ${currentScript.name}` : 'Configure Script'}
-        footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
-              variant="secondary"
-              onClick={() => setConfigureDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={handleSaveConfiguration}>
-              Save Configuration
-            </Button>
-          </ResponsiveStack>
-        }
       >
-        {currentScript && (
-          <ResponsiveStack direction="col" gap={4}>
-            {currentScript.parsedInputs?.map((input) => (
-              <ScriptInputRenderer
-                key={input.name}
-                input={input}
-                value={currentInputValues[input.name]}
-                onChange={(value) =>
-                  setCurrentInputValues((prev) => ({
-                    ...prev,
-                    [input.name]: value,
-                  }))
-                }
-              />
-            ))}
-          </ResponsiveStack>
-        )}
+        <DialogTitle>{currentScript ? `Configure Script: ${currentScript.name}` : 'Configure Script'}</DialogTitle>
+        <DialogBody>
+          {currentScript && (
+            <ResponsiveStack direction="col" gap={4}>
+              {currentScript.parsedInputs?.map((input) => (
+                <ScriptInputRenderer
+                  key={input.name}
+                  input={input}
+                  value={currentInputValues[input.name]}
+                  onChange={(value) =>
+                    setCurrentInputValues((prev) => ({
+                      ...prev,
+                      [input.name]: value,
+                    }))
+                  }
+                />
+              ))}
+            </ResponsiveStack>
+          )}
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={() => setConfigureDialogOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSaveConfiguration}>
+            Save Configuration
+          </Button>
+        </DialogButtons>
       </Dialog>
     </>
   );

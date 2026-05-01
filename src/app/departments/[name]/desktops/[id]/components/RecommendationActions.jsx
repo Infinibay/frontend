@@ -16,6 +16,10 @@ import {
   Button,
   Card,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   PropertyList,
   ResponsiveStack,
   Tooltip,
@@ -35,7 +39,7 @@ const variantMap = {
   ghost: 'ghost',
 };
 
-const RecommendationActions = ({ recommendation, vmStatus }) => {
+const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agentOnline }) => {
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [showListDialog, setShowListDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -46,13 +50,15 @@ const RecommendationActions = ({ recommendation, vmStatus }) => {
   });
   const [confirmAction, setConfirmAction] = useState(null);
 
-  const isRunning = vmStatus === 'running' || vmStatus === 'poweredOn';
+  // Recommendations need a fully-ready VM (process running AND OS finished setup);
+  // running an action against a still-installing VM would queue indefinitely.
+  const isRunning = (vmStatus === 'running' && !!vmSetupComplete) || vmStatus === 'poweredOn';
 
   const info = getRecommendationInfo(recommendation.type, recommendation);
   const metadata = extractRecommendationMetadata(recommendation);
   const { resolve, resolution, isStarting, isResolving } = useResolveRecommendation(recommendation.id);
 
-  const getActionConfig = (type, vmRunning) => {
+  const getActionConfig = (type, canInstallUpdates) => {
     const actions = [];
     switch (type) {
       case 'OS_UPDATE_AVAILABLE':
@@ -72,14 +78,13 @@ const RecommendationActions = ({ recommendation, vmStatus }) => {
             icon: Calendar,
           });
         }
-        if (vmRunning) {
-          actions.push({
-            action: 'install_updates',
-            label: 'Install Updates',
-            variant: 'default',
-            icon: RefreshCw,
-          });
-        }
+        actions.push({
+          action: 'install_updates',
+          label: 'Install Updates',
+          variant: 'default',
+          icon: RefreshCw,
+          disabled: !canInstallUpdates,
+        });
         actions.push({
           action: 'list',
           label: 'View Updates',
@@ -94,16 +99,16 @@ const RecommendationActions = ({ recommendation, vmStatus }) => {
             label: `Install Security Updates (${metadata.securityUpdateCount})`,
             variant: 'destructive',
             icon: Shield,
+            disabled: !canInstallUpdates,
           });
         }
-        if (vmRunning) {
-          actions.push({
-            action: 'install_updates',
-            label: 'Install All Updates',
-            variant: 'default',
-            icon: RefreshCw,
-          });
-        }
+        actions.push({
+          action: 'install_updates',
+          label: 'Install All Updates',
+          variant: 'default',
+          icon: RefreshCw,
+          disabled: !canInstallUpdates,
+        });
         actions.push({
           action: 'list',
           label: `View All (${metadata?.totalUpdateCount || 0})`,
@@ -442,7 +447,7 @@ const RecommendationActions = ({ recommendation, vmStatus }) => {
     });
   };
 
-  const actionConfig = getActionConfig(recommendation.type, isRunning);
+  const actionConfig = getActionConfig(recommendation.type, isRunning && agentOnline);
 
   return (
     <>
@@ -451,15 +456,16 @@ const RecommendationActions = ({ recommendation, vmStatus }) => {
           {actionConfig.actions.map((action, index) => {
             const IconComp = action.icon;
             const busy = isStarting || isRunning;
+            const isDisabled = action.comingSoon || action.disabled || busy;
             const btn = (
               <Button
                 key={index}
                 size="sm"
                 variant={variantMap[action.variant] || 'primary'}
-                disabled={action.comingSoon || busy}
+                disabled={isDisabled}
                 icon={IconComp ? <IconComp size={12} /> : undefined}
                 onClick={
-                  action.comingSoon || busy ? undefined : () => handleAction(action.action)
+                  isDisabled ? undefined : () => handleAction(action.action)
                 }
               >
                 {action.label}
@@ -467,6 +473,10 @@ const RecommendationActions = ({ recommendation, vmStatus }) => {
             );
             return action.comingSoon ? (
               <Tooltip key={index} content="Coming soon">
+                <span>{btn}</span>
+              </Tooltip>
+            ) : action.disabled ? (
+              <Tooltip key={index} content="Agent offline — waiting for connection">
                 <span>{btn}</span>
               </Tooltip>
             ) : (
@@ -484,45 +494,38 @@ const RecommendationActions = ({ recommendation, vmStatus }) => {
           setConfirmAction(null);
         }}
         size="md"
-        title={confirmAction?.title}
-        description={confirmAction?.description}
-        footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setShowConfirmDialog(false);
-                setConfirmAction(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant={
-                confirmAction?.variant === 'destructive' ? 'destructive' : 'primary'
-              }
-              onClick={handleConfirm}
-            >
-              {confirmAction?.confirmLabel || 'Confirm'}
-            </Button>
-          </ResponsiveStack>
-        }
-      />
+      >
+        <DialogTitle>{confirmAction?.title}</DialogTitle>
+        <DialogDescription>{confirmAction?.description}</DialogDescription>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setShowConfirmDialog(false);
+              setConfirmAction(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant={
+              confirmAction?.variant === 'destructive' ? 'destructive' : 'primary'
+            }
+            onClick={handleConfirm}
+          >
+            {confirmAction?.confirmLabel || 'Confirm'}
+          </Button>
+        </DialogButtons>
+      </Dialog>
 
       <Dialog
         open={showInfoDialog}
         onClose={() => setShowInfoDialog(false)}
         size="lg"
-        title={dialogContent.title}
-        description={dialogContent.description}
-        footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button variant="primary" onClick={() => setShowInfoDialog(false)}>
-              Close
-            </Button>
-          </ResponsiveStack>
-        }
       >
+        <DialogTitle>{dialogContent.title}</DialogTitle>
+        <DialogDescription>{dialogContent.description}</DialogDescription>
+        <DialogBody>
         <ResponsiveStack direction="col" gap={4}>
           {dialogContent.guidanceSteps ? (
             <Alert tone="info" icon={<Info size={14} />} title="Steps to follow">
@@ -573,22 +576,22 @@ const RecommendationActions = ({ recommendation, vmStatus }) => {
             </Card>
           ) : null}
         </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="primary" onClick={() => setShowInfoDialog(false)}>
+            Close
+          </Button>
+        </DialogButtons>
       </Dialog>
 
       <Dialog
         open={showListDialog}
         onClose={() => setShowListDialog(false)}
         size="lg"
-        title={dialogContent.title}
-        description={dialogContent.description}
-        footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button variant="primary" onClick={() => setShowListDialog(false)}>
-              Close
-            </Button>
-          </ResponsiveStack>
-        }
       >
+        <DialogTitle>{dialogContent.title}</DialogTitle>
+        <DialogDescription>{dialogContent.description}</DialogDescription>
+        <DialogBody>
         <ResponsiveStack direction="col" gap={3}>
           {dialogContent.items && dialogContent.items.length > 0 ? (
             dialogContent.items.map((item, index) => {
@@ -731,6 +734,12 @@ const RecommendationActions = ({ recommendation, vmStatus }) => {
             </Alert>
           )}
         </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="primary" onClick={() => setShowListDialog(false)}>
+            Close
+          </Button>
+        </DialogButtons>
       </Dialog>
     </>
   );

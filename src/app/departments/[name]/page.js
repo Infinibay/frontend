@@ -20,6 +20,10 @@ import {
   Alert,
   Button,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   EmptyState,
   LoadingOverlay,
   Page,
@@ -55,18 +59,19 @@ const DepartmentNetworkTab = dynamic(
   },
 );
 
-const vmStatusToHarbor = (status) => {
+const vmStatusToHarbor = (status, setupComplete) => {
   switch ((status || '').toLowerCase()) {
     case 'running':
-      return 'online';
+      return setupComplete ? 'online' : 'provisioning';
     case 'paused':
     case 'suspended':
       return 'degraded';
     case 'starting':
     case 'provisioning':
-    case 'building':
       return 'provisioning';
     case 'stopping':
+    case 'updating_hardware':
+    case 'powering_off_update':
       return 'maintenance';
     default:
       return 'offline';
@@ -172,7 +177,7 @@ const DepartmentPage = () => {
       machines.map((vm) => ({
         id: vm.id,
         name: vm.name,
-        status: vmStatusToHarbor(vm.status),
+        status: vmStatusToHarbor(vm.status, vm.setupComplete),
         subtitle: vmSubtitle(vm),
         tags: vm.user
           ? [
@@ -472,41 +477,41 @@ const DepartmentPage = () => {
         open={!!deleteConfirmation?.isOpen}
         onClose={cancelDelete}
         size="sm"
-        title="Delete desktop"
-        description={
-          deleteConfirmation?.vm
-            ? `Remove "${deleteConfirmation.vm.name}"? This cannot be undone.`
-            : 'This action cannot be undone.'
-        }
-        footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
-              variant="secondary"
-              onClick={cancelDelete}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              icon={<Trash2 size={14} />}
-              onClick={confirmDelete}
-              loading={isDeleting}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Deleting…' : 'Delete'}
-            </Button>
-          </ResponsiveStack>
-        }
       >
-        <Alert
-          tone="danger"
-          size="sm"
-          icon={<AlertCircle size={14} />}
-        >
-          All snapshots, volumes and configuration for this desktop will be
-          permanently removed.
-        </Alert>
+        <DialogTitle>Delete desktop</DialogTitle>
+        <DialogDescription>
+          {deleteConfirmation?.vm
+            ? `Remove "${deleteConfirmation.vm.name}"? This cannot be undone.`
+            : 'This action cannot be undone.'}
+        </DialogDescription>
+        <DialogBody>
+          <Alert
+            tone="danger"
+            size="sm"
+            icon={<AlertCircle size={14} />}
+          >
+            All snapshots, volumes and configuration for this desktop will be
+            permanently removed.
+          </Alert>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={cancelDelete}
+            disabled={isDeleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            icon={<Trash2 size={14} />}
+            onClick={confirmDelete}
+            loading={isDeleting}
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Deleting…' : 'Delete'}
+          </Button>
+        </DialogButtons>
       </Dialog>
     </>
   );

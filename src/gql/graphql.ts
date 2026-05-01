@@ -777,6 +777,7 @@ export enum GoldenImageStatus {
   Building = 'BUILDING',
   Deprecated = 'DEPRECATED',
   Draft = 'DRAFT',
+  Failed = 'FAILED',
   Published = 'PUBLISHED'
 }
 
@@ -956,6 +957,7 @@ export type Machine = {
   os: Scalars['String']['output'];
   publicIP?: Maybe<Scalars['String']['output']>;
   ramGB?: Maybe<Scalars['Int']['output']>;
+  setupComplete: Scalars['Boolean']['output'];
   status: Scalars['String']['output'];
   template?: Maybe<MachineTemplateType>;
   templateId?: Maybe<Scalars['String']['output']>;
@@ -1281,6 +1283,8 @@ export type Mutation = {
   restoreBackup: BackupRestoreResult;
   /** Restore a virtual machine to a snapshot */
   restoreSnapshot: SuccessType;
+  /** Retry a failed golden image build. Only works for automated (template-based) builds. */
+  retryBuildGoldenImage: GoldenImageResult;
   /** Run Windows Defender quick scan on a VM */
   runDefenderQuickScan: DefenderScanResult;
   scalePool: PoolResult;
@@ -1681,6 +1685,11 @@ export type MutationRestoreBackupArgs = {
 
 export type MutationRestoreSnapshotArgs = {
   input: RestoreSnapshotInput;
+};
+
+
+export type MutationRetryBuildGoldenImageArgs = {
+  id: Scalars['ID']['input'];
 };
 
 

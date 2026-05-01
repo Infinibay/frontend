@@ -94,6 +94,7 @@ mutation createMachine($input: CreateMachineInputType!) {
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -170,6 +171,7 @@ mutation updateMachineHardware($input: UpdateMachineHardwareInput!) {
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -209,6 +211,7 @@ mutation updateMachineName($input: UpdateMachineNameInput!) {
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -248,6 +251,7 @@ mutation updateMachineUser($input: UpdateMachineUserInput!) {
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -287,6 +291,7 @@ mutation moveMachine($departmentId: String!, $id: String!) {
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt

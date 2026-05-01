@@ -1,38 +1,43 @@
 /**
  * VM Status Utilities
  *
- * Maps QEMU/infinization VM states to frontend display categories and actions.
+ * Maps QEMU/infinization VM states (Machine.status) to frontend display
+ * categories and actions.
  *
  * Status Flow (from infinization/StateSync):
  *
- * QMP Status (QEMU)     →  DB Status (infinization)  →  Frontend Category
- * ─────────────────────────────────────────────────────────────────────────
- * 'running'             →  'running'               →  'active'
- * 'paused'              →  'suspended'             →  'suspended'
- * 'shutdown'            →  'off'                   →  'off'
- * 'suspended'           →  'suspended'             →  'suspended'
- * 'inmigrate'           →  'building'              →  'transitional'
- * 'postmigrate'         →  'building'              →  'transitional'
- * 'prelaunch'           →  'building'              →  'transitional'
- * 'finish-migrate'      →  'building'              →  'transitional'
- * 'restore-vm'          →  'building'              →  'transitional'
- * 'watchdog'            →  'error'                 →  'error'
- * 'guest-panicked'      →  'error'                 →  'error'
- * 'io-error'            →  'error'                 →  'error'
- * 'colo'                →  'running'               →  'active'
+ * QMP Status (QEMU)     →  DB Status (Machine.status)  →  Frontend Category
+ * ───────────────────────────────────────────────────────────────────────────
+ * 'running'             →  'running'                 →  'active'
+ * 'paused'              →  'suspended'               →  'suspended'
+ * 'shutdown'            →  'off'                     →  'off'
+ * 'suspended'           →  'suspended'               →  'suspended'
+ * 'inmigrate'           →  'starting'                →  'transitional'
+ * 'postmigrate'         →  'starting'                →  'transitional'
+ * 'prelaunch'           →  'starting'                →  'transitional'
+ * 'finish-migrate'      →  'starting'                →  'transitional'
+ * 'restore-vm'          →  'starting'                →  'transitional'
+ * 'watchdog'            →  'error'                   →  'error'
+ * 'guest-panicked'      →  'error'                   →  'error'
+ * 'io-error'            →  'error'                   →  'error'
+ * 'colo'                →  'running'                 →  'active'
  *
- * Additional DB statuses (set by VMLifecycle):
+ * Additional DB statuses set by VMLifecycle:
  * 'starting'            →  'transitional'
  * 'updating_hardware'   →  'transitional'
  * 'powering_off_update' →  'transitional'
+ *
+ * "Is the OS installed and infiniservice handshaked?" is an orthogonal
+ * dimension stored in MachineConfiguration.setupComplete. UI uses
+ * isInstalling()/isReadyToUse() (declared below) for that distinction.
  */
 
 /**
- * All valid DB statuses from infinization
+ * All valid DB statuses from infinization (Machine.status only — does not
+ * include the orthogonal setupComplete flag).
  * @type {string[]}
  */
 export const DB_VM_STATUSES = [
-  'building',
   'running',
   'off',
   'suspended',
@@ -87,7 +92,6 @@ export const getStatusCategory = (status) => {
   // Transitional states - VM is changing state, actions disabled
   if ([
     'starting',
-    'building',
     'updating_hardware',
     'powering_off_update',
     'inmigrate',
@@ -183,7 +187,6 @@ export const getStatusLabel = (status) => {
 
     // Transitional
     'starting': 'Starting...',
-    'building': 'Building...',
     'updating_hardware': 'Updating...',
     'powering_off_update': 'Updating...',
     'inmigrate': 'Migrating...',
@@ -270,6 +273,47 @@ export const isTransitioning = (status) => {
  */
 export const isRunning = (status) => {
   return getStatusCategory(status) === STATUS_CATEGORY.ACTIVE
+}
+
+/**
+ * True while the VM is running but the OS install / first infiniservice
+ * handshake hasn't completed. UI shows "Installing…" in this state.
+ * @param {string} status
+ * @param {boolean} setupComplete
+ */
+export const isInstalling = (status, setupComplete) =>
+  status === 'running' && !setupComplete
+
+/**
+ * True when the VM is fully usable: process running AND OS finished setup.
+ * Use this to gate features like "Run script", "Connect", health checks, etc.
+ * @param {string} status
+ * @param {boolean} setupComplete
+ */
+export const isReadyToUse = (status, setupComplete) =>
+  status === 'running' && !!setupComplete
+
+/**
+ * Combined display label: respects the orthogonal setupComplete flag so the
+ * UI can differentiate "Installing…" from "Running" without flipping the
+ * underlying Machine.status (which is owned by QEMU/QMP).
+ * @param {string} status
+ * @param {boolean} setupComplete
+ */
+export const getDisplayLabel = (status, setupComplete) => {
+  if (isInstalling(status, setupComplete)) return 'Installing...'
+  return getStatusLabel(status)
+}
+
+/**
+ * Same as getStatusCategory but treats `running && !setupComplete` as
+ * transitional, so the UI shows the "in-progress" tone/animation.
+ * @param {string} status
+ * @param {boolean} setupComplete
+ */
+export const getDisplayCategory = (status, setupComplete) => {
+  if (isInstalling(status, setupComplete)) return STATUS_CATEGORY.TRANSITIONAL
+  return getStatusCategory(status)
 }
 
 /**

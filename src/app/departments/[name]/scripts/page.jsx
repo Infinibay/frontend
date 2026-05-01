@@ -21,6 +21,9 @@ import {
   Button,
   Card,
   Dialog,
+  DialogTitle,
+  DialogBody,
+  DialogButtons,
   Drawer,
   IconButton,
   IconTile,
@@ -358,35 +361,14 @@ export default function DepartmentScriptsPage() {
         open={unassignConfirm !== null}
         onClose={() => !isUnassigning && setUnassignConfirm(null)}
         size="md"
-        title={
+      >
+        <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
             <AlertCircle size={16} />
             <span>Script has active schedules</span>
           </ResponsiveStack>
-        }
-        footerAlign="end"
-        footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
-              variant="secondary"
-              disabled={isUnassigning}
-              onClick={() => setUnassignConfirm(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              loading={isUnassigning}
-              disabled={isUnassigning}
-              onClick={() => handleUnassignConfirm()}
-            >
-              {isUnassigning
-                ? 'Unassigning…'
-                : 'Unassign & cancel schedules'}
-            </Button>
-          </ResponsiveStack>
-        }
-      >
+        </DialogTitle>
+        <DialogBody>
         <ResponsiveStack direction="col" gap={3}>
           <Alert tone="warning" size="sm">
             This script has{' '}
@@ -413,6 +395,26 @@ export default function DepartmentScriptsPage() {
             this department.
           </span>
         </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            disabled={isUnassigning}
+            onClick={() => setUnassignConfirm(null)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            loading={isUnassigning}
+            disabled={isUnassigning}
+            onClick={() => handleUnassignConfirm()}
+          >
+            {isUnassigning
+              ? 'Unassigning…'
+              : 'Unassign & cancel schedules'}
+          </Button>
+        </DialogButtons>
       </Dialog>
 
       {selectedScriptForSchedule ? (

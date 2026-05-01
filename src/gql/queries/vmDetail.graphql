@@ -3,6 +3,7 @@ query vmDetailedInfo($id: String!) {
     id
     name
     status
+    setupComplete
     userId
     templateId
     createdAt

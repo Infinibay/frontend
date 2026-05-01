@@ -43,20 +43,18 @@ import { DesktopListView } from "@/components/common/DesktopListView";
 
 const debug = createDebugger("frontend:pages:computers");
 
-/** Map QEMU-style status string → Harbor HostStatus. */
-const vmStatusToHarbor = (status) => {
+/** Map QEMU-style status string + setupComplete flag → Harbor HostStatus. */
+const vmStatusToHarbor = (status, setupComplete) => {
   switch ((status || "").toLowerCase()) {
     case "running":
-      return "online";
+      // Running but the OS hasn't finished setup → still provisioning.
+      return setupComplete ? "online" : "provisioning";
     case "paused":
     case "suspended":
       return "degraded";
     case "starting":
     case "provisioning":
-    case "building":
       return "provisioning";
-    case "stopped":
-    case "shutoff":
     case "off":
     case "powered_off":
     case "error":
@@ -158,7 +156,7 @@ export default function ComputersPage() {
         return {
           id: vm.id,
           name: vm.name,
-          status: vmStatusToHarbor(vm.status),
+          status: vmStatusToHarbor(vm.status, vm.setupComplete),
           subtitle: vmSubtitle(vm),
           tags: vm.department?.name ? [vm.department.name] : [],
           region: vm.department?.name || undefined,

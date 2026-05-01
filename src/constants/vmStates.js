@@ -1,16 +1,20 @@
 /**
  * VM State Constants
  *
- * Single source of truth for VM states matching backend DBVMStatus.
- * See: infinization/src/types/sync.types.ts
+ * Single source of truth for VM states matching backend Machine.status (QEMU process state).
+ * See: infinization/src/types/sync.types.ts (DBVMStatus)
+ *
+ * Note: "is the OS ready / installed" is a separate dimension —
+ * MachineConfiguration.setupComplete (boolean). UI helpers that combine both
+ * live in src/utils/vmStatus.js (isInstalling, isReadyToUse).
  */
 
 export const VM_STATES = {
   OFF: 'off',
+  STARTING: 'starting',
   RUNNING: 'running',
   SUSPENDED: 'suspended',
   PAUSED: 'paused',
-  BUILDING: 'building',
   UPDATING_HARDWARE: 'updating_hardware',
   POWERING_OFF_UPDATE: 'powering_off_update',
   ERROR: 'error'
@@ -42,7 +46,7 @@ export const PAUSABLE_STATES = [
 
 // States where VM is busy (no actions allowed)
 export const BUSY_STATES = [
-  VM_STATES.BUILDING,
+  VM_STATES.STARTING,
   VM_STATES.UPDATING_HARDWARE,
   VM_STATES.POWERING_OFF_UPDATE
 ]
@@ -87,7 +91,7 @@ export const getStatusColor = (status) => {
     case VM_STATES.SUSPENDED:
     case VM_STATES.PAUSED:
       return 'yellow'
-    case VM_STATES.BUILDING:
+    case VM_STATES.STARTING:
     case VM_STATES.UPDATING_HARDWARE:
       return 'blue'
     case VM_STATES.POWERING_OFF_UPDATE:
@@ -109,7 +113,7 @@ export const getStatusBgClass = (status) => {
     case VM_STATES.SUSPENDED:
     case VM_STATES.PAUSED:
       return 'bg-yellow-400'
-    case VM_STATES.BUILDING:
+    case VM_STATES.STARTING:
     case VM_STATES.UPDATING_HARDWARE:
       return 'bg-blue-400'
     case VM_STATES.POWERING_OFF_UPDATE:

@@ -15,6 +15,8 @@ import {
   Menu,
   ResponsiveStack,
   Dialog,
+  DialogTitle,
+  DialogBody,
   TextField,
   Select,
 } from '@infinibay/harbor';
@@ -192,6 +194,7 @@ export default function GoldenImagesPage() {
   useEffect(() => {
     const capture = searchParams?.get('capture');
     if (capture) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPrefillMachineId(capture);
       setDialogOpen(true);
       router.replace('/images');
@@ -215,6 +218,7 @@ export default function GoldenImagesPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchImages();
   }, [fetchImages]);
 
@@ -313,6 +317,7 @@ export default function GoldenImagesPage() {
             }
           />
         ) : (
+          // eslint-disable-next-line react-hooks/refs
           families.map(({ root, versions }) => (
             <section key={root.id} className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3 pb-2 border-b border-white/5">
@@ -476,7 +481,10 @@ function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
   const [destroySource, setDestroySource] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const eligibleVms = vms.filter((v) => v.status !== 'building' && v.status !== 'error');
+  // VMs eligible to be captured as a Golden Image must have completed install
+  // (setupComplete=true) and not be in error state. Their power state can be
+  // anything except error — capture handles snapshotting/stopping itself.
+  const eligibleVms = vms.filter((v) => v.setupComplete && v.status !== 'error');
 
   const handleSubmit = useCallback(async () => {
     if (!name.trim()) {
@@ -527,7 +535,9 @@ function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
   }, [mode, templateId, machineId, name, notes, sanitizeUserData, destroySource, onCreated]);
 
   return (
-    <Dialog open onClose={onClose} title="New Golden Image">
+    <Dialog open onClose={onClose}>
+      <DialogTitle>New Golden Image</DialogTitle>
+      <DialogBody>
       <div className="flex flex-col gap-4 min-w-[480px]">
         <div className="flex gap-1 p-1 bg-white/5 rounded-md self-start">
           <button
@@ -617,6 +627,7 @@ function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
           </Button>
         </div>
       </div>
+      </DialogBody>
     </Dialog>
   );
 }

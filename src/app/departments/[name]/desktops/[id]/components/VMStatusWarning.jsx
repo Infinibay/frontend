@@ -4,16 +4,22 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   ResponsiveStack,
 } from '@infinibay/harbor';
 import { AlertTriangle, Clock, Info, Power } from 'lucide-react';
 import { usePowerOffMutation } from '@/gql/hooks';
 
-const VMStatusWarning = ({ vmStatus, vmId, vmName, onVMStopped }) => {
+const VMStatusWarning = ({ vmStatus, vmSetupComplete, vmId, vmName, onVMStopped }) => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [powerOffMachine, { loading: poweringOff }] = usePowerOffMutation();
 
-  if (vmStatus !== 'running') return null;
+  // Only warn when the VM is fully up and the user could meaningfully change
+  // firewall rules. While still installing there's nothing to warn about.
+  if (vmStatus !== 'running' || !vmSetupComplete) return null;
 
   const handleStopVM = async () => {
     try {
@@ -79,29 +85,10 @@ const VMStatusWarning = ({ vmStatus, vmId, vmName, onVMStopped }) => {
         open={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         size="md"
-        title="Confirm desktop shutdown"
-        description={`You are about to shut down the desktop "${vmName}".`}
-        footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
-              variant="secondary"
-              onClick={() => setIsConfirmOpen(false)}
-              disabled={poweringOff}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              icon={<Power size={14} />}
-              onClick={handleStopVM}
-              disabled={poweringOff}
-              loading={poweringOff}
-            >
-              {poweringOff ? 'Shutting down…' : 'Shutdown now'}
-            </Button>
-          </ResponsiveStack>
-        }
       >
+        <DialogTitle>Confirm desktop shutdown</DialogTitle>
+        <DialogDescription>{`You are about to shut down the desktop "${vmName}".`}</DialogDescription>
+        <DialogBody>
         <ResponsiveStack direction="col" gap={3}>
           <Alert
             tone="warning"
@@ -119,6 +106,25 @@ const VMStatusWarning = ({ vmStatus, vmId, vmName, onVMStopped }) => {
             Estimated time: 30–120 seconds
           </Badge>
         </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={() => setIsConfirmOpen(false)}
+            disabled={poweringOff}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            icon={<Power size={14} />}
+            onClick={handleStopVM}
+            disabled={poweringOff}
+            loading={poweringOff}
+          >
+            {poweringOff ? 'Shutting down…' : 'Shutdown now'}
+          </Button>
+        </DialogButtons>
       </Dialog>
     </ResponsiveStack>
   );

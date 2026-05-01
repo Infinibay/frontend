@@ -67,22 +67,21 @@ function TabLoading({ label }) {
   return <Container size="md" padded>{label}</Container>;
 }
 
-function toHarborStatus(state) {
+function toHarborStatus(state, setupComplete) {
   switch ((state || '').toLowerCase()) {
     case 'running':
-      return 'online';
+      return setupComplete ? 'online' : 'provisioning';
     case 'paused':
     case 'suspended':
     case 'error':
       return 'degraded';
     case 'starting':
     case 'provisioning':
-    case 'building':
       return 'provisioning';
     case 'stopping':
+    case 'updating_hardware':
+    case 'powering_off_update':
       return 'maintenance';
-    case 'stopped':
-    case 'shutoff':
     case 'powered_off':
     case 'off':
     default:
@@ -90,13 +89,13 @@ function toHarborStatus(state) {
   }
 }
 
-function statusLabel(status) {
+function statusLabel(status, isInstalling) {
   switch (status) {
     case 'online': return 'Running';
     case 'degraded': return 'Degraded';
-    case 'provisioning': return 'Starting';
-    case 'maintenance': return 'Stopping';
-    case 'offline': return 'Stopped';
+    case 'provisioning': return isInstalling ? 'Installing…' : 'Starting';
+    case 'maintenance': return 'Updating';
+    case 'offline': return 'Off';
     default: return 'Unknown';
   }
 }
@@ -222,7 +221,9 @@ const VMDetailPage = () => {
 
   debug.success('VM detail loaded successfully', { vmName: vm?.name });
 
-  const status = toHarborStatus(vm.status);
+  const setupComplete = vm?.setupComplete ?? false;
+  const status = toHarborStatus(vm.status, setupComplete);
+  const isInstalling = vm.status === 'running' && !setupComplete;
   const isRunning = status === 'online';
   const isBusy = status === 'provisioning' || status === 'maintenance';
   const os = vm?.configuration?.os;
@@ -264,7 +265,7 @@ const VMDetailPage = () => {
                     <span>{vm.name}</span>
                     <Badge tone={statusTone(status)} pulse={isRunning}>
                       <StatusDot status={status} />
-                      {statusLabel(status)}
+                      {statusLabel(status, isInstalling)}
                     </Badge>
                     {vm.template?.name ? (
                       <Badge tone="purple">{vm.template.name}</Badge>
@@ -357,12 +358,14 @@ const VMDetailPage = () => {
                 vmId={vmId}
                 vm={vm}
                 vmStatus={vm?.status}
+                vmSetupComplete={setupComplete}
               />
             </TabPanel>
             <TabPanel value="firewall">
               <VMSecurityTab
                 vmId={vmId}
                 vmStatus={vm?.status}
+                vmSetupComplete={setupComplete}
                 vmOs={vm?.configuration?.os}
                 departmentId={vm?.department?.id}
               />
@@ -371,11 +374,12 @@ const VMDetailPage = () => {
               <VMScriptsTab
                 vmId={vmId}
                 vmStatus={vm?.status}
+                vmSetupComplete={setupComplete}
                 departmentId={vm?.department?.id}
               />
             </TabPanel>
             <TabPanel value="backups">
-              <VMBackupsTab vmId={vmId} vmStatus={vm?.status} />
+              <VMBackupsTab vmId={vmId} vmStatus={vm?.status} vmSetupComplete={setupComplete} />
             </TabPanel>
           </Tabs>
         </ResponsiveStack>

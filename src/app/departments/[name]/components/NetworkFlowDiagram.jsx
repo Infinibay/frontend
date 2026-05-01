@@ -16,6 +16,9 @@ import {
   Badge,
   Card,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
   IconTile,
   PropertyList,
   ResponsiveStack,
@@ -57,7 +60,8 @@ const FlowNode = ({ icon, label, status, isOk, details, info }) => {
         open={isOpen}
         onClose={() => setIsOpen(false)}
         size="md"
-        title={
+      >
+        <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
             <IconTile icon={icon} tone={isOk ? 'green' : 'rose'} size="sm" />
             <span>{info.name}</span>
@@ -65,9 +69,9 @@ const FlowNode = ({ icon, label, status, isOk, details, info }) => {
               {isOk ? 'OK' : 'Issue'}
             </Badge>
           </ResponsiveStack>
-        }
-        description={info.description}
-      >
+        </DialogTitle>
+        <DialogDescription>{info.description}</DialogDescription>
+        <DialogBody>
         <ResponsiveStack direction="col" gap={3}>
           <Card
             variant="default"
@@ -101,6 +105,7 @@ const FlowNode = ({ icon, label, status, isOk, details, info }) => {
             />
           ) : null}
         </ResponsiveStack>
+        </DialogBody>
       </Dialog>
     </>
   );

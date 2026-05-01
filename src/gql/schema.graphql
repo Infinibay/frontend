@@ -741,6 +741,7 @@ enum GoldenImageStatus {
   BUILDING
   DEPRECATED
   DRAFT
+  FAILED
   PUBLISHED
 }
 
@@ -926,6 +927,7 @@ type Machine {
   os: String!
   publicIP: String
   ramGB: Int
+  setupComplete: Boolean!
   status: String!
   template: MachineTemplateType
   templateId: String
@@ -1284,6 +1286,11 @@ type Mutation {
 
   """Restore a virtual machine to a snapshot"""
   restoreSnapshot(input: RestoreSnapshotInput!): SuccessType!
+
+  """
+  Retry a failed golden image build. Only works for automated (template-based) builds.
+  """
+  retryBuildGoldenImage(id: ID!): GoldenImageResult!
 
   """Run Windows Defender quick scan on a VM"""
   runDefenderQuickScan(vmId: ID!): DefenderScanResult!

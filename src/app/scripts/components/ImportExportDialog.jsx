@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import {
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   Button,
   FileDrop,
   EmptyState,
@@ -96,28 +100,14 @@ export function ImportExportDialog({ isOpen, onClose, mode, selectedScripts, onI
       open={!!isOpen}
       onClose={handleClose}
       size="md"
-      title={isImport ? 'Import scripts' : 'Export scripts'}
-      description={
-        isImport
-          ? 'Upload YAML or JSON script files. Each becomes a new script in the library.'
-          : `Download ${count} script${count === 1 ? '' : 's'} as YAML files.`
-      }
-      footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-          <Button variant="secondary" onClick={handleClose} disabled={importing}>
-            Cancel
-          </Button>
-          <Button
-            onClick={isImport ? handleImport : handleExport}
-            disabled={isImport && (files.length === 0 || importing)}
-            loading={isImport && importing}
-            icon={isImport ? <Upload size={14} /> : <Download size={14} />}
-          >
-            {isImport ? (importing ? 'Importing…' : 'Import') : 'Export'}
-          </Button>
-        </ResponsiveStack>
-      }
     >
+      <DialogTitle>{isImport ? 'Import scripts' : 'Export scripts'}</DialogTitle>
+      <DialogDescription>
+        {isImport
+          ? 'Upload YAML or JSON script files. Each becomes a new script in the library.'
+          : `Download ${count} script${count === 1 ? '' : 's'} as YAML files.`}
+      </DialogDescription>
+      <DialogBody>
       {isImport ? (
         <ResponsiveStack direction="col" gap={3}>
           <FileDrop
@@ -155,6 +145,20 @@ export function ImportExportDialog({ isOpen, onClose, mode, selectedScripts, onI
           ))}
         </ResponsiveStack>
       )}
+      </DialogBody>
+      <DialogButtons align="end">
+        <Button variant="secondary" onClick={handleClose} disabled={importing}>
+          Cancel
+        </Button>
+        <Button
+          onClick={isImport ? handleImport : handleExport}
+          disabled={isImport && (files.length === 0 || importing)}
+          loading={isImport && importing}
+          icon={isImport ? <Upload size={14} /> : <Download size={14} />}
+        >
+          {isImport ? (importing ? 'Importing…' : 'Import') : 'Export'}
+        </Button>
+      </DialogButtons>
     </Dialog>
   )
 }

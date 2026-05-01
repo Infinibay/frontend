@@ -24,6 +24,10 @@ import {
   EmptyState,
   Spinner,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   IconButton,
   ResponsiveStack,
   Tooltip,
@@ -545,18 +549,25 @@ export default function TemplatesPage() {
         open={!!deleteTemplateTarget}
         onClose={() => setDeleteTemplateTarget(null)}
         size="sm"
-        title={
+      >
+        <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
             <AlertCircle size={16} />
             <span>Delete blueprint</span>
           </ResponsiveStack>
-        }
-        description={
-          deleteTemplateTarget
+        </DialogTitle>
+        <DialogDescription>
+          {deleteTemplateTarget
             ? `Remove ${deleteTemplateTarget.name}? Desktops already created from it are unaffected.`
-            : ''
-        }
-        footer={
+            : ''}
+        </DialogDescription>
+        <DialogBody>
+          <p>
+            This cannot be undone. Only the blueprint is removed; existing
+            desktops keep running.
+          </p>
+        </DialogBody>
+        <DialogButtons align="end">
           <ButtonGroup attached={false}>
             <Button
               variant="secondary"
@@ -574,30 +585,32 @@ export default function TemplatesPage() {
               Delete
             </Button>
           </ButtonGroup>
-        }
-      >
-        <p>
-          This cannot be undone. Only the blueprint is removed; existing
-          desktops keep running.
-        </p>
+        </DialogButtons>
       </Dialog>
 
       <Dialog
         open={!!deleteCategoryTarget}
         onClose={() => setDeleteCategoryTarget(null)}
         size="sm"
-        title={
+      >
+        <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
             <AlertCircle size={16} />
             <span>Delete category</span>
           </ResponsiveStack>
-        }
-        description={
-          deleteCategoryTarget
+        </DialogTitle>
+        <DialogDescription>
+          {deleteCategoryTarget
             ? `Remove the ${deleteCategoryTarget.name} category?`
-            : ''
-        }
-        footer={
+            : ''}
+        </DialogDescription>
+        <DialogBody>
+          <p>
+            The category must be empty. Blueprints inside must be removed or
+            moved first.
+          </p>
+        </DialogBody>
+        <DialogButtons align="end">
           <ButtonGroup attached={false}>
             <Button
               variant="secondary"
@@ -615,12 +628,7 @@ export default function TemplatesPage() {
               Delete
             </Button>
           </ButtonGroup>
-        }
-      >
-        <p>
-          The category must be empty. Blueprints inside must be removed or
-          moved first.
-        </p>
+        </DialogButtons>
       </Dialog>
     </Page>
   );

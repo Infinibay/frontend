@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 
 import useVMRecommendations from '@/hooks/useVMRecommendations';
+import useVmAgentConnection from '@/hooks/useVmAgentConnection';
 import { RecommendationsGeneralHelp } from './RecommendationHelp';
 import RecommendationActions from './RecommendationActions';
 import {
@@ -71,7 +72,7 @@ const priorityLabel = (priority) => {
   return '';
 };
 
-const VMRecommendationsTab = ({ vmId, vmStatus }) => {
+const VMRecommendationsTab = ({ vmId, vmStatus, vmSetupComplete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -87,6 +88,10 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
     error,
     refreshRecommendations,
   } = useVMRecommendations(vmId, { pollInterval: 60_000 }) || {};
+
+  const { isConnected: agentOnline } = useVmAgentConnection(vmId, {
+    pollInterval: 20_000,
+  });
 
   const filtered = useMemo(() => {
     let list = [...recommendations];
@@ -394,6 +399,8 @@ const VMRecommendationsTab = ({ vmId, vmStatus }) => {
                     recommendation={rec}
                     vmId={vmId}
                     vmStatus={vmStatus}
+                    vmSetupComplete={vmSetupComplete}
+                    agentOnline={agentOnline}
                   />
                 }
               >

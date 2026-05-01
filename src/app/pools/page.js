@@ -11,6 +11,8 @@ import {
   Button,
   DataTable,
   Dialog,
+  DialogTitle,
+  DialogBody,
   EmptyState,
   IconButton,
   Menu,
@@ -130,6 +132,7 @@ export default function PoolsListPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPools();
   }, [fetchPools]);
 
@@ -407,7 +410,9 @@ function NewPoolDialog({ onClose, onCreated }) {
   };
 
   return (
-    <Dialog open onClose={onClose} title="New Pool">
+    <Dialog open onClose={onClose}>
+      <DialogTitle>New Pool</DialogTitle>
+      <DialogBody>
       <div className="flex flex-col gap-4 min-w-[480px]">
         <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
         <Select
@@ -453,6 +458,7 @@ function NewPoolDialog({ onClose, onCreated }) {
           <Button variant="primary" onClick={handleSubmit} loading={submitting}>Create pool</Button>
         </div>
       </div>
+      </DialogBody>
     </Dialog>);
 
 }
@@ -491,7 +497,9 @@ function ScalePoolDialog({ pool, onClose, onScaled }) {
   };
 
   return (
-    <Dialog open onClose={onClose} title={`Scale "${pool.name}"`}>
+    <Dialog open onClose={onClose}>
+      <DialogTitle>{`Scale "${pool.name}"`}</DialogTitle>
+      <DialogBody>
       <div className="flex flex-col gap-4 min-w-[380px]">
         <div className="text-sm text-fg-muted">
           Current: <span className="font-mono text-fg">{pool.currentSize}</span>
@@ -511,6 +519,7 @@ function ScalePoolDialog({ pool, onClose, onScaled }) {
           <Button variant="primary" onClick={handleSubmit} loading={submitting}>Apply</Button>
         </div>
       </div>
+      </DialogBody>
     </Dialog>);
 
 }

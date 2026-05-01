@@ -27,7 +27,6 @@ import {
   ResponsiveStack,
   ResponsiveGrid,
   FieldRow,
-  FieldSpacer,
   FormField,
   Tabs,
   TabList,
@@ -38,6 +37,10 @@ import {
   Badge,
   Tooltip,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   IconButton,
   Button,
 } from '@infinibay/harbor';
@@ -472,14 +475,10 @@ export function BlueprintForm({ form, onChange }) {
         open={!!infoScript}
         onClose={() => setInfoScript(null)}
         size="md"
-        title={infoScript?.name ?? ''}
-        description={infoScript?.description ?? ''}
-        footer={
-          <Button variant="secondary" onClick={() => setInfoScript(null)}>
-            Close
-          </Button>
-        }
       >
+        <DialogTitle>{infoScript?.name ?? ''}</DialogTitle>
+        <DialogDescription>{infoScript?.description ?? ''}</DialogDescription>
+        <DialogBody>
         <ResponsiveStack direction="col" gap={4}>
           {infoDetails?.whatItDoes ? (
             <div>
@@ -532,6 +531,12 @@ export function BlueprintForm({ form, onChange }) {
             </div>
           ) : null}
         </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={() => setInfoScript(null)}>
+            Close
+          </Button>
+        </DialogButtons>
       </Dialog>
     </Tabs>
   );

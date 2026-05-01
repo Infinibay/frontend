@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react'
 import {
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   Button,
   FormField,
   TextField,
@@ -70,6 +74,7 @@ export default function ScriptInputModal({
             ? 'text'
             : input.type || 'text'
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         name: input.name || '',
         label: input.label || '',
@@ -357,19 +362,10 @@ export default function ScriptInputModal({
       open={!!open}
       onClose={() => onOpenChange(false)}
       size="lg"
-      title={mode === 'edit' ? 'Edit input' : 'Add new input'}
-      description="Configure the input parameter requested when running this script."
-      footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>
-            {mode === 'edit' ? 'Save changes' : 'Add input'}
-          </Button>
-        </ResponsiveStack>
-      }
     >
+      <DialogTitle>{mode === 'edit' ? 'Edit input' : 'Add new input'}</DialogTitle>
+      <DialogDescription>Configure the input parameter requested when running this script.</DialogDescription>
+      <DialogBody>
       <Tabs value={activeTab} onValueChange={setActiveTab} variant="underline">
         <TabList>
           <Tab value="basic" icon={<SettingsIcon size={14} />}>
@@ -457,6 +453,15 @@ export default function ScriptInputModal({
           </ResponsiveStack>
         </Alert>
       ) : null}
+      </DialogBody>
+      <DialogButtons align="end">
+        <Button variant="secondary" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave}>
+          {mode === 'edit' ? 'Save changes' : 'Add input'}
+        </Button>
+      </DialogButtons>
     </Dialog>
   )
 }

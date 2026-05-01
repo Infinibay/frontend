@@ -31,10 +31,13 @@ import { StatusChip } from '@/components/common/StatusChip';
 
 const GB = (bytes) => bytes != null ? Math.round(bytes / 1024) : null;
 
-function vmStatusGroup(status) {
+function vmStatusGroup(status, setupComplete) {
   const s = String(status || '').toLowerCase();
-  if (s === 'running' || s === 'active') return 'running';
-  if (s === 'shutoff' || s === 'stopped' || s === 'shut off') return 'stopped';
+  if (s === 'running' || s === 'active') {
+    // VM is up but the OS hasn't finished setup → counts as transitional, not running.
+    return setupComplete ? 'running' : 'other';
+  }
+  if (s === 'off' || s === 'shutoff' || s === 'stopped' || s === 'shut off') return 'stopped';
   if (s === 'paused' || s === 'suspended') return 'paused';
   return 'other';
 }
@@ -60,7 +63,7 @@ function buildDepartmentRows(departments, machines) {
     if (!byDept.has(did)) byDept.set(did, { total: 0, running: 0, stopped: 0 });
     const agg = byDept.get(did);
     agg.total += 1;
-    const g = vmStatusGroup(m.status);
+    const g = vmStatusGroup(m.status, m.setupComplete);
     if (g === 'running') agg.running += 1;else
     if (g === 'stopped') agg.stopped += 1;
   }
@@ -85,7 +88,7 @@ function buildDepartmentRows(departments, machines) {
 
 function buildRecentActivity(machines) {
   const list = (machines || []).slice(0, 8).map((m, i) => {
-    const g = vmStatusGroup(m.status);
+    const g = vmStatusGroup(m.status, m.setupComplete);
     const minutesAgo = 3 + i * 7;
     const action =
     g === 'running' ? 'started' :
@@ -139,8 +142,8 @@ export default function OverviewPage() {
 
   const stats = useMemo(() => {
     const list = machines || [];
-    const running = list.filter((m) => vmStatusGroup(m.status) === 'running').length;
-    const stopped = list.filter((m) => vmStatusGroup(m.status) === 'stopped').length;
+    const running = list.filter((m) => vmStatusGroup(m.status, m.setupComplete) === 'running').length;
+    const stopped = list.filter((m) => vmStatusGroup(m.status, m.setupComplete) === 'stopped').length;
     return {
       total: list.length,
       running,

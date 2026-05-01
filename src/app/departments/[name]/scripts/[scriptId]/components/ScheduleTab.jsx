@@ -15,6 +15,10 @@ import {
   IconButton,
   Badge,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   FormField,
   TextField,
   NumberField,
@@ -689,10 +693,9 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
         open={showScheduleDialog}
         onClose={() => setShowScheduleDialog(false)}
         size="lg"
-        title={`${editingSchedule ? 'Edit Schedule' : 'Schedule Script'}: ${script?.name || ''}`}
-        footer={dialogFooter}
-        footerAlign="end"
       >
+        <DialogTitle>{`${editingSchedule ? 'Edit Schedule' : 'Schedule Script'}: ${script?.name || ''}`}</DialogTitle>
+        <DialogBody>
         <ResponsiveStack direction="column" gap={5}>
           {/* Schedule Mode */}
           <FormField label="Schedule Type">
@@ -825,6 +828,8 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
             </Alert>
           )}
         </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">{dialogFooter}</DialogButtons>
       </Dialog>
 
       {/* Confirm Cancel Dialog */}
@@ -832,16 +837,17 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
         open={confirmAction !== null}
         onClose={() => setConfirmAction(null)}
         size="sm"
-        title="Cancel Schedule?"
-        description={confirmAction?.description}
-        footer={confirmFooter}
-        footerAlign="end"
       >
-        {confirmAction?.scheduleName && (
-          <Alert tone="info" size="sm" title="Schedule">
-            {confirmAction.scheduleName}
-          </Alert>
-        )}
+        <DialogTitle>Cancel Schedule?</DialogTitle>
+        <DialogDescription>{confirmAction?.description}</DialogDescription>
+        <DialogBody>
+          {confirmAction?.scheduleName && (
+            <Alert tone="info" size="sm" title="Schedule">
+              {confirmAction.scheduleName}
+            </Alert>
+          )}
+        </DialogBody>
+        <DialogButtons align="end">{confirmFooter}</DialogButtons>
       </Dialog>
     </ResponsiveStack>
   )

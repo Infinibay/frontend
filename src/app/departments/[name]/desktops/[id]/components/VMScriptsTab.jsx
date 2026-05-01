@@ -8,6 +8,10 @@ import {
   Card,
   CodeBlock,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   EmptyState,
   FormField,
   LoadingOverlay,
@@ -74,7 +78,8 @@ const StatusIcon = ({ status }) => {
   }
 };
 
-export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
+export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departmentId }) {
+  const isReady = vmStatus === 'running' && !!vmSetupComplete;
   const [selectedScript, setSelectedScript] = useState(null);
   const [inputValues, setInputValues] = useState({});
   const [showExecuteDialog, setShowExecuteDialog] = useState(false);
@@ -103,7 +108,7 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
 
   const { data: usersData } = useVmUsersQuery({
     variables: { machineId: vmId },
-    skip: !vmId || vmStatus !== 'running',
+    skip: !vmId || !isReady,
   });
 
   const [executeScript, { loading: executing }] = useExecuteScriptMutation();
@@ -282,7 +287,7 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
                       variant="primary"
                       icon={<Play size={12} />}
                       onClick={() => openExecute(script)}
-                      disabled={vmStatus !== 'running'}
+                      disabled={!isReady}
                     >
                       Run
                     </Button>
@@ -328,33 +333,12 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
         open={showExecuteDialog}
         onClose={() => setShowExecuteDialog(false)}
         size="lg"
-        title={
-          selectedScript ? `Execute: ${selectedScript.name}` : 'Execute script'
-        }
-        description={selectedScript?.description}
-        footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
-              variant="secondary"
-              onClick={() => setShowExecuteDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleExecute}
-              loading={executing}
-              disabled={
-                executing ||
-                scriptLoading ||
-                Object.keys(validationErrors).length > 0
-              }
-            >
-              {executing ? 'Executing…' : 'Execute'}
-            </Button>
-          </ResponsiveStack>
-        }
       >
+        <DialogTitle>
+          {selectedScript ? `Execute: ${selectedScript.name}` : 'Execute script'}
+        </DialogTitle>
+        <DialogDescription>{selectedScript?.description}</DialogDescription>
+        <DialogBody>
         <ResponsiveStack direction="col" gap={4}>
           {scriptLoading ? (
             <ResponsiveStack direction="row" gap={3} align="center" justify="center">
@@ -401,22 +385,37 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
             />
           </FormField>
         </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={() => setShowExecuteDialog(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleExecute}
+            loading={executing}
+            disabled={
+              executing ||
+              scriptLoading ||
+              Object.keys(validationErrors).length > 0
+            }
+          >
+            {executing ? 'Executing…' : 'Execute'}
+          </Button>
+        </DialogButtons>
       </Dialog>
 
       <Dialog
         open={showLogsDialog}
         onClose={() => setShowLogsDialog(false)}
         size="lg"
-        title="Execution logs"
-        description={selectedExecution?.script?.name}
-        footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button variant="primary" onClick={() => setShowLogsDialog(false)}>
-              Close
-            </Button>
-          </ResponsiveStack>
-        }
       >
+        <DialogTitle>Execution logs</DialogTitle>
+        <DialogDescription>{selectedExecution?.script?.name}</DialogDescription>
+        <DialogBody>
         <ResponsiveStack direction="col" gap={4}>
           {selectedExecution?.stdout ? (
             <Card
@@ -448,6 +447,12 @@ export default function VMScriptsTab({ vmId, vmStatus, departmentId }) {
             />
           ) : null}
         </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="primary" onClick={() => setShowLogsDialog(false)}>
+            Close
+          </Button>
+        </DialogButtons>
       </Dialog>
     </>
   );

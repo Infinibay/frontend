@@ -17,6 +17,9 @@ import {
   Button,
   Checkbox,
   Dialog,
+  DialogTitle,
+  DialogBody,
+  DialogButtons,
   FormField,
   LoadingOverlay,
   NumberField,
@@ -311,16 +314,18 @@ export default function ScheduleScriptDialog({
         open={open}
         onClose={() => onOpenChange(false)}
         size="lg"
-        title="Error loading script"
-        footer={
+      >
+        <DialogTitle>Error loading script</DialogTitle>
+        <DialogBody>
+          <Alert tone="danger" icon={<AlertCircle size={16} />}>
+            Failed to load script details. Please try again.
+          </Alert>
+        </DialogBody>
+        <DialogButtons align="end">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-        }
-      >
-        <Alert tone="danger" icon={<AlertCircle size={16} />}>
-          Failed to load script details. Please try again.
-        </Alert>
+        </DialogButtons>
       </Dialog>
     );
   }
@@ -350,25 +355,9 @@ export default function ScheduleScriptDialog({
       open={open}
       onClose={() => onOpenChange(false)}
       size="lg"
-      title={`Schedule script: ${scriptName}`}
-      footerAlign="end"
-      footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            leadingIcon={submitIcon}
-            disabled={isSubmitDisabled}
-            loading={scheduling}
-            onClick={handleScheduleScript}
-          >
-            {submitLabel}
-          </Button>
-        </ResponsiveStack>
-      }
     >
+      <DialogTitle>{`Schedule script: ${scriptName}`}</DialogTitle>
+      <DialogBody>
       <LoadingOverlay active={scriptLoading} label="Loading script…">
         <ResponsiveStack direction="col" gap={5}>
           <FormField label="Schedule type">
@@ -527,6 +516,21 @@ export default function ScheduleScriptDialog({
           ) : null}
         </ResponsiveStack>
       </LoadingOverlay>
+      </DialogBody>
+      <DialogButtons align="end">
+        <Button variant="secondary" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          leadingIcon={submitIcon}
+          disabled={isSubmitDisabled}
+          loading={scheduling}
+          onClick={handleScheduleScript}
+        >
+          {submitLabel}
+        </Button>
+      </DialogButtons>
     </Dialog>
   );
 }

@@ -90,6 +90,7 @@ query machine($id: String!) {
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt
@@ -131,6 +132,7 @@ query machines($orderBy: MachineOrderBy, $pagination: PaginationInputType) {
     name
     configuration
     status
+    setupComplete
     userId
     templateId
     createdAt

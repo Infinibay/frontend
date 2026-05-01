@@ -23,6 +23,10 @@ import {
   Card,
   DataTable,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   Drawer,
   EmptyState,
   LoadingOverlay,
@@ -308,23 +312,22 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
       <Dialog
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        size="sm"
-        title="Apply risky policy?"
-        description="The selected default behaviour leaves the network broadly open. Confirm to continue."
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleSave}>
-              Apply anyway
-            </Button>
-          </ResponsiveStack>
-        }>
-        
-        <Alert tone="warning" size="sm" icon={<AlertTriangle size={12} />}>
-          The subnet will restart immediately. In-flight connections may drop.
-        </Alert>
+        size="sm">
+        <DialogTitle>Apply risky policy?</DialogTitle>
+        <DialogDescription>The selected default behaviour leaves the network broadly open. Confirm to continue.</DialogDescription>
+        <DialogBody>
+          <Alert tone="warning" size="sm" icon={<AlertTriangle size={12} />}>
+            The subnet will restart immediately. In-flight connections may drop.
+          </Alert>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={handleSave}>
+            Apply anyway
+          </Button>
+        </DialogButtons>
       </Dialog>
     </>);
 
@@ -707,36 +710,34 @@ const DepartmentSecurityTab = ({ department }) => {
       <Dialog
         open={bulkDeleteOpen}
         onClose={() => !isDeleting && setBulkDeleteOpen(false)}
-        size="md"
-        title="Delete selected rules?"
-        footerAlign="end"
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
+        size="md">
+        <DialogTitle>Delete selected rules?</DialogTitle>
+        <DialogBody>
+          <Alert tone="warning" size="sm" icon={<AlertTriangle size={14} />}>
+            This will permanently remove {selectedIds.length} rule
+            {selectedIds.length !== 1 ? 's' : ''} from this department. VMs
+            inheriting these rules will lose them immediately.
+          </Alert>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
             variant="secondary"
             disabled={isDeleting}
             onClick={() => setBulkDeleteOpen(false)}>
-            
-              Cancel
-            </Button>
-            <Button
+
+            Cancel
+          </Button>
+          <Button
             variant="destructive"
             loading={isDeleting}
             disabled={isDeleting}
             icon={<Trash2 size={14} />}
             onClick={handleBulkDelete}>
-            
-              Delete {selectedIds.length} rule
-              {selectedIds.length !== 1 ? 's' : ''}
-            </Button>
-          </ResponsiveStack>
-        }>
-        
-        <Alert tone="warning" size="sm" icon={<AlertTriangle size={14} />}>
-          This will permanently remove {selectedIds.length} rule
-          {selectedIds.length !== 1 ? 's' : ''} from this department. VMs
-          inheriting these rules will lose them immediately.
-        </Alert>
+
+            Delete {selectedIds.length} rule
+            {selectedIds.length !== 1 ? 's' : ''}
+          </Button>
+        </DialogButtons>
       </Dialog>
     </>);
 

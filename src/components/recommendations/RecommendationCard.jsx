@@ -13,6 +13,9 @@ import {
   Button,
   ButtonGroup,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogButtons,
   IconButton,
   Menu,
   MenuItem,
@@ -190,8 +193,9 @@ export function RecommendationCard({ recommendation, onActionComplete }) {
         open={showConfirmDialog}
         onClose={() => setShowConfirmDialog(false)}
         size="sm"
-        title={`Ejecutar "${scriptName}"?`}
-        description={
+      >
+        <DialogTitle>{`Ejecutar "${scriptName}"?`}</DialogTitle>
+        <DialogDescription>
           <span>
             Se ejecutara este script en <strong>{recommendation.machine?.name}</strong>.
             {recommendation.description ? (
@@ -200,8 +204,8 @@ export function RecommendationCard({ recommendation, onActionComplete }) {
               </span>
             ) : null}
           </span>
-        }
-        footer={
+        </DialogDescription>
+        <DialogButtons align="end">
           <ButtonGroup>
             <Button variant="secondary" onClick={() => setShowConfirmDialog(false)}>
               Cancelar
@@ -214,8 +218,8 @@ export function RecommendationCard({ recommendation, onActionComplete }) {
               Ejecutar
             </Button>
           </ButtonGroup>
-        }
-      />
+        </DialogButtons>
+      </Dialog>
     </>
   );
 }

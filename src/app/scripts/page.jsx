@@ -29,6 +29,10 @@ import {
   ResponsiveStack,
   Tooltip,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
 } from '@infinibay/harbor';
 import { PageHeader } from '@/components/common/PageHeader';
 import { OsBadge } from '@/components/common/OsBadge';
@@ -493,37 +497,37 @@ export default function ScriptsPage() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         size="sm"
-        title={
+      >
+        <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
             <AlertCircle size={16} />
             <span>Delete script</span>
           </ResponsiveStack>
-        }
-        description={
-          deleteTarget
+        </DialogTitle>
+        <DialogDescription>
+          {deleteTarget
             ? `Remove "${deleteTarget.name}"? Any active schedules will be cancelled.`
-            : ''
-        }
-        footer={
-          <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              loading={deleting}
-              disabled={deleting}
-            >
-              Delete
-            </Button>
-          </ResponsiveStack>
-        }
-      >
-        <p>
-          Existing execution history is kept. The script body and its schedules are
-          removed for good.
-        </p>
+            : ''}
+        </DialogDescription>
+        <DialogBody>
+          <p>
+            Existing execution history is kept. The script body and its schedules are
+            removed for good.
+          </p>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            loading={deleting}
+            disabled={deleting}
+          >
+            Delete
+          </Button>
+        </DialogButtons>
       </Dialog>
     </Page>
   );
