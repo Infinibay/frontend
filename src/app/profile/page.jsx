@@ -371,7 +371,7 @@ export default function ProfilePage() {
         <ResponsiveStack
           direction={{ base: 'col', sm: 'row' }}
           gap={6}
-          align={{ base: 'stretch', sm: 'start' }}
+          align="start"
         >
           <Avatar name={displayName} src={gravatarUrl} size="xl" />
           <ResponsiveStack direction="col" gap={3}>

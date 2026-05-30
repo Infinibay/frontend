@@ -218,14 +218,19 @@ export default function DepartmentScriptsPage() {
         actions={
           <Button
             variant="primary"
-            leadingIcon={<Plus size={14} />}
+            icon={<Plus size={14} />}
             onClick={() => setShowAssignDialog(true)}
           >
             Assign script
           </Button>
         }
       >
-        <LoadingOverlay active={deptScriptsLoading} label="Loading scripts…">
+        <div className="relative">
+          {deptScriptsLoading && (
+            <div className="absolute inset-0 z-10 grid place-items-center bg-bg/60 backdrop-blur-sm">
+              <LoadingOverlay label="Loading scripts…" />
+            </div>
+          )}
           {!deptScriptsLoading && assigned.length === 0 ? (
             <ResponsiveStack direction="col" gap={2} align="center">
               <IconTile
@@ -254,7 +259,7 @@ export default function DepartmentScriptsPage() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        leadingIcon={<Edit3 size={14} />}
+                        icon={<Edit3 size={14} />}
                         onClick={(e) => {
                           e.stopPropagation();
                           router.push(`/scripts/${script.id}`);
@@ -265,7 +270,7 @@ export default function DepartmentScriptsPage() {
                       <Button
                         variant="primary"
                         size="sm"
-                        leadingIcon={<Calendar size={14} />}
+                        icon={<Calendar size={14} />}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpenScheduleDialog(script);
@@ -275,7 +280,6 @@ export default function DepartmentScriptsPage() {
                       </Button>
                       <IconButton
                         label="Remove script"
-                        tone="danger"
                         size="sm"
                         quiet
                         icon={<Trash2 size={14} />}
@@ -291,7 +295,7 @@ export default function DepartmentScriptsPage() {
               ))}
             </ResponsiveStack>
           ) : null}
-        </LoadingOverlay>
+        </div>
       </Card>
 
       <Drawer
@@ -321,9 +325,14 @@ export default function DepartmentScriptsPage() {
             placeholder="Search scripts…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            leadingIcon={<Search size={14} />}
+            icon={<Search size={14} />}
           />
-          <LoadingOverlay active={allScriptsLoading} label="Loading scripts…">
+          <div className="relative">
+            {allScriptsLoading && (
+              <div className="absolute inset-0 z-10 grid place-items-center bg-bg/60 backdrop-blur-sm">
+                <LoadingOverlay label="Loading scripts…" />
+              </div>
+            )}
             {!allScriptsLoading && filteredAvailableScripts.length === 0 ? (
               <Alert tone="info" size="sm">
                 {searchQuery
@@ -353,7 +362,7 @@ export default function DepartmentScriptsPage() {
                 ))}
               </ResponsiveStack>
             ) : null}
-          </LoadingOverlay>
+          </div>
         </ResponsiveStack>
       </Drawer>
 

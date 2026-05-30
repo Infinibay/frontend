@@ -9,8 +9,36 @@ module.exports = {
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
     // Harbor library source — transpilePackages feeds these to SWC,
     // Tailwind scans them so utilities like bg-surface / text-fg /
-    // shadow-harbor-glow land in the bundle.
-    "../harbor/src/**/*.{js,ts,jsx,tsx}",
+    // shadow-harbor-glow AND Harbor-only classes (e.g. Container's
+    // max-w-[var(--harbor-container-*)]) land in the bundle.
+    // NOTE: the submodule is at frontend/harbor, i.e. ./harbor — NOT
+    // ../harbor. The old "../harbor/src" pointed outside the repo at a
+    // nonexistent path, so Harbor's source was never scanned and every
+    // Harbor-only class got purged (pages rendered full-bleed, no
+    // max-width/centering — the "espantoso" layout). Keep this as ./harbor.
+    "./harbor/src/**/*.{js,ts,jsx,tsx}",
+  ],
+  // Harbor's layout primitives (ResponsiveStack, ResponsiveGrid) build their
+  // Tailwind classes at RUNTIME via template literals — `gap-${g}`,
+  // `${bp}:flex-row`, `${bp}:grid-cols-${n}`. Tailwind's static scanner can't
+  // see those, so when Harbor is consumed from source the responsive/spacing
+  // utilities get purged and every page collapses (no gaps, rows stay stacked).
+  // Safelist the families those primitives generate so they survive the build.
+  // (Harbor's published dist ships a prebuilt CSS that already includes these;
+  // we consume source, so we regenerate them here.)
+  safelist: [
+    {
+      pattern: /^flex-(row|col|row-reverse|col-reverse)$/,
+      variants: ["sm", "md", "lg", "xl", "2xl"],
+    },
+    {
+      pattern: /^grid-cols-(1|2|3|4|5|6|7|8|9|10|11|12)$/,
+      variants: ["sm", "md", "lg", "xl", "2xl"],
+    },
+    {
+      pattern: /^gap-(0|px|0\.5|1|1\.5|2|2\.5|3|3\.5|4|5|6|7|8|9|10|11|12|14|16|20|24)$/,
+      variants: ["sm", "md", "lg", "xl", "2xl"],
+    },
   ],
   theme: {
     extend: {

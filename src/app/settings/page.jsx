@@ -25,7 +25,6 @@ import {
   Button,
   Badge,
   Alert,
-  Spinner,
   SegmentedControl,
   Tabs,
   TabList,
@@ -321,14 +320,14 @@ function BrandingSection() {
             placeholder="https://cdn.example.com/logo.svg"
             value={logo}
             onChange={(e) => setLogo(e.target.value)}
-            helper="Shown in the sidebar and on the login page."
+            hint="Shown in the sidebar and on the login page."
           />
           <TextField
             label="Brand name"
             placeholder="Acme Cloud"
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
-            helper="Replaces “Infinibay” in the topbar and tab titles."
+            hint="Replaces “Infinibay” in the topbar and tab titles."
           />
         </ResponsiveGrid>
 
@@ -783,8 +782,6 @@ export default function SettingsPage() {
           <PackagesSection embedded />
         </TabPanel>
       </Tabs>
-
-      <Spinner hidden aria-hidden />
     </Page>
   );
 }

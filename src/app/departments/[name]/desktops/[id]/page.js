@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Badge,
@@ -9,6 +9,7 @@ import {
   Container,
   IconTile,
   ResponsiveStack,
+  Select,
   StatusDot,
   Tab,
   TabList,
@@ -24,6 +25,7 @@ import {
   LayoutDashboard,
   Lightbulb,
   Monitor,
+  MoveRight,
   Power,
   PowerOff,
   RefreshCw,
@@ -32,6 +34,10 @@ import {
   Terminal,
 } from 'lucide-react';
 import { useVMDetail } from './hooks/useVMDetail';
+import {
+  useGetNodeInventoryQuery,
+  useMigrateMachineToNodeMutation,
+} from '@/gql/hooks';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { openSpiceClient } from '@/utils/spiceConnect';
 import { toast } from '@/hooks/use-toast';
@@ -111,10 +117,15 @@ function statusTone(status) {
   }
 }
 
+function canColdMigrateStatus(status) {
+  return ['off', 'powered_off', 'stopped', 'error'].includes((status || '').toLowerCase());
+}
+
 const VMDetailPage = () => {
   const params = useParams();
   const departmentName = params.name;
   const vmId = params.id;
+  const [targetNodeId, setTargetNodeId] = useState('');
 
   debug.log('VM Detail Page mounted', { departmentName, vmId });
 
@@ -130,6 +141,16 @@ const VMDetailPage = () => {
     refreshVM,
     handlePowerAction,
   } = useVMDetail(vmId);
+
+  const {
+    data: nodeData,
+    loading: nodesLoading,
+    refetch: refetchNodes,
+  } = useGetNodeInventoryQuery({
+    fetchPolicy: 'cache-and-network',
+    pollInterval: 30_000,
+  });
+  const [migrateMachineToNode, { loading: migrationLoading }] = useMigrateMachineToNodeMutation();
 
   const helpConfig = useMemo(
     () => ({
@@ -229,6 +250,18 @@ const VMDetailPage = () => {
   const os = vm?.configuration?.os;
   const graphicUrl = typeof vm?.configuration?.graphic === 'string' ? vm.configuration.graphic : null;
   const canConnect = isRunning && graphicUrl?.startsWith('spice://');
+  const nodes = nodeData?.nodes || [];
+  const currentNode = nodes.find((node) => node.id === vm.nodeId);
+  const migrationTargets = nodes.filter((node) => node.id !== vm.nodeId && !node.maintenanceMode);
+  const migrationOptions = [
+    { value: '', label: migrationTargets.length > 0 ? 'Select target node' : 'No eligible target nodes' },
+    ...migrationTargets.map((node) => ({
+      value: node.id,
+      label: `${node.name} · ${node.cores} cores · ${Math.round((node.ram || 0) / 1024)} GB RAM`,
+    })),
+  ];
+  const canMigrate = canColdMigrateStatus(vm.status) && !isBusy && !migrationLoading;
+  const migrationDisabled = !canMigrate || !targetNodeId;
 
   const handleConnect = () => {
     try {
@@ -247,6 +280,42 @@ const VMDetailPage = () => {
     }
   };
 
+  const handleMigrate = async () => {
+    if (!targetNodeId) return;
+
+    const target = nodes.find((node) => node.id === targetNodeId);
+
+    try {
+      const result = await migrateMachineToNode({
+        variables: { id: vmId, targetNodeId },
+      });
+      const migration = result?.data?.migrateMachineToNode;
+
+      if (!migration?.success) {
+        toast({
+          title: 'Migration blocked',
+          description: migration?.error || 'The desktop could not be moved to the selected node.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Desktop reassigned',
+        description: target?.name ? `${vm.name} was moved to ${target.name}.` : `${vm.name} was moved to the selected node.`,
+        variant: 'default',
+      });
+      setTargetNodeId('');
+      await Promise.all([refreshVM(), refetchNodes()]);
+    } catch (err) {
+      toast({
+        title: 'Migration failed',
+        description: err?.message || 'The desktop could not be moved to the selected node.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <>
       <Container size="xl" padded>
@@ -256,7 +325,7 @@ const VMDetailPage = () => {
               direction={{ base: 'col', lg: 'row' }}
               gap={5}
               justify="between"
-              align={{ base: 'start', lg: 'center' }}
+              align="center"
             >
               <ResponsiveStack direction="row" gap={4} align="center">
                 <IconTile icon={<Server size={22} />} tone="purple" size="lg" />
@@ -323,6 +392,53 @@ const VMDetailPage = () => {
                     Start
                   </Button>
                 )}
+              </ResponsiveStack>
+            </ResponsiveStack>
+          </Card>
+
+          <Card variant="default" spotlight={false} glow={false}>
+            <ResponsiveStack
+              direction={{ base: 'col', lg: 'row' }}
+              gap={4}
+              justify="between"
+              align="center"
+            >
+              <ResponsiveStack direction="row" gap={3} align="center">
+                <IconTile icon={<MoveRight size={18} />} tone="blue" size="md" />
+                <ResponsiveStack direction="col" gap={1}>
+                  <span>Node placement</span>
+                  <span>
+                    {currentNode?.name
+                      ? `Current node: ${currentNode.name}`
+                      : vm.nodeId
+                        ? `Current node: ${vm.nodeId}`
+                        : 'Current node: unassigned'}
+                  </span>
+                  <span className="text-xs text-fg-muted">
+                    Cold migration requires shared VM storage across nodes.
+                  </span>
+                </ResponsiveStack>
+              </ResponsiveStack>
+
+              <ResponsiveStack direction={{ base: 'col', sm: 'row' }} gap={2} align="center">
+                <div style={{ minWidth: 260 }}>
+                  <Select
+                    value={targetNodeId}
+                    onChange={setTargetNodeId}
+                    options={migrationOptions}
+                    disabled={nodesLoading || migrationTargets.length === 0 || !canMigrate}
+                  />
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<MoveRight size={14} />}
+                  onClick={handleMigrate}
+                  loading={migrationLoading}
+                  disabled={migrationDisabled}
+                >
+                  Migrate stopped desktop
+                </Button>
               </ResponsiveStack>
             </ResponsiveStack>
           </Card>

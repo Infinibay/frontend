@@ -152,7 +152,7 @@ export default function ScriptEditorPage() {
     if (data?.script?.content) {
       try {
         const parsed = yaml.load(data.script.content);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setOriginalYamlData(parsed);
         // When duplicating, suffix the name so the user knows which one they're on
         // and avoids fileName collision on the server side.
@@ -221,7 +221,7 @@ export default function ScriptEditorPage() {
     selectedShell &&
     scriptContent.trim())
     {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setErrors([]);
     }
   }, [scriptName, selectedOS, selectedShell, scriptContent, errors.length]);
@@ -345,14 +345,14 @@ export default function ScriptEditorPage() {
     setScriptInputs((prev) => prev.filter((_, idx) => idx !== i));
     toast.success('Input removed');
   };
-  const duplicateInput = (i) => {
+  const duplicateInput = useCallback((i) => {
     const orig = scriptInputs[i];
     setScriptInputs((prev) => [
     ...prev,
     { ...orig, name: `${orig.name}_copy`, label: `${orig.label} (Copy)` }]
     );
     toast.success('Input duplicated');
-  };
+  }, [scriptInputs]);
 
   usePageHeader(
     {
@@ -449,7 +449,7 @@ export default function ScriptEditorPage() {
       }
     }])],
 
-    [scriptInputs, readOnly]
+    [scriptInputs, readOnly, duplicateInput]
   );
 
   if (!isNew && loading) {
@@ -561,8 +561,7 @@ export default function ScriptEditorPage() {
                   <TagInput
                     value={scriptTags}
                     onChange={(next) => setScriptTags(next.slice(0, 10))}
-                    placeholder="Type a tag, press Enter…"
-                    disabled={readOnly} />
+                    placeholder="Type a tag, press Enter…" />
 
                 </FormField>
 
@@ -571,8 +570,7 @@ export default function ScriptEditorPage() {
                     <SegmentedControl
                       items={OS_OPTIONS}
                       value={selectedOS}
-                      onChange={handleOSChange}
-                      disabled={readOnly} />
+                      onChange={readOnly ? undefined : handleOSChange} />
 
                   </FormField>
                   <FormField
@@ -727,7 +725,7 @@ export default function ScriptEditorPage() {
                       <ResponsiveStack
                     direction={{ base: 'col', md: 'row' }}
                     gap={2}
-                    align={{ base: 'start', md: 'center' }}
+                    align="center"
                     justify="between">
                     
                         <ResponsiveStack direction="col" gap={1}>

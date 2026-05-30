@@ -191,7 +191,7 @@ export default function ScheduleScriptDialog({
   useEffect(() => {
     if (open) {
       // Intentional: reset all dialog state to defaults when re-opened.
-      /* eslint-disable react-hooks/set-state-in-effect */
+       
       setScheduleMode('immediate');
       setSelectAllVMs(true);
       setSelectedVMs([]);
@@ -202,7 +202,7 @@ export default function ScheduleScriptDialog({
       setRunIndefinitely(false);
       setInputValues({});
       setValidationErrors({});
-      /* eslint-enable react-hooks/set-state-in-effect */
+       
     }
   }, [open]);
 
@@ -358,7 +358,12 @@ export default function ScheduleScriptDialog({
     >
       <DialogTitle>{`Schedule script: ${scriptName}`}</DialogTitle>
       <DialogBody>
-      <LoadingOverlay active={scriptLoading} label="Loading script…">
+      <div className="relative">
+        {scriptLoading && (
+          <div className="absolute inset-0 z-10 grid place-items-center bg-bg/60 backdrop-blur-sm">
+            <LoadingOverlay label="Loading script…" />
+          </div>
+        )}
         <ResponsiveStack direction="col" gap={5}>
           <FormField label="Schedule type">
             <SegmentedControl
@@ -479,7 +484,6 @@ export default function ScheduleScriptDialog({
                       onChange={(v) =>
                         setMaxExecutions(v ? parseInt(v, 10) : null)
                       }
-                      placeholder="Leave empty for unlimited"
                     />
                   ) : null}
                 </ResponsiveStack>
@@ -515,7 +519,7 @@ export default function ScheduleScriptDialog({
             </Alert>
           ) : null}
         </ResponsiveStack>
-      </LoadingOverlay>
+      </div>
       </DialogBody>
       <DialogButtons align="end">
         <Button variant="secondary" onClick={() => onOpenChange(false)}>
@@ -523,7 +527,7 @@ export default function ScheduleScriptDialog({
         </Button>
         <Button
           variant="primary"
-          leadingIcon={submitIcon}
+          icon={submitIcon}
           disabled={isSubmitDisabled}
           loading={scheduling}
           onClick={handleScheduleScript}
