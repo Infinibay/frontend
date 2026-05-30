@@ -171,7 +171,7 @@ export default function NotificationsPage() {
           </ResponsiveStack>
         </ResponsiveStack>
 
-        <ResponsiveGrid minItemWidth={160} gap={3}>
+        <ResponsiveGrid columns={{ base: 2, md: 4 }} gap={3}>
           <Stat
             label="Critical"
             value={stats.danger}

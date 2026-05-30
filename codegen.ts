@@ -34,10 +34,14 @@ const config: CodegenConfig = {
         withHooks: true,
         withComponent: false,
         withHOC: false,
-        withMutationFn: true,
+        // Apollo Client 4 removed the `MutationFunction` and
+        // `BaseMutationOptions` type exports these flags relied on. The
+        // generated `*MutationFn` / `*MutationOptions` aliases are unused by
+        // app code (only the `useXMutation` hooks are), so disable them.
+        withMutationFn: false,
         withRefetchFn: true,
         withResultType: true,
-        withMutationOptionsType: true,
+        withMutationOptionsType: false,
         withSubscriptions: true,
         avoidOptionals: true,
         skipTypename: false,

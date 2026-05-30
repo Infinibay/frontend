@@ -41,7 +41,7 @@ export default function CreateMachineWizard({ departmentId }) {
         : String(departments[0].id);
 
       // Intentional: one-shot wizard initialisation when deps load.
-      /* eslint-disable react-hooks/set-state-in-effect */
+       
       setValidatedDepartmentId(departmentExists ? departmentId : null);
       setInitialValues({
         basicInfo: {
@@ -53,7 +53,7 @@ export default function CreateMachineWizard({ departmentId }) {
           gpuInfo: null
         }
       });
-      /* eslint-enable react-hooks/set-state-in-effect */
+       
     }
   }, [departments, departmentId, initialValues]);
 

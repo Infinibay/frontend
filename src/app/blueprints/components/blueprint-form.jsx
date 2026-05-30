@@ -245,7 +245,6 @@ export function BlueprintForm({ form, onChange }) {
                 value={osType}
                 onChange={(v) => onChange({ osType: v })}
                 options={OS_OPTIONS}
-                required
               />
             </FormField>
           </FieldRow>
@@ -301,7 +300,7 @@ export function BlueprintForm({ form, onChange }) {
             <Alert tone="info" size="sm">
               Apps installed on every desktop created from this blueprint, as
               first-boot tasks via InfiniService. Showing {filteredApps.length}
-              {' '}compatible with <Badge tone="neutral" size="sm">{osType}</Badge>.
+              {' '}compatible with <Badge tone="neutral">{osType}</Badge>.
             </Alert>
             {filteredApps.length === 0 ? (
               <div className="text-sm text-fg-muted py-6 text-center">

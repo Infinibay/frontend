@@ -2,6 +2,9 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Allow an alternate build dir via env (e.g. when a prior root-owned
+  // `.next` from a container build blocks a local rebuild). Defaults to `.next`.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   // Allow LAN devices to access the dev server (HMR/WebSocket).
   // Add your device IP here if it changes, e.g. '192.168.0.42'.
@@ -53,6 +56,18 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@components': path.resolve(__dirname, 'src/components'),
+      // Harbor 0.3.x ships an `exports` map that prefers its built `./dist`
+      // output (which isn't present — the package can't build standalone
+      // outside its own monorepo). Pin the specifiers the app actually uses
+      // back to Harbor's source (the `source` export condition), which is how
+      // this app has always consumed it: SWC transpiles it via
+      // `transpilePackages` and Tailwind scans `../harbor/src`. The trailing
+      // `$` makes each alias an exact match so the root one doesn't shadow the
+      // subpaths.
+      '@infinibay/harbor$': path.resolve(__dirname, 'harbor/src/components/index.ts'),
+      '@infinibay/harbor/theme$': path.resolve(__dirname, 'harbor/src/lib/theme/index.ts'),
+      '@infinibay/harbor/lib/cursor$': path.resolve(__dirname, 'harbor/src/lib/cursor.tsx'),
+      '@infinibay/harbor/index.css$': path.resolve(__dirname, 'harbor/src/index.css'),
     };
     return config;
   },

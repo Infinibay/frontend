@@ -357,6 +357,22 @@ export type CreateGoldenImageFromTemplateInput = {
   templateId: Scalars['String']['input'];
 };
 
+export type CreateIdentityProviderInput = {
+  attributes: InputMaybe<Scalars['JSONObject']['input']>;
+  baseDn: Scalars['String']['input'];
+  bindDn: InputMaybe<Scalars['String']['input']>;
+  bindPassword: InputMaybe<Scalars['String']['input']>;
+  domain: InputMaybe<Scalars['String']['input']>;
+  enabled: InputMaybe<Scalars['Boolean']['input']>;
+  groupFilter: InputMaybe<Scalars['String']['input']>;
+  host: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  port: InputMaybe<Scalars['Float']['input']>;
+  providerType: IdentityProviderKind;
+  useTls: InputMaybe<Scalars['Boolean']['input']>;
+  userFilter: InputMaybe<Scalars['String']['input']>;
+};
+
 export type CreateMachineInputType = {
   applications: Array<MachineApplicationInputType>;
   customCores: InputMaybe<Scalars['Int']['input']>;
@@ -553,6 +569,16 @@ export type DiskSpaceInfo = {
   warningThreshold: Maybe<Scalars['Float']['output']>;
 };
 
+export type DiskType = {
+  __typename?: 'DiskType';
+  createdAt: Scalars['DateTimeISO']['output'];
+  id: Scalars['ID']['output'];
+  nodeId: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
 /** Result of dismissing recommendation(s) */
 export type DismissRecommendationResult = {
   __typename?: 'DismissRecommendationResult';
@@ -582,6 +608,11 @@ export type DnsmasqDiagnosticsType = {
 export type DyummyType = {
   __typename?: 'DyummyType';
   value: Scalars['String']['output'];
+};
+
+export type EffectivePermissionType = {
+  __typename?: 'EffectivePermissionType';
+  allowedResources: Array<Scalars['String']['output']>;
 };
 
 export type EffectiveRuleSetType = {
@@ -882,6 +913,97 @@ export type IsoStatus = {
   os: Scalars['String']['output'];
 };
 
+export type IdentityGroupRoleMappingType = {
+  __typename?: 'IdentityGroupRoleMappingType';
+  createdAt: Scalars['DateTimeISO']['output'];
+  groupDn: Scalars['String']['output'];
+  groupName: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  providerId: Scalars['ID']['output'];
+  role: UserRole;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type IdentityProviderConnectionResultType = {
+  __typename?: 'IdentityProviderConnectionResultType';
+  latencyMs: Maybe<Scalars['Float']['output']>;
+  message: Scalars['String']['output'];
+  provider: Maybe<IdentityProviderType>;
+  success: Scalars['Boolean']['output'];
+};
+
+/** External directory provider type */
+export enum IdentityProviderKind {
+  ActiveDirectory = 'ACTIVE_DIRECTORY',
+  Ldap = 'LDAP'
+}
+
+/** External directory connection state */
+export enum IdentityProviderState {
+  Connected = 'CONNECTED',
+  Disconnected = 'DISCONNECTED',
+  Error = 'ERROR',
+  Syncing = 'SYNCING'
+}
+
+export type IdentityProviderSyncResultType = {
+  __typename?: 'IdentityProviderSyncResultType';
+  groupsSeen: Scalars['Float']['output'];
+  message: Scalars['String']['output'];
+  provider: Maybe<IdentityProviderType>;
+  success: Scalars['Boolean']['output'];
+  syncRunId: Scalars['String']['output'];
+  usersCreated: Scalars['Float']['output'];
+  usersDisabled: Scalars['Float']['output'];
+  usersUpdated: Scalars['Float']['output'];
+};
+
+export type IdentityProviderType = {
+  __typename?: 'IdentityProviderType';
+  attributes: Maybe<Scalars['JSONObject']['output']>;
+  baseDn: Scalars['String']['output'];
+  bindDn: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  domain: Maybe<Scalars['String']['output']>;
+  enabled: Scalars['Boolean']['output'];
+  groupFilter: Maybe<Scalars['String']['output']>;
+  hasBindPassword: Scalars['Boolean']['output'];
+  host: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lastError: Maybe<Scalars['String']['output']>;
+  lastSyncAt: Maybe<Scalars['DateTimeISO']['output']>;
+  lastTestAt: Maybe<Scalars['DateTimeISO']['output']>;
+  name: Scalars['String']['output'];
+  port: Scalars['Float']['output'];
+  providerType: IdentityProviderKind;
+  status: IdentityProviderState;
+  updatedAt: Scalars['DateTimeISO']['output'];
+  useTls: Scalars['Boolean']['output'];
+  userFilter: Maybe<Scalars['String']['output']>;
+};
+
+export type IdentitySyncRunType = {
+  __typename?: 'IdentitySyncRunType';
+  error: Maybe<Scalars['String']['output']>;
+  finishedAt: Maybe<Scalars['DateTimeISO']['output']>;
+  groupsSeen: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  message: Maybe<Scalars['String']['output']>;
+  providerId: Scalars['ID']['output'];
+  startedAt: Scalars['DateTimeISO']['output'];
+  status: IdentitySyncStatus;
+  usersCreated: Scalars['Int']['output'];
+  usersDisabled: Scalars['Int']['output'];
+  usersUpdated: Scalars['Int']['output'];
+};
+
+/** External directory sync run status */
+export enum IdentitySyncStatus {
+  Error = 'ERROR',
+  Running = 'RUNNING',
+  Success = 'SUCCESS'
+}
+
 export type InfiniServiceStatus = {
   __typename?: 'InfiniServiceStatus';
   error: Maybe<Scalars['String']['output']>;
@@ -957,6 +1079,7 @@ export type Machine = {
   internalName: Scalars['String']['output'];
   localIP: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
+  nodeId: Maybe<Scalars['String']['output']>;
   os: Scalars['String']['output'];
   publicIP: Maybe<Scalars['String']['output']>;
   ramGB: Maybe<Scalars['Int']['output']>;
@@ -972,6 +1095,15 @@ export type MachineApplicationInputType = {
   applicationId: Scalars['String']['input'];
   machineId: Scalars['String']['input'];
   parameters: InputMaybe<Scalars['JSONObject']['input']>;
+};
+
+export type MachineMigrationResultType = {
+  __typename?: 'MachineMigrationResultType';
+  error: Maybe<Scalars['String']['output']>;
+  machineId: Scalars['String']['output'];
+  sourceNodeId: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  targetNodeId: Scalars['String']['output'];
 };
 
 export type MachineOrderBy = {
@@ -1212,6 +1344,7 @@ export type Mutation = {
   createDepartmentFirewallRule: FirewallRuleType;
   /** Build a sealed golden image from a blueprint (long-running). */
   createGoldenImageFromTemplate: GoldenImageResult;
+  createIdentityProvider: IdentityProviderType;
   createMachine: Machine;
   createMachineTemplate: MachineTemplateType;
   createMachineTemplateCategory: MachineTemplateCategoryType;
@@ -1230,6 +1363,8 @@ export type Mutation = {
   deleteBackupSchedule: SuccessType;
   deleteFirewallRule: Scalars['Boolean']['output'];
   deleteGoldenImage: Scalars['Boolean']['output'];
+  deleteIdentityGroupRoleMapping: Scalars['Boolean']['output'];
+  deleteIdentityProvider: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
   deletePool: Scalars['Boolean']['output'];
@@ -1265,6 +1400,7 @@ export type Mutation = {
   login: Maybe<LoginResponse>;
   /** Install, remove, or update a package on a virtual machine */
   managePackage: PackageManagementResult;
+  migrateMachineToNode: MachineMigrationResultType;
   moveMachine: Machine;
   /** Perform disk cleanup on a VM */
   performDiskCleanup: DiskCleanupResult;
@@ -1295,6 +1431,8 @@ export type Mutation = {
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
+  setNodeMaintenanceMode: NodeType;
+  setRolePermission: RolePermissionMatrixType;
   setupNode: DyummyType;
   /** Snooze all pending recommendations for a duration (ISO 8601 duration format: PT1H, P1D, etc.) */
   snoozeAllRecommendations: SnoozeRecommendationResult;
@@ -1304,6 +1442,9 @@ export type Mutation = {
   syncFirewallToLibvirt: SyncResultType;
   /** Sync ISOs with filesystem */
   syncISOs: Scalars['Boolean']['output'];
+  syncIdentityProvider: IdentityProviderSyncResultType;
+  testIdentityProvider: IdentityProviderConnectionResultType;
+  testIdentityProviderConfig: IdentityProviderConnectionResultType;
   toggleMaintenanceTask: MaintenanceTaskResponse;
   triggerHealthCheckRound: HealthCheckRoundResult;
   unassignScriptFromDepartment: Scalars['Boolean']['output'];
@@ -1318,6 +1459,7 @@ export type Mutation = {
   updateDepartmentName: DepartmentType;
   updateDepartmentNetwork: DepartmentType;
   updateFirewallRule: FirewallRuleType;
+  updateIdentityProvider: IdentityProviderType;
   updateMachineHardware: Machine;
   updateMachineName: Machine;
   updateMachineTemplate: MachineTemplateType;
@@ -1330,6 +1472,7 @@ export type Mutation = {
   updateScheduledScript: ScheduleScriptResponseType;
   updateScript: ScriptResponseType;
   updateUser: UserType;
+  upsertIdentityGroupRoleMapping: IdentityGroupRoleMappingType;
   /** Validate ISO file integrity */
   validateISO: Scalars['Boolean']['output'];
 };
@@ -1400,6 +1543,11 @@ export type MutationCreateDepartmentFirewallRuleArgs = {
 
 export type MutationCreateGoldenImageFromTemplateArgs = {
   input: CreateGoldenImageFromTemplateInput;
+};
+
+
+export type MutationCreateIdentityProviderArgs = {
+  input: CreateIdentityProviderInput;
 };
 
 
@@ -1475,6 +1623,16 @@ export type MutationDeleteFirewallRuleArgs = {
 
 
 export type MutationDeleteGoldenImageArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteIdentityGroupRoleMappingArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteIdentityProviderArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1617,6 +1775,12 @@ export type MutationManagePackageArgs = {
 };
 
 
+export type MutationMigrateMachineToNodeArgs = {
+  id: Scalars['String']['input'];
+  targetNodeId: Scalars['String']['input'];
+};
+
+
 export type MutationMoveMachineArgs = {
   departmentId: Scalars['String']['input'];
   id: Scalars['String']['input'];
@@ -1727,6 +1891,17 @@ export type MutationSetNetworkIpRangeArgs = {
 };
 
 
+export type MutationSetNodeMaintenanceModeArgs = {
+  enabled: Scalars['Boolean']['input'];
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSetRolePermissionArgs = {
+  input: SetRolePermissionInput;
+};
+
+
 export type MutationSnoozeAllRecommendationsArgs = {
   duration: Scalars['String']['input'];
 };
@@ -1740,6 +1915,21 @@ export type MutationSnoozeRecommendationArgs = {
 
 export type MutationSuspendArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationSyncIdentityProviderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationTestIdentityProviderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationTestIdentityProviderConfigArgs = {
+  input: CreateIdentityProviderInput;
 };
 
 
@@ -1804,6 +1994,12 @@ export type MutationUpdateFirewallRuleArgs = {
 };
 
 
+export type MutationUpdateIdentityProviderArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateIdentityProviderInput;
+};
+
+
 export type MutationUpdateMachineHardwareArgs = {
   input: UpdateMachineHardwareInput;
 };
@@ -1861,6 +2057,11 @@ export type MutationUpdateScriptArgs = {
 export type MutationUpdateUserArgs = {
   id: Scalars['String']['input'];
   input: UpdateUserInputType;
+};
+
+
+export type MutationUpsertIdentityGroupRoleMappingArgs = {
+  input: UpsertIdentityGroupRoleMappingInput;
 };
 
 
@@ -1926,6 +2127,38 @@ export type NetworkIpInput = {
   address: Scalars['String']['input'];
   netmask: Scalars['String']['input'];
   networkName: Scalars['String']['input'];
+};
+
+export type NodeInventorySummary = {
+  __typename?: 'NodeInventorySummary';
+  onlineNodes: Scalars['Int']['output'];
+  staleNodes: Scalars['Int']['output'];
+  totalCores: Scalars['Int']['output'];
+  totalDisks: Scalars['Int']['output'];
+  totalNodes: Scalars['Int']['output'];
+  totalRam: Scalars['Int']['output'];
+};
+
+export type NodeType = {
+  __typename?: 'NodeType';
+  availableCores: Scalars['Int']['output'];
+  availableRamGB: Scalars['Int']['output'];
+  cores: Scalars['Int']['output'];
+  cpuFlags: Scalars['JSONObject']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  currentRaid: Scalars['String']['output'];
+  diskCount: Scalars['Int']['output'];
+  disks: Array<DiskType>;
+  health: Scalars['String']['output'];
+  healthyDiskCount: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  machineCount: Scalars['Int']['output'];
+  maintenanceMode: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  nextRaid: Maybe<Scalars['String']['output']>;
+  ram: Scalars['Int']['output'];
+  runningMachineCount: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
 };
 
 /** Operating system */
@@ -2056,6 +2289,28 @@ export type PaginationInputType = {
   take: InputMaybe<Scalars['Int']['input']>;
 };
 
+/** Role permission decision */
+export enum PermissionEffect {
+  Allow = 'ALLOW',
+  Deny = 'DENY',
+  Inherit = 'INHERIT'
+}
+
+export type PermissionPrincipalType = {
+  __typename?: 'PermissionPrincipalType';
+  avatar: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  kind: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+};
+
+export type PermissionResourceType = {
+  __typename?: 'PermissionResourceType';
+  group: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+};
+
 export type Pool = {
   __typename?: 'Pool';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -2164,6 +2419,10 @@ export type Query = {
   graphicConnection: Maybe<GraphicConfigurationType>;
   healthCheckQueueStats: QueueStatsType;
   healthQueueStatistics: QueueStatistics;
+  identityGroupRoleMappings: Array<IdentityGroupRoleMappingType>;
+  identityProvider: Maybe<IdentityProviderType>;
+  identityProviders: Array<IdentityProviderType>;
+  identitySyncRuns: Array<IdentitySyncRunType>;
   latestVMHealthSnapshot: Maybe<VmHealthSnapshotType>;
   listInfinibayFilters: Array<LibvirtFilterInfoType>;
   /** List all installed packages on a virtual machine */
@@ -2180,8 +2439,12 @@ export type Query = {
   maintenanceStats: MaintenanceStats;
   maintenanceTask: Maybe<MaintenanceTask>;
   maintenanceTasks: Array<MaintenanceTask>;
+  myPermissions: EffectivePermissionType;
   network: Network;
   networks: Array<Network>;
+  node: Maybe<NodeType>;
+  nodeInventorySummary: NodeInventorySummary;
+  nodes: Array<NodeType>;
   /** Get a specific plugin package by name */
   package: Maybe<PackageType>;
   /** Get runtime status of all plugin packages */
@@ -2194,6 +2457,7 @@ export type Query = {
   pools: Array<Pool>;
   /** Fetch a single resolution. Poll this query to track progress. */
   recommendationResolution: Maybe<RecommendationResolutionType>;
+  rolePermissionMatrix: RolePermissionMatrixType;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
   scheduledScript: Maybe<ScheduledScriptType>;
@@ -2371,6 +2635,21 @@ export type QueryGraphicConnectionArgs = {
 };
 
 
+export type QueryIdentityGroupRoleMappingsArgs = {
+  providerId: Scalars['ID']['input'];
+};
+
+
+export type QueryIdentityProviderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryIdentitySyncRunsArgs = {
+  providerId: Scalars['ID']['input'];
+};
+
+
 export type QueryLatestVmHealthSnapshotArgs = {
   machineId: Scalars['ID']['input'];
 };
@@ -2439,6 +2718,11 @@ export type QueryMaintenanceTasksArgs = {
 
 export type QueryNetworkArgs = {
   name: Scalars['String']['input'];
+};
+
+
+export type QueryNodeArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -2685,6 +2969,13 @@ export type RestoreSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
+export type RolePermissionMatrixType = {
+  __typename?: 'RolePermissionMatrixType';
+  permissions: Scalars['JSONObject']['output'];
+  principals: Array<PermissionPrincipalType>;
+  resources: Array<PermissionResourceType>;
+};
+
 /** Action to take on matched traffic */
 export enum RuleAction {
   Accept = 'ACCEPT',
@@ -2892,6 +3183,12 @@ export type ScriptType = {
   updatedAt: Scalars['DateTimeISO']['output'];
 };
 
+export type SetRolePermissionInput = {
+  effect: PermissionEffect;
+  resource: Scalars['String']['input'];
+  role: UserRole;
+};
+
 /** Shell type for script execution */
 export enum ShellType {
   Bash = 'BASH',
@@ -2951,6 +3248,16 @@ export type SocketConnectionStats = {
   totalConnections: Maybe<Scalars['Float']['output']>;
 };
 
+export type Subscription = {
+  __typename?: 'Subscription';
+  systemMetricsUpdated: SystemMetrics;
+};
+
+
+export type SubscriptionSystemMetricsUpdatedArgs = {
+  machineId: InputMaybe<Scalars['String']['input']>;
+};
+
 export type SuccessType = {
   __typename?: 'SuccessType';
   message: Scalars['String']['output'];
@@ -2964,6 +3271,26 @@ export type SyncResultType = {
   filtersUpdated: Scalars['Int']['output'];
   success: Scalars['Boolean']['output'];
   vmsUpdated: Scalars['Int']['output'];
+};
+
+export type SystemMetrics = {
+  __typename?: 'SystemMetrics';
+  availableMemoryKB: Scalars['Float']['output'];
+  cpuCoresUsage: Array<Scalars['Float']['output']>;
+  cpuTemperature: Maybe<Scalars['Float']['output']>;
+  cpuUsagePercent: Scalars['Float']['output'];
+  diskIOStats: Scalars['JSONObject']['output'];
+  diskUsageStats: Scalars['JSONObject']['output'];
+  id: Scalars['ID']['output'];
+  loadAverage: Maybe<Scalars['JSONObject']['output']>;
+  machineId: Scalars['String']['output'];
+  networkStats: Scalars['JSONObject']['output'];
+  swapTotalKB: Maybe<Scalars['Float']['output']>;
+  swapUsedKB: Maybe<Scalars['Float']['output']>;
+  timestamp: Scalars['DateTimeISO']['output'];
+  totalMemoryKB: Scalars['Float']['output'];
+  uptime: Scalars['Float']['output'];
+  usedMemoryKB: Scalars['Float']['output'];
 };
 
 export type SystemReadiness = {
@@ -3046,6 +3373,22 @@ export type UpdateFirewallRuleInput = {
   srcPortStart: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type UpdateIdentityProviderInput = {
+  attributes: InputMaybe<Scalars['JSONObject']['input']>;
+  baseDn: InputMaybe<Scalars['String']['input']>;
+  bindDn: InputMaybe<Scalars['String']['input']>;
+  bindPassword: InputMaybe<Scalars['String']['input']>;
+  domain: InputMaybe<Scalars['String']['input']>;
+  enabled: InputMaybe<Scalars['Boolean']['input']>;
+  groupFilter: InputMaybe<Scalars['String']['input']>;
+  host: InputMaybe<Scalars['String']['input']>;
+  name: InputMaybe<Scalars['String']['input']>;
+  port: InputMaybe<Scalars['Float']['input']>;
+  providerType: InputMaybe<IdentityProviderKind>;
+  useTls: InputMaybe<Scalars['Boolean']['input']>;
+  userFilter: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateMachineHardwareInput = {
   /** New number of CPU cores */
   cpuCores: InputMaybe<Scalars['Int']['input']>;
@@ -3126,6 +3469,13 @@ export type UpdateUserInputType = {
   password: InputMaybe<Scalars['String']['input']>;
   passwordConfirmation: InputMaybe<Scalars['String']['input']>;
   role: InputMaybe<UserRole>;
+};
+
+export type UpsertIdentityGroupRoleMappingInput = {
+  groupDn: Scalars['String']['input'];
+  groupName: InputMaybe<Scalars['String']['input']>;
+  providerId: Scalars['ID']['input'];
+  role: UserRole;
 };
 
 /** The field to order users by */
@@ -3344,6 +3694,22 @@ export type UpdateUserMutationVariables = Exact<{
 
 
 export type UpdateUserMutation = { __typename?: 'Mutation', updateUser: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } };
+
+export type SetNodeMaintenanceModeMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enabled: Scalars['Boolean']['input'];
+}>;
+
+
+export type SetNodeMaintenanceModeMutation = { __typename?: 'Mutation', setNodeMaintenanceMode: { __typename?: 'NodeType', id: string, name: string, maintenanceMode: boolean, health: string, updatedAt: string } };
+
+export type MigrateMachineToNodeMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+  targetNodeId: Scalars['String']['input'];
+}>;
+
+
+export type MigrateMachineToNodeMutation = { __typename?: 'Mutation', migrateMachineToNode: { __typename?: 'MachineMigrationResultType', success: boolean, machineId: string, sourceNodeId: string | null, targetNodeId: string, error: string | null } };
 
 export type CreateMachineTemplateMutationVariables = Exact<{
   input: MachineTemplateInputType;
@@ -3690,6 +4056,70 @@ export type CancelScheduledScriptMutationVariables = Exact<{
 
 export type CancelScheduledScriptMutation = { __typename?: 'Mutation', cancelScheduledScript: { __typename?: 'ScheduleScriptResponseType', success: boolean, message: string | null, error: string | null } };
 
+export type CreateIdentityProviderMutationVariables = Exact<{
+  input: CreateIdentityProviderInput;
+}>;
+
+
+export type CreateIdentityProviderMutation = { __typename?: 'Mutation', createIdentityProvider: { __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string } };
+
+export type UpdateIdentityProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateIdentityProviderInput;
+}>;
+
+
+export type UpdateIdentityProviderMutation = { __typename?: 'Mutation', updateIdentityProvider: { __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string } };
+
+export type DeleteIdentityProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteIdentityProviderMutation = { __typename?: 'Mutation', deleteIdentityProvider: boolean };
+
+export type TestIdentityProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TestIdentityProviderMutation = { __typename?: 'Mutation', testIdentityProvider: { __typename?: 'IdentityProviderConnectionResultType', success: boolean, message: string, latencyMs: number | null, provider: { __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, lastTestAt: string | null, lastError: string | null } | null } };
+
+export type TestIdentityProviderConfigMutationVariables = Exact<{
+  input: CreateIdentityProviderInput;
+}>;
+
+
+export type TestIdentityProviderConfigMutation = { __typename?: 'Mutation', testIdentityProviderConfig: { __typename?: 'IdentityProviderConnectionResultType', success: boolean, message: string, latencyMs: number | null } };
+
+export type SyncIdentityProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SyncIdentityProviderMutation = { __typename?: 'Mutation', syncIdentityProvider: { __typename?: 'IdentityProviderSyncResultType', success: boolean, message: string, syncRunId: string, usersCreated: number, usersUpdated: number, usersDisabled: number, groupsSeen: number, provider: { __typename?: 'IdentityProviderType', id: string, status: IdentityProviderState, lastSyncAt: string | null, lastError: string | null } | null } };
+
+export type UpsertIdentityGroupRoleMappingMutationVariables = Exact<{
+  input: UpsertIdentityGroupRoleMappingInput;
+}>;
+
+
+export type UpsertIdentityGroupRoleMappingMutation = { __typename?: 'Mutation', upsertIdentityGroupRoleMapping: { __typename?: 'IdentityGroupRoleMappingType', id: string, providerId: string, groupDn: string, groupName: string, role: UserRole, createdAt: string, updatedAt: string } };
+
+export type DeleteIdentityGroupRoleMappingMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteIdentityGroupRoleMappingMutation = { __typename?: 'Mutation', deleteIdentityGroupRoleMapping: boolean };
+
+export type SetRolePermissionMutationVariables = Exact<{
+  input: SetRolePermissionInput;
+}>;
+
+
+export type SetRolePermissionMutation = { __typename?: 'Mutation', setRolePermission: { __typename?: 'RolePermissionMatrixType', permissions: { [key: string]: any }, principals: Array<{ __typename?: 'PermissionPrincipalType', id: string, label: string, kind: string, avatar: string }>, resources: Array<{ __typename?: 'PermissionResourceType', id: string, label: string, group: string }> } };
+
 export type CreateBackupMutationVariables = Exact<{
   input: CreateBackupInput;
 }>;
@@ -4015,7 +4445,7 @@ export type MachineQueryVariables = Exact<{
 }>;
 
 
-export type MachineQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } | null };
+export type MachineQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } | null };
 
 export type MachinesQueryVariables = Exact<{
   orderBy: InputMaybe<MachineOrderBy>;
@@ -4023,7 +4453,7 @@ export type MachinesQueryVariables = Exact<{
 }>;
 
 
-export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null }> };
+export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null }> };
 
 export type GraphicConnectionQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -4208,6 +4638,42 @@ export type CaptureDepartmentDhcpTrafficQueryVariables = Exact<{
 
 export type CaptureDepartmentDhcpTrafficQuery = { __typename?: 'Query', captureDepartmentDhcpTraffic: { __typename?: 'DhcpTrafficCaptureType', bridgeName: string, duration: number, packets: Array<string>, summary: { __typename?: 'DhcpPacketSummaryType', totalPackets: number, discoverPackets: number, offerPackets: number, requestPackets: number, ackPackets: number } } };
 
+export type IdentityProvidersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type IdentityProvidersQuery = { __typename?: 'Query', identityProviders: Array<{ __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string }> };
+
+export type IdentityProviderQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type IdentityProviderQuery = { __typename?: 'Query', identityProvider: { __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string } | null };
+
+export type IdentitySyncRunsQueryVariables = Exact<{
+  providerId: Scalars['ID']['input'];
+}>;
+
+
+export type IdentitySyncRunsQuery = { __typename?: 'Query', identitySyncRuns: Array<{ __typename?: 'IdentitySyncRunType', id: string, providerId: string, status: IdentitySyncStatus, startedAt: string, finishedAt: string | null, usersCreated: number, usersUpdated: number, usersDisabled: number, groupsSeen: number, message: string | null, error: string | null }> };
+
+export type IdentityGroupRoleMappingsQueryVariables = Exact<{
+  providerId: Scalars['ID']['input'];
+}>;
+
+
+export type IdentityGroupRoleMappingsQuery = { __typename?: 'Query', identityGroupRoleMappings: Array<{ __typename?: 'IdentityGroupRoleMappingType', id: string, providerId: string, groupDn: string, groupName: string, role: UserRole, createdAt: string, updatedAt: string }> };
+
+export type RolePermissionMatrixQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type RolePermissionMatrixQuery = { __typename?: 'Query', rolePermissionMatrix: { __typename?: 'RolePermissionMatrixType', permissions: { [key: string]: any }, principals: Array<{ __typename?: 'PermissionPrincipalType', id: string, label: string, kind: string, avatar: string }>, resources: Array<{ __typename?: 'PermissionResourceType', id: string, label: string, group: string }> } };
+
+export type MyPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyPermissionsQuery = { __typename?: 'Query', myPermissions: { __typename?: 'EffectivePermissionType', allowedResources: Array<string> } };
+
 export type BackupsQueryVariables = Exact<{
   vmId: Scalars['String']['input'];
 }>;
@@ -4239,12 +4705,17 @@ export type PackageStatusesQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type PackageStatusesQuery = { __typename?: 'Query', packageStatuses: Array<{ __typename?: 'PackageStatusType', name: string, version: string, isLoaded: boolean, isEnabled: boolean, isBuiltin: boolean, checkerCount: number, lastError: string | null }> };
 
+export type GetNodeInventoryQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetNodeInventoryQuery = { __typename?: 'Query', nodeInventorySummary: { __typename?: 'NodeInventorySummary', totalNodes: number, onlineNodes: number, staleNodes: number, totalCores: number, totalRam: number, totalDisks: number }, nodes: Array<{ __typename?: 'NodeType', id: string, name: string, currentRaid: string, nextRaid: string | null, maintenanceMode: boolean, health: string, cores: number, ram: number, availableCores: number, availableRamGB: number, machineCount: number, runningMachineCount: number, diskCount: number, healthyDiskCount: number, updatedAt: string, disks: Array<{ __typename?: 'DiskType', id: string, path: string, status: string, updatedAt: string }> }> };
+
 export type VmDetailedInfoQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type VmDetailedInfoQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, status: string, setupComplete: boolean, userId: string | null, templateId: string | null, createdAt: string | null, configuration: { [key: string]: any } | null, localIP: string | null, publicIP: string | null, department: { __typename?: 'DepartmentType', id: string, name: string } | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number } | null, user: { __typename?: 'UserType', id: string, email: string, firstName: string, lastName: string, role: string } | null } | null };
+export type VmDetailedInfoQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, createdAt: string | null, configuration: { [key: string]: any } | null, localIP: string | null, publicIP: string | null, department: { __typename?: 'DepartmentType', id: string, name: string } | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number } | null, user: { __typename?: 'UserType', id: string, email: string, firstName: string, lastName: string, role: string } | null } | null };
 
 export type GetVmRecommendationsQueryVariables = Exact<{
   vmId: Scalars['ID']['input'];
@@ -4299,7 +4770,6 @@ export const CreateUserDocument = gql`
   }
 }
     `;
-export type CreateUserMutationFn = ApolloReactCommon.MutationFunction<CreateUserMutation, CreateUserMutationVariables>;
 
 /**
  * __useCreateUserMutation__
@@ -4324,7 +4794,6 @@ export function useCreateUserMutation(baseOptions?: ApolloReactHooks.MutationHoo
       }
 export type CreateUserMutationHookResult = ReturnType<typeof useCreateUserMutation>;
 export type CreateUserMutationResult = ApolloReactCommon.MutationResult<CreateUserMutation>;
-export type CreateUserMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateUserMutation, CreateUserMutationVariables>;
 export const UpdateUserDocument = gql`
     mutation updateUser($input: UpdateUserInputType!, $id: String!) {
   updateUser(input: $input, id: $id) {
@@ -4338,7 +4807,6 @@ export const UpdateUserDocument = gql`
   }
 }
     `;
-export type UpdateUserMutationFn = ApolloReactCommon.MutationFunction<UpdateUserMutation, UpdateUserMutationVariables>;
 
 /**
  * __useUpdateUserMutation__
@@ -4364,7 +4832,78 @@ export function useUpdateUserMutation(baseOptions?: ApolloReactHooks.MutationHoo
       }
 export type UpdateUserMutationHookResult = ReturnType<typeof useUpdateUserMutation>;
 export type UpdateUserMutationResult = ApolloReactCommon.MutationResult<UpdateUserMutation>;
-export type UpdateUserMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateUserMutation, UpdateUserMutationVariables>;
+export const SetNodeMaintenanceModeDocument = gql`
+    mutation SetNodeMaintenanceMode($id: ID!, $enabled: Boolean!) {
+  setNodeMaintenanceMode(id: $id, enabled: $enabled) {
+    id
+    name
+    maintenanceMode
+    health
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useSetNodeMaintenanceModeMutation__
+ *
+ * To run a mutation, you first call `useSetNodeMaintenanceModeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetNodeMaintenanceModeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [setNodeMaintenanceModeMutation, { data, loading, error }] = useSetNodeMaintenanceModeMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      enabled: // value for 'enabled'
+ *   },
+ * });
+ */
+export function useSetNodeMaintenanceModeMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SetNodeMaintenanceModeMutation, SetNodeMaintenanceModeMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SetNodeMaintenanceModeMutation, SetNodeMaintenanceModeMutationVariables>(SetNodeMaintenanceModeDocument, options);
+      }
+export type SetNodeMaintenanceModeMutationHookResult = ReturnType<typeof useSetNodeMaintenanceModeMutation>;
+export type SetNodeMaintenanceModeMutationResult = ApolloReactCommon.MutationResult<SetNodeMaintenanceModeMutation>;
+export const MigrateMachineToNodeDocument = gql`
+    mutation MigrateMachineToNode($id: String!, $targetNodeId: String!) {
+  migrateMachineToNode(id: $id, targetNodeId: $targetNodeId) {
+    success
+    machineId
+    sourceNodeId
+    targetNodeId
+    error
+  }
+}
+    `;
+
+/**
+ * __useMigrateMachineToNodeMutation__
+ *
+ * To run a mutation, you first call `useMigrateMachineToNodeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useMigrateMachineToNodeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [migrateMachineToNodeMutation, { data, loading, error }] = useMigrateMachineToNodeMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      targetNodeId: // value for 'targetNodeId'
+ *   },
+ * });
+ */
+export function useMigrateMachineToNodeMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<MigrateMachineToNodeMutation, MigrateMachineToNodeMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<MigrateMachineToNodeMutation, MigrateMachineToNodeMutationVariables>(MigrateMachineToNodeDocument, options);
+      }
+export type MigrateMachineToNodeMutationHookResult = ReturnType<typeof useMigrateMachineToNodeMutation>;
+export type MigrateMachineToNodeMutationResult = ApolloReactCommon.MutationResult<MigrateMachineToNodeMutation>;
 export const CreateMachineTemplateDocument = gql`
     mutation createMachineTemplate($input: MachineTemplateInputType!) {
   createMachineTemplate(input: $input) {
@@ -4395,7 +4934,6 @@ export const CreateMachineTemplateDocument = gql`
   }
 }
     `;
-export type CreateMachineTemplateMutationFn = ApolloReactCommon.MutationFunction<CreateMachineTemplateMutation, CreateMachineTemplateMutationVariables>;
 
 /**
  * __useCreateMachineTemplateMutation__
@@ -4420,7 +4958,6 @@ export function useCreateMachineTemplateMutation(baseOptions?: ApolloReactHooks.
       }
 export type CreateMachineTemplateMutationHookResult = ReturnType<typeof useCreateMachineTemplateMutation>;
 export type CreateMachineTemplateMutationResult = ApolloReactCommon.MutationResult<CreateMachineTemplateMutation>;
-export type CreateMachineTemplateMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateMachineTemplateMutation, CreateMachineTemplateMutationVariables>;
 export const UpdateMachineTemplateDocument = gql`
     mutation updateMachineTemplate($input: MachineTemplateInputType!, $id: String!) {
   updateMachineTemplate(input: $input, id: $id) {
@@ -4451,7 +4988,6 @@ export const UpdateMachineTemplateDocument = gql`
   }
 }
     `;
-export type UpdateMachineTemplateMutationFn = ApolloReactCommon.MutationFunction<UpdateMachineTemplateMutation, UpdateMachineTemplateMutationVariables>;
 
 /**
  * __useUpdateMachineTemplateMutation__
@@ -4477,13 +5013,11 @@ export function useUpdateMachineTemplateMutation(baseOptions?: ApolloReactHooks.
       }
 export type UpdateMachineTemplateMutationHookResult = ReturnType<typeof useUpdateMachineTemplateMutation>;
 export type UpdateMachineTemplateMutationResult = ApolloReactCommon.MutationResult<UpdateMachineTemplateMutation>;
-export type UpdateMachineTemplateMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateMachineTemplateMutation, UpdateMachineTemplateMutationVariables>;
 export const DestroyMachineTemplateDocument = gql`
     mutation destroyMachineTemplate($id: String!) {
   destroyMachineTemplate(id: $id)
 }
     `;
-export type DestroyMachineTemplateMutationFn = ApolloReactCommon.MutationFunction<DestroyMachineTemplateMutation, DestroyMachineTemplateMutationVariables>;
 
 /**
  * __useDestroyMachineTemplateMutation__
@@ -4508,13 +5042,11 @@ export function useDestroyMachineTemplateMutation(baseOptions?: ApolloReactHooks
       }
 export type DestroyMachineTemplateMutationHookResult = ReturnType<typeof useDestroyMachineTemplateMutation>;
 export type DestroyMachineTemplateMutationResult = ApolloReactCommon.MutationResult<DestroyMachineTemplateMutation>;
-export type DestroyMachineTemplateMutationOptions = ApolloReactCommon.BaseMutationOptions<DestroyMachineTemplateMutation, DestroyMachineTemplateMutationVariables>;
 export const DestroyMachineTemplateCategoryDocument = gql`
     mutation destroyMachineTemplateCategory($id: String!) {
   destroyMachineTemplateCategory(id: $id)
 }
     `;
-export type DestroyMachineTemplateCategoryMutationFn = ApolloReactCommon.MutationFunction<DestroyMachineTemplateCategoryMutation, DestroyMachineTemplateCategoryMutationVariables>;
 
 /**
  * __useDestroyMachineTemplateCategoryMutation__
@@ -4539,7 +5071,6 @@ export function useDestroyMachineTemplateCategoryMutation(baseOptions?: ApolloRe
       }
 export type DestroyMachineTemplateCategoryMutationHookResult = ReturnType<typeof useDestroyMachineTemplateCategoryMutation>;
 export type DestroyMachineTemplateCategoryMutationResult = ApolloReactCommon.MutationResult<DestroyMachineTemplateCategoryMutation>;
-export type DestroyMachineTemplateCategoryMutationOptions = ApolloReactCommon.BaseMutationOptions<DestroyMachineTemplateCategoryMutation, DestroyMachineTemplateCategoryMutationVariables>;
 export const CreateMachineDocument = gql`
     mutation createMachine($input: CreateMachineInputType!) {
   createMachine(input: $input) {
@@ -4581,7 +5112,6 @@ export const CreateMachineDocument = gql`
   }
 }
     `;
-export type CreateMachineMutationFn = ApolloReactCommon.MutationFunction<CreateMachineMutation, CreateMachineMutationVariables>;
 
 /**
  * __useCreateMachineMutation__
@@ -4606,7 +5136,6 @@ export function useCreateMachineMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type CreateMachineMutationHookResult = ReturnType<typeof useCreateMachineMutation>;
 export type CreateMachineMutationResult = ApolloReactCommon.MutationResult<CreateMachineMutation>;
-export type CreateMachineMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateMachineMutation, CreateMachineMutationVariables>;
 export const PowerOnDocument = gql`
     mutation powerOn($id: String!) {
   powerOn(id: $id) {
@@ -4615,7 +5144,6 @@ export const PowerOnDocument = gql`
   }
 }
     `;
-export type PowerOnMutationFn = ApolloReactCommon.MutationFunction<PowerOnMutation, PowerOnMutationVariables>;
 
 /**
  * __usePowerOnMutation__
@@ -4640,7 +5168,6 @@ export function usePowerOnMutation(baseOptions?: ApolloReactHooks.MutationHookOp
       }
 export type PowerOnMutationHookResult = ReturnType<typeof usePowerOnMutation>;
 export type PowerOnMutationResult = ApolloReactCommon.MutationResult<PowerOnMutation>;
-export type PowerOnMutationOptions = ApolloReactCommon.BaseMutationOptions<PowerOnMutation, PowerOnMutationVariables>;
 export const PowerOffDocument = gql`
     mutation powerOff($id: String!) {
   powerOff(id: $id) {
@@ -4649,7 +5176,6 @@ export const PowerOffDocument = gql`
   }
 }
     `;
-export type PowerOffMutationFn = ApolloReactCommon.MutationFunction<PowerOffMutation, PowerOffMutationVariables>;
 
 /**
  * __usePowerOffMutation__
@@ -4674,7 +5200,6 @@ export function usePowerOffMutation(baseOptions?: ApolloReactHooks.MutationHookO
       }
 export type PowerOffMutationHookResult = ReturnType<typeof usePowerOffMutation>;
 export type PowerOffMutationResult = ApolloReactCommon.MutationResult<PowerOffMutation>;
-export type PowerOffMutationOptions = ApolloReactCommon.BaseMutationOptions<PowerOffMutation, PowerOffMutationVariables>;
 export const SuspendDocument = gql`
     mutation suspend($id: String!) {
   suspend(id: $id) {
@@ -4683,7 +5208,6 @@ export const SuspendDocument = gql`
   }
 }
     `;
-export type SuspendMutationFn = ApolloReactCommon.MutationFunction<SuspendMutation, SuspendMutationVariables>;
 
 /**
  * __useSuspendMutation__
@@ -4708,7 +5232,6 @@ export function useSuspendMutation(baseOptions?: ApolloReactHooks.MutationHookOp
       }
 export type SuspendMutationHookResult = ReturnType<typeof useSuspendMutation>;
 export type SuspendMutationResult = ApolloReactCommon.MutationResult<SuspendMutation>;
-export type SuspendMutationOptions = ApolloReactCommon.BaseMutationOptions<SuspendMutation, SuspendMutationVariables>;
 export const DestroyMachineDocument = gql`
     mutation destroyMachine($id: String!) {
   destroyMachine(id: $id) {
@@ -4717,7 +5240,6 @@ export const DestroyMachineDocument = gql`
   }
 }
     `;
-export type DestroyMachineMutationFn = ApolloReactCommon.MutationFunction<DestroyMachineMutation, DestroyMachineMutationVariables>;
 
 /**
  * __useDestroyMachineMutation__
@@ -4742,7 +5264,6 @@ export function useDestroyMachineMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type DestroyMachineMutationHookResult = ReturnType<typeof useDestroyMachineMutation>;
 export type DestroyMachineMutationResult = ApolloReactCommon.MutationResult<DestroyMachineMutation>;
-export type DestroyMachineMutationOptions = ApolloReactCommon.BaseMutationOptions<DestroyMachineMutation, DestroyMachineMutationVariables>;
 export const ExecuteCommandDocument = gql`
     mutation executeCommand($command: String!, $id: String!) {
   executeCommand(command: $command, id: $id) {
@@ -4752,7 +5273,6 @@ export const ExecuteCommandDocument = gql`
   }
 }
     `;
-export type ExecuteCommandMutationFn = ApolloReactCommon.MutationFunction<ExecuteCommandMutation, ExecuteCommandMutationVariables>;
 
 /**
  * __useExecuteCommandMutation__
@@ -4778,7 +5298,6 @@ export function useExecuteCommandMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type ExecuteCommandMutationHookResult = ReturnType<typeof useExecuteCommandMutation>;
 export type ExecuteCommandMutationResult = ApolloReactCommon.MutationResult<ExecuteCommandMutation>;
-export type ExecuteCommandMutationOptions = ApolloReactCommon.BaseMutationOptions<ExecuteCommandMutation, ExecuteCommandMutationVariables>;
 export const UpdateMachineHardwareDocument = gql`
     mutation updateMachineHardware($input: UpdateMachineHardwareInput!) {
   updateMachineHardware(input: $input) {
@@ -4820,7 +5339,6 @@ export const UpdateMachineHardwareDocument = gql`
   }
 }
     `;
-export type UpdateMachineHardwareMutationFn = ApolloReactCommon.MutationFunction<UpdateMachineHardwareMutation, UpdateMachineHardwareMutationVariables>;
 
 /**
  * __useUpdateMachineHardwareMutation__
@@ -4845,7 +5363,6 @@ export function useUpdateMachineHardwareMutation(baseOptions?: ApolloReactHooks.
       }
 export type UpdateMachineHardwareMutationHookResult = ReturnType<typeof useUpdateMachineHardwareMutation>;
 export type UpdateMachineHardwareMutationResult = ApolloReactCommon.MutationResult<UpdateMachineHardwareMutation>;
-export type UpdateMachineHardwareMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateMachineHardwareMutation, UpdateMachineHardwareMutationVariables>;
 export const UpdateMachineNameDocument = gql`
     mutation updateMachineName($input: UpdateMachineNameInput!) {
   updateMachineName(input: $input) {
@@ -4887,7 +5404,6 @@ export const UpdateMachineNameDocument = gql`
   }
 }
     `;
-export type UpdateMachineNameMutationFn = ApolloReactCommon.MutationFunction<UpdateMachineNameMutation, UpdateMachineNameMutationVariables>;
 
 /**
  * __useUpdateMachineNameMutation__
@@ -4912,7 +5428,6 @@ export function useUpdateMachineNameMutation(baseOptions?: ApolloReactHooks.Muta
       }
 export type UpdateMachineNameMutationHookResult = ReturnType<typeof useUpdateMachineNameMutation>;
 export type UpdateMachineNameMutationResult = ApolloReactCommon.MutationResult<UpdateMachineNameMutation>;
-export type UpdateMachineNameMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateMachineNameMutation, UpdateMachineNameMutationVariables>;
 export const UpdateMachineUserDocument = gql`
     mutation updateMachineUser($input: UpdateMachineUserInput!) {
   updateMachineUser(input: $input) {
@@ -4954,7 +5469,6 @@ export const UpdateMachineUserDocument = gql`
   }
 }
     `;
-export type UpdateMachineUserMutationFn = ApolloReactCommon.MutationFunction<UpdateMachineUserMutation, UpdateMachineUserMutationVariables>;
 
 /**
  * __useUpdateMachineUserMutation__
@@ -4979,7 +5493,6 @@ export function useUpdateMachineUserMutation(baseOptions?: ApolloReactHooks.Muta
       }
 export type UpdateMachineUserMutationHookResult = ReturnType<typeof useUpdateMachineUserMutation>;
 export type UpdateMachineUserMutationResult = ApolloReactCommon.MutationResult<UpdateMachineUserMutation>;
-export type UpdateMachineUserMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateMachineUserMutation, UpdateMachineUserMutationVariables>;
 export const MoveMachineDocument = gql`
     mutation moveMachine($departmentId: String!, $id: String!) {
   moveMachine(departmentId: $departmentId, id: $id) {
@@ -5021,7 +5534,6 @@ export const MoveMachineDocument = gql`
   }
 }
     `;
-export type MoveMachineMutationFn = ApolloReactCommon.MutationFunction<MoveMachineMutation, MoveMachineMutationVariables>;
 
 /**
  * __useMoveMachineMutation__
@@ -5047,7 +5559,6 @@ export function useMoveMachineMutation(baseOptions?: ApolloReactHooks.MutationHo
       }
 export type MoveMachineMutationHookResult = ReturnType<typeof useMoveMachineMutation>;
 export type MoveMachineMutationResult = ApolloReactCommon.MutationResult<MoveMachineMutation>;
-export type MoveMachineMutationOptions = ApolloReactCommon.BaseMutationOptions<MoveMachineMutation, MoveMachineMutationVariables>;
 export const SetupNodeDocument = gql`
     mutation setupNode {
   setupNode {
@@ -5055,7 +5566,6 @@ export const SetupNodeDocument = gql`
   }
 }
     `;
-export type SetupNodeMutationFn = ApolloReactCommon.MutationFunction<SetupNodeMutation, SetupNodeMutationVariables>;
 
 /**
  * __useSetupNodeMutation__
@@ -5079,7 +5589,6 @@ export function useSetupNodeMutation(baseOptions?: ApolloReactHooks.MutationHook
       }
 export type SetupNodeMutationHookResult = ReturnType<typeof useSetupNodeMutation>;
 export type SetupNodeMutationResult = ApolloReactCommon.MutationResult<SetupNodeMutation>;
-export type SetupNodeMutationOptions = ApolloReactCommon.BaseMutationOptions<SetupNodeMutation, SetupNodeMutationVariables>;
 export const CreateDepartmentDocument = gql`
     mutation createDepartment($name: String!, $firewallConfig: CreateDepartmentFirewallInput) {
   createDepartment(name: $name, firewallConfig: $firewallConfig) {
@@ -5095,7 +5604,6 @@ export const CreateDepartmentDocument = gql`
   }
 }
     `;
-export type CreateDepartmentMutationFn = ApolloReactCommon.MutationFunction<CreateDepartmentMutation, CreateDepartmentMutationVariables>;
 
 /**
  * __useCreateDepartmentMutation__
@@ -5121,7 +5629,6 @@ export function useCreateDepartmentMutation(baseOptions?: ApolloReactHooks.Mutat
       }
 export type CreateDepartmentMutationHookResult = ReturnType<typeof useCreateDepartmentMutation>;
 export type CreateDepartmentMutationResult = ApolloReactCommon.MutationResult<CreateDepartmentMutation>;
-export type CreateDepartmentMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateDepartmentMutation, CreateDepartmentMutationVariables>;
 export const DestroyDepartmentDocument = gql`
     mutation destroyDepartment($id: String!) {
   destroyDepartment(id: $id) {
@@ -5134,7 +5641,6 @@ export const DestroyDepartmentDocument = gql`
   }
 }
     `;
-export type DestroyDepartmentMutationFn = ApolloReactCommon.MutationFunction<DestroyDepartmentMutation, DestroyDepartmentMutationVariables>;
 
 /**
  * __useDestroyDepartmentMutation__
@@ -5159,7 +5665,6 @@ export function useDestroyDepartmentMutation(baseOptions?: ApolloReactHooks.Muta
       }
 export type DestroyDepartmentMutationHookResult = ReturnType<typeof useDestroyDepartmentMutation>;
 export type DestroyDepartmentMutationResult = ApolloReactCommon.MutationResult<DestroyDepartmentMutation>;
-export type DestroyDepartmentMutationOptions = ApolloReactCommon.BaseMutationOptions<DestroyDepartmentMutation, DestroyDepartmentMutationVariables>;
 export const UpdateDepartmentNameDocument = gql`
     mutation updateDepartmentName($input: UpdateDepartmentNameInput!) {
   updateDepartmentName(input: $input) {
@@ -5172,7 +5677,6 @@ export const UpdateDepartmentNameDocument = gql`
   }
 }
     `;
-export type UpdateDepartmentNameMutationFn = ApolloReactCommon.MutationFunction<UpdateDepartmentNameMutation, UpdateDepartmentNameMutationVariables>;
 
 /**
  * __useUpdateDepartmentNameMutation__
@@ -5197,7 +5701,6 @@ export function useUpdateDepartmentNameMutation(baseOptions?: ApolloReactHooks.M
       }
 export type UpdateDepartmentNameMutationHookResult = ReturnType<typeof useUpdateDepartmentNameMutation>;
 export type UpdateDepartmentNameMutationResult = ApolloReactCommon.MutationResult<UpdateDepartmentNameMutation>;
-export type UpdateDepartmentNameMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateDepartmentNameMutation, UpdateDepartmentNameMutationVariables>;
 export const UpdateDepartmentFirewallPolicyDocument = gql`
     mutation UpdateDepartmentFirewallPolicy($departmentId: String!, $input: UpdateDepartmentFirewallPolicyInput!) {
   updateDepartmentFirewallPolicy(departmentId: $departmentId, input: $input) {
@@ -5213,7 +5716,6 @@ export const UpdateDepartmentFirewallPolicyDocument = gql`
   }
 }
     `;
-export type UpdateDepartmentFirewallPolicyMutationFn = ApolloReactCommon.MutationFunction<UpdateDepartmentFirewallPolicyMutation, UpdateDepartmentFirewallPolicyMutationVariables>;
 
 /**
  * __useUpdateDepartmentFirewallPolicyMutation__
@@ -5239,7 +5741,6 @@ export function useUpdateDepartmentFirewallPolicyMutation(baseOptions?: ApolloRe
       }
 export type UpdateDepartmentFirewallPolicyMutationHookResult = ReturnType<typeof useUpdateDepartmentFirewallPolicyMutation>;
 export type UpdateDepartmentFirewallPolicyMutationResult = ApolloReactCommon.MutationResult<UpdateDepartmentFirewallPolicyMutation>;
-export type UpdateDepartmentFirewallPolicyMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateDepartmentFirewallPolicyMutation, UpdateDepartmentFirewallPolicyMutationVariables>;
 export const CreateMachineTemplateCategoryDocument = gql`
     mutation createMachineTemplateCategory($input: MachineTemplateCategoryInputType!) {
   createMachineTemplateCategory(input: $input) {
@@ -5252,7 +5753,6 @@ export const CreateMachineTemplateCategoryDocument = gql`
   }
 }
     `;
-export type CreateMachineTemplateCategoryMutationFn = ApolloReactCommon.MutationFunction<CreateMachineTemplateCategoryMutation, CreateMachineTemplateCategoryMutationVariables>;
 
 /**
  * __useCreateMachineTemplateCategoryMutation__
@@ -5277,7 +5777,6 @@ export function useCreateMachineTemplateCategoryMutation(baseOptions?: ApolloRea
       }
 export type CreateMachineTemplateCategoryMutationHookResult = ReturnType<typeof useCreateMachineTemplateCategoryMutation>;
 export type CreateMachineTemplateCategoryMutationResult = ApolloReactCommon.MutationResult<CreateMachineTemplateCategoryMutation>;
-export type CreateMachineTemplateCategoryMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateMachineTemplateCategoryMutation, CreateMachineTemplateCategoryMutationVariables>;
 export const UpdateMachineTemplateCategoryDocument = gql`
     mutation updateMachineTemplateCategory($input: MachineTemplateCategoryInputType!, $id: String!) {
   updateMachineTemplateCategory(input: $input, id: $id) {
@@ -5290,7 +5789,6 @@ export const UpdateMachineTemplateCategoryDocument = gql`
   }
 }
     `;
-export type UpdateMachineTemplateCategoryMutationFn = ApolloReactCommon.MutationFunction<UpdateMachineTemplateCategoryMutation, UpdateMachineTemplateCategoryMutationVariables>;
 
 /**
  * __useUpdateMachineTemplateCategoryMutation__
@@ -5316,7 +5814,6 @@ export function useUpdateMachineTemplateCategoryMutation(baseOptions?: ApolloRea
       }
 export type UpdateMachineTemplateCategoryMutationHookResult = ReturnType<typeof useUpdateMachineTemplateCategoryMutation>;
 export type UpdateMachineTemplateCategoryMutationResult = ApolloReactCommon.MutationResult<UpdateMachineTemplateCategoryMutation>;
-export type UpdateMachineTemplateCategoryMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateMachineTemplateCategoryMutation, UpdateMachineTemplateCategoryMutationVariables>;
 export const CreateApplicationDocument = gql`
     mutation createApplication($input: CreateApplicationInputType!) {
   createApplication(input: $input) {
@@ -5330,7 +5827,6 @@ export const CreateApplicationDocument = gql`
   }
 }
     `;
-export type CreateApplicationMutationFn = ApolloReactCommon.MutationFunction<CreateApplicationMutation, CreateApplicationMutationVariables>;
 
 /**
  * __useCreateApplicationMutation__
@@ -5355,7 +5851,6 @@ export function useCreateApplicationMutation(baseOptions?: ApolloReactHooks.Muta
       }
 export type CreateApplicationMutationHookResult = ReturnType<typeof useCreateApplicationMutation>;
 export type CreateApplicationMutationResult = ApolloReactCommon.MutationResult<CreateApplicationMutation>;
-export type CreateApplicationMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateApplicationMutation, CreateApplicationMutationVariables>;
 export const UpdateApplicationDocument = gql`
     mutation updateApplication($input: CreateApplicationInputType!, $id: String!) {
   updateApplication(input: $input, id: $id) {
@@ -5369,7 +5864,6 @@ export const UpdateApplicationDocument = gql`
   }
 }
     `;
-export type UpdateApplicationMutationFn = ApolloReactCommon.MutationFunction<UpdateApplicationMutation, UpdateApplicationMutationVariables>;
 
 /**
  * __useUpdateApplicationMutation__
@@ -5395,13 +5889,11 @@ export function useUpdateApplicationMutation(baseOptions?: ApolloReactHooks.Muta
       }
 export type UpdateApplicationMutationHookResult = ReturnType<typeof useUpdateApplicationMutation>;
 export type UpdateApplicationMutationResult = ApolloReactCommon.MutationResult<UpdateApplicationMutation>;
-export type UpdateApplicationMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateApplicationMutation, UpdateApplicationMutationVariables>;
 export const DeleteApplicationDocument = gql`
     mutation deleteApplication($id: String!) {
   deleteApplication(id: $id)
 }
     `;
-export type DeleteApplicationMutationFn = ApolloReactCommon.MutationFunction<DeleteApplicationMutation, DeleteApplicationMutationVariables>;
 
 /**
  * __useDeleteApplicationMutation__
@@ -5426,13 +5918,11 @@ export function useDeleteApplicationMutation(baseOptions?: ApolloReactHooks.Muta
       }
 export type DeleteApplicationMutationHookResult = ReturnType<typeof useDeleteApplicationMutation>;
 export type DeleteApplicationMutationResult = ApolloReactCommon.MutationResult<DeleteApplicationMutation>;
-export type DeleteApplicationMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteApplicationMutation, DeleteApplicationMutationVariables>;
 export const CreateNetworkDocument = gql`
     mutation createNetwork($input: CreateNetworkInput!) {
   createNetwork(input: $input)
 }
     `;
-export type CreateNetworkMutationFn = ApolloReactCommon.MutationFunction<CreateNetworkMutation, CreateNetworkMutationVariables>;
 
 /**
  * __useCreateNetworkMutation__
@@ -5457,13 +5947,11 @@ export function useCreateNetworkMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type CreateNetworkMutationHookResult = ReturnType<typeof useCreateNetworkMutation>;
 export type CreateNetworkMutationResult = ApolloReactCommon.MutationResult<CreateNetworkMutation>;
-export type CreateNetworkMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateNetworkMutation, CreateNetworkMutationVariables>;
 export const SetNetworkIpRangeDocument = gql`
     mutation setNetworkIpRange($input: IpRangeInput!) {
   setNetworkIpRange(input: $input)
 }
     `;
-export type SetNetworkIpRangeMutationFn = ApolloReactCommon.MutationFunction<SetNetworkIpRangeMutation, SetNetworkIpRangeMutationVariables>;
 
 /**
  * __useSetNetworkIpRangeMutation__
@@ -5488,13 +5976,11 @@ export function useSetNetworkIpRangeMutation(baseOptions?: ApolloReactHooks.Muta
       }
 export type SetNetworkIpRangeMutationHookResult = ReturnType<typeof useSetNetworkIpRangeMutation>;
 export type SetNetworkIpRangeMutationResult = ApolloReactCommon.MutationResult<SetNetworkIpRangeMutation>;
-export type SetNetworkIpRangeMutationOptions = ApolloReactCommon.BaseMutationOptions<SetNetworkIpRangeMutation, SetNetworkIpRangeMutationVariables>;
 export const SetNetworkIpDocument = gql`
     mutation setNetworkIp($input: NetworkIpInput!) {
   setNetworkIp(input: $input)
 }
     `;
-export type SetNetworkIpMutationFn = ApolloReactCommon.MutationFunction<SetNetworkIpMutation, SetNetworkIpMutationVariables>;
 
 /**
  * __useSetNetworkIpMutation__
@@ -5519,13 +6005,11 @@ export function useSetNetworkIpMutation(baseOptions?: ApolloReactHooks.MutationH
       }
 export type SetNetworkIpMutationHookResult = ReturnType<typeof useSetNetworkIpMutation>;
 export type SetNetworkIpMutationResult = ApolloReactCommon.MutationResult<SetNetworkIpMutation>;
-export type SetNetworkIpMutationOptions = ApolloReactCommon.BaseMutationOptions<SetNetworkIpMutation, SetNetworkIpMutationVariables>;
 export const SetNetworkBridgeNameDocument = gql`
     mutation setNetworkBridgeName($input: BridgeNameInput!) {
   setNetworkBridgeName(input: $input)
 }
     `;
-export type SetNetworkBridgeNameMutationFn = ApolloReactCommon.MutationFunction<SetNetworkBridgeNameMutation, SetNetworkBridgeNameMutationVariables>;
 
 /**
  * __useSetNetworkBridgeNameMutation__
@@ -5550,13 +6034,11 @@ export function useSetNetworkBridgeNameMutation(baseOptions?: ApolloReactHooks.M
       }
 export type SetNetworkBridgeNameMutationHookResult = ReturnType<typeof useSetNetworkBridgeNameMutation>;
 export type SetNetworkBridgeNameMutationResult = ApolloReactCommon.MutationResult<SetNetworkBridgeNameMutation>;
-export type SetNetworkBridgeNameMutationOptions = ApolloReactCommon.BaseMutationOptions<SetNetworkBridgeNameMutation, SetNetworkBridgeNameMutationVariables>;
 export const DeleteNetworkDocument = gql`
     mutation deleteNetwork($input: DeleteNetworkInput!) {
   deleteNetwork(input: $input)
 }
     `;
-export type DeleteNetworkMutationFn = ApolloReactCommon.MutationFunction<DeleteNetworkMutation, DeleteNetworkMutationVariables>;
 
 /**
  * __useDeleteNetworkMutation__
@@ -5581,7 +6063,6 @@ export function useDeleteNetworkMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type DeleteNetworkMutationHookResult = ReturnType<typeof useDeleteNetworkMutation>;
 export type DeleteNetworkMutationResult = ApolloReactCommon.MutationResult<DeleteNetworkMutation>;
-export type DeleteNetworkMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteNetworkMutation, DeleteNetworkMutationVariables>;
 export const RunDefenderQuickScanDocument = gql`
     mutation runDefenderQuickScan($vmId: ID!) {
   runDefenderQuickScan(vmId: $vmId) {
@@ -5596,7 +6077,6 @@ export const RunDefenderQuickScanDocument = gql`
   }
 }
     `;
-export type RunDefenderQuickScanMutationFn = ApolloReactCommon.MutationFunction<RunDefenderQuickScanMutation, RunDefenderQuickScanMutationVariables>;
 
 /**
  * __useRunDefenderQuickScanMutation__
@@ -5621,7 +6101,6 @@ export function useRunDefenderQuickScanMutation(baseOptions?: ApolloReactHooks.M
       }
 export type RunDefenderQuickScanMutationHookResult = ReturnType<typeof useRunDefenderQuickScanMutation>;
 export type RunDefenderQuickScanMutationResult = ApolloReactCommon.MutationResult<RunDefenderQuickScanMutation>;
-export type RunDefenderQuickScanMutationOptions = ApolloReactCommon.BaseMutationOptions<RunDefenderQuickScanMutation, RunDefenderQuickScanMutationVariables>;
 export const PerformDiskCleanupDocument = gql`
     mutation performDiskCleanup($vmId: ID!, $drive: String!, $targets: [String!]) {
   performDiskCleanup(vmId: $vmId, drive: $drive, targets: $targets) {
@@ -5636,7 +6115,6 @@ export const PerformDiskCleanupDocument = gql`
   }
 }
     `;
-export type PerformDiskCleanupMutationFn = ApolloReactCommon.MutationFunction<PerformDiskCleanupMutation, PerformDiskCleanupMutationVariables>;
 
 /**
  * __usePerformDiskCleanupMutation__
@@ -5663,7 +6141,6 @@ export function usePerformDiskCleanupMutation(baseOptions?: ApolloReactHooks.Mut
       }
 export type PerformDiskCleanupMutationHookResult = ReturnType<typeof usePerformDiskCleanupMutation>;
 export type PerformDiskCleanupMutationResult = ApolloReactCommon.MutationResult<PerformDiskCleanupMutation>;
-export type PerformDiskCleanupMutationOptions = ApolloReactCommon.BaseMutationOptions<PerformDiskCleanupMutation, PerformDiskCleanupMutationVariables>;
 export const CreateDepartmentFirewallRuleDocument = gql`
     mutation CreateDepartmentFirewallRule($departmentId: ID!, $input: CreateFirewallRuleInput!) {
   createDepartmentFirewallRule(departmentId: $departmentId, input: $input) {
@@ -5690,7 +6167,6 @@ export const CreateDepartmentFirewallRuleDocument = gql`
   }
 }
     `;
-export type CreateDepartmentFirewallRuleMutationFn = ApolloReactCommon.MutationFunction<CreateDepartmentFirewallRuleMutation, CreateDepartmentFirewallRuleMutationVariables>;
 
 /**
  * __useCreateDepartmentFirewallRuleMutation__
@@ -5716,7 +6192,6 @@ export function useCreateDepartmentFirewallRuleMutation(baseOptions?: ApolloReac
       }
 export type CreateDepartmentFirewallRuleMutationHookResult = ReturnType<typeof useCreateDepartmentFirewallRuleMutation>;
 export type CreateDepartmentFirewallRuleMutationResult = ApolloReactCommon.MutationResult<CreateDepartmentFirewallRuleMutation>;
-export type CreateDepartmentFirewallRuleMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateDepartmentFirewallRuleMutation, CreateDepartmentFirewallRuleMutationVariables>;
 export const CreateVmFirewallRuleDocument = gql`
     mutation CreateVMFirewallRule($vmId: ID!, $input: CreateFirewallRuleInput!) {
   createVMFirewallRule(vmId: $vmId, input: $input) {
@@ -5743,7 +6218,6 @@ export const CreateVmFirewallRuleDocument = gql`
   }
 }
     `;
-export type CreateVmFirewallRuleMutationFn = ApolloReactCommon.MutationFunction<CreateVmFirewallRuleMutation, CreateVmFirewallRuleMutationVariables>;
 
 /**
  * __useCreateVmFirewallRuleMutation__
@@ -5769,7 +6243,6 @@ export function useCreateVmFirewallRuleMutation(baseOptions?: ApolloReactHooks.M
       }
 export type CreateVmFirewallRuleMutationHookResult = ReturnType<typeof useCreateVmFirewallRuleMutation>;
 export type CreateVmFirewallRuleMutationResult = ApolloReactCommon.MutationResult<CreateVmFirewallRuleMutation>;
-export type CreateVmFirewallRuleMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateVmFirewallRuleMutation, CreateVmFirewallRuleMutationVariables>;
 export const UpdateFirewallRuleDocument = gql`
     mutation UpdateFirewallRule($ruleId: ID!, $input: UpdateFirewallRuleInput!) {
   updateFirewallRule(ruleId: $ruleId, input: $input) {
@@ -5796,7 +6269,6 @@ export const UpdateFirewallRuleDocument = gql`
   }
 }
     `;
-export type UpdateFirewallRuleMutationFn = ApolloReactCommon.MutationFunction<UpdateFirewallRuleMutation, UpdateFirewallRuleMutationVariables>;
 
 /**
  * __useUpdateFirewallRuleMutation__
@@ -5822,13 +6294,11 @@ export function useUpdateFirewallRuleMutation(baseOptions?: ApolloReactHooks.Mut
       }
 export type UpdateFirewallRuleMutationHookResult = ReturnType<typeof useUpdateFirewallRuleMutation>;
 export type UpdateFirewallRuleMutationResult = ApolloReactCommon.MutationResult<UpdateFirewallRuleMutation>;
-export type UpdateFirewallRuleMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateFirewallRuleMutation, UpdateFirewallRuleMutationVariables>;
 export const DeleteFirewallRuleDocument = gql`
     mutation DeleteFirewallRule($ruleId: ID!) {
   deleteFirewallRule(ruleId: $ruleId)
 }
     `;
-export type DeleteFirewallRuleMutationFn = ApolloReactCommon.MutationFunction<DeleteFirewallRuleMutation, DeleteFirewallRuleMutationVariables>;
 
 /**
  * __useDeleteFirewallRuleMutation__
@@ -5853,7 +6323,6 @@ export function useDeleteFirewallRuleMutation(baseOptions?: ApolloReactHooks.Mut
       }
 export type DeleteFirewallRuleMutationHookResult = ReturnType<typeof useDeleteFirewallRuleMutation>;
 export type DeleteFirewallRuleMutationResult = ApolloReactCommon.MutationResult<DeleteFirewallRuleMutation>;
-export type DeleteFirewallRuleMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteFirewallRuleMutation, DeleteFirewallRuleMutationVariables>;
 export const FlushFirewallRulesDocument = gql`
     mutation FlushFirewallRules($vmId: ID!) {
   flushFirewallRules(vmId: $vmId) {
@@ -5865,7 +6334,6 @@ export const FlushFirewallRulesDocument = gql`
   }
 }
     `;
-export type FlushFirewallRulesMutationFn = ApolloReactCommon.MutationFunction<FlushFirewallRulesMutation, FlushFirewallRulesMutationVariables>;
 
 /**
  * __useFlushFirewallRulesMutation__
@@ -5890,7 +6358,6 @@ export function useFlushFirewallRulesMutation(baseOptions?: ApolloReactHooks.Mut
       }
 export type FlushFirewallRulesMutationHookResult = ReturnType<typeof useFlushFirewallRulesMutation>;
 export type FlushFirewallRulesMutationResult = ApolloReactCommon.MutationResult<FlushFirewallRulesMutation>;
-export type FlushFirewallRulesMutationOptions = ApolloReactCommon.BaseMutationOptions<FlushFirewallRulesMutation, FlushFirewallRulesMutationVariables>;
 export const SyncFirewallToLibvirtDocument = gql`
     mutation SyncFirewallToLibvirt {
   syncFirewallToLibvirt {
@@ -5902,7 +6369,6 @@ export const SyncFirewallToLibvirtDocument = gql`
   }
 }
     `;
-export type SyncFirewallToLibvirtMutationFn = ApolloReactCommon.MutationFunction<SyncFirewallToLibvirtMutation, SyncFirewallToLibvirtMutationVariables>;
 
 /**
  * __useSyncFirewallToLibvirtMutation__
@@ -5926,7 +6392,6 @@ export function useSyncFirewallToLibvirtMutation(baseOptions?: ApolloReactHooks.
       }
 export type SyncFirewallToLibvirtMutationHookResult = ReturnType<typeof useSyncFirewallToLibvirtMutation>;
 export type SyncFirewallToLibvirtMutationResult = ApolloReactCommon.MutationResult<SyncFirewallToLibvirtMutation>;
-export type SyncFirewallToLibvirtMutationOptions = ApolloReactCommon.BaseMutationOptions<SyncFirewallToLibvirtMutation, SyncFirewallToLibvirtMutationVariables>;
 export const CleanupInfinibayFirewallDocument = gql`
     mutation CleanupInfinibayFirewall {
   cleanupInfinibayFirewall {
@@ -5936,7 +6401,6 @@ export const CleanupInfinibayFirewallDocument = gql`
   }
 }
     `;
-export type CleanupInfinibayFirewallMutationFn = ApolloReactCommon.MutationFunction<CleanupInfinibayFirewallMutation, CleanupInfinibayFirewallMutationVariables>;
 
 /**
  * __useCleanupInfinibayFirewallMutation__
@@ -5960,7 +6424,6 @@ export function useCleanupInfinibayFirewallMutation(baseOptions?: ApolloReactHoo
       }
 export type CleanupInfinibayFirewallMutationHookResult = ReturnType<typeof useCleanupInfinibayFirewallMutation>;
 export type CleanupInfinibayFirewallMutationResult = ApolloReactCommon.MutationResult<CleanupInfinibayFirewallMutation>;
-export type CleanupInfinibayFirewallMutationOptions = ApolloReactCommon.BaseMutationOptions<CleanupInfinibayFirewallMutation, CleanupInfinibayFirewallMutationVariables>;
 export const CreateScriptDocument = gql`
     mutation CreateScript($input: CreateScriptInput!) {
   createScript(input: $input) {
@@ -5989,7 +6452,6 @@ export const CreateScriptDocument = gql`
   }
 }
     `;
-export type CreateScriptMutationFn = ApolloReactCommon.MutationFunction<CreateScriptMutation, CreateScriptMutationVariables>;
 
 /**
  * __useCreateScriptMutation__
@@ -6014,7 +6476,6 @@ export function useCreateScriptMutation(baseOptions?: ApolloReactHooks.MutationH
       }
 export type CreateScriptMutationHookResult = ReturnType<typeof useCreateScriptMutation>;
 export type CreateScriptMutationResult = ApolloReactCommon.MutationResult<CreateScriptMutation>;
-export type CreateScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateScriptMutation, CreateScriptMutationVariables>;
 export const UpdateScriptDocument = gql`
     mutation UpdateScript($input: UpdateScriptInput!) {
   updateScript(input: $input) {
@@ -6051,7 +6512,6 @@ export const UpdateScriptDocument = gql`
   }
 }
     `;
-export type UpdateScriptMutationFn = ApolloReactCommon.MutationFunction<UpdateScriptMutation, UpdateScriptMutationVariables>;
 
 /**
  * __useUpdateScriptMutation__
@@ -6076,7 +6536,6 @@ export function useUpdateScriptMutation(baseOptions?: ApolloReactHooks.MutationH
       }
 export type UpdateScriptMutationHookResult = ReturnType<typeof useUpdateScriptMutation>;
 export type UpdateScriptMutationResult = ApolloReactCommon.MutationResult<UpdateScriptMutation>;
-export type UpdateScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateScriptMutation, UpdateScriptMutationVariables>;
 export const DeleteScriptDocument = gql`
     mutation DeleteScript($id: ID!, $force: Boolean) {
   deleteScript(id: $id, force: $force) {
@@ -6086,7 +6545,6 @@ export const DeleteScriptDocument = gql`
   }
 }
     `;
-export type DeleteScriptMutationFn = ApolloReactCommon.MutationFunction<DeleteScriptMutation, DeleteScriptMutationVariables>;
 
 /**
  * __useDeleteScriptMutation__
@@ -6112,13 +6570,11 @@ export function useDeleteScriptMutation(baseOptions?: ApolloReactHooks.MutationH
       }
 export type DeleteScriptMutationHookResult = ReturnType<typeof useDeleteScriptMutation>;
 export type DeleteScriptMutationResult = ApolloReactCommon.MutationResult<DeleteScriptMutation>;
-export type DeleteScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteScriptMutation, DeleteScriptMutationVariables>;
 export const AssignScriptToDepartmentDocument = gql`
     mutation AssignScriptToDepartment($scriptId: ID!, $departmentId: ID!) {
   assignScriptToDepartment(scriptId: $scriptId, departmentId: $departmentId)
 }
     `;
-export type AssignScriptToDepartmentMutationFn = ApolloReactCommon.MutationFunction<AssignScriptToDepartmentMutation, AssignScriptToDepartmentMutationVariables>;
 
 /**
  * __useAssignScriptToDepartmentMutation__
@@ -6144,13 +6600,11 @@ export function useAssignScriptToDepartmentMutation(baseOptions?: ApolloReactHoo
       }
 export type AssignScriptToDepartmentMutationHookResult = ReturnType<typeof useAssignScriptToDepartmentMutation>;
 export type AssignScriptToDepartmentMutationResult = ApolloReactCommon.MutationResult<AssignScriptToDepartmentMutation>;
-export type AssignScriptToDepartmentMutationOptions = ApolloReactCommon.BaseMutationOptions<AssignScriptToDepartmentMutation, AssignScriptToDepartmentMutationVariables>;
 export const UnassignScriptFromDepartmentDocument = gql`
     mutation UnassignScriptFromDepartment($scriptId: ID!, $departmentId: ID!) {
   unassignScriptFromDepartment(scriptId: $scriptId, departmentId: $departmentId)
 }
     `;
-export type UnassignScriptFromDepartmentMutationFn = ApolloReactCommon.MutationFunction<UnassignScriptFromDepartmentMutation, UnassignScriptFromDepartmentMutationVariables>;
 
 /**
  * __useUnassignScriptFromDepartmentMutation__
@@ -6176,7 +6630,6 @@ export function useUnassignScriptFromDepartmentMutation(baseOptions?: ApolloReac
       }
 export type UnassignScriptFromDepartmentMutationHookResult = ReturnType<typeof useUnassignScriptFromDepartmentMutation>;
 export type UnassignScriptFromDepartmentMutationResult = ApolloReactCommon.MutationResult<UnassignScriptFromDepartmentMutation>;
-export type UnassignScriptFromDepartmentMutationOptions = ApolloReactCommon.BaseMutationOptions<UnassignScriptFromDepartmentMutation, UnassignScriptFromDepartmentMutationVariables>;
 export const ExecuteScriptDocument = gql`
     mutation ExecuteScript($input: ExecuteScriptInput!) {
   executeScript(input: $input) {
@@ -6201,7 +6654,6 @@ export const ExecuteScriptDocument = gql`
   }
 }
     `;
-export type ExecuteScriptMutationFn = ApolloReactCommon.MutationFunction<ExecuteScriptMutation, ExecuteScriptMutationVariables>;
 
 /**
  * __useExecuteScriptMutation__
@@ -6226,7 +6678,6 @@ export function useExecuteScriptMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type ExecuteScriptMutationHookResult = ReturnType<typeof useExecuteScriptMutation>;
 export type ExecuteScriptMutationResult = ApolloReactCommon.MutationResult<ExecuteScriptMutation>;
-export type ExecuteScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<ExecuteScriptMutation, ExecuteScriptMutationVariables>;
 export const CancelScriptExecutionDocument = gql`
     mutation CancelScriptExecution($id: ID!) {
   cancelScriptExecution(id: $id) {
@@ -6242,7 +6693,6 @@ export const CancelScriptExecutionDocument = gql`
   }
 }
     `;
-export type CancelScriptExecutionMutationFn = ApolloReactCommon.MutationFunction<CancelScriptExecutionMutation, CancelScriptExecutionMutationVariables>;
 
 /**
  * __useCancelScriptExecutionMutation__
@@ -6267,7 +6717,6 @@ export function useCancelScriptExecutionMutation(baseOptions?: ApolloReactHooks.
       }
 export type CancelScriptExecutionMutationHookResult = ReturnType<typeof useCancelScriptExecutionMutation>;
 export type CancelScriptExecutionMutationResult = ApolloReactCommon.MutationResult<CancelScriptExecutionMutation>;
-export type CancelScriptExecutionMutationOptions = ApolloReactCommon.BaseMutationOptions<CancelScriptExecutionMutation, CancelScriptExecutionMutationVariables>;
 export const ScheduleScriptDocument = gql`
     mutation ScheduleScript($input: ScheduleScriptInput!) {
   scheduleScript(input: $input) {
@@ -6306,7 +6755,6 @@ export const ScheduleScriptDocument = gql`
   }
 }
     `;
-export type ScheduleScriptMutationFn = ApolloReactCommon.MutationFunction<ScheduleScriptMutation, ScheduleScriptMutationVariables>;
 
 /**
  * __useScheduleScriptMutation__
@@ -6331,7 +6779,6 @@ export function useScheduleScriptMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type ScheduleScriptMutationHookResult = ReturnType<typeof useScheduleScriptMutation>;
 export type ScheduleScriptMutationResult = ApolloReactCommon.MutationResult<ScheduleScriptMutation>;
-export type ScheduleScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<ScheduleScriptMutation, ScheduleScriptMutationVariables>;
 export const UpdateScheduledScriptDocument = gql`
     mutation UpdateScheduledScript($input: UpdateScheduledScriptInput!) {
   updateScheduledScript(input: $input) {
@@ -6370,7 +6817,6 @@ export const UpdateScheduledScriptDocument = gql`
   }
 }
     `;
-export type UpdateScheduledScriptMutationFn = ApolloReactCommon.MutationFunction<UpdateScheduledScriptMutation, UpdateScheduledScriptMutationVariables>;
 
 /**
  * __useUpdateScheduledScriptMutation__
@@ -6395,7 +6841,6 @@ export function useUpdateScheduledScriptMutation(baseOptions?: ApolloReactHooks.
       }
 export type UpdateScheduledScriptMutationHookResult = ReturnType<typeof useUpdateScheduledScriptMutation>;
 export type UpdateScheduledScriptMutationResult = ApolloReactCommon.MutationResult<UpdateScheduledScriptMutation>;
-export type UpdateScheduledScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateScheduledScriptMutation, UpdateScheduledScriptMutationVariables>;
 export const CancelScheduledScriptDocument = gql`
     mutation CancelScheduledScript($executionId: ID!) {
   cancelScheduledScript(executionId: $executionId) {
@@ -6405,7 +6850,6 @@ export const CancelScheduledScriptDocument = gql`
   }
 }
     `;
-export type CancelScheduledScriptMutationFn = ApolloReactCommon.MutationFunction<CancelScheduledScriptMutation, CancelScheduledScriptMutationVariables>;
 
 /**
  * __useCancelScheduledScriptMutation__
@@ -6430,7 +6874,362 @@ export function useCancelScheduledScriptMutation(baseOptions?: ApolloReactHooks.
       }
 export type CancelScheduledScriptMutationHookResult = ReturnType<typeof useCancelScheduledScriptMutation>;
 export type CancelScheduledScriptMutationResult = ApolloReactCommon.MutationResult<CancelScheduledScriptMutation>;
-export type CancelScheduledScriptMutationOptions = ApolloReactCommon.BaseMutationOptions<CancelScheduledScriptMutation, CancelScheduledScriptMutationVariables>;
+export const CreateIdentityProviderDocument = gql`
+    mutation CreateIdentityProvider($input: CreateIdentityProviderInput!) {
+  createIdentityProvider(input: $input) {
+    id
+    name
+    providerType
+    status
+    enabled
+    domain
+    host
+    port
+    useTls
+    baseDn
+    bindDn
+    hasBindPassword
+    userFilter
+    groupFilter
+    attributes
+    lastTestAt
+    lastSyncAt
+    lastError
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useCreateIdentityProviderMutation__
+ *
+ * To run a mutation, you first call `useCreateIdentityProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateIdentityProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createIdentityProviderMutation, { data, loading, error }] = useCreateIdentityProviderMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateIdentityProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateIdentityProviderMutation, CreateIdentityProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateIdentityProviderMutation, CreateIdentityProviderMutationVariables>(CreateIdentityProviderDocument, options);
+      }
+export type CreateIdentityProviderMutationHookResult = ReturnType<typeof useCreateIdentityProviderMutation>;
+export type CreateIdentityProviderMutationResult = ApolloReactCommon.MutationResult<CreateIdentityProviderMutation>;
+export const UpdateIdentityProviderDocument = gql`
+    mutation UpdateIdentityProvider($id: ID!, $input: UpdateIdentityProviderInput!) {
+  updateIdentityProvider(id: $id, input: $input) {
+    id
+    name
+    providerType
+    status
+    enabled
+    domain
+    host
+    port
+    useTls
+    baseDn
+    bindDn
+    hasBindPassword
+    userFilter
+    groupFilter
+    attributes
+    lastTestAt
+    lastSyncAt
+    lastError
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useUpdateIdentityProviderMutation__
+ *
+ * To run a mutation, you first call `useUpdateIdentityProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateIdentityProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateIdentityProviderMutation, { data, loading, error }] = useUpdateIdentityProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateIdentityProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateIdentityProviderMutation, UpdateIdentityProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateIdentityProviderMutation, UpdateIdentityProviderMutationVariables>(UpdateIdentityProviderDocument, options);
+      }
+export type UpdateIdentityProviderMutationHookResult = ReturnType<typeof useUpdateIdentityProviderMutation>;
+export type UpdateIdentityProviderMutationResult = ApolloReactCommon.MutationResult<UpdateIdentityProviderMutation>;
+export const DeleteIdentityProviderDocument = gql`
+    mutation DeleteIdentityProvider($id: ID!) {
+  deleteIdentityProvider(id: $id)
+}
+    `;
+
+/**
+ * __useDeleteIdentityProviderMutation__
+ *
+ * To run a mutation, you first call `useDeleteIdentityProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteIdentityProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteIdentityProviderMutation, { data, loading, error }] = useDeleteIdentityProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteIdentityProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteIdentityProviderMutation, DeleteIdentityProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteIdentityProviderMutation, DeleteIdentityProviderMutationVariables>(DeleteIdentityProviderDocument, options);
+      }
+export type DeleteIdentityProviderMutationHookResult = ReturnType<typeof useDeleteIdentityProviderMutation>;
+export type DeleteIdentityProviderMutationResult = ApolloReactCommon.MutationResult<DeleteIdentityProviderMutation>;
+export const TestIdentityProviderDocument = gql`
+    mutation TestIdentityProvider($id: ID!) {
+  testIdentityProvider(id: $id) {
+    success
+    message
+    latencyMs
+    provider {
+      id
+      name
+      providerType
+      status
+      enabled
+      lastTestAt
+      lastError
+    }
+  }
+}
+    `;
+
+/**
+ * __useTestIdentityProviderMutation__
+ *
+ * To run a mutation, you first call `useTestIdentityProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useTestIdentityProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [testIdentityProviderMutation, { data, loading, error }] = useTestIdentityProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTestIdentityProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<TestIdentityProviderMutation, TestIdentityProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<TestIdentityProviderMutation, TestIdentityProviderMutationVariables>(TestIdentityProviderDocument, options);
+      }
+export type TestIdentityProviderMutationHookResult = ReturnType<typeof useTestIdentityProviderMutation>;
+export type TestIdentityProviderMutationResult = ApolloReactCommon.MutationResult<TestIdentityProviderMutation>;
+export const TestIdentityProviderConfigDocument = gql`
+    mutation TestIdentityProviderConfig($input: CreateIdentityProviderInput!) {
+  testIdentityProviderConfig(input: $input) {
+    success
+    message
+    latencyMs
+  }
+}
+    `;
+
+/**
+ * __useTestIdentityProviderConfigMutation__
+ *
+ * To run a mutation, you first call `useTestIdentityProviderConfigMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useTestIdentityProviderConfigMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [testIdentityProviderConfigMutation, { data, loading, error }] = useTestIdentityProviderConfigMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useTestIdentityProviderConfigMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<TestIdentityProviderConfigMutation, TestIdentityProviderConfigMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<TestIdentityProviderConfigMutation, TestIdentityProviderConfigMutationVariables>(TestIdentityProviderConfigDocument, options);
+      }
+export type TestIdentityProviderConfigMutationHookResult = ReturnType<typeof useTestIdentityProviderConfigMutation>;
+export type TestIdentityProviderConfigMutationResult = ApolloReactCommon.MutationResult<TestIdentityProviderConfigMutation>;
+export const SyncIdentityProviderDocument = gql`
+    mutation SyncIdentityProvider($id: ID!) {
+  syncIdentityProvider(id: $id) {
+    success
+    message
+    syncRunId
+    usersCreated
+    usersUpdated
+    usersDisabled
+    groupsSeen
+    provider {
+      id
+      status
+      lastSyncAt
+      lastError
+    }
+  }
+}
+    `;
+
+/**
+ * __useSyncIdentityProviderMutation__
+ *
+ * To run a mutation, you first call `useSyncIdentityProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSyncIdentityProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [syncIdentityProviderMutation, { data, loading, error }] = useSyncIdentityProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useSyncIdentityProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SyncIdentityProviderMutation, SyncIdentityProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SyncIdentityProviderMutation, SyncIdentityProviderMutationVariables>(SyncIdentityProviderDocument, options);
+      }
+export type SyncIdentityProviderMutationHookResult = ReturnType<typeof useSyncIdentityProviderMutation>;
+export type SyncIdentityProviderMutationResult = ApolloReactCommon.MutationResult<SyncIdentityProviderMutation>;
+export const UpsertIdentityGroupRoleMappingDocument = gql`
+    mutation UpsertIdentityGroupRoleMapping($input: UpsertIdentityGroupRoleMappingInput!) {
+  upsertIdentityGroupRoleMapping(input: $input) {
+    id
+    providerId
+    groupDn
+    groupName
+    role
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useUpsertIdentityGroupRoleMappingMutation__
+ *
+ * To run a mutation, you first call `useUpsertIdentityGroupRoleMappingMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpsertIdentityGroupRoleMappingMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [upsertIdentityGroupRoleMappingMutation, { data, loading, error }] = useUpsertIdentityGroupRoleMappingMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpsertIdentityGroupRoleMappingMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpsertIdentityGroupRoleMappingMutation, UpsertIdentityGroupRoleMappingMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpsertIdentityGroupRoleMappingMutation, UpsertIdentityGroupRoleMappingMutationVariables>(UpsertIdentityGroupRoleMappingDocument, options);
+      }
+export type UpsertIdentityGroupRoleMappingMutationHookResult = ReturnType<typeof useUpsertIdentityGroupRoleMappingMutation>;
+export type UpsertIdentityGroupRoleMappingMutationResult = ApolloReactCommon.MutationResult<UpsertIdentityGroupRoleMappingMutation>;
+export const DeleteIdentityGroupRoleMappingDocument = gql`
+    mutation DeleteIdentityGroupRoleMapping($id: ID!) {
+  deleteIdentityGroupRoleMapping(id: $id)
+}
+    `;
+
+/**
+ * __useDeleteIdentityGroupRoleMappingMutation__
+ *
+ * To run a mutation, you first call `useDeleteIdentityGroupRoleMappingMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteIdentityGroupRoleMappingMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteIdentityGroupRoleMappingMutation, { data, loading, error }] = useDeleteIdentityGroupRoleMappingMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteIdentityGroupRoleMappingMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteIdentityGroupRoleMappingMutation, DeleteIdentityGroupRoleMappingMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteIdentityGroupRoleMappingMutation, DeleteIdentityGroupRoleMappingMutationVariables>(DeleteIdentityGroupRoleMappingDocument, options);
+      }
+export type DeleteIdentityGroupRoleMappingMutationHookResult = ReturnType<typeof useDeleteIdentityGroupRoleMappingMutation>;
+export type DeleteIdentityGroupRoleMappingMutationResult = ApolloReactCommon.MutationResult<DeleteIdentityGroupRoleMappingMutation>;
+export const SetRolePermissionDocument = gql`
+    mutation SetRolePermission($input: SetRolePermissionInput!) {
+  setRolePermission(input: $input) {
+    principals {
+      id
+      label
+      kind
+      avatar
+    }
+    resources {
+      id
+      label
+      group
+    }
+    permissions
+  }
+}
+    `;
+
+/**
+ * __useSetRolePermissionMutation__
+ *
+ * To run a mutation, you first call `useSetRolePermissionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetRolePermissionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [setRolePermissionMutation, { data, loading, error }] = useSetRolePermissionMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useSetRolePermissionMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SetRolePermissionMutation, SetRolePermissionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SetRolePermissionMutation, SetRolePermissionMutationVariables>(SetRolePermissionDocument, options);
+      }
+export type SetRolePermissionMutationHookResult = ReturnType<typeof useSetRolePermissionMutation>;
+export type SetRolePermissionMutationResult = ApolloReactCommon.MutationResult<SetRolePermissionMutation>;
 export const CreateBackupDocument = gql`
     mutation createBackup($input: CreateBackupInput!) {
   createBackup(input: $input) {
@@ -6444,7 +7243,6 @@ export const CreateBackupDocument = gql`
   }
 }
     `;
-export type CreateBackupMutationFn = ApolloReactCommon.MutationFunction<CreateBackupMutation, CreateBackupMutationVariables>;
 
 /**
  * __useCreateBackupMutation__
@@ -6469,7 +7267,6 @@ export function useCreateBackupMutation(baseOptions?: ApolloReactHooks.MutationH
       }
 export type CreateBackupMutationHookResult = ReturnType<typeof useCreateBackupMutation>;
 export type CreateBackupMutationResult = ApolloReactCommon.MutationResult<CreateBackupMutation>;
-export type CreateBackupMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateBackupMutation, CreateBackupMutationVariables>;
 export const RestoreBackupDocument = gql`
     mutation restoreBackup($input: RestoreBackupInput!) {
   restoreBackup(input: $input) {
@@ -6482,7 +7279,6 @@ export const RestoreBackupDocument = gql`
   }
 }
     `;
-export type RestoreBackupMutationFn = ApolloReactCommon.MutationFunction<RestoreBackupMutation, RestoreBackupMutationVariables>;
 
 /**
  * __useRestoreBackupMutation__
@@ -6507,7 +7303,6 @@ export function useRestoreBackupMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type RestoreBackupMutationHookResult = ReturnType<typeof useRestoreBackupMutation>;
 export type RestoreBackupMutationResult = ApolloReactCommon.MutationResult<RestoreBackupMutation>;
-export type RestoreBackupMutationOptions = ApolloReactCommon.BaseMutationOptions<RestoreBackupMutation, RestoreBackupMutationVariables>;
 export const DeleteBackupDocument = gql`
     mutation deleteBackup($input: DeleteBackupInput!) {
   deleteBackup(input: $input) {
@@ -6516,7 +7311,6 @@ export const DeleteBackupDocument = gql`
   }
 }
     `;
-export type DeleteBackupMutationFn = ApolloReactCommon.MutationFunction<DeleteBackupMutation, DeleteBackupMutationVariables>;
 
 /**
  * __useDeleteBackupMutation__
@@ -6541,7 +7335,6 @@ export function useDeleteBackupMutation(baseOptions?: ApolloReactHooks.MutationH
       }
 export type DeleteBackupMutationHookResult = ReturnType<typeof useDeleteBackupMutation>;
 export type DeleteBackupMutationResult = ApolloReactCommon.MutationResult<DeleteBackupMutation>;
-export type DeleteBackupMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteBackupMutation, DeleteBackupMutationVariables>;
 export const CreateBackupScheduleDocument = gql`
     mutation createBackupSchedule($input: CreateScheduleInput!) {
   createBackupSchedule(input: $input) {
@@ -6561,7 +7354,6 @@ export const CreateBackupScheduleDocument = gql`
   }
 }
     `;
-export type CreateBackupScheduleMutationFn = ApolloReactCommon.MutationFunction<CreateBackupScheduleMutation, CreateBackupScheduleMutationVariables>;
 
 /**
  * __useCreateBackupScheduleMutation__
@@ -6586,7 +7378,6 @@ export function useCreateBackupScheduleMutation(baseOptions?: ApolloReactHooks.M
       }
 export type CreateBackupScheduleMutationHookResult = ReturnType<typeof useCreateBackupScheduleMutation>;
 export type CreateBackupScheduleMutationResult = ApolloReactCommon.MutationResult<CreateBackupScheduleMutation>;
-export type CreateBackupScheduleMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateBackupScheduleMutation, CreateBackupScheduleMutationVariables>;
 export const UpdateBackupScheduleDocument = gql`
     mutation updateBackupSchedule($id: ID!, $input: UpdateScheduleInput!) {
   updateBackupSchedule(id: $id, input: $input) {
@@ -6605,7 +7396,6 @@ export const UpdateBackupScheduleDocument = gql`
   }
 }
     `;
-export type UpdateBackupScheduleMutationFn = ApolloReactCommon.MutationFunction<UpdateBackupScheduleMutation, UpdateBackupScheduleMutationVariables>;
 
 /**
  * __useUpdateBackupScheduleMutation__
@@ -6631,7 +7421,6 @@ export function useUpdateBackupScheduleMutation(baseOptions?: ApolloReactHooks.M
       }
 export type UpdateBackupScheduleMutationHookResult = ReturnType<typeof useUpdateBackupScheduleMutation>;
 export type UpdateBackupScheduleMutationResult = ApolloReactCommon.MutationResult<UpdateBackupScheduleMutation>;
-export type UpdateBackupScheduleMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateBackupScheduleMutation, UpdateBackupScheduleMutationVariables>;
 export const DeleteBackupScheduleDocument = gql`
     mutation deleteBackupSchedule($id: ID!) {
   deleteBackupSchedule(id: $id) {
@@ -6640,7 +7429,6 @@ export const DeleteBackupScheduleDocument = gql`
   }
 }
     `;
-export type DeleteBackupScheduleMutationFn = ApolloReactCommon.MutationFunction<DeleteBackupScheduleMutation, DeleteBackupScheduleMutationVariables>;
 
 /**
  * __useDeleteBackupScheduleMutation__
@@ -6665,7 +7453,6 @@ export function useDeleteBackupScheduleMutation(baseOptions?: ApolloReactHooks.M
       }
 export type DeleteBackupScheduleMutationHookResult = ReturnType<typeof useDeleteBackupScheduleMutation>;
 export type DeleteBackupScheduleMutationResult = ApolloReactCommon.MutationResult<DeleteBackupScheduleMutation>;
-export type DeleteBackupScheduleMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteBackupScheduleMutation, DeleteBackupScheduleMutationVariables>;
 export const EnablePackageDocument = gql`
     mutation EnablePackage($name: String!) {
   enablePackage(name: $name) {
@@ -6691,7 +7478,6 @@ export const EnablePackageDocument = gql`
   }
 }
     `;
-export type EnablePackageMutationFn = ApolloReactCommon.MutationFunction<EnablePackageMutation, EnablePackageMutationVariables>;
 
 /**
  * __useEnablePackageMutation__
@@ -6716,7 +7502,6 @@ export function useEnablePackageMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type EnablePackageMutationHookResult = ReturnType<typeof useEnablePackageMutation>;
 export type EnablePackageMutationResult = ApolloReactCommon.MutationResult<EnablePackageMutation>;
-export type EnablePackageMutationOptions = ApolloReactCommon.BaseMutationOptions<EnablePackageMutation, EnablePackageMutationVariables>;
 export const DisablePackageDocument = gql`
     mutation DisablePackage($name: String!) {
   disablePackage(name: $name) {
@@ -6742,7 +7527,6 @@ export const DisablePackageDocument = gql`
   }
 }
     `;
-export type DisablePackageMutationFn = ApolloReactCommon.MutationFunction<DisablePackageMutation, DisablePackageMutationVariables>;
 
 /**
  * __useDisablePackageMutation__
@@ -6767,13 +7551,11 @@ export function useDisablePackageMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type DisablePackageMutationHookResult = ReturnType<typeof useDisablePackageMutation>;
 export type DisablePackageMutationResult = ApolloReactCommon.MutationResult<DisablePackageMutation>;
-export type DisablePackageMutationOptions = ApolloReactCommon.BaseMutationOptions<DisablePackageMutation, DisablePackageMutationVariables>;
 export const UninstallPackageDocument = gql`
     mutation UninstallPackage($name: String!) {
   uninstallPackage(name: $name)
 }
     `;
-export type UninstallPackageMutationFn = ApolloReactCommon.MutationFunction<UninstallPackageMutation, UninstallPackageMutationVariables>;
 
 /**
  * __useUninstallPackageMutation__
@@ -6798,7 +7580,6 @@ export function useUninstallPackageMutation(baseOptions?: ApolloReactHooks.Mutat
       }
 export type UninstallPackageMutationHookResult = ReturnType<typeof useUninstallPackageMutation>;
 export type UninstallPackageMutationResult = ApolloReactCommon.MutationResult<UninstallPackageMutation>;
-export type UninstallPackageMutationOptions = ApolloReactCommon.BaseMutationOptions<UninstallPackageMutation, UninstallPackageMutationVariables>;
 export const ResolveRecommendationDocument = gql`
     mutation resolveRecommendation($id: ID!, $actionKey: String!, $params: ResolveRecommendationParamsInput) {
   resolveRecommendation(id: $id, actionKey: $actionKey, params: $params) {
@@ -6806,7 +7587,6 @@ export const ResolveRecommendationDocument = gql`
   }
 }
     ${RecommendationResolutionFieldsFragmentDoc}`;
-export type ResolveRecommendationMutationFn = ApolloReactCommon.MutationFunction<ResolveRecommendationMutation, ResolveRecommendationMutationVariables>;
 
 /**
  * __useResolveRecommendationMutation__
@@ -6833,7 +7613,6 @@ export function useResolveRecommendationMutation(baseOptions?: ApolloReactHooks.
       }
 export type ResolveRecommendationMutationHookResult = ReturnType<typeof useResolveRecommendationMutation>;
 export type ResolveRecommendationMutationResult = ApolloReactCommon.MutationResult<ResolveRecommendationMutation>;
-export type ResolveRecommendationMutationOptions = ApolloReactCommon.BaseMutationOptions<ResolveRecommendationMutation, ResolveRecommendationMutationVariables>;
 export const CancelResolutionDocument = gql`
     mutation cancelResolution($id: ID!) {
   cancelResolution(id: $id) {
@@ -6841,7 +7620,6 @@ export const CancelResolutionDocument = gql`
   }
 }
     ${RecommendationResolutionFieldsFragmentDoc}`;
-export type CancelResolutionMutationFn = ApolloReactCommon.MutationFunction<CancelResolutionMutation, CancelResolutionMutationVariables>;
 
 /**
  * __useCancelResolutionMutation__
@@ -6866,7 +7644,6 @@ export function useCancelResolutionMutation(baseOptions?: ApolloReactHooks.Mutat
       }
 export type CancelResolutionMutationHookResult = ReturnType<typeof useCancelResolutionMutation>;
 export type CancelResolutionMutationResult = ApolloReactCommon.MutationResult<CancelResolutionMutation>;
-export type CancelResolutionMutationOptions = ApolloReactCommon.BaseMutationOptions<CancelResolutionMutation, CancelResolutionMutationVariables>;
 export const RecommendationResolutionDocument = gql`
     query recommendationResolution($id: ID!) {
   recommendationResolution(id: $id) {
@@ -6986,7 +7763,6 @@ export const CreateMaintenanceTaskDocument = gql`
   }
 }
     `;
-export type CreateMaintenanceTaskMutationFn = ApolloReactCommon.MutationFunction<CreateMaintenanceTaskMutation, CreateMaintenanceTaskMutationVariables>;
 
 /**
  * __useCreateMaintenanceTaskMutation__
@@ -7011,7 +7787,6 @@ export function useCreateMaintenanceTaskMutation(baseOptions?: ApolloReactHooks.
       }
 export type CreateMaintenanceTaskMutationHookResult = ReturnType<typeof useCreateMaintenanceTaskMutation>;
 export type CreateMaintenanceTaskMutationResult = ApolloReactCommon.MutationResult<CreateMaintenanceTaskMutation>;
-export type CreateMaintenanceTaskMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateMaintenanceTaskMutation, CreateMaintenanceTaskMutationVariables>;
 export const UpdateMaintenanceTaskDocument = gql`
     mutation updateMaintenanceTask($input: UpdateMaintenanceTaskInput!) {
   updateMaintenanceTask(input: $input) {
@@ -7039,7 +7814,6 @@ export const UpdateMaintenanceTaskDocument = gql`
   }
 }
     `;
-export type UpdateMaintenanceTaskMutationFn = ApolloReactCommon.MutationFunction<UpdateMaintenanceTaskMutation, UpdateMaintenanceTaskMutationVariables>;
 
 /**
  * __useUpdateMaintenanceTaskMutation__
@@ -7064,7 +7838,6 @@ export function useUpdateMaintenanceTaskMutation(baseOptions?: ApolloReactHooks.
       }
 export type UpdateMaintenanceTaskMutationHookResult = ReturnType<typeof useUpdateMaintenanceTaskMutation>;
 export type UpdateMaintenanceTaskMutationResult = ApolloReactCommon.MutationResult<UpdateMaintenanceTaskMutation>;
-export type UpdateMaintenanceTaskMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateMaintenanceTaskMutation, UpdateMaintenanceTaskMutationVariables>;
 export const DeleteMaintenanceTaskDocument = gql`
     mutation deleteMaintenanceTask($id: ID!) {
   deleteMaintenanceTask(id: $id) {
@@ -7074,7 +7847,6 @@ export const DeleteMaintenanceTaskDocument = gql`
   }
 }
     `;
-export type DeleteMaintenanceTaskMutationFn = ApolloReactCommon.MutationFunction<DeleteMaintenanceTaskMutation, DeleteMaintenanceTaskMutationVariables>;
 
 /**
  * __useDeleteMaintenanceTaskMutation__
@@ -7099,7 +7871,6 @@ export function useDeleteMaintenanceTaskMutation(baseOptions?: ApolloReactHooks.
       }
 export type DeleteMaintenanceTaskMutationHookResult = ReturnType<typeof useDeleteMaintenanceTaskMutation>;
 export type DeleteMaintenanceTaskMutationResult = ApolloReactCommon.MutationResult<DeleteMaintenanceTaskMutation>;
-export type DeleteMaintenanceTaskMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteMaintenanceTaskMutation, DeleteMaintenanceTaskMutationVariables>;
 export const ExecuteMaintenanceTaskDocument = gql`
     mutation executeMaintenanceTask($taskId: ID!) {
   executeMaintenanceTask(taskId: $taskId) {
@@ -7123,7 +7894,6 @@ export const ExecuteMaintenanceTaskDocument = gql`
   }
 }
     `;
-export type ExecuteMaintenanceTaskMutationFn = ApolloReactCommon.MutationFunction<ExecuteMaintenanceTaskMutation, ExecuteMaintenanceTaskMutationVariables>;
 
 /**
  * __useExecuteMaintenanceTaskMutation__
@@ -7148,7 +7918,6 @@ export function useExecuteMaintenanceTaskMutation(baseOptions?: ApolloReactHooks
       }
 export type ExecuteMaintenanceTaskMutationHookResult = ReturnType<typeof useExecuteMaintenanceTaskMutation>;
 export type ExecuteMaintenanceTaskMutationResult = ApolloReactCommon.MutationResult<ExecuteMaintenanceTaskMutation>;
-export type ExecuteMaintenanceTaskMutationOptions = ApolloReactCommon.BaseMutationOptions<ExecuteMaintenanceTaskMutation, ExecuteMaintenanceTaskMutationVariables>;
 export const ExecuteImmediateMaintenanceDocument = gql`
     mutation executeImmediateMaintenance($input: ExecuteMaintenanceInput!) {
   executeImmediateMaintenance(input: $input) {
@@ -7172,7 +7941,6 @@ export const ExecuteImmediateMaintenanceDocument = gql`
   }
 }
     `;
-export type ExecuteImmediateMaintenanceMutationFn = ApolloReactCommon.MutationFunction<ExecuteImmediateMaintenanceMutation, ExecuteImmediateMaintenanceMutationVariables>;
 
 /**
  * __useExecuteImmediateMaintenanceMutation__
@@ -7197,7 +7965,6 @@ export function useExecuteImmediateMaintenanceMutation(baseOptions?: ApolloReact
       }
 export type ExecuteImmediateMaintenanceMutationHookResult = ReturnType<typeof useExecuteImmediateMaintenanceMutation>;
 export type ExecuteImmediateMaintenanceMutationResult = ApolloReactCommon.MutationResult<ExecuteImmediateMaintenanceMutation>;
-export type ExecuteImmediateMaintenanceMutationOptions = ApolloReactCommon.BaseMutationOptions<ExecuteImmediateMaintenanceMutation, ExecuteImmediateMaintenanceMutationVariables>;
 export const ToggleMaintenanceTaskDocument = gql`
     mutation toggleMaintenanceTask($id: ID!, $enabled: Boolean!) {
   toggleMaintenanceTask(id: $id, enabled: $enabled) {
@@ -7225,7 +7992,6 @@ export const ToggleMaintenanceTaskDocument = gql`
   }
 }
     `;
-export type ToggleMaintenanceTaskMutationFn = ApolloReactCommon.MutationFunction<ToggleMaintenanceTaskMutation, ToggleMaintenanceTaskMutationVariables>;
 
 /**
  * __useToggleMaintenanceTaskMutation__
@@ -7251,7 +8017,6 @@ export function useToggleMaintenanceTaskMutation(baseOptions?: ApolloReactHooks.
       }
 export type ToggleMaintenanceTaskMutationHookResult = ReturnType<typeof useToggleMaintenanceTaskMutation>;
 export type ToggleMaintenanceTaskMutationResult = ApolloReactCommon.MutationResult<ToggleMaintenanceTaskMutation>;
-export type ToggleMaintenanceTaskMutationOptions = ApolloReactCommon.BaseMutationOptions<ToggleMaintenanceTaskMutation, ToggleMaintenanceTaskMutationVariables>;
 export const RestartMachineDocument = gql`
     mutation restartMachine($id: String!) {
   restartMachine(id: $id) {
@@ -7260,7 +8025,6 @@ export const RestartMachineDocument = gql`
   }
 }
     `;
-export type RestartMachineMutationFn = ApolloReactCommon.MutationFunction<RestartMachineMutation, RestartMachineMutationVariables>;
 
 /**
  * __useRestartMachineMutation__
@@ -7285,7 +8049,6 @@ export function useRestartMachineMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type RestartMachineMutationHookResult = ReturnType<typeof useRestartMachineMutation>;
 export type RestartMachineMutationResult = ApolloReactCommon.MutationResult<RestartMachineMutation>;
-export type RestartMachineMutationOptions = ApolloReactCommon.BaseMutationOptions<RestartMachineMutation, RestartMachineMutationVariables>;
 export const ForcePowerOffDocument = gql`
     mutation forcePowerOff($id: String!) {
   forcePowerOff(id: $id) {
@@ -7294,7 +8057,6 @@ export const ForcePowerOffDocument = gql`
   }
 }
     `;
-export type ForcePowerOffMutationFn = ApolloReactCommon.MutationFunction<ForcePowerOffMutation, ForcePowerOffMutationVariables>;
 
 /**
  * __useForcePowerOffMutation__
@@ -7319,7 +8081,6 @@ export function useForcePowerOffMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type ForcePowerOffMutationHookResult = ReturnType<typeof useForcePowerOffMutation>;
 export type ForcePowerOffMutationResult = ApolloReactCommon.MutationResult<ForcePowerOffMutation>;
-export type ForcePowerOffMutationOptions = ApolloReactCommon.BaseMutationOptions<ForcePowerOffMutation, ForcePowerOffMutationVariables>;
 export const ResetMachineDocument = gql`
     mutation resetMachine($id: String!) {
   resetMachine(id: $id) {
@@ -7328,7 +8089,6 @@ export const ResetMachineDocument = gql`
   }
 }
     `;
-export type ResetMachineMutationFn = ApolloReactCommon.MutationFunction<ResetMachineMutation, ResetMachineMutationVariables>;
 
 /**
  * __useResetMachineMutation__
@@ -7353,7 +8113,6 @@ export function useResetMachineMutation(baseOptions?: ApolloReactHooks.MutationH
       }
 export type ResetMachineMutationHookResult = ReturnType<typeof useResetMachineMutation>;
 export type ResetMachineMutationResult = ApolloReactCommon.MutationResult<ResetMachineMutation>;
-export type ResetMachineMutationOptions = ApolloReactCommon.BaseMutationOptions<ResetMachineMutation, ResetMachineMutationVariables>;
 export const PowerOnMachineDocument = gql`
     mutation powerOnMachine($id: String!) {
   powerOn(id: $id) {
@@ -7362,7 +8121,6 @@ export const PowerOnMachineDocument = gql`
   }
 }
     `;
-export type PowerOnMachineMutationFn = ApolloReactCommon.MutationFunction<PowerOnMachineMutation, PowerOnMachineMutationVariables>;
 
 /**
  * __usePowerOnMachineMutation__
@@ -7387,7 +8145,6 @@ export function usePowerOnMachineMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type PowerOnMachineMutationHookResult = ReturnType<typeof usePowerOnMachineMutation>;
 export type PowerOnMachineMutationResult = ApolloReactCommon.MutationResult<PowerOnMachineMutation>;
-export type PowerOnMachineMutationOptions = ApolloReactCommon.BaseMutationOptions<PowerOnMachineMutation, PowerOnMachineMutationVariables>;
 export const PowerOffMachineDocument = gql`
     mutation powerOffMachine($id: String!) {
   powerOff(id: $id) {
@@ -7396,7 +8153,6 @@ export const PowerOffMachineDocument = gql`
   }
 }
     `;
-export type PowerOffMachineMutationFn = ApolloReactCommon.MutationFunction<PowerOffMachineMutation, PowerOffMachineMutationVariables>;
 
 /**
  * __usePowerOffMachineMutation__
@@ -7421,7 +8177,6 @@ export function usePowerOffMachineMutation(baseOptions?: ApolloReactHooks.Mutati
       }
 export type PowerOffMachineMutationHookResult = ReturnType<typeof usePowerOffMachineMutation>;
 export type PowerOffMachineMutationResult = ApolloReactCommon.MutationResult<PowerOffMachineMutation>;
-export type PowerOffMachineMutationOptions = ApolloReactCommon.BaseMutationOptions<PowerOffMachineMutation, PowerOffMachineMutationVariables>;
 export const ManagePackageDocument = gql`
     mutation managePackage($input: PackageManagementInput!) {
   managePackage(input: $input) {
@@ -7441,7 +8196,6 @@ export const ManagePackageDocument = gql`
   }
 }
     `;
-export type ManagePackageMutationFn = ApolloReactCommon.MutationFunction<ManagePackageMutation, ManagePackageMutationVariables>;
 
 /**
  * __useManagePackageMutation__
@@ -7466,7 +8220,6 @@ export function useManagePackageMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type ManagePackageMutationHookResult = ReturnType<typeof useManagePackageMutation>;
 export type ManagePackageMutationResult = ApolloReactCommon.MutationResult<ManagePackageMutation>;
-export type ManagePackageMutationOptions = ApolloReactCommon.BaseMutationOptions<ManagePackageMutation, ManagePackageMutationVariables>;
 export const InstallPackageDocument = gql`
     mutation installPackage($machineId: ID!, $packageName: String!) {
   installPackage(machineId: $machineId, packageName: $packageName) {
@@ -7478,7 +8231,6 @@ export const InstallPackageDocument = gql`
   }
 }
     `;
-export type InstallPackageMutationFn = ApolloReactCommon.MutationFunction<InstallPackageMutation, InstallPackageMutationVariables>;
 
 /**
  * __useInstallPackageMutation__
@@ -7504,7 +8256,6 @@ export function useInstallPackageMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type InstallPackageMutationHookResult = ReturnType<typeof useInstallPackageMutation>;
 export type InstallPackageMutationResult = ApolloReactCommon.MutationResult<InstallPackageMutation>;
-export type InstallPackageMutationOptions = ApolloReactCommon.BaseMutationOptions<InstallPackageMutation, InstallPackageMutationVariables>;
 export const RemovePackageDocument = gql`
     mutation removePackage($machineId: ID!, $packageName: String!) {
   removePackage(machineId: $machineId, packageName: $packageName) {
@@ -7516,7 +8267,6 @@ export const RemovePackageDocument = gql`
   }
 }
     `;
-export type RemovePackageMutationFn = ApolloReactCommon.MutationFunction<RemovePackageMutation, RemovePackageMutationVariables>;
 
 /**
  * __useRemovePackageMutation__
@@ -7542,7 +8292,6 @@ export function useRemovePackageMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type RemovePackageMutationHookResult = ReturnType<typeof useRemovePackageMutation>;
 export type RemovePackageMutationResult = ApolloReactCommon.MutationResult<RemovePackageMutation>;
-export type RemovePackageMutationOptions = ApolloReactCommon.BaseMutationOptions<RemovePackageMutation, RemovePackageMutationVariables>;
 export const UpdatePackageDocument = gql`
     mutation updatePackage($machineId: ID!, $packageName: String!) {
   updatePackage(machineId: $machineId, packageName: $packageName) {
@@ -7554,7 +8303,6 @@ export const UpdatePackageDocument = gql`
   }
 }
     `;
-export type UpdatePackageMutationFn = ApolloReactCommon.MutationFunction<UpdatePackageMutation, UpdatePackageMutationVariables>;
 
 /**
  * __useUpdatePackageMutation__
@@ -7580,7 +8328,6 @@ export function useUpdatePackageMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type UpdatePackageMutationHookResult = ReturnType<typeof useUpdatePackageMutation>;
 export type UpdatePackageMutationResult = ApolloReactCommon.MutationResult<UpdatePackageMutation>;
-export type UpdatePackageMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdatePackageMutation, UpdatePackageMutationVariables>;
 export const KillProcessDocument = gql`
     mutation killProcess($machineId: String!, $pid: Int!, $force: Boolean = false) {
   killProcess(machineId: $machineId, pid: $pid, force: $force) {
@@ -7592,7 +8339,6 @@ export const KillProcessDocument = gql`
   }
 }
     `;
-export type KillProcessMutationFn = ApolloReactCommon.MutationFunction<KillProcessMutation, KillProcessMutationVariables>;
 
 /**
  * __useKillProcessMutation__
@@ -7619,7 +8365,6 @@ export function useKillProcessMutation(baseOptions?: ApolloReactHooks.MutationHo
       }
 export type KillProcessMutationHookResult = ReturnType<typeof useKillProcessMutation>;
 export type KillProcessMutationResult = ApolloReactCommon.MutationResult<KillProcessMutation>;
-export type KillProcessMutationOptions = ApolloReactCommon.BaseMutationOptions<KillProcessMutation, KillProcessMutationVariables>;
 export const KillProcessesDocument = gql`
     mutation killProcesses($machineId: String!, $pids: [Int!]!, $force: Boolean = false) {
   killProcesses(machineId: $machineId, pids: $pids, force: $force) {
@@ -7631,7 +8376,6 @@ export const KillProcessesDocument = gql`
   }
 }
     `;
-export type KillProcessesMutationFn = ApolloReactCommon.MutationFunction<KillProcessesMutation, KillProcessesMutationVariables>;
 
 /**
  * __useKillProcessesMutation__
@@ -7658,7 +8402,6 @@ export function useKillProcessesMutation(baseOptions?: ApolloReactHooks.Mutation
       }
 export type KillProcessesMutationHookResult = ReturnType<typeof useKillProcessesMutation>;
 export type KillProcessesMutationResult = ApolloReactCommon.MutationResult<KillProcessesMutation>;
-export type KillProcessesMutationOptions = ApolloReactCommon.BaseMutationOptions<KillProcessesMutation, KillProcessesMutationVariables>;
 export const ExecuteImmediateMaintenanceFromRecommendationsDocument = gql`
     mutation executeImmediateMaintenanceFromRecommendations($input: ExecuteMaintenanceInput!) {
   executeImmediateMaintenance(input: $input) {
@@ -7677,7 +8420,6 @@ export const ExecuteImmediateMaintenanceFromRecommendationsDocument = gql`
   }
 }
     `;
-export type ExecuteImmediateMaintenanceFromRecommendationsMutationFn = ApolloReactCommon.MutationFunction<ExecuteImmediateMaintenanceFromRecommendationsMutation, ExecuteImmediateMaintenanceFromRecommendationsMutationVariables>;
 
 /**
  * __useExecuteImmediateMaintenanceFromRecommendationsMutation__
@@ -7702,7 +8444,6 @@ export function useExecuteImmediateMaintenanceFromRecommendationsMutation(baseOp
       }
 export type ExecuteImmediateMaintenanceFromRecommendationsMutationHookResult = ReturnType<typeof useExecuteImmediateMaintenanceFromRecommendationsMutation>;
 export type ExecuteImmediateMaintenanceFromRecommendationsMutationResult = ApolloReactCommon.MutationResult<ExecuteImmediateMaintenanceFromRecommendationsMutation>;
-export type ExecuteImmediateMaintenanceFromRecommendationsMutationOptions = ApolloReactCommon.BaseMutationOptions<ExecuteImmediateMaintenanceFromRecommendationsMutation, ExecuteImmediateMaintenanceFromRecommendationsMutationVariables>;
 export const CreateMaintenanceTaskFromRecommendationsDocument = gql`
     mutation createMaintenanceTaskFromRecommendations($input: CreateMaintenanceTaskInput!) {
   createMaintenanceTask(input: $input) {
@@ -7724,7 +8465,6 @@ export const CreateMaintenanceTaskFromRecommendationsDocument = gql`
   }
 }
     `;
-export type CreateMaintenanceTaskFromRecommendationsMutationFn = ApolloReactCommon.MutationFunction<CreateMaintenanceTaskFromRecommendationsMutation, CreateMaintenanceTaskFromRecommendationsMutationVariables>;
 
 /**
  * __useCreateMaintenanceTaskFromRecommendationsMutation__
@@ -7749,7 +8489,6 @@ export function useCreateMaintenanceTaskFromRecommendationsMutation(baseOptions?
       }
 export type CreateMaintenanceTaskFromRecommendationsMutationHookResult = ReturnType<typeof useCreateMaintenanceTaskFromRecommendationsMutation>;
 export type CreateMaintenanceTaskFromRecommendationsMutationResult = ApolloReactCommon.MutationResult<CreateMaintenanceTaskFromRecommendationsMutation>;
-export type CreateMaintenanceTaskFromRecommendationsMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateMaintenanceTaskFromRecommendationsMutation, CreateMaintenanceTaskFromRecommendationsMutationVariables>;
 export const DismissRecommendationDocument = gql`
     mutation dismissRecommendation($id: ID!) {
   dismissRecommendation(id: $id) {
@@ -7759,7 +8498,6 @@ export const DismissRecommendationDocument = gql`
   }
 }
     `;
-export type DismissRecommendationMutationFn = ApolloReactCommon.MutationFunction<DismissRecommendationMutation, DismissRecommendationMutationVariables>;
 
 /**
  * __useDismissRecommendationMutation__
@@ -7784,7 +8522,6 @@ export function useDismissRecommendationMutation(baseOptions?: ApolloReactHooks.
       }
 export type DismissRecommendationMutationHookResult = ReturnType<typeof useDismissRecommendationMutation>;
 export type DismissRecommendationMutationResult = ApolloReactCommon.MutationResult<DismissRecommendationMutation>;
-export type DismissRecommendationMutationOptions = ApolloReactCommon.BaseMutationOptions<DismissRecommendationMutation, DismissRecommendationMutationVariables>;
 export const DismissAllRecommendationsDocument = gql`
     mutation dismissAllRecommendations {
   dismissAllRecommendations {
@@ -7794,7 +8531,6 @@ export const DismissAllRecommendationsDocument = gql`
   }
 }
     `;
-export type DismissAllRecommendationsMutationFn = ApolloReactCommon.MutationFunction<DismissAllRecommendationsMutation, DismissAllRecommendationsMutationVariables>;
 
 /**
  * __useDismissAllRecommendationsMutation__
@@ -7818,7 +8554,6 @@ export function useDismissAllRecommendationsMutation(baseOptions?: ApolloReactHo
       }
 export type DismissAllRecommendationsMutationHookResult = ReturnType<typeof useDismissAllRecommendationsMutation>;
 export type DismissAllRecommendationsMutationResult = ApolloReactCommon.MutationResult<DismissAllRecommendationsMutation>;
-export type DismissAllRecommendationsMutationOptions = ApolloReactCommon.BaseMutationOptions<DismissAllRecommendationsMutation, DismissAllRecommendationsMutationVariables>;
 export const SnoozeRecommendationDocument = gql`
     mutation snoozeRecommendation($id: ID!, $duration: String!) {
   snoozeRecommendation(id: $id, duration: $duration) {
@@ -7829,7 +8564,6 @@ export const SnoozeRecommendationDocument = gql`
   }
 }
     `;
-export type SnoozeRecommendationMutationFn = ApolloReactCommon.MutationFunction<SnoozeRecommendationMutation, SnoozeRecommendationMutationVariables>;
 
 /**
  * __useSnoozeRecommendationMutation__
@@ -7855,7 +8589,6 @@ export function useSnoozeRecommendationMutation(baseOptions?: ApolloReactHooks.M
       }
 export type SnoozeRecommendationMutationHookResult = ReturnType<typeof useSnoozeRecommendationMutation>;
 export type SnoozeRecommendationMutationResult = ApolloReactCommon.MutationResult<SnoozeRecommendationMutation>;
-export type SnoozeRecommendationMutationOptions = ApolloReactCommon.BaseMutationOptions<SnoozeRecommendationMutation, SnoozeRecommendationMutationVariables>;
 export const SnoozeAllRecommendationsDocument = gql`
     mutation snoozeAllRecommendations($duration: String!) {
   snoozeAllRecommendations(duration: $duration) {
@@ -7866,7 +8599,6 @@ export const SnoozeAllRecommendationsDocument = gql`
   }
 }
     `;
-export type SnoozeAllRecommendationsMutationFn = ApolloReactCommon.MutationFunction<SnoozeAllRecommendationsMutation, SnoozeAllRecommendationsMutationVariables>;
 
 /**
  * __useSnoozeAllRecommendationsMutation__
@@ -7891,7 +8623,6 @@ export function useSnoozeAllRecommendationsMutation(baseOptions?: ApolloReactHoo
       }
 export type SnoozeAllRecommendationsMutationHookResult = ReturnType<typeof useSnoozeAllRecommendationsMutation>;
 export type SnoozeAllRecommendationsMutationResult = ApolloReactCommon.MutationResult<SnoozeAllRecommendationsMutation>;
-export type SnoozeAllRecommendationsMutationOptions = ApolloReactCommon.BaseMutationOptions<SnoozeAllRecommendationsMutation, SnoozeAllRecommendationsMutationVariables>;
 export const CreateSnapshotDocument = gql`
     mutation createSnapshot($input: CreateSnapshotInput!) {
   createSnapshot(input: $input) {
@@ -7912,7 +8643,6 @@ export const CreateSnapshotDocument = gql`
   }
 }
     `;
-export type CreateSnapshotMutationFn = ApolloReactCommon.MutationFunction<CreateSnapshotMutation, CreateSnapshotMutationVariables>;
 
 /**
  * __useCreateSnapshotMutation__
@@ -7937,7 +8667,6 @@ export function useCreateSnapshotMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type CreateSnapshotMutationHookResult = ReturnType<typeof useCreateSnapshotMutation>;
 export type CreateSnapshotMutationResult = ApolloReactCommon.MutationResult<CreateSnapshotMutation>;
-export type CreateSnapshotMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateSnapshotMutation, CreateSnapshotMutationVariables>;
 export const RestoreSnapshotDocument = gql`
     mutation restoreSnapshot($input: RestoreSnapshotInput!) {
   restoreSnapshot(input: $input) {
@@ -7946,7 +8675,6 @@ export const RestoreSnapshotDocument = gql`
   }
 }
     `;
-export type RestoreSnapshotMutationFn = ApolloReactCommon.MutationFunction<RestoreSnapshotMutation, RestoreSnapshotMutationVariables>;
 
 /**
  * __useRestoreSnapshotMutation__
@@ -7971,7 +8699,6 @@ export function useRestoreSnapshotMutation(baseOptions?: ApolloReactHooks.Mutati
       }
 export type RestoreSnapshotMutationHookResult = ReturnType<typeof useRestoreSnapshotMutation>;
 export type RestoreSnapshotMutationResult = ApolloReactCommon.MutationResult<RestoreSnapshotMutation>;
-export type RestoreSnapshotMutationOptions = ApolloReactCommon.BaseMutationOptions<RestoreSnapshotMutation, RestoreSnapshotMutationVariables>;
 export const DeleteSnapshotDocument = gql`
     mutation deleteSnapshot($input: DeleteSnapshotInput!) {
   deleteSnapshot(input: $input) {
@@ -7980,7 +8707,6 @@ export const DeleteSnapshotDocument = gql`
   }
 }
     `;
-export type DeleteSnapshotMutationFn = ApolloReactCommon.MutationFunction<DeleteSnapshotMutation, DeleteSnapshotMutationVariables>;
 
 /**
  * __useDeleteSnapshotMutation__
@@ -8005,7 +8731,6 @@ export function useDeleteSnapshotMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type DeleteSnapshotMutationHookResult = ReturnType<typeof useDeleteSnapshotMutation>;
 export type DeleteSnapshotMutationResult = ApolloReactCommon.MutationResult<DeleteSnapshotMutation>;
-export type DeleteSnapshotMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteSnapshotMutation, DeleteSnapshotMutationVariables>;
 export const CurrentUserDocument = gql`
     query currentUser {
   currentUser {
@@ -8295,6 +9020,7 @@ export const MachineDocument = gql`
     configuration
     status
     setupComplete
+    nodeId
     userId
     templateId
     createdAt
@@ -8377,6 +9103,7 @@ export const MachinesDocument = gql`
     configuration
     status
     setupComplete
+    nodeId
     userId
     templateId
     createdAt
@@ -10250,6 +10977,344 @@ export type CaptureDepartmentDhcpTrafficQueryResult = ApolloReactCommon.QueryRes
 export function refetchCaptureDepartmentDhcpTrafficQuery(variables: CaptureDepartmentDhcpTrafficQueryVariables) {
       return { query: CaptureDepartmentDhcpTrafficDocument, variables: variables }
     }
+export const IdentityProvidersDocument = gql`
+    query IdentityProviders {
+  identityProviders {
+    id
+    name
+    providerType
+    status
+    enabled
+    domain
+    host
+    port
+    useTls
+    baseDn
+    bindDn
+    hasBindPassword
+    userFilter
+    groupFilter
+    attributes
+    lastTestAt
+    lastSyncAt
+    lastError
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useIdentityProvidersQuery__
+ *
+ * To run a query within a React component, call `useIdentityProvidersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useIdentityProvidersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useIdentityProvidersQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useIdentityProvidersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<IdentityProvidersQuery, IdentityProvidersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<IdentityProvidersQuery, IdentityProvidersQueryVariables>(IdentityProvidersDocument, options);
+      }
+export function useIdentityProvidersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<IdentityProvidersQuery, IdentityProvidersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<IdentityProvidersQuery, IdentityProvidersQueryVariables>(IdentityProvidersDocument, options);
+        }
+// @ts-ignore
+export function useIdentityProvidersSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<IdentityProvidersQuery, IdentityProvidersQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<IdentityProvidersQuery, IdentityProvidersQueryVariables>;
+export function useIdentityProvidersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<IdentityProvidersQuery, IdentityProvidersQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<IdentityProvidersQuery | undefined, IdentityProvidersQueryVariables>;
+export function useIdentityProvidersSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<IdentityProvidersQuery, IdentityProvidersQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<IdentityProvidersQuery, IdentityProvidersQueryVariables>(IdentityProvidersDocument, options);
+        }
+export type IdentityProvidersQueryHookResult = ReturnType<typeof useIdentityProvidersQuery>;
+export type IdentityProvidersLazyQueryHookResult = ReturnType<typeof useIdentityProvidersLazyQuery>;
+export type IdentityProvidersSuspenseQueryHookResult = ReturnType<typeof useIdentityProvidersSuspenseQuery>;
+export type IdentityProvidersQueryResult = ApolloReactCommon.QueryResult<IdentityProvidersQuery, IdentityProvidersQueryVariables>;
+export function refetchIdentityProvidersQuery(variables?: IdentityProvidersQueryVariables) {
+      return { query: IdentityProvidersDocument, variables: variables }
+    }
+export const IdentityProviderDocument = gql`
+    query IdentityProvider($id: ID!) {
+  identityProvider(id: $id) {
+    id
+    name
+    providerType
+    status
+    enabled
+    domain
+    host
+    port
+    useTls
+    baseDn
+    bindDn
+    hasBindPassword
+    userFilter
+    groupFilter
+    attributes
+    lastTestAt
+    lastSyncAt
+    lastError
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useIdentityProviderQuery__
+ *
+ * To run a query within a React component, call `useIdentityProviderQuery` and pass it any options that fit your needs.
+ * When your component renders, `useIdentityProviderQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useIdentityProviderQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useIdentityProviderQuery(baseOptions: ApolloReactHooks.QueryHookOptions<IdentityProviderQuery, IdentityProviderQueryVariables> & ({ variables: IdentityProviderQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<IdentityProviderQuery, IdentityProviderQueryVariables>(IdentityProviderDocument, options);
+      }
+export function useIdentityProviderLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<IdentityProviderQuery, IdentityProviderQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<IdentityProviderQuery, IdentityProviderQueryVariables>(IdentityProviderDocument, options);
+        }
+// @ts-ignore
+export function useIdentityProviderSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<IdentityProviderQuery, IdentityProviderQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<IdentityProviderQuery, IdentityProviderQueryVariables>;
+export function useIdentityProviderSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<IdentityProviderQuery, IdentityProviderQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<IdentityProviderQuery | undefined, IdentityProviderQueryVariables>;
+export function useIdentityProviderSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<IdentityProviderQuery, IdentityProviderQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<IdentityProviderQuery, IdentityProviderQueryVariables>(IdentityProviderDocument, options);
+        }
+export type IdentityProviderQueryHookResult = ReturnType<typeof useIdentityProviderQuery>;
+export type IdentityProviderLazyQueryHookResult = ReturnType<typeof useIdentityProviderLazyQuery>;
+export type IdentityProviderSuspenseQueryHookResult = ReturnType<typeof useIdentityProviderSuspenseQuery>;
+export type IdentityProviderQueryResult = ApolloReactCommon.QueryResult<IdentityProviderQuery, IdentityProviderQueryVariables>;
+export function refetchIdentityProviderQuery(variables: IdentityProviderQueryVariables) {
+      return { query: IdentityProviderDocument, variables: variables }
+    }
+export const IdentitySyncRunsDocument = gql`
+    query IdentitySyncRuns($providerId: ID!) {
+  identitySyncRuns(providerId: $providerId) {
+    id
+    providerId
+    status
+    startedAt
+    finishedAt
+    usersCreated
+    usersUpdated
+    usersDisabled
+    groupsSeen
+    message
+    error
+  }
+}
+    `;
+
+/**
+ * __useIdentitySyncRunsQuery__
+ *
+ * To run a query within a React component, call `useIdentitySyncRunsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useIdentitySyncRunsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useIdentitySyncRunsQuery({
+ *   variables: {
+ *      providerId: // value for 'providerId'
+ *   },
+ * });
+ */
+export function useIdentitySyncRunsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<IdentitySyncRunsQuery, IdentitySyncRunsQueryVariables> & ({ variables: IdentitySyncRunsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<IdentitySyncRunsQuery, IdentitySyncRunsQueryVariables>(IdentitySyncRunsDocument, options);
+      }
+export function useIdentitySyncRunsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<IdentitySyncRunsQuery, IdentitySyncRunsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<IdentitySyncRunsQuery, IdentitySyncRunsQueryVariables>(IdentitySyncRunsDocument, options);
+        }
+// @ts-ignore
+export function useIdentitySyncRunsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<IdentitySyncRunsQuery, IdentitySyncRunsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<IdentitySyncRunsQuery, IdentitySyncRunsQueryVariables>;
+export function useIdentitySyncRunsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<IdentitySyncRunsQuery, IdentitySyncRunsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<IdentitySyncRunsQuery | undefined, IdentitySyncRunsQueryVariables>;
+export function useIdentitySyncRunsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<IdentitySyncRunsQuery, IdentitySyncRunsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<IdentitySyncRunsQuery, IdentitySyncRunsQueryVariables>(IdentitySyncRunsDocument, options);
+        }
+export type IdentitySyncRunsQueryHookResult = ReturnType<typeof useIdentitySyncRunsQuery>;
+export type IdentitySyncRunsLazyQueryHookResult = ReturnType<typeof useIdentitySyncRunsLazyQuery>;
+export type IdentitySyncRunsSuspenseQueryHookResult = ReturnType<typeof useIdentitySyncRunsSuspenseQuery>;
+export type IdentitySyncRunsQueryResult = ApolloReactCommon.QueryResult<IdentitySyncRunsQuery, IdentitySyncRunsQueryVariables>;
+export function refetchIdentitySyncRunsQuery(variables: IdentitySyncRunsQueryVariables) {
+      return { query: IdentitySyncRunsDocument, variables: variables }
+    }
+export const IdentityGroupRoleMappingsDocument = gql`
+    query IdentityGroupRoleMappings($providerId: ID!) {
+  identityGroupRoleMappings(providerId: $providerId) {
+    id
+    providerId
+    groupDn
+    groupName
+    role
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useIdentityGroupRoleMappingsQuery__
+ *
+ * To run a query within a React component, call `useIdentityGroupRoleMappingsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useIdentityGroupRoleMappingsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useIdentityGroupRoleMappingsQuery({
+ *   variables: {
+ *      providerId: // value for 'providerId'
+ *   },
+ * });
+ */
+export function useIdentityGroupRoleMappingsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<IdentityGroupRoleMappingsQuery, IdentityGroupRoleMappingsQueryVariables> & ({ variables: IdentityGroupRoleMappingsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<IdentityGroupRoleMappingsQuery, IdentityGroupRoleMappingsQueryVariables>(IdentityGroupRoleMappingsDocument, options);
+      }
+export function useIdentityGroupRoleMappingsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<IdentityGroupRoleMappingsQuery, IdentityGroupRoleMappingsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<IdentityGroupRoleMappingsQuery, IdentityGroupRoleMappingsQueryVariables>(IdentityGroupRoleMappingsDocument, options);
+        }
+// @ts-ignore
+export function useIdentityGroupRoleMappingsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<IdentityGroupRoleMappingsQuery, IdentityGroupRoleMappingsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<IdentityGroupRoleMappingsQuery, IdentityGroupRoleMappingsQueryVariables>;
+export function useIdentityGroupRoleMappingsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<IdentityGroupRoleMappingsQuery, IdentityGroupRoleMappingsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<IdentityGroupRoleMappingsQuery | undefined, IdentityGroupRoleMappingsQueryVariables>;
+export function useIdentityGroupRoleMappingsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<IdentityGroupRoleMappingsQuery, IdentityGroupRoleMappingsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<IdentityGroupRoleMappingsQuery, IdentityGroupRoleMappingsQueryVariables>(IdentityGroupRoleMappingsDocument, options);
+        }
+export type IdentityGroupRoleMappingsQueryHookResult = ReturnType<typeof useIdentityGroupRoleMappingsQuery>;
+export type IdentityGroupRoleMappingsLazyQueryHookResult = ReturnType<typeof useIdentityGroupRoleMappingsLazyQuery>;
+export type IdentityGroupRoleMappingsSuspenseQueryHookResult = ReturnType<typeof useIdentityGroupRoleMappingsSuspenseQuery>;
+export type IdentityGroupRoleMappingsQueryResult = ApolloReactCommon.QueryResult<IdentityGroupRoleMappingsQuery, IdentityGroupRoleMappingsQueryVariables>;
+export function refetchIdentityGroupRoleMappingsQuery(variables: IdentityGroupRoleMappingsQueryVariables) {
+      return { query: IdentityGroupRoleMappingsDocument, variables: variables }
+    }
+export const RolePermissionMatrixDocument = gql`
+    query RolePermissionMatrix {
+  rolePermissionMatrix {
+    principals {
+      id
+      label
+      kind
+      avatar
+    }
+    resources {
+      id
+      label
+      group
+    }
+    permissions
+  }
+}
+    `;
+
+/**
+ * __useRolePermissionMatrixQuery__
+ *
+ * To run a query within a React component, call `useRolePermissionMatrixQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRolePermissionMatrixQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRolePermissionMatrixQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useRolePermissionMatrixQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>(RolePermissionMatrixDocument, options);
+      }
+export function useRolePermissionMatrixLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>(RolePermissionMatrixDocument, options);
+        }
+// @ts-ignore
+export function useRolePermissionMatrixSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>;
+export function useRolePermissionMatrixSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<RolePermissionMatrixQuery | undefined, RolePermissionMatrixQueryVariables>;
+export function useRolePermissionMatrixSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>(RolePermissionMatrixDocument, options);
+        }
+export type RolePermissionMatrixQueryHookResult = ReturnType<typeof useRolePermissionMatrixQuery>;
+export type RolePermissionMatrixLazyQueryHookResult = ReturnType<typeof useRolePermissionMatrixLazyQuery>;
+export type RolePermissionMatrixSuspenseQueryHookResult = ReturnType<typeof useRolePermissionMatrixSuspenseQuery>;
+export type RolePermissionMatrixQueryResult = ApolloReactCommon.QueryResult<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>;
+export function refetchRolePermissionMatrixQuery(variables?: RolePermissionMatrixQueryVariables) {
+      return { query: RolePermissionMatrixDocument, variables: variables }
+    }
+export const MyPermissionsDocument = gql`
+    query MyPermissions {
+  myPermissions {
+    allowedResources
+  }
+}
+    `;
+
+/**
+ * __useMyPermissionsQuery__
+ *
+ * To run a query within a React component, call `useMyPermissionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyPermissionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyPermissionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useMyPermissionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MyPermissionsQuery, MyPermissionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MyPermissionsQuery, MyPermissionsQueryVariables>(MyPermissionsDocument, options);
+      }
+export function useMyPermissionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MyPermissionsQuery, MyPermissionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MyPermissionsQuery, MyPermissionsQueryVariables>(MyPermissionsDocument, options);
+        }
+// @ts-ignore
+export function useMyPermissionsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<MyPermissionsQuery, MyPermissionsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MyPermissionsQuery, MyPermissionsQueryVariables>;
+export function useMyPermissionsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MyPermissionsQuery, MyPermissionsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<MyPermissionsQuery | undefined, MyPermissionsQueryVariables>;
+export function useMyPermissionsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<MyPermissionsQuery, MyPermissionsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<MyPermissionsQuery, MyPermissionsQueryVariables>(MyPermissionsDocument, options);
+        }
+export type MyPermissionsQueryHookResult = ReturnType<typeof useMyPermissionsQuery>;
+export type MyPermissionsLazyQueryHookResult = ReturnType<typeof useMyPermissionsLazyQuery>;
+export type MyPermissionsSuspenseQueryHookResult = ReturnType<typeof useMyPermissionsSuspenseQuery>;
+export type MyPermissionsQueryResult = ApolloReactCommon.QueryResult<MyPermissionsQuery, MyPermissionsQueryVariables>;
+export function refetchMyPermissionsQuery(variables?: MyPermissionsQueryVariables) {
+      return { query: MyPermissionsDocument, variables: variables }
+    }
 export const BackupsDocument = gql`
     query backups($vmId: String!) {
   backups(vmId: $vmId) {
@@ -10564,6 +11629,79 @@ export type PackageStatusesQueryResult = ApolloReactCommon.QueryResult<PackageSt
 export function refetchPackageStatusesQuery(variables?: PackageStatusesQueryVariables) {
       return { query: PackageStatusesDocument, variables: variables }
     }
+export const GetNodeInventoryDocument = gql`
+    query GetNodeInventory {
+  nodeInventorySummary {
+    totalNodes
+    onlineNodes
+    staleNodes
+    totalCores
+    totalRam
+    totalDisks
+  }
+  nodes {
+    id
+    name
+    currentRaid
+    nextRaid
+    maintenanceMode
+    health
+    cores
+    ram
+    availableCores
+    availableRamGB
+    machineCount
+    runningMachineCount
+    diskCount
+    healthyDiskCount
+    updatedAt
+    disks {
+      id
+      path
+      status
+      updatedAt
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetNodeInventoryQuery__
+ *
+ * To run a query within a React component, call `useGetNodeInventoryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetNodeInventoryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetNodeInventoryQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetNodeInventoryQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetNodeInventoryQuery, GetNodeInventoryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetNodeInventoryQuery, GetNodeInventoryQueryVariables>(GetNodeInventoryDocument, options);
+      }
+export function useGetNodeInventoryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetNodeInventoryQuery, GetNodeInventoryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetNodeInventoryQuery, GetNodeInventoryQueryVariables>(GetNodeInventoryDocument, options);
+        }
+// @ts-ignore
+export function useGetNodeInventorySuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetNodeInventoryQuery, GetNodeInventoryQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetNodeInventoryQuery, GetNodeInventoryQueryVariables>;
+export function useGetNodeInventorySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetNodeInventoryQuery, GetNodeInventoryQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetNodeInventoryQuery | undefined, GetNodeInventoryQueryVariables>;
+export function useGetNodeInventorySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetNodeInventoryQuery, GetNodeInventoryQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetNodeInventoryQuery, GetNodeInventoryQueryVariables>(GetNodeInventoryDocument, options);
+        }
+export type GetNodeInventoryQueryHookResult = ReturnType<typeof useGetNodeInventoryQuery>;
+export type GetNodeInventoryLazyQueryHookResult = ReturnType<typeof useGetNodeInventoryLazyQuery>;
+export type GetNodeInventorySuspenseQueryHookResult = ReturnType<typeof useGetNodeInventorySuspenseQuery>;
+export type GetNodeInventoryQueryResult = ApolloReactCommon.QueryResult<GetNodeInventoryQuery, GetNodeInventoryQueryVariables>;
+export function refetchGetNodeInventoryQuery(variables?: GetNodeInventoryQueryVariables) {
+      return { query: GetNodeInventoryDocument, variables: variables }
+    }
 export const VmDetailedInfoDocument = gql`
     query vmDetailedInfo($id: String!) {
   machine(id: $id) {
@@ -10571,6 +11709,7 @@ export const VmDetailedInfoDocument = gql`
     name
     status
     setupComplete
+    nodeId
     userId
     templateId
     createdAt

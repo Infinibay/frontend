@@ -523,4 +523,6 @@ class ProblemTransformationService {
   }
 }
 
-export default new ProblemTransformationService();
+const problemTransformationService = new ProblemTransformationService();
+
+export default problemTransformationService;

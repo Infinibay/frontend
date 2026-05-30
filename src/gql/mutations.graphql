@@ -22,6 +22,26 @@ mutation updateUser($input: UpdateUserInputType!, $id: String!) {
   }
 }
 
+mutation SetNodeMaintenanceMode($id: ID!, $enabled: Boolean!) {
+  setNodeMaintenanceMode(id: $id, enabled: $enabled) {
+    id
+    name
+    maintenanceMode
+    health
+    updatedAt
+  }
+}
+
+mutation MigrateMachineToNode($id: String!, $targetNodeId: String!) {
+  migrateMachineToNode(id: $id, targetNodeId: $targetNodeId) {
+    success
+    machineId
+    sourceNodeId
+    targetNodeId
+    error
+  }
+}
+
 mutation createMachineTemplate($input: MachineTemplateInputType!) {
   createMachineTemplate(input: $input) {
     id
@@ -926,5 +946,135 @@ mutation CancelScheduledScript($executionId: ID!) {
     success
     message
     error
+  }
+}
+
+mutation CreateIdentityProvider($input: CreateIdentityProviderInput!) {
+  createIdentityProvider(input: $input) {
+    id
+    name
+    providerType
+    status
+    enabled
+    domain
+    host
+    port
+    useTls
+    baseDn
+    bindDn
+    hasBindPassword
+    userFilter
+    groupFilter
+    attributes
+    lastTestAt
+    lastSyncAt
+    lastError
+    createdAt
+    updatedAt
+  }
+}
+
+mutation UpdateIdentityProvider($id: ID!, $input: UpdateIdentityProviderInput!) {
+  updateIdentityProvider(id: $id, input: $input) {
+    id
+    name
+    providerType
+    status
+    enabled
+    domain
+    host
+    port
+    useTls
+    baseDn
+    bindDn
+    hasBindPassword
+    userFilter
+    groupFilter
+    attributes
+    lastTestAt
+    lastSyncAt
+    lastError
+    createdAt
+    updatedAt
+  }
+}
+
+mutation DeleteIdentityProvider($id: ID!) {
+  deleteIdentityProvider(id: $id)
+}
+
+mutation TestIdentityProvider($id: ID!) {
+  testIdentityProvider(id: $id) {
+    success
+    message
+    latencyMs
+    provider {
+      id
+      name
+      providerType
+      status
+      enabled
+      lastTestAt
+      lastError
+    }
+  }
+}
+
+mutation TestIdentityProviderConfig($input: CreateIdentityProviderInput!) {
+  testIdentityProviderConfig(input: $input) {
+    success
+    message
+    latencyMs
+  }
+}
+
+mutation SyncIdentityProvider($id: ID!) {
+  syncIdentityProvider(id: $id) {
+    success
+    message
+    syncRunId
+    usersCreated
+    usersUpdated
+    usersDisabled
+    groupsSeen
+    provider {
+      id
+      status
+      lastSyncAt
+      lastError
+    }
+  }
+}
+
+mutation UpsertIdentityGroupRoleMapping($input: UpsertIdentityGroupRoleMappingInput!) {
+  upsertIdentityGroupRoleMapping(input: $input) {
+    id
+    providerId
+    groupDn
+    groupName
+    role
+    createdAt
+    updatedAt
+  }
+}
+
+mutation DeleteIdentityGroupRoleMapping($id: ID!) {
+  deleteIdentityGroupRoleMapping(id: $id)
+}
+
+mutation SetRolePermission($input: SetRolePermissionInput!) {
+  setRolePermission(input: $input) {
+    principals {
+      id
+      label
+      kind
+      avatar
+    }
+    resources {
+      id
+      label
+      group
+    }
+    permissions
   }
 }

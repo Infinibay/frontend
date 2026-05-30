@@ -43,7 +43,7 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
 
   if (status === 'running') {
     return (
-      <ButtonGroup onClick={stop}>
+      <ButtonGroup>
         <IconButton
           size="sm"
           variant="ghost"
@@ -93,6 +93,7 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
  *   pendingActions     — { [vmId]: true } dict from Redux
  *   view               — 'table' | 'grid'
  *   showDepartment     — whether to include the Department column (cross-dept lists)
+ *   nodeNameById       — optional { [nodeId]: nodeName } map for placement display
  *   onOpen             — (vm) => void, row click
  *   onPlay/onPause/onStop/onDelete — action callbacks
  */
@@ -101,6 +102,7 @@ export function DesktopListView({
   pendingActions,
   view = 'table',
   showDepartment = true,
+  nodeNameById = {},
   onOpen,
   onPlay,
   onPause,
@@ -143,6 +145,20 @@ export function DesktopListView({
     }
 
     cols.push(
+      {
+        id: 'node',
+        header: 'Node',
+        width: 160,
+        cell: ({ row }) => {
+          const nodeId = row._raw?.nodeId;
+          const nodeName = nodeId ? nodeNameById[nodeId] || nodeId : null;
+          return nodeName ?
+          <span className="text-sm truncate">{nodeName}</span> :
+
+          <span className="text-fg-subtle">—</span>;
+
+        }
+      },
       {
         id: 'os',
         header: 'OS',
@@ -266,7 +282,7 @@ export function DesktopListView({
     );
 
     return cols;
-  }, [pendingActions, showDepartment, onPlay, onPause, onStop, onOpen, onDelete]);
+  }, [pendingActions, showDepartment, nodeNameById, onPlay, onPause, onStop, onOpen, onDelete]);
 
   const inner = view === 'grid' ?
   <ClusterView

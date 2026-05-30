@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Montserrat } from 'next/font/google';
 import { ApolloProvider } from '@apollo/client/react';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -27,6 +26,8 @@ import {
 import { RealTimeProvider } from '@/components/RealTimeProvider';
 import { SocketNamespaceGuard } from '@/components/SocketNamespaceGuard';
 import { isEndUser } from '@/lib/roles';
+import { useMyPermissionsQuery } from '@/gql/hooks';
+import { firstAllowedRoute, isPathAllowed } from '@/lib/permissions';
 import { createThemeScript } from '@/utils/theme';
 import { ThemeProvider, useAppTheme } from '@/contexts/ThemeProvider';
 import { HarborThemeBridge } from '@/components/layout/HarborThemeBridge';
@@ -42,31 +43,17 @@ import '@/utils/debugPanelStatus';
 
 const debug = createDebugger('frontend:layout:root');
 
-const monst = Montserrat({
-  subsets: ['latin'],
-  display: 'swap',
-});
-
-/**
- * Paths that an end-user (role USER) is allowed to reach directly. Everything
- * else gets kicked back to /workspace. Operator routes aren't meant to be
- * visible to end users, so the guard is both a security signal and UX.
- */
-const END_USER_ALLOWED_PREFIXES = ['/workspace', '/profile', '/auth/'];
-
-function isAllowedForEndUser(pathname) {
-  if (!pathname || pathname === '/') return true; // home redirects by role
-  return END_USER_ALLOWED_PREFIXES.some(
-    (p) => pathname === p.replace(/\/$/, '') || pathname.startsWith(p),
-  );
-}
-
 function AppContent({ children, isAuthenticated }) {
   const pathname = usePathname();
   const router = useRouter();
   const user = useSelector((state) => state.auth.user);
   const interfaceSize = useSelector(selectInterfaceSize);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
+  const { data: permissionsData, loading: permissionsLoading } = useMyPermissionsQuery({
+    skip: !isAuthenticated || pathname?.startsWith('/auth/'),
+    fetchPolicy: 'cache-and-network',
+  });
+  const allowedResources = permissionsData?.myPermissions?.allowedResources;
   // React Compiler auto-memoises pure derivations, so just let it see the
   // shape; AppSidebar is React.memo'd and will skip re-render when the
   // user identity is stable.
@@ -89,14 +76,18 @@ function AppContent({ children, isAuthenticated }) {
     });
   }, [isAuthenticated, pathname, user, interfaceSize, appSettingsInitialized]);
 
-  // End-user route guard: bounce USERs off operator surfaces.
+  // Permission route guard: backend still enforces access, this keeps direct
+  // URL entry aligned with the operator navigation.
   React.useEffect(() => {
     if (!isAuthenticated) return;
-    if (!isEndUser(user)) return;
-    if (isAllowedForEndUser(pathname)) return;
-    debug.warn('routing', 'Redirecting end-user away from operator route', { pathname });
-    router.replace('/workspace');
-  }, [isAuthenticated, user, pathname, router]);
+    if (pathname?.startsWith('/auth/')) return;
+    if (!allowedResources) return;
+    if (isPathAllowed(pathname, allowedResources)) return;
+
+    const fallback = firstAllowedRoute(allowedResources, isEndUser(user) ? '/workspace' : '/overview');
+    debug.warn('routing', 'Redirecting user away from denied route', { pathname, fallback });
+    router.replace(fallback);
+  }, [allowedResources, isAuthenticated, pathname, router, user]);
 
   const handleLogout = React.useCallback(() => {
     debug.info('auth', 'Logout initiated');
@@ -110,6 +101,15 @@ function AppContent({ children, isAuthenticated }) {
         <BrandingApplier />
         <NavigationProgress />
         <RouteFade>{children}</RouteFade>
+      </>
+    );
+  }
+
+  if (permissionsLoading && !allowedResources) {
+    return (
+      <>
+        <BrandingApplier />
+        <NavigationProgress />
       </>
     );
   }
@@ -169,8 +169,15 @@ export default function RootLayout({ children }) {
   }, [isAuthenticated]);
 
   return (
-    <html lang="en" style={monst.style} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Harbor's design system is built on Inter (tokens.css sets
+            --harbor-font-sans: "Inter"). Load it so the type scale, weights
+            and metrics match Harbor instead of falling back to a system font
+            (which made the whole app look off). rsms.me serves InterVariable;
+            swap for a self-hosted copy if this app must run offline. */}
+        <link rel="preconnect" href="https://rsms.me" />
+        <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
         <script dangerouslySetInnerHTML={{ __html: createThemeScript() }} />
       </head>
       <body>

@@ -6,6 +6,10 @@ import {
   Card,
   DataTable,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   EmptyState,
   LoadingOverlay,
   NumberField,
@@ -847,7 +851,7 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
         icon={<HardDrive size={18} />}
         title="No backups yet"
         description="Create your first backup to protect this desktop against data loss."
-        action={
+        actions={
         backupBlockedReason ?
         <Tooltip content={backupBlockedReason}>
                 <span>
@@ -968,105 +972,104 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
       <Dialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        size="md"
-        title="Create backup"
-        description="A new backup will be created from the desktop's current disks."
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button variant="secondary" onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button
+        size="md">
+        <DialogTitle>Create backup</DialogTitle>
+        <DialogDescription>
+          A new backup will be created from the desktop's current disks.
+        </DialogDescription>
+        <DialogBody>
+          <ResponsiveStack direction="col" gap={3}>
+            <BackupPresetPicker
+              presets={MANUAL_PRESETS}
+              value={createForm.presetId}
+              onChange={(id) => setCreateForm((f) => ({ ...f, presetId: id }))} />
+
+            <Textarea
+              label="Description (optional)"
+              value={createForm.description}
+              onChange={(e) =>
+              setCreateForm((f) => ({ ...f, description: e.target.value }))
+              }
+              placeholder="e.g. before upgrading Postgres to 17"
+              maxChars={200} />
+
+          </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={() => setCreateOpen(false)}>
+            Cancel
+          </Button>
+          <Button
             variant="primary"
             icon={<Play size={14} />}
             onClick={onCreateBackup}
             loading={createBackupState.loading}>
-            
-              Start backup
-            </Button>
-          </ResponsiveStack>
-        }>
-        
-        <ResponsiveStack direction="col" gap={3}>
-          <BackupPresetPicker
-            presets={MANUAL_PRESETS}
-            value={createForm.presetId}
-            onChange={(id) => setCreateForm((f) => ({ ...f, presetId: id }))} />
-          
-          <Textarea
-            label="Description (optional)"
-            value={createForm.description}
-            onChange={(e) =>
-            setCreateForm((f) => ({ ...f, description: e.target.value }))
-            }
-            placeholder="e.g. before upgrading Postgres to 17"
-            maxChars={200} />
-          
-        </ResponsiveStack>
+
+            Start backup
+          </Button>
+        </DialogButtons>
       </Dialog>
 
       {/* Restore confirm */}
       <Dialog
         open={!!restoreTarget}
         onClose={() => setRestoreTarget(null)}
-        size="md"
-        title="Restore from backup"
-        description={
-        restoreTarget ?
-        `Restore this VM to the state of backup ${restoreTarget.backupId}? Current disks will be overwritten.` :
-        ''
-        }
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button variant="secondary" onClick={() => setRestoreTarget(null)}>
-              Cancel
-            </Button>
-            <Button
+        size="md">
+        <DialogTitle>Restore from backup</DialogTitle>
+        <DialogDescription>
+          {restoreTarget ?
+          `Restore this VM to the state of backup ${restoreTarget.backupId}? Current disks will be overwritten.` :
+          ''}
+        </DialogDescription>
+        <DialogBody>
+          {restoreTarget ?
+          <Alert tone="warning" icon={<Shield size={14} />} title="Irreversible action">
+              The VM should be stopped before restoring. Any changes made after the
+              backup ({formatDate(restoreTarget.createdAt)}) will be lost.
+            </Alert> :
+          null}
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={() => setRestoreTarget(null)}>
+            Cancel
+          </Button>
+          <Button
             variant="destructive"
             icon={<RotateCcw size={14} />}
             onClick={onConfirmRestore}
             loading={restoreBackupState.loading}>
-            
-              Restore now
-            </Button>
-          </ResponsiveStack>
-        }>
-        
-        {restoreTarget ?
-        <Alert tone="warning" icon={<Shield size={14} />} title="Irreversible action">
-            The VM should be stopped before restoring. Any changes made after the
-            backup ({formatDate(restoreTarget.createdAt)}) will be lost.
-          </Alert> :
-        null}
+
+            Restore now
+          </Button>
+        </DialogButtons>
       </Dialog>
 
       {/* Delete backup confirm */}
       <Dialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        size="sm"
-        title="Delete backup"
-        description={
-        deleteTarget ?
-        `Delete backup from ${formatDate(deleteTarget.createdAt)}? The files on disk will be removed.` :
-        ''
-        }
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button
+        size="sm">
+        <DialogTitle>Delete backup</DialogTitle>
+        <DialogDescription>
+          {deleteTarget ?
+          `Delete backup from ${formatDate(deleteTarget.createdAt)}? The files on disk will be removed.` :
+          ''}
+        </DialogDescription>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button
             variant="destructive"
             icon={<Trash2 size={14} />}
             onClick={onConfirmDelete}
             loading={deleteBackupState.loading}>
-            
-              Delete
-            </Button>
-          </ResponsiveStack>
-        } />
-      
+
+            Delete
+          </Button>
+        </DialogButtons>
+      </Dialog>
+
 
       {/* Schedule create/edit */}
       <Dialog
@@ -1074,37 +1077,14 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
         onClose={() =>
         setScheduleDialog({ open: false, mode: 'create', form: emptyScheduleForm })
         }
-        size="md"
-        title={
-        scheduleDialog.mode === 'create' ? 'New backup schedule' : 'Edit schedule'
-        }
-        description="Backups will run automatically on the given cron expression."
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
-            variant="secondary"
-            onClick={() =>
-            setScheduleDialog({
-              open: false,
-              mode: 'create',
-              form: emptyScheduleForm
-            })
-            }>
-            
-              Cancel
-            </Button>
-            <Button
-            variant="primary"
-            onClick={onSaveSchedule}
-            loading={
-            createScheduleState.loading || updateScheduleState.loading
-            }>
-            
-              {scheduleDialog.mode === 'create' ? 'Create' : 'Save'}
-            </Button>
-          </ResponsiveStack>
-        }>
-        
+        size="md">
+        <DialogTitle>
+          {scheduleDialog.mode === 'create' ? 'New backup schedule' : 'Edit schedule'}
+        </DialogTitle>
+        <DialogDescription>
+          Backups will run automatically on the given cron expression.
+        </DialogDescription>
+        <DialogBody>
         <ResponsiveStack direction="col" gap={3}>
           <TextField
             label="Label (optional)"
@@ -1161,40 +1141,63 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
               form: { ...d.form, enabled: e.target.checked }
             }))
             } />
-          
+
         </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={() =>
+            setScheduleDialog({
+              open: false,
+              mode: 'create',
+              form: emptyScheduleForm
+            })
+            }>
+
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={onSaveSchedule}
+            loading={
+            createScheduleState.loading || updateScheduleState.loading
+            }>
+
+            {scheduleDialog.mode === 'create' ? 'Create' : 'Save'}
+          </Button>
+        </DialogButtons>
       </Dialog>
 
       {/* Delete schedule confirm */}
       <Dialog
         open={!!deleteScheduleTarget}
         onClose={() => setDeleteScheduleTarget(null)}
-        size="sm"
-        title="Delete schedule"
-        description={
-        deleteScheduleTarget ?
-        `Delete schedule "${deleteScheduleTarget.label || deleteScheduleTarget.cronExpression}"? Existing backups are kept.` :
-        ''
-        }
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
+        size="sm">
+        <DialogTitle>Delete schedule</DialogTitle>
+        <DialogDescription>
+          {deleteScheduleTarget ?
+          `Delete schedule "${deleteScheduleTarget.label || deleteScheduleTarget.cronExpression}"? Existing backups are kept.` :
+          ''}
+        </DialogDescription>
+        <DialogButtons align="end">
+          <Button
             variant="secondary"
             onClick={() => setDeleteScheduleTarget(null)}>
-            
-              Cancel
-            </Button>
-            <Button
+
+            Cancel
+          </Button>
+          <Button
             variant="destructive"
             icon={<Trash2 size={14} />}
             onClick={onConfirmDeleteSchedule}
             loading={deleteScheduleState.loading}>
-            
-              Delete
-            </Button>
-          </ResponsiveStack>
-        } />
-      
+
+            Delete
+          </Button>
+        </DialogButtons>
+      </Dialog>
+
     </Page>);
 
 };

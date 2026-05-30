@@ -162,7 +162,7 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
   useEffect(() => {
     if (showExecuteDialog && scriptData?.script?.parsedInputs) {
       // Intentional: live validation while the dialog is open.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       validateInputs();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -424,7 +424,7 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
               glow={false}
               title="Standard output"
             >
-              <CodeBlock language="bash">{selectedExecution.stdout}</CodeBlock>
+              <CodeBlock lang="bash" code={selectedExecution.stdout} />
             </Card>
           ) : null}
           {selectedExecution?.stderr ? (
@@ -436,7 +436,7 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
               leadingIconTone="rose"
               title="Standard error"
             >
-              <CodeBlock language="bash">{selectedExecution.stderr}</CodeBlock>
+              <CodeBlock lang="bash" code={selectedExecution.stderr} />
             </Card>
           ) : null}
           {!selectedExecution?.stdout && !selectedExecution?.stderr ? (

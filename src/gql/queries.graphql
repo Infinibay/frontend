@@ -91,6 +91,7 @@ query machine($id: String!) {
     configuration
     status
     setupComplete
+    nodeId
     userId
     templateId
     createdAt
@@ -133,6 +134,7 @@ query machines($orderBy: MachineOrderBy, $pagination: PaginationInputType) {
     configuration
     status
     setupComplete
+    nodeId
     userId
     templateId
     createdAt
@@ -955,3 +957,103 @@ query CaptureDepartmentDhcpTraffic($departmentId: String!, $durationSeconds: Int
   }
 }
 
+query IdentityProviders {
+  identityProviders {
+    id
+    name
+    providerType
+    status
+    enabled
+    domain
+    host
+    port
+    useTls
+    baseDn
+    bindDn
+    hasBindPassword
+    userFilter
+    groupFilter
+    attributes
+    lastTestAt
+    lastSyncAt
+    lastError
+    createdAt
+    updatedAt
+  }
+}
+
+query IdentityProvider($id: ID!) {
+  identityProvider(id: $id) {
+    id
+    name
+    providerType
+    status
+    enabled
+    domain
+    host
+    port
+    useTls
+    baseDn
+    bindDn
+    hasBindPassword
+    userFilter
+    groupFilter
+    attributes
+    lastTestAt
+    lastSyncAt
+    lastError
+    createdAt
+    updatedAt
+  }
+}
+
+query IdentitySyncRuns($providerId: ID!) {
+  identitySyncRuns(providerId: $providerId) {
+    id
+    providerId
+    status
+    startedAt
+    finishedAt
+    usersCreated
+    usersUpdated
+    usersDisabled
+    groupsSeen
+    message
+    error
+  }
+}
+
+query IdentityGroupRoleMappings($providerId: ID!) {
+  identityGroupRoleMappings(providerId: $providerId) {
+    id
+    providerId
+    groupDn
+    groupName
+    role
+    createdAt
+    updatedAt
+  }
+}
+
+query RolePermissionMatrix {
+  rolePermissionMatrix {
+    principals {
+      id
+      label
+      kind
+      avatar
+    }
+    resources {
+      id
+      label
+      group
+    }
+    permissions
+  }
+}
+
+query MyPermissions {
+  myPermissions {
+    allowedResources
+  }
+}

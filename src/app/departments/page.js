@@ -8,6 +8,10 @@ import {
   Button,
   DataTable,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   EmptyState,
   IconButton,
   LoadingOverlay,
@@ -213,8 +217,7 @@ const DepartmentsPage = () => {
             placeholder="Search…"
             icon={<Search size={14} />}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="sm" />
+            onChange={(e) => setSearchQuery(e.target.value)} />
 
           } />
         
@@ -375,72 +378,74 @@ const DepartmentsPage = () => {
           setNewDepartmentName('');
           setIsCreateDeptDialogOpen(false);
         }}
-        size="sm"
-        title="New department"
-        description="Create an organizational unit to group desktops, firewall rules and scripts."
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
+        size="sm">
+
+        <DialogTitle>New department</DialogTitle>
+        <DialogDescription>
+          Create an organizational unit to group desktops, firewall rules and scripts.
+        </DialogDescription>
+        <DialogBody>
+          <ResponsiveStack direction="col" gap={3}>
+            <TextField
+              label="Name"
+              placeholder="Engineering"
+              value={newDepartmentName}
+              onChange={(e) => setNewDepartmentName(e.target.value)}
+              autoFocus />
+
+            {createError ? <Alert tone="danger" size="sm">{createError}</Alert> : null}
+          </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
             variant="secondary"
             onClick={() => {
               setNewDepartmentName('');
               setIsCreateDeptDialogOpen(false);
             }}
             disabled={isCreating}>
-            
-              Cancel
-            </Button>
-            <Button
+
+            Cancel
+          </Button>
+          <Button
             variant="primary"
             onClick={handleCreateDepartment}
             loading={isCreating}
             disabled={isCreating || !newDepartmentName.trim()}>
-            
-              Create
-            </Button>
-          </ResponsiveStack>
-        }>
-        
-        <ResponsiveStack direction="col" gap={3}>
-          <TextField
-            label="Name"
-            placeholder="Engineering"
-            value={newDepartmentName}
-            onChange={(e) => setNewDepartmentName(e.target.value)}
-            autoFocus />
-          
-          {createError ? <Alert tone="danger" size="sm">{createError}</Alert> : null}
-        </ResponsiveStack>
+
+            Create
+          </Button>
+        </DialogButtons>
       </Dialog>
 
       <Dialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        size="sm"
-        title="Delete department"
-        description={
-        deleteTarget ?
-        `Remove "${deleteTarget.name}"? Its desktops will need to be reassigned to another department.` :
-        undefined
-        }
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button
+        size="sm">
+
+        <DialogTitle>Delete department</DialogTitle>
+        {deleteTarget ? (
+          <DialogDescription>
+            {`Remove "${deleteTarget.name}"? Its desktops will need to be reassigned to another department.`}
+          </DialogDescription>
+        ) : null}
+        <DialogBody>
+          <Alert tone="danger" size="sm" icon={<AlertTriangle size={14} />}>
+            This action cannot be undone.
+          </Alert>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button
             variant="destructive"
             icon={<Trash2 size={14} />}
             onClick={submitDelete}>
-            
-              Delete
-            </Button>
-          </ResponsiveStack>
-        }>
-        
-        <Alert tone="danger" size="sm" icon={<AlertTriangle size={14} />}>
-          This action cannot be undone.
-        </Alert>
+
+            Delete
+          </Button>
+        </DialogButtons>
       </Dialog>
     </>);
 

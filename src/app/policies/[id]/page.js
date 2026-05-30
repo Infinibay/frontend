@@ -24,12 +24,19 @@ import {
 
 import { PageHeader } from '@/components/common/PageHeader';
 import { PreviewBanner } from '@/components/common/PreviewBanner';
-import {
-  POLICIES,
-  WEB_CATEGORIES,
-  CUSTOM_RULES,
-  testDomain,
-} from '@/lib/mockData/policies';
+const POLICIES = [
+  { id: 'pol-office', name: 'Office baseline', kind: 'web' },
+  { id: 'pol-restricted', name: 'Restricted browsing', kind: 'web' },
+  { id: 'pol-dev', name: 'Developer access', kind: 'network' },
+  { id: 'pol-callcenter', name: 'Call center', kind: 'web' },
+  { id: 'pol-vpn-only', name: 'VPN only', kind: 'network' },
+];
+const WEB_CATEGORIES = {};
+const CUSTOM_RULES = {};
+const testDomain = () => ({
+  verdict: 'blocked',
+  reason: 'Policy testing requires backend enforcement support.',
+});
 
 export default function PolicyDetailPage() {
   const router = useRouter();
@@ -65,6 +72,55 @@ export default function PolicyDetailPage() {
       </Page>
     );
   }
+
+  return (
+    <Page>
+      <ResponsiveStack direction="col" gap={4}>
+        <PageHeader
+          title={policy.name}
+          description="The fine-grained policy editor is not wired to the backend yet."
+          count={policy.kind === 'web' ? 'Web filter draft' : 'Network policy draft'}
+          primary={
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<ArrowLeft size={14} />}
+              onClick={() => router.push('/policies')}
+            >
+              Back
+            </Button>
+          }
+        />
+
+        <Alert
+          tone="warning"
+          icon={<ShieldCheck size={14} />}
+          title="Policy backend required"
+        >
+          This route intentionally avoids the old preview-only rules and domain test. Production policy editing needs backend models, enforcement, audit logging, and assignment workflows first.
+        </Alert>
+
+        <section className="rounded-md border border-border-subtle bg-surface-raised p-4">
+          <ResponsiveStack direction="col" gap={3}>
+            <ResponsiveStack direction="row" gap={2} align="center">
+              {policy.kind === 'web' ? (
+                <Globe size={16} className="text-fg-muted" />
+              ) : (
+                <Network size={16} className="text-fg-muted" />
+              )}
+              <span className="text-sm font-medium">Required before this can be enabled</span>
+            </ResponsiveStack>
+            <div className="grid gap-2 text-sm text-fg-muted">
+              <span>Backend policy schema and CRUD mutations</span>
+              <span>Department and desktop assignment model</span>
+              <span>Runtime enforcement path through network/firewall services</span>
+              <span>Audit trail for policy changes</span>
+            </div>
+          </ResponsiveStack>
+        </section>
+      </ResponsiveStack>
+    </Page>
+  );
 
   const onTest = () => {
     if (!testInput.trim()) {
@@ -143,9 +199,9 @@ export default function PolicyDetailPage() {
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{c.name}</span>
                         {c.allow ? (
-                          <Badge tone="success" size="sm">Allow</Badge>
+                          <Badge tone="success">Allow</Badge>
                         ) : (
-                          <Badge tone="danger" size="sm">Block</Badge>
+                          <Badge tone="danger">Block</Badge>
                         )}
                       </div>
                       <span className="text-fg-muted text-xs">{c.description}</span>
@@ -181,9 +237,9 @@ export default function PolicyDetailPage() {
                     <div key={r.id} className="flex items-center gap-3 py-2 px-2">
                       <span className="font-mono text-sm flex-1">{r.domain}</span>
                       {r.allow ? (
-                        <Badge tone="success" size="sm">Allow</Badge>
+                        <Badge tone="success">Allow</Badge>
                       ) : (
-                        <Badge tone="danger" size="sm">Block</Badge>
+                        <Badge tone="danger">Block</Badge>
                       )}
                       <IconButton
                         size="sm"

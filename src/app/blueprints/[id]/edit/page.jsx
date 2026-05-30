@@ -61,10 +61,9 @@ export default function EditBlueprintPage({ params }) {
     if (templates.length === 0) dispatch(fetchTemplates());
   }, [dispatch, templates.length]);
 
-  // Initialize form once when template loads (no cascading renders).
   useEffect(() => {
-    if (!template || form.name) return; // Already initialized or no template.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!template || ready) return;
+     
     setForm({
       name: template.name || '',
       description: template.description || '',
@@ -81,7 +80,7 @@ export default function EditBlueprintPage({ params }) {
     });
      
     setReady(true);
-  }, [template]);
+  }, [template, ready]);
 
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
 
@@ -135,11 +134,10 @@ export default function EditBlueprintPage({ params }) {
           <IconButton
             size="sm"
             variant="ghost"
-            aria-label="Back to blueprints"
+            label="Back to blueprints"
+            icon={<ArrowLeft size={14} />}
             onClick={() => router.push('/blueprints')}
-          >
-            <ArrowLeft size={14} />
-          </IconButton>
+          />
           <PageHeader
             title={template ? `Edit "${template.name}"` : 'Edit blueprint'}
             description={template ? 'Changes apply only to new desktops created from this blueprint.' : undefined}

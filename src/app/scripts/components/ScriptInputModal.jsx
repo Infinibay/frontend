@@ -74,7 +74,7 @@ export default function ScriptInputModal({
             ? 'text'
             : input.type || 'text'
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setFormData({
         name: input.name || '',
         label: input.label || '',

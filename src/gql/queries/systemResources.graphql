@@ -15,3 +15,37 @@ query GetSystemResources {
     }
   }
 }
+
+query GetNodeInventory {
+  nodeInventorySummary {
+    totalNodes
+    onlineNodes
+    staleNodes
+    totalCores
+    totalRam
+    totalDisks
+  }
+  nodes {
+    id
+    name
+    currentRaid
+    nextRaid
+    maintenanceMode
+    health
+    cores
+    ram
+    availableCores
+    availableRamGB
+    machineCount
+    runningMachineCount
+    diskCount
+    healthyDiskCount
+    updatedAt
+    disks {
+      id
+      path
+      status
+      updatedAt
+    }
+  }
+}

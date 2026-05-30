@@ -22,6 +22,9 @@ import {
   Button,
   Badge,
   Dialog,
+  DialogTitle,
+  DialogBody,
+  DialogButtons,
   Alert,
   EmptyState,
   Skeleton,
@@ -404,38 +407,38 @@ export default function PackagesSection({ embedded = false, className = "" }) {
         open={!!uninstallTarget}
         onClose={() => !uninstalling && setUninstallTarget(null)}
         size="sm"
-        title="Uninstall package?"
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setUninstallTarget(null)}
-              disabled={uninstalling}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() =>
-                uninstallPackage({ variables: { name: uninstallTarget.name } })
-              }
-              loading={uninstalling}
-              disabled={uninstalling}
-            >
-              Uninstall
-            </Button>
-          </>
-        }
       >
-        <Alert tone="danger" className="mb-3">
-          This will permanently remove{" "}
-          <strong>{uninstallTarget?.displayName}</strong> and all of its
-          checkers.
-        </Alert>
-        <p className="text-sm text-fg-muted">
-          Historical data produced by this package stays in the database, but
-          no new checks will run until it is reinstalled.
-        </p>
+        <DialogTitle>Uninstall package?</DialogTitle>
+        <DialogBody>
+          <Alert tone="danger" className="mb-3">
+            This will permanently remove{" "}
+            <strong>{uninstallTarget?.displayName}</strong> and all of its
+            checkers.
+          </Alert>
+          <p className="text-sm text-fg-muted">
+            Historical data produced by this package stays in the database, but
+            no new checks will run until it is reinstalled.
+          </p>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={() => setUninstallTarget(null)}
+            disabled={uninstalling}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() =>
+              uninstallPackage({ variables: { name: uninstallTarget.name } })
+            }
+            loading={uninstalling}
+            disabled={uninstalling}
+          >
+            Uninstall
+          </Button>
+        </DialogButtons>
       </Dialog>
     </div>
   );

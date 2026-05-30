@@ -47,6 +47,7 @@ function InlineOsIcon({ hit, size }) {
     );
   }
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`https://cdn.simpleicons.org/${hit.slug}/${hit.color}`}
       alt=""

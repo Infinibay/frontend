@@ -32,7 +32,7 @@ export function PageHeader({
       <ResponsiveStack
         direction={{ base: 'col', md: 'row' }}
         gap={3}
-        align={{ base: 'stretch', md: 'center' }}
+        align="center"
         justify="between"
       >
         <ResponsiveStack direction="col" gap={1}>

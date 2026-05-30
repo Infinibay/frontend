@@ -38,3 +38,8 @@ next-env.d.ts
 
 # local dev sqlite / tools
 .infinidev/
+
+# Local verification build (root-owned .next workaround)
+.next-verify/
+# Agent visual-capture output
+.screenshots/

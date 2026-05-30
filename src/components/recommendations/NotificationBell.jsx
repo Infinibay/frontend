@@ -78,7 +78,7 @@ export function NotificationBell() {
         size="sm"
         icon={<Bell size={16} />}
         onClick={() => setIsOpen(!isOpen)}
-        aria-label={`${count} recomendaciones pendientes`}
+        label={`${count} recomendaciones pendientes`}
         aria-expanded={isOpen}
         aria-haspopup="true"
       />

@@ -183,7 +183,7 @@ export function RecommendationCard({ recommendation, onActionComplete }) {
               size="sm"
               icon={<X size={12} />}
               onClick={handleDismiss}
-              aria-label="Descartar"
+              label="Descartar"
             />
           </ResponsiveStack>
         </div>

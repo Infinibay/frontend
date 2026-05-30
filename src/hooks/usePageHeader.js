@@ -99,9 +99,10 @@ export function usePageHeader(config, dependencies = []) {
     // Note: No resetHeader() to avoid flicker; next page's setHeader will replace state
     // Capture currentActionIds in cleanup closure to avoid stale ref warnings
     const idsToCleanup = currentActionIds
+    const registry = actionRegistry.current
     return () => {
       idsToCleanup.forEach(id => {
-        actionRegistry.current.delete(id)
+        registry.delete(id)
       })
     }
   }, dependencies) // eslint-disable-line react-hooks/exhaustive-deps

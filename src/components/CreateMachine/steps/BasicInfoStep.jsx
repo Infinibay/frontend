@@ -34,7 +34,7 @@ const debug = createDebugger('frontend:components:basic-info-step');
 export function BasicInfoStep({ id, departmentId = null }) {
   const { setValue, values } = useWizardContext();
   const { getError } = useFormError();
-  const stepValues = values[id] || {};
+  const stepValues = React.useMemo(() => values[id] || {}, [values, id]);
   const departments = useSelector(selectDepartments);
   const isLoading = useSelector(selectDepartmentsLoading);
 

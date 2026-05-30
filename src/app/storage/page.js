@@ -1,34 +1,64 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo } from 'react';
 import {
   Page,
   Badge,
+  Button,
   DataTable,
+  ResourceMeter,
   ResponsiveStack,
-  Select,
+  Skeleton,
   StatusDot } from
 '@infinibay/harbor';
+import { Database, HardDrive, RefreshCw } from 'lucide-react';
+
 import { PageHeader } from '@/components/common/PageHeader';
-import { PreviewBanner } from '@/components/common/PreviewBanner';
-import { STORAGE_MOUNTS, TYPE_META } from '@/lib/mockData/storage';
+import { useGetSystemResourcesQuery } from '@/gql/hooks';
+
+function pctUsed(total, used) {
+  if (!total || total <= 0) return 0;
+  return Math.round((used / total) * 100);
+}
+
+function formatGB(value) {
+  if (value == null || Number.isNaN(Number(value))) return '-';
+  return `${Number(value).toLocaleString()} GB`;
+}
 
 export default function StorageListPage() {
-  const router = useRouter();
-  const [familyFilter, setFamilyFilter] = useState('all');
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useGetSystemResourcesQuery({
+    fetchPolicy: 'cache-and-network',
+    pollInterval: 30_000
+  });
 
-  const filtered = useMemo(() => {
-    if (familyFilter === 'all') return STORAGE_MOUNTS;
-    return STORAGE_MOUNTS.filter((m) => TYPE_META[m.type].family === familyFilter);
-  }, [familyFilter]);
+  const disk = data?.getSystemResources?.disk;
+  const usedPct = pctUsed(disk?.total, disk?.used);
 
-  const familyOptions = [
-  { value: 'all', label: 'All types' },
-  { value: 'internal', label: 'Internal' },
-  { value: 'network', label: 'Network' },
-  { value: 'cloud', label: 'Cloud' },
-  { value: 'third-party', label: 'Third-party' }];
+  const rows = useMemo(
+    () =>
+      disk
+        ? [
+            {
+              id: 'local',
+              name: 'Local Infinibay storage',
+              type: 'Local host',
+              endpoint: 'INFINIBAY_BASE_DIR',
+              status: error ? 'degraded' : 'online',
+              used: disk.used,
+              available: disk.available,
+              total: disk.total,
+              usage: pctUsed(disk.total, disk.used)
+            }
+          ]
+        : [],
+    [disk, error]
+  );
 
 
   const columns = useMemo(
@@ -39,7 +69,7 @@ export default function StorageListPage() {
       cell: ({ row }) =>
       <ResponsiveStack direction="row" gap={2} align="center">
             <StatusDot
-          status={row.status === 'ok' ? 'online' : row.status === 'degraded' ? 'degraded' : 'offline'}
+          status={row.status}
           size={8} />
         
             <span className="font-medium">{row.name}</span>
@@ -50,17 +80,7 @@ export default function StorageListPage() {
       id: 'type',
       header: 'Type',
       width: 170,
-      cell: ({ row }) => {
-        const m = TYPE_META[row.type];
-        return (
-          <ResponsiveStack direction="row" gap={2} align="center">
-              <Badge tone="neutral">{m.label}</Badge>
-              {m.family === 'third-party' ?
-            <span className="text-fg-subtle text-xs">3rd-party</span> :
-            null}
-            </ResponsiveStack>);
-
-      }
+      cell: ({ row }) => <Badge tone="neutral">{row.type}</Badge>
     },
     {
       id: 'endpoint',
@@ -74,19 +94,18 @@ export default function StorageListPage() {
       header: 'Usage',
       width: 180,
       cell: ({ row }) => {
-        const pct = Math.round(row.usedGB / row.totalGB * 100);
         return (
           <ResponsiveStack direction="col" gap={0}>
               <span className="text-xs text-fg-muted">
-                {row.usedGB} / {row.totalGB} GB · {pct}%
+                {formatGB(row.used)} / {formatGB(row.total)} · {row.usage}%
               </span>
               <div className="h-1 rounded-full bg-white/5 overflow-hidden">
                 <div
                 className={[
                 'h-full',
-                pct >= 90 ? 'bg-danger' : pct >= 70 ? 'bg-warning' : 'bg-accent'].
+                row.usage >= 90 ? 'bg-danger' : row.usage >= 70 ? 'bg-warning' : 'bg-accent'].
                 join(' ')}
-                style={{ width: `${pct}%` }} />
+                style={{ width: `${row.usage}%` }} />
               
               </div>
             </ResponsiveStack>);
@@ -94,25 +113,23 @@ export default function StorageListPage() {
       }
     },
     {
-      id: 'latencyMs',
-      header: 'Latency',
-      width: 90,
+      id: 'available',
+      header: 'Available',
+      width: 120,
       align: 'right',
       cell: ({ row }) =>
       <span className="font-mono text-xs">
-            {row.latencyMs === 0 ? '—' : `${row.latencyMs} ms`}
+            {formatGB(row.available)}
           </span>
 
     },
     {
-      id: 'bindings',
-      header: 'Bound to',
-      width: 180,
+      id: 'scope',
+      header: 'Scope',
+      width: 160,
       cell: ({ row }) =>
       <span className="text-sm text-fg-muted">
-            {row.bindings.includes('*') ?
-        'All departments' :
-        row.bindings.join(', ')}
+            Shared by this node
           </span>
 
     }],
@@ -123,31 +140,73 @@ export default function StorageListPage() {
   return (
     <Page>
       <ResponsiveStack direction="col" gap={4}>
-        <PreviewBanner />
         <PageHeader
           title="Storage"
-          count={`${STORAGE_MOUNTS.length} mount${STORAGE_MOUNTS.length !== 1 ? 's' : ''}`}
-          filters={
-          <Select
-            value={familyFilter}
-            onChange={setFamilyFilter}
-            options={familyOptions} />
-
+          count={disk ? `${formatGB(disk.available)} available` : 'local capacity'}
+          description="Local host storage capacity reported by the backend."
+          secondary={
+          <Button variant="secondary" onClick={() => refetch()} disabled={loading}>
+              <RefreshCw size={14} />
+              Refresh
+            </Button>
           } />
-        
-        {filtered.length === 0 ?
-        <span className="text-fg-muted text-sm py-4">
-            No storage matches this filter.
-          </span> :
 
-        <DataTable
-          rows={filtered}
-          columns={columns}
-          rowId={(r) => r.id}
-          defaultDensity="compact"
-          onRowClick={(r) => router.push(`/storage/${r.id}`)} />
+        {loading && !disk ?
+        <ResponsiveStack direction="col" gap={3}>
+            <Skeleton height={130} />
+            <Skeleton height={180} />
+          </ResponsiveStack> :
+        null}
 
-        }
+        {disk ?
+        <>
+            <ResponsiveStack
+            direction={{ base: 'col', lg: 'row' }}
+            gap={4}
+            align="stretch">
+              <div className="flex-1 min-w-0 rounded-md border border-border-subtle bg-surface-raised p-4">
+                <ResponsiveStack direction="col" gap={3}>
+                  <ResponsiveStack direction="row" gap={2} align="center" justify="between">
+                    <ResponsiveStack direction="row" gap={2} align="center">
+                      <HardDrive size={16} className="text-fg-muted" />
+                      <span className="text-sm font-medium">Capacity</span>
+                    </ResponsiveStack>
+                    <Badge tone={error ? 'warning' : 'success'}>
+                      {error ? 'Stale' : 'Live'}
+                    </Badge>
+                  </ResponsiveStack>
+                  <ResourceMeter
+                  resources={[
+                  {
+                    label: 'Used',
+                    value: usedPct,
+                    detail: `${formatGB(disk.used)} / ${formatGB(disk.total)}`
+                  }]} />
+                
+                </ResponsiveStack>
+              </div>
+
+              <div className="w-full lg:w-72 rounded-md border border-border-subtle bg-surface-raised p-4">
+                <ResponsiveStack direction="col" gap={3}>
+                  <ResponsiveStack direction="row" gap={2} align="center">
+                    <Database size={16} className="text-fg-muted" />
+                    <span className="text-sm font-medium">Storage backend</span>
+                  </ResponsiveStack>
+                  <span className="text-sm text-fg-muted">
+                    External mounts, cloud buckets, quotas, and per-department storage policies are not implemented yet.
+                  </span>
+                </ResponsiveStack>
+              </div>
+            </ResponsiveStack>
+
+            <DataTable
+            rows={rows}
+            columns={columns}
+            rowId={(r) => r.id}
+            defaultDensity="compact" />
+          </> :
+        null}
+
       </ResponsiveStack>
     </Page>);
 

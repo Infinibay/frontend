@@ -154,7 +154,7 @@ export default function ScriptDetailPage() {
   if (loading) {
     return (
       <Page>
-        <LoadingOverlay active label="Loading script details…" />
+        <LoadingOverlay label="Loading script details…" />
       </Page>
     );
   }
@@ -189,21 +189,33 @@ export default function ScriptDetailPage() {
   const metadataItems = [
     {
       key: 'created',
-      label: 'Created',
+      label: (
+        <ResponsiveStack direction="row" gap={1} align="center">
+          <Clock size={12} />
+          <span>Created</span>
+        </ResponsiveStack>
+      ),
       value: new Date(script.createdAt).toLocaleDateString(),
-      icon: <Clock size={12} />,
     },
     script.updatedAt && {
       key: 'updated',
-      label: 'Updated',
+      label: (
+        <ResponsiveStack direction="row" gap={1} align="center">
+          <Clock size={12} />
+          <span>Updated</span>
+        </ResponsiveStack>
+      ),
       value: new Date(script.updatedAt).toLocaleDateString(),
-      icon: <Clock size={12} />,
     },
     script.createdBy && {
       key: 'author',
-      label: 'Created by',
+      label: (
+        <ResponsiveStack direction="row" gap={1} align="center">
+          <User size={12} />
+          <span>Created by</span>
+        </ResponsiveStack>
+      ),
       value: script.createdBy.username,
-      icon: <User size={12} />,
     },
   ].filter(Boolean);
 
@@ -247,7 +259,7 @@ export default function ScriptDetailPage() {
                     ))}
                   </ResponsiveStack>
                 ) : null}
-                <PropertyList items={metadataItems} columns={2} />
+                <PropertyList items={metadataItems} variant="cards" />
               </ResponsiveStack>
             </Card>
 
@@ -338,7 +350,7 @@ export default function ScriptDetailPage() {
 
             <Card variant="default" title="Script content">
               <CodeBlock
-                language={script.shell || 'bash'}
+                lang={script.shell || 'bash'}
                 code={script.parsedContent?.script || '# No content available'}
               />
             </Card>

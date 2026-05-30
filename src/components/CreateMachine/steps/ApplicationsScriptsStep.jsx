@@ -53,7 +53,7 @@ export function ApplicationsScriptsStep({ id }) {
 
   // Sync local script state with wizard values (e.g. when a blueprint pre-fills them)
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setSelectedScripts(stepValues.scripts || []);
   }, [stepValues.scripts]);
 
@@ -245,7 +245,12 @@ export function ApplicationsScriptsStep({ id }) {
     }
     return (
       <IconTile
-        icon={<img src={app.icon} alt="" width={20} height={20} />}
+        icon={
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={app.icon} alt="" width={20} height={20} />
+          </>
+        }
         tone="purple"
         size="md"
       />
@@ -318,9 +323,26 @@ export function ApplicationsScriptsStep({ id }) {
             <ResponsiveStack direction="col" gap={4}>
               <ResponsiveStack direction="col" gap={3}>
                 <SearchField
-                  value={appSearch}
-                  onChange={setAppSearch}
                   placeholder="Search applications…"
+                  onSearch={(q) => {
+                    setAppSearch(q);
+                    const term = q.trim().toLowerCase();
+                    if (!term) return [];
+                    return allApps
+                      .filter(
+                        (app) =>
+                          app.name.toLowerCase().includes(term) ||
+                          (app.description &&
+                            app.description.toLowerCase().includes(term))
+                      )
+                      .map((app) => ({
+                        id: app.id,
+                        title: app.name,
+                        subtitle: app.description,
+                        icon: renderAppIcon(app),
+                      }));
+                  }}
+                  onPick={(r) => toggleApp(r.id)}
                 />
                 {appCategoryItems.length > 1 && (
                   <ToggleGroup
@@ -337,13 +359,15 @@ export function ApplicationsScriptsStep({ id }) {
                     {selectedApps.length} selected
                   </Badge>
                   {selectedApps.map((app) => (
-                    <Badge
+                    <button
                       key={app.id}
-                      tone="neutral"
+                      type="button"
                       onClick={() => handleSelectionChange(app.id, false)}
                     >
-                      {app.name} ×
-                    </Badge>
+                      <Badge tone="neutral">
+                        {app.name} ×
+                      </Badge>
+                    </button>
                   ))}
                 </ResponsiveStack>
               )}

@@ -366,7 +366,7 @@ export function BlueprintStep({ id }) {
                             <ResponsiveStack direction="row" gap={1} wrap>
                               <Package size={12} className="text-fg-muted" />
                               {template.applications.map((app) => (
-                                <Badge key={app.applicationId} tone="purple" size="sm">
+                                <Badge key={app.applicationId} tone="purple">
                                   {app.name}
                                 </Badge>
                               ))}
@@ -378,7 +378,7 @@ export function BlueprintStep({ id }) {
                             <ResponsiveStack direction="row" gap={1} wrap>
                               <ShieldCheck size={12} className="text-fg-muted" />
                               {template.scripts.map((s) => (
-                                <Badge key={s.scriptId} tone="neutral" size="sm">
+                                <Badge key={s.scriptId} tone="neutral">
                                   {s.name}
                                 </Badge>
                               ))}
@@ -388,17 +388,17 @@ export function BlueprintStep({ id }) {
                           {/* Extra features */}
                           <ResponsiveStack direction="row" gap={1} wrap>
                             {template.encryptDisk && (
-                              <Badge tone="danger" size="sm">
+                              <Badge tone="danger">
                                 Encryption
                               </Badge>
                             )}
                             {template.wallpaperUrl && (
-                              <Badge tone="info" size="sm">
+                              <Badge tone="info">
                                 Wallpaper
                               </Badge>
                             )}
                             {template.powerPlan && (
-                              <Badge tone="warning" size="sm">
+                              <Badge tone="warning">
                                 Power: {template.powerPlan}
                               </Badge>
                             )}

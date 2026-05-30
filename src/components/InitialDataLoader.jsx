@@ -89,11 +89,11 @@ export const InitialDataLoader = ({ children }) => {
   // auth loading flags tickle true briefly on navigation and we don't
   // want to blank the whole app for 100ms every time.
   const [hasBootstrapped, setHasBootstrapped] = useState(false);
-  /* eslint-disable react-hooks/set-state-in-effect */
+   
   useEffect(() => {
     if (!isCriticalLoading && !hasBootstrapped) setHasBootstrapped(true);
   }, [isCriticalLoading, hasBootstrapped]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   const handleRetry = () => {
     debug.info(`Retrying initialization (attempt ${retryCount + 1})...`);

@@ -13,11 +13,13 @@ import {
   EmptyState,
   IconButton,
   Menu,
+  MenuItem,
   ResponsiveStack,
   Dialog,
   DialogTitle,
   DialogBody,
   TextField,
+  Textarea,
   Select,
 } from '@infinibay/harbor';
 import {
@@ -194,7 +196,7 @@ export default function GoldenImagesPage() {
   useEffect(() => {
     const capture = searchParams?.get('capture');
     if (capture) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setPrefillMachineId(capture);
       setDialogOpen(true);
       router.replace('/images');
@@ -218,7 +220,7 @@ export default function GoldenImagesPage() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     fetchImages();
   }, [fetchImages]);
 
@@ -285,12 +287,11 @@ export default function GoldenImagesPage() {
             <IconButton
               size="sm"
               variant="ghost"
-              aria-label="Refresh"
+              label="Refresh"
+              icon={<RefreshCcw size={14} />}
               onClick={fetchImages}
               disabled={loading}
-            >
-              <RefreshCcw size={14} />
-            </IconButton>
+            />
           }
           primary={
             <Button
@@ -310,14 +311,14 @@ export default function GoldenImagesPage() {
           <EmptyState
             title="No golden images yet"
             description="Seal a base disk to bootstrap thin-clone desktops."
-            action={
+            actions={
               <Button variant="primary" icon={<Plus size={14} />} onClick={() => setDialogOpen(true)}>
                 New Golden Image
               </Button>
             }
           />
         ) : (
-          // eslint-disable-next-line react-hooks/refs
+           
           families.map(({ root, versions }) => (
             <section key={root.id} className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3 pb-2 border-b border-white/5">
@@ -399,7 +400,7 @@ function GoldenImageRow({ image, progress, onPublish, onDeprecate, onRetry, onDe
   return (
     <div className="flex items-center gap-3 py-2 px-2">
       <span className="font-mono text-sm w-12 shrink-0">v{image.version}</span>
-      <Badge tone={tone} size="sm">
+      <Badge tone={tone}>
         {image.status}
       </Badge>
       {isBuilding && (
@@ -424,42 +425,36 @@ function GoldenImageRow({ image, progress, onPublish, onDeprecate, onRetry, onDe
       <span className="text-xs text-fg-muted w-20 text-right">{timeAgo(image.createdAt)}</span>
       <Menu
         trigger={
-          <IconButton size="sm" variant="ghost" aria-label="Actions">
-            <MoreHorizontal size={14} />
-          </IconButton>
+          <IconButton size="sm" variant="ghost" label="Actions" icon={<MoreHorizontal size={14} />} />
         }
-        items={[
-          image.status === 'draft' && {
-            id: 'publish',
-            label: 'Publish',
-            icon: <CheckCircle2 size={14} />,
-            onSelect: onPublish,
-          },
-          image.status === 'published' && {
-            id: 'deprecate',
-            label: 'Deprecate',
-            icon: <CircleSlash size={14} />,
-            onSelect: onDeprecate,
-          },
-          image.status === 'failed' && {
-            id: 'retry',
-            label: 'Retry build',
-            icon: <RefreshCcw size={14} />,
-            onSelect: onRetry,
-          },
-          {
-            id: 'delete',
-            label: 'Delete',
-            icon: <Trash2 size={14} />,
-            tone: 'danger',
-            onSelect: () => {
-              if (confirm(`Delete ${image.name} v${image.version}? This removes the sealed qcow2.`)) {
-                onDelete();
-              }
-            },
-          },
-        ].filter(Boolean)}
-      />
+      >
+        {image.status === 'draft' && (
+          <MenuItem icon={<CheckCircle2 size={14} />} onClick={onPublish}>
+            Publish
+          </MenuItem>
+        )}
+        {image.status === 'published' && (
+          <MenuItem icon={<CircleSlash size={14} />} onClick={onDeprecate}>
+            Deprecate
+          </MenuItem>
+        )}
+        {image.status === 'failed' && (
+          <MenuItem icon={<RefreshCcw size={14} />} onClick={onRetry}>
+            Retry build
+          </MenuItem>
+        )}
+        <MenuItem
+          icon={<Trash2 size={14} />}
+          danger
+          onClick={() => {
+            if (confirm(`Delete ${image.name} v${image.version}? This removes the sealed qcow2.`)) {
+              onDelete();
+            }
+          }}
+        >
+          Delete
+        </MenuItem>
+      </Menu>
     </div>
   );
 }
@@ -609,12 +604,11 @@ function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
           </>
         )}
 
-        <TextField
+        <Textarea
           label="Notes (optional)"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="What changed in this version?"
-          multiline
           rows={3}
         />
 

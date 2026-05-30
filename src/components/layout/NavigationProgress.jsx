@@ -50,7 +50,7 @@ export function NavigationProgress() {
   // Intentional setState inside effect: the progress bar is driven by
   // external events (pathname change), not by data in render. Snapping
   // to 100 and then to 0 after a timeout is the whole point.
-  /* eslint-disable react-hooks/set-state-in-effect */
+   
   useEffect(() => {
     if (!visible) return;
     cancelAnimationFrame(rafRef.current);
@@ -62,7 +62,7 @@ export function NavigationProgress() {
     return () => clearTimeout(fadeTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   return (
     <div

@@ -354,6 +354,22 @@ export type CreateGoldenImageFromTemplateInput = {
   templateId: Scalars['String']['input'];
 };
 
+export type CreateIdentityProviderInput = {
+  attributes?: InputMaybe<Scalars['JSONObject']['input']>;
+  baseDn?: Scalars['String']['input'];
+  bindDn?: InputMaybe<Scalars['String']['input']>;
+  bindPassword?: InputMaybe<Scalars['String']['input']>;
+  domain?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  groupFilter?: InputMaybe<Scalars['String']['input']>;
+  host?: Scalars['String']['input'];
+  name?: Scalars['String']['input'];
+  port?: InputMaybe<Scalars['Float']['input']>;
+  providerType?: IdentityProviderKind;
+  useTls?: InputMaybe<Scalars['Boolean']['input']>;
+  userFilter?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type CreateMachineInputType = {
   applications?: Array<MachineApplicationInputType>;
   customCores?: InputMaybe<Scalars['Int']['input']>;
@@ -550,6 +566,16 @@ export type DiskSpaceInfo = {
   warningThreshold?: Maybe<Scalars['Float']['output']>;
 };
 
+export type DiskType = {
+  __typename?: 'DiskType';
+  createdAt: Scalars['DateTimeISO']['output'];
+  id: Scalars['ID']['output'];
+  nodeId: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
 /** Result of dismissing recommendation(s) */
 export type DismissRecommendationResult = {
   __typename?: 'DismissRecommendationResult';
@@ -579,6 +605,11 @@ export type DnsmasqDiagnosticsType = {
 export type DyummyType = {
   __typename?: 'DyummyType';
   value: Scalars['String']['output'];
+};
+
+export type EffectivePermissionType = {
+  __typename?: 'EffectivePermissionType';
+  allowedResources: Array<Scalars['String']['output']>;
 };
 
 export type EffectiveRuleSetType = {
@@ -879,6 +910,97 @@ export type IsoStatus = {
   os: Scalars['String']['output'];
 };
 
+export type IdentityGroupRoleMappingType = {
+  __typename?: 'IdentityGroupRoleMappingType';
+  createdAt: Scalars['DateTimeISO']['output'];
+  groupDn: Scalars['String']['output'];
+  groupName: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  providerId: Scalars['ID']['output'];
+  role: UserRole;
+  updatedAt: Scalars['DateTimeISO']['output'];
+};
+
+export type IdentityProviderConnectionResultType = {
+  __typename?: 'IdentityProviderConnectionResultType';
+  latencyMs?: Maybe<Scalars['Float']['output']>;
+  message: Scalars['String']['output'];
+  provider?: Maybe<IdentityProviderType>;
+  success: Scalars['Boolean']['output'];
+};
+
+/** External directory provider type */
+export enum IdentityProviderKind {
+  ActiveDirectory = 'ACTIVE_DIRECTORY',
+  Ldap = 'LDAP'
+}
+
+/** External directory connection state */
+export enum IdentityProviderState {
+  Connected = 'CONNECTED',
+  Disconnected = 'DISCONNECTED',
+  Error = 'ERROR',
+  Syncing = 'SYNCING'
+}
+
+export type IdentityProviderSyncResultType = {
+  __typename?: 'IdentityProviderSyncResultType';
+  groupsSeen: Scalars['Float']['output'];
+  message: Scalars['String']['output'];
+  provider?: Maybe<IdentityProviderType>;
+  success: Scalars['Boolean']['output'];
+  syncRunId: Scalars['String']['output'];
+  usersCreated: Scalars['Float']['output'];
+  usersDisabled: Scalars['Float']['output'];
+  usersUpdated: Scalars['Float']['output'];
+};
+
+export type IdentityProviderType = {
+  __typename?: 'IdentityProviderType';
+  attributes?: Maybe<Scalars['JSONObject']['output']>;
+  baseDn: Scalars['String']['output'];
+  bindDn?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  domain?: Maybe<Scalars['String']['output']>;
+  enabled: Scalars['Boolean']['output'];
+  groupFilter?: Maybe<Scalars['String']['output']>;
+  hasBindPassword: Scalars['Boolean']['output'];
+  host: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lastError?: Maybe<Scalars['String']['output']>;
+  lastSyncAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  lastTestAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  name: Scalars['String']['output'];
+  port: Scalars['Float']['output'];
+  providerType: IdentityProviderKind;
+  status: IdentityProviderState;
+  updatedAt: Scalars['DateTimeISO']['output'];
+  useTls: Scalars['Boolean']['output'];
+  userFilter?: Maybe<Scalars['String']['output']>;
+};
+
+export type IdentitySyncRunType = {
+  __typename?: 'IdentitySyncRunType';
+  error?: Maybe<Scalars['String']['output']>;
+  finishedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  groupsSeen: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  message?: Maybe<Scalars['String']['output']>;
+  providerId: Scalars['ID']['output'];
+  startedAt: Scalars['DateTimeISO']['output'];
+  status: IdentitySyncStatus;
+  usersCreated: Scalars['Int']['output'];
+  usersDisabled: Scalars['Int']['output'];
+  usersUpdated: Scalars['Int']['output'];
+};
+
+/** External directory sync run status */
+export enum IdentitySyncStatus {
+  Error = 'ERROR',
+  Running = 'RUNNING',
+  Success = 'SUCCESS'
+}
+
 export type InfiniServiceStatus = {
   __typename?: 'InfiniServiceStatus';
   error?: Maybe<Scalars['String']['output']>;
@@ -954,6 +1076,7 @@ export type Machine = {
   internalName: Scalars['String']['output'];
   localIP?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
+  nodeId?: Maybe<Scalars['String']['output']>;
   os: Scalars['String']['output'];
   publicIP?: Maybe<Scalars['String']['output']>;
   ramGB?: Maybe<Scalars['Int']['output']>;
@@ -969,6 +1092,15 @@ export type MachineApplicationInputType = {
   applicationId?: Scalars['String']['input'];
   machineId?: Scalars['String']['input'];
   parameters?: InputMaybe<Scalars['JSONObject']['input']>;
+};
+
+export type MachineMigrationResultType = {
+  __typename?: 'MachineMigrationResultType';
+  error?: Maybe<Scalars['String']['output']>;
+  machineId: Scalars['String']['output'];
+  sourceNodeId?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  targetNodeId: Scalars['String']['output'];
 };
 
 export type MachineOrderBy = {
@@ -1209,6 +1341,7 @@ export type Mutation = {
   createDepartmentFirewallRule: FirewallRuleType;
   /** Build a sealed golden image from a blueprint (long-running). */
   createGoldenImageFromTemplate: GoldenImageResult;
+  createIdentityProvider: IdentityProviderType;
   createMachine: Machine;
   createMachineTemplate: MachineTemplateType;
   createMachineTemplateCategory: MachineTemplateCategoryType;
@@ -1227,6 +1360,8 @@ export type Mutation = {
   deleteBackupSchedule: SuccessType;
   deleteFirewallRule: Scalars['Boolean']['output'];
   deleteGoldenImage: Scalars['Boolean']['output'];
+  deleteIdentityGroupRoleMapping: Scalars['Boolean']['output'];
+  deleteIdentityProvider: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
   deletePool: Scalars['Boolean']['output'];
@@ -1262,6 +1397,7 @@ export type Mutation = {
   login?: Maybe<LoginResponse>;
   /** Install, remove, or update a package on a virtual machine */
   managePackage: PackageManagementResult;
+  migrateMachineToNode: MachineMigrationResultType;
   moveMachine: Machine;
   /** Perform disk cleanup on a VM */
   performDiskCleanup: DiskCleanupResult;
@@ -1292,6 +1428,8 @@ export type Mutation = {
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
+  setNodeMaintenanceMode: NodeType;
+  setRolePermission: RolePermissionMatrixType;
   setupNode: DyummyType;
   /** Snooze all pending recommendations for a duration (ISO 8601 duration format: PT1H, P1D, etc.) */
   snoozeAllRecommendations: SnoozeRecommendationResult;
@@ -1301,6 +1439,9 @@ export type Mutation = {
   syncFirewallToLibvirt: SyncResultType;
   /** Sync ISOs with filesystem */
   syncISOs: Scalars['Boolean']['output'];
+  syncIdentityProvider: IdentityProviderSyncResultType;
+  testIdentityProvider: IdentityProviderConnectionResultType;
+  testIdentityProviderConfig: IdentityProviderConnectionResultType;
   toggleMaintenanceTask: MaintenanceTaskResponse;
   triggerHealthCheckRound: HealthCheckRoundResult;
   unassignScriptFromDepartment: Scalars['Boolean']['output'];
@@ -1315,6 +1456,7 @@ export type Mutation = {
   updateDepartmentName: DepartmentType;
   updateDepartmentNetwork: DepartmentType;
   updateFirewallRule: FirewallRuleType;
+  updateIdentityProvider: IdentityProviderType;
   updateMachineHardware: Machine;
   updateMachineName: Machine;
   updateMachineTemplate: MachineTemplateType;
@@ -1327,6 +1469,7 @@ export type Mutation = {
   updateScheduledScript: ScheduleScriptResponseType;
   updateScript: ScriptResponseType;
   updateUser: UserType;
+  upsertIdentityGroupRoleMapping: IdentityGroupRoleMappingType;
   /** Validate ISO file integrity */
   validateISO: Scalars['Boolean']['output'];
 };
@@ -1397,6 +1540,11 @@ export type MutationCreateDepartmentFirewallRuleArgs = {
 
 export type MutationCreateGoldenImageFromTemplateArgs = {
   input: CreateGoldenImageFromTemplateInput;
+};
+
+
+export type MutationCreateIdentityProviderArgs = {
+  input: CreateIdentityProviderInput;
 };
 
 
@@ -1472,6 +1620,16 @@ export type MutationDeleteFirewallRuleArgs = {
 
 
 export type MutationDeleteGoldenImageArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteIdentityGroupRoleMappingArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteIdentityProviderArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1614,6 +1772,12 @@ export type MutationManagePackageArgs = {
 };
 
 
+export type MutationMigrateMachineToNodeArgs = {
+  id: Scalars['String']['input'];
+  targetNodeId: Scalars['String']['input'];
+};
+
+
 export type MutationMoveMachineArgs = {
   departmentId: Scalars['String']['input'];
   id: Scalars['String']['input'];
@@ -1724,6 +1888,17 @@ export type MutationSetNetworkIpRangeArgs = {
 };
 
 
+export type MutationSetNodeMaintenanceModeArgs = {
+  enabled: Scalars['Boolean']['input'];
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSetRolePermissionArgs = {
+  input: SetRolePermissionInput;
+};
+
+
 export type MutationSnoozeAllRecommendationsArgs = {
   duration: Scalars['String']['input'];
 };
@@ -1737,6 +1912,21 @@ export type MutationSnoozeRecommendationArgs = {
 
 export type MutationSuspendArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationSyncIdentityProviderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationTestIdentityProviderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationTestIdentityProviderConfigArgs = {
+  input: CreateIdentityProviderInput;
 };
 
 
@@ -1801,6 +1991,12 @@ export type MutationUpdateFirewallRuleArgs = {
 };
 
 
+export type MutationUpdateIdentityProviderArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateIdentityProviderInput;
+};
+
+
 export type MutationUpdateMachineHardwareArgs = {
   input: UpdateMachineHardwareInput;
 };
@@ -1858,6 +2054,11 @@ export type MutationUpdateScriptArgs = {
 export type MutationUpdateUserArgs = {
   id: Scalars['String']['input'];
   input: UpdateUserInputType;
+};
+
+
+export type MutationUpsertIdentityGroupRoleMappingArgs = {
+  input: UpsertIdentityGroupRoleMappingInput;
 };
 
 
@@ -1923,6 +2124,38 @@ export type NetworkIpInput = {
   address?: Scalars['String']['input'];
   netmask?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
+};
+
+export type NodeInventorySummary = {
+  __typename?: 'NodeInventorySummary';
+  onlineNodes: Scalars['Int']['output'];
+  staleNodes: Scalars['Int']['output'];
+  totalCores: Scalars['Int']['output'];
+  totalDisks: Scalars['Int']['output'];
+  totalNodes: Scalars['Int']['output'];
+  totalRam: Scalars['Int']['output'];
+};
+
+export type NodeType = {
+  __typename?: 'NodeType';
+  availableCores: Scalars['Int']['output'];
+  availableRamGB: Scalars['Int']['output'];
+  cores: Scalars['Int']['output'];
+  cpuFlags: Scalars['JSONObject']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
+  currentRaid: Scalars['String']['output'];
+  diskCount: Scalars['Int']['output'];
+  disks: Array<DiskType>;
+  health: Scalars['String']['output'];
+  healthyDiskCount: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  machineCount: Scalars['Int']['output'];
+  maintenanceMode: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  nextRaid?: Maybe<Scalars['String']['output']>;
+  ram: Scalars['Int']['output'];
+  runningMachineCount: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
 };
 
 /** Operating system */
@@ -2053,6 +2286,28 @@ export type PaginationInputType = {
   take?: InputMaybe<Scalars['Int']['input']>;
 };
 
+/** Role permission decision */
+export enum PermissionEffect {
+  Allow = 'ALLOW',
+  Deny = 'DENY',
+  Inherit = 'INHERIT'
+}
+
+export type PermissionPrincipalType = {
+  __typename?: 'PermissionPrincipalType';
+  avatar: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  kind: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+};
+
+export type PermissionResourceType = {
+  __typename?: 'PermissionResourceType';
+  group: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+};
+
 export type Pool = {
   __typename?: 'Pool';
   createdAt: Scalars['DateTimeISO']['output'];
@@ -2161,6 +2416,10 @@ export type Query = {
   graphicConnection?: Maybe<GraphicConfigurationType>;
   healthCheckQueueStats: QueueStatsType;
   healthQueueStatistics: QueueStatistics;
+  identityGroupRoleMappings: Array<IdentityGroupRoleMappingType>;
+  identityProvider?: Maybe<IdentityProviderType>;
+  identityProviders: Array<IdentityProviderType>;
+  identitySyncRuns: Array<IdentitySyncRunType>;
   latestVMHealthSnapshot?: Maybe<VmHealthSnapshotType>;
   listInfinibayFilters: Array<LibvirtFilterInfoType>;
   /** List all installed packages on a virtual machine */
@@ -2177,8 +2436,12 @@ export type Query = {
   maintenanceStats: MaintenanceStats;
   maintenanceTask?: Maybe<MaintenanceTask>;
   maintenanceTasks: Array<MaintenanceTask>;
+  myPermissions: EffectivePermissionType;
   network: Network;
   networks: Array<Network>;
+  node?: Maybe<NodeType>;
+  nodeInventorySummary: NodeInventorySummary;
+  nodes: Array<NodeType>;
   /** Get a specific plugin package by name */
   package?: Maybe<PackageType>;
   /** Get runtime status of all plugin packages */
@@ -2191,6 +2454,7 @@ export type Query = {
   pools: Array<Pool>;
   /** Fetch a single resolution. Poll this query to track progress. */
   recommendationResolution?: Maybe<RecommendationResolutionType>;
+  rolePermissionMatrix: RolePermissionMatrixType;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
   scheduledScript?: Maybe<ScheduledScriptType>;
@@ -2368,6 +2632,21 @@ export type QueryGraphicConnectionArgs = {
 };
 
 
+export type QueryIdentityGroupRoleMappingsArgs = {
+  providerId: Scalars['ID']['input'];
+};
+
+
+export type QueryIdentityProviderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryIdentitySyncRunsArgs = {
+  providerId: Scalars['ID']['input'];
+};
+
+
 export type QueryLatestVmHealthSnapshotArgs = {
   machineId: Scalars['ID']['input'];
 };
@@ -2436,6 +2715,11 @@ export type QueryMaintenanceTasksArgs = {
 
 export type QueryNetworkArgs = {
   name: Scalars['String']['input'];
+};
+
+
+export type QueryNodeArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -2682,6 +2966,13 @@ export type RestoreSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
+export type RolePermissionMatrixType = {
+  __typename?: 'RolePermissionMatrixType';
+  permissions: Scalars['JSONObject']['output'];
+  principals: Array<PermissionPrincipalType>;
+  resources: Array<PermissionResourceType>;
+};
+
 /** Action to take on matched traffic */
 export enum RuleAction {
   Accept = 'ACCEPT',
@@ -2889,6 +3180,12 @@ export type ScriptType = {
   updatedAt: Scalars['DateTimeISO']['output'];
 };
 
+export type SetRolePermissionInput = {
+  effect?: PermissionEffect;
+  resource?: Scalars['String']['input'];
+  role?: UserRole;
+};
+
 /** Shell type for script execution */
 export enum ShellType {
   Bash = 'BASH',
@@ -2948,6 +3245,16 @@ export type SocketConnectionStats = {
   totalConnections?: Maybe<Scalars['Float']['output']>;
 };
 
+export type Subscription = {
+  __typename?: 'Subscription';
+  systemMetricsUpdated: SystemMetrics;
+};
+
+
+export type SubscriptionSystemMetricsUpdatedArgs = {
+  machineId?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type SuccessType = {
   __typename?: 'SuccessType';
   message: Scalars['String']['output'];
@@ -2961,6 +3268,26 @@ export type SyncResultType = {
   filtersUpdated: Scalars['Int']['output'];
   success: Scalars['Boolean']['output'];
   vmsUpdated: Scalars['Int']['output'];
+};
+
+export type SystemMetrics = {
+  __typename?: 'SystemMetrics';
+  availableMemoryKB: Scalars['Float']['output'];
+  cpuCoresUsage: Array<Scalars['Float']['output']>;
+  cpuTemperature?: Maybe<Scalars['Float']['output']>;
+  cpuUsagePercent: Scalars['Float']['output'];
+  diskIOStats: Scalars['JSONObject']['output'];
+  diskUsageStats: Scalars['JSONObject']['output'];
+  id: Scalars['ID']['output'];
+  loadAverage?: Maybe<Scalars['JSONObject']['output']>;
+  machineId: Scalars['String']['output'];
+  networkStats: Scalars['JSONObject']['output'];
+  swapTotalKB?: Maybe<Scalars['Float']['output']>;
+  swapUsedKB?: Maybe<Scalars['Float']['output']>;
+  timestamp: Scalars['DateTimeISO']['output'];
+  totalMemoryKB: Scalars['Float']['output'];
+  uptime: Scalars['Float']['output'];
+  usedMemoryKB: Scalars['Float']['output'];
 };
 
 export type SystemReadiness = {
@@ -3043,6 +3370,22 @@ export type UpdateFirewallRuleInput = {
   srcPortStart?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type UpdateIdentityProviderInput = {
+  attributes?: InputMaybe<Scalars['JSONObject']['input']>;
+  baseDn?: InputMaybe<Scalars['String']['input']>;
+  bindDn?: InputMaybe<Scalars['String']['input']>;
+  bindPassword?: InputMaybe<Scalars['String']['input']>;
+  domain?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  groupFilter?: InputMaybe<Scalars['String']['input']>;
+  host?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  port?: InputMaybe<Scalars['Float']['input']>;
+  providerType?: InputMaybe<IdentityProviderKind>;
+  useTls?: InputMaybe<Scalars['Boolean']['input']>;
+  userFilter?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateMachineHardwareInput = {
   /** New number of CPU cores */
   cpuCores?: InputMaybe<Scalars['Int']['input']>;
@@ -3123,6 +3466,13 @@ export type UpdateUserInputType = {
   password?: InputMaybe<Scalars['String']['input']>;
   passwordConfirmation?: InputMaybe<Scalars['String']['input']>;
   role?: InputMaybe<UserRole>;
+};
+
+export type UpsertIdentityGroupRoleMappingInput = {
+  groupDn?: Scalars['String']['input'];
+  groupName?: InputMaybe<Scalars['String']['input']>;
+  providerId?: Scalars['ID']['input'];
+  role?: UserRole;
 };
 
 /** The field to order users by */

@@ -42,7 +42,7 @@ function WizardContent({ children, onComplete, initialValues = {} }) {
   const [isValidating, setIsValidating] = React.useState(false);
   const { setFieldError, clearAllErrors, clearFieldError } = useFormError();
 
-  const steps = React.Children.toArray(children);
+  const steps = React.useMemo(() => React.Children.toArray(children), [children]);
   const isLastStep = currentStep === steps.length - 1;
   const currentStepElement = steps[currentStep];
 
@@ -51,7 +51,7 @@ function WizardContent({ children, onComplete, initialValues = {} }) {
       stepCount: steps.length,
       initialValues: Object.keys(initialValues),
     });
-  }, []);
+  }, [initialValues, steps.length]);
 
   React.useEffect(() => {
     debug.log('navigation', 'Step changed:', {
@@ -59,7 +59,7 @@ function WizardContent({ children, onComplete, initialValues = {} }) {
       stepId: currentStepElement?.props?.id,
       isLastStep,
     });
-  }, [currentStep]);
+  }, [currentStep, currentStepElement?.props?.id, isLastStep]);
 
   const next = async () => {
     const stepId = currentStepElement.props.id;

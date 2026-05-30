@@ -218,7 +218,7 @@ export default function NewApplicationPage() {
                       type="button"
                       icon={<Trash2 size={14} />}
                       onClick={() => removeParam(i)}
-                      aria-label="Remove parameter"
+                      label="Remove parameter"
                     />
                   </ResponsiveStack>
                 </Card>

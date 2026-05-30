@@ -12,8 +12,11 @@ import { toast } from "sonner";
 import { FolderTree } from "lucide-react";
 import {
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   Button,
-  ButtonGroup,
   TextField,
   Textarea,
   Alert,
@@ -51,10 +54,10 @@ export function EditCategoryDialog({ children, category, open, onOpenChange }) {
   useEffect(() => {
     if (isOpen && category) {
       // Intentional: prime form state when the dialog opens for a category.
-      /* eslint-disable react-hooks/set-state-in-effect */
+       
       setName(category.name || "");
       setDescription(category.description || "");
-      /* eslint-enable react-hooks/set-state-in-effect */
+       
     }
   }, [isOpen, category]);
 
@@ -101,49 +104,51 @@ export function EditCategoryDialog({ children, category, open, onOpenChange }) {
         open={isOpen}
         onClose={close}
         size="sm"
-        title={
+      >
+        <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
             <FolderTree size={16} />
             <span>Edit category</span>
           </ResponsiveStack>
-        }
-        description="Update the name and description."
-        footer={
-          <ButtonGroup attached={false}>
-            <Button
-              variant="secondary"
-              onClick={close}
-              disabled={loading?.update}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdate}
-              loading={loading?.update}
-              disabled={loading?.update || !name.trim()}
-            >
-              Save changes
-            </Button>
-          </ButtonGroup>
-        }
-      >
-        <ResponsiveStack direction="col" gap={3}>
-          {error?.update ? (
-            <Alert tone="danger">{String(error.update)}</Alert>
-          ) : null}
-          <TextField
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-          />
-          <Textarea
-            label="Description (optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-          />
-        </ResponsiveStack>
+        </DialogTitle>
+        <DialogDescription>
+          Update the name and description.
+        </DialogDescription>
+        <DialogBody>
+          <ResponsiveStack direction="col" gap={3}>
+            {error?.update ? (
+              <Alert tone="danger">{String(error.update)}</Alert>
+            ) : null}
+            <TextField
+              label="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
+            <Textarea
+              label="Description (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+            />
+          </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={close}
+            disabled={loading?.update}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleUpdate}
+            loading={loading?.update}
+            disabled={loading?.update || !name.trim()}
+          >
+            Save changes
+          </Button>
+        </DialogButtons>
       </Dialog>
     </>
   );

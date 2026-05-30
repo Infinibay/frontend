@@ -329,11 +329,11 @@ function generateOperations(schemaData, options) {
 
     queryType.fields.forEach(field => {
       const operationName = capitalizeFirstLetter(field.name);
-      const arguments = generateArguments(field);
+      const operationArguments = generateArguments(field);
       const argumentCalls = generateArgumentCalls(field);
       const fieldSelection = generateFieldSelection(field.type, schema);
 
-      const operation = `query ${operationName}${arguments} {
+      const operation = `query ${operationName}${operationArguments} {
   ${field.name}${argumentCalls}${fieldSelection ? ` {\n${fieldSelection}\n  }` : ''}
 }`;
 
@@ -347,11 +347,11 @@ function generateOperations(schemaData, options) {
 
     mutationType.fields.forEach(field => {
       const operationName = capitalizeFirstLetter(field.name);
-      const arguments = generateArguments(field);
+      const operationArguments = generateArguments(field);
       const argumentCalls = generateArgumentCalls(field);
       const fieldSelection = generateFieldSelection(field.type, schema);
 
-      const operation = `mutation ${operationName}${arguments} {
+      const operation = `mutation ${operationName}${operationArguments} {
   ${field.name}${argumentCalls}${fieldSelection ? ` {\n${fieldSelection}\n  }` : ''}
 }`;
 
@@ -365,11 +365,11 @@ function generateOperations(schemaData, options) {
 
     subscriptionType.fields.forEach(field => {
       const operationName = capitalizeFirstLetter(field.name);
-      const arguments = generateArguments(field);
+      const operationArguments = generateArguments(field);
       const argumentCalls = generateArgumentCalls(field);
       const fieldSelection = generateFieldSelection(field.type, schema);
 
-      const operation = `subscription ${operationName}${arguments} {
+      const operation = `subscription ${operationName}${operationArguments} {
   ${field.name}${argumentCalls}${fieldSelection ? ` {\n${fieldSelection}\n  }` : ''}
 }`;
 

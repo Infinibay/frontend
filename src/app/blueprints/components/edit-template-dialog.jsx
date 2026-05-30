@@ -61,7 +61,7 @@ export function EditTemplateDialog({ children, template, open, onOpenChange }) {
 
   useEffect(() => {
     if (isOpen && template) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setForm({
         name: template.name || '',
         description: template.description || '',

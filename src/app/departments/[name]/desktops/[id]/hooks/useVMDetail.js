@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { gql } from "@apollo/client";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
@@ -26,6 +26,8 @@ const vmDetailedInfo = gql`
       id
       name
       status
+      setupComplete
+      nodeId
       userId
       templateId
       createdAt
@@ -505,13 +507,13 @@ export const useVMDetail = (vmId) => {
   };
 
   // Handle navigation back to department
-  const handleBackToDepartment = () => {
+  const handleBackToDepartment = useCallback(() => {
     if (vm?.department?.name) {
       router.push("/departments/" + encodeURIComponent(vm.department.name));
     } else {
       router.push('/departments');
     }
-  };
+  }, [router, vm]);
 
   // Handle escape key to navigate back
   useEffect(() => {
@@ -523,7 +525,7 @@ export const useVMDetail = (vmId) => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [vm]);
+  }, [handleBackToDepartment]);
 
   return {
     // State

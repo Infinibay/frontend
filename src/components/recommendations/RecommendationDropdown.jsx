@@ -77,7 +77,7 @@ export function RecommendationDropdown({ onClose, onActionComplete }) {
 
   return (
     <div style={wrapperStyle}>
-      <Card variant="default" padding="none">
+      <Card variant="default">
         <ResponsiveStack direction="col" gap={0}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <ResponsiveStack direction="row" gap={2} align="center" justify="between">
@@ -98,7 +98,7 @@ export function RecommendationDropdown({ onClose, onActionComplete }) {
                       variant="ghost"
                       size="sm"
                       icon={<MoreHorizontal size={16} />}
-                      aria-label="Batch actions"
+                      label="Batch actions"
                     />
                   }
                 >

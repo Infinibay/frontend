@@ -9,6 +9,9 @@ import {
   Card,
   DataTable,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogButtons,
   EmptyState,
   IconButton,
   LoadingOverlay,
@@ -482,62 +485,64 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
       <Dialog
         open={!!ruleToDelete}
         onClose={() => !isDeleting ? setRuleToDelete(null) : null}
-        size="sm"
-        title="Delete firewall rule?"
-        description={
-        ruleToDelete ?
-        `This will permanently remove "${ruleToDelete.name}" from this VM.` :
-        undefined
-        }
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
+        size="sm">
+        <DialogTitle>Delete firewall rule?</DialogTitle>
+        <DialogDescription>
+          {ruleToDelete ?
+          `This will permanently remove "${ruleToDelete.name}" from this VM.` :
+          undefined}
+        </DialogDescription>
+        <DialogButtons align="end">
+          <Button
             variant="secondary"
             onClick={() => setRuleToDelete(null)}
             disabled={isDeleting}>
-            
-              Cancel
-            </Button>
-            <Button
+
+            Cancel
+          </Button>
+          <Button
             variant="destructive"
             icon={<Trash2 size={14} />}
             onClick={handleDeleteRule}
             loading={isDeleting}
             disabled={isDeleting}>
-            
-              Delete rule
-            </Button>
-          </ResponsiveStack>
-        } />
-      
+
+            Delete rule
+          </Button>
+        </DialogButtons>
+      </Dialog>
+
 
       <Dialog
         open={bulkDeleteOpen}
         onClose={() => !isDeleting ? setBulkDeleteOpen(false) : null}
-        size="sm"
-        title={`Delete ${selectedIds.length} firewall rule${selectedIds.length !== 1 ? 's' : ''}?`}
-        description="This will permanently remove the selected custom rules from this desktop. Inherited rules are unaffected."
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
+        size="sm">
+        <DialogTitle>
+          {`Delete ${selectedIds.length} firewall rule${selectedIds.length !== 1 ? 's' : ''}?`}
+        </DialogTitle>
+        <DialogDescription>
+          This will permanently remove the selected custom rules from this desktop. Inherited rules are unaffected.
+        </DialogDescription>
+        <DialogButtons align="end">
+          <Button
             variant="secondary"
             onClick={() => setBulkDeleteOpen(false)}
             disabled={isDeleting}>
-            
-              Cancel
-            </Button>
-            <Button
+
+            Cancel
+          </Button>
+          <Button
             variant="destructive"
             icon={<Trash2 size={14} />}
             onClick={handleBulkDelete}
             loading={isDeleting}
             disabled={isDeleting}>
-            
-              Delete {selectedIds.length} rule{selectedIds.length !== 1 ? 's' : ''}
-            </Button>
-          </ResponsiveStack>
-        } />
-      
+
+            Delete {selectedIds.length} rule{selectedIds.length !== 1 ? 's' : ''}
+          </Button>
+        </DialogButtons>
+      </Dialog>
+
     </>);
 
 };

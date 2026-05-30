@@ -16,6 +16,7 @@ import {
   EmptyState,
   IconButton,
   Menu,
+  MenuItem,
   ResponsiveStack,
   Select,
   StatusDot,
@@ -132,7 +133,7 @@ export default function PoolsListPage() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     fetchPools();
   }, [fetchPools]);
 
@@ -199,7 +200,7 @@ export default function PoolsListPage() {
       id: 'type',
       header: 'Type',
       cell: ({ row }) =>
-      <Badge tone={row.type === 'persistent' ? 'info' : 'neutral'} size="sm">
+      <Badge tone={row.type === 'persistent' ? 'info' : 'neutral'}>
             {row.type}
           </Badge>
 
@@ -219,7 +220,7 @@ export default function PoolsListPage() {
       header: 'State',
       cell: ({ row }) =>
       row.draining ?
-      <Badge tone="warning" size="sm">draining</Badge> :
+      <Badge tone="warning">draining</Badge> :
 
       <span className="text-fg-muted text-xs">live</span>
 
@@ -231,38 +232,28 @@ export default function PoolsListPage() {
       cell: ({ row }) =>
       <Menu
         trigger={
-        <IconButton size="sm" variant="ghost" aria-label="Actions">
-                <MoreHorizontal size={14} />
-              </IconButton>
+        <IconButton size="sm" variant="ghost" label="Actions" icon={<MoreHorizontal size={14} />} />
+        }>
+            <MenuItem icon={<Move3d size={14} />} onClick={() => setScaleTarget(row)}>
+              Scale…
+            </MenuItem>
+            {row.draining ?
+        <MenuItem
+          icon={<Play size={14} />}
+          onClick={() => runMutation(UNDRAIN_POOL, { id: row.id }, 'Pool resumed')}>
+                Resume
+              </MenuItem> :
+
+        <MenuItem
+          icon={<Pause size={14} />}
+          onClick={() => runMutation(DRAIN_POOL, { id: row.id }, 'Pool draining')}>
+                Drain
+              </MenuItem>
         }
-        items={[
-        {
-          id: 'scale',
-          label: 'Scale…',
-          icon: <Move3d size={14} />,
-          onSelect: () => setScaleTarget(row)
-        },
-        row.draining ?
-        {
-          id: 'undrain',
-          label: 'Resume',
-          icon: <Play size={14} />,
-          onSelect: () =>
-          runMutation(UNDRAIN_POOL, { id: row.id }, 'Pool resumed')
-        } :
-        {
-          id: 'drain',
-          label: 'Drain',
-          icon: <Pause size={14} />,
-          onSelect: () =>
-          runMutation(DRAIN_POOL, { id: row.id }, 'Pool draining')
-        },
-        {
-          id: 'delete',
-          label: 'Delete',
-          icon: <Trash2 size={14} />,
-          tone: 'danger',
-          onSelect: () => {
+            <MenuItem
+          icon={<Trash2 size={14} />}
+          danger
+          onClick={() => {
             if (
             confirm(
               `Delete pool "${row.name}"? This archives all ${row.currentSize} desktop(s) and removes the pool.`
@@ -270,9 +261,10 @@ export default function PoolsListPage() {
             {
               runMutation(DELETE_POOL, { id: row.id }, 'Pool deleted');
             }
-          }
-        }]
-        } />
+          }}>
+              Delete
+            </MenuItem>
+          </Menu>
 
 
     }],
@@ -290,12 +282,10 @@ export default function PoolsListPage() {
           <IconButton
             size="sm"
             variant="ghost"
-            aria-label="Refresh"
+            label="Refresh"
+            icon={<RefreshCcw size={14} />}
             onClick={fetchPools}
-            disabled={loading}>
-            
-              <RefreshCcw size={14} />
-            </IconButton>
+            disabled={loading} />
           }
           primary={
           <Button
@@ -315,7 +305,7 @@ export default function PoolsListPage() {
         <EmptyState
           title="No pools yet"
           description="A pool groups desktops sharing a blueprint + golden image."
-          action={
+          actions={
           <Button variant="primary" icon={<Plus size={14} />} onClick={() => setDialogOpen(true)}>
                 New Pool
               </Button>

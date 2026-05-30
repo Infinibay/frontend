@@ -18,6 +18,9 @@ import {
   Badge,
   TextField,
   Dialog,
+  DialogTitle,
+  DialogBody,
+  DialogButtons,
   EmptyState,
   Spinner,
   Alert,
@@ -56,7 +59,7 @@ export default function ScriptsSection({ embedded = false, className = "" }) {
   const [deleteScript, { loading: deleting }] = useDeleteScriptMutation();
   const [createScript] = useCreateScriptMutation();
 
-  const scripts = data?.scripts || [];
+  const scripts = useMemo(() => data?.scripts || [], [data?.scripts]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -271,35 +274,35 @@ export default function ScriptsSection({ embedded = false, className = "" }) {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         size="sm"
-        title="Delete script?"
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setDeleteTarget(null)}
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              loading={deleting}
-              disabled={deleting}
-            >
-              Delete
-            </Button>
-          </>
-        }
       >
-        <Alert tone="danger" className="mb-3">
-          This will permanently remove <strong>{deleteTarget?.name}</strong> and
-          cancel any active schedules attached to it.
-        </Alert>
-        <p className="text-sm text-fg-muted">
-          Execution logs and audit trail for this script will also be deleted.
-          This cannot be undone.
-        </p>
+        <DialogTitle>Delete script?</DialogTitle>
+        <DialogBody>
+          <Alert tone="danger" className="mb-3">
+            This will permanently remove <strong>{deleteTarget?.name}</strong> and
+            cancel any active schedules attached to it.
+          </Alert>
+          <p className="text-sm text-fg-muted">
+            Execution logs and audit trail for this script will also be deleted.
+            This cannot be undone.
+          </p>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={() => setDeleteTarget(null)}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            loading={deleting}
+            disabled={deleting}
+          >
+            Delete
+          </Button>
+        </DialogButtons>
       </Dialog>
     </div>
   );

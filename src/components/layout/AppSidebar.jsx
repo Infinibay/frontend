@@ -28,6 +28,8 @@ import { Avatar, Button, ResponsiveStack, Sidebar } from '@infinibay/harbor';
 
 import { selectAppSettings } from '@/state/slices/appSettings';
 import { isEndUser } from '@/lib/roles';
+import { useMyPermissionsQuery } from '@/gql/hooks';
+import { resourceForNavId } from '@/lib/permissions';
 
 /**
  * Operator sidebar — see docs/design/harbor_design_guidelines.md §3.1.
@@ -66,6 +68,16 @@ function navFor(user) {
   return isEndUser(user) ? END_USER_NAV_ITEMS : OPERATOR_NAV_ITEMS;
 }
 
+function filterAllowedNav(items, allowedResources) {
+  if (!allowedResources) return items;
+
+  const allowed = new Set(allowedResources);
+  return items.filter((item) => {
+    const resource = resourceForNavId(item.id);
+    return allowed.has(resource);
+  });
+}
+
 function routeForId(items, id) {
   return items.find((i) => i.id === id)?.href || '/';
 }
@@ -86,12 +98,19 @@ const AppSidebarInner = React.forwardRef(function AppSidebar({ user, onLogOut },
   const pathname = usePathname();
   const router = useRouter();
   const appSettings = useSelector(selectAppSettings);
+  const { data: permissionsData } = useMyPermissionsQuery({
+    skip: !user,
+    fetchPolicy: 'cache-and-network',
+  });
 
   const logoSrc = appSettings?.logoUrl || '/images/logo.png';
   const isExternalLogo =
     !!appSettings?.logoUrl && /^(https?:)?\/\//.test(appSettings.logoUrl);
 
-  const navItems = useMemo(() => navFor(user), [user]);
+  const navItems = useMemo(
+    () => filterAllowedNav(navFor(user), permissionsData?.myPermissions?.allowedResources),
+    [permissionsData?.myPermissions?.allowedResources, user],
+  );
 
   const sections = useMemo(
     () => [

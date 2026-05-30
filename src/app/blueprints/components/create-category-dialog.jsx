@@ -6,8 +6,11 @@ import { toast } from "sonner";
 import { FolderTree } from "lucide-react";
 import {
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   Button,
-  ButtonGroup,
   TextField,
   Textarea,
   Alert,
@@ -72,47 +75,49 @@ export function CreateCategoryDialog({ children }) {
         open={open}
         onClose={close}
         size="sm"
-        title={
+      >
+        <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
             <FolderTree size={16} />
             <span>New Category</span>
           </ResponsiveStack>
-        }
-        description="Group related templates so they're easier to find."
-        footer={
-          <ButtonGroup attached={false}>
-            <Button variant="secondary" onClick={close} disabled={loading?.create}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreate}
-              loading={loading?.create}
-              disabled={loading?.create || !name.trim()}
-            >
-              Create
-            </Button>
-          </ButtonGroup>
-        }
-      >
-        <ResponsiveStack direction="col" gap={3}>
-          {error?.create ? (
-            <Alert tone="danger">{String(error.create)}</Alert>
-          ) : null}
-          <TextField
-            label="Name"
-            placeholder="Production, Development, Testing…"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-          />
-          <Textarea
-            label="Description (optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            placeholder="Short blurb so other admins understand when to use this category"
-          />
-        </ResponsiveStack>
+        </DialogTitle>
+        <DialogDescription>
+          Group related templates so they're easier to find.
+        </DialogDescription>
+        <DialogBody>
+          <ResponsiveStack direction="col" gap={3}>
+            {error?.create ? (
+              <Alert tone="danger">{String(error.create)}</Alert>
+            ) : null}
+            <TextField
+              label="Name"
+              placeholder="Production, Development, Testing…"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
+            <Textarea
+              label="Description (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              placeholder="Short blurb so other admins understand when to use this category"
+            />
+          </ResponsiveStack>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={close} disabled={loading?.create}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreate}
+            loading={loading?.create}
+            disabled={loading?.create || !name.trim()}
+          >
+            Create
+          </Button>
+        </DialogButtons>
       </Dialog>
     </>
   );

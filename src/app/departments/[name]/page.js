@@ -42,6 +42,7 @@ import { StatusChip } from '@/components/common/StatusChip';
 
 import { useDepartmentPage } from './hooks/useDepartmentPage';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { useGetNodeInventoryQuery } from '@/gql/hooks';
 
 const SecuritySection = dynamic(() => import('./components/SecuritySection.jsx'), {
   ssr: false,
@@ -110,6 +111,10 @@ const DepartmentPage = () => {
   } = useDepartmentPage(departmentName);
 
   const pendingActions = useSelector((state) => state.vms?.pendingActions || {});
+  const { data: nodeData } = useGetNodeInventoryQuery({
+    fetchPolicy: 'cache-and-network',
+    pollInterval: 30_000,
+  });
 
   const helpConfig = useMemo(
     () => ({
@@ -172,22 +177,31 @@ const DepartmentPage = () => {
     [department?.name],
   );
 
+  const nodeNameById = useMemo(
+    () => Object.fromEntries((nodeData?.nodes || []).map((node) => [node.id, node.name])),
+    [nodeData?.nodes],
+  );
+
   const hosts = useMemo(
-    () =>
-      machines.map((vm) => ({
-        id: vm.id,
-        name: vm.name,
-        status: vmStatusToHarbor(vm.status, vm.setupComplete),
-        subtitle: vmSubtitle(vm),
-        tags: vm.user
-          ? [
-              `${vm.user.firstName || ''} ${vm.user.lastName || ''}`.trim() ||
-                vm.user.email,
-            ]
-          : [],
-        _raw: vm,
-      })),
-    [machines],
+    () => {
+      return machines.map((vm) => {
+        const nodeName = vm.nodeId ? nodeNameById[vm.nodeId] || vm.nodeId : null;
+        const userName = vm.user
+          ? `${vm.user.firstName || ''} ${vm.user.lastName || ''}`.trim() ||
+            vm.user.email
+          : null;
+
+        return {
+          id: vm.id,
+          name: vm.name,
+          status: vmStatusToHarbor(vm.status, vm.setupComplete),
+          subtitle: vmSubtitle(vm),
+          tags: [userName, nodeName].filter(Boolean),
+          _raw: vm,
+        };
+      });
+    },
+    [machines, nodeNameById],
   );
 
   const stats = useMemo(() => {
@@ -380,6 +394,7 @@ const DepartmentPage = () => {
                       pendingActions={pendingActions}
                       view="table"
                       showDepartment={false}
+                      nodeNameById={nodeNameById}
                       onOpen={handlePcSelect}
                       onPlay={handlePlayAction}
                       onPause={handlePauseAction}
@@ -450,6 +465,7 @@ const DepartmentPage = () => {
                 pendingActions={pendingActions}
                 view="table"
                 showDepartment={false}
+                nodeNameById={nodeNameById}
                 onOpen={handlePcSelect}
                 onPlay={handlePlayAction}
                 onPause={handlePauseAction}

@@ -2,7 +2,7 @@
  * Hook for real-time VM network information updates
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { selectVmsState } from '@/state/slices/vms';
 import { createDebugger } from '@/utils/debug';
@@ -20,14 +20,17 @@ export const useVMNetworkRealTime = (vmId) => {
   const [hasIPUpdated, setHasIPUpdated] = useState(false);
 
   // Find the current VM from the Redux state
-  const vm = vmsState.items.find(machine => machine.id === vmId) ||
-             vmsState.selectedMachine?.id === vmId ? vmsState.selectedMachine : null;
+  const vm = useMemo(() => {
+    const listedVm = vmsState.items.find(machine => machine.id === vmId);
+    if (listedVm) return listedVm;
+    return vmsState.selectedMachine?.id === vmId ? vmsState.selectedMachine : null;
+  }, [vmsState.items, vmsState.selectedMachine, vmId]);
 
   // Current IP values
-  const currentIPs = {
+  const currentIPs = useMemo(() => ({
     localIP: vm?.localIP || null,
     publicIP: vm?.publicIP || null
-  };
+  }), [vm?.localIP, vm?.publicIP]);
 
   // Check for IP changes and trigger update indicator
   useEffect(() => {
@@ -59,14 +62,14 @@ export const useVMNetworkRealTime = (vmId) => {
 
       return () => clearTimeout(timer);
     }
-  }, [vm?.localIP, vm?.publicIP, vmId]);
+  }, [currentIPs, previousIPs, vm, vmId]);
 
   // Initialize previous IPs on first load
   useEffect(() => {
     if (vm && !previousIPs.localIP && !previousIPs.publicIP) {
       setPreviousIPs(currentIPs);
     }
-  }, [vm?.id]);
+  }, [currentIPs, previousIPs.localIP, previousIPs.publicIP, vm]);
 
   return {
     vm,

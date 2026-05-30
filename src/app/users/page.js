@@ -25,6 +25,10 @@ import {
   Avatar,
   Alert,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   Drawer,
   DataTable,
   EmptyState,
@@ -602,39 +606,37 @@ export default function UsersPage() {
       <Dialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        size="sm"
-        title={
-        <ResponsiveStack direction="row" gap={2} align="center">
+        size="sm">
+        <DialogTitle>
+          <ResponsiveStack direction="row" gap={2} align="center">
             <Trash2 size={16} />
             <span>
               Delete{" "}
               {deleteTarget === "bulk" ? `${selected.length} users` : "user"}
             </span>
           </ResponsiveStack>
-        }
-        description={
-        deleteTarget && deleteTarget !== "bulk" ?
+        </DialogTitle>
+        <DialogDescription>
+          {deleteTarget && deleteTarget !== "bulk" ?
         `Remove ${deleteTarget.firstName || ""} ${deleteTarget.lastName || ""} (${deleteTarget.email})?` :
-        "Remove all selected users?"
-        }
-        footer={
-        <ResponsiveStack direction="row" gap={2} justify="end">
-            <Button
+        "Remove all selected users?"}
+        </DialogDescription>
+        <DialogBody>
+          <p style={{ margin: 0, opacity: 0.7 }}>
+            This cannot be undone. The account will no longer be able to sign in
+            and any desktops they own will be orphaned unless reassigned first.
+          </p>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
             variant="secondary"
             onClick={() => setDeleteTarget(null)}>
-            
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          </ResponsiveStack>
-        }>
-        
-        <p style={{ margin: 0, opacity: 0.7 }}>
-          This cannot be undone. The account will no longer be able to sign in
-          and any desktops they own will be orphaned unless reassigned first.
-        </p>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={handleDelete}>
+            Delete
+          </Button>
+        </DialogButtons>
       </Dialog>
     </Page>);
 

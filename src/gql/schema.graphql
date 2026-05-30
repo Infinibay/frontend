@@ -322,6 +322,22 @@ input CreateGoldenImageFromTemplateInput {
   templateId: String!
 }
 
+input CreateIdentityProviderInput {
+  attributes: JSONObject
+  baseDn: String! = ""
+  bindDn: String
+  bindPassword: String
+  domain: String
+  enabled: Boolean
+  groupFilter: String
+  host: String! = ""
+  name: String! = ""
+  port: Float
+  providerType: IdentityProviderKind! = ACTIVE_DIRECTORY
+  useTls: Boolean
+  userFilter: String
+}
+
 input CreateMachineInputType {
   applications: [MachineApplicationInputType!]! = []
   customCores: Int
@@ -515,6 +531,15 @@ type DiskSpaceInfo {
   warningThreshold: Float
 }
 
+type DiskType {
+  createdAt: DateTimeISO!
+  id: ID!
+  nodeId: String!
+  path: String!
+  status: String!
+  updatedAt: DateTimeISO!
+}
+
 """Result of dismissing recommendation(s)"""
 type DismissRecommendationResult {
   """Number of recommendations dismissed"""
@@ -543,6 +568,10 @@ type DnsmasqDiagnosticsType {
 
 type DyummyType {
   value: String!
+}
+
+type EffectivePermissionType {
+  allowedResources: [String!]!
 }
 
 type EffectiveRuleSetType {
@@ -836,6 +865,92 @@ type ISOStatus {
   os: String!
 }
 
+type IdentityGroupRoleMappingType {
+  createdAt: DateTimeISO!
+  groupDn: String!
+  groupName: String!
+  id: ID!
+  providerId: ID!
+  role: UserRole!
+  updatedAt: DateTimeISO!
+}
+
+type IdentityProviderConnectionResultType {
+  latencyMs: Float
+  message: String!
+  provider: IdentityProviderType
+  success: Boolean!
+}
+
+"""External directory provider type"""
+enum IdentityProviderKind {
+  ACTIVE_DIRECTORY
+  LDAP
+}
+
+"""External directory connection state"""
+enum IdentityProviderState {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  SYNCING
+}
+
+type IdentityProviderSyncResultType {
+  groupsSeen: Float!
+  message: String!
+  provider: IdentityProviderType
+  success: Boolean!
+  syncRunId: String!
+  usersCreated: Float!
+  usersDisabled: Float!
+  usersUpdated: Float!
+}
+
+type IdentityProviderType {
+  attributes: JSONObject
+  baseDn: String!
+  bindDn: String
+  createdAt: DateTimeISO!
+  domain: String
+  enabled: Boolean!
+  groupFilter: String
+  hasBindPassword: Boolean!
+  host: String!
+  id: ID!
+  lastError: String
+  lastSyncAt: DateTimeISO
+  lastTestAt: DateTimeISO
+  name: String!
+  port: Float!
+  providerType: IdentityProviderKind!
+  status: IdentityProviderState!
+  updatedAt: DateTimeISO!
+  useTls: Boolean!
+  userFilter: String
+}
+
+type IdentitySyncRunType {
+  error: String
+  finishedAt: DateTimeISO
+  groupsSeen: Int!
+  id: ID!
+  message: String
+  providerId: ID!
+  startedAt: DateTimeISO!
+  status: IdentitySyncStatus!
+  usersCreated: Int!
+  usersDisabled: Int!
+  usersUpdated: Int!
+}
+
+"""External directory sync run status"""
+enum IdentitySyncStatus {
+  ERROR
+  RUNNING
+  SUCCESS
+}
+
 type InfiniServiceStatus {
   error: String
   installed: Boolean!
@@ -924,6 +1039,7 @@ type Machine {
   internalName: String!
   localIP: String
   name: String!
+  nodeId: String
   os: String!
   publicIP: String
   ramGB: Int
@@ -939,6 +1055,14 @@ input MachineApplicationInputType {
   applicationId: String! = ""
   machineId: String! = ""
   parameters: JSONObject
+}
+
+type MachineMigrationResultType {
+  error: String
+  machineId: String!
+  sourceNodeId: String
+  success: Boolean!
+  targetNodeId: String!
 }
 
 input MachineOrderBy {
@@ -1192,6 +1316,7 @@ type Mutation {
 
   """Build a sealed golden image from a blueprint (long-running)."""
   createGoldenImageFromTemplate(input: CreateGoldenImageFromTemplateInput!): GoldenImageResult!
+  createIdentityProvider(input: CreateIdentityProviderInput!): IdentityProviderType!
   createMachine(input: CreateMachineInputType!): Machine!
   createMachineTemplate(input: MachineTemplateInputType!): MachineTemplateType!
   createMachineTemplateCategory(input: MachineTemplateCategoryInputType!): MachineTemplateCategoryType!
@@ -1213,6 +1338,8 @@ type Mutation {
   deleteBackupSchedule(id: ID!): SuccessType!
   deleteFirewallRule(ruleId: ID!): Boolean!
   deleteGoldenImage(id: ID!): Boolean!
+  deleteIdentityGroupRoleMapping(id: ID!): Boolean!
+  deleteIdentityProvider(id: ID!): Boolean!
   deleteMaintenanceTask(id: ID!): MaintenanceTaskResponse!
   deleteNetwork(input: DeleteNetworkInput!): Boolean!
   deletePool(id: ID!): Boolean!
@@ -1256,6 +1383,7 @@ type Mutation {
 
   """Install, remove, or update a package on a virtual machine"""
   managePackage(input: PackageManagementInput!): PackageManagementResult!
+  migrateMachineToNode(id: String!, targetNodeId: String!): MachineMigrationResultType!
   moveMachine(departmentId: String!, id: String!): Machine!
 
   """Perform disk cleanup on a VM"""
@@ -1299,6 +1427,8 @@ type Mutation {
   setNetworkBridgeName(input: BridgeNameInput!): Boolean!
   setNetworkIp(input: NetworkIpInput!): Boolean!
   setNetworkIpRange(input: IpRangeInput!): Boolean!
+  setNodeMaintenanceMode(enabled: Boolean!, id: ID!): NodeType!
+  setRolePermission(input: SetRolePermissionInput!): RolePermissionMatrixType!
   setupNode: DyummyType!
 
   """
@@ -1315,6 +1445,9 @@ type Mutation {
 
   """Sync ISOs with filesystem"""
   syncISOs: Boolean!
+  syncIdentityProvider(id: ID!): IdentityProviderSyncResultType!
+  testIdentityProvider(id: ID!): IdentityProviderConnectionResultType!
+  testIdentityProviderConfig(input: CreateIdentityProviderInput!): IdentityProviderConnectionResultType!
   toggleMaintenanceTask(enabled: Boolean!, id: ID!): MaintenanceTaskResponse!
   triggerHealthCheckRound: HealthCheckRoundResult!
   unassignScriptFromDepartment(departmentId: ID!, scriptId: ID!): Boolean!
@@ -1333,6 +1466,7 @@ type Mutation {
   updateDepartmentName(input: UpdateDepartmentNameInput!): DepartmentType!
   updateDepartmentNetwork(input: UpdateDepartmentNetworkInput!): DepartmentType!
   updateFirewallRule(input: UpdateFirewallRuleInput!, ruleId: ID!): FirewallRuleType!
+  updateIdentityProvider(id: ID!, input: UpdateIdentityProviderInput!): IdentityProviderType!
   updateMachineHardware(input: UpdateMachineHardwareInput!): Machine!
   updateMachineName(input: UpdateMachineNameInput!): Machine!
   updateMachineTemplate(id: String!, input: MachineTemplateInputType!): MachineTemplateType!
@@ -1346,6 +1480,7 @@ type Mutation {
   updateScheduledScript(input: UpdateScheduledScriptInput!): ScheduleScriptResponseType!
   updateScript(input: UpdateScriptInput!): ScriptResponseType!
   updateUser(id: String!, input: UpdateUserInputType!): UserType!
+  upsertIdentityGroupRoleMapping(input: UpsertIdentityGroupRoleMappingInput!): IdentityGroupRoleMappingType!
 
   """Validate ISO file integrity"""
   validateISO(isoId: String!): Boolean!
@@ -1403,6 +1538,36 @@ input NetworkIpInput {
   address: String! = ""
   netmask: String! = ""
   networkName: String! = ""
+}
+
+type NodeInventorySummary {
+  onlineNodes: Int!
+  staleNodes: Int!
+  totalCores: Int!
+  totalDisks: Int!
+  totalNodes: Int!
+  totalRam: Int!
+}
+
+type NodeType {
+  availableCores: Int!
+  availableRamGB: Int!
+  cores: Int!
+  cpuFlags: JSONObject!
+  createdAt: DateTimeISO!
+  currentRaid: String!
+  diskCount: Int!
+  disks: [DiskType!]!
+  health: String!
+  healthyDiskCount: Int!
+  id: ID!
+  machineCount: Int!
+  maintenanceMode: Boolean!
+  name: String!
+  nextRaid: String
+  ram: Int!
+  runningMachineCount: Int!
+  updatedAt: DateTimeISO!
 }
 
 """Operating system"""
@@ -1558,6 +1723,26 @@ input PaginationInputType {
   take: Int = 20
 }
 
+"""Role permission decision"""
+enum PermissionEffect {
+  ALLOW
+  DENY
+  INHERIT
+}
+
+type PermissionPrincipalType {
+  avatar: String!
+  id: String!
+  kind: String!
+  label: String!
+}
+
+type PermissionResourceType {
+  group: String!
+  id: String!
+  label: String!
+}
+
 type Pool {
   createdAt: DateTimeISO!
 
@@ -1698,6 +1883,10 @@ type Query {
   graphicConnection(id: String!): GraphicConfigurationType
   healthCheckQueueStats: QueueStatsType!
   healthQueueStatistics: QueueStatistics!
+  identityGroupRoleMappings(providerId: ID!): [IdentityGroupRoleMappingType!]!
+  identityProvider(id: ID!): IdentityProviderType
+  identityProviders: [IdentityProviderType!]!
+  identitySyncRuns(providerId: ID!): [IdentitySyncRunType!]!
   latestVMHealthSnapshot(machineId: ID!): VMHealthSnapshotType
   listInfinibayFilters: [LibvirtFilterInfoType!]!
 
@@ -1716,8 +1905,12 @@ type Query {
   maintenanceStats(machineId: ID!): MaintenanceStats!
   maintenanceTask(id: ID!): MaintenanceTask
   maintenanceTasks(machineId: ID!, status: String): [MaintenanceTask!]!
+  myPermissions: EffectivePermissionType!
   network(name: String!): Network!
   networks: [Network!]!
+  node(id: ID!): NodeType
+  nodeInventorySummary: NodeInventorySummary!
+  nodes: [NodeType!]!
 
   """Get a specific plugin package by name"""
   package(name: String!): PackageType
@@ -1737,6 +1930,7 @@ type Query {
 
   """Fetch a single resolution. Poll this query to track progress."""
   recommendationResolution(id: ID!): RecommendationResolutionType
+  rolePermissionMatrix: RolePermissionMatrixType!
 
   """Run a specific health check on a VM"""
   runHealthCheck(checkName: HealthCheckName!, vmId: ID!): GenericHealthCheckResponse!
@@ -1941,6 +2135,12 @@ input RestoreSnapshotInput {
   snapshotName: String!
 }
 
+type RolePermissionMatrixType {
+  permissions: JSONObject!
+  principals: [PermissionPrincipalType!]!
+  resources: [PermissionResourceType!]!
+}
+
 """Action to take on matched traffic"""
 enum RuleAction {
   ACCEPT
@@ -2138,6 +2338,12 @@ type ScriptType {
   updatedAt: DateTimeISO!
 }
 
+input SetRolePermissionInput {
+  effect: PermissionEffect! = DENY
+  resource: String! = ""
+  role: UserRole! = USER
+}
+
 """Shell type for script execution"""
 enum ShellType {
   BASH
@@ -2195,6 +2401,10 @@ type SocketConnectionStats {
   totalConnections: Float
 }
 
+type Subscription {
+  systemMetricsUpdated(machineId: String): SystemMetrics!
+}
+
 type SuccessType {
   message: String!
   success: Boolean!
@@ -2206,6 +2416,25 @@ type SyncResultType {
   filtersUpdated: Int!
   success: Boolean!
   vmsUpdated: Int!
+}
+
+type SystemMetrics {
+  availableMemoryKB: Float!
+  cpuCoresUsage: [Float!]!
+  cpuTemperature: Float
+  cpuUsagePercent: Float!
+  diskIOStats: JSONObject!
+  diskUsageStats: JSONObject!
+  id: ID!
+  loadAverage: JSONObject
+  machineId: String!
+  networkStats: JSONObject!
+  swapTotalKB: Float
+  swapUsedKB: Float
+  timestamp: DateTimeISO!
+  totalMemoryKB: Float!
+  uptime: Float!
+  usedMemoryKB: Float!
 }
 
 type SystemReadiness {
@@ -2286,6 +2515,22 @@ input UpdateFirewallRuleInput {
   srcIpMask: String
   srcPortEnd: Int
   srcPortStart: Int
+}
+
+input UpdateIdentityProviderInput {
+  attributes: JSONObject
+  baseDn: String
+  bindDn: String
+  bindPassword: String
+  domain: String
+  enabled: Boolean
+  groupFilter: String
+  host: String
+  name: String
+  port: Float
+  providerType: IdentityProviderKind
+  useTls: Boolean
+  userFilter: String
 }
 
 input UpdateMachineHardwareInput {
@@ -2373,6 +2618,13 @@ input UpdateUserInputType {
   password: String
   passwordConfirmation: String
   role: UserRole
+}
+
+input UpsertIdentityGroupRoleMappingInput {
+  groupDn: String! = ""
+  groupName: String
+  providerId: ID! = ""
+  role: UserRole! = USER
 }
 
 """The field to order users by"""

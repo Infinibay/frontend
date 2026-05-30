@@ -89,11 +89,10 @@ export default function NewBlueprintPage() {
           <IconButton
             size="sm"
             variant="ghost"
-            aria-label="Back to blueprints"
+            label="Back to blueprints"
+            icon={<ArrowLeft size={14} />}
             onClick={() => router.push('/blueprints')}
-          >
-            <ArrowLeft size={14} />
-          </IconButton>
+          />
           <PageHeader
             title="New blueprint"
             primary={

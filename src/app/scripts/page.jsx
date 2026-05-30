@@ -258,7 +258,7 @@ export default function ScriptsPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const scripts = data?.scripts || [];
+  const scripts = useMemo(() => data?.scripts || [], [data?.scripts]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -416,8 +416,25 @@ export default function ScriptsPage() {
           <>
             <SearchField
               placeholder="Search name, description, tags…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onSearch={(q) => {
+                setSearch(q);
+                const term = q.trim().toLowerCase();
+                if (!term) return [];
+                return scripts
+                  .filter(
+                    (s) =>
+                      s.name?.toLowerCase().includes(term) ||
+                      s.description?.toLowerCase().includes(term) ||
+                      s.tags?.some((t) => t.toLowerCase().includes(term))
+                  )
+                  .map((s) => ({
+                    id: s.id,
+                    title: s.name,
+                    subtitle: s.description,
+                    icon: <FileCode size={16} />,
+                  }));
+              }}
+              onPick={(r) => router.push(`/scripts/${r.id}`)}
             />
             <SegmentedControl
               items={OS_FILTER_OPTIONS}

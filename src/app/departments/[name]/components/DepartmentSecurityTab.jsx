@@ -157,10 +157,10 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
   useEffect(() => {
     if (open) {
       // Intentional: re-prime modal state to current policy when reopened.
-      /* eslint-disable react-hooks/set-state-in-effect */
+       
       setPolicy(current);
       setConfig(currentConfig);
-      /* eslint-enable react-hooks/set-state-in-effect */
+       
     }
   }, [open, current, currentConfig]);
 

@@ -282,4 +282,6 @@ class ProblemPriorityService {
   }
 }
 
-export default new ProblemPriorityService();
+const problemPriorityService = new ProblemPriorityService();
+
+export default problemPriorityService;

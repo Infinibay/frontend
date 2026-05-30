@@ -140,10 +140,12 @@ export function ThemeProvider({
  * @returns {React.Component} Wrapped component with theme context
  */
 export function withAppTheme(Component) {
-  return React.forwardRef((props, ref) => {
+  const WrappedComponent = React.forwardRef((props, ref) => {
     const theme = useAppTheme()
     return <Component {...props} ref={ref} theme={theme} />
   })
+  WrappedComponent.displayName = `withAppTheme(${Component.displayName || Component.name || 'Component'})`
+  return WrappedComponent
 }
 
 // Keep withTheme as an alias for backward compatibility

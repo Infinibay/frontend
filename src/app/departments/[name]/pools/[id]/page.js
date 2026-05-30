@@ -1,20 +1,43 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useMemo } from 'react';
+import { gql } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
+import { useSelector } from 'react-redux';
 import { useParams, useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import {
   Page,
+  Badge,
   Button,
   EmptyState,
   ResponsiveStack,
+  Skeleton,
+  StatusDot,
 } from '@infinibay/harbor';
 import { ArrowLeft, Layers } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/PageHeader';
-import { PreviewBanner } from '@/components/common/PreviewBanner';
-import { POOLS } from '@/lib/mockData/pools';
+
+const POOL_DETAIL_QUERY = gql`
+  query DepartmentPoolDetail($id: ID!) {
+    pool(id: $id) {
+      id
+      name
+      templateId
+      goldenImageId
+      departmentId
+      type
+      sizeMin
+      sizeMax
+      idleTimeoutMinutes
+      resetOnLogoff
+      draining
+      currentSize
+      createdAt
+      updatedAt
+    }
+  }
+`;
 
 function KV({ label, value, mono }) {
   return (
@@ -28,18 +51,40 @@ function KV({ label, value, mono }) {
 export default function PoolDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const pool = POOLS.find((p) => p.id === params.id);
-  const [tab, setTab] = useState('overview');
+  const poolId = String(params.id || '');
 
-  if (!pool) {
+  const {
+    data,
+    loading,
+    error,
+    refetch,
+  } = useQuery(POOL_DETAIL_QUERY, {
+    variables: { id: poolId },
+    fetchPolicy: 'cache-and-network',
+    skip: !poolId,
+  });
+
+  const pool = data?.pool;
+  const departments = useSelector((s) => s.departments?.items ?? []);
+  const templates = useSelector((s) => s.templates?.items ?? []);
+
+  const deptNameById = useMemo(
+    () => Object.fromEntries(departments.map((d) => [d.id, d.name])),
+    [departments]
+  );
+  const templateNameById = useMemo(
+    () => Object.fromEntries(templates.map((t) => [t.id, t.name])),
+    [templates]
+  );
+
+  if (loading && !pool) {
     return (
       <Page>
         <ResponsiveStack direction="col" gap={4}>
-          <PreviewBanner />
-          <EmptyState
-            icon={<Layers size={18} />}
-            title="Pool not found"
-            actions={
+          <PageHeader
+            title="Pool"
+            count="loading"
+            secondary={
               <Button
                 size="sm"
                 variant="secondary"
@@ -50,31 +95,65 @@ export default function PoolDetailPage() {
               </Button>
             }
           />
+          <Skeleton height={220} />
         </ResponsiveStack>
       </Page>
     );
   }
 
-  const tabs = [
-    { id: 'overview',   label: 'Overview' },
-    { id: 'desktops',   label: 'Desktops' },
-    { id: 'sessions',   label: `Sessions · ${pool.activeSessions}` },
-    { id: 'image',      label: 'Image' },
-    { id: 'assignment', label: 'Assignment' },
-    { id: 'settings',   label: 'Settings' },
-  ];
+  if (!pool) {
+    return (
+      <Page>
+        <ResponsiveStack direction="col" gap={4}>
+          <EmptyState
+            icon={<Layers size={18} />}
+            title={error ? 'Pool unavailable' : 'Pool not found'}
+            description={
+              error
+                ? 'The backend could not load this pool.'
+                : 'This pool does not exist or was deleted.'
+            }
+            actions={
+              error ? (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => refetch()}
+                >
+                  Retry
+                </Button>
+              ) : (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<ArrowLeft size={14} />}
+                onClick={() => router.push('/pools')}
+              >
+                Back
+              </Button>
+              )
+            }
+          />
+        </ResponsiveStack>
+      </Page>
+    );
+  }
+
+  const departmentName = deptNameById[pool.departmentId] ?? pool.departmentId;
+  const templateName = templateNameById[pool.templateId] ?? pool.templateId;
+  const typeLabel = pool.type === 'persistent' ? 'Persistent' : 'Non-persistent';
+  const targetRange = `${pool.sizeMin} - ${pool.sizeMax}`;
 
   return (
     <Page>
       <ResponsiveStack direction="col" gap={4}>
-        <PreviewBanner />
         <PageHeader
           title={pool.name}
-          count={`${pool.department} · ${pool.type === 'persistent' ? 'Persistent' : 'Non-persistent'} · ${pool.activeSessions} active`}
+          count={`${departmentName} · ${typeLabel} · ${pool.currentSize} desktop${pool.currentSize !== 1 ? 's' : ''}`}
           secondary={
             <Button
               size="sm"
-              variant="ghost"
+              variant="secondary"
               icon={<ArrowLeft size={14} />}
               onClick={() => router.push('/pools')}
             >
@@ -83,92 +162,58 @@ export default function PoolDetailPage() {
           }
         />
 
-        <ResponsiveStack direction="row" gap={1} align="center" wrap>
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={[
-                'text-sm px-3 py-1.5 rounded-md transition-colors',
-                tab === t.id ? 'bg-white/10 text-fg' : 'text-fg-muted hover:text-fg hover:bg-white/5',
-              ].join(' ')}
-            >
-              {t.label}
-            </button>
-          ))}
+        <ResponsiveStack
+          direction={{ base: 'col', lg: 'row' }}
+          gap={4}
+          align="stretch"
+        >
+          <section className="flex-1 min-w-0 rounded-md border border-border-subtle bg-surface-raised p-4">
+            <ResponsiveStack direction="col" gap={3}>
+              <ResponsiveStack direction="row" gap={2} align="center" justify="between">
+                <ResponsiveStack direction="row" gap={2} align="center">
+                  <Layers size={16} className="text-fg-muted" />
+                  <span className="text-sm font-medium">Pool state</span>
+                </ResponsiveStack>
+                <Badge tone={pool.draining ? 'warning' : 'success'}>
+                  {pool.draining ? 'draining' : 'live'}
+                </Badge>
+              </ResponsiveStack>
+
+              <div className="flex flex-col gap-2 py-1">
+                <KV label="Department" value={departmentName} />
+                <KV label="Blueprint" value={templateName} />
+                <KV label="Golden image" value={pool.goldenImageId || '-'} mono />
+                <KV label="Type" value={typeLabel} />
+                <KV label="Current size" value={pool.currentSize} mono />
+                <KV label="Target range" value={`${targetRange} desktops`} mono />
+                <KV
+                  label="Idle timeout"
+                  value={pool.idleTimeoutMinutes == null ? 'Never' : `${pool.idleTimeoutMinutes} min`}
+                  mono={pool.idleTimeoutMinutes != null}
+                />
+                <KV label="Reset on logoff" value={pool.resetOnLogoff ? 'Yes' : 'No'} />
+              </div>
+            </ResponsiveStack>
+          </section>
+
+          <section className="w-full lg:w-72 rounded-md border border-border-subtle bg-surface-raised p-4">
+            <ResponsiveStack direction="col" gap={3}>
+              <ResponsiveStack direction="row" gap={2} align="center">
+                <StatusDot
+                  status={pool.draining ? 'degraded' : pool.currentSize < pool.sizeMin ? 'degraded' : 'online'}
+                  size={8}
+                />
+                <span className="text-sm font-medium">Capacity</span>
+              </ResponsiveStack>
+              <ResponsiveStack direction="col" gap={1}>
+                <span className="text-2xl font-semibold">{pool.currentSize}</span>
+                <span className="text-sm text-fg-muted">
+                  desktops provisioned, target {targetRange}
+                </span>
+              </ResponsiveStack>
+            </ResponsiveStack>
+          </section>
         </ResponsiveStack>
-
-        {tab === 'overview' && (
-          <section className="flex flex-col gap-2 py-2">
-            <KV label="Department" value={pool.department} />
-            <KV label="Blueprint" value={pool.blueprint} />
-            <KV label="Image version" value={pool.imageVersion} mono />
-            <KV label="Type" value={pool.type === 'persistent' ? 'Persistent' : 'Non-persistent'} />
-            <KV label="Size" value={`${pool.minSize} – ${pool.maxSize} desktops`} mono />
-            <KV label="Active sessions" value={pool.activeSessions} mono />
-            <KV label="Idle desktops" value={pool.idleDesktops} mono />
-            <KV label="Idle timeout" value={`${pool.idleTimeoutMin} min`} mono />
-            <KV label="Health" value={pool.health} />
-          </section>
-        )}
-
-        {tab === 'desktops' && (
-          <section className="py-2">
-            <span className="text-fg-muted text-sm">
-              Desktops in this pool are backed by the live Desktops list. Filter
-              <code className="font-mono text-xs bg-white/5 rounded px-1 mx-1">pool={pool.name}</code>
-              in <Link className="underline underline-offset-2" href="/desktops">/desktops</Link>.
-            </span>
-          </section>
-        )}
-
-        {tab === 'sessions' && (
-          <section className="py-2">
-            <span className="text-fg-muted text-sm">
-              {pool.activeSessions} active sessions in this pool —
-              see <Link className="underline underline-offset-2" href="/sessions">/sessions</Link>.
-            </span>
-          </section>
-        )}
-
-        {tab === 'image' && (
-          <section className="flex flex-col gap-2 py-2">
-            <KV label="Blueprint" value={pool.blueprint} />
-            <KV label="Current version" value={pool.imageVersion} mono />
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => toast.info('Preview only — not wired yet.')}
-            >
-              Publish new version
-            </Button>
-          </section>
-        )}
-
-        {tab === 'assignment' && (
-          <section className="flex flex-col gap-2 py-2">
-            <span className="text-fg-muted text-sm">
-              Users get a desktop from this pool when they belong to:
-            </span>
-            <div className="flex flex-col gap-1">
-              {pool.assignedGroups.map((g) => (
-                <span key={g} className="font-mono text-xs">{g}</span>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {tab === 'settings' && (
-          <section className="flex flex-col gap-2 py-2">
-            <KV label="Type" value={pool.type} />
-            <KV label="Min / max size" value={`${pool.minSize} – ${pool.maxSize}`} mono />
-            <KV label="Idle timeout" value={`${pool.idleTimeoutMin} min`} mono />
-            <span className="text-fg-muted text-xs pt-2">
-              Editing pool settings in this preview is non-operative.
-            </span>
-          </section>
-        )}
       </ResponsiveStack>
     </Page>
   );

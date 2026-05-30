@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 import {
   Alert,
   Button,
-  ButtonGroup,
   Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   EmptyState,
   IconButton,
   Page,
@@ -40,6 +43,7 @@ import {
 } from "@/state/slices/appSettings";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DesktopListView } from "@/components/common/DesktopListView";
+import { useGetNodeInventoryQuery } from "@/gql/hooks";
 
 const debug = createDebugger("frontend:pages:computers");
 
@@ -83,6 +87,7 @@ const osIconFor = (os) => {
   const hit = OS_ICON_MAP.find((m) => m.match.test(os));
   if (!hit) return null;
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`https://cdn.simpleicons.org/${hit.slug}/${hit.color}`}
       alt={os}
@@ -125,6 +130,10 @@ export default function ComputersPage() {
     strategy: LOADING_STRATEGIES.BACKGROUND,
     ttl: 10 * 60 * 1000,
   });
+  const { data: nodeData } = useGetNodeInventoryQuery({
+    fetchPolicy: "cache-and-network",
+    pollInterval: 30_000,
+  });
 
   const loading = vmsLoading || departmentsLoading;
   const error = vmsError || departmentsError;
@@ -149,22 +158,28 @@ export default function ComputersPage() {
   const view = useSelector(selectDesktopsView);
   const onViewChange = (v) => dispatch(setDesktopsView(v));
 
+  const nodeNameById = useMemo(
+    () => Object.fromEntries((nodeData?.nodes || []).map((node) => [node.id, node.name])),
+    [nodeData?.nodes]
+  );
+
   const hosts = useMemo(
     () =>
       (machines || []).map((vm) => {
         const os = vm?.configuration?.os || vm?.os;
+        const nodeName = vm.nodeId ? nodeNameById[vm.nodeId] || vm.nodeId : null;
         return {
           id: vm.id,
           name: vm.name,
           status: vmStatusToHarbor(vm.status, vm.setupComplete),
           subtitle: vmSubtitle(vm),
-          tags: vm.department?.name ? [vm.department.name] : [],
+          tags: [vm.department?.name, nodeName].filter(Boolean),
           region: vm.department?.name || undefined,
           osIcon: osIconFor(os),
           _raw: vm,
         };
       }),
-    [machines]
+    [machines, nodeNameById]
   );
 
   const filteredHosts = useMemo(
@@ -453,6 +468,7 @@ export default function ComputersPage() {
           pendingActions={pendingActions}
           view={view}
           showDepartment
+          nodeNameById={nodeNameById}
           onOpen={handlePcSelect}
           onPlay={handlePlay}
           onPause={handlePause}
@@ -466,29 +482,29 @@ export default function ComputersPage() {
         open={!!deleteConfirmation?.isOpen}
         onClose={cancelDelete}
         size="sm"
-        title={
+      >
+        <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
             <AlertCircle size={16} />
             Delete desktop
           </ResponsiveStack>
-        }
-        description={
-          deleteConfirmation?.machine
+        </DialogTitle>
+        <DialogDescription>
+          {deleteConfirmation?.machine
             ? `This permanently removes ${deleteConfirmation.machine.name} and all its data.`
-            : "This action cannot be undone."
-        }
-        footer={
-          <ButtonGroup>
-            <Button variant="secondary" onClick={cancelDelete}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              Delete
-            </Button>
-          </ButtonGroup>
-        }
-      >
-        <p>All snapshots, volumes and attached configuration will be lost.</p>
+            : "This action cannot be undone."}
+        </DialogDescription>
+        <DialogBody>
+          <p>All snapshots, volumes and attached configuration will be lost.</p>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={cancelDelete}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={confirmDelete}>
+            Delete
+          </Button>
+        </DialogButtons>
       </Dialog>
     </Page>
   );

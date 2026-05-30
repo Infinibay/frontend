@@ -143,9 +143,7 @@ export default function PoolDetailPage({ params }) {
     <Page>
       <ResponsiveStack direction="col" gap={4}>
         <ResponsiveStack direction="row" gap={2} align="center">
-          <IconButton size="sm" variant="ghost" aria-label="Back" onClick={() => router.push('/pools')}>
-            <ArrowLeft size={14} />
-          </IconButton>
+          <IconButton size="sm" variant="ghost" label="Back" icon={<ArrowLeft size={14} />} onClick={() => router.push('/pools')} />
           <PageHeader
             title={pool.name}
             count={
@@ -154,14 +152,12 @@ export default function PoolDetailPage({ params }) {
                 status={pool.draining ? 'warning' : pool.currentSize < pool.sizeMin ? 'degraded' : 'online'}
                 size={8} />
               
-                <Badge tone={pool.type === 'persistent' ? 'info' : 'neutral'} size="sm">{pool.type}</Badge>
-                {pool.draining ? <Badge tone="warning" size="sm">draining</Badge> : null}
+                <Badge tone={pool.type === 'persistent' ? 'info' : 'neutral'}>{pool.type}</Badge>
+                {pool.draining ? <Badge tone="warning">draining</Badge> : null}
               </ResponsiveStack>
             }
             secondary={
-            <IconButton size="sm" variant="ghost" aria-label="Refresh" onClick={fetch} disabled={loading}>
-                <RefreshCcw size={14} />
-              </IconButton>
+            <IconButton size="sm" variant="ghost" label="Refresh" icon={<RefreshCcw size={14} />} onClick={fetch} disabled={loading} />
             } />
           
         </ResponsiveStack>

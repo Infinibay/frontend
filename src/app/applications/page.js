@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Package,
@@ -37,7 +37,6 @@ const debug = createDebugger("frontend:pages:applications");
 
 const ApplicationsPage = () => {
   const router = useRouter();
-  const [search, setSearch] = useState("");
 
   const {
     data: applications,
@@ -55,16 +54,25 @@ const ApplicationsPage = () => {
     hasError: !!error
   });
 
-  const filtered = useMemo(() => {
-    const list = applications || [];
-    const q = search.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(
-      (a) =>
-      a.name?.toLowerCase().includes(q) ||
-      a.description?.toLowerCase().includes(q)
-    );
-  }, [applications, search]);
+  const handleSearch = useCallback(
+    (query) => {
+      const list = applications || [];
+      const q = query.trim().toLowerCase();
+      if (!q) return [];
+      return list.
+      filter(
+        (a) =>
+        a.name?.toLowerCase().includes(q) ||
+        a.description?.toLowerCase().includes(q)
+      ).
+      map((a) => ({
+        id: a.id,
+        title: a.name,
+        subtitle: a.description || undefined
+      }));
+    },
+    [applications]
+  );
 
   const helpConfig = useMemo(
     () => ({
@@ -134,6 +142,7 @@ const ApplicationsPage = () => {
       <div className="flex items-center gap-3 min-w-0">
             {row.icon ?
         <span className="inline-flex w-6 h-6 rounded bg-white/5 border border-white/10 items-center justify-center overflow-hidden shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
             src={row.icon}
             alt=""
@@ -234,8 +243,8 @@ const ApplicationsPage = () => {
         filters={
         <SearchField
           placeholder="Search applications…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)} />
+          onSearch={handleSearch}
+          onPick={(r) => router.push(`/applications/${r.id}`)} />
 
         } />
       
@@ -258,19 +267,12 @@ const ApplicationsPage = () => {
       <ResponsiveStack direction="row" gap={3} justify="center" align="center">
           <Spinner /> Loading applications…
         </ResponsiveStack> :
-      filtered.length === 0 ?
+      (applications || []).length === 0 ?
       <EmptyState
         icon={<Package size={18} />}
-        title={
-        (applications || []).length ? "No matches" : "No applications yet"
-        }
-        description={
-        (applications || []).length ?
-        "No applications match your search." :
-        "Register your first application to see it here."
-        }
+        title="No applications yet"
+        description="Register your first application to see it here."
         actions={
-        !(applications || []).length ?
         <Tooltip content="New Application">
                 <span>
                   <Button
@@ -278,17 +280,16 @@ const ApplicationsPage = () => {
               variant="primary"
               icon={<Plus size={14} />}
               onClick={() => router.push("/applications/new")}>
-              
+
                     New Application
                   </Button>
                 </span>
-              </Tooltip> :
-        null
+              </Tooltip>
         } /> :
 
 
       <RowContextMenu
-        rows={filtered}
+        rows={applications || []}
         labelFor={(r) => r.name}
         buildItems={(r) => [
         {
@@ -297,9 +298,9 @@ const ApplicationsPage = () => {
           onSelect: () => router.push(`/applications/${r.id}`)
         }]
         }>
-        
+
           <DataTable
-          rows={filtered}
+          rows={applications || []}
           columns={columns}
           rowId={(r) => r.id}
           onRowClick={(row) => router.push(`/applications/${row.id}`)}
