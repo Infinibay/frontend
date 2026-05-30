@@ -1,3 +1,11 @@
+# Harbor is PINNED to a tag. The recorded gitlink commit (in the parent repo
+# index) is the source of truth — do NOT run `git submodule update --remote`:
+# that chases the remote branch and silently drifts the UI lib out from under
+# the frontend, which is what broke the app before. To intentionally bump:
+#   1) git -C harbor fetch --tags
+#   2) git -C harbor checkout <new tag>      (e.g. v0.3.2)
+#   3) git add harbor && commit, then update the "Pinned" note below.
+# Pinned: v0.3.1
 [submodule "harbor"]
 	path = harbor
 	url = https://github.com/Infinibay/harbor.git
