@@ -94,6 +94,12 @@ const DELETE_POOL = gql`
   mutation DeletePool($id: ID!) { deletePool(id: $id) }
 `;
 
+const GOLDEN_IMAGES_FOR_POOLS = gql`
+  query GoldenImagesForPools {
+    goldenImages { id name osType status version }
+  }
+`;
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -356,11 +362,28 @@ function NewPoolDialog({ onClose, onCreated }) {
   const [name, setName] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [templateId, setTemplateId] = useState('');
+  const [goldenImageId, setGoldenImageId] = useState('');
+  const [goldenImages, setGoldenImages] = useState([]);
   const [type, setType] = useState('non-persistent');
   const [sizeMin, setSizeMin] = useState('0');
   const [sizeMax, setSizeMax] = useState('10');
   const [idleTimeoutMinutes, setIdleTimeoutMinutes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Load published golden images so the operator can pin the pool to a
+  // specific sealed base instead of inheriting the blueprint's default.
+  useEffect(() => {
+    let cancelled = false;
+    client
+      .query({ query: GOLDEN_IMAGES_FOR_POOLS, fetchPolicy: 'network-only' })
+      .then(({ data }) => {
+        if (!cancelled) setGoldenImages(data?.goldenImages ?? []);
+      })
+      .catch((err) => debug.warn('golden images load', err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async () => {
     if (!name.trim()) return toast.error('Name required');
@@ -380,6 +403,7 @@ function NewPoolDialog({ onClose, onCreated }) {
             name: name.trim(),
             departmentId,
             templateId,
+            goldenImageId: goldenImageId || null,
             type,
             sizeMin: min,
             sizeMax: max,
@@ -422,7 +446,18 @@ function NewPoolDialog({ onClose, onCreated }) {
           { value: '', label: '— pick a blueprint —' },
           ...templates.map((t) => ({ value: t.id, label: t.name }))]
           } />
-        
+
+        <Select
+          label="Golden image (optional)"
+          value={goldenImageId}
+          onChange={setGoldenImageId}
+          options={[
+          { value: '', label: '— inherit from blueprint —' },
+          ...goldenImages.
+          filter((g) => g.status === 'published').
+          map((g) => ({ value: g.id, label: `${g.name} · v${g.version} (${g.osType})` }))]
+          } />
+
         <Select
           label="Type"
           value={type}

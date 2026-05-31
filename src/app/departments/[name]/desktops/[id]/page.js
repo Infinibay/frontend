@@ -26,6 +26,7 @@ import {
   Lightbulb,
   Monitor,
   MoveRight,
+  Network,
   Power,
   PowerOff,
   RefreshCw,
@@ -67,6 +68,10 @@ const VMScriptsTab = dynamic(() => import('./components/VMScriptsTab'), {
 const VMBackupsTab = dynamic(() => import('./components/VMBackupsTab'), {
   ssr: false,
   loading: () => <TabLoading label="Loading backups…" />,
+});
+const VMDomainTab = dynamic(() => import('./components/VMDomainTab'), {
+  ssr: false,
+  loading: () => <TabLoading label="Loading domain…" />,
 });
 
 function TabLoading({ label }) {
@@ -140,6 +145,7 @@ const VMDetailPage = () => {
     setShowToast,
     refreshVM,
     handlePowerAction,
+    isAdmin,
   } = useVMDetail(vmId);
 
   const {
@@ -464,6 +470,11 @@ const VMDetailPage = () => {
               <Tab value="backups" icon={<Database size={14} />}>
                 Backups
               </Tab>
+              {isAdmin ? (
+                <Tab value="domain" icon={<Network size={14} />}>
+                  Domain
+                </Tab>
+              ) : null}
             </TabList>
 
             <TabPanel value="overview">
@@ -497,6 +508,17 @@ const VMDetailPage = () => {
             <TabPanel value="backups">
               <VMBackupsTab vmId={vmId} vmStatus={vm?.status} vmSetupComplete={setupComplete} />
             </TabPanel>
+            {isAdmin ? (
+              <TabPanel value="domain">
+                <VMDomainTab
+                  vmId={vmId}
+                  vm={vm}
+                  vmStatus={vm?.status}
+                  vmSetupComplete={setupComplete}
+                  onJoined={refreshVM}
+                />
+              </TabPanel>
+            ) : null}
           </Tabs>
         </ResponsiveStack>
       </Container>

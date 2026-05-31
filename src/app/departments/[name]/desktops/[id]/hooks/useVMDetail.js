@@ -216,7 +216,7 @@ export const useVMDetail = (vmId) => {
 
   // Redux selectors
   const currentUser = useSelector(state => state.auth.user);
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const isAdmin = (currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN');
 
   // UI State
   const [showToast, setShowToast] = useState(false);

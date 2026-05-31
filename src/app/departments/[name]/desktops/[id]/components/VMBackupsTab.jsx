@@ -1023,10 +1023,45 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
         </DialogDescription>
         <DialogBody>
           {restoreTarget ?
-          <Alert tone="warning" icon={<Shield size={14} />} title="Irreversible action">
-              The VM should be stopped before restoring. Any changes made after the
-              backup ({formatDate(restoreTarget.createdAt)}) will be lost.
-            </Alert> :
+          <ResponsiveStack direction="col" gap={3}>
+              <Alert tone="warning" icon={<Shield size={14} />} title="Irreversible action">
+                The VM should be stopped before restoring. Any changes made after the
+                backup ({formatDate(restoreTarget.createdAt)}) will be lost.
+              </Alert>
+              {restoreTarget.disks?.length ?
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: 12, opacity: 0.7 }}>
+                    Disks to restore ({restoreTarget.disks.length})
+                  </span>
+                  {restoreTarget.disks.map((d, i) =>
+              <div
+                key={d.sourcePath || i}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  fontSize: 12,
+                  fontFamily: 'monospace'
+                }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {d.sourcePath}
+                      </span>
+                      <span style={{ opacity: 0.6, flexShrink: 0 }}>
+                        {formatBytes(d.backupSize ?? d.originalSize)}
+                      </span>
+                    </div>
+              )}
+                </div> :
+            null}
+              {restoreBackupState.loading ?
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <Progress tone="sky" shimmer />
+                  <span style={{ fontSize: 12, opacity: 0.7 }}>
+                    Restoring… this can take a few minutes. Keep this dialog open.
+                  </span>
+                </div> :
+            null}
+            </ResponsiveStack> :
           null}
         </DialogBody>
         <DialogButtons align="end">

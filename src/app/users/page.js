@@ -222,7 +222,7 @@ export default function UsersPage() {
     const list = users || [];
     return {
       total: list.length,
-      admins: list.filter((u) => u.role === "ADMIN").length,
+      admins: list.filter((u) => (u.role === "ADMIN" || u.role === "SUPER_ADMIN")).length,
       users: list.filter((u) => u.role === "USER").length
     };
   }, [users]);
@@ -390,7 +390,7 @@ export default function UsersPage() {
       width: 120,
       sortable: true,
       cell: ({ row }) =>
-      row.role === "ADMIN" ?
+      (row.role === "ADMIN" || row.role === "SUPER_ADMIN") ?
       <RoleBadge role="admin" /> :
 
       <RoleBadge role="viewer" label="User" />

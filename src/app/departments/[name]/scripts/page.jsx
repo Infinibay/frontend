@@ -67,7 +67,7 @@ export default function DepartmentScriptsPage() {
   const apolloClient = useApolloClient();
   const departmentName = params.name;
   const currentUser = useSelector((state) => state.auth.user);
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const isAdmin = (currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN');
 
   const departments = useSelector((state) => state.departments.items);
   const department = departments.find(
