@@ -93,16 +93,21 @@ const Page_ = () => {
       await dispatch(fetchCurrentUser()).unwrap();
       router.push("/desktops");
     } catch (err) {
-      if (
-        err.status === 401 ||
-        err.status === 403 ||
-        err.message?.includes("401") ||
-        err.message?.includes("403")
-      ) {
-        setError("Invalid email or password. Please check your credentials and try again.");
-      } else {
-        setError("An error occurred. Please try again later.");
-      }
+      // GraphQL auth failures come back as HTTP 200 with code UNAUTHENTICATED and
+      // message "Invalid credentials" (no 401/403 status). After the thunk
+      // serializes the error only `message`/`code` survive, so match on those too.
+      const message = err?.message || "";
+      const code = err?.extensions?.code || err?.code;
+      const isAuthError =
+        code === "UNAUTHENTICATED" ||
+        err?.status === 401 ||
+        err?.status === 403 ||
+        /invalid credentials|unauthenticated|401|403/i.test(message);
+      setError(
+        isAuthError
+          ? "Invalid email or password. Please check your credentials and try again."
+          : "An error occurred. Please try again later."
+      );
     } finally {
       setIsLoading(false);
     }
