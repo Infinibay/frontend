@@ -1062,19 +1062,68 @@ mutation DeleteIdentityGroupRoleMapping($id: ID!) {
   deleteIdentityGroupRoleMapping(id: $id)
 }
 
+fragment RoleFields on RoleType {
+  id
+  key
+  name
+  description
+  isSystem
+  priority
+  userCount
+  permissions {
+    permission
+    scope
+  }
+}
+
 mutation SetRolePermission($input: SetRolePermissionInput!) {
   setRolePermission(input: $input) {
-    principals {
-      id
-      label
-      kind
-      avatar
-    }
-    resources {
-      id
-      label
-      group
-    }
-    permissions
+    ...RoleFields
   }
+}
+
+mutation RemoveRolePermission($input: RemoveRolePermissionInput!) {
+  removeRolePermission(input: $input) {
+    ...RoleFields
+  }
+}
+
+mutation CreateRole($input: CreateRoleInput!) {
+  createRole(input: $input) {
+    ...RoleFields
+  }
+}
+
+mutation UpdateRole($input: UpdateRoleInput!) {
+  updateRole(input: $input) {
+    ...RoleFields
+  }
+}
+
+mutation DeleteRole($id: String!) {
+  deleteRole(id: $id)
+}
+
+mutation ResetRoleToDefault($roleId: String!) {
+  resetRoleToDefault(roleId: $roleId) {
+    ...RoleFields
+  }
+}
+
+mutation AssignUserRole($input: AssignUserRoleInput!) {
+  assignUserRole(input: $input)
+}
+
+mutation SetUserPermissionOverride($input: SetUserPermissionOverrideInput!) {
+  setUserPermissionOverride(input: $input) {
+    id
+    userId
+    permission
+    scope
+    effect
+  }
+}
+
+mutation ClearUserPermissionOverride($userId: String!, $permission: String!) {
+  clearUserPermissionOverride(userId: $userId, permission: $permission)
 }

@@ -1035,25 +1035,54 @@ query IdentityGroupRoleMappings($providerId: ID!) {
   }
 }
 
-query RolePermissionMatrix {
-  rolePermissionMatrix {
-    principals {
-      id
-      label
-      kind
-      avatar
-    }
+query PermissionRegistry {
+  permissionRegistry {
     resources {
-      id
+      key
       label
       group
+      scoped
+      verbs
     }
-    permissions
+    groups {
+      key
+      members
+    }
+  }
+}
+
+query Roles {
+  roles {
+    id
+    key
+    name
+    description
+    isSystem
+    priority
+    userCount
+    permissions {
+      permission
+      scope
+    }
+  }
+}
+
+query UserPermissionOverrides($userId: String!) {
+  userPermissionOverrides(userId: $userId) {
+    id
+    userId
+    permission
+    scope
+    effect
   }
 }
 
 query MyPermissions {
   myPermissions {
     allowedResources
+    grants {
+      permission
+      scope
+    }
   }
 }

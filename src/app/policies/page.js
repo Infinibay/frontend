@@ -8,27 +8,48 @@ import {
   Alert,
   Badge,
   Button,
+  IconButton,
   DataTable,
   EmptyState,
-  PermissionMatrix,
+  Accordion,
+  AccordionItem,
   ResponsiveStack,
   Select } from
 '@infinibay/harbor';
-import { History, Plus, RefreshCw, ShieldCheck, Trash2, Users } from 'lucide-react';
+import {
+  History,
+  Lock,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+  Users } from
+'lucide-react';
 
 import client from '@/apollo-client';
 import { PageHeader } from '@/components/common/PageHeader';
 import { fetchUsers } from '@/state/slices/users';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import {
-  PermissionEffect,
-  useRolePermissionMatrixQuery,
-  useSetRolePermissionMutation
+  usePermissionRegistryQuery,
+  useRolesQuery,
+  useUserPermissionOverridesQuery,
+  useSetRolePermissionMutation,
+  useRemoveRolePermissionMutation,
+  useCreateRoleMutation,
+  useDeleteRoleMutation,
+  useResetRoleToDefaultMutation,
+  useAssignUserRoleMutation,
+  useSetUserPermissionOverrideMutation,
+  useClearUserPermissionOverrideMutation
 } from '@/gql/hooks';
+import { PermissionScope, GrantEffect } from '@/gql/graphql';
 import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
-// GraphQL (inline — these operations are admin-only and not part of codegen)
+// GraphQL (inline — department-role + audit operations are admin-only and
+// not part of codegen). These are unchanged from the previous page.
 // ---------------------------------------------------------------------------
 
 const DEPARTMENTS_Q = gql`
@@ -83,48 +104,34 @@ const AUDIT_Q = gql`
   }
 `;
 
-const ROLE_PRINCIPALS = [
-  { id: 'SUPER_ADMIN', label: 'Super admin', kind: 'role', avatar: 'SA' },
-  { id: 'ADMIN', label: 'Admin', kind: 'role', avatar: 'AD' },
-  { id: 'USER', label: 'User', kind: 'role', avatar: 'US' }
-];
+// ---------------------------------------------------------------------------
+// Scope helpers
+// ---------------------------------------------------------------------------
 
-const PERMISSION_RESOURCES = [
-  { id: 'overview', label: 'Overview', group: 'Operate' },
-  { id: 'desktops', label: 'Desktops', group: 'Operate' },
-  { id: 'workspace', label: 'Workspace', group: 'Operate' },
-  { id: 'infrastructure', label: 'Infrastructure', group: 'Operate' },
-  { id: 'departments', label: 'Departments', group: 'Operate' },
-  { id: 'blueprints', label: 'Blueprints', group: 'Operate' },
-  { id: 'applications', label: 'Applications', group: 'Operate' },
-  { id: 'firewall', label: 'Firewall', group: 'Operate' },
-  { id: 'scripts', label: 'Scripts', group: 'Operate' },
-  { id: 'users', label: 'Users', group: 'Admin' },
-  { id: 'identity', label: 'Identity', group: 'Admin' },
-  { id: 'policies', label: 'Policies', group: 'Admin' },
-  { id: 'settings', label: 'Settings', group: 'Admin' }
-];
-
-const EFFECTIVE_PERMISSIONS = {
-  'SUPER_ADMIN:overview': 'allow', 'SUPER_ADMIN:desktops': 'allow', 'SUPER_ADMIN:workspace': 'allow',
-  'SUPER_ADMIN:infrastructure': 'allow', 'SUPER_ADMIN:departments': 'allow', 'SUPER_ADMIN:blueprints': 'allow',
-  'SUPER_ADMIN:applications': 'allow', 'SUPER_ADMIN:firewall': 'allow', 'SUPER_ADMIN:scripts': 'allow',
-  'SUPER_ADMIN:users': 'allow', 'SUPER_ADMIN:identity': 'allow', 'SUPER_ADMIN:policies': 'allow',
-  'SUPER_ADMIN:settings': 'allow',
-  'ADMIN:overview': 'allow', 'ADMIN:desktops': 'allow', 'ADMIN:workspace': 'allow',
-  'ADMIN:infrastructure': 'allow', 'ADMIN:departments': 'allow', 'ADMIN:blueprints': 'allow',
-  'ADMIN:applications': 'allow', 'ADMIN:firewall': 'allow', 'ADMIN:scripts': 'allow',
-  'ADMIN:users': 'allow', 'ADMIN:identity': 'allow', 'ADMIN:policies': 'allow', 'ADMIN:settings': 'allow',
-  'USER:overview': 'deny', 'USER:desktops': 'deny', 'USER:workspace': 'allow',
-  'USER:infrastructure': 'deny', 'USER:departments': 'deny', 'USER:blueprints': 'deny',
-  'USER:applications': 'deny', 'USER:firewall': 'deny', 'USER:scripts': 'deny',
-  'USER:users': 'deny', 'USER:identity': 'deny', 'USER:policies': 'deny', 'USER:settings': 'deny'
+const SCOPE_RANK = {
+  [PermissionScope.Own]: 1,
+  [PermissionScope.Department]: 2,
+  [PermissionScope.Any]: 3
 };
 
-function roleLabel(role) {
-  if (role === 'SUPER_ADMIN') return 'Super admin';
-  if (role === 'ADMIN') return 'Admin';
-  return 'User';
+const SCOPE_LABEL = {
+  [PermissionScope.Own]: 'Own',
+  [PermissionScope.Department]: 'Department',
+  [PermissionScope.Any]: 'Any'
+};
+
+const NONE = '__none__';
+
+function scopeOptions(scoped) {
+  const opts = [{ value: NONE, label: '—' }];
+  if (scoped) {
+    opts.push(
+      { value: PermissionScope.Own, label: 'Own' },
+      { value: PermissionScope.Department, label: 'Department' }
+    );
+  }
+  opts.push({ value: PermissionScope.Any, label: 'Any' });
+  return opts;
 }
 
 function formatWhen(value) {
@@ -136,17 +143,124 @@ function formatWhen(value) {
   }
 }
 
-const SectionCard = ({ icon, title, children }) => (
+function roleLabel(role) {
+  if (role === 'SUPER_ADMIN') return 'Super admin';
+  if (role === 'ADMIN') return 'Admin';
+  return 'User';
+}
+
+const SectionCard = ({ icon, title, action, children }) => (
   <section className="rounded-md border border-border-subtle bg-surface-raised p-4">
     <ResponsiveStack direction="col" gap={3}>
       <ResponsiveStack direction="row" gap={2} align="center">
         {icon}
         <span className="text-sm font-medium">{title}</span>
+        {action ? <div className="ml-auto">{action}</div> : null}
       </ResponsiveStack>
       {children}
     </ResponsiveStack>
   </section>
 );
+
+// ---------------------------------------------------------------------------
+// Effective-grant lookup
+// ---------------------------------------------------------------------------
+// Build a map of `${resource}:${verb}` -> { scope, source } that expands:
+//   - `*`                     (all permissions)
+//   - `${resource}:manage`    (every verb of that resource)
+//   - cross-resource groups   (a grant on a group key fans out to its members)
+// `source` is 'direct' | 'manage' | 'group' | 'wildcard' so the UI can show
+// derived grants as disabled ("via *", "via manage", "via group").
+function buildEffectiveGrants(role, registry) {
+  const result = new Map();
+  if (!role || !registry) return result;
+
+  const resources = registry.resources || [];
+  const groups = registry.groups || [];
+  const groupMembers = new Map(groups.map((g) => [g.key, g.members || []]));
+
+  // resourceKey -> verbs[]
+  const verbsByResource = new Map(resources.map((r) => [r.key, r.verbs || []]));
+
+  const stronger = (a, b) => ((SCOPE_RANK[a] || 0) >= (SCOPE_RANK[b] || 0) ? a : b);
+
+  const apply = (resourceKey, verb, scope, source) => {
+    const key = `${resourceKey}:${verb}`;
+    const existing = result.get(key);
+    if (!existing) {
+      result.set(key, { scope, source });
+      return;
+    }
+    // Keep the strongest scope; a direct grant always wins as the source.
+    const nextScope = stronger(existing.scope, scope);
+    const nextSource = source === 'direct' ? 'direct' : existing.source;
+    result.set(key, { scope: nextScope, source: nextSource });
+  };
+
+  // Expand a single (permission, scope) grant into concrete resource:verb pairs.
+  const expandGrant = (permission, scope) => {
+    if (permission === '*') {
+      for (const r of resources) {
+        for (const v of r.verbs || []) apply(r.key, v, scope, 'wildcard');
+      }
+      return;
+    }
+
+    const [resourcePart, verbPart] = permission.split(':');
+
+    // Cross-resource group grant (group key in the registry groups list).
+    if (groupMembers.has(resourcePart) && verbPart === undefined) {
+      for (const member of groupMembers.get(resourcePart)) {
+        expandGrantMember(member, scope, 'group');
+      }
+      return;
+    }
+    if (groupMembers.has(permission)) {
+      for (const member of groupMembers.get(permission)) {
+        expandGrantMember(member, scope, 'group');
+      }
+      return;
+    }
+
+    if (verbPart === 'manage') {
+      const verbs = verbsByResource.get(resourcePart) || [];
+      for (const v of verbs) apply(resourcePart, v, scope, 'manage');
+      return;
+    }
+
+    if (resourcePart && verbPart) {
+      apply(resourcePart, verbPart, scope, 'direct');
+    }
+  };
+
+  // A group member is itself a permission string (e.g. "firewall:read" or
+  // "firewall:manage" or another group key); expand it with a 'group' source.
+  const expandGrantMember = (member, scope, sourceTag) => {
+    const [resourcePart, verbPart] = member.split(':');
+    if (member === '*') {
+      for (const r of resources) {
+        for (const v of r.verbs || []) apply(r.key, v, scope, sourceTag);
+      }
+      return;
+    }
+    if (groupMembers.has(member)) {
+      for (const m of groupMembers.get(member)) expandGrantMember(m, scope, sourceTag);
+      return;
+    }
+    if (verbPart === 'manage') {
+      const verbs = verbsByResource.get(resourcePart) || [];
+      for (const v of verbs) apply(resourcePart, v, scope, sourceTag);
+      return;
+    }
+    if (resourcePart && verbPart) apply(resourcePart, verbPart, scope, sourceTag);
+  };
+
+  for (const grant of role.permissions || []) {
+    expandGrant(grant.permission, grant.scope);
+  }
+
+  return result;
+}
 
 export default function PoliciesListPage() {
   const router = useRouter();
@@ -159,30 +273,153 @@ export default function PoliciesListPage() {
     strategy: LOADING_STRATEGIES.BACKGROUND,
     ttl: 3 * 60 * 1000
   });
-  const {
-    data: policyData,
-    loading: policiesLoading,
-    error: policiesError,
-    refetch: refetchPolicies
-  } = useRolePermissionMatrixQuery({
-    fetchPolicy: 'cache-and-network'
-  });
-  const [setRolePermission, { loading: savingPolicy }] = useSetRolePermissionMutation();
-
-  const matrix = policyData?.rolePermissionMatrix;
-  const principals = matrix?.principals?.length ? matrix.principals : ROLE_PRINCIPALS;
-  const resources = matrix?.resources?.length ? matrix.resources : PERMISSION_RESOURCES;
-  const permissions = matrix?.permissions || EFFECTIVE_PERMISSIONS;
 
   // -------------------------------------------------------------------------
-  // Department roles + audit log state
+  // RBAC data
+  // -------------------------------------------------------------------------
+  const {
+    data: registryData,
+    loading: registryLoading,
+    error: registryError
+  } = usePermissionRegistryQuery();
+  const {
+    data: rolesData,
+    loading: rolesLoading,
+    error: rolesError,
+    refetch: refetchRoles
+  } = useRolesQuery({ fetchPolicy: 'cache-and-network' });
+
+  const [setRolePermission] = useSetRolePermissionMutation();
+  const [removeRolePermission] = useRemoveRolePermissionMutation();
+  const [createRole, { loading: creatingRole }] = useCreateRoleMutation();
+  const [deleteRole] = useDeleteRoleMutation();
+  const [resetRoleToDefault, { loading: resettingRole }] = useResetRoleToDefaultMutation();
+  const [assignUserRole, { loading: assigning }] = useAssignUserRoleMutation();
+  const [setUserPermissionOverride, { loading: settingOverride }] = useSetUserPermissionOverrideMutation();
+  const [clearUserPermissionOverride] = useClearUserPermissionOverrideMutation();
+
+  const registry = registryData?.permissionRegistry;
+  const roles = useMemo(() => rolesData?.roles || [], [rolesData]);
+
+  const [selectedRoleId, setSelectedRoleId] = useState(null);
+  const selectedRole = useMemo(
+    () => roles.find((r) => r.id === selectedRoleId) || null,
+    [roles, selectedRoleId]
+  );
+  const roleReadOnly = selectedRole?.key === 'SUPER_ADMIN';
+
+  // Pick the first role when data lands.
+  useEffect(() => {
+    if (!selectedRoleId && roles.length) {
+      setSelectedRoleId(roles[0].id);
+    }
+  }, [roles, selectedRoleId]);
+
+  const effectiveGrants = useMemo(
+    () => buildEffectiveGrants(selectedRole, registry),
+    [selectedRole, registry]
+  );
+
+  // Group resources by registry group for the Accordion.
+  const resourcesByGroup = useMemo(() => {
+    const map = new Map();
+    for (const r of registry?.resources || []) {
+      if (!map.has(r.group)) map.set(r.group, []);
+      map.get(r.group).push(r);
+    }
+    return Array.from(map.entries());
+  }, [registry]);
+
+  // -------------------------------------------------------------------------
+  // New-role form
+  // -------------------------------------------------------------------------
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleDescription, setNewRoleDescription] = useState('');
+
+  const handleCreateRole = async () => {
+    const name = newRoleName.trim();
+    if (!name) {
+      toast.error('Give the role a name');
+      return;
+    }
+    try {
+      const { data } = await createRole({
+        variables: {
+          input: { name, description: newRoleDescription.trim() || null, permissions: [] }
+        }
+      });
+      toast.success('Role created');
+      setNewRoleName('');
+      setNewRoleDescription('');
+      const { data: fresh } = await refetchRoles();
+      const created = data?.createRole;
+      const id = created?.id || fresh?.roles?.find((r) => r.name === name)?.id;
+      if (id) setSelectedRoleId(id);
+    } catch (err) {
+      toast.error(err?.message || 'Could not create role');
+    }
+  };
+
+  const handleDeleteRole = async (role) => {
+    try {
+      await deleteRole({ variables: { id: role.id } });
+      toast.success('Role deleted');
+      if (selectedRoleId === role.id) setSelectedRoleId(null);
+      await refetchRoles();
+    } catch (err) {
+      toast.error(err?.message || 'Could not delete role');
+    }
+  };
+
+  // System presets (except the locked SUPER_ADMIN) can be reset to their seeded
+  // defaults, discarding any in-place customizations.
+  const handleResetRole = async (role) => {
+    if (!role || !role.isSystem || role.key === 'SUPER_ADMIN') return;
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm(`Reset "${role.name}" to its default permissions? This discards any customizations.`)
+    ) {
+      return;
+    }
+    try {
+      await resetRoleToDefault({ variables: { roleId: role.id } });
+      toast.success(`"${role.name}" reset to defaults`);
+      await refetchRoles();
+    } catch (err) {
+      toast.error(err?.message || 'Could not reset role');
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Permission editing
+  // -------------------------------------------------------------------------
+  const changeGrant = async (permission, nextValue) => {
+    if (!selectedRole || roleReadOnly) return;
+    try {
+      if (nextValue === NONE) {
+        await removeRolePermission({
+          variables: { input: { roleId: selectedRole.id, permission } }
+        });
+      } else {
+        await setRolePermission({
+          variables: { input: { roleId: selectedRole.id, permission, scope: nextValue } }
+        });
+      }
+      await refetchRoles();
+    } catch (err) {
+      toast.error(err?.message || 'Could not update permission');
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Department roles + audit log (PRESERVED verbatim from the prior page)
   // -------------------------------------------------------------------------
   const [departments, setDepartments] = useState([]);
   const [selectedDept, setSelectedDept] = useState('');
   const [members, setMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [newUserId, setNewUserId] = useState('');
-  const [newRole, setNewRole] = useState('MEMBER');
+  const [newDeptRole, setNewDeptRole] = useState('MEMBER');
   const [savingMember, setSavingMember] = useState(false);
   const [audit, setAudit] = useState([]);
 
@@ -248,31 +485,6 @@ export default function PoliciesListPage() {
     loadMembers(selectedDept);
   }, [selectedDept, loadMembers]);
 
-  const persistPermission = async (principalId, resourceId, next) => {
-    const effect =
-      next === 'allow'
-        ? PermissionEffect.Allow
-        : next === 'deny'
-          ? PermissionEffect.Deny
-          : PermissionEffect.Inherit;
-
-    try {
-      await setRolePermission({
-        variables: { input: { role: principalId, resource: resourceId, effect } }
-      });
-      await refetchPolicies();
-      loadAudit();
-    } catch (err) {
-      toast.error(err?.message || 'Could not update permission');
-    }
-  };
-
-  const persistBulkPermissions = async (changes) => {
-    for (const change of changes) {
-      await persistPermission(change.principalId, change.resourceId, change.value);
-    }
-  };
-
   const memberUserIds = useMemo(() => new Set(members.map((m) => m.userId)), [members]);
   const assignableUsers = useMemo(
     () => userList.filter((u) => !u.deleted && !memberUserIds.has(u.id)),
@@ -288,11 +500,11 @@ export default function PoliciesListPage() {
     try {
       await client.mutate({
         mutation: SET_MEMBER_M,
-        variables: { input: { departmentId: selectedDept, userId: newUserId, role: newRole } }
+        variables: { input: { departmentId: selectedDept, userId: newUserId, role: newDeptRole } }
       });
       toast.success('Member added');
       setNewUserId('');
-      setNewRole('MEMBER');
+      setNewDeptRole('MEMBER');
       await loadMembers(selectedDept);
       loadAudit();
     } catch (err) {
@@ -328,52 +540,101 @@ export default function PoliciesListPage() {
     }
   };
 
-  const roleRows = useMemo(() => {
-    const counts = new Map();
-    for (const user of userList) {
-      const role = user.role || 'USER';
-      counts.set(role, (counts.get(role) || 0) + 1);
+  // -------------------------------------------------------------------------
+  // Assign role to user
+  // -------------------------------------------------------------------------
+  const [assignUserId, setAssignUserId] = useState('');
+  const [assignRoleId, setAssignRoleId] = useState('');
+
+  const handleAssignRole = async () => {
+    if (!assignUserId || !assignRoleId) {
+      toast.error('Pick a user and a role');
+      return;
     }
-    return principals.map((principal) => ({
-      id: principal.id,
-      role: principal.id,
-      users: counts.get(principal.id) || 0,
-      access:
-        principal.id === 'USER'
-          ? 'Workspace only'
-          : principal.id === 'ADMIN'
-            ? 'Operator console'
-            : 'Full control'
-    }));
-  }, [principals, userList]);
+    try {
+      await assignUserRole({ variables: { input: { userId: assignUserId, roleId: assignRoleId } } });
+      toast.success('Role assigned');
+      setAssignUserId('');
+      setAssignRoleId('');
+      await refetchRoles();
+      loadAudit();
+    } catch (err) {
+      toast.error(err?.message || 'Could not assign role');
+    }
+  };
 
-  const roleColumns = useMemo(
-    () => [
-    {
-      id: 'role',
-      header: 'Role',
-      cell: ({ row }) =>
-      <ResponsiveStack direction="row" gap={2} align="center">
-            <ShieldCheck size={14} className="text-fg-muted" />
-            <span className="font-medium">{roleLabel(row.role)}</span>
-          </ResponsiveStack>
-    },
-    {
-      id: 'access',
-      header: 'Effective access',
-      width: 180,
-      cell: ({ row }) => <Badge tone="neutral">{row.access}</Badge>
-    },
-    {
-      id: 'users',
-      header: 'Users',
-      width: 90,
-      align: 'right',
-      cell: ({ row }) => <span className="font-mono text-xs">{row.users}</span>
-    }],
-    []
-  );
+  // -------------------------------------------------------------------------
+  // Per-user overrides
+  // -------------------------------------------------------------------------
+  const [overrideUserId, setOverrideUserId] = useState('');
+  const {
+    data: overridesData,
+    loading: overridesLoading,
+    refetch: refetchOverrides
+  } = useUserPermissionOverridesQuery({
+    variables: { userId: overrideUserId },
+    skip: !overrideUserId,
+    fetchPolicy: 'cache-and-network'
+  });
+  const overrides = overridesData?.userPermissionOverrides || [];
 
+  const [overridePermission, setOverridePermission] = useState('');
+  const [overrideScope, setOverrideScope] = useState(PermissionScope.Any);
+  const [overrideEffect, setOverrideEffect] = useState(GrantEffect.Allow);
+
+  // All concrete `resource:verb` leaves from the registry, for the picker.
+  const registryLeaves = useMemo(() => {
+    const leaves = [];
+    for (const r of registry?.resources || []) {
+      for (const v of r.verbs || []) {
+        leaves.push({ value: `${r.key}:${v}`, label: `${r.label} · ${v}` });
+      }
+    }
+    return leaves;
+  }, [registry]);
+
+  const handleAddOverride = async () => {
+    const permission = overridePermission.trim();
+    if (!overrideUserId || !permission) {
+      toast.error('Pick a user and a permission');
+      return;
+    }
+    try {
+      await setUserPermissionOverride({
+        variables: {
+          input: {
+            userId: overrideUserId,
+            permission,
+            scope: overrideScope,
+            effect: overrideEffect
+          }
+        }
+      });
+      toast.success('Override saved');
+      setOverridePermission('');
+      await refetchOverrides();
+      loadAudit();
+    } catch (err) {
+      toast.error(err?.message || 'Could not save override');
+    }
+  };
+
+  const handleClearOverride = async (override) => {
+    try {
+      await clearUserPermissionOverride({
+        variables: { userId: override.userId, permission: override.permission }
+      });
+      toast.success('Override cleared');
+      await refetchOverrides();
+      loadAudit();
+    } catch (err) {
+      toast.error(err?.message || 'Could not clear override');
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Table column definitions
+  // -------------------------------------------------------------------------
   const memberColumns = useMemo(
     () => [
     {
@@ -438,13 +699,123 @@ export default function PoliciesListPage() {
     []
   );
 
+  const overrideColumns = useMemo(
+    () => [
+    {
+      id: 'permission',
+      header: 'Permission',
+      cell: ({ row }) => <span className="font-mono text-xs">{row.permission}</span>
+    },
+    {
+      id: 'scope',
+      header: 'Scope',
+      width: 130,
+      cell: ({ row }) => <Badge tone="neutral">{SCOPE_LABEL[row.scope] || row.scope}</Badge>
+    },
+    {
+      id: 'effect',
+      header: 'Effect',
+      width: 110,
+      cell: ({ row }) =>
+      <Badge tone={row.effect === GrantEffect.Allow ? 'success' : 'danger'}>
+            {row.effect === GrantEffect.Allow ? 'Allow' : 'Deny'}
+          </Badge>
+    },
+    {
+      id: 'actions',
+      header: '',
+      width: 80,
+      align: 'right',
+      cell: ({ row }) =>
+      <Button size="sm" variant="ghost" icon={<Trash2 size={12} />} onClick={() => handleClearOverride(row)} />
+    }],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  // -------------------------------------------------------------------------
+  // Render helpers
+  // -------------------------------------------------------------------------
+  const renderResourceItem = (resource) => {
+    // The resource-level "manage" grant value (direct grant only).
+    const manageGrant = (selectedRole?.permissions || []).find(
+      (g) => g.permission === `${resource.key}:manage`
+    );
+    const manageValue = manageGrant ? manageGrant.scope : NONE;
+
+    return (
+      <ResponsiveStack direction="col" gap={2}>
+        <ResponsiveStack direction="row" gap={2} align="center">
+          <span className="text-xs font-medium text-fg-muted">Grant all (manage)</span>
+          <div className="w-40">
+            <Select
+              size="sm"
+              value={manageValue}
+              disabled={roleReadOnly}
+              onChange={(v) => changeGrant(`${resource.key}:manage`, v)}
+              options={scopeOptions(resource.scoped)} />
+          </div>
+        </ResponsiveStack>
+
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          {(resource.verbs || []).map((verb) => {
+            const permission = `${resource.key}:${verb}`;
+            const directGrant = (selectedRole?.permissions || []).find(
+              (g) => g.permission === permission
+            );
+            const eff = effectiveGrants.get(permission);
+            const derived = eff && eff.source !== 'direct';
+
+            const value = directGrant
+              ? directGrant.scope
+              : derived
+                ? eff.scope
+                : NONE;
+
+            const derivedLabel =
+              eff?.source === 'wildcard'
+                ? 'via *'
+                : eff?.source === 'manage'
+                  ? 'via manage'
+                  : eff?.source === 'group'
+                    ? 'via group'
+                    : null;
+
+            return (
+              <div
+                key={permission}
+                className="flex items-center justify-between gap-2 rounded-md border border-border-subtle px-3 py-2">
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate text-sm">{verb}</span>
+                  {derived && derivedLabel ? (
+                    <span className="text-fg-muted text-xs">{derivedLabel}</span>
+                  ) : null}
+                </div>
+                <div className="w-36 shrink-0">
+                  <Select
+                    size="sm"
+                    value={value}
+                    disabled={roleReadOnly || derived}
+                    onChange={(v) => changeGrant(permission, v)}
+                    options={scopeOptions(resource.scoped)} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </ResponsiveStack>
+    );
+  };
+
+  const rbacError = registryError || rolesError;
+
   return (
     <Page>
       <ResponsiveStack direction="col" gap={4}>
         <PageHeader
-          title="Policies"
-          count="role-based access"
-          description="Backend-backed role access matrix, department-scoped roles, and an audit trail for this Infinibay instance."
+          title="Roles & Permissions"
+          count="action-based access"
+          description="Define roles from the permission registry, assign them to users, layer per-user overrides, and manage department-scoped roles — all audited."
           primary={
             <Button variant="primary" onClick={() => router.push('/users')}>
               <Users size={14} />
@@ -456,40 +827,293 @@ export default function PoliciesListPage() {
               variant="secondary"
               onClick={() => {
                 refresh();
-                refetchPolicies();
+                refetchRoles();
                 loadDepartments();
                 loadMembers(selectedDept);
                 loadAudit();
               }}
-              disabled={isLoading || policiesLoading || savingPolicy}
-            >
+              disabled={isLoading || rolesLoading || registryLoading}>
               <RefreshCw size={14} />
               Refresh
             </Button>
           } />
 
-        {policiesError ? (
-          <Alert tone="warning" icon={<ShieldCheck size={14} />} title="Policy backend unavailable">
-            Showing safe built-in role defaults. Persisted role permissions could not be loaded.
+        {rbacError ? (
+          <Alert tone="warning" icon={<ShieldCheck size={14} />} title="Permission backend unavailable">
+            Roles or the permission registry could not be loaded. Some controls may be disabled.
           </Alert>
         ) : (
-          <Alert tone="info" icon={<ShieldCheck size={14} />} title="Role permissions are backend-backed">
-            SUPER_ADMIN remains protected. Department roles below grant scoped access without making someone a global admin; every change is recorded in the audit trail.
+          <Alert tone="info" icon={<ShieldCheck size={14} />} title="SUPER_ADMIN is protected; changes are audited">
+            The SUPER_ADMIN role is read-only and always retains full control. Every role, override, and
+            department-role change is recorded in the access change log below.
           </Alert>
         )}
 
-        <SectionCard icon={<ShieldCheck size={16} className="text-fg-muted" />} title="Effective role matrix">
-          <PermissionMatrix
-            principals={principals}
-            resources={resources}
-            value={permissions}
-            onChange={persistPermission}
-            onBulkChange={persistBulkPermissions}
-            density="compact" />
+        {/* ---------------------------------------------------------------- */}
+        {/* Roles list + permission editor                                   */}
+        {/* ---------------------------------------------------------------- */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[20rem_1fr]">
+          <SectionCard
+            icon={<ShieldCheck size={16} className="text-fg-muted" />}
+            title="Roles">
+            <ResponsiveStack direction="col" gap={2}>
+              {rolesLoading && !roles.length ? (
+                <span className="text-fg-muted text-sm">Loading roles…</span>
+              ) : roles.length ? (
+                roles.map((role) => {
+                  const active = role.id === selectedRoleId;
+                  return (
+                    <button
+                      key={role.id}
+                      type="button"
+                      onClick={() => setSelectedRoleId(role.id)}
+                      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-left transition-colors ${
+                        active
+                          ? 'border-border-strong bg-surface-overlay'
+                          : 'border-border-subtle hover:bg-surface-overlay'
+                      }`}>
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <span className="flex items-center gap-2 truncate text-sm font-medium">
+                          {role.name}
+                          {role.key === 'SUPER_ADMIN' ? (
+                            <Lock size={12} className="text-fg-muted" />
+                          ) : null}
+                        </span>
+                        {role.description ? (
+                          <span className="text-fg-muted truncate text-xs">{role.description}</span>
+                        ) : null}
+                      </div>
+                      {role.isSystem ? <Badge tone="info">system</Badge> : null}
+                      <Badge tone="neutral">{role.userCount ?? 0}</Badge>
+                      {!role.isSystem ? (
+                        <IconButton
+                          size="sm"
+                          variant="ghost"
+                          label="Delete role"
+                          icon={<Trash2 size={12} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteRole(role);
+                          }} />
+                      ) : null}
+                    </button>
+                  );
+                })
+              ) : (
+                <EmptyState
+                  icon={<ShieldCheck size={18} />}
+                  title="No roles yet"
+                  description="Create a role below to start granting permissions." />
+              )}
+
+              <div className="mt-2 flex flex-col gap-2 border-t border-border-subtle pt-3">
+                <span className="text-xs font-medium text-fg-muted">New role</span>
+                <input
+                  className="rounded-md border border-border-subtle bg-surface-base px-3 py-2 text-sm outline-none focus:border-border-strong"
+                  placeholder="Role name"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)} />
+                <input
+                  className="rounded-md border border-border-subtle bg-surface-base px-3 py-2 text-sm outline-none focus:border-border-strong"
+                  placeholder="Description (optional)"
+                  value={newRoleDescription}
+                  onChange={(e) => setNewRoleDescription(e.target.value)} />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Plus size={14} />}
+                  loading={creatingRole}
+                  onClick={handleCreateRole}>
+                  Create role
+                </Button>
+              </div>
+            </ResponsiveStack>
+          </SectionCard>
+
+          <SectionCard
+            icon={<ShieldCheck size={16} className="text-fg-muted" />}
+            title={selectedRole ? `Permissions · ${selectedRole.name}` : 'Permissions'}
+            action={
+              <div className="flex items-center gap-2">
+                {selectedRole?.isSystem && selectedRole?.key !== 'SUPER_ADMIN' ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<RefreshCw size={14} />}
+                    loading={resettingRole}
+                    onClick={() => handleResetRole(selectedRole)}>
+                    Reset to default
+                  </Button>
+                ) : null}
+                {roleReadOnly ? (
+                  <Badge tone="warning" icon={<Lock size={12} />}>
+                    read-only
+                  </Badge>
+                ) : null}
+              </div>
+            }>
+            {!selectedRole ? (
+              <EmptyState
+                icon={<ShieldCheck size={18} />}
+                title="Select a role"
+                description="Pick a role on the left to edit its permissions." />
+            ) : registryLoading && !registry ? (
+              <span className="text-fg-muted text-sm">Loading permission registry…</span>
+            ) : !resourcesByGroup.length ? (
+              <EmptyState
+                icon={<ShieldCheck size={18} />}
+                title="No permissions registered"
+                description="The permission registry returned no resources." />
+            ) : (
+              <Accordion multiple defaultValue={resourcesByGroup[0]?.[1]?.[0]?.key}>
+                {resourcesByGroup.map(([group, groupResources]) => (
+                  <div key={group} className="space-y-2">
+                    <span className="text-fg-muted text-xs font-semibold uppercase tracking-wide">
+                      {group}
+                    </span>
+                    {groupResources.map((resource) => (
+                      <AccordionItem
+                        key={resource.key}
+                        value={resource.key}
+                        title={
+                          <span className="flex items-center gap-2">
+                            {resource.label}
+                            {!resource.scoped ? (
+                              <Badge tone="neutral">global</Badge>
+                            ) : null}
+                          </span>
+                        }>
+                        {renderResourceItem(resource)}
+                      </AccordionItem>
+                    ))}
+                  </div>
+                ))}
+              </Accordion>
+            )}
+          </SectionCard>
+        </div>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Assign role to user                                              */}
+        {/* ---------------------------------------------------------------- */}
+        <SectionCard icon={<UserPlus size={16} className="text-fg-muted" />} title="Assign role to user">
+          <ResponsiveStack direction={{ base: 'col', lg: 'row' }} gap={2} align="end">
+            <div className="flex-1 min-w-0">
+              <Select
+                label="User"
+                value={assignUserId}
+                onChange={setAssignUserId}
+                options={[
+                { value: '', label: '— pick a user —' },
+                ...userList
+                  .filter((u) => !u.deleted)
+                  .map((u) => ({ value: u.id, label: `${userNameById.get(u.id)} · ${u.email}` }))]
+                } />
+            </div>
+            <div className="w-full lg:w-72">
+              <Select
+                label="Role"
+                value={assignRoleId}
+                onChange={setAssignRoleId}
+                options={[
+                { value: '', label: '— pick a role —' },
+                ...roles.map((r) => ({ value: r.id, label: r.name }))]
+                } />
+            </div>
+            <Button
+              variant="primary"
+              icon={<UserPlus size={14} />}
+              loading={assigning}
+              disabled={!assignUserId || !assignRoleId}
+              onClick={handleAssignRole}>
+              Assign
+            </Button>
+          </ResponsiveStack>
         </SectionCard>
 
-        <DataTable rows={roleRows} columns={roleColumns} rowId={(r) => r.id} defaultDensity="compact" />
+        {/* ---------------------------------------------------------------- */}
+        {/* Per-user overrides                                               */}
+        {/* ---------------------------------------------------------------- */}
+        <SectionCard icon={<ShieldCheck size={16} className="text-fg-muted" />} title="Per-user overrides">
+          <div className="w-full lg:w-96">
+            <Select
+              label="User"
+              value={overrideUserId}
+              onChange={setOverrideUserId}
+              options={[
+              { value: '', label: '— pick a user —' },
+              ...userList
+                .filter((u) => !u.deleted)
+                .map((u) => ({ value: u.id, label: `${userNameById.get(u.id)} · ${u.email}` }))]
+              } />
+          </div>
 
+          {!overrideUserId ? (
+            <EmptyState
+              icon={<ShieldCheck size={18} />}
+              title="Pick a user"
+              description="Choose a user to view and manage their permission overrides." />
+          ) : (
+            <ResponsiveStack direction="col" gap={3}>
+              <ResponsiveStack direction={{ base: 'col', lg: 'row' }} gap={2} align="end">
+                <div className="flex-1 min-w-0">
+                  <Select
+                    label="Permission"
+                    value={overridePermission}
+                    onChange={setOverridePermission}
+                    options={[
+                    { value: '', label: '— pick a permission —' },
+                    ...registryLeaves]
+                    } />
+                </div>
+                <div className="w-full lg:w-44">
+                  <Select
+                    label="Scope"
+                    value={overrideScope}
+                    onChange={setOverrideScope}
+                    options={[
+                    { value: PermissionScope.Own, label: 'Own' },
+                    { value: PermissionScope.Department, label: 'Department' },
+                    { value: PermissionScope.Any, label: 'Any' }]
+                    } />
+                </div>
+                <div className="w-full lg:w-36">
+                  <Select
+                    label="Effect"
+                    value={overrideEffect}
+                    onChange={setOverrideEffect}
+                    options={[
+                    { value: GrantEffect.Allow, label: 'Allow' },
+                    { value: GrantEffect.Deny, label: 'Deny' }]
+                    } />
+                </div>
+                <Button
+                  variant="primary"
+                  icon={<Plus size={14} />}
+                  loading={settingOverride}
+                  disabled={!overridePermission}
+                  onClick={handleAddOverride}>
+                  Add
+                </Button>
+              </ResponsiveStack>
+
+              {overridesLoading && !overrides.length ? (
+                <span className="text-fg-muted text-sm">Loading overrides…</span>
+              ) : overrides.length ? (
+                <DataTable rows={overrides} columns={overrideColumns} rowId={(r) => r.id} defaultDensity="compact" />
+              ) : (
+                <EmptyState
+                  icon={<ShieldCheck size={18} />}
+                  title="No overrides"
+                  description="This user inherits everything from their role(s). Add an override above to allow or deny a specific permission." />
+              )}
+            </ResponsiveStack>
+          )}
+        </SectionCard>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Department roles (PRESERVED)                                     */}
+        {/* ---------------------------------------------------------------- */}
         <SectionCard icon={<Users size={16} className="text-fg-muted" />} title="Department roles">
           <ResponsiveStack direction={{ base: 'col', lg: 'row' }} gap={2} align="end">
             <div className="w-full lg:w-72">
@@ -519,8 +1143,8 @@ export default function PoliciesListPage() {
             <div className="w-full lg:w-40">
               <Select
                 label="Role"
-                value={newRole}
-                onChange={setNewRole}
+                value={newDeptRole}
+                onChange={setNewDeptRole}
                 options={[
                 { value: 'MEMBER', label: 'Member' },
                 { value: 'MANAGER', label: 'Manager' }]
@@ -548,6 +1172,9 @@ export default function PoliciesListPage() {
           )}
         </SectionCard>
 
+        {/* ---------------------------------------------------------------- */}
+        {/* Access change log (PRESERVED)                                    */}
+        {/* ---------------------------------------------------------------- */}
         <SectionCard icon={<History size={16} className="text-fg-muted" />} title="Access change log">
           {audit.length ? (
             <DataTable rows={audit} columns={auditColumns} rowId={(r) => r.id} defaultDensity="compact" />

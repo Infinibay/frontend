@@ -118,6 +118,11 @@ export type ApplicationUpdates = {
   windowsUpdatesCount?: Maybe<Scalars['Int']['output']>;
 };
 
+export type AssignUserRoleInput = {
+  roleId?: Scalars['ID']['input'];
+  userId?: Scalars['ID']['input'];
+};
+
 export type BackgroundHealthServiceStatus = {
   __typename?: 'BackgroundHealthServiceStatus';
   activeQueues: Scalars['Int']['output'];
@@ -422,6 +427,12 @@ export type CreatePoolInput = {
   type?: InputMaybe<PoolType>;
 };
 
+export type CreateRoleInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name?: Scalars['String']['input'];
+  permissions?: InputMaybe<Array<GrantInput>>;
+};
+
 export type CreateScheduleInput = {
   compression?: InputMaybe<BackupCompression>;
   cronExpression: Scalars['String']['input'];
@@ -485,6 +496,17 @@ export type DeleteSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
+export type DepartmentMemberType = {
+  __typename?: 'DepartmentMemberType';
+  departmentId: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  role: DepartmentRole;
+  userEmail: Scalars['String']['output'];
+  userGlobalRole: UserRole;
+  userId: Scalars['String']['output'];
+  userName: Scalars['String']['output'];
+};
+
 export type DepartmentNetworkDiagnosticsType = {
   __typename?: 'DepartmentNetworkDiagnosticsType';
   brNetfilter: BrNetfilterDiagnosticsType;
@@ -497,6 +519,12 @@ export type DepartmentNetworkDiagnosticsType = {
   recommendations: Array<Scalars['String']['output']>;
   timestamp: Scalars['Timestamp']['output'];
 };
+
+/** Role a user holds within a single department */
+export enum DepartmentRole {
+  Manager = 'MANAGER',
+  Member = 'MEMBER'
+}
 
 export type DepartmentType = {
   __typename?: 'DepartmentType';
@@ -602,14 +630,23 @@ export type DnsmasqDiagnosticsType = {
   recentLogLines?: Maybe<Array<Scalars['String']['output']>>;
 };
 
+export type DomainJoinResultType = {
+  __typename?: 'DomainJoinResultType';
+  domain?: Maybe<Scalars['String']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type DyummyType = {
   __typename?: 'DyummyType';
   value: Scalars['String']['output'];
 };
 
-export type EffectivePermissionType = {
-  __typename?: 'EffectivePermissionType';
+export type EffectivePermissionsType = {
+  __typename?: 'EffectivePermissionsType';
   allowedResources: Array<Scalars['String']['output']>;
+  grants: Array<PermissionGrantType>;
 };
 
 export type EffectiveRuleSetType = {
@@ -811,6 +848,17 @@ export enum GoldenImageStatus {
   Failed = 'FAILED',
   Published = 'PUBLISHED'
 }
+
+/** Allow or deny effect for a per-user permission override */
+export enum GrantEffect {
+  Allow = 'ALLOW',
+  Deny = 'DENY'
+}
+
+export type GrantInput = {
+  permission?: Scalars['String']['input'];
+  scope?: InputMaybe<PermissionScope>;
+};
 
 export type GraphicConfigurationType = {
   __typename?: 'GraphicConfigurationType';
@@ -1018,6 +1066,16 @@ export type IpRangeInput = {
   end?: Scalars['String']['input'];
   networkName?: Scalars['String']['input'];
   start?: Scalars['String']['input'];
+};
+
+export type JoinDomainInput = {
+  computerName?: InputMaybe<Scalars['String']['input']>;
+  identityProviderId?: Scalars['String']['input'];
+  machineId?: Scalars['String']['input'];
+  ou?: InputMaybe<Scalars['String']['input']>;
+  password?: InputMaybe<Scalars['String']['input']>;
+  restartAfter?: InputMaybe<Scalars['Boolean']['input']>;
+  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Keep-alive heartbeat metrics for a VM connection */
@@ -1321,6 +1379,7 @@ export enum MaintenanceTrigger {
 export type Mutation = {
   __typename?: 'Mutation';
   assignScriptToDepartment: Scalars['Boolean']['output'];
+  assignUserRole: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
   /** Cancel a pending or running resolution. No-op on terminal resolutions. */
@@ -1330,6 +1389,7 @@ export type Mutation = {
   /** Seal an existing VM into a new golden image (long-running). */
   captureGoldenImageFromMachine: GoldenImageResult;
   cleanupInfinibayFirewall: CleanupResultType;
+  clearUserPermissionOverride: Scalars['Boolean']['output'];
   /** Check out a desktop from the pool for the current user. Returns Machine.id. */
   connectToPool: Scalars['ID']['output'];
   createApplication: ApplicationType;
@@ -1348,6 +1408,7 @@ export type Mutation = {
   createMaintenanceTask: MaintenanceTaskResponse;
   createNetwork: Scalars['Boolean']['output'];
   createPool: PoolResult;
+  createRole: RoleType;
   createScript: ScriptResponseType;
   /** Create a snapshot of a virtual machine */
   createSnapshot: SnapshotResult;
@@ -1365,6 +1426,7 @@ export type Mutation = {
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
   deletePool: Scalars['Boolean']['output'];
+  deleteRole: Scalars['Boolean']['output'];
   deleteScript: ScriptResponseType;
   /** Delete a snapshot from a virtual machine */
   deleteSnapshot: SuccessType;
@@ -1392,6 +1454,7 @@ export type Mutation = {
   forceRestoreSnapshot: SuccessType;
   /** Install a package on a virtual machine (legacy compatibility) */
   installPackage: CommandResult;
+  joinVmToDomain: DomainJoinResultType;
   killProcess: ProcessControlResult;
   killProcesses: Array<ProcessControlResult>;
   login?: Maybe<LoginResponse>;
@@ -1407,11 +1470,14 @@ export type Mutation = {
   queueAllVMHealthChecks: HealthCheckRoundResult;
   /** Register uploaded ISO */
   registerISO: Iso;
+  removeDepartmentMember: Scalars['Boolean']['output'];
   /** Remove ISO file */
   removeISO: Scalars['Boolean']['output'];
   /** Remove a package from a virtual machine (legacy compatibility) */
   removePackage: CommandResult;
+  removeRolePermission: RoleType;
   resetMachine: SuccessType;
+  resetRoleToDefault: RoleType;
   /** Trigger auto-resolution for a recommendation. Idempotent: returns the in-flight resolution if one is already running. */
   resolveRecommendation: RecommendationResolutionType;
   restartMachine: SuccessType;
@@ -1425,11 +1491,13 @@ export type Mutation = {
   runDefenderQuickScan: DefenderScanResult;
   scalePool: PoolResult;
   scheduleScript: ScheduleScriptResponseType;
+  setDepartmentMember: DepartmentMemberType;
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
   setNodeMaintenanceMode: NodeType;
-  setRolePermission: RolePermissionMatrixType;
+  setRolePermission: RoleType;
+  setUserPermissionOverride: UserPermissionOverrideType;
   setupNode: DyummyType;
   /** Snooze all pending recommendations for a duration (ISO 8601 duration format: PT1H, P1D, etc.) */
   snoozeAllRecommendations: SnoozeRecommendationResult;
@@ -1466,6 +1534,7 @@ export type Mutation = {
   /** Update a package on a virtual machine (legacy compatibility) */
   updatePackage: CommandResult;
   updatePool: PoolResult;
+  updateRole: RoleType;
   updateScheduledScript: ScheduleScriptResponseType;
   updateScript: ScriptResponseType;
   updateUser: UserType;
@@ -1478,6 +1547,11 @@ export type Mutation = {
 export type MutationAssignScriptToDepartmentArgs = {
   departmentId: Scalars['ID']['input'];
   scriptId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignUserRoleArgs = {
+  input: AssignUserRoleInput;
 };
 
 
@@ -1503,6 +1577,12 @@ export type MutationCancelScriptExecutionArgs = {
 
 export type MutationCaptureGoldenImageFromMachineArgs = {
   input: CaptureGoldenImageFromMachineInput;
+};
+
+
+export type MutationClearUserPermissionOverrideArgs = {
+  permission: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
 };
 
 
@@ -1578,6 +1658,11 @@ export type MutationCreatePoolArgs = {
 };
 
 
+export type MutationCreateRoleArgs = {
+  input: CreateRoleInput;
+};
+
+
 export type MutationCreateScriptArgs = {
   input: CreateScriptInput;
 };
@@ -1646,6 +1731,11 @@ export type MutationDeleteNetworkArgs = {
 
 export type MutationDeletePoolArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteRoleArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -1747,6 +1837,11 @@ export type MutationInstallPackageArgs = {
 };
 
 
+export type MutationJoinVmToDomainArgs = {
+  input: JoinDomainInput;
+};
+
+
 export type MutationKillProcessArgs = {
   force?: Scalars['Boolean']['input'];
   machineId: Scalars['String']['input'];
@@ -1814,6 +1909,12 @@ export type MutationRegisterIsoArgs = {
 };
 
 
+export type MutationRemoveDepartmentMemberArgs = {
+  departmentId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+};
+
+
 export type MutationRemoveIsoArgs = {
   isoId: Scalars['String']['input'];
 };
@@ -1825,8 +1926,18 @@ export type MutationRemovePackageArgs = {
 };
 
 
+export type MutationRemoveRolePermissionArgs = {
+  input: RemoveRolePermissionInput;
+};
+
+
 export type MutationResetMachineArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationResetRoleToDefaultArgs = {
+  roleId: Scalars['String']['input'];
 };
 
 
@@ -1873,6 +1984,11 @@ export type MutationScheduleScriptArgs = {
 };
 
 
+export type MutationSetDepartmentMemberArgs = {
+  input: SetDepartmentMemberInput;
+};
+
+
 export type MutationSetNetworkBridgeNameArgs = {
   input: BridgeNameInput;
 };
@@ -1896,6 +2012,11 @@ export type MutationSetNodeMaintenanceModeArgs = {
 
 export type MutationSetRolePermissionArgs = {
   input: SetRolePermissionInput;
+};
+
+
+export type MutationSetUserPermissionOverrideArgs = {
+  input: SetUserPermissionOverrideInput;
 };
 
 
@@ -2038,6 +2159,11 @@ export type MutationUpdatePackageArgs = {
 export type MutationUpdatePoolArgs = {
   id: Scalars['ID']['input'];
   input: UpdatePoolInput;
+};
+
+
+export type MutationUpdateRoleArgs = {
+  input: UpdateRoleInput;
 };
 
 
@@ -2286,26 +2412,55 @@ export type PaginationInputType = {
   take?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/** Role permission decision */
-export enum PermissionEffect {
-  Allow = 'ALLOW',
-  Deny = 'DENY',
-  Inherit = 'INHERIT'
-}
-
-export type PermissionPrincipalType = {
-  __typename?: 'PermissionPrincipalType';
-  avatar: Scalars['String']['output'];
-  id: Scalars['String']['output'];
-  kind: Scalars['String']['output'];
-  label: Scalars['String']['output'];
+export type PermissionGrantType = {
+  __typename?: 'PermissionGrantType';
+  permission: Scalars['String']['output'];
+  scope: PermissionScope;
 };
 
-export type PermissionResourceType = {
-  __typename?: 'PermissionResourceType';
+export type PermissionGroupType = {
+  __typename?: 'PermissionGroupType';
+  key: Scalars['String']['output'];
+  members: Array<Scalars['String']['output']>;
+};
+
+export type PermissionRegistryType = {
+  __typename?: 'PermissionRegistryType';
+  groups: Array<PermissionGroupType>;
+  resources: Array<PermissionResourceDefType>;
+};
+
+export type PermissionResourceDefType = {
+  __typename?: 'PermissionResourceDefType';
   group: Scalars['String']['output'];
-  id: Scalars['String']['output'];
+  key: Scalars['String']['output'];
   label: Scalars['String']['output'];
+  scoped: Scalars['Boolean']['output'];
+  verbs: Array<Scalars['String']['output']>;
+};
+
+/** Scope a permission grant applies at (own / department / any) */
+export enum PermissionScope {
+  Any = 'ANY',
+  Department = 'DEPARTMENT',
+  Own = 'OWN'
+}
+
+export type PolicyAuditEntryType = {
+  __typename?: 'PolicyAuditEntryType';
+  action: Scalars['String']['output'];
+  actorId?: Maybe<Scalars['String']['output']>;
+  actorName?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  id: Scalars['ID']['output'];
+  metadata?: Maybe<Scalars['JSONObject']['output']>;
+  summary: Scalars['String']['output'];
+  targetId?: Maybe<Scalars['String']['output']>;
+  targetType: Scalars['String']['output'];
+};
+
+export type PolicyAuditQueryInput = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type Pool = {
@@ -2387,6 +2542,7 @@ export type Query = {
   currentSnapshot?: Maybe<Snapshot>;
   currentUser?: Maybe<UserType>;
   department?: Maybe<DepartmentType>;
+  departmentMembers: Array<DepartmentMemberType>;
   departmentNetworkDiagnostics: DepartmentNetworkDiagnosticsType;
   departmentScripts: Array<ScriptType>;
   departments: Array<DepartmentType>;
@@ -2436,7 +2592,7 @@ export type Query = {
   maintenanceStats: MaintenanceStats;
   maintenanceTask?: Maybe<MaintenanceTask>;
   maintenanceTasks: Array<MaintenanceTask>;
-  myPermissions: EffectivePermissionType;
+  myPermissions: EffectivePermissionsType;
   network: Network;
   networks: Array<Network>;
   node?: Maybe<NodeType>;
@@ -2450,11 +2606,14 @@ export type Query = {
   packages: Array<PackageType>;
   /** Get the count of pending (non-dismissed, non-snoozed) recommendations across all VMs */
   pendingRecommendationCount: Scalars['Int']['output'];
+  permissionRegistry: PermissionRegistryType;
+  policyAuditLog: Array<PolicyAuditEntryType>;
   pool?: Maybe<Pool>;
   pools: Array<Pool>;
   /** Fetch a single resolution. Poll this query to track progress. */
   recommendationResolution?: Maybe<RecommendationResolutionType>;
-  rolePermissionMatrix: RolePermissionMatrixType;
+  role?: Maybe<RoleType>;
+  roles: Array<RoleType>;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
   scheduledScript?: Maybe<ScheduledScriptType>;
@@ -2469,6 +2628,7 @@ export type Query = {
   /** Get current socket connection statistics for all VMs */
   socketConnectionStats?: Maybe<SocketConnectionStats>;
   user: UserType;
+  userPermissionOverrides: Array<UserPermissionOverrideType>;
   users: Array<UserType>;
   validateFirewallRule: ValidationResultType;
   vmHealthCheckQueue: Array<VmHealthCheckQueueType>;
@@ -2556,6 +2716,11 @@ export type QueryCurrentSnapshotArgs = {
 
 export type QueryDepartmentArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryDepartmentMembersArgs = {
+  departmentId: Scalars['String']['input'];
 };
 
 
@@ -2728,6 +2893,11 @@ export type QueryPackageArgs = {
 };
 
 
+export type QueryPolicyAuditLogArgs = {
+  input?: InputMaybe<PolicyAuditQueryInput>;
+};
+
+
 export type QueryPoolArgs = {
   id: Scalars['ID']['input'];
 };
@@ -2735,6 +2905,11 @@ export type QueryPoolArgs = {
 
 export type QueryRecommendationResolutionArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryRoleArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -2789,6 +2964,11 @@ export type QuerySearchPackagesArgs = {
 
 export type QueryUserArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryUserPermissionOverridesArgs = {
+  userId: Scalars['String']['input'];
 };
 
 
@@ -2911,6 +3091,11 @@ export enum RecommendationType {
   UnderProvisioned = 'UNDER_PROVISIONED'
 }
 
+export type RemoveRolePermissionInput = {
+  permission?: Scalars['String']['input'];
+  roleId?: Scalars['ID']['input'];
+};
+
 /** Lifecycle state of an auto-resolve execution for a VM recommendation */
 export enum ResolutionStatus {
   Cancelled = 'CANCELLED',
@@ -2966,11 +3151,16 @@ export type RestoreSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
-export type RolePermissionMatrixType = {
-  __typename?: 'RolePermissionMatrixType';
-  permissions: Scalars['JSONObject']['output'];
-  principals: Array<PermissionPrincipalType>;
-  resources: Array<PermissionResourceType>;
+export type RoleType = {
+  __typename?: 'RoleType';
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isSystem: Scalars['Boolean']['output'];
+  key: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  permissions: Array<PermissionGrantType>;
+  priority: Scalars['Int']['output'];
+  userCount: Scalars['Int']['output'];
 };
 
 /** Action to take on matched traffic */
@@ -3180,10 +3370,23 @@ export type ScriptType = {
   updatedAt: Scalars['DateTimeISO']['output'];
 };
 
+export type SetDepartmentMemberInput = {
+  departmentId?: Scalars['String']['input'];
+  role?: DepartmentRole;
+  userId?: Scalars['String']['input'];
+};
+
 export type SetRolePermissionInput = {
-  effect?: PermissionEffect;
-  resource?: Scalars['String']['input'];
-  role?: UserRole;
+  permission?: Scalars['String']['input'];
+  roleId?: Scalars['ID']['input'];
+  scope?: InputMaybe<PermissionScope>;
+};
+
+export type SetUserPermissionOverrideInput = {
+  effect?: InputMaybe<GrantEffect>;
+  permission?: Scalars['String']['input'];
+  scope?: InputMaybe<PermissionScope>;
+  userId?: Scalars['ID']['input'];
 };
 
 /** Shell type for script execution */
@@ -3428,6 +3631,12 @@ export type UpdatePoolInput = {
   sizeMin?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type UpdateRoleInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  id?: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateScheduleInput = {
   compression?: InputMaybe<BackupCompression>;
   cronExpression?: InputMaybe<Scalars['String']['input']>;
@@ -3489,6 +3698,15 @@ export enum UserOrderByField {
 export type UserOrderByInputType = {
   direction?: InputMaybe<OrderByDirection>;
   fieldName?: InputMaybe<UserOrderByField>;
+};
+
+export type UserPermissionOverrideType = {
+  __typename?: 'UserPermissionOverrideType';
+  effect: GrantEffect;
+  id: Scalars['ID']['output'];
+  permission: Scalars['String']['output'];
+  scope: PermissionScope;
+  userId: Scalars['String']['output'];
 };
 
 /** The basic roles of users */

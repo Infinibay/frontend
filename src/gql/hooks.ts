@@ -121,6 +121,11 @@ export type ApplicationUpdates = {
   windowsUpdatesCount: Maybe<Scalars['Int']['output']>;
 };
 
+export type AssignUserRoleInput = {
+  roleId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type BackgroundHealthServiceStatus = {
   __typename?: 'BackgroundHealthServiceStatus';
   activeQueues: Scalars['Int']['output'];
@@ -425,6 +430,12 @@ export type CreatePoolInput = {
   type: InputMaybe<PoolType>;
 };
 
+export type CreateRoleInput = {
+  description: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  permissions: InputMaybe<Array<GrantInput>>;
+};
+
 export type CreateScheduleInput = {
   compression: InputMaybe<BackupCompression>;
   cronExpression: Scalars['String']['input'];
@@ -488,6 +499,17 @@ export type DeleteSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
+export type DepartmentMemberType = {
+  __typename?: 'DepartmentMemberType';
+  departmentId: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  role: DepartmentRole;
+  userEmail: Scalars['String']['output'];
+  userGlobalRole: UserRole;
+  userId: Scalars['String']['output'];
+  userName: Scalars['String']['output'];
+};
+
 export type DepartmentNetworkDiagnosticsType = {
   __typename?: 'DepartmentNetworkDiagnosticsType';
   brNetfilter: BrNetfilterDiagnosticsType;
@@ -500,6 +522,12 @@ export type DepartmentNetworkDiagnosticsType = {
   recommendations: Array<Scalars['String']['output']>;
   timestamp: Scalars['Timestamp']['output'];
 };
+
+/** Role a user holds within a single department */
+export enum DepartmentRole {
+  Manager = 'MANAGER',
+  Member = 'MEMBER'
+}
 
 export type DepartmentType = {
   __typename?: 'DepartmentType';
@@ -605,14 +633,23 @@ export type DnsmasqDiagnosticsType = {
   recentLogLines: Maybe<Array<Scalars['String']['output']>>;
 };
 
+export type DomainJoinResultType = {
+  __typename?: 'DomainJoinResultType';
+  domain: Maybe<Scalars['String']['output']>;
+  error: Maybe<Scalars['String']['output']>;
+  message: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type DyummyType = {
   __typename?: 'DyummyType';
   value: Scalars['String']['output'];
 };
 
-export type EffectivePermissionType = {
-  __typename?: 'EffectivePermissionType';
+export type EffectivePermissionsType = {
+  __typename?: 'EffectivePermissionsType';
   allowedResources: Array<Scalars['String']['output']>;
+  grants: Array<PermissionGrantType>;
 };
 
 export type EffectiveRuleSetType = {
@@ -814,6 +851,17 @@ export enum GoldenImageStatus {
   Failed = 'FAILED',
   Published = 'PUBLISHED'
 }
+
+/** Allow or deny effect for a per-user permission override */
+export enum GrantEffect {
+  Allow = 'ALLOW',
+  Deny = 'DENY'
+}
+
+export type GrantInput = {
+  permission: Scalars['String']['input'];
+  scope: InputMaybe<PermissionScope>;
+};
 
 export type GraphicConfigurationType = {
   __typename?: 'GraphicConfigurationType';
@@ -1021,6 +1069,16 @@ export type IpRangeInput = {
   end: Scalars['String']['input'];
   networkName: Scalars['String']['input'];
   start: Scalars['String']['input'];
+};
+
+export type JoinDomainInput = {
+  computerName: InputMaybe<Scalars['String']['input']>;
+  identityProviderId: Scalars['String']['input'];
+  machineId: Scalars['String']['input'];
+  ou: InputMaybe<Scalars['String']['input']>;
+  password: InputMaybe<Scalars['String']['input']>;
+  restartAfter: InputMaybe<Scalars['Boolean']['input']>;
+  username: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Keep-alive heartbeat metrics for a VM connection */
@@ -1324,6 +1382,7 @@ export enum MaintenanceTrigger {
 export type Mutation = {
   __typename?: 'Mutation';
   assignScriptToDepartment: Scalars['Boolean']['output'];
+  assignUserRole: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
   calculateISOChecksum: Scalars['String']['output'];
   /** Cancel a pending or running resolution. No-op on terminal resolutions. */
@@ -1333,6 +1392,7 @@ export type Mutation = {
   /** Seal an existing VM into a new golden image (long-running). */
   captureGoldenImageFromMachine: GoldenImageResult;
   cleanupInfinibayFirewall: CleanupResultType;
+  clearUserPermissionOverride: Scalars['Boolean']['output'];
   /** Check out a desktop from the pool for the current user. Returns Machine.id. */
   connectToPool: Scalars['ID']['output'];
   createApplication: ApplicationType;
@@ -1351,6 +1411,7 @@ export type Mutation = {
   createMaintenanceTask: MaintenanceTaskResponse;
   createNetwork: Scalars['Boolean']['output'];
   createPool: PoolResult;
+  createRole: RoleType;
   createScript: ScriptResponseType;
   /** Create a snapshot of a virtual machine */
   createSnapshot: SnapshotResult;
@@ -1368,6 +1429,7 @@ export type Mutation = {
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
   deletePool: Scalars['Boolean']['output'];
+  deleteRole: Scalars['Boolean']['output'];
   deleteScript: ScriptResponseType;
   /** Delete a snapshot from a virtual machine */
   deleteSnapshot: SuccessType;
@@ -1395,6 +1457,7 @@ export type Mutation = {
   forceRestoreSnapshot: SuccessType;
   /** Install a package on a virtual machine (legacy compatibility) */
   installPackage: CommandResult;
+  joinVmToDomain: DomainJoinResultType;
   killProcess: ProcessControlResult;
   killProcesses: Array<ProcessControlResult>;
   login: Maybe<LoginResponse>;
@@ -1410,11 +1473,14 @@ export type Mutation = {
   queueAllVMHealthChecks: HealthCheckRoundResult;
   /** Register uploaded ISO */
   registerISO: Iso;
+  removeDepartmentMember: Scalars['Boolean']['output'];
   /** Remove ISO file */
   removeISO: Scalars['Boolean']['output'];
   /** Remove a package from a virtual machine (legacy compatibility) */
   removePackage: CommandResult;
+  removeRolePermission: RoleType;
   resetMachine: SuccessType;
+  resetRoleToDefault: RoleType;
   /** Trigger auto-resolution for a recommendation. Idempotent: returns the in-flight resolution if one is already running. */
   resolveRecommendation: RecommendationResolutionType;
   restartMachine: SuccessType;
@@ -1428,11 +1494,13 @@ export type Mutation = {
   runDefenderQuickScan: DefenderScanResult;
   scalePool: PoolResult;
   scheduleScript: ScheduleScriptResponseType;
+  setDepartmentMember: DepartmentMemberType;
   setNetworkBridgeName: Scalars['Boolean']['output'];
   setNetworkIp: Scalars['Boolean']['output'];
   setNetworkIpRange: Scalars['Boolean']['output'];
   setNodeMaintenanceMode: NodeType;
-  setRolePermission: RolePermissionMatrixType;
+  setRolePermission: RoleType;
+  setUserPermissionOverride: UserPermissionOverrideType;
   setupNode: DyummyType;
   /** Snooze all pending recommendations for a duration (ISO 8601 duration format: PT1H, P1D, etc.) */
   snoozeAllRecommendations: SnoozeRecommendationResult;
@@ -1469,6 +1537,7 @@ export type Mutation = {
   /** Update a package on a virtual machine (legacy compatibility) */
   updatePackage: CommandResult;
   updatePool: PoolResult;
+  updateRole: RoleType;
   updateScheduledScript: ScheduleScriptResponseType;
   updateScript: ScriptResponseType;
   updateUser: UserType;
@@ -1481,6 +1550,11 @@ export type Mutation = {
 export type MutationAssignScriptToDepartmentArgs = {
   departmentId: Scalars['ID']['input'];
   scriptId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignUserRoleArgs = {
+  input: AssignUserRoleInput;
 };
 
 
@@ -1506,6 +1580,12 @@ export type MutationCancelScriptExecutionArgs = {
 
 export type MutationCaptureGoldenImageFromMachineArgs = {
   input: CaptureGoldenImageFromMachineInput;
+};
+
+
+export type MutationClearUserPermissionOverrideArgs = {
+  permission: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
 };
 
 
@@ -1581,6 +1661,11 @@ export type MutationCreatePoolArgs = {
 };
 
 
+export type MutationCreateRoleArgs = {
+  input: CreateRoleInput;
+};
+
+
 export type MutationCreateScriptArgs = {
   input: CreateScriptInput;
 };
@@ -1649,6 +1734,11 @@ export type MutationDeleteNetworkArgs = {
 
 export type MutationDeletePoolArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteRoleArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -1750,6 +1840,11 @@ export type MutationInstallPackageArgs = {
 };
 
 
+export type MutationJoinVmToDomainArgs = {
+  input: JoinDomainInput;
+};
+
+
 export type MutationKillProcessArgs = {
   force?: Scalars['Boolean']['input'];
   machineId: Scalars['String']['input'];
@@ -1817,6 +1912,12 @@ export type MutationRegisterIsoArgs = {
 };
 
 
+export type MutationRemoveDepartmentMemberArgs = {
+  departmentId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+};
+
+
 export type MutationRemoveIsoArgs = {
   isoId: Scalars['String']['input'];
 };
@@ -1828,8 +1929,18 @@ export type MutationRemovePackageArgs = {
 };
 
 
+export type MutationRemoveRolePermissionArgs = {
+  input: RemoveRolePermissionInput;
+};
+
+
 export type MutationResetMachineArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationResetRoleToDefaultArgs = {
+  roleId: Scalars['String']['input'];
 };
 
 
@@ -1876,6 +1987,11 @@ export type MutationScheduleScriptArgs = {
 };
 
 
+export type MutationSetDepartmentMemberArgs = {
+  input: SetDepartmentMemberInput;
+};
+
+
 export type MutationSetNetworkBridgeNameArgs = {
   input: BridgeNameInput;
 };
@@ -1899,6 +2015,11 @@ export type MutationSetNodeMaintenanceModeArgs = {
 
 export type MutationSetRolePermissionArgs = {
   input: SetRolePermissionInput;
+};
+
+
+export type MutationSetUserPermissionOverrideArgs = {
+  input: SetUserPermissionOverrideInput;
 };
 
 
@@ -2041,6 +2162,11 @@ export type MutationUpdatePackageArgs = {
 export type MutationUpdatePoolArgs = {
   id: Scalars['ID']['input'];
   input: UpdatePoolInput;
+};
+
+
+export type MutationUpdateRoleArgs = {
+  input: UpdateRoleInput;
 };
 
 
@@ -2289,26 +2415,55 @@ export type PaginationInputType = {
   take: InputMaybe<Scalars['Int']['input']>;
 };
 
-/** Role permission decision */
-export enum PermissionEffect {
-  Allow = 'ALLOW',
-  Deny = 'DENY',
-  Inherit = 'INHERIT'
-}
-
-export type PermissionPrincipalType = {
-  __typename?: 'PermissionPrincipalType';
-  avatar: Scalars['String']['output'];
-  id: Scalars['String']['output'];
-  kind: Scalars['String']['output'];
-  label: Scalars['String']['output'];
+export type PermissionGrantType = {
+  __typename?: 'PermissionGrantType';
+  permission: Scalars['String']['output'];
+  scope: PermissionScope;
 };
 
-export type PermissionResourceType = {
-  __typename?: 'PermissionResourceType';
+export type PermissionGroupType = {
+  __typename?: 'PermissionGroupType';
+  key: Scalars['String']['output'];
+  members: Array<Scalars['String']['output']>;
+};
+
+export type PermissionRegistryType = {
+  __typename?: 'PermissionRegistryType';
+  groups: Array<PermissionGroupType>;
+  resources: Array<PermissionResourceDefType>;
+};
+
+export type PermissionResourceDefType = {
+  __typename?: 'PermissionResourceDefType';
   group: Scalars['String']['output'];
-  id: Scalars['String']['output'];
+  key: Scalars['String']['output'];
   label: Scalars['String']['output'];
+  scoped: Scalars['Boolean']['output'];
+  verbs: Array<Scalars['String']['output']>;
+};
+
+/** Scope a permission grant applies at (own / department / any) */
+export enum PermissionScope {
+  Any = 'ANY',
+  Department = 'DEPARTMENT',
+  Own = 'OWN'
+}
+
+export type PolicyAuditEntryType = {
+  __typename?: 'PolicyAuditEntryType';
+  action: Scalars['String']['output'];
+  actorId: Maybe<Scalars['String']['output']>;
+  actorName: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  id: Scalars['ID']['output'];
+  metadata: Maybe<Scalars['JSONObject']['output']>;
+  summary: Scalars['String']['output'];
+  targetId: Maybe<Scalars['String']['output']>;
+  targetType: Scalars['String']['output'];
+};
+
+export type PolicyAuditQueryInput = {
+  limit: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type Pool = {
@@ -2390,6 +2545,7 @@ export type Query = {
   currentSnapshot: Maybe<Snapshot>;
   currentUser: Maybe<UserType>;
   department: Maybe<DepartmentType>;
+  departmentMembers: Array<DepartmentMemberType>;
   departmentNetworkDiagnostics: DepartmentNetworkDiagnosticsType;
   departmentScripts: Array<ScriptType>;
   departments: Array<DepartmentType>;
@@ -2439,7 +2595,7 @@ export type Query = {
   maintenanceStats: MaintenanceStats;
   maintenanceTask: Maybe<MaintenanceTask>;
   maintenanceTasks: Array<MaintenanceTask>;
-  myPermissions: EffectivePermissionType;
+  myPermissions: EffectivePermissionsType;
   network: Network;
   networks: Array<Network>;
   node: Maybe<NodeType>;
@@ -2453,11 +2609,14 @@ export type Query = {
   packages: Array<PackageType>;
   /** Get the count of pending (non-dismissed, non-snoozed) recommendations across all VMs */
   pendingRecommendationCount: Scalars['Int']['output'];
+  permissionRegistry: PermissionRegistryType;
+  policyAuditLog: Array<PolicyAuditEntryType>;
   pool: Maybe<Pool>;
   pools: Array<Pool>;
   /** Fetch a single resolution. Poll this query to track progress. */
   recommendationResolution: Maybe<RecommendationResolutionType>;
-  rolePermissionMatrix: RolePermissionMatrixType;
+  role: Maybe<RoleType>;
+  roles: Array<RoleType>;
   /** Run a specific health check on a VM */
   runHealthCheck: GenericHealthCheckResponse;
   scheduledScript: Maybe<ScheduledScriptType>;
@@ -2472,6 +2631,7 @@ export type Query = {
   /** Get current socket connection statistics for all VMs */
   socketConnectionStats: Maybe<SocketConnectionStats>;
   user: UserType;
+  userPermissionOverrides: Array<UserPermissionOverrideType>;
   users: Array<UserType>;
   validateFirewallRule: ValidationResultType;
   vmHealthCheckQueue: Array<VmHealthCheckQueueType>;
@@ -2559,6 +2719,11 @@ export type QueryCurrentSnapshotArgs = {
 
 export type QueryDepartmentArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryDepartmentMembersArgs = {
+  departmentId: Scalars['String']['input'];
 };
 
 
@@ -2731,6 +2896,11 @@ export type QueryPackageArgs = {
 };
 
 
+export type QueryPolicyAuditLogArgs = {
+  input: InputMaybe<PolicyAuditQueryInput>;
+};
+
+
 export type QueryPoolArgs = {
   id: Scalars['ID']['input'];
 };
@@ -2738,6 +2908,11 @@ export type QueryPoolArgs = {
 
 export type QueryRecommendationResolutionArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryRoleArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -2792,6 +2967,11 @@ export type QuerySearchPackagesArgs = {
 
 export type QueryUserArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryUserPermissionOverridesArgs = {
+  userId: Scalars['String']['input'];
 };
 
 
@@ -2914,6 +3094,11 @@ export enum RecommendationType {
   UnderProvisioned = 'UNDER_PROVISIONED'
 }
 
+export type RemoveRolePermissionInput = {
+  permission: Scalars['String']['input'];
+  roleId: Scalars['ID']['input'];
+};
+
 /** Lifecycle state of an auto-resolve execution for a VM recommendation */
 export enum ResolutionStatus {
   Cancelled = 'CANCELLED',
@@ -2969,11 +3154,16 @@ export type RestoreSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
-export type RolePermissionMatrixType = {
-  __typename?: 'RolePermissionMatrixType';
-  permissions: Scalars['JSONObject']['output'];
-  principals: Array<PermissionPrincipalType>;
-  resources: Array<PermissionResourceType>;
+export type RoleType = {
+  __typename?: 'RoleType';
+  description: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isSystem: Scalars['Boolean']['output'];
+  key: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  permissions: Array<PermissionGrantType>;
+  priority: Scalars['Int']['output'];
+  userCount: Scalars['Int']['output'];
 };
 
 /** Action to take on matched traffic */
@@ -3183,10 +3373,23 @@ export type ScriptType = {
   updatedAt: Scalars['DateTimeISO']['output'];
 };
 
+export type SetDepartmentMemberInput = {
+  departmentId: Scalars['String']['input'];
+  role: DepartmentRole;
+  userId: Scalars['String']['input'];
+};
+
 export type SetRolePermissionInput = {
-  effect: PermissionEffect;
-  resource: Scalars['String']['input'];
-  role: UserRole;
+  permission: Scalars['String']['input'];
+  roleId: Scalars['ID']['input'];
+  scope: InputMaybe<PermissionScope>;
+};
+
+export type SetUserPermissionOverrideInput = {
+  effect: InputMaybe<GrantEffect>;
+  permission: Scalars['String']['input'];
+  scope: InputMaybe<PermissionScope>;
+  userId: Scalars['ID']['input'];
 };
 
 /** Shell type for script execution */
@@ -3431,6 +3634,12 @@ export type UpdatePoolInput = {
   sizeMin: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type UpdateRoleInput = {
+  description: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  name: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateScheduleInput = {
   compression: InputMaybe<BackupCompression>;
   cronExpression: InputMaybe<Scalars['String']['input']>;
@@ -3492,6 +3701,15 @@ export enum UserOrderByField {
 export type UserOrderByInputType = {
   direction: InputMaybe<OrderByDirection>;
   fieldName: InputMaybe<UserOrderByField>;
+};
+
+export type UserPermissionOverrideType = {
+  __typename?: 'UserPermissionOverrideType';
+  effect: GrantEffect;
+  id: Scalars['ID']['output'];
+  permission: Scalars['String']['output'];
+  scope: PermissionScope;
+  userId: Scalars['String']['output'];
 };
 
 /** The basic roles of users */
@@ -4113,12 +4331,71 @@ export type DeleteIdentityGroupRoleMappingMutationVariables = Exact<{
 
 export type DeleteIdentityGroupRoleMappingMutation = { __typename?: 'Mutation', deleteIdentityGroupRoleMapping: boolean };
 
+export type RoleFieldsFragment = { __typename?: 'RoleType', id: string, key: string, name: string, description: string | null, isSystem: boolean, priority: number, userCount: number, permissions: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> };
+
 export type SetRolePermissionMutationVariables = Exact<{
   input: SetRolePermissionInput;
 }>;
 
 
-export type SetRolePermissionMutation = { __typename?: 'Mutation', setRolePermission: { __typename?: 'RolePermissionMatrixType', permissions: { [key: string]: any }, principals: Array<{ __typename?: 'PermissionPrincipalType', id: string, label: string, kind: string, avatar: string }>, resources: Array<{ __typename?: 'PermissionResourceType', id: string, label: string, group: string }> } };
+export type SetRolePermissionMutation = { __typename?: 'Mutation', setRolePermission: { __typename?: 'RoleType', id: string, key: string, name: string, description: string | null, isSystem: boolean, priority: number, userCount: number, permissions: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> } };
+
+export type RemoveRolePermissionMutationVariables = Exact<{
+  input: RemoveRolePermissionInput;
+}>;
+
+
+export type RemoveRolePermissionMutation = { __typename?: 'Mutation', removeRolePermission: { __typename?: 'RoleType', id: string, key: string, name: string, description: string | null, isSystem: boolean, priority: number, userCount: number, permissions: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> } };
+
+export type CreateRoleMutationVariables = Exact<{
+  input: CreateRoleInput;
+}>;
+
+
+export type CreateRoleMutation = { __typename?: 'Mutation', createRole: { __typename?: 'RoleType', id: string, key: string, name: string, description: string | null, isSystem: boolean, priority: number, userCount: number, permissions: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> } };
+
+export type UpdateRoleMutationVariables = Exact<{
+  input: UpdateRoleInput;
+}>;
+
+
+export type UpdateRoleMutation = { __typename?: 'Mutation', updateRole: { __typename?: 'RoleType', id: string, key: string, name: string, description: string | null, isSystem: boolean, priority: number, userCount: number, permissions: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> } };
+
+export type DeleteRoleMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+
+export type DeleteRoleMutation = { __typename?: 'Mutation', deleteRole: boolean };
+
+export type ResetRoleToDefaultMutationVariables = Exact<{
+  roleId: Scalars['String']['input'];
+}>;
+
+
+export type ResetRoleToDefaultMutation = { __typename?: 'Mutation', resetRoleToDefault: { __typename?: 'RoleType', id: string, key: string, name: string, description: string | null, isSystem: boolean, priority: number, userCount: number, permissions: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> } };
+
+export type AssignUserRoleMutationVariables = Exact<{
+  input: AssignUserRoleInput;
+}>;
+
+
+export type AssignUserRoleMutation = { __typename?: 'Mutation', assignUserRole: boolean };
+
+export type SetUserPermissionOverrideMutationVariables = Exact<{
+  input: SetUserPermissionOverrideInput;
+}>;
+
+
+export type SetUserPermissionOverrideMutation = { __typename?: 'Mutation', setUserPermissionOverride: { __typename?: 'UserPermissionOverrideType', id: string, userId: string, permission: string, scope: PermissionScope, effect: GrantEffect } };
+
+export type ClearUserPermissionOverrideMutationVariables = Exact<{
+  userId: Scalars['String']['input'];
+  permission: Scalars['String']['input'];
+}>;
+
+
+export type ClearUserPermissionOverrideMutation = { __typename?: 'Mutation', clearUserPermissionOverride: boolean };
 
 export type CreateBackupMutationVariables = Exact<{
   input: CreateBackupInput;
@@ -4664,15 +4941,27 @@ export type IdentityGroupRoleMappingsQueryVariables = Exact<{
 
 export type IdentityGroupRoleMappingsQuery = { __typename?: 'Query', identityGroupRoleMappings: Array<{ __typename?: 'IdentityGroupRoleMappingType', id: string, providerId: string, groupDn: string, groupName: string, role: UserRole, createdAt: string, updatedAt: string }> };
 
-export type RolePermissionMatrixQueryVariables = Exact<{ [key: string]: never; }>;
+export type PermissionRegistryQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type RolePermissionMatrixQuery = { __typename?: 'Query', rolePermissionMatrix: { __typename?: 'RolePermissionMatrixType', permissions: { [key: string]: any }, principals: Array<{ __typename?: 'PermissionPrincipalType', id: string, label: string, kind: string, avatar: string }>, resources: Array<{ __typename?: 'PermissionResourceType', id: string, label: string, group: string }> } };
+export type PermissionRegistryQuery = { __typename?: 'Query', permissionRegistry: { __typename?: 'PermissionRegistryType', resources: Array<{ __typename?: 'PermissionResourceDefType', key: string, label: string, group: string, scoped: boolean, verbs: Array<string> }>, groups: Array<{ __typename?: 'PermissionGroupType', key: string, members: Array<string> }> } };
+
+export type RolesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type RolesQuery = { __typename?: 'Query', roles: Array<{ __typename?: 'RoleType', id: string, key: string, name: string, description: string | null, isSystem: boolean, priority: number, userCount: number, permissions: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> }> };
+
+export type UserPermissionOverridesQueryVariables = Exact<{
+  userId: Scalars['String']['input'];
+}>;
+
+
+export type UserPermissionOverridesQuery = { __typename?: 'Query', userPermissionOverrides: Array<{ __typename?: 'UserPermissionOverrideType', id: string, userId: string, permission: string, scope: PermissionScope, effect: GrantEffect }> };
 
 export type MyPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyPermissionsQuery = { __typename?: 'Query', myPermissions: { __typename?: 'EffectivePermissionType', allowedResources: Array<string> } };
+export type MyPermissionsQuery = { __typename?: 'Query', myPermissions: { __typename?: 'EffectivePermissionsType', allowedResources: Array<string>, grants: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> } };
 
 export type BackupsQueryVariables = Exact<{
   vmId: Scalars['String']['input'];
@@ -4738,6 +5027,21 @@ export type GlobalPendingRecommendationsQueryVariables = Exact<{
 
 export type GlobalPendingRecommendationsQuery = { __typename?: 'Query', globalPendingRecommendations: Array<{ __typename?: 'GlobalRecommendationType', id: string, machineId: string, machineName: string, type: RecommendationType, text: string, actionText: string, severity: string, data: { [key: string]: any } | null, createdAt: string }> };
 
+export const RoleFieldsFragmentDoc = gql`
+    fragment RoleFields on RoleType {
+  id
+  key
+  name
+  description
+  isSystem
+  priority
+  userCount
+  permissions {
+    permission
+    scope
+  }
+}
+    `;
 export const RecommendationResolutionFieldsFragmentDoc = gql`
     fragment RecommendationResolutionFields on RecommendationResolutionType {
   id
@@ -7191,21 +7495,10 @@ export type DeleteIdentityGroupRoleMappingMutationResult = ApolloReactCommon.Mut
 export const SetRolePermissionDocument = gql`
     mutation SetRolePermission($input: SetRolePermissionInput!) {
   setRolePermission(input: $input) {
-    principals {
-      id
-      label
-      kind
-      avatar
-    }
-    resources {
-      id
-      label
-      group
-    }
-    permissions
+    ...RoleFields
   }
 }
-    `;
+    ${RoleFieldsFragmentDoc}`;
 
 /**
  * __useSetRolePermissionMutation__
@@ -7230,6 +7523,253 @@ export function useSetRolePermissionMutation(baseOptions?: ApolloReactHooks.Muta
       }
 export type SetRolePermissionMutationHookResult = ReturnType<typeof useSetRolePermissionMutation>;
 export type SetRolePermissionMutationResult = ApolloReactCommon.MutationResult<SetRolePermissionMutation>;
+export const RemoveRolePermissionDocument = gql`
+    mutation RemoveRolePermission($input: RemoveRolePermissionInput!) {
+  removeRolePermission(input: $input) {
+    ...RoleFields
+  }
+}
+    ${RoleFieldsFragmentDoc}`;
+
+/**
+ * __useRemoveRolePermissionMutation__
+ *
+ * To run a mutation, you first call `useRemoveRolePermissionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRemoveRolePermissionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [removeRolePermissionMutation, { data, loading, error }] = useRemoveRolePermissionMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRemoveRolePermissionMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RemoveRolePermissionMutation, RemoveRolePermissionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RemoveRolePermissionMutation, RemoveRolePermissionMutationVariables>(RemoveRolePermissionDocument, options);
+      }
+export type RemoveRolePermissionMutationHookResult = ReturnType<typeof useRemoveRolePermissionMutation>;
+export type RemoveRolePermissionMutationResult = ApolloReactCommon.MutationResult<RemoveRolePermissionMutation>;
+export const CreateRoleDocument = gql`
+    mutation CreateRole($input: CreateRoleInput!) {
+  createRole(input: $input) {
+    ...RoleFields
+  }
+}
+    ${RoleFieldsFragmentDoc}`;
+
+/**
+ * __useCreateRoleMutation__
+ *
+ * To run a mutation, you first call `useCreateRoleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateRoleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createRoleMutation, { data, loading, error }] = useCreateRoleMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateRoleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateRoleMutation, CreateRoleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateRoleMutation, CreateRoleMutationVariables>(CreateRoleDocument, options);
+      }
+export type CreateRoleMutationHookResult = ReturnType<typeof useCreateRoleMutation>;
+export type CreateRoleMutationResult = ApolloReactCommon.MutationResult<CreateRoleMutation>;
+export const UpdateRoleDocument = gql`
+    mutation UpdateRole($input: UpdateRoleInput!) {
+  updateRole(input: $input) {
+    ...RoleFields
+  }
+}
+    ${RoleFieldsFragmentDoc}`;
+
+/**
+ * __useUpdateRoleMutation__
+ *
+ * To run a mutation, you first call `useUpdateRoleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateRoleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateRoleMutation, { data, loading, error }] = useUpdateRoleMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateRoleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateRoleMutation, UpdateRoleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateRoleMutation, UpdateRoleMutationVariables>(UpdateRoleDocument, options);
+      }
+export type UpdateRoleMutationHookResult = ReturnType<typeof useUpdateRoleMutation>;
+export type UpdateRoleMutationResult = ApolloReactCommon.MutationResult<UpdateRoleMutation>;
+export const DeleteRoleDocument = gql`
+    mutation DeleteRole($id: String!) {
+  deleteRole(id: $id)
+}
+    `;
+
+/**
+ * __useDeleteRoleMutation__
+ *
+ * To run a mutation, you first call `useDeleteRoleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteRoleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteRoleMutation, { data, loading, error }] = useDeleteRoleMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteRoleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteRoleMutation, DeleteRoleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteRoleMutation, DeleteRoleMutationVariables>(DeleteRoleDocument, options);
+      }
+export type DeleteRoleMutationHookResult = ReturnType<typeof useDeleteRoleMutation>;
+export type DeleteRoleMutationResult = ApolloReactCommon.MutationResult<DeleteRoleMutation>;
+export const ResetRoleToDefaultDocument = gql`
+    mutation ResetRoleToDefault($roleId: String!) {
+  resetRoleToDefault(roleId: $roleId) {
+    ...RoleFields
+  }
+}
+    ${RoleFieldsFragmentDoc}`;
+
+/**
+ * __useResetRoleToDefaultMutation__
+ *
+ * To run a mutation, you first call `useResetRoleToDefaultMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useResetRoleToDefaultMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [resetRoleToDefaultMutation, { data, loading, error }] = useResetRoleToDefaultMutation({
+ *   variables: {
+ *      roleId: // value for 'roleId'
+ *   },
+ * });
+ */
+export function useResetRoleToDefaultMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ResetRoleToDefaultMutation, ResetRoleToDefaultMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ResetRoleToDefaultMutation, ResetRoleToDefaultMutationVariables>(ResetRoleToDefaultDocument, options);
+      }
+export type ResetRoleToDefaultMutationHookResult = ReturnType<typeof useResetRoleToDefaultMutation>;
+export type ResetRoleToDefaultMutationResult = ApolloReactCommon.MutationResult<ResetRoleToDefaultMutation>;
+export const AssignUserRoleDocument = gql`
+    mutation AssignUserRole($input: AssignUserRoleInput!) {
+  assignUserRole(input: $input)
+}
+    `;
+
+/**
+ * __useAssignUserRoleMutation__
+ *
+ * To run a mutation, you first call `useAssignUserRoleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAssignUserRoleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [assignUserRoleMutation, { data, loading, error }] = useAssignUserRoleMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAssignUserRoleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssignUserRoleMutation, AssignUserRoleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AssignUserRoleMutation, AssignUserRoleMutationVariables>(AssignUserRoleDocument, options);
+      }
+export type AssignUserRoleMutationHookResult = ReturnType<typeof useAssignUserRoleMutation>;
+export type AssignUserRoleMutationResult = ApolloReactCommon.MutationResult<AssignUserRoleMutation>;
+export const SetUserPermissionOverrideDocument = gql`
+    mutation SetUserPermissionOverride($input: SetUserPermissionOverrideInput!) {
+  setUserPermissionOverride(input: $input) {
+    id
+    userId
+    permission
+    scope
+    effect
+  }
+}
+    `;
+
+/**
+ * __useSetUserPermissionOverrideMutation__
+ *
+ * To run a mutation, you first call `useSetUserPermissionOverrideMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetUserPermissionOverrideMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [setUserPermissionOverrideMutation, { data, loading, error }] = useSetUserPermissionOverrideMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useSetUserPermissionOverrideMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SetUserPermissionOverrideMutation, SetUserPermissionOverrideMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SetUserPermissionOverrideMutation, SetUserPermissionOverrideMutationVariables>(SetUserPermissionOverrideDocument, options);
+      }
+export type SetUserPermissionOverrideMutationHookResult = ReturnType<typeof useSetUserPermissionOverrideMutation>;
+export type SetUserPermissionOverrideMutationResult = ApolloReactCommon.MutationResult<SetUserPermissionOverrideMutation>;
+export const ClearUserPermissionOverrideDocument = gql`
+    mutation ClearUserPermissionOverride($userId: String!, $permission: String!) {
+  clearUserPermissionOverride(userId: $userId, permission: $permission)
+}
+    `;
+
+/**
+ * __useClearUserPermissionOverrideMutation__
+ *
+ * To run a mutation, you first call `useClearUserPermissionOverrideMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useClearUserPermissionOverrideMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [clearUserPermissionOverrideMutation, { data, loading, error }] = useClearUserPermissionOverrideMutation({
+ *   variables: {
+ *      userId: // value for 'userId'
+ *      permission: // value for 'permission'
+ *   },
+ * });
+ */
+export function useClearUserPermissionOverrideMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ClearUserPermissionOverrideMutation, ClearUserPermissionOverrideMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ClearUserPermissionOverrideMutation, ClearUserPermissionOverrideMutationVariables>(ClearUserPermissionOverrideDocument, options);
+      }
+export type ClearUserPermissionOverrideMutationHookResult = ReturnType<typeof useClearUserPermissionOverrideMutation>;
+export type ClearUserPermissionOverrideMutationResult = ApolloReactCommon.MutationResult<ClearUserPermissionOverrideMutation>;
 export const CreateBackupDocument = gql`
     mutation createBackup($input: CreateBackupInput!) {
   createBackup(input: $input) {
@@ -11214,66 +11754,174 @@ export type IdentityGroupRoleMappingsQueryResult = ApolloReactCommon.QueryResult
 export function refetchIdentityGroupRoleMappingsQuery(variables: IdentityGroupRoleMappingsQueryVariables) {
       return { query: IdentityGroupRoleMappingsDocument, variables: variables }
     }
-export const RolePermissionMatrixDocument = gql`
-    query RolePermissionMatrix {
-  rolePermissionMatrix {
-    principals {
-      id
-      label
-      kind
-      avatar
-    }
+export const PermissionRegistryDocument = gql`
+    query PermissionRegistry {
+  permissionRegistry {
     resources {
-      id
+      key
       label
       group
+      scoped
+      verbs
     }
-    permissions
+    groups {
+      key
+      members
+    }
   }
 }
     `;
 
 /**
- * __useRolePermissionMatrixQuery__
+ * __usePermissionRegistryQuery__
  *
- * To run a query within a React component, call `useRolePermissionMatrixQuery` and pass it any options that fit your needs.
- * When your component renders, `useRolePermissionMatrixQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `usePermissionRegistryQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePermissionRegistryQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useRolePermissionMatrixQuery({
+ * const { data, loading, error } = usePermissionRegistryQuery({
  *   variables: {
  *   },
  * });
  */
-export function useRolePermissionMatrixQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>) {
+export function usePermissionRegistryQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<PermissionRegistryQuery, PermissionRegistryQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>(RolePermissionMatrixDocument, options);
+        return ApolloReactHooks.useQuery<PermissionRegistryQuery, PermissionRegistryQueryVariables>(PermissionRegistryDocument, options);
       }
-export function useRolePermissionMatrixLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>) {
+export function usePermissionRegistryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PermissionRegistryQuery, PermissionRegistryQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>(RolePermissionMatrixDocument, options);
+          return ApolloReactHooks.useLazyQuery<PermissionRegistryQuery, PermissionRegistryQueryVariables>(PermissionRegistryDocument, options);
         }
 // @ts-ignore
-export function useRolePermissionMatrixSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>;
-export function useRolePermissionMatrixSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<RolePermissionMatrixQuery | undefined, RolePermissionMatrixQueryVariables>;
-export function useRolePermissionMatrixSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>) {
+export function usePermissionRegistrySuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<PermissionRegistryQuery, PermissionRegistryQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<PermissionRegistryQuery, PermissionRegistryQueryVariables>;
+export function usePermissionRegistrySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PermissionRegistryQuery, PermissionRegistryQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<PermissionRegistryQuery | undefined, PermissionRegistryQueryVariables>;
+export function usePermissionRegistrySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PermissionRegistryQuery, PermissionRegistryQueryVariables>) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useSuspenseQuery<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>(RolePermissionMatrixDocument, options);
+          return ApolloReactHooks.useSuspenseQuery<PermissionRegistryQuery, PermissionRegistryQueryVariables>(PermissionRegistryDocument, options);
         }
-export type RolePermissionMatrixQueryHookResult = ReturnType<typeof useRolePermissionMatrixQuery>;
-export type RolePermissionMatrixLazyQueryHookResult = ReturnType<typeof useRolePermissionMatrixLazyQuery>;
-export type RolePermissionMatrixSuspenseQueryHookResult = ReturnType<typeof useRolePermissionMatrixSuspenseQuery>;
-export type RolePermissionMatrixQueryResult = ApolloReactCommon.QueryResult<RolePermissionMatrixQuery, RolePermissionMatrixQueryVariables>;
-export function refetchRolePermissionMatrixQuery(variables?: RolePermissionMatrixQueryVariables) {
-      return { query: RolePermissionMatrixDocument, variables: variables }
+export type PermissionRegistryQueryHookResult = ReturnType<typeof usePermissionRegistryQuery>;
+export type PermissionRegistryLazyQueryHookResult = ReturnType<typeof usePermissionRegistryLazyQuery>;
+export type PermissionRegistrySuspenseQueryHookResult = ReturnType<typeof usePermissionRegistrySuspenseQuery>;
+export type PermissionRegistryQueryResult = ApolloReactCommon.QueryResult<PermissionRegistryQuery, PermissionRegistryQueryVariables>;
+export function refetchPermissionRegistryQuery(variables?: PermissionRegistryQueryVariables) {
+      return { query: PermissionRegistryDocument, variables: variables }
+    }
+export const RolesDocument = gql`
+    query Roles {
+  roles {
+    id
+    key
+    name
+    description
+    isSystem
+    priority
+    userCount
+    permissions {
+      permission
+      scope
+    }
+  }
+}
+    `;
+
+/**
+ * __useRolesQuery__
+ *
+ * To run a query within a React component, call `useRolesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRolesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRolesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useRolesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<RolesQuery, RolesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RolesQuery, RolesQueryVariables>(RolesDocument, options);
+      }
+export function useRolesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RolesQuery, RolesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RolesQuery, RolesQueryVariables>(RolesDocument, options);
+        }
+// @ts-ignore
+export function useRolesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<RolesQuery, RolesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<RolesQuery, RolesQueryVariables>;
+export function useRolesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<RolesQuery, RolesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<RolesQuery | undefined, RolesQueryVariables>;
+export function useRolesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<RolesQuery, RolesQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<RolesQuery, RolesQueryVariables>(RolesDocument, options);
+        }
+export type RolesQueryHookResult = ReturnType<typeof useRolesQuery>;
+export type RolesLazyQueryHookResult = ReturnType<typeof useRolesLazyQuery>;
+export type RolesSuspenseQueryHookResult = ReturnType<typeof useRolesSuspenseQuery>;
+export type RolesQueryResult = ApolloReactCommon.QueryResult<RolesQuery, RolesQueryVariables>;
+export function refetchRolesQuery(variables?: RolesQueryVariables) {
+      return { query: RolesDocument, variables: variables }
+    }
+export const UserPermissionOverridesDocument = gql`
+    query UserPermissionOverrides($userId: String!) {
+  userPermissionOverrides(userId: $userId) {
+    id
+    userId
+    permission
+    scope
+    effect
+  }
+}
+    `;
+
+/**
+ * __useUserPermissionOverridesQuery__
+ *
+ * To run a query within a React component, call `useUserPermissionOverridesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useUserPermissionOverridesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useUserPermissionOverridesQuery({
+ *   variables: {
+ *      userId: // value for 'userId'
+ *   },
+ * });
+ */
+export function useUserPermissionOverridesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<UserPermissionOverridesQuery, UserPermissionOverridesQueryVariables> & ({ variables: UserPermissionOverridesQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<UserPermissionOverridesQuery, UserPermissionOverridesQueryVariables>(UserPermissionOverridesDocument, options);
+      }
+export function useUserPermissionOverridesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<UserPermissionOverridesQuery, UserPermissionOverridesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<UserPermissionOverridesQuery, UserPermissionOverridesQueryVariables>(UserPermissionOverridesDocument, options);
+        }
+// @ts-ignore
+export function useUserPermissionOverridesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<UserPermissionOverridesQuery, UserPermissionOverridesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<UserPermissionOverridesQuery, UserPermissionOverridesQueryVariables>;
+export function useUserPermissionOverridesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<UserPermissionOverridesQuery, UserPermissionOverridesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<UserPermissionOverridesQuery | undefined, UserPermissionOverridesQueryVariables>;
+export function useUserPermissionOverridesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<UserPermissionOverridesQuery, UserPermissionOverridesQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<UserPermissionOverridesQuery, UserPermissionOverridesQueryVariables>(UserPermissionOverridesDocument, options);
+        }
+export type UserPermissionOverridesQueryHookResult = ReturnType<typeof useUserPermissionOverridesQuery>;
+export type UserPermissionOverridesLazyQueryHookResult = ReturnType<typeof useUserPermissionOverridesLazyQuery>;
+export type UserPermissionOverridesSuspenseQueryHookResult = ReturnType<typeof useUserPermissionOverridesSuspenseQuery>;
+export type UserPermissionOverridesQueryResult = ApolloReactCommon.QueryResult<UserPermissionOverridesQuery, UserPermissionOverridesQueryVariables>;
+export function refetchUserPermissionOverridesQuery(variables: UserPermissionOverridesQueryVariables) {
+      return { query: UserPermissionOverridesDocument, variables: variables }
     }
 export const MyPermissionsDocument = gql`
     query MyPermissions {
   myPermissions {
     allowedResources
+    grants {
+      permission
+      scope
+    }
   }
 }
     `;

@@ -92,6 +92,11 @@ type ApplicationUpdates {
   windowsUpdatesCount: Int
 }
 
+input AssignUserRoleInput {
+  roleId: ID! = ""
+  userId: ID! = ""
+}
+
 type BackgroundHealthServiceStatus {
   activeQueues: Int!
   cronActive: Boolean!
@@ -390,6 +395,12 @@ input CreatePoolInput {
   type: PoolType = NON_PERSISTENT
 }
 
+input CreateRoleInput {
+  description: String
+  name: String! = ""
+  permissions: [GrantInput!]
+}
+
 input CreateScheduleInput {
   compression: BackupCompression
   cronExpression: String!
@@ -457,6 +468,16 @@ input DeleteSnapshotInput {
   snapshotName: String!
 }
 
+type DepartmentMemberType {
+  departmentId: String!
+  id: ID!
+  role: DepartmentRole!
+  userEmail: String!
+  userGlobalRole: UserRole!
+  userId: String!
+  userName: String!
+}
+
 type DepartmentNetworkDiagnosticsType {
   brNetfilter: BrNetfilterDiagnosticsType!
   bridge: BridgeDiagnosticsType!
@@ -467,6 +488,12 @@ type DepartmentNetworkDiagnosticsType {
   nat: NatDiagnosticsType!
   recommendations: [String!]!
   timestamp: Timestamp!
+}
+
+"""Role a user holds within a single department"""
+enum DepartmentRole {
+  MANAGER
+  MEMBER
 }
 
 type DepartmentType {
@@ -566,12 +593,20 @@ type DnsmasqDiagnosticsType {
   recentLogLines: [String!]
 }
 
+type DomainJoinResultType {
+  domain: String
+  error: String
+  message: String
+  success: Boolean!
+}
+
 type DyummyType {
   value: String!
 }
 
-type EffectivePermissionType {
+type EffectivePermissionsType {
   allowedResources: [String!]!
+  grants: [PermissionGrantType!]!
 }
 
 type EffectiveRuleSetType {
@@ -772,6 +807,17 @@ enum GoldenImageStatus {
   DRAFT
   FAILED
   PUBLISHED
+}
+
+"""Allow or deny effect for a per-user permission override"""
+enum GrantEffect {
+  ALLOW
+  DENY
+}
+
+input GrantInput {
+  permission: String! = ""
+  scope: PermissionScope = ANY
 }
 
 type GraphicConfigurationType {
@@ -977,6 +1023,16 @@ scalar JSON
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
 scalar JSONObject
+
+input JoinDomainInput {
+  computerName: String
+  identityProviderId: String! = ""
+  machineId: String! = ""
+  ou: String
+  password: String
+  restartAfter: Boolean
+  username: String
+}
 
 """Keep-alive heartbeat metrics for a VM connection"""
 type KeepAliveMetrics {
@@ -1287,6 +1343,7 @@ enum MaintenanceTrigger {
 
 type Mutation {
   assignScriptToDepartment(departmentId: ID!, scriptId: ID!): Boolean!
+  assignUserRole(input: AssignUserRoleInput!): Boolean!
 
   """Calculate ISO checksum"""
   calculateISOChecksum(isoId: String!): String!
@@ -1299,6 +1356,7 @@ type Mutation {
   """Seal an existing VM into a new golden image (long-running)."""
   captureGoldenImageFromMachine(input: CaptureGoldenImageFromMachineInput!): GoldenImageResult!
   cleanupInfinibayFirewall: CleanupResultType!
+  clearUserPermissionOverride(permission: String!, userId: String!): Boolean!
 
   """
   Check out a desktop from the pool for the current user. Returns Machine.id.
@@ -1323,6 +1381,7 @@ type Mutation {
   createMaintenanceTask(input: CreateMaintenanceTaskInput!): MaintenanceTaskResponse!
   createNetwork(input: CreateNetworkInput!): Boolean!
   createPool(input: CreatePoolInput!): PoolResult!
+  createRole(input: CreateRoleInput!): RoleType!
   createScript(input: CreateScriptInput!): ScriptResponseType!
 
   """Create a snapshot of a virtual machine"""
@@ -1343,6 +1402,7 @@ type Mutation {
   deleteMaintenanceTask(id: ID!): MaintenanceTaskResponse!
   deleteNetwork(input: DeleteNetworkInput!): Boolean!
   deletePool(id: ID!): Boolean!
+  deleteRole(id: String!): Boolean!
   deleteScript(force: Boolean = false, id: ID!): ScriptResponseType!
 
   """Delete a snapshot from a virtual machine"""
@@ -1377,6 +1437,7 @@ type Mutation {
 
   """Install a package on a virtual machine (legacy compatibility)"""
   installPackage(machineId: ID!, packageName: String!): CommandResult!
+  joinVmToDomain(input: JoinDomainInput!): DomainJoinResultType!
   killProcess(force: Boolean! = false, machineId: String!, pid: Int!): ProcessControlResult!
   killProcesses(force: Boolean! = false, machineId: String!, pids: [Int!]!): [ProcessControlResult!]!
   login(email: String!, password: String!): LoginResponse
@@ -1395,13 +1456,16 @@ type Mutation {
 
   """Register uploaded ISO"""
   registerISO(filename: String!, os: String!, path: String!, size: Float!): ISO!
+  removeDepartmentMember(departmentId: String!, userId: String!): Boolean!
 
   """Remove ISO file"""
   removeISO(isoId: String!): Boolean!
 
   """Remove a package from a virtual machine (legacy compatibility)"""
   removePackage(machineId: ID!, packageName: String!): CommandResult!
+  removeRolePermission(input: RemoveRolePermissionInput!): RoleType!
   resetMachine(id: String!): SuccessType!
+  resetRoleToDefault(roleId: String!): RoleType!
 
   """
   Trigger auto-resolution for a recommendation. Idempotent: returns the in-flight resolution if one is already running.
@@ -1424,11 +1488,13 @@ type Mutation {
   runDefenderQuickScan(vmId: ID!): DefenderScanResult!
   scalePool(id: ID!, targetSize: Int!): PoolResult!
   scheduleScript(input: ScheduleScriptInput!): ScheduleScriptResponseType!
+  setDepartmentMember(input: SetDepartmentMemberInput!): DepartmentMemberType!
   setNetworkBridgeName(input: BridgeNameInput!): Boolean!
   setNetworkIp(input: NetworkIpInput!): Boolean!
   setNetworkIpRange(input: IpRangeInput!): Boolean!
   setNodeMaintenanceMode(enabled: Boolean!, id: ID!): NodeType!
-  setRolePermission(input: SetRolePermissionInput!): RolePermissionMatrixType!
+  setRolePermission(input: SetRolePermissionInput!): RoleType!
+  setUserPermissionOverride(input: SetUserPermissionOverrideInput!): UserPermissionOverrideType!
   setupNode: DyummyType!
 
   """
@@ -1477,6 +1543,7 @@ type Mutation {
   """Update a package on a virtual machine (legacy compatibility)"""
   updatePackage(machineId: ID!, packageName: String!): CommandResult!
   updatePool(id: ID!, input: UpdatePoolInput!): PoolResult!
+  updateRole(input: UpdateRoleInput!): RoleType!
   updateScheduledScript(input: UpdateScheduledScriptInput!): ScheduleScriptResponseType!
   updateScript(input: UpdateScriptInput!): ScriptResponseType!
   updateUser(id: String!, input: UpdateUserInputType!): UserType!
@@ -1723,24 +1790,50 @@ input PaginationInputType {
   take: Int = 20
 }
 
-"""Role permission decision"""
-enum PermissionEffect {
-  ALLOW
-  DENY
-  INHERIT
+type PermissionGrantType {
+  permission: String!
+  scope: PermissionScope!
 }
 
-type PermissionPrincipalType {
-  avatar: String!
-  id: String!
-  kind: String!
-  label: String!
+type PermissionGroupType {
+  key: String!
+  members: [String!]!
 }
 
-type PermissionResourceType {
+type PermissionRegistryType {
+  groups: [PermissionGroupType!]!
+  resources: [PermissionResourceDefType!]!
+}
+
+type PermissionResourceDefType {
   group: String!
-  id: String!
+  key: String!
   label: String!
+  scoped: Boolean!
+  verbs: [String!]!
+}
+
+"""Scope a permission grant applies at (own / department / any)"""
+enum PermissionScope {
+  ANY
+  DEPARTMENT
+  OWN
+}
+
+type PolicyAuditEntryType {
+  action: String!
+  actorId: String
+  actorName: String
+  createdAt: DateTimeISO!
+  id: ID!
+  metadata: JSONObject
+  summary: String!
+  targetId: String
+  targetType: String!
+}
+
+input PolicyAuditQueryInput {
+  limit: Int = 100
 }
 
 type Pool {
@@ -1833,6 +1926,7 @@ type Query {
   currentSnapshot(machineId: String!): Snapshot
   currentUser: UserType
   department(id: String!): DepartmentType
+  departmentMembers(departmentId: String!): [DepartmentMemberType!]!
   departmentNetworkDiagnostics(departmentId: String!): DepartmentNetworkDiagnosticsType!
   departmentScripts(departmentId: ID!): [ScriptType!]!
   departments: [DepartmentType!]!
@@ -1905,7 +1999,7 @@ type Query {
   maintenanceStats(machineId: ID!): MaintenanceStats!
   maintenanceTask(id: ID!): MaintenanceTask
   maintenanceTasks(machineId: ID!, status: String): [MaintenanceTask!]!
-  myPermissions: EffectivePermissionType!
+  myPermissions: EffectivePermissionsType!
   network(name: String!): Network!
   networks: [Network!]!
   node(id: ID!): NodeType
@@ -1925,12 +2019,15 @@ type Query {
   Get the count of pending (non-dismissed, non-snoozed) recommendations across all VMs
   """
   pendingRecommendationCount: Int!
+  permissionRegistry: PermissionRegistryType!
+  policyAuditLog(input: PolicyAuditQueryInput): [PolicyAuditEntryType!]!
   pool(id: ID!): Pool
   pools: [Pool!]!
 
   """Fetch a single resolution. Poll this query to track progress."""
   recommendationResolution(id: ID!): RecommendationResolutionType
-  rolePermissionMatrix: RolePermissionMatrixType!
+  role(id: String!): RoleType
+  roles: [RoleType!]!
 
   """Run a specific health check on a VM"""
   runHealthCheck(checkName: HealthCheckName!, vmId: ID!): GenericHealthCheckResponse!
@@ -1948,6 +2045,7 @@ type Query {
   """Get current socket connection statistics for all VMs"""
   socketConnectionStats: SocketConnectionStats
   user(id: String!): UserType!
+  userPermissionOverrides(userId: String!): [UserPermissionOverrideType!]!
   users(orderBy: UserOrderByInputType, pagination: PaginationInputType): [UserType!]!
   validateFirewallRule(input: CreateFirewallRuleInput!): ValidationResultType!
   vmHealthCheckQueue(limit: Int = 20, machineId: ID, offset: Int = 0, status: String): [VMHealthCheckQueueType!]!
@@ -2077,6 +2175,11 @@ enum RecommendationType {
   UNDER_PROVISIONED
 }
 
+input RemoveRolePermissionInput {
+  permission: String! = ""
+  roleId: ID! = ""
+}
+
 """Lifecycle state of an auto-resolve execution for a VM recommendation"""
 enum ResolutionStatus {
   CANCELLED
@@ -2135,10 +2238,15 @@ input RestoreSnapshotInput {
   snapshotName: String!
 }
 
-type RolePermissionMatrixType {
-  permissions: JSONObject!
-  principals: [PermissionPrincipalType!]!
-  resources: [PermissionResourceType!]!
+type RoleType {
+  description: String
+  id: ID!
+  isSystem: Boolean!
+  key: String!
+  name: String!
+  permissions: [PermissionGrantType!]!
+  priority: Int!
+  userCount: Int!
 }
 
 """Action to take on matched traffic"""
@@ -2338,10 +2446,23 @@ type ScriptType {
   updatedAt: DateTimeISO!
 }
 
+input SetDepartmentMemberInput {
+  departmentId: String! = ""
+  role: DepartmentRole! = MEMBER
+  userId: String! = ""
+}
+
 input SetRolePermissionInput {
-  effect: PermissionEffect! = DENY
-  resource: String! = ""
-  role: UserRole! = USER
+  permission: String! = ""
+  roleId: ID! = ""
+  scope: PermissionScope = ANY
+}
+
+input SetUserPermissionOverrideInput {
+  effect: GrantEffect = ALLOW
+  permission: String! = ""
+  scope: PermissionScope = ANY
+  userId: ID! = ""
 }
 
 """Shell type for script execution"""
@@ -2579,6 +2700,12 @@ input UpdatePoolInput {
   sizeMin: Int
 }
 
+input UpdateRoleInput {
+  description: String
+  id: ID! = ""
+  name: String
+}
+
 input UpdateScheduleInput {
   compression: BackupCompression
   cronExpression: String
@@ -2641,6 +2768,14 @@ enum UserOrderByField {
 input UserOrderByInputType {
   direction: OrderByDirection
   fieldName: UserOrderByField
+}
+
+type UserPermissionOverrideType {
+  effect: GrantEffect!
+  id: ID!
+  permission: String!
+  scope: PermissionScope!
+  userId: String!
 }
 
 """The basic roles of users"""
