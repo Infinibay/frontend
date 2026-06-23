@@ -6,9 +6,17 @@ const nextConfig = {
   // `.next` from a container build blocks a local rebuild). Defaults to `.next`.
   distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
-  // Allow LAN devices to access the dev server (HMR/WebSocket).
-  // Add your device IP here if it changes, e.g. '192.168.0.42'.
-  allowedDevOrigins: ['192.168.0.199'],
+  // Origins allowed to reach dev-server resources (HMR/WebSocket). localhost +
+  // 127.0.0.1 cover local and Docker-published access; add LAN device IPs as
+  // needed, or via NEXT_ALLOWED_DEV_ORIGINS (comma-separated).
+  allowedDevOrigins: [
+    'localhost',
+    '127.0.0.1',
+    '192.168.0.199',
+    ...(process.env.NEXT_ALLOWED_DEV_ORIGINS
+      ? process.env.NEXT_ALLOWED_DEV_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
+      : []),
+  ],
   typescript: {
     // Warning: This allows production builds to successfully complete even if
     // your project has type errors.
