@@ -339,6 +339,8 @@ input CreateIdentityProviderInput {
   name: String! = ""
   port: Float
   providerType: IdentityProviderKind! = ACTIVE_DIRECTORY
+  tlsCa: String
+  tlsInsecureSkipVerify: Boolean
   useTls: Boolean
   userFilter: String
 }
@@ -971,6 +973,8 @@ type IdentityProviderType {
   port: Float!
   providerType: IdentityProviderKind!
   status: IdentityProviderState!
+  tlsCa: String
+  tlsInsecureSkipVerify: Boolean!
   updatedAt: DateTimeISO!
   useTls: Boolean!
   userFilter: String
@@ -1079,6 +1083,11 @@ type LibvirtFilterInfoType {
 
 """Login response with user data and token"""
 type LoginResponse {
+  """Access token lifetime in seconds"""
+  expiresIn: Int!
+
+  """Refresh token used to obtain a new access token"""
+  refreshToken: String!
   token: String!
   user: UserType!
 }
@@ -1097,6 +1106,9 @@ type Machine {
   name: String!
   nodeId: String
   os: String!
+
+  """Pool this desktop belongs to, if any (VDI pool membership)."""
+  poolId: ID
   publicIP: String
   ramGB: Int
   setupComplete: Boolean!
@@ -1441,6 +1453,7 @@ type Mutation {
   killProcess(force: Boolean! = false, machineId: String!, pid: Int!): ProcessControlResult!
   killProcesses(force: Boolean! = false, machineId: String!, pids: [Int!]!): [ProcessControlResult!]!
   login(email: String!, password: String!): LoginResponse
+  logout: Boolean!
 
   """Install, remove, or update a package on a virtual machine"""
   managePackage(input: PackageManagementInput!): PackageManagementResult!
@@ -1453,6 +1466,7 @@ type Mutation {
   powerOn(id: String!): SuccessType!
   publishGoldenImage(id: ID!): GoldenImageResult!
   queueAllVMHealthChecks: HealthCheckRoundResult!
+  refreshToken(refreshToken: String!): RefreshAuthResponse!
 
   """Register uploaded ISO"""
   registerISO(filename: String!, os: String!, path: String!, size: Float!): ISO!
@@ -2175,6 +2189,16 @@ enum RecommendationType {
   UNDER_PROVISIONED
 }
 
+"""Response from refreshing an access token"""
+type RefreshAuthResponse {
+  """Access token lifetime in seconds"""
+  expiresIn: Int!
+
+  """Rotated refresh token to use for the next refresh"""
+  refreshToken: String!
+  token: String!
+}
+
 input RemoveRolePermissionInput {
   permission: String! = ""
   roleId: ID! = ""
@@ -2650,6 +2674,8 @@ input UpdateIdentityProviderInput {
   name: String
   port: Float
   providerType: IdentityProviderKind
+  tlsCa: String
+  tlsInsecureSkipVerify: Boolean
   useTls: Boolean
   userFilter: String
 }
@@ -2798,6 +2824,11 @@ type UserType {
   """User namespace for real-time events"""
   namespace: String
   role: String!
+
+  """
+  Assigned role id (custom or system preset); null falls back to the `role` enum tier
+  """
+  roleId: ID
 }
 
 type VMHealthCheckQueueType {

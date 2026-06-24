@@ -3,6 +3,7 @@ import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { RetryLink } from '@apollo/client/link/retry';
 import { createDebugger } from '@/utils/debug';
+import { refreshAccessToken } from '@/utils/auth';
 
 const debug = createDebugger('frontend:utils:apollo-client');
 
@@ -34,12 +35,52 @@ const retryLink = new RetryLink({
   }
 });
 
-// Error link for logging and handling errors
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+// Operations that must never trigger a proactive refresh (avoid recursion: the
+// refresh mutation goes through this same client/link chain).
+const AUTH_OPERATION_NAMES = ['refreshToken', 'login', 'Logout'];
+
+// Detect an AUTHENTICATION failure (not logged in / token expired-revoked-invalid).
+// Deliberately does NOT match AUTHORIZATION/permission denials such as
+// "Not authorized: requires vm:edit" (those carry code FORBIDDEN) — a missing
+// permission must never log the user out.
+const isAuthError = ({ message, extensions }) => {
+  if (extensions?.code === 'UNAUTHENTICATED') {
+    return true;
+  }
+  return typeof message === 'string' &&
+    /authentication required|not authenticated|token (has )?(expired|been revoked|is invalid)|invalid token/i.test(message);
+};
+
+const clearSessionAndRedirect = () => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('tokenExpiresAt');
+  // Guard against redirect loops when the failing request originated on sign-in.
+  if (!window.location.pathname.startsWith('/auth/sign-in')) {
+    window.location.href = '/auth/sign-in';
+  }
+};
+
+// Error link for logging + reactive auth handling. The common expiry case is
+// handled proactively in authLink (below); a reactive UNAUTHENTICATED here means
+// the refresh token is also dead (or auth failed for another reason), so we end
+// the session rather than retry. Apollo Client 4 removed `fromPromise`, so we do
+// not attempt an in-link async retry.
+const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path, extensions }) => {
       debug.warn('graphql', `GraphQL error: Message: ${message}, Location: ${locations}, Path: ${path}`, { extensions });
     });
+
+    const operationName = operation.operationName;
+    if (
+      !AUTH_OPERATION_NAMES.includes(operationName) &&
+      graphQLErrors.some(isAuthError)
+    ) {
+      debug.warn('auth', `Authentication error on "${operationName}", clearing session`);
+      clearSessionAndRedirect();
+    }
   }
 
   if (networkError) {
@@ -55,19 +96,36 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   }
 });
 
-const authLink = setContext((_, { headers }) => {
-  // Only access localStorage when in browser environment
-  let token = '';
-  if (typeof window !== 'undefined') {
-    token = localStorage.getItem('token');
+// Refresh the access token this many ms before it actually expires, so requests
+// never go out with an already-expired token.
+const REFRESH_SKEW_MS = 30000;
+
+const authLink = setContext(async (operation, { headers }) => {
+  // Only touch localStorage in the browser.
+  if (typeof window === 'undefined') {
+    return { headers };
   }
-  
+
+  let token = localStorage.getItem('token') || '';
+
+  // Proactively rotate the access token when it is at/near expiry. Skip the auth
+  // operations themselves (the refresh mutation runs through this link too —
+  // refreshing here would recurse). refreshAccessToken() is single-flight.
+  if (token && !AUTH_OPERATION_NAMES.includes(operation.operationName)) {
+    const expiresAt = Number(localStorage.getItem('tokenExpiresAt') || 0);
+    if (expiresAt && Date.now() > expiresAt - REFRESH_SKEW_MS) {
+      const refreshed = await refreshAccessToken();
+      token = refreshed || '';
+    }
+  }
+
   return {
     headers: {
       ...headers,
-      authorization: token ? `${token}` : "",
-    }
-  }
+      // RAW token, no 'Bearer ' prefix (matches the backend's extractToken).
+      authorization: token ? `${token}` : '',
+    },
+  };
 });
 
 const cache = new InMemoryCache({

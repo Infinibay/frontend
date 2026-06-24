@@ -118,13 +118,18 @@ export const InitialDataLoader = ({ children }) => {
   }
 
   if (error && !hasTimedOut) {
-    const isAuthError = error?.message?.toLowerCase().includes('not authorized') ||
-                       error?.message?.toLowerCase().includes('unauthorized') ||
-                       error?.message?.toLowerCase().includes('401') ||
-                       error?.message?.toLowerCase().includes('403') ||
+    const msg = error?.message?.toLowerCase() || '';
+    const isAuthError = msg.includes('not authorized') ||
+                       msg.includes('unauthorized') ||
+                       msg.includes('authentication required') ||
+                       msg.includes('not authenticated') ||
+                       msg.includes('401') ||
+                       msg.includes('403') ||
                        error?.graphQLErrors?.some(e =>
+                         e?.extensions?.code === 'UNAUTHENTICATED' ||
                          e.message?.toLowerCase().includes('not authorized') ||
-                         e.message?.toLowerCase().includes('unauthorized')
+                         e.message?.toLowerCase().includes('unauthorized') ||
+                         e.message?.toLowerCase().includes('authentication required')
                        );
 
     if (isAuthError) {

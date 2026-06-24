@@ -24,18 +24,23 @@ const getInitialState = () => {
 	if (typeof window !== 'undefined') {
 		try {
 			const token = localStorage.getItem('token');
+			const refreshToken = localStorage.getItem('refreshToken');
+			const tokenExpiresAt = localStorage.getItem('tokenExpiresAt');
 			const socketNamespace = localStorage.getItem('socketNamespace');
-			
+
 			// Log for debugging Chrome issue
 			debug.info('init', 'Auth initial state from localStorage:', {
 				hasToken: !!token,
+				hasRefreshToken: !!refreshToken,
 				hasNamespace: !!socketNamespace,
 				namespace: socketNamespace
 			});
-			
+
 			return {
 				isLoggedIn: !!token,
 				token: token || null,
+				refreshToken: refreshToken || null,
+				expiresIn: tokenExpiresAt ? Number(tokenExpiresAt) : null,
 				socketNamespace: socketNamespace || null,
 				user: {
 					id: null,
@@ -64,6 +69,8 @@ const getInitialState = () => {
 	return {
 		isLoggedIn: false,
 		token: null,
+		refreshToken: null,
+		expiresIn: null,
 		socketNamespace: null,
 		user: {
 			id: null,
@@ -90,6 +97,8 @@ const authSlice = createSlice({
 	reducers: {
 		logout: (state) => {
 			state.token = null;
+			state.refreshToken = null;
+			state.expiresIn = null;
 			state.socketNamespace = null;
 			state.user = {
 				id: null,
@@ -103,9 +112,11 @@ const authSlice = createSlice({
 			state.error.login = null;
 			state.error.fetchUser = null;
 
-			// Clear both token and socket namespace from localStorage
+			// Clear token, refresh token, expiry and socket namespace from localStorage
 			if (typeof window !== 'undefined') {
 				localStorage.removeItem('token');
+				localStorage.removeItem('refreshToken');
+				localStorage.removeItem('tokenExpiresAt');
 				localStorage.removeItem('socketNamespace');
 			}
 		},
@@ -136,10 +147,14 @@ const authSlice = createSlice({
 			if (typeof window !== 'undefined') {
 				try {
 					const token = localStorage.getItem('token');
+					const refreshToken = localStorage.getItem('refreshToken');
+					const tokenExpiresAt = localStorage.getItem('tokenExpiresAt');
 					const socketNamespace = localStorage.getItem('socketNamespace');
 
 					if (token) {
 						state.token = token;
+						state.refreshToken = refreshToken || null;
+						state.expiresIn = tokenExpiresAt ? Number(tokenExpiresAt) : null;
 						state.isLoggedIn = true;
 						debug.success('restore', 'Token restored from localStorage');
 					}
@@ -208,6 +223,12 @@ const authSlice = createSlice({
 				// Store token in localStorage (already done in auth.login, but ensure consistency)
 				if (typeof window !== 'undefined' && action.payload) {
 					localStorage.setItem('token', action.payload);
+
+					// auth.login already persists refreshToken/tokenExpiresAt; sync them into state
+					const refreshToken = localStorage.getItem('refreshToken');
+					const tokenExpiresAt = localStorage.getItem('tokenExpiresAt');
+					state.refreshToken = refreshToken || null;
+					state.expiresIn = tokenExpiresAt ? Number(tokenExpiresAt) : null;
 				}
 
 				// Socket namespace will be set when fetchCurrentUser is called after login
@@ -216,6 +237,8 @@ const authSlice = createSlice({
 				state.loading.login = false;
 				state.error.login = action.error.message;
 				state.token = null;
+				state.refreshToken = null;
+				state.expiresIn = null;
 				state.isLoggedIn = false;
 			});
 	}

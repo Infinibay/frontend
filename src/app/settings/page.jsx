@@ -10,6 +10,7 @@ import {
   Package as PackageIcon,
   Disc,
   FileCode,
+  FlaskConical,
   Sun,
   Moon,
   Monitor as MonitorIcon,
@@ -36,6 +37,7 @@ import {
   ResponsiveGrid,
   TextField,
   ColorPicker,
+  Switch,
 } from "@infinibay/harbor";
 
 import { usePageHeader } from "@/hooks/usePageHeader";
@@ -57,6 +59,11 @@ import {
   setBrandName,
   setLogoUrl,
 } from "@/state/slices/appSettings";
+import {
+  selectFeatureFlagMeta,
+  fetchFeatureFlags,
+} from "@/state/slices/featureFlags";
+import auth from "@/utils/auth";
 import {
   THEME_PRESETS,
   getPreset,
@@ -692,6 +699,63 @@ function IsosTab() {
   );
 }
 
+// ─── Preview features tab ─────────────────────────────────────────
+
+function PreviewFeaturesTab() {
+  const dispatch = useDispatch();
+  const flags = useSelector(selectFeatureFlagMeta);
+  const role = useSelector((s) => s.auth.user?.role);
+  const canToggle = role === "SUPER_ADMIN";
+
+  useEffect(() => {
+    dispatch(fetchFeatureFlags());
+  }, [dispatch]);
+
+  const handleToggle = async (flag, checked) => {
+    try {
+      await auth.setFeatureFlag(flag.key, checked);
+      dispatch(fetchFeatureFlags());
+      toast.success(
+        `${flag.label} ${checked ? "enabled" : "disabled"}`
+      );
+    } catch (err) {
+      toast.error(
+        `Could not update ${flag.label}: ${err.message || err}`
+      );
+    }
+  };
+
+  return (
+    <ResponsiveStack direction="col" gap={6}>
+      <Card
+        variant="default"
+        leadingIcon={<FlaskConical size={20} />}
+        leadingIconTone="amber"
+        title="Preview features"
+        description="Enable experimental / not-yet-complete features. Off by default."
+      >
+        <ResponsiveStack direction="col" gap={4}>
+          {!canToggle && (
+            <span className="text-fg-subtle text-xs">
+              Only a super admin can change feature flags.
+            </span>
+          )}
+          {flags.map((flag) => (
+            <Switch
+              key={flag.key}
+              label={flag.label}
+              description={flag.description}
+              checked={flag.enabled}
+              disabled={!canToggle}
+              onChange={(e) => handleToggle(flag, e.target.checked)}
+            />
+          ))}
+        </ResponsiveStack>
+      </Card>
+    </ResponsiveStack>
+  );
+}
+
 // ─── Page root ────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -722,6 +786,17 @@ export default function SettingsPage() {
             <p>
               Upload installer ISOs per OS. You can drop a file on the OS
               card to upload it automatically.
+            </p>
+          ),
+        },
+        {
+          id: "preview",
+          title: "Preview features",
+          icon: <FlaskConical size={16} />,
+          content: (
+            <p>
+              Toggle experimental, not-yet-complete features. They are off
+              by default; only a super admin can change them.
             </p>
           ),
         },
@@ -767,6 +842,9 @@ export default function SettingsPage() {
           <Tab value="packages" icon={<PackageIcon size={16} />}>
             Packages
           </Tab>
+          <Tab value="preview" icon={<FlaskConical size={16} />}>
+            Preview features
+          </Tab>
         </TabList>
 
         <TabPanel value="appearance">
@@ -780,6 +858,9 @@ export default function SettingsPage() {
         </TabPanel>
         <TabPanel value="packages">
           <PackagesSection embedded />
+        </TabPanel>
+        <TabPanel value="preview">
+          <PreviewFeaturesTab />
         </TabPanel>
       </Tabs>
     </Page>

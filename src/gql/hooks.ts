@@ -374,6 +374,8 @@ export type CreateIdentityProviderInput = {
   name: Scalars['String']['input'];
   port: InputMaybe<Scalars['Float']['input']>;
   providerType: IdentityProviderKind;
+  tlsCa: InputMaybe<Scalars['String']['input']>;
+  tlsInsecureSkipVerify: InputMaybe<Scalars['Boolean']['input']>;
   useTls: InputMaybe<Scalars['Boolean']['input']>;
   userFilter: InputMaybe<Scalars['String']['input']>;
 };
@@ -1025,6 +1027,8 @@ export type IdentityProviderType = {
   port: Scalars['Float']['output'];
   providerType: IdentityProviderKind;
   status: IdentityProviderState;
+  tlsCa: Maybe<Scalars['String']['output']>;
+  tlsInsecureSkipVerify: Scalars['Boolean']['output'];
   updatedAt: Scalars['DateTimeISO']['output'];
   useTls: Scalars['Boolean']['output'];
   userFilter: Maybe<Scalars['String']['output']>;
@@ -1120,6 +1124,10 @@ export type LibvirtFilterInfoType = {
 /** Login response with user data and token */
 export type LoginResponse = {
   __typename?: 'LoginResponse';
+  /** Access token lifetime in seconds */
+  expiresIn: Scalars['Int']['output'];
+  /** Refresh token used to obtain a new access token */
+  refreshToken: Scalars['String']['output'];
   token: Scalars['String']['output'];
   user: UserType;
 };
@@ -1139,6 +1147,8 @@ export type Machine = {
   name: Scalars['String']['output'];
   nodeId: Maybe<Scalars['String']['output']>;
   os: Scalars['String']['output'];
+  /** Pool this desktop belongs to, if any (VDI pool membership). */
+  poolId: Maybe<Scalars['ID']['output']>;
   publicIP: Maybe<Scalars['String']['output']>;
   ramGB: Maybe<Scalars['Int']['output']>;
   setupComplete: Scalars['Boolean']['output'];
@@ -1461,6 +1471,7 @@ export type Mutation = {
   killProcess: ProcessControlResult;
   killProcesses: Array<ProcessControlResult>;
   login: Maybe<LoginResponse>;
+  logout: Scalars['Boolean']['output'];
   /** Install, remove, or update a package on a virtual machine */
   managePackage: PackageManagementResult;
   migrateMachineToNode: MachineMigrationResultType;
@@ -1471,6 +1482,7 @@ export type Mutation = {
   powerOn: SuccessType;
   publishGoldenImage: GoldenImageResult;
   queueAllVMHealthChecks: HealthCheckRoundResult;
+  refreshToken: RefreshAuthResponse;
   /** Register uploaded ISO */
   registerISO: Iso;
   removeDepartmentMember: Scalars['Boolean']['output'];
@@ -1901,6 +1913,11 @@ export type MutationPowerOnArgs = {
 
 export type MutationPublishGoldenImageArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationRefreshTokenArgs = {
+  refreshToken: Scalars['String']['input'];
 };
 
 
@@ -3094,6 +3111,16 @@ export enum RecommendationType {
   UnderProvisioned = 'UNDER_PROVISIONED'
 }
 
+/** Response from refreshing an access token */
+export type RefreshAuthResponse = {
+  __typename?: 'RefreshAuthResponse';
+  /** Access token lifetime in seconds */
+  expiresIn: Scalars['Int']['output'];
+  /** Rotated refresh token to use for the next refresh */
+  refreshToken: Scalars['String']['output'];
+  token: Scalars['String']['output'];
+};
+
 export type RemoveRolePermissionInput = {
   permission: Scalars['String']['input'];
   roleId: Scalars['ID']['input'];
@@ -3588,6 +3615,8 @@ export type UpdateIdentityProviderInput = {
   name: InputMaybe<Scalars['String']['input']>;
   port: InputMaybe<Scalars['Float']['input']>;
   providerType: InputMaybe<IdentityProviderKind>;
+  tlsCa: InputMaybe<Scalars['String']['input']>;
+  tlsInsecureSkipVerify: InputMaybe<Scalars['Boolean']['input']>;
   useTls: InputMaybe<Scalars['Boolean']['input']>;
   userFilter: InputMaybe<Scalars['String']['input']>;
 };
@@ -3732,6 +3761,8 @@ export type UserType = {
   /** User namespace for real-time events */
   namespace: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
+  /** Assigned role id (custom or system preset); null falls back to the `role` enum tier */
+  roleId: Maybe<Scalars['ID']['output']>;
 };
 
 export type VmHealthCheckQueueType = {
@@ -4279,7 +4310,7 @@ export type CreateIdentityProviderMutationVariables = Exact<{
 }>;
 
 
-export type CreateIdentityProviderMutation = { __typename?: 'Mutation', createIdentityProvider: { __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string } };
+export type CreateIdentityProviderMutation = { __typename?: 'Mutation', createIdentityProvider: { __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, tlsCa: string | null, tlsInsecureSkipVerify: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string } };
 
 export type UpdateIdentityProviderMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4287,7 +4318,7 @@ export type UpdateIdentityProviderMutationVariables = Exact<{
 }>;
 
 
-export type UpdateIdentityProviderMutation = { __typename?: 'Mutation', updateIdentityProvider: { __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string } };
+export type UpdateIdentityProviderMutation = { __typename?: 'Mutation', updateIdentityProvider: { __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, tlsCa: string | null, tlsInsecureSkipVerify: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string } };
 
 export type DeleteIdentityProviderMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4330,6 +4361,18 @@ export type DeleteIdentityGroupRoleMappingMutationVariables = Exact<{
 
 
 export type DeleteIdentityGroupRoleMappingMutation = { __typename?: 'Mutation', deleteIdentityGroupRoleMapping: boolean };
+
+export type RefreshTokenMutationVariables = Exact<{
+  refreshToken: Scalars['String']['input'];
+}>;
+
+
+export type RefreshTokenMutation = { __typename?: 'Mutation', refreshToken: { __typename?: 'RefreshAuthResponse', token: string, refreshToken: string, expiresIn: number } };
+
+export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type LogoutMutation = { __typename?: 'Mutation', logout: boolean };
 
 export type RoleFieldsFragment = { __typename?: 'RoleType', id: string, key: string, name: string, description: string | null, isSystem: boolean, priority: number, userCount: number, permissions: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> };
 
@@ -4700,7 +4743,7 @@ export type UsersQueryVariables = Exact<{
 }>;
 
 
-export type UsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string }> };
+export type UsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, roleId: string | null, email: string, avatar: string | null, createdAt: string }> };
 
 export type MachineTemplateQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -4722,7 +4765,7 @@ export type MachineQueryVariables = Exact<{
 }>;
 
 
-export type MachineQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } | null };
+export type MachineQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, poolId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } | null };
 
 export type MachinesQueryVariables = Exact<{
   orderBy: InputMaybe<MachineOrderBy>;
@@ -4730,7 +4773,7 @@ export type MachinesQueryVariables = Exact<{
 }>;
 
 
-export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null }> };
+export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, poolId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null }> };
 
 export type GraphicConnectionQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -4918,14 +4961,14 @@ export type CaptureDepartmentDhcpTrafficQuery = { __typename?: 'Query', captureD
 export type IdentityProvidersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type IdentityProvidersQuery = { __typename?: 'Query', identityProviders: Array<{ __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string }> };
+export type IdentityProvidersQuery = { __typename?: 'Query', identityProviders: Array<{ __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, tlsCa: string | null, tlsInsecureSkipVerify: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string }> };
 
 export type IdentityProviderQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type IdentityProviderQuery = { __typename?: 'Query', identityProvider: { __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string } | null };
+export type IdentityProviderQuery = { __typename?: 'Query', identityProvider: { __typename?: 'IdentityProviderType', id: string, name: string, providerType: IdentityProviderKind, status: IdentityProviderState, enabled: boolean, domain: string | null, host: string, port: number, useTls: boolean, tlsCa: string | null, tlsInsecureSkipVerify: boolean, baseDn: string, bindDn: string | null, hasBindPassword: boolean, userFilter: string | null, groupFilter: string | null, attributes: { [key: string]: any } | null, lastTestAt: string | null, lastSyncAt: string | null, lastError: string | null, createdAt: string, updatedAt: string } | null };
 
 export type IdentitySyncRunsQueryVariables = Exact<{
   providerId: Scalars['ID']['input'];
@@ -7190,6 +7233,8 @@ export const CreateIdentityProviderDocument = gql`
     host
     port
     useTls
+    tlsCa
+    tlsInsecureSkipVerify
     baseDn
     bindDn
     hasBindPassword
@@ -7240,6 +7285,8 @@ export const UpdateIdentityProviderDocument = gql`
     host
     port
     useTls
+    tlsCa
+    tlsInsecureSkipVerify
     baseDn
     bindDn
     hasBindPassword
@@ -7492,6 +7539,67 @@ export function useDeleteIdentityGroupRoleMappingMutation(baseOptions?: ApolloRe
       }
 export type DeleteIdentityGroupRoleMappingMutationHookResult = ReturnType<typeof useDeleteIdentityGroupRoleMappingMutation>;
 export type DeleteIdentityGroupRoleMappingMutationResult = ApolloReactCommon.MutationResult<DeleteIdentityGroupRoleMappingMutation>;
+export const RefreshTokenDocument = gql`
+    mutation RefreshToken($refreshToken: String!) {
+  refreshToken(refreshToken: $refreshToken) {
+    token
+    refreshToken
+    expiresIn
+  }
+}
+    `;
+
+/**
+ * __useRefreshTokenMutation__
+ *
+ * To run a mutation, you first call `useRefreshTokenMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRefreshTokenMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [refreshTokenMutation, { data, loading, error }] = useRefreshTokenMutation({
+ *   variables: {
+ *      refreshToken: // value for 'refreshToken'
+ *   },
+ * });
+ */
+export function useRefreshTokenMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RefreshTokenMutation, RefreshTokenMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RefreshTokenMutation, RefreshTokenMutationVariables>(RefreshTokenDocument, options);
+      }
+export type RefreshTokenMutationHookResult = ReturnType<typeof useRefreshTokenMutation>;
+export type RefreshTokenMutationResult = ApolloReactCommon.MutationResult<RefreshTokenMutation>;
+export const LogoutDocument = gql`
+    mutation Logout {
+  logout
+}
+    `;
+
+/**
+ * __useLogoutMutation__
+ *
+ * To run a mutation, you first call `useLogoutMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useLogoutMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [logoutMutation, { data, loading, error }] = useLogoutMutation({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useLogoutMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<LogoutMutation, LogoutMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<LogoutMutation, LogoutMutationVariables>(LogoutDocument, options);
+      }
+export type LogoutMutationHookResult = ReturnType<typeof useLogoutMutation>;
+export type LogoutMutationResult = ApolloReactCommon.MutationResult<LogoutMutation>;
 export const SetRolePermissionDocument = gql`
     mutation SetRolePermission($input: SetRolePermissionInput!) {
   setRolePermission(input: $input) {
@@ -9382,6 +9490,7 @@ export const UsersDocument = gql`
     firstName
     lastName
     role
+    roleId
     email
     avatar
     createdAt
@@ -9563,6 +9672,7 @@ export const MachineDocument = gql`
     nodeId
     userId
     templateId
+    poolId
     createdAt
     localIP
     publicIP
@@ -9646,6 +9756,7 @@ export const MachinesDocument = gql`
     nodeId
     userId
     templateId
+    poolId
     createdAt
     localIP
     publicIP
@@ -11529,6 +11640,8 @@ export const IdentityProvidersDocument = gql`
     host
     port
     useTls
+    tlsCa
+    tlsInsecureSkipVerify
     baseDn
     bindDn
     hasBindPassword
@@ -11593,6 +11706,8 @@ export const IdentityProviderDocument = gql`
     host
     port
     useTls
+    tlsCa
+    tlsInsecureSkipVerify
     baseDn
     bindDn
     hasBindPassword

@@ -90,8 +90,11 @@ const Page_ = () => {
     setIsLoading(true);
     try {
       await dispatch(loginUser({ email: data.email, password: data.password })).unwrap();
-      await dispatch(fetchCurrentUser()).unwrap();
-      router.push("/desktops");
+      // loginUser already performs a full-page navigation to /desktops on success
+      // (window.location.href), which remounts the root layout so its auth gate
+      // re-validates against the fresh token. A client-side router.push (or an
+      // extra query) here races that one-shot token check and bounces the user
+      // back to sign-in on the FIRST login — so we intentionally stop here.
     } catch (err) {
       // GraphQL auth failures come back as HTTP 200 with code UNAUTHENTICATED and
       // message "Invalid credentials" (no 401/403 status). After the thunk

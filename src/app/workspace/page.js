@@ -22,7 +22,7 @@ import { fetchVms } from '@/state/slices/vms';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import { selectUser } from '@/state/slices/auth';
 import { openSpiceClient } from '@/utils/spiceConnect';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const POOLS_QUERY = gql`
   query WorkspacePools {
@@ -72,17 +72,13 @@ function DesktopTile({ desktop }) {
     if (!canConnect) return;
     try {
       openSpiceClient(graphic, { vmName: desktop.name });
-      toast({
-        title: 'Opening SPICE client',
+      toast.success('Opening SPICE client', {
         description:
           'A .vv file was downloaded. Your OS should open it with virt-viewer or the default SPICE client.',
-        variant: 'default',
       });
     } catch (err) {
-      toast({
-        title: 'Could not open SPICE client',
+      toast.error('Could not open SPICE client', {
         description: err?.message || 'Invalid connection info',
-        variant: 'destructive',
       });
     }
   };
@@ -231,35 +227,41 @@ export default function WorkspacePage() {
       const machineId = data?.connectToPool;
       if (!machineId) throw new Error('No desktop returned from pool');
 
-      // Pull the freshly-assigned machine so we have its SPICE URL.
-      const { data: mdata } = await client.query({
-        query: MACHINE_QUERY,
-        variables: { id: machineId },
-        fetchPolicy: 'network-only',
-      });
-      const m = mdata?.machine;
-      const graphic = typeof m?.configuration?.graphic === 'string' ? m.configuration.graphic : null;
-      if (!graphic || !graphic.startsWith('spice://')) {
-        toast({
-          title: 'Desktop is starting',
-          description: 'Give it a few seconds, then refresh and click Connect again.',
+      // The desktop may need a few seconds to boot before its SPICE endpoint
+      // is up. Poll until it's reachable, then launch the client automatically
+      // so the user never has to come back and click Connect again.
+      const deadline = Date.now() + 60_000;
+      let launched = false;
+      while (Date.now() < deadline) {
+        const { data: mdata } = await client.query({
+          query: MACHINE_QUERY,
+          variables: { id: machineId },
+          fetchPolicy: 'network-only',
         });
-        refresh();
-        fetchPools();
-        return;
+        const m = mdata?.machine;
+        const graphic =
+          typeof m?.configuration?.graphic === 'string' ? m.configuration.graphic : null;
+        if (graphic && graphic.startsWith('spice://')) {
+          openSpiceClient(graphic, { vmName: m.name });
+          toast.success('Opening SPICE client', {
+            description: 'A .vv file was downloaded. Open it with virt-viewer.',
+          });
+          launched = true;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 2500));
       }
-      openSpiceClient(graphic, { vmName: m.name });
-      toast({
-        title: 'Opening SPICE client',
-        description: 'A .vv file was downloaded. Open it with virt-viewer.',
-      });
+      if (!launched) {
+        toast('Desktop is still starting', {
+          description:
+            'It is taking longer than usual. Once it shows as Running, click Connect on its card.',
+        });
+      }
       refresh();
       fetchPools();
     } catch (err) {
-      toast({
-        title: 'Could not connect',
+      toast.error('Could not connect', {
         description: err?.message || String(err),
-        variant: 'destructive',
       });
     } finally {
       setConnectingPoolId(null);

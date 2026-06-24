@@ -371,6 +371,8 @@ export type CreateIdentityProviderInput = {
   name?: Scalars['String']['input'];
   port?: InputMaybe<Scalars['Float']['input']>;
   providerType?: IdentityProviderKind;
+  tlsCa?: InputMaybe<Scalars['String']['input']>;
+  tlsInsecureSkipVerify?: InputMaybe<Scalars['Boolean']['input']>;
   useTls?: InputMaybe<Scalars['Boolean']['input']>;
   userFilter?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1022,6 +1024,8 @@ export type IdentityProviderType = {
   port: Scalars['Float']['output'];
   providerType: IdentityProviderKind;
   status: IdentityProviderState;
+  tlsCa?: Maybe<Scalars['String']['output']>;
+  tlsInsecureSkipVerify: Scalars['Boolean']['output'];
   updatedAt: Scalars['DateTimeISO']['output'];
   useTls: Scalars['Boolean']['output'];
   userFilter?: Maybe<Scalars['String']['output']>;
@@ -1117,6 +1121,10 @@ export type LibvirtFilterInfoType = {
 /** Login response with user data and token */
 export type LoginResponse = {
   __typename?: 'LoginResponse';
+  /** Access token lifetime in seconds */
+  expiresIn: Scalars['Int']['output'];
+  /** Refresh token used to obtain a new access token */
+  refreshToken: Scalars['String']['output'];
   token: Scalars['String']['output'];
   user: UserType;
 };
@@ -1136,6 +1144,8 @@ export type Machine = {
   name: Scalars['String']['output'];
   nodeId?: Maybe<Scalars['String']['output']>;
   os: Scalars['String']['output'];
+  /** Pool this desktop belongs to, if any (VDI pool membership). */
+  poolId?: Maybe<Scalars['ID']['output']>;
   publicIP?: Maybe<Scalars['String']['output']>;
   ramGB?: Maybe<Scalars['Int']['output']>;
   setupComplete: Scalars['Boolean']['output'];
@@ -1458,6 +1468,7 @@ export type Mutation = {
   killProcess: ProcessControlResult;
   killProcesses: Array<ProcessControlResult>;
   login?: Maybe<LoginResponse>;
+  logout: Scalars['Boolean']['output'];
   /** Install, remove, or update a package on a virtual machine */
   managePackage: PackageManagementResult;
   migrateMachineToNode: MachineMigrationResultType;
@@ -1468,6 +1479,7 @@ export type Mutation = {
   powerOn: SuccessType;
   publishGoldenImage: GoldenImageResult;
   queueAllVMHealthChecks: HealthCheckRoundResult;
+  refreshToken: RefreshAuthResponse;
   /** Register uploaded ISO */
   registerISO: Iso;
   removeDepartmentMember: Scalars['Boolean']['output'];
@@ -1898,6 +1910,11 @@ export type MutationPowerOnArgs = {
 
 export type MutationPublishGoldenImageArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationRefreshTokenArgs = {
+  refreshToken: Scalars['String']['input'];
 };
 
 
@@ -3091,6 +3108,16 @@ export enum RecommendationType {
   UnderProvisioned = 'UNDER_PROVISIONED'
 }
 
+/** Response from refreshing an access token */
+export type RefreshAuthResponse = {
+  __typename?: 'RefreshAuthResponse';
+  /** Access token lifetime in seconds */
+  expiresIn: Scalars['Int']['output'];
+  /** Rotated refresh token to use for the next refresh */
+  refreshToken: Scalars['String']['output'];
+  token: Scalars['String']['output'];
+};
+
 export type RemoveRolePermissionInput = {
   permission?: Scalars['String']['input'];
   roleId?: Scalars['ID']['input'];
@@ -3585,6 +3612,8 @@ export type UpdateIdentityProviderInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   port?: InputMaybe<Scalars['Float']['input']>;
   providerType?: InputMaybe<IdentityProviderKind>;
+  tlsCa?: InputMaybe<Scalars['String']['input']>;
+  tlsInsecureSkipVerify?: InputMaybe<Scalars['Boolean']['input']>;
   useTls?: InputMaybe<Scalars['Boolean']['input']>;
   userFilter?: InputMaybe<Scalars['String']['input']>;
 };
@@ -3729,6 +3758,8 @@ export type UserType = {
   /** User namespace for real-time events */
   namespace?: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
+  /** Assigned role id (custom or system preset); null falls back to the `role` enum tier */
+  roleId?: Maybe<Scalars['ID']['output']>;
 };
 
 export type VmHealthCheckQueueType = {

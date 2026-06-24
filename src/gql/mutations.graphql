@@ -960,6 +960,8 @@ mutation CreateIdentityProvider($input: CreateIdentityProviderInput!) {
     host
     port
     useTls
+    tlsCa
+    tlsInsecureSkipVerify
     baseDn
     bindDn
     hasBindPassword
@@ -985,6 +987,8 @@ mutation UpdateIdentityProvider($id: ID!, $input: UpdateIdentityProviderInput!) 
     host
     port
     useTls
+    tlsCa
+    tlsInsecureSkipVerify
     baseDn
     bindDn
     hasBindPassword
@@ -1060,6 +1064,18 @@ mutation UpsertIdentityGroupRoleMapping($input: UpsertIdentityGroupRoleMappingIn
 
 mutation DeleteIdentityGroupRoleMapping($id: ID!) {
   deleteIdentityGroupRoleMapping(id: $id)
+}
+
+mutation RefreshToken($refreshToken: String!) {
+  refreshToken(refreshToken: $refreshToken) {
+    token
+    refreshToken
+    expiresIn
+  }
+}
+
+mutation Logout {
+  logout
 }
 
 fragment RoleFields on RoleType {

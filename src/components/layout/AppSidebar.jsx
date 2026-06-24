@@ -27,6 +27,7 @@ import {
 import { Avatar, Button, ResponsiveStack, Sidebar } from '@infinibay/harbor';
 
 import { selectAppSettings } from '@/state/slices/appSettings';
+import { selectFeatureFlags } from '@/state/slices/featureFlags';
 import { isEndUser } from '@/lib/roles';
 import { useMyPermissionsQuery } from '@/gql/hooks';
 import { resourceForNavId } from '@/lib/permissions';
@@ -48,7 +49,7 @@ const OPERATOR_NAV_ITEMS = [
   { id: 'sessions',       href: '/sessions',       icon: <PlayCircle size={14} />,      label: 'Sessions',    preview: true },
   { id: 'users',          href: '/users',          icon: <Users size={14} />,           label: 'Users' },
   { id: 'identity',       href: '/identity',       icon: <Fingerprint size={14} />,     label: 'Identity',    preview: true },
-  { id: 'storage',        href: '/storage',        icon: <HardDrive size={14} />,       label: 'Storage',     preview: true },
+  { id: 'storage',        href: '/storage',        icon: <HardDrive size={14} />,       label: 'Storage',     preview: true, featureFlag: 'storage' },
   { id: 'policies',       href: '/policies',       icon: <ShieldCheck size={14} />,     label: 'Policies',    preview: true },
   { id: 'events',         href: '/events',         icon: <Activity size={14} />,        label: 'Events' },
   { id: 'infrastructure', href: '/infrastructure', icon: <Server size={14} />,          label: 'Infrastructure' },
@@ -78,6 +79,13 @@ function filterAllowedNav(items, allowedResources) {
   });
 }
 
+function filterEnabledFlags(items, flags) {
+  return items.filter((item) => {
+    if (!item.featureFlag) return true;
+    return !!flags?.[item.featureFlag];
+  });
+}
+
 function routeForId(items, id) {
   return items.find((i) => i.id === id)?.href || '/';
 }
@@ -98,6 +106,7 @@ const AppSidebarInner = React.forwardRef(function AppSidebar({ user, onLogOut },
   const pathname = usePathname();
   const router = useRouter();
   const appSettings = useSelector(selectAppSettings);
+  const featureFlags = useSelector(selectFeatureFlags);
   const { data: permissionsData } = useMyPermissionsQuery({
     skip: !user,
     fetchPolicy: 'cache-and-network',
@@ -108,8 +117,12 @@ const AppSidebarInner = React.forwardRef(function AppSidebar({ user, onLogOut },
     !!appSettings?.logoUrl && /^(https?:)?\/\//.test(appSettings.logoUrl);
 
   const navItems = useMemo(
-    () => filterAllowedNav(navFor(user), permissionsData?.myPermissions?.allowedResources),
-    [permissionsData?.myPermissions?.allowedResources, user],
+    () =>
+      filterEnabledFlags(
+        filterAllowedNav(navFor(user), permissionsData?.myPermissions?.allowedResources),
+        featureFlags,
+      ),
+    [permissionsData?.myPermissions?.allowedResources, user, featureFlags],
   );
 
   const sections = useMemo(

@@ -6,6 +6,7 @@ import { fetchApplications } from './state/slices/applications';
 import { fetchGraphics } from './state/slices/system';
 import { fetchUsers } from './state/slices/users';
 import { fetchAppSettings } from './state/slices/appSettings';
+import { fetchFeatureFlags } from '@/state/slices/featureFlags';
 import { createDebugger } from './utils/debug';
 import { startTimer, endTimer, measureAsync, trackDataLoading } from './utils/performance';
 
@@ -24,7 +25,8 @@ const SERVICE_CONFIG = {
 		{ name: 'departments', action: fetchDepartments, description: 'Department data for organization' },
 		{ name: 'vms', action: fetchVms, description: 'Virtual machine inventory' },
 		{ name: 'applications', action: fetchApplications, description: 'Available applications' },
-		{ name: 'users', action: fetchUsers, description: 'User management data' }
+		{ name: 'users', action: fetchUsers, description: 'User management data' },
+		{ name: 'featureFlags', action: fetchFeatureFlags, description: 'Feature flag state' }
 	],
 
 	// On-demand services - only load when specifically needed

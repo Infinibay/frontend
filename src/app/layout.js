@@ -43,7 +43,7 @@ import '@/utils/debugPanelStatus';
 
 const debug = createDebugger('frontend:layout:root');
 
-function AppContent({ children, isAuthenticated }) {
+function AppContent({ children, isAuthenticated, authChecked }) {
   const pathname = usePathname();
   const router = useRouter();
   const user = useSelector((state) => state.auth.user);
@@ -89,18 +89,42 @@ function AppContent({ children, isAuthenticated }) {
     router.replace(fallback);
   }, [allowedResources, isAuthenticated, pathname, router, user]);
 
+  // Auth gate: send unauthenticated users to sign-in. Covers EVERY route,
+  // including those not wrapped in <ProtectedRoute> (e.g. /identity, /policies,
+  // /settings). Wait for the async token check to finish (authChecked) so a
+  // valid session is never bounced during the initial verification.
+  React.useEffect(() => {
+    if (!authChecked) return;
+    if (isAuthenticated) return;
+    if (pathname?.startsWith('/auth/')) return;
+    debug.warn('auth', 'Unauthenticated access — redirecting to sign-in', { pathname });
+    router.replace('/auth/sign-in');
+  }, [authChecked, isAuthenticated, pathname, router]);
+
   const handleLogout = React.useCallback(() => {
     debug.info('auth', 'Logout initiated');
     auth.logout();
     window.location.href = '/auth/sign-in';
   }, []);
 
-  if (!isAuthenticated || pathname?.startsWith('/auth/')) {
+  // Auth pages (sign-in, sign-up, forgot-password, …) render without the app shell.
+  if (pathname?.startsWith('/auth/')) {
     return (
       <>
         <BrandingApplier />
         <NavigationProgress />
         <RouteFade>{children}</RouteFade>
+      </>
+    );
+  }
+
+  // Still verifying the session, or unauthenticated and being redirected to
+  // sign-in: render a bare frame instead of flashing protected content.
+  if (!authChecked || !isAuthenticated) {
+    return (
+      <>
+        <BrandingApplier />
+        <NavigationProgress />
       </>
     );
   }
@@ -152,13 +176,21 @@ function ThemeProviderWrapper({ children }) {
 }
 
 export default function RootLayout({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // null = auth check still in progress; true/false = check completed.
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
       debug.info('auth', 'Checking authentication status in root layout');
       const isValid = await auth.validateToken();
       debug.log('auth', 'Authentication check result:', isValid);
+      // Drop a stale/invalid token so redux state and the next check stay
+      // consistent before AppContent redirects to sign-in.
+      if (!isValid && typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenExpiresAt');
+      }
       setIsAuthenticated(isValid);
     };
     checkAuth();
@@ -193,7 +225,10 @@ export default function RootLayout({ children }) {
                           <InitialDataLoader>
                             <SocketNamespaceGuard>
                               <RealTimeProvider>
-                                <AppContent isAuthenticated={isAuthenticated}>
+                                <AppContent
+                                  authChecked={isAuthenticated !== null}
+                                  isAuthenticated={isAuthenticated === true}
+                                >
                                   {children}
                                 </AppContent>
                               </RealTimeProvider>

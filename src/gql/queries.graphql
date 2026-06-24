@@ -29,6 +29,7 @@ query users($pagination: PaginationInputType, $orderBy: UserOrderByInputType) {
     firstName
     lastName
     role
+    roleId
     email
     avatar
     createdAt
@@ -94,6 +95,7 @@ query machine($id: String!) {
     nodeId
     userId
     templateId
+    poolId
     createdAt
     localIP
     publicIP
@@ -137,6 +139,7 @@ query machines($orderBy: MachineOrderBy, $pagination: PaginationInputType) {
     nodeId
     userId
     templateId
+    poolId
     createdAt
     localIP
     publicIP
@@ -968,6 +971,8 @@ query IdentityProviders {
     host
     port
     useTls
+    tlsCa
+    tlsInsecureSkipVerify
     baseDn
     bindDn
     hasBindPassword
@@ -993,6 +998,8 @@ query IdentityProvider($id: ID!) {
     host
     port
     useTls
+    tlsCa
+    tlsInsecureSkipVerify
     baseDn
     bindDn
     hasBindPassword

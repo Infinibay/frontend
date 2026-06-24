@@ -8,17 +8,27 @@ import {
   Alert,
   Badge,
   Button,
+  Checkbox,
   DataTable,
+  Dialog,
+  DialogBody,
+  DialogTitle,
   EmptyState,
+  FieldRow,
+  FormField,
   ResponsiveStack,
+  Select,
   Skeleton,
-  StatusDot } from
+  StatusDot,
+  Textarea,
+  TextField } from
 '@infinibay/harbor';
 import {
   Fingerprint,
   CheckCircle2,
   ArrowLeft,
   AlertCircle,
+  Pencil,
   RefreshCw } from
 'lucide-react';
 
@@ -30,8 +40,34 @@ import {
   useIdentitySyncRunsQuery,
   useSyncIdentityProviderMutation,
   useTestIdentityProviderMutation,
+  useUpdateIdentityProviderMutation,
   useUpsertIdentityGroupRoleMappingMutation
 } from '@/gql/hooks';
+
+const EMPTY_EDIT_FORM = {
+  providerType: 'ACTIVE_DIRECTORY',
+  name: '',
+  domain: '',
+  host: '',
+  port: '389',
+  useTls: false,
+  tlsCa: '',
+  tlsInsecureSkipVerify: false,
+  baseDn: '',
+  bindDn: '',
+  bindPassword: '',
+  userFilter: '',
+  groupFilter: ''
+};
+
+function parsePort(value, useTls) {
+  const raw = String(value ?? '').trim();
+  if (raw === '') return useTls ? 636 : 389;
+  if (!/^\d+$/.test(raw)) return null;
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return null;
+  return port;
+}
 
 const TYPE_LABEL = {
   ACTIVE_DIRECTORY: 'Active Directory',
@@ -113,6 +149,7 @@ export default function IdentityDetailPage() {
   });
   const [testIdentityProvider, { loading: providerTesting }] = useTestIdentityProviderMutation();
   const [syncIdentityProvider, { loading: providerSyncing }] = useSyncIdentityProviderMutation();
+  const [updateIdentityProvider, { loading: providerUpdating }] = useUpdateIdentityProviderMutation();
   const [upsertGroupRoleMapping, { loading: mappingSaving }] = useUpsertIdentityGroupRoleMappingMutation();
   const [deleteGroupRoleMapping, { loading: mappingDeleting }] = useDeleteIdentityGroupRoleMappingMutation();
   const provider = providerData?.identityProvider;
@@ -120,6 +157,80 @@ export default function IdentityDetailPage() {
   const [groupDn, setGroupDn] = useState('');
   const [groupName, setGroupName] = useState('');
   const [groupRole, setGroupRole] = useState('USER');
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
+
+  const updateEditForm = (key, value) => {
+    setEditForm((current) => ({ ...current, [key]: value }));
+  };
+
+  // Pre-populate the edit form from the loaded provider. The bind password is
+  // never returned by the server, so it stays blank (blank = keep existing).
+  const openEdit = () => {
+    if (!provider) return;
+    setEditForm({
+      providerType: provider.providerType || 'ACTIVE_DIRECTORY',
+      name: provider.name || '',
+      domain: provider.domain || '',
+      host: provider.host || '',
+      port: provider.port != null ? String(provider.port) : '',
+      useTls: !!provider.useTls,
+      tlsCa: provider.tlsCa || '',
+      tlsInsecureSkipVerify: !!provider.tlsInsecureSkipVerify,
+      baseDn: provider.baseDn || '',
+      bindDn: provider.bindDn || '',
+      bindPassword: '',
+      userFilter: provider.userFilter || '',
+      groupFilter: provider.groupFilter || ''
+    });
+    setEditOpen(true);
+  };
+
+  const closeEdit = () => {
+    setEditOpen(false);
+    setEditForm(EMPTY_EDIT_FORM);
+  };
+
+  const saveEdit = async () => {
+    if (!provider?.id) return;
+    const name = editForm.name.trim();
+    const host = editForm.host.trim();
+    const baseDn = editForm.baseDn.trim();
+    if (!name || !host || !baseDn) {
+      toast.error('Name, host, and base DN are required');
+      return;
+    }
+    const port = parsePort(editForm.port, editForm.useTls);
+    if (port === null) {
+      toast.error('Port must be an integer between 1 and 65535');
+      return;
+    }
+    const input = {
+      providerType: editForm.providerType,
+      name,
+      domain: editForm.domain.trim() || null,
+      host,
+      port,
+      useTls: editForm.useTls,
+      tlsCa: editForm.tlsCa.trim() || null,
+      tlsInsecureSkipVerify: editForm.tlsInsecureSkipVerify,
+      baseDn,
+      bindDn: editForm.bindDn.trim() || null,
+      userFilter: editForm.userFilter.trim() || null,
+      groupFilter: editForm.groupFilter.trim() || null,
+      // Only send a password when the user typed a new one; blank keeps existing.
+      ...(editForm.bindPassword ? { bindPassword: editForm.bindPassword } : {})
+    };
+    try {
+      await updateIdentityProvider({ variables: { id: provider.id, input } });
+      toast.success('Identity provider updated');
+      closeEdit();
+      await refetchProvider();
+    } catch (err) {
+      toast.error(err?.message || 'Could not update identity provider');
+    }
+  };
 
   const providerRunColumns = useMemo(() => [
   {
@@ -302,6 +413,14 @@ export default function IdentityDetailPage() {
               <Button
                 size="sm"
                 variant="secondary"
+                icon={<Pencil size={14} />}
+                onClick={openEdit}
+              >
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
                 icon={<RefreshCw size={14} />}
                 onClick={runProviderTest}
                 loading={providerTesting}
@@ -452,6 +571,138 @@ export default function IdentityDetailPage() {
           />
         )}
       </ResponsiveStack>
+
+      {editOpen ? (
+        <Dialog open size="lg" onClose={closeEdit}>
+          <DialogTitle>Edit Directory</DialogTitle>
+          <DialogBody>
+            <div className="flex flex-col gap-4 w-full">
+              <FieldRow>
+                <FormField label="Type">
+                  <Select
+                    aria-label="Type"
+                    value={editForm.providerType}
+                    onChange={(value) => updateEditForm('providerType', value)}
+                    options={[
+                      { value: 'ACTIVE_DIRECTORY', label: 'Active Directory' },
+                      { value: 'LDAP', label: 'LDAP' }
+                    ]}
+                  />
+                </FormField>
+                <FormField label="Name" required>
+                  <TextField
+                    value={editForm.name}
+                    onChange={(event) => updateEditForm('name', event.target.value)}
+                    placeholder="Corporate AD"
+                  />
+                </FormField>
+              </FieldRow>
+
+              <FieldRow>
+                <FormField label="Host" required>
+                  <TextField
+                    value={editForm.host}
+                    onChange={(event) => updateEditForm('host', event.target.value)}
+                    placeholder="dc01.example.com"
+                  />
+                </FormField>
+                <FormField label="Port" required>
+                  <TextField
+                    value={editForm.port}
+                    onChange={(event) => updateEditForm('port', event.target.value)}
+                    placeholder={editForm.useTls ? '636' : '389'}
+                  />
+                </FormField>
+              </FieldRow>
+
+              <Checkbox
+                label="Use TLS"
+                checked={editForm.useTls}
+                onChange={(event) => {
+                  updateEditForm('useTls', event.target.checked);
+                  updateEditForm('port', event.target.checked ? '636' : '389');
+                }}
+              />
+
+              <FormField label="TLS CA certificate (PEM)">
+                <Textarea
+                  rows={4}
+                  value={editForm.tlsCa}
+                  onChange={(event) => updateEditForm('tlsCa', event.target.value)}
+                  placeholder="-----BEGIN CERTIFICATE-----"
+                />
+              </FormField>
+              <Checkbox
+                label="Skip TLS certificate validation (insecure — disables cert validation; ignored in production)"
+                checked={editForm.tlsInsecureSkipVerify}
+                onChange={(event) => updateEditForm('tlsInsecureSkipVerify', event.target.checked)}
+              />
+
+              <FormField label="Domain">
+                <TextField
+                  value={editForm.domain}
+                  onChange={(event) => updateEditForm('domain', event.target.value)}
+                  placeholder="example.com"
+                />
+              </FormField>
+              <FormField label="Base DN" required>
+                <TextField
+                  value={editForm.baseDn}
+                  onChange={(event) => updateEditForm('baseDn', event.target.value)}
+                  placeholder="DC=example,DC=com"
+                />
+              </FormField>
+              <FormField label="Bind DN">
+                <TextField
+                  value={editForm.bindDn}
+                  onChange={(event) => updateEditForm('bindDn', event.target.value)}
+                  placeholder="CN=infinibay,OU=Service Accounts,DC=example,DC=com"
+                />
+              </FormField>
+              <FormField label="Bind password">
+                <TextField
+                  type="password"
+                  value={editForm.bindPassword}
+                  onChange={(event) => updateEditForm('bindPassword', event.target.value)}
+                  placeholder={provider?.hasBindPassword ? '•••••• (unchanged)' : 'Stored encrypted in the backend'}
+                />
+              </FormField>
+
+              <FieldRow>
+                <FormField label="User filter">
+                  <TextField
+                    value={editForm.userFilter}
+                    onChange={(event) => updateEditForm('userFilter', event.target.value)}
+                  />
+                </FormField>
+                <FormField label="Group filter">
+                  <TextField
+                    value={editForm.groupFilter}
+                    onChange={(event) => updateEditForm('groupFilter', event.target.value)}
+                  />
+                </FormField>
+              </FieldRow>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="secondary"
+                  onClick={closeEdit}
+                  disabled={providerUpdating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={saveEdit}
+                  loading={providerUpdating}
+                >
+                  Save changes
+                </Button>
+              </div>
+            </div>
+          </DialogBody>
+        </Dialog>
+      ) : null}
     </Page>);
 
 }

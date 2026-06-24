@@ -4,6 +4,7 @@ import storage from 'redux-persist/lib/storage'
 import appSettingsReducer from './slices/appSettings'
 import authReducer from './slices/auth'
 import departments from './slices/departments'
+import featureFlagsReducer from './slices/featureFlags'
 import firewallReducer from './slices/firewall'
 import healthReducer from './slices/health'
 import headerReducer from './slices/header'
@@ -47,10 +48,17 @@ const persistAppSettingsConfig = {
   whitelist: ['settings'] // Only persist the settings object
 };
 
+const persistFeatureFlagsConfig = {
+  key: 'featureFlags',
+  storage,
+  whitelist: ['flags'] // Only persist the effective flags map
+};
+
 const persistedAuth = persistReducer(persistAuthConfig, authReducer)
 const persistedDeparments = persistReducer(persistConfigDepartments, departments)
 const persistedSystem = persistReducer(persistSystemConfig, systemReducer)
 const persistedAppSettings = persistReducer(persistAppSettingsConfig, appSettingsReducer);
+const persistedFeatureFlags = persistReducer(persistFeatureFlagsConfig, featureFlagsReducer);
 
 export const store = configureStore({
   reducer: {
@@ -58,6 +66,7 @@ export const store = configureStore({
     applications: persistedApplicaitonReducer,
     auth: persistedAuth,
     departments: persistedDeparments,
+    featureFlags: persistedFeatureFlags,
     firewall: firewallReducer,
     header: headerReducer,
     health: healthReducer,

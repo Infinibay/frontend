@@ -4,29 +4,36 @@ import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { gql } from '@apollo/client';
 import { toast } from 'sonner';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Page,
   Alert,
   Badge,
   Button,
   ButtonGroup,
+  Checkbox,
   DataTable,
   IconButton,
+  Menu,
+  MenuItem,
   ResponsiveStack,
+  Spinner,
   StatusDot,
   Tabs,
   TabList,
   Tab,
   TabPanel,
-  TextField,
-  Checkbox } from
+  TextField } from
 '@infinibay/harbor';
 import {
   ArrowLeft,
   RefreshCcw,
   Pause,
   Play,
+  Power,
+  PowerOff,
+  ExternalLink,
+  MoreHorizontal,
   Move3d,
   Settings2,
   Layers,
@@ -35,6 +42,23 @@ import {
 
 import client from '@/apollo-client';
 import { PageHeader } from '@/components/common/PageHeader';
+import { usePageHeader } from '@/hooks/usePageHeader';
+import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { fetchVms, playVm, pauseVm, stopVm } from '@/state/slices/vms';
+
+// Statuses that mean a desktop is provisioned but not actively in use,
+// i.e. immediately available for a user to check out ("hot" but idle).
+const IDLE_STATUSES = ['off', 'stopped', 'paused', 'suspended'];
+
+function typeLabel(type) {
+  return type === 'persistent' ? 'Persistent' : 'Non-persistent';
+}
+
+const GOLDEN_IMAGES_QUERY = gql`
+  query PoolGoldenImages {
+    goldenImages { id name version osType }
+  }
+`;
 
 const POOL_QUERY = gql`
   query PoolDetail($id: ID!) {
@@ -83,14 +107,30 @@ export default function PoolDetailPage({ params }) {
   const [pool, setPool] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [goldenImages, setGoldenImages] = useState([]);
+
   const departments = useSelector((s) => s.departments?.items ?? []);
   const templates = useSelector((s) => s.templates?.items ?? []);
-  const vms = useSelector((s) => s.vms?.items ?? []);
+
+  // Keep the global VM inventory warm so the Desktops tab and the
+  // running/idle counts work even on a direct navigation to this page.
+  const {
+    data: vms,
+    refresh: refreshVms
+  } = useEnsureData('vms', fetchVms, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 30 * 1000,
+    transform: (data) => data.items || data || []
+  });
+
   const deptName = departments.find((d) => d.id === pool?.departmentId)?.name;
   const templateName = templates.find((t) => t.id === pool?.templateId)?.name;
+  const goldenImageName = pool?.goldenImageId
+    ? goldenImages.find((g) => g.id === pool.goldenImageId)?.name
+    : null;
 
-  const fetch = useCallback(async () => {
-    setLoading(true);
+  const fetch = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const { data } = await client.query({
         query: POOL_QUERY,
@@ -99,17 +139,55 @@ export default function PoolDetailPage({ params }) {
       });
       setPool(data?.pool ?? null);
     } catch (err) {
-      toast.error(`Failed to load pool: ${err.message}`);
+      if (!silent) toast.error(`Failed to load pool: ${err.message}`);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [id]);
 
-  useEffect(() => {fetch();}, [fetch]);
+  const refresh = useCallback(() => {
+    fetch();
+    refreshVms();
+  }, [fetch, refreshVms]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  // Load published golden images once so we can show the pinned base by name.
+  useEffect(() => {
+    let cancelled = false;
+    client
+      .query({ query: GOLDEN_IMAGES_QUERY, fetchPolicy: 'cache-first' })
+      .then(({ data }) => { if (!cancelled) setGoldenImages(data?.goldenImages ?? []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Live refresh: pools spin desktops up/down in the background, so poll the
+  // pool + the VM inventory on a light cadence while this page is open.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch({ silent: true });
+      refreshVms();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [fetch, refreshVms]);
 
   const poolMachines = useMemo(
-    () => vms.filter((v) => v.poolId === id),
+    () => (vms || []).filter((v) => v.poolId === id && v.status !== 'archived'),
     [vms, id]
+  );
+
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: 'Home', href: '/' },
+        { label: 'Pools', href: '/pools' },
+        { label: pool?.name || 'Pool', isCurrent: true }
+      ],
+      title: pool?.name || 'Pool',
+      actions: []
+    },
+    [pool?.name]
   );
 
   const run = async (mutation, variables, msg) => {
@@ -120,14 +198,20 @@ export default function PoolDetailPage({ params }) {
         throw new Error(result.error || 'mutation failed');
       }
       toast.success(msg);
-      fetch();
+      refresh();
     } catch (err) {
       toast.error(err.message);
     }
   };
 
   if (loading && !pool) {
-    return <Page><div className="text-fg-muted">Loading…</div></Page>;
+    return (
+      <Page>
+        <ResponsiveStack direction="row" gap={3} justify="center" align="center">
+          <Spinner /> <span className="text-fg-muted text-sm">Loading pool…</span>
+        </ResponsiveStack>
+      </Page>);
+
   }
   if (!pool) {
     return (
@@ -151,15 +235,15 @@ export default function PoolDetailPage({ params }) {
                 <StatusDot
                 status={pool.draining ? 'warning' : pool.currentSize < pool.sizeMin ? 'degraded' : 'online'}
                 size={8} />
-              
-                <Badge tone={pool.type === 'persistent' ? 'info' : 'neutral'}>{pool.type}</Badge>
+
+                <Badge tone={pool.type === 'persistent' ? 'info' : 'neutral'}>{typeLabel(pool.type)}</Badge>
                 {pool.draining ? <Badge tone="warning">draining</Badge> : null}
               </ResponsiveStack>
             }
             secondary={
-            <IconButton size="sm" variant="ghost" label="Refresh" icon={<RefreshCcw size={14} />} onClick={fetch} disabled={loading} />
+            <IconButton size="sm" variant="ghost" label="Refresh" icon={<RefreshCcw size={14} />} onClick={refresh} disabled={loading} />
             } />
-          
+
         </ResponsiveStack>
 
         <Tabs defaultValue="overview" variant="underline">
@@ -174,6 +258,7 @@ export default function PoolDetailPage({ params }) {
               pool={pool}
               deptName={deptName}
               templateName={templateName}
+              goldenImageName={goldenImageName}
               poolMachines={poolMachines}
               onScale={(t) => run(SCALE_POOL, { id: pool.id, targetSize: t }, 'Pool scaling')}
               onToggleDrain={() =>
@@ -183,18 +268,18 @@ export default function PoolDetailPage({ params }) {
                 pool.draining ? 'Pool resumed' : 'Pool draining'
               )
               } />
-            
+
           </TabPanel>
 
           <TabPanel value="desktops">
-            <DesktopsTab machines={poolMachines} />
+            <DesktopsTab machines={poolMachines} onRefresh={refresh} />
           </TabPanel>
 
           <TabPanel value="settings">
             <SettingsTab
               pool={pool}
               onSaved={(patch, msg) => run(UPDATE_POOL, { id: pool.id, input: patch }, msg)} />
-            
+
           </TabPanel>
         </Tabs>
       </ResponsiveStack>
@@ -202,10 +287,10 @@ export default function PoolDetailPage({ params }) {
 
 }
 
-function OverviewTab({ pool, deptName, templateName, poolMachines, onScale, onToggleDrain }) {
+function OverviewTab({ pool, deptName, templateName, goldenImageName, poolMachines, onScale, onToggleDrain }) {
   const [scaleInput, setScaleInput] = useState(String(pool.currentSize));
   const runningCount = poolMachines.filter((m) => m.status === 'running').length;
-  const idleCount = poolMachines.filter((m) => ['off', 'stopped', 'paused'].includes(m.status)).length;
+  const idleCount = poolMachines.filter((m) => IDLE_STATUSES.includes(m.status)).length;
 
   return (
     <ResponsiveStack direction="col" gap={4}>
@@ -213,7 +298,7 @@ function OverviewTab({ pool, deptName, templateName, poolMachines, onScale, onTo
         <Stat label="Current size" value={pool.currentSize} hint={`${pool.sizeMin}–${pool.sizeMax} range`} />
         <Stat label="Running" value={runningCount} />
         <Stat label="Idle" value={idleCount} />
-        <Stat label="Type" value={pool.type} mono />
+        <Stat label="Type" value={typeLabel(pool.type)} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -221,9 +306,12 @@ function OverviewTab({ pool, deptName, templateName, poolMachines, onScale, onTo
           <h3 className="text-sm uppercase tracking-wide text-fg-muted mb-2">Configuration</h3>
           <KV label="Department" value={deptName ?? pool.departmentId.slice(0, 8)} />
           <KV label="Blueprint" value={templateName ?? pool.templateId.slice(0, 8)} />
-          <KV label="Golden image" value={pool.goldenImageId ?? '—'} mono />
+          <KV
+            label="Golden image"
+            value={goldenImageName ?? (pool.goldenImageId ? `${pool.goldenImageId.slice(0, 8)}…` : 'inherited from blueprint')}
+            mono={!goldenImageName} />
           <KV label="Idle timeout" value={pool.idleTimeoutMinutes ? `${pool.idleTimeoutMinutes} min` : 'never'} />
-          <KV label="Reset on logoff" value={pool.resetOnLogoff ? 'yes' : 'no'} />
+          <KV label="Reset on logoff" value={pool.type === 'persistent' ? 'n/a (persistent)' : pool.resetOnLogoff ? 'yes' : 'no'} />
         </section>
 
         <section>
@@ -237,7 +325,7 @@ function OverviewTab({ pool, deptName, templateName, poolMachines, onScale, onTo
                 max={pool.sizeMax}
                 value={scaleInput}
                 onChange={(e) => setScaleInput(e.target.value)} />
-              
+
               <Button
                 icon={<Move3d size={14} />}
                 onClick={() => {
@@ -246,7 +334,7 @@ function OverviewTab({ pool, deptName, templateName, poolMachines, onScale, onTo
                   if (n > pool.sizeMax) return toast.error(`Max is ${pool.sizeMax}`);
                   onScale(n);
                 }}>
-                
+
                 Apply
               </Button>
             </div>
@@ -254,7 +342,7 @@ function OverviewTab({ pool, deptName, templateName, poolMachines, onScale, onTo
               variant={pool.draining ? 'primary' : 'secondary'}
               icon={pool.draining ? <Play size={14} /> : <Pause size={14} />}
               onClick={onToggleDrain}>
-              
+
               {pool.draining ? 'Resume pool' : 'Drain pool'}
             </Button>
           </ResponsiveStack>
@@ -264,26 +352,86 @@ function OverviewTab({ pool, deptName, templateName, poolMachines, onScale, onTo
 
 }
 
-function DesktopsTab({ machines }) {
+function DesktopsTab({ machines, onRefresh }) {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const [busyId, setBusyId] = useState(null);
+
+  const openConsole = useCallback(
+    (m) => {
+      const dept = m.department?.name || m.departmentId || '';
+      router.push(`/departments/${encodeURIComponent(dept)}/vm/${m.id}`);
+    },
+    [router]
+  );
+
+  const act = useCallback(
+    async (m, thunk, msg) => {
+      setBusyId(m.id);
+      try {
+        await dispatch(thunk({ id: m.id })).unwrap();
+        toast.success(msg);
+        onRefresh?.();
+      } catch (err) {
+        toast.error(typeof err === 'string' ? err : err?.message || 'Action failed');
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [dispatch, onRefresh]
+  );
+
   const columns = useMemo(
     () => [
     {
       id: 'status',
       header: 'Status',
-      width: 100,
+      width: 120,
       cell: ({ row: r }) =>
       <ResponsiveStack direction="row" gap={2} align="center">
-            <StatusDot status={r.status === 'running' ? 'online' : 'offline'} size={8} />
-            <span className="text-xs text-fg-muted">{r.status}</span>
+            <StatusDot status={desktopDotStatus(r.status)} size={8} />
+            <span className="text-xs text-fg-muted">{r.status === 'rebuilding' ? 'resetting' : r.status}</span>
           </ResponsiveStack>
 
     },
     { id: 'name', header: 'Name', cell: ({ row: r }) => <span className="font-medium">{r.name}</span> },
     { id: 'user', header: 'Assigned', cell: ({ row: r }) => r.user?.email ?? <span className="text-fg-subtle">—</span> },
-    { id: 'ip', header: 'IP', cell: ({ row: r }) => r.localIP ? <span className="font-mono text-xs">{r.localIP}</span> : '—' }],
+    { id: 'ip', header: 'IP', cell: ({ row: r }) => r.localIP ? <span className="font-mono text-xs">{r.localIP}</span> : '—' },
+    {
+      id: 'actions',
+      header: '',
+      width: 40,
+      cell: ({ row: r }) => {
+        const isRunning = r.status === 'running';
+        const isBusy = busyId === r.id || r.status === 'starting' || r.status === 'rebuilding';
+        return (
+          <Menu
+            trigger={
+            <IconButton size="sm" variant="ghost" label="Desktop actions" icon={<MoreHorizontal size={14} />} disabled={isBusy} />
+            }>
+              <MenuItem icon={<ExternalLink size={14} />} onClick={() => openConsole(r)}>
+                Open console
+              </MenuItem>
+              {isRunning ?
+            <>
+                  <MenuItem icon={<Pause size={14} />} onClick={() => act(r, pauseVm, 'Suspending desktop')}>
+                    Suspend
+                  </MenuItem>
+                  <MenuItem icon={<PowerOff size={14} />} danger onClick={() => act(r, stopVm, 'Powering off desktop')}>
+                    Power off
+                  </MenuItem>
+                </> :
 
-    []
+            <MenuItem icon={<Power size={14} />} onClick={() => act(r, playVm, 'Powering on desktop')}>
+                  Power on
+                </MenuItem>
+            }
+            </Menu>);
+
+      }
+    }],
+
+    [busyId, act, openConsole]
   );
 
   if (machines.length === 0) {
@@ -296,12 +444,13 @@ function DesktopsTab({ machines }) {
       columns={columns}
       rowId={(r) => r.id}
       defaultDensity="compact"
-      onRowClick={(row) => router.push(`/departments/${row.department?.name || row.departmentId}/vm/${row.id}`)} />);
+      onRowClick={(row) => openConsole(row)} />);
 
 
 }
 
 function SettingsTab({ pool, onSaved }) {
+  const isPersistent = pool.type === 'persistent';
   const [name, setName] = useState(pool.name);
   const [sizeMin, setSizeMin] = useState(String(pool.sizeMin));
   const [sizeMax, setSizeMax] = useState(String(pool.sizeMax));
@@ -312,7 +461,7 @@ function SettingsTab({ pool, onSaved }) {
     const min = parseInt(sizeMin, 10);
     const max = parseInt(sizeMax, 10);
     if (!Number.isFinite(min) || !Number.isFinite(max)) return toast.error('Sizes must be numeric');
-    if (min > max) return toast.error('sizeMin cannot exceed sizeMax');
+    if (min > max) return toast.error('Min cannot exceed Max');
     onSaved(
       {
         name: name.trim(),
@@ -329,8 +478,8 @@ function SettingsTab({ pool, onSaved }) {
     <ResponsiveStack direction="col" gap={4}>
       <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} />
       <div className="grid grid-cols-2 gap-3">
-        <TextField label="Size min" type="number" min={0} value={sizeMin} onChange={(e) => setSizeMin(e.target.value)} />
-        <TextField label="Size max" type="number" min={1} value={sizeMax} onChange={(e) => setSizeMax(e.target.value)} />
+        <TextField label="Min (kept warm)" type="number" min={0} value={sizeMin} onChange={(e) => setSizeMin(e.target.value)} />
+        <TextField label="Max (cap)" type="number" min={1} value={sizeMax} onChange={(e) => setSizeMax(e.target.value)} />
       </div>
       <TextField
         label="Idle timeout (minutes)"
@@ -338,13 +487,18 @@ function SettingsTab({ pool, onSaved }) {
         placeholder="Empty = never"
         value={idle}
         onChange={(e) => setIdle(e.target.value)} />
-      
+
       <label className="flex items-center gap-2 text-sm">
-        <Checkbox checked={resetOnLogoff} onChange={(e) => setResetOnLogoff(!!e.target.checked)} />
+        <Checkbox
+          checked={isPersistent ? false : resetOnLogoff}
+          disabled={isPersistent}
+          onChange={(e) => setResetOnLogoff(!!e.target.checked)} />
         <span>
           Reset desktop on logoff
           <span className="block text-xs text-fg-muted">
-            Non-persistent pools only. Delta qcow2 is wiped and the backing image re-used on next connect.
+            {isPersistent
+              ? 'Ignored for persistent pools — each user keeps their own desktop and state across logoffs.'
+              : 'Delta qcow2 is wiped and the backing image re-used on next connect, so every session starts clean.'}
           </span>
         </span>
       </label>
@@ -353,6 +507,23 @@ function SettingsTab({ pool, onSaved }) {
       </ButtonGroup>
     </ResponsiveStack>);
 
+}
+
+function desktopDotStatus(status) {
+  switch (status) {
+    case 'running':
+      return 'online';
+    case 'starting':
+    case 'rebuilding':
+      return 'provisioning';
+    case 'paused':
+    case 'suspended':
+      return 'degraded';
+    case 'error':
+      return 'warning';
+    default:
+      return 'offline';
+  }
 }
 
 function Stat({ label, value, hint, mono }) {

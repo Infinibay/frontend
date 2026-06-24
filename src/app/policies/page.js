@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { gql } from '@apollo/client';
 import {
@@ -14,7 +14,11 @@ import {
   Accordion,
   AccordionItem,
   ResponsiveStack,
-  Select } from
+  Select,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanel } from
 '@infinibay/harbor';
 import {
   History,
@@ -31,6 +35,7 @@ import client from '@/apollo-client';
 import { PageHeader } from '@/components/common/PageHeader';
 import { fetchUsers } from '@/state/slices/users';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { getSocketService } from '@/services/socketService';
 import {
   usePermissionRegistryQuery,
   useRolesQuery,
@@ -38,6 +43,7 @@ import {
   useSetRolePermissionMutation,
   useRemoveRolePermissionMutation,
   useCreateRoleMutation,
+  useUpdateRoleMutation,
   useDeleteRoleMutation,
   useResetRoleToDefaultMutation,
   useAssignUserRoleMutation,
@@ -122,18 +128,6 @@ const SCOPE_LABEL = {
 
 const NONE = '__none__';
 
-function scopeOptions(scoped) {
-  const opts = [{ value: NONE, label: '—' }];
-  if (scoped) {
-    opts.push(
-      { value: PermissionScope.Own, label: 'Own' },
-      { value: PermissionScope.Department, label: 'Department' }
-    );
-  }
-  opts.push({ value: PermissionScope.Any, label: 'Any' });
-  return opts;
-}
-
 function formatWhen(value) {
   if (!value) return '—';
   try {
@@ -149,8 +143,22 @@ function roleLabel(role) {
   return 'User';
 }
 
+// "joinDomain" -> "Join Domain", "manageExecutions" -> "Manage Executions".
+function humanizeVerb(verb) {
+  const spaced = String(verb).replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+// Top-level sections, split into tabs so the page isn't one endless scroll.
+const POLICY_TABS = [
+  { id: 'roles', label: 'Roles & permissions', icon: ShieldCheck },
+  { id: 'users', label: 'User access', icon: UserPlus },
+  { id: 'departments', label: 'Departments', icon: Users },
+  { id: 'audit', label: 'Audit log', icon: History }
+];
+
 const SectionCard = ({ icon, title, action, children }) => (
-  <section className="rounded-md border border-border-subtle bg-surface-raised p-4">
+  <section className="rounded-sm border border-white/10 bg-surface-1 p-4 shadow-harbor-md">
     <ResponsiveStack direction="col" gap={3}>
       <ResponsiveStack direction="row" gap={2} align="center">
         {icon}
@@ -161,6 +169,46 @@ const SectionCard = ({ icon, title, action, children }) => (
     </ResponsiveStack>
   </section>
 );
+
+// Compact segmented scope picker — replaces the bulky per-verb dropdowns. Reads
+// left→right as widening reach (— ⊂ Own ⊂ Dept ⊂ Any). Global (unscoped)
+// resources collapse to Off / On.
+const ScopeSegmented = ({ value, scoped, disabled = false, onChange }) => {
+  const segments = scoped
+    ? [
+        { value: NONE, label: '—', hint: 'No access' },
+        { value: PermissionScope.Own, label: 'Own', hint: 'Own resources only' },
+        { value: PermissionScope.Department, label: 'Dept', hint: 'Whole department' },
+        { value: PermissionScope.Any, label: 'Any', hint: 'Anywhere' }]
+    : [
+        { value: NONE, label: 'Off', hint: 'No access' },
+        { value: PermissionScope.Any, label: 'On', hint: 'Granted' }];
+
+  return (
+    <div
+      role="group"
+      className={`inline-flex shrink-0 select-none rounded border border-white/10 bg-surface-1 p-0.5 ${
+        disabled ? 'opacity-60' : ''
+      }`}>
+      {segments.map((seg) => {
+        const active = value === seg.value;
+        return (
+          <button
+            key={seg.value}
+            type="button"
+            title={seg.hint}
+            disabled={disabled}
+            onClick={() => onChange?.(seg.value)}
+            className={`min-w-[2.25rem] rounded-[3px] px-2.5 py-1 text-xs font-medium transition-colors ${
+              active ? 'bg-accent text-white shadow-sm' : 'text-fg-muted hover:bg-white/5 hover:text-fg'
+            } ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+            {seg.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Effective-grant lookup
@@ -293,6 +341,7 @@ export default function PoliciesListPage() {
   const [removeRolePermission] = useRemoveRolePermissionMutation();
   const [createRole, { loading: creatingRole }] = useCreateRoleMutation();
   const [deleteRole] = useDeleteRoleMutation();
+  const [updateRole, { loading: updatingRole }] = useUpdateRoleMutation();
   const [resetRoleToDefault, { loading: resettingRole }] = useResetRoleToDefaultMutation();
   const [assignUserRole, { loading: assigning }] = useAssignUserRoleMutation();
   const [setUserPermissionOverride, { loading: settingOverride }] = useSetUserPermissionOverrideMutation();
@@ -335,6 +384,39 @@ export default function PoliciesListPage() {
   // -------------------------------------------------------------------------
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleDescription, setNewRoleDescription] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [activeTab, setActiveTab] = useState('roles');
+
+  // Pre-fill the edit fields from the selected role; selecting a role also
+  // leaves "create" mode so the bottom panel always reflects the current intent.
+  useEffect(() => {
+    if (selectedRole) {
+      setEditName(selectedRole.name || '');
+      setEditDescription(selectedRole.description || '');
+    }
+    setCreating(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoleId]);
+
+  const handleSaveRole = async () => {
+    if (!selectedRole || roleReadOnly) return;
+    const name = editName.trim();
+    if (!name) {
+      toast.error('Give the role a name');
+      return;
+    }
+    try {
+      await updateRole({
+        variables: { input: { id: selectedRole.id, name, description: editDescription.trim() || null } }
+      });
+      toast.success('Role updated');
+      await refetchRoles();
+    } catch (err) {
+      toast.error(err?.message || 'Could not update role');
+    }
+  };
 
   const handleCreateRole = async () => {
     const name = newRoleName.trim();
@@ -351,6 +433,7 @@ export default function PoliciesListPage() {
       toast.success('Role created');
       setNewRoleName('');
       setNewRoleDescription('');
+      setCreating(false);
       const { data: fresh } = await refetchRoles();
       const created = data?.createRole;
       const id = created?.id || fresh?.roles?.find((r) => r.name === name)?.id;
@@ -432,9 +515,14 @@ export default function PoliciesListPage() {
     return map;
   }, [userList]);
 
-  const loadDepartments = useCallback(async () => {
+  // Loaders are cache-first by default (instant on revisit); pass force=true to
+  // pull fresh from the network — after a mutation, a socket event, or Refresh.
+  const loadDepartments = useCallback(async (force = false) => {
     try {
-      const { data } = await client.query({ query: DEPARTMENTS_Q, fetchPolicy: 'network-only' });
+      const { data } = await client.query({
+        query: DEPARTMENTS_Q,
+        fetchPolicy: force ? 'network-only' : 'cache-first'
+      });
       const list = data?.departments ?? [];
       setDepartments(list);
       setSelectedDept((cur) => cur || (list[0]?.id ?? ''));
@@ -443,7 +531,7 @@ export default function PoliciesListPage() {
     }
   }, []);
 
-  const loadMembers = useCallback(async (departmentId) => {
+  const loadMembers = useCallback(async (departmentId, force = false) => {
     if (!departmentId) {
       setMembers([]);
       return;
@@ -453,7 +541,7 @@ export default function PoliciesListPage() {
       const { data } = await client.query({
         query: MEMBERS_Q,
         variables: { departmentId },
-        fetchPolicy: 'network-only'
+        fetchPolicy: force ? 'network-only' : 'cache-first'
       });
       setMembers(data?.departmentMembers ?? []);
     } catch (err) {
@@ -463,12 +551,12 @@ export default function PoliciesListPage() {
     }
   }, []);
 
-  const loadAudit = useCallback(async () => {
+  const loadAudit = useCallback(async (force = false) => {
     try {
       const { data } = await client.query({
         query: AUDIT_Q,
         variables: { input: { limit: 100 } },
-        fetchPolicy: 'network-only'
+        fetchPolicy: force ? 'network-only' : 'cache-first'
       });
       setAudit(data?.policyAuditLog ?? []);
     } catch {
@@ -476,6 +564,9 @@ export default function PoliciesListPage() {
     }
   }, []);
 
+  // Prefetch every tab's data once on mount (cache-first, non-blocking) so
+  // switching tabs is instant — the slow API is only hit on the first load,
+  // then served from cache (and kept fresh by the pub-sub events above).
   useEffect(() => {
     loadDepartments();
     loadAudit();
@@ -505,8 +596,7 @@ export default function PoliciesListPage() {
       toast.success('Member added');
       setNewUserId('');
       setNewDeptRole('MEMBER');
-      await loadMembers(selectedDept);
-      loadAudit();
+      await loadMembers(selectedDept, true);
     } catch (err) {
       toast.error(err?.message || 'Could not add member');
     } finally {
@@ -520,8 +610,7 @@ export default function PoliciesListPage() {
         mutation: SET_MEMBER_M,
         variables: { input: { departmentId: selectedDept, userId: member.userId, role } }
       });
-      await loadMembers(selectedDept);
-      loadAudit();
+      await loadMembers(selectedDept, true);
     } catch (err) {
       toast.error(err?.message || 'Could not update role');
     }
@@ -533,8 +622,7 @@ export default function PoliciesListPage() {
         mutation: REMOVE_MEMBER_M,
         variables: { departmentId: selectedDept, userId: member.userId }
       });
-      await loadMembers(selectedDept);
-      loadAudit();
+      await loadMembers(selectedDept, true);
     } catch (err) {
       toast.error(err?.message || 'Could not remove member');
     }
@@ -543,23 +631,29 @@ export default function PoliciesListPage() {
   // -------------------------------------------------------------------------
   // Assign role to user
   // -------------------------------------------------------------------------
-  const [assignUserId, setAssignUserId] = useState('');
-  const [assignRoleId, setAssignRoleId] = useState('');
+  const [changingRoleFor, setChangingRoleFor] = useState('');
 
-  const handleAssignRole = async () => {
-    if (!assignUserId || !assignRoleId) {
-      toast.error('Pick a user and a role');
-      return;
-    }
+  // Inline "user → role" management. Every user has exactly one role, so we show
+  // the current one and let it be changed in place (no separate assign step).
+  const roleableUsers = useMemo(() => userList.filter((u) => !u.deleted), [userList]);
+  const roleOptions = useMemo(() => roles.map((r) => ({ value: r.id, label: r.name })), [roles]);
+  const systemRoleIdByKey = useMemo(() => {
+    const m = new Map();
+    for (const r of roles) m.set(r.key, r.id);
+    return m;
+  }, [roles]);
+
+  const handleChangeUserRole = async (userId, roleId) => {
+    if (!roleId) return;
+    setChangingRoleFor(userId);
     try {
-      await assignUserRole({ variables: { input: { userId: assignUserId, roleId: assignRoleId } } });
-      toast.success('Role assigned');
-      setAssignUserId('');
-      setAssignRoleId('');
-      await refetchRoles();
-      loadAudit();
+      await assignUserRole({ variables: { input: { userId, roleId } } });
+      toast.success('Role updated');
+      await Promise.all([refresh(), refetchRoles()]);
     } catch (err) {
-      toast.error(err?.message || 'Could not assign role');
+      toast.error(err?.message || 'Could not change role');
+    } finally {
+      setChangingRoleFor('');
     }
   };
 
@@ -574,24 +668,26 @@ export default function PoliciesListPage() {
   } = useUserPermissionOverridesQuery({
     variables: { userId: overrideUserId },
     skip: !overrideUserId,
-    fetchPolicy: 'cache-and-network'
+    fetchPolicy: 'cache-first'
   });
   const overrides = overridesData?.userPermissionOverrides || [];
 
-  const [overridePermission, setOverridePermission] = useState('');
+  const [overrideResource, setOverrideResource] = useState('');
+  const [overrideVerb, setOverrideVerb] = useState('');
   const [overrideScope, setOverrideScope] = useState(PermissionScope.Any);
   const [overrideEffect, setOverrideEffect] = useState(GrantEffect.Allow);
+  const overridePermission = overrideResource && overrideVerb ? `${overrideResource}:${overrideVerb}` : '';
 
-  // All concrete `resource:verb` leaves from the registry, for the picker.
-  const registryLeaves = useMemo(() => {
-    const leaves = [];
-    for (const r of registry?.resources || []) {
-      for (const v of r.verbs || []) {
-        leaves.push({ value: `${r.key}:${v}`, label: `${r.label} · ${v}` });
-      }
-    }
-    return leaves;
-  }, [registry]);
+  // Two-step permission picker (resource → action) keeps each dropdown small —
+  // far snappier to open than a single ~130-entry list.
+  const overrideResourceOptions = useMemo(
+    () => (registry?.resources || []).map((r) => ({ value: r.key, label: r.label })),
+    [registry]
+  );
+  const overrideVerbOptions = useMemo(() => {
+    const res = (registry?.resources || []).find((r) => r.key === overrideResource);
+    return (res?.verbs || []).map((v) => ({ value: v, label: humanizeVerb(v) }));
+  }, [registry, overrideResource]);
 
   const handleAddOverride = async () => {
     const permission = overridePermission.trim();
@@ -611,9 +707,9 @@ export default function PoliciesListPage() {
         }
       });
       toast.success('Override saved');
-      setOverridePermission('');
+      setOverrideResource('');
+      setOverrideVerb('');
       await refetchOverrides();
-      loadAudit();
     } catch (err) {
       toast.error(err?.message || 'Could not save override');
     }
@@ -626,11 +722,48 @@ export default function PoliciesListPage() {
       });
       toast.success('Override cleared');
       await refetchOverrides();
-      loadAudit();
     } catch (err) {
       toast.error(err?.message || 'Could not clear override');
     }
   };
+
+  // -------------------------------------------------------------------------
+  // Real-time sync via the websocket pub-sub. Governance changes (made here or
+  // by another admin) broadcast on the 'policy' channel; we refetch only the
+  // affected slice so the view stays live without manual refreshes.
+  // -------------------------------------------------------------------------
+  const liveRef = useRef({});
+  liveRef.current = {
+    activeTab,
+    overrideUserId,
+    selectedDept,
+    refetchRoles,
+    refetchOverrides,
+    refreshUsers: refresh,
+    loadMembers,
+    loadAudit
+  };
+
+  useEffect(() => {
+    const socket = getSocketService();
+    const unsubscribe = socket.subscribeToAllResourceEvents(
+      'policy',
+      (action, evt) => {
+        const d = evt?.data || {};
+        const L = liveRef.current;
+        if (d.kind === 'role' || d.kind === 'userRole') L.refetchRoles?.();
+        if (d.kind === 'userRole') L.refreshUsers?.();
+        if (d.kind === 'override' && d.userId === L.overrideUserId) L.refetchOverrides?.();
+        if (d.kind === 'member' && d.departmentId === L.selectedDept) L.loadMembers?.(L.selectedDept, true);
+        // Every governance change writes the audit log; refresh it if it's open.
+        if (L.activeTab === 'audit') L.loadAudit?.(true);
+      },
+      ['create', 'update', 'delete']
+    );
+    return () => {
+      try { unsubscribe?.(); } catch { /* noop */ }
+    };
+  }, []);
 
   // -------------------------------------------------------------------------
   // Table column definitions
@@ -744,20 +877,20 @@ export default function PoliciesListPage() {
     const manageValue = manageGrant ? manageGrant.scope : NONE;
 
     return (
-      <ResponsiveStack direction="col" gap={2}>
-        <ResponsiveStack direction="row" gap={2} align="center">
-          <span className="text-xs font-medium text-fg-muted">Grant all (manage)</span>
-          <div className="w-40">
-            <Select
-              size="sm"
-              value={manageValue}
-              disabled={roleReadOnly}
-              onChange={(v) => changeGrant(`${resource.key}:manage`, v)}
-              options={scopeOptions(resource.scoped)} />
+      <div className="overflow-hidden rounded-sm border border-white/10 bg-surface">
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-surface-1 px-3.5 py-2.5">
+          <div className="flex min-w-0 flex-col">
+            <span className="text-sm font-medium">Manage all</span>
+            <span className="text-xs text-fg-muted">Grant every action on this resource at once</span>
           </div>
-        </ResponsiveStack>
+          <ScopeSegmented
+            value={manageValue}
+            scoped={resource.scoped}
+            disabled={roleReadOnly}
+            onChange={(v) => changeGrant(`${resource.key}:manage`, v)} />
+        </div>
 
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <div className="divide-y divide-white/5">
           {(resource.verbs || []).map((verb) => {
             const permission = `${resource.key}:${verb}`;
             const directGrant = (selectedRole?.permissions || []).find(
@@ -765,12 +898,7 @@ export default function PoliciesListPage() {
             );
             const eff = effectiveGrants.get(permission);
             const derived = eff && eff.source !== 'direct';
-
-            const value = directGrant
-              ? directGrant.scope
-              : derived
-                ? eff.scope
-                : NONE;
+            const value = directGrant ? directGrant.scope : derived ? eff.scope : NONE;
 
             const derivedLabel =
               eff?.source === 'wildcard'
@@ -784,26 +912,27 @@ export default function PoliciesListPage() {
             return (
               <div
                 key={permission}
-                className="flex items-center justify-between gap-2 rounded-md border border-border-subtle px-3 py-2">
-                <div className="flex min-w-0 flex-col">
-                  <span className="truncate text-sm">{verb}</span>
-                  {derived && derivedLabel ? (
-                    <span className="text-fg-muted text-xs">{derivedLabel}</span>
+                className="flex items-center justify-between gap-3 px-3.5 py-2 transition-colors hover:bg-white/[0.03]">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate text-sm" title={humanizeVerb(verb)}>
+                    {humanizeVerb(verb)}
+                  </span>
+                  {!roleReadOnly && derived && derivedLabel ? (
+                    <span title={`Inherited ${derivedLabel}`} className="shrink-0 text-fg-muted">
+                      <Lock size={11} />
+                    </span>
                   ) : null}
                 </div>
-                <div className="w-36 shrink-0">
-                  <Select
-                    size="sm"
-                    value={value}
-                    disabled={roleReadOnly || derived}
-                    onChange={(v) => changeGrant(permission, v)}
-                    options={scopeOptions(resource.scoped)} />
-                </div>
+                <ScopeSegmented
+                  value={value}
+                  scoped={resource.scoped}
+                  disabled={roleReadOnly || derived}
+                  onChange={(v) => changeGrant(permission, v)} />
               </div>
             );
           })}
         </div>
-      </ResponsiveStack>
+      </div>
     );
   };
 
@@ -828,9 +957,9 @@ export default function PoliciesListPage() {
               onClick={() => {
                 refresh();
                 refetchRoles();
-                loadDepartments();
-                loadMembers(selectedDept);
-                loadAudit();
+                loadDepartments(true);
+                loadMembers(selectedDept, true);
+                loadAudit(true);
               }}
               disabled={isLoading || rolesLoading || registryLoading}>
               <RefreshCw size={14} />
@@ -842,20 +971,50 @@ export default function PoliciesListPage() {
           <Alert tone="warning" icon={<ShieldCheck size={14} />} title="Permission backend unavailable">
             Roles or the permission registry could not be loaded. Some controls may be disabled.
           </Alert>
-        ) : (
-          <Alert tone="info" icon={<ShieldCheck size={14} />} title="SUPER_ADMIN is protected; changes are audited">
-            The SUPER_ADMIN role is read-only and always retains full control. Every role, override, and
-            department-role change is recorded in the access change log below.
-          </Alert>
-        )}
+        ) : null}
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Roles list + permission editor                                   */}
-        {/* ---------------------------------------------------------------- */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[20rem_1fr]">
+        {/* Section tabs — Harbor underline tabs: animated sliding underline +
+            per-panel content swap (fade-up), both built into Tabs/TabPanel. */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} variant="underline">
+          <TabList className="w-full overflow-x-auto">
+            {POLICY_TABS.map((t) => {
+              const Icon = t.icon;
+              return (
+                <Tab key={t.id} value={t.id} icon={<Icon size={15} />}>
+                  {t.label}
+                </Tab>
+              );
+            })}
+          </TabList>
+
+          {/* ---------------------------------------------------------------- */}
+          {/* Roles list + permission editor                                   */}
+          {/* ---------------------------------------------------------------- */}
+          <TabPanel value="roles" className="flex flex-col gap-4">
+            {activeTab === 'roles' && (
+              <>
+            <Alert tone="info" icon={<ShieldCheck size={14} />} title="SUPER_ADMIN is protected; changes are audited">
+              The SUPER_ADMIN role is read-only and always retains full control. Every role, override, and
+              department-role change is recorded in the Audit log tab.
+            </Alert>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[20rem_1fr]">
           <SectionCard
             icon={<ShieldCheck size={16} className="text-fg-muted" />}
-            title="Roles">
+            title="Roles"
+            action={
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<Plus size={14} />}
+                onClick={() => {
+                  setNewRoleName('');
+                  setNewRoleDescription('');
+                  setCreating(true);
+                }}>
+                New
+              </Button>
+            }>
             <ResponsiveStack direction="col" gap={2}>
               {rolesLoading && !roles.length ? (
                 <span className="text-fg-muted text-sm">Loading roles…</span>
@@ -863,14 +1022,21 @@ export default function PoliciesListPage() {
                 roles.map((role) => {
                   const active = role.id === selectedRoleId;
                   return (
-                    <button
+                    <div
                       key={role.id}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setSelectedRoleId(role.id)}
-                      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-left transition-colors ${
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedRoleId(role.id);
+                        }
+                      }}
+                      className={`flex cursor-pointer items-center gap-2 rounded-sm border px-3 py-2 text-left transition-colors ${
                         active
-                          ? 'border-border-strong bg-surface-overlay'
-                          : 'border-border-subtle hover:bg-surface-overlay'
+                          ? 'border-white/20 bg-surface-2'
+                          : 'border-white/10 hover:bg-surface-2'
                       }`}>
                       <div className="flex min-w-0 flex-1 flex-col">
                         <span className="flex items-center gap-2 truncate text-sm font-medium">
@@ -896,7 +1062,7 @@ export default function PoliciesListPage() {
                             handleDeleteRole(role);
                           }} />
                       ) : null}
-                    </button>
+                    </div>
                   );
                 })
               ) : (
@@ -906,26 +1072,71 @@ export default function PoliciesListPage() {
                   description="Create a role below to start granting permissions." />
               )}
 
-              <div className="mt-2 flex flex-col gap-2 border-t border-border-subtle pt-3">
-                <span className="text-xs font-medium text-fg-muted">New role</span>
-                <input
-                  className="rounded-md border border-border-subtle bg-surface-base px-3 py-2 text-sm outline-none focus:border-border-strong"
-                  placeholder="Role name"
-                  value={newRoleName}
-                  onChange={(e) => setNewRoleName(e.target.value)} />
-                <input
-                  className="rounded-md border border-border-subtle bg-surface-base px-3 py-2 text-sm outline-none focus:border-border-strong"
-                  placeholder="Description (optional)"
-                  value={newRoleDescription}
-                  onChange={(e) => setNewRoleDescription(e.target.value)} />
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={<Plus size={14} />}
-                  loading={creatingRole}
-                  onClick={handleCreateRole}>
-                  Create role
-                </Button>
+              <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-3">
+                {creating ? (
+                  <>
+                    <span className="text-xs font-medium text-fg-muted">Create a new role</span>
+                    <input
+                      className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
+                      placeholder="Role name"
+                      value={newRoleName}
+                      onChange={(e) => setNewRoleName(e.target.value)} />
+                    <input
+                      className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
+                      placeholder="Description (optional)"
+                      value={newRoleDescription}
+                      onChange={(e) => setNewRoleDescription(e.target.value)} />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon={<Plus size={14} />}
+                        loading={creatingRole}
+                        onClick={handleCreateRole}>
+                        Create role
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setCreating(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </>
+                ) : selectedRole ? (
+                  roleReadOnly ? (
+                    <span className="text-xs text-fg-muted">
+                      This system role is locked — its name and permissions can’t be changed.
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-xs font-medium text-fg-muted">
+                        Edit details{selectedRole.isSystem ? ' · system preset' : ''}
+                      </span>
+                      <input
+                        className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
+                        placeholder="Role name"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)} />
+                      <input
+                        className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
+                        placeholder="Description (optional)"
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)} />
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        loading={updatingRole}
+                        disabled={
+                          !editName.trim() ||
+                          (editName.trim() === selectedRole.name &&
+                            editDescription.trim() === (selectedRole.description || ''))
+                        }
+                        onClick={handleSaveRole}>
+                        Save changes
+                      </Button>
+                    </>
+                  )
+                ) : (
+                  <span className="text-xs text-fg-muted">Select a role to edit, or “New” to create one.</span>
+                )}
               </div>
             </ResponsiveStack>
           </SectionCard>
@@ -992,42 +1203,42 @@ export default function PoliciesListPage() {
             )}
           </SectionCard>
         </div>
+              </>
+            )}
+          </TabPanel>
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Assign role to user                                              */}
-        {/* ---------------------------------------------------------------- */}
-        <SectionCard icon={<UserPlus size={16} className="text-fg-muted" />} title="Assign role to user">
-          <ResponsiveStack direction={{ base: 'col', lg: 'row' }} gap={2} align="end">
-            <div className="flex-1 min-w-0">
-              <Select
-                label="User"
-                value={assignUserId}
-                onChange={setAssignUserId}
-                options={[
-                { value: '', label: '— pick a user —' },
-                ...userList
-                  .filter((u) => !u.deleted)
-                  .map((u) => ({ value: u.id, label: `${userNameById.get(u.id)} · ${u.email}` }))]
-                } />
-            </div>
-            <div className="w-full lg:w-72">
-              <Select
-                label="Role"
-                value={assignRoleId}
-                onChange={setAssignRoleId}
-                options={[
-                { value: '', label: '— pick a role —' },
-                ...roles.map((r) => ({ value: r.id, label: r.name }))]
-                } />
-            </div>
-            <Button
-              variant="primary"
-              icon={<UserPlus size={14} />}
-              loading={assigning}
-              disabled={!assignUserId || !assignRoleId}
-              onClick={handleAssignRole}>
-              Assign
-            </Button>
+          {/* User access */}
+          <TabPanel value="users" className="flex flex-col gap-4">
+        <SectionCard icon={<UserPlus size={16} className="text-fg-muted" />} title="User roles">
+          <ResponsiveStack direction="col" gap={2}>
+            <span className="text-fg-muted text-xs">
+              Every user has exactly one role — change it inline. Fine-grained per-user tweaks live in “Per-user overrides” below.
+            </span>
+            {!roleableUsers.length ? (
+              <EmptyState
+                icon={<UserPlus size={18} />}
+                title="No users"
+                description="There are no users to manage yet." />
+            ) : (
+              <div className="divide-y divide-white/5 rounded-sm border border-white/10">
+                {roleableUsers.map((u) => (
+                  <div key={u.id} className="flex items-center justify-between gap-3 px-3.5 py-2">
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate text-sm font-medium">{userNameById.get(u.id)}</span>
+                      <span className="truncate text-xs text-fg-muted">{u.email}</span>
+                    </div>
+                    <div className="w-56 shrink-0">
+                      <Select
+                        size="sm"
+                        value={u.roleId || systemRoleIdByKey.get(u.role)}
+                        disabled={changingRoleFor === u.id}
+                        onChange={(roleId) => handleChangeUserRole(u.id, roleId)}
+                        options={roleOptions} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </ResponsiveStack>
         </SectionCard>
 
@@ -1058,13 +1269,18 @@ export default function PoliciesListPage() {
               <ResponsiveStack direction={{ base: 'col', lg: 'row' }} gap={2} align="end">
                 <div className="flex-1 min-w-0">
                   <Select
-                    label="Permission"
-                    value={overridePermission}
-                    onChange={setOverridePermission}
-                    options={[
-                    { value: '', label: '— pick a permission —' },
-                    ...registryLeaves]
-                    } />
+                    label="Resource"
+                    value={overrideResource}
+                    onChange={(v) => { setOverrideResource(v); setOverrideVerb(''); }}
+                    options={[{ value: '', label: '— resource —' }, ...overrideResourceOptions]} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Select
+                    label="Action"
+                    value={overrideVerb}
+                    onChange={setOverrideVerb}
+                    disabled={!overrideResource}
+                    options={[{ value: '', label: '— action —' }, ...overrideVerbOptions]} />
                 </div>
                 <div className="w-full lg:w-44">
                   <Select
@@ -1110,11 +1326,11 @@ export default function PoliciesListPage() {
             </ResponsiveStack>
           )}
         </SectionCard>
+          </TabPanel>
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Department roles (PRESERVED)                                     */}
-        {/* ---------------------------------------------------------------- */}
-        <SectionCard icon={<Users size={16} className="text-fg-muted" />} title="Department roles">
+          {/* Departments */}
+          <TabPanel value="departments" className="flex flex-col gap-4">
+        <SectionCard icon={<Users size={16} className="text-fg-muted" />} title="Department members">
           <ResponsiveStack direction={{ base: 'col', lg: 'row' }} gap={2} align="end">
             <div className="w-full lg:w-72">
               <Select
@@ -1171,10 +1387,10 @@ export default function PoliciesListPage() {
               description="Add a user above to grant them scoped access to this department (Manager can operate it; Member can view it)." />
           )}
         </SectionCard>
+          </TabPanel>
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Access change log (PRESERVED)                                    */}
-        {/* ---------------------------------------------------------------- */}
+          {/* Audit log */}
+          <TabPanel value="audit" className="flex flex-col gap-4">
         <SectionCard icon={<History size={16} className="text-fg-muted" />} title="Access change log">
           {audit.length ? (
             <DataTable rows={audit} columns={auditColumns} rowId={(r) => r.id} defaultDensity="compact" />
@@ -1185,6 +1401,8 @@ export default function PoliciesListPage() {
               description="Permission and department-role changes will appear here as they happen." />
           )}
         </SectionCard>
+          </TabPanel>
+        </Tabs>
       </ResponsiveStack>
     </Page>);
 

@@ -14,7 +14,25 @@ const LoginDocument = gql`
         role
       }
       token
+      refreshToken
+      expiresIn
     }
+  }
+`;
+
+const RefreshDocument = gql`
+  mutation refreshToken($refreshToken: String!) {
+    refreshToken(refreshToken: $refreshToken) {
+      token
+      refreshToken
+      expiresIn
+    }
+  }
+`;
+
+const LogoutDocument = gql`
+  mutation logout {
+    logout
   }
 `;
 
@@ -69,6 +87,28 @@ const UpdateAppSettingsDocument = gql`
   }
 `;
 
+const FeatureFlagsDocument = gql`
+  query featureFlags {
+    featureFlags {
+      key
+      label
+      description
+      enabled
+    }
+  }
+`;
+
+const SetFeatureFlagDocument = gql`
+  mutation setFeatureFlag($key: String!, $enabled: Boolean!) {
+    setFeatureFlag(key: $key, enabled: $enabled) {
+      key
+      label
+      description
+      enabled
+    }
+  }
+`;
+
 // GraphQL API endpoint (use environment variable)
 const API_URL = process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:4000/graphql';
 
@@ -101,6 +141,67 @@ const client = new ApolloClient({
 // Create debug instance for auth
 const debug = createDebugger('frontend:auth');
 
+// Module-level single-flight promise so concurrent callers share one network refresh
+let refreshInFlight = null;
+
+/**
+ * Refresh the access token using the stored refresh token.
+ * Single-flight: concurrent callers share one in-flight network request.
+ * @returns {Promise<string|null>} the new access token, or null if refresh failed/unavailable
+ */
+export const refreshAccessToken = async () => {
+  // Only access localStorage in browser environment
+  const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+  if (!refreshToken) {
+    return null;
+  }
+
+  // If a refresh is already in flight, share it
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+
+  refreshInFlight = (async () => {
+    try {
+      const { data } = await client.mutate({
+        mutation: RefreshDocument,
+        variables: { refreshToken },
+      });
+
+      const result = data?.refreshToken;
+      if (result && result.token) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', result.token);
+          localStorage.setItem('refreshToken', result.refreshToken);
+          localStorage.setItem('tokenExpiresAt', String(Date.now() + (result.expiresIn || 3600) * 1000));
+        }
+        debug.success('refresh', 'Access token refreshed successfully');
+        return result.token;
+      }
+
+      // No token returned: treat as failure and clear state
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenExpiresAt');
+      }
+      return null;
+    } catch (error) {
+      debug.error('refresh', 'Token refresh failed:', error);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenExpiresAt');
+      }
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+};
+
 // Authentication functions
 export const auth = {
   login: async (email, password) => {
@@ -115,6 +216,8 @@ export const auth = {
         // Only access localStorage in browser environment
         if (typeof window !== 'undefined') {
           localStorage.setItem('token', data.login.token);
+          localStorage.setItem('refreshToken', data.login.refreshToken);
+          localStorage.setItem('tokenExpiresAt', String(Date.now() + (data.login.expiresIn || 3600) * 1000));
         }
         return data.login.token;
       }
@@ -134,10 +237,21 @@ export const auth = {
     return data.currentUser;
   },
 
-  logout: () => {
+  logout: async () => {
+    // Best-effort backend logout; ignore any errors so client-side cleanup always runs
+    try {
+      await client.mutate({
+        mutation: LogoutDocument,
+      });
+    } catch (error) {
+      debug.warn('logout', 'Backend logout failed (ignored):', error);
+    }
+
     // Only access localStorage in browser environment
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('tokenExpiresAt');
     }
   },
 
@@ -203,6 +317,37 @@ export const auth = {
     } catch (error) {
       debug.error('updateAppSettings', 'Failed to update app settings:', error);
       throw new Error('Failed to update app settings');
+    }
+  },
+
+  // Feature Flag functions
+  fetchFeatureFlags: async () => {
+    try {
+      const { data } = await client.query({
+        query: FeatureFlagsDocument,
+        fetchPolicy: 'network-only',
+        errorPolicy: 'all'
+      });
+      debug.success('fetchFeatureFlags', 'Feature flags fetched successfully');
+      return data?.featureFlags || [];
+    } catch (error) {
+      debug.error('fetchFeatureFlags', 'Failed to fetch feature flags:', error);
+      // Return empty array on failure; the Redux slice falls back to defaults
+      return [];
+    }
+  },
+
+  setFeatureFlag: async (key, enabled) => {
+    try {
+      const { data } = await client.mutate({
+        mutation: SetFeatureFlagDocument,
+        variables: { key, enabled }
+      });
+      debug.success('setFeatureFlag', 'Feature flag updated successfully:', { key, enabled });
+      return data.setFeatureFlag;
+    } catch (error) {
+      debug.error('setFeatureFlag', 'Failed to set feature flag:', error);
+      throw new Error('Failed to set feature flag');
     }
   }
 };

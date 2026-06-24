@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Page,
   Badge,
@@ -15,6 +16,7 @@ import { Database, HardDrive, RefreshCw } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/PageHeader';
 import { useGetSystemResourcesQuery } from '@/gql/hooks';
+import useFeatureFlag from '@/hooks/useFeatureFlag';
 
 function pctUsed(total, used) {
   if (!total || total <= 0) return 0;
@@ -27,6 +29,15 @@ function formatGB(value) {
 }
 
 export default function StorageListPage() {
+  const router = useRouter();
+  const storageEnabled = useFeatureFlag('storage');
+
+  useEffect(() => {
+    if (!storageEnabled) {
+      router.replace('/desktops');
+    }
+  }, [storageEnabled, router]);
+
   const {
     data,
     loading,
@@ -136,6 +147,10 @@ export default function StorageListPage() {
 
     []
   );
+
+  if (!storageEnabled) {
+    return null;
+  }
 
   return (
     <Page>
