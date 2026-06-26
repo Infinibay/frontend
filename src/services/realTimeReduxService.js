@@ -131,16 +131,21 @@ export class RealTimeReduxService {
       ])
     )
 
-    // Subscribe to remediation approval/rollback events (resource 'remediation').
-    // backend does not yet emit this — ready for when it does. handleRemediationEvent
-    // is never invoked; it would send the actionType as the event name with payload
-    // { vmId, vmName, actionType, result }.
+    // Subscribe to user-initiated remediation lifecycle (resource 'remediation').
+    // The backend dispatches these via the global event manager; VmEventManager
+    // strips the 'remediation_' prefix and replaces '_' with '-' to derive the wire
+    // action, so the actions we see are 'started' | 'succeeded' | 'failed' |
+    // 'requires-reboot' | 'cancelled'. The payload's data is the result object
+    // ({ description, reason, ... }).
     this.subscriptions.push(
       this.socketService.subscribeToAllResourceEvents('remediation', (action, data) => {
         this.handleRemediationEvent(action, data)
       }, [
-        'approval-required',
-        'rolled-back'
+        'started',
+        'succeeded',
+        'failed',
+        'requires-reboot',
+        'cancelled'
       ])
     )
 
@@ -597,7 +602,7 @@ export class RealTimeReduxService {
     trackRealTimeEvent(`health_status:${action}`, endTime - startTime)
   }
 
-  // Handle remediation approval/rollback events (resource 'remediation')
+  // Handle user-initiated remediation lifecycle events (resource 'remediation')
   handleRemediationEvent(action, eventData) {
     const startTime = performance.now()
     this.debug.log('remediation-event', `Received Remediation ${action} event:`, eventData)
@@ -607,34 +612,50 @@ export class RealTimeReduxService {
       return
     }
 
-    const payload = eventData?.data ?? eventData
-    if (!payload) {
+    // Backend events are wrapped as { status, data, timestamp }; data is the flat
+    // VmEventManager.handleRemediationEvent payload { vmId, vmName, actionType, result, ... }
+    // where the human-readable fields ({ description, reason, ... }) live on data.result.
+    // Fall back to data itself (then the raw payload) for resilience to either shape.
+    const data = eventData?.data ?? eventData
+    if (!data) {
       this.debug.warn('remediation-event', `No data in Remediation ${action} event`)
       return
     }
 
-    // backend does not yet emit these — ready for when it does. handleRemediationEvent
-    // would send the actionType as the event name with payload
-    // { vmId, vmName, actionType, result }.
-    switch (action) {
-      case 'approval-required': {
-        const { vmId, result } = payload
-        toast.warning('Approval required', {
-          description: `${result?.description ?? 'A remediation'} requires your approval`,
-          duration: 10000
-        })
-        if (!vmId) this.debug.warn('remediation-event', 'approval-required event missing vmId')
-        break
-      }
+    const result = data.result ?? data
+    const description = result.description ?? 'Remediation'
 
-      case 'rolled-back': {
-        const { result } = payload
-        toast.error('Remediation rolled back', {
-          description: result?.reason || 'The remediation was rolled back due to an error',
+    switch (action) {
+      case 'started':
+        toast.info('Remediation started', {
+          description,
+          duration: 5000
+        })
+        break
+
+      case 'succeeded':
+        toast.success(`${description} completed`, {
+          duration: 5000
+        })
+        break
+
+      case 'requires-reboot':
+        toast.warning(`${description} — reboot required`, {
           duration: 7000
         })
         break
-      }
+
+      case 'failed':
+        toast.error(`${description}${result.reason ? `: ${result.reason}` : ''}`, {
+          duration: 7000
+        })
+        break
+
+      case 'cancelled':
+        toast.info('Remediation cancelled', {
+          duration: 5000
+        })
+        break
 
       default:
         this.debug.warn('remediation-event', `Unknown Remediation action: ${action}`)
