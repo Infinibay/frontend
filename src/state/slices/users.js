@@ -21,9 +21,20 @@ export const DELETE_USER_MUTATION = gql`
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
     debug.log('query', 'Executing GraphQL query', { query: query.loc?.source?.body, variables });
-    const { data } = await client.query({ query, variables });
-    debug.log('query', 'GraphQL query success', data);
-    return data;
+    const response = await client.query({
+      query,
+      variables,
+      fetchPolicy: 'network-only' // Force network request so mutations aren't masked by a stale cache-first read
+    });
+
+    // Surface GraphQL errors (errorPolicy:'all' resolves instead of throwing)
+    if (response.errors) {
+      const errorMessage = response.errors.map(err => err.message).join(', ');
+      throw new Error(errorMessage);
+    }
+
+    debug.log('query', 'GraphQL query success', response.data);
+    return response.data;
   } catch (error) {
     debug.error('query', 'GraphQL query error', error);
     console.error('GraphQL query error:', error);
@@ -90,6 +101,7 @@ const usersSlice = createSlice({
   name: 'users',
   initialState: {
     items: [],
+    lastUpdated: null,
     loading: {
       fetch: false,
       create: false,
@@ -138,6 +150,7 @@ const usersSlice = createSlice({
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.loading.fetch = false;
         state.items = action.payload;
+        state.lastUpdated = Date.now();
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading.fetch = false;
@@ -150,8 +163,18 @@ const usersSlice = createSlice({
         state.loading.create = true;
         state.error.create = null;
       })
-      .addCase(createUser.fulfilled, (state) => {
+      .addCase(createUser.fulfilled, (state, action) => {
         state.loading.create = false;
+        // Optimistically add the new user by id (idempotent with realTimeUserCreated)
+        const newUser = action.payload;
+        if (newUser && newUser.id) {
+          const idx = state.items.findIndex(u => u.id === newUser.id);
+          if (idx === -1) {
+            state.items.push(newUser);
+          } else {
+            state.items[idx] = newUser;
+          }
+        }
       })
       .addCase(createUser.rejected, (state, action) => {
         state.loading.create = false;
@@ -164,8 +187,18 @@ const usersSlice = createSlice({
         state.loading.update = true;
         state.error.update = null;
       })
-      .addCase(updateUser.fulfilled, (state) => {
+      .addCase(updateUser.fulfilled, (state, action) => {
         state.loading.update = false;
+        // Optimistically replace the user by id (idempotent with realTimeUserUpdated)
+        const updated = action.payload;
+        if (updated && updated.id) {
+          const idx = state.items.findIndex(u => u.id === updated.id);
+          if (idx !== -1) {
+            state.items[idx] = updated;
+          } else {
+            state.items.push(updated);
+          }
+        }
       })
       .addCase(updateUser.rejected, (state, action) => {
         state.loading.update = false;

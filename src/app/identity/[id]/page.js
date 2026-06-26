@@ -495,7 +495,7 @@ export default function IdentityDetailPage() {
               <label className="flex flex-col gap-1 flex-[2] min-w-0">
                 <span className="text-xs text-fg-muted">Group DN</span>
                 <input
-                  className="h-9 rounded-md border border-border-subtle bg-surface px-3 text-sm outline-none"
+                  className="h-9 rounded-md border border-border-subtle bg-surface px-3 text-sm outline-none focus-visible:shadow-[var(--harbor-focus-shadow)]"
                   value={groupDn}
                   onChange={(event) => setGroupDn(event.target.value)}
                   placeholder="CN=VDI Admins,OU=Groups,DC=example,DC=com"
@@ -504,7 +504,7 @@ export default function IdentityDetailPage() {
               <label className="flex flex-col gap-1 flex-1 min-w-0">
                 <span className="text-xs text-fg-muted">Display name</span>
                 <input
-                  className="h-9 rounded-md border border-border-subtle bg-surface px-3 text-sm outline-none"
+                  className="h-9 rounded-md border border-border-subtle bg-surface px-3 text-sm outline-none focus-visible:shadow-[var(--harbor-focus-shadow)]"
                   value={groupName}
                   onChange={(event) => setGroupName(event.target.value)}
                   placeholder="VDI Admins"
@@ -513,7 +513,7 @@ export default function IdentityDetailPage() {
               <label className="flex flex-col gap-1 w-full lg:w-40">
                 <span className="text-xs text-fg-muted">Role</span>
                 <select
-                  className="h-9 rounded-md border border-border-subtle bg-surface px-3 text-sm outline-none"
+                  className="h-9 rounded-md border border-border-subtle bg-surface px-3 text-sm outline-none focus-visible:shadow-[var(--harbor-focus-shadow)]"
                   value={groupRole}
                   onChange={(event) => setGroupRole(event.target.value)}
                 >

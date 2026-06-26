@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   Loader2,
   AlertCircle,
+  Menu,
 } from 'lucide-react';
 import {
   AppHeader,
@@ -34,6 +35,7 @@ import { selectUser } from '@/state/slices/auth';
 import { isOperator } from '@/lib/roles';
 import {
   selectHeaderBreadcrumbs,
+  selectHeaderTitle,
   selectHeaderSubtitle,
   selectHeaderActions,
   selectHeaderHelpTooltip,
@@ -121,9 +123,10 @@ function harborVariant(v) {
   }
 }
 
-function GlobalHeaderInner() {
+function GlobalHeaderInner({ onMenuClick }) {
   const pathname = usePathname();
   const reduxBreadcrumbs = useSelector(selectHeaderBreadcrumbs);
+  const title = useSelector(selectHeaderTitle);
   const subtitle = useSelector(selectHeaderSubtitle);
   const actions = useSelector(selectHeaderActions);
   const helpTooltip = useSelector(selectHeaderHelpTooltip);
@@ -142,6 +145,20 @@ function GlobalHeaderInner() {
 
   const left = (
     <ResponsiveStack direction="row" gap={3} align="center">
+      {/* Hamburger: opens the nav drawer below lg, where the static sidebar
+          is hidden. Hidden on lg+ where the sidebar is always present. */}
+      <span className="lg:hidden">
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Menu size={16} />}
+          onClick={() => onMenuClick?.()}
+          title="Open navigation"
+        >
+          {''}
+        </Button>
+      </span>
+
       {backButton ? (
         <Link href={backButton.href}>
           <Button variant="ghost" size="sm" icon={<ChevronLeft size={14} />}>
@@ -157,6 +174,15 @@ function GlobalHeaderInner() {
             href: c.isCurrent ? undefined : c.href,
           }))}
         />
+      ) : null}
+
+      {/* The page <h1>. Pages set this via usePageHeader({ title }); without
+          this it was dead state, leaving Applications/Scripts/Profile/
+          Notifications with no heading. */}
+      {title ? (
+        <h1 className="text-base font-semibold leading-tight m-0 truncate">
+          {title}
+        </h1>
       ) : null}
 
       {subtitle ? <span>{subtitle.text}</span> : null}

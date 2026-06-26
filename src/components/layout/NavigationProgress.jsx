@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { Z } from '@infinibay/harbor';
 
 /**
  * Thin accent-gradient progress bar pinned at the top of the viewport.
@@ -73,7 +74,7 @@ export function NavigationProgress() {
         left: 0,
         right: 0,
         height: 2,
-        zIndex: 10000,
+        zIndex: Z.CHROME,
         pointerEvents: 'none',
         opacity: visible ? 1 : 0,
         transition: 'opacity 180ms ease-out',

@@ -460,7 +460,7 @@ export function BlueprintForm({ form, onChange }) {
             ) : (
               <ResponsiveStack direction="col" gap={1} className="p-4 rounded-md bg-white/[0.02] border border-white/5">
                 <span className="text-sm font-medium text-fg-muted">Disk encryption</span>
-                <span className="text-xs text-warn-fg">
+                <span className="text-xs text-warning">
                   LUKS on Linux requires install-time partitioning (preseed /
                   cloud-init) and isn&apos;t yet wired. Tracked as follow-up 6.G.ii.
                 </span>
@@ -500,7 +500,7 @@ export function BlueprintForm({ form, onChange }) {
               <div className="text-xs uppercase tracking-wide text-fg-muted mb-1">
                 Pros
               </div>
-              <ul className="list-disc list-inside text-sm text-success-fg">
+              <ul className="list-disc list-inside text-sm text-success">
                 {infoDetails.pros.map((p, i) => (
                   <li key={i}>{p}</li>
                 ))}
@@ -513,7 +513,7 @@ export function BlueprintForm({ form, onChange }) {
               <div className="text-xs uppercase tracking-wide text-fg-muted mb-1">
                 Cons
               </div>
-              <ul className="list-disc list-inside text-sm text-danger-fg">
+              <ul className="list-disc list-inside text-sm text-danger">
                 {infoDetails.cons.map((c, i) => (
                   <li key={i}>{c}</li>
                 ))}
@@ -526,7 +526,7 @@ export function BlueprintForm({ form, onChange }) {
               <div className="text-xs uppercase tracking-wide text-fg-muted mb-1">
                 Notes
               </div>
-              <div className="text-sm text-warn-fg">{infoDetails.notes}</div>
+              <div className="text-sm text-warning">{infoDetails.notes}</div>
             </div>
           ) : null}
         </ResponsiveStack>
@@ -579,7 +579,7 @@ function ScriptGroup({ title, scripts, selected, onToggle, onShowInfo }) {
       <div className="flex items-center gap-2">
         <div className="text-xs uppercase tracking-wide text-fg-muted">{title}</div>
         <div className="flex-1 border-b border-white/5" />
-        <span className="text-xs text-fg-subtle">{scripts.length}</span>
+        <span className="text-xs text-fg-muted">{scripts.length}</span>
       </div>
       <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={2}>
         {scripts.map((s) => (
@@ -604,7 +604,7 @@ function ScriptGroup({ title, scripts, selected, onToggle, onShowInfo }) {
                 variant="ghost"
                 label="More info"
                 icon={<Info size={14} />}
-                className="flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity"
                 onClick={(e) => {
                   e.stopPropagation();
                   onShowInfo(s);

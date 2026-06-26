@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { createDebugger } from '@/utils/debug';
 
 const debug = createDebugger('frontend:hooks:useComputerActions');
@@ -19,8 +20,7 @@ import {
 export function useComputerActions() {
   const dispatch = useDispatch();
   const router = useRouter();
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState({});
+  const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     isOpen: false,
     machine: null,
@@ -47,56 +47,29 @@ export function useComputerActions() {
   const handlePlay = async (machine) => {
     try {
       await dispatch(playVm({ id: machine.id })).unwrap();
-      setToastProps({
-        title: "Success",
-        description: "Machine started successfully",
-        variant: "success",
-      });
+      toast.success("Machine started successfully");
     } catch (error) {
-      setToastProps({
-        title: "Error",
-        description: error.message || "Failed to start machine",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to start machine");
     }
-    setShowToast(true);
   };
 
   const handlePause = async (machine) => {
     try {
       await dispatch(pauseVm({ id: machine.id })).unwrap();
-      setToastProps({
-        title: "Success",
-        description: "Machine paused successfully",
-        variant: "success",
-      });
+      toast.success("Machine paused successfully");
     } catch (error) {
-      setToastProps({
-        title: "Error",
-        description: error.message || "Failed to pause machine",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to pause machine");
     }
-    setShowToast(true);
   };
 
   const handleStop = async (machine) => {
     try {
       debug.log('stop', 'Stopping machine:', machine);
       await dispatch(stopVm({ id: machine.id })).unwrap();
-      setToastProps({
-        title: "Success",
-        description: "Machine stopped successfully",
-        variant: "success",
-      });
+      toast.success("Machine stopped successfully");
     } catch (error) {
-      setToastProps({
-        title: "Error",
-        description: error.message || "Failed to stop machine",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to stop machine");
     }
-    setShowToast(true);
   };
 
   const handleDelete = (machine) => {
@@ -109,25 +82,19 @@ export function useComputerActions() {
 
   const confirmDelete = async () => {
     const machine = deleteConfirmation.machine;
-    if (!machine) return;
+    if (!machine || isDeleting) return;
 
+    setIsDeleting(true);
     try {
       await dispatch(deleteVm({ id: machine.id })).unwrap();
       handleDetailsClose(false);
-      setToastProps({
-        title: "Success",
-        description: "Machine deleted successfully",
-        variant: "success",
-      });
+      toast.success("Machine deleted successfully");
+      setDeleteConfirmation({ isOpen: false, machine: null });
     } catch (error) {
-      setToastProps({
-        title: "Error",
-        description: error.message || "Failed to delete machine",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to delete machine");
+    } finally {
+      setIsDeleting(false);
     }
-    setShowToast(true);
-    setDeleteConfirmation({ isOpen: false, machine: null });
   };
 
   const cancelDelete = () => {
@@ -137,27 +104,14 @@ export function useComputerActions() {
   const handleRefresh = async () => {
     try {
       await dispatch(fetchVms()).unwrap();
-      setToastProps({
-        title: "Success",
-        description: "Machines data refreshed successfully",
-        variant: "success",
-      });
+      toast.success("Machines data refreshed successfully");
     } catch (err) {
       const msg = typeof err === 'string' ? err : err?.message || '';
-      const isNetworkError = /Network error|fetch|connection/i.test(msg);
-      setToastProps({
-        title: "Refresh Error",
-        description: msg || "Failed to refresh machines data",
-        variant: "destructive",
-      });
+      toast.error(msg || "Failed to refresh machines data");
     }
-    setShowToast(true);
   };
 
   return {
-    showToast,
-    toastProps,
-    setShowToast,
     handlePcSelect,
     handleDetailsClose,
     handlePlay,
@@ -168,5 +122,6 @@ export function useComputerActions() {
     deleteConfirmation,
     confirmDelete,
     cancelDelete,
+    isDeleting,
   };
 }

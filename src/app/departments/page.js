@@ -62,6 +62,7 @@ const DepartmentsPage = () => {
 
   const vms = useSelector((state) => state.vms?.items || []);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const helpConfig = useMemo(
     () => ({
@@ -125,9 +126,18 @@ const DepartmentsPage = () => {
   );
 
   const submitDelete = async () => {
-    if (!deleteTarget) return;
-    await handleDeleteDepartment(deleteTarget.id, deleteTarget.name);
-    setDeleteTarget(null);
+    if (!deleteTarget || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await handleDeleteDepartment(deleteTarget.id, deleteTarget.name);
+      // Only close on success; the hook already surfaced a success toast.
+      setDeleteTarget(null);
+    } catch {
+      // The hook surfaced an error toast; keep the dialog open so the
+      // operator can retry or cancel rather than leaving it stuck.
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (hasError) {
@@ -420,7 +430,7 @@ const DepartmentsPage = () => {
 
       <Dialog
         open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
+        onClose={() => !isDeleting && setDeleteTarget(null)}
         size="sm">
 
         <DialogTitle>Delete department</DialogTitle>
@@ -435,13 +445,19 @@ const DepartmentsPage = () => {
           </Alert>
         </DialogBody>
         <DialogButtons align="end">
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+          <Button
+            variant="secondary"
+            onClick={() => setDeleteTarget(null)}
+            disabled={isDeleting}>
+
             Cancel
           </Button>
           <Button
             variant="destructive"
             icon={<Trash2 size={14} />}
-            onClick={submitDelete}>
+            onClick={submitDelete}
+            loading={isDeleting}
+            disabled={isDeleting}>
 
             Delete
           </Button>

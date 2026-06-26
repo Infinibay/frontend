@@ -115,7 +115,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
           leadingIcon={<Building2 size={18} />}
           leadingIconTone="purple"
         >
-          <FormField error={getError('departmentId')}>
+          <FormField required error={getError('departmentId')}>
             <Select
               options={departmentOptions}
               value={stepValues.departmentId || ''}
@@ -140,17 +140,19 @@ export function BasicInfoStep({ id, departmentId = null }) {
           leadingIcon={<Server size={18} />}
           leadingIconTone="sky"
         >
-          <TextField
-            id="name"
-            icon={<Server size={14} />}
-            placeholder="e.g., dev-server-01, web-app-prod"
-            value={stepValues.name || ''}
-            onChange={(e) => {
-              debug.log('input', 'Machine name changed:', e.target.value);
-              setValue(`${id}.name`, e.target.value);
-            }}
-            error={getError('name') || undefined}
-          />
+          <FormField required>
+            <TextField
+              id="name"
+              icon={<Server size={14} />}
+              placeholder="e.g., dev-server-01, web-app-prod"
+              value={stepValues.name || ''}
+              onChange={(e) => {
+                debug.log('input', 'Machine name changed:', e.target.value);
+                setValue(`${id}.name`, e.target.value);
+              }}
+              error={getError('name') || undefined}
+            />
+          </FormField>
         </Card>
 
         <Card
@@ -163,7 +165,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
           leadingIconTone="purple"
         >
           <ResponsiveStack direction="col" gap={5}>
-            <FormField label="Username">
+            <FormField label="Username" required>
               <TextField
                 id="username"
                 icon={<User size={14} />}
@@ -177,7 +179,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
               />
             </FormField>
 
-            <FormField label="Password" helper="Choose a strong password for the user account">
+            <FormField label="Password" required helper="Choose a strong password for the user account">
               <ResponsiveStack direction="col" gap={2}>
                 <TextField
                   id="password"
@@ -209,7 +211,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
               </ResponsiveStack>
             </FormField>
 
-            <FormField label="Confirm Password">
+            <FormField label="Confirm Password" required>
               <ResponsiveStack direction="col" gap={2}>
                 <TextField
                   id="confirmPassword"

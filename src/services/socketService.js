@@ -39,7 +39,7 @@ export class SocketService {
     this.userNamespace = null
     this.reconnectAttempts = 0
     this.maxReconnectAttempts = 5
-    this.pendingSubscriptions = [] // Store subscription info for re-subscribing
+    this.pendingSubscriptions = [] // Queue of subscriptions requested before the socket existed; flushed on connect
     this.debug = createDebugger('frontend:realtime:socket')
   }
 
@@ -63,16 +63,23 @@ export class SocketService {
 
       this.connectionState = ConnectionState.CONNECTING
       this.userNamespace = namespace
-      this.pendingSubscriptions = [] // Store subscriptions that need to be re-applied
+      // NOTE: do NOT reset pendingSubscriptions here. Components can subscribe before
+      // connect() runs (child effects fire before the provider's connect on a hard
+      // reload); those queued subscriptions must survive to be flushed on 'connect'.
 
       // Get backend host, preferring environment variable
       const backendHost = process.env.NEXT_PUBLIC_BACKEND_HOST || 'http://localhost:4000'
       this.debug.info('connect', 'Using backend host:', backendHost)
 
-      // Create Socket.io connection
+      // Create Socket.io connection.
+      // Use the FUNCTION form of `auth` so socket.io re-reads the freshest token
+      // from localStorage on every (re)connect. This prevents real-time from dying
+      // ~1h after login when the access token is rotated (localStorage is updated by
+      // the auth refresh flow, but the redux/connect-time token stays stale).
       this.socket = io(backendHost, {
-        auth: {
-          token: token
+        auth: (cb) => {
+          const freshToken = (typeof window !== 'undefined' && localStorage.getItem('token')) || token
+          cb({ token: freshToken, namespace })
         },
         transports: ['websocket', 'polling'],
         timeout: 10000,
@@ -88,6 +95,8 @@ export class SocketService {
         this.debug.success('connect', 'Connected to Socket.io server:', this.socket.id)
         this.connectionState = ConnectionState.CONNECTED
         this.reconnectAttempts = 0
+        // Flush any subscriptions that were requested before the socket existed
+        this.flushPendingSubscriptions()
         resolve()
       })
 
@@ -109,6 +118,9 @@ export class SocketService {
           this.debug.info('namespace', `Namespace changed from ${oldNamespace} to ${data.namespace}, re-subscribing to events...`)
           this.resubscribeWithNewNamespace(oldNamespace, data.namespace)
         }
+
+        // Flush any subscriptions queued before the socket/namespace was ready
+        this.flushPendingSubscriptions()
       })
 
       // Connection error
@@ -123,26 +135,30 @@ export class SocketService {
         this.debug.warn('disconnect', 'Disconnected from Socket.io server:', reason)
         this.connectionState = ConnectionState.DISCONNECTED
 
-        // Auto-reconnect for certain disconnect reasons
+        // Do NOT run a manual reconnect loop here: socket.io's built-in manager
+        // (reconnection:true, configured above) already handles transport drops with
+        // proper backoff. A second manual loop only conflicts with it.
         if (reason === 'io server disconnect') {
-          // Server initiated disconnect, don't reconnect automatically
+          // Server forcibly disconnected us — built-in reconnection won't fire either.
           this.debug.warn('disconnect', 'Server disconnected us, not reconnecting automatically')
-        } else if (this.reconnectAttempts < this.maxReconnectAttempts) {
-          // Client-side disconnect, attempt to reconnect
-          this.reconnectAttempts++
-          this.debug.info('reconnect', `Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
-          setTimeout(() => this.reconnect(), 2000 * this.reconnectAttempts)
+        } else if (reason === 'io client disconnect') {
+          // Intentional client teardown (disconnect()) — must not reconnect.
+          this.debug.info('disconnect', 'Client-initiated disconnect, not reconnecting')
+        } else {
+          // Transport-level drop — rely on the built-in manager to reconnect.
+          this.debug.info('disconnect', 'Transport drop, relying on built-in reconnection')
         }
       })
 
-      // Reconnection events
-      this.socket.on('reconnect', (attemptNumber) => {
+      // Reconnection lifecycle events are emitted on the Manager (socket.io), not the
+      // Socket. Bind them to this.socket.io or they never fire (socket.io-client v4).
+      this.socket.io.on('reconnect', (attemptNumber) => {
         this.debug.success('reconnect', `Reconnected after ${attemptNumber} attempts`)
         this.connectionState = ConnectionState.CONNECTED
         this.reconnectAttempts = 0
       })
 
-      this.socket.on('reconnect_failed', () => {
+      this.socket.io.on('reconnect_failed', () => {
         this.debug.error('reconnect', 'Failed to reconnect to Socket.io server')
         this.connectionState = ConnectionState.ERROR
       })
@@ -179,8 +195,22 @@ export class SocketService {
   // Subscribe to events with pattern matching
   subscribe(eventPattern, callback) {
     if (!this.socket) {
-      this.debug.warn('subscribe', `Cannot subscribe to ${eventPattern}: not connected`)
-      return () => { } // Return empty unsubscribe function
+      // The socket has not been created yet (e.g. a component mounts and subscribes
+      // before RealTimeProvider finishes connecting on a hard reload). Queue the
+      // request and replay it on 'connect' / namespace assignment instead of dropping it.
+      this.debug.info('subscribe', `Socket not ready, queuing subscription: ${eventPattern}`)
+      const pending = { eventPattern, callback, realUnsubscribe: null, cancelled: false }
+      this.pendingSubscriptions.push(pending)
+
+      // Return an unsubscribe that works whether or not the queue has been flushed yet
+      return () => {
+        pending.cancelled = true
+        this.pendingSubscriptions = this.pendingSubscriptions.filter(p => p !== pending)
+        if (pending.realUnsubscribe) {
+          pending.realUnsubscribe()
+          pending.realUnsubscribe = null
+        }
+      }
     }
 
     this.debug.info('subscribe', `Subscribing to event pattern: ${eventPattern}`)
@@ -190,10 +220,6 @@ export class SocketService {
       this.eventListeners.set(eventPattern, new Set())
     }
     this.eventListeners.get(eventPattern).add(callback)
-
-    // Store subscription info for potential re-subscribing
-    const subscriptionInfo = { eventPattern, callback }
-    this.pendingSubscriptions.push(subscriptionInfo)
 
     // For namespace-specific events, listen for the full event name
     if (this.userNamespace && eventPattern.includes(':')) {
@@ -230,8 +256,7 @@ export class SocketService {
 
       return () => {
         this.removeEventListener(eventPattern, callback)
-        this.removePendingSubscription(eventPattern, callback)
-        
+
         // Only remove the socket handler if no more callbacks exist
         const callbacks = this.eventListeners.get(eventPattern)
         if (!callbacks || callbacks.size === 0) {
@@ -252,9 +277,29 @@ export class SocketService {
           this.socket.off(eventPattern, callback)
         }
         this.removeEventListener(eventPattern, callback)
-        this.removePendingSubscription(eventPattern, callback)
       }
     }
+  }
+
+  // Replay subscriptions that were requested before the socket existed.
+  // Called on 'connect' and after namespace assignment.
+  flushPendingSubscriptions() {
+    if (!this.socket || this.pendingSubscriptions.length === 0) {
+      return
+    }
+
+    const queued = this.pendingSubscriptions
+    this.pendingSubscriptions = []
+    this.debug.info('subscribe', `Flushing ${queued.length} queued subscription(s)`)
+
+    queued.forEach(pending => {
+      if (pending.cancelled) {
+        return
+      }
+      // Establish the real subscription now and remember its unsubscribe so a late
+      // unsubscribe() call (from the queued handle) still tears it down.
+      pending.realUnsubscribe = this.subscribe(pending.eventPattern, pending.callback)
+    })
   }
 
   /**
@@ -358,13 +403,6 @@ export class SocketService {
         this.eventListeners.delete(eventPattern)
       }
     }
-  }
-
-  // Remove pending subscription
-  removePendingSubscription(eventPattern, callback) {
-    this.pendingSubscriptions = this.pendingSubscriptions.filter(
-      sub => !(sub.eventPattern === eventPattern && sub.callback === callback)
-    )
   }
 
   // Re-subscribe to all events with new namespace

@@ -407,7 +407,7 @@ const DepartmentPage = () => {
                     <div className="pb-2 border-b border-white/5">
                       <h2 className="text-base font-semibold m-0">Recent activity</h2>
                     </div>
-                    <div className="flex flex-col divide-y divide-white/5">
+                    <div className="flex flex-col divide-y divide-[color:var(--harbor-border-subtle)]">
                       {hosts.slice(0, 6).map((h, i) => {
                         const s = (h._raw?.status || '').toLowerCase();
                         const label =

@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { getSocketService } from './socketService'
 import { createDebugger } from '@/utils/debug'
 import { trackRealTimeEvent } from '@/utils/performance'
@@ -45,6 +46,10 @@ export class RealTimeReduxService {
       this.debug.success('init', 'Real-time Redux service initialized successfully')
     } catch (error) {
       this.debug.error('init', 'Failed to initialize real-time Redux service:', error)
+      // Rethrow so RealTimeProvider's catch can set status to 'error'. Swallowing
+      // here made a failed connection (connect_error) look 'connected' in the UI.
+      this.isInitialized = false
+      throw error
     }
   }
 
@@ -81,21 +86,61 @@ export class RealTimeReduxService {
       })
     )
 
-    // Subscribe to Firewall events (generic filters + rule changes)
+    // Subscribe to Firewall rule changes.
+    // NOTE: the previous 'generic:*' actions were dead — the backend never emits them
+    // (generic-filter assignment was removed; templates now create individual rules,
+    // which fire the rule:* events handled below). Only the rule:* path is wired.
     this.subscriptions.push(
       this.socketService.subscribeToAllResourceEvents('firewall', (action, data) => {
         this.handleFirewallEvent(action, data)
       }, [
-        'generic:assigned',
-        'generic:unassigned',
-        'generic:assigned:department',
-        'generic:unassigned:department',
         'rule:created',
         'rule:updated',
         'rule:deleted',
         'rule:created:department',
         'rule:updated:department',
         'rule:deleted:department'
+      ])
+    )
+
+    // Subscribe to AutoCheck events (health monitoring / remediation lifecycle).
+    // The backend emits these under the 'autocheck' resource (namespaced as
+    // `${namespace}:autocheck:<action>`), so we must subscribe via the resource/action
+    // pattern rather than the bare event names healthSocket.js used.
+    // These are the ONLY autocheck actions the backend emits today
+    // (VmEventManager.handleAutoCheckEvent). It does not emit 'started'/'completed'.
+    this.subscriptions.push(
+      this.socketService.subscribeToAllResourceEvents('autocheck', (action, data) => {
+        this.handleAutoCheckEvent(action, data)
+      }, [
+        'issue-detected',
+        'remediation-available',
+        'remediation-completed'
+      ])
+    )
+
+    // Subscribe to health status changes (resource 'health_status').
+    // backend does not yet emit this — ready for when it does. Its only emitter
+    // (handleHealthStatusChange) is never invoked, and it sends action 'change'
+    // with { vmId, vmName, healthStatus, checkResults } (no numeric score).
+    this.subscriptions.push(
+      this.socketService.subscribeToAllResourceEvents('health_status', (action, data) => {
+        this.handleHealthStatusEvent(action, data)
+      }, [
+        'change'
+      ])
+    )
+
+    // Subscribe to remediation approval/rollback events (resource 'remediation').
+    // backend does not yet emit this — ready for when it does. handleRemediationEvent
+    // is never invoked; it would send the actionType as the event name with payload
+    // { vmId, vmName, actionType, result }.
+    this.subscriptions.push(
+      this.socketService.subscribeToAllResourceEvents('remediation', (action, data) => {
+        this.handleRemediationEvent(action, data)
+      }, [
+        'approval-required',
+        'rolled-back'
       ])
     )
 
@@ -392,32 +437,6 @@ export class RealTimeReduxService {
 
     // Dispatch Redux action to trigger firewall refresh
     switch (action) {
-      case 'generic:assigned':
-      case 'generic:unassigned':
-        this.store.dispatch({
-          type: 'firewall/realTimeGenericFilterChanged',
-          payload: {
-            vmId: firewallData.vmId,
-            filterId: firewallData.filterId,
-            filterName: firewallData.filterName,
-            action: action
-          }
-        })
-        break
-
-      case 'generic:assigned:department':
-      case 'generic:unassigned:department':
-        this.store.dispatch({
-          type: 'firewall/realTimeGenericFilterChanged',
-          payload: {
-            departmentId: firewallData.departmentId,
-            filterId: firewallData.filterId,
-            filterName: firewallData.filterName,
-            action: action
-          }
-        })
-        break
-
       case 'rule:created':
       case 'rule:updated':
       case 'rule:deleted':
@@ -452,6 +471,177 @@ export class RealTimeReduxService {
 
     const endTime = performance.now()
     trackRealTimeEvent(`firewall:${action}`, endTime - startTime)
+  }
+
+  // Handle AutoCheck real-time events (health monitoring + remediation lifecycle)
+  handleAutoCheckEvent(action, eventData) {
+    const startTime = performance.now()
+    this.debug.log('autocheck-event', `Received AutoCheck ${action} event:`, eventData)
+
+    if (eventData?.status === 'error') {
+      this.debug.error('autocheck-event', `AutoCheck ${action} error:`, eventData.error)
+      return
+    }
+
+    // Backend events are wrapped as { status, data, timestamp }; fall back to the raw
+    // payload for resilience to either shape.
+    const payload = eventData?.data ?? eventData
+    if (!payload) {
+      this.debug.warn('autocheck-event', `No data in AutoCheck ${action} event`)
+      return
+    }
+
+    switch (action) {
+      case 'issue-detected': {
+        // Backend payload.data is FLAT: { vmId, vmName, issueType, severity, description, details }
+        const { vmId, issueType, severity, description, details } = payload
+        if (vmId && issueType) {
+          const issue = {
+            id: `${issueType}-${Date.now()}`,
+            checkName: issueType,
+            status: 'issue',
+            severity,
+            message: description
+          }
+          this.store.dispatch({ type: 'health/addHealthIssue', payload: { vmId, issue } })
+        }
+
+        const severityMap = {
+          critical: { fn: toast.error, title: 'Critical Issue Detected' },
+          warning: { fn: toast.warning, title: 'Warning' },
+          info: { fn: toast.info, title: 'Information' }
+        }
+        const notif = severityMap[severity] || severityMap.info
+        notif.fn(`${notif.title}: ${description ?? ''}`, {
+          description: vmId ? `VM: ${vmId}` : undefined,
+          duration: 5000
+        })
+        break
+      }
+
+      case 'remediation-available': {
+        // Backend payload.data is FLAT: { vmId, vmName, checkType, remediationType, description, ... }
+        const { description } = payload
+        toast.info('New remediation available', {
+          description,
+          duration: 7000
+        })
+        break
+      }
+
+      case 'remediation-completed': {
+        // Backend payload.data is FLAT: { vmId, vmName, checkType, remediationType, success, description, ... }
+        const { success, description } = payload
+        if (success) {
+          toast.success('Remediation completed successfully', {
+            description,
+            duration: 5000
+          })
+        } else {
+          toast.error('Remediation failed', {
+            description: description || 'Please check the logs for details',
+            duration: 7000
+          })
+        }
+        break
+      }
+
+      default:
+        this.debug.warn('autocheck-event', `Unknown AutoCheck action: ${action}`)
+    }
+
+    const endTime = performance.now()
+    trackRealTimeEvent(`autocheck:${action}`, endTime - startTime)
+  }
+
+  // Handle health score updates (resource 'health_status')
+  handleHealthStatusEvent(action, eventData) {
+    const startTime = performance.now()
+    this.debug.log('health-event', `Received HealthStatus ${action} event:`, eventData)
+
+    if (eventData?.status === 'error') {
+      this.debug.error('health-event', `HealthStatus ${action} error:`, eventData.error)
+      return
+    }
+
+    const payload = eventData?.data ?? eventData
+    if (!payload) {
+      this.debug.warn('health-event', `No data in HealthStatus ${action} event`)
+      return
+    }
+
+    switch (action) {
+      // backend does not yet emit this — ready for when it does. handleHealthStatusChange
+      // would send action 'change' with { vmId, vmName, healthStatus, checkResults }.
+      case 'change': {
+        const { vmId, healthStatus } = payload
+        if (vmId && healthStatus) {
+          const severityMap = {
+            critical: { fn: toast.error, title: 'Health critical' },
+            warning: { fn: toast.warning, title: 'Health warning' },
+            healthy: { fn: toast.success, title: 'Health recovered' }
+          }
+          const notif = severityMap[healthStatus]
+          if (notif) {
+            notif.fn(notif.title, { description: `VM ${vmId}`, duration: 4000 })
+          }
+        }
+        break
+      }
+
+      default:
+        this.debug.warn('health-event', `Unknown HealthStatus action: ${action}`)
+    }
+
+    const endTime = performance.now()
+    trackRealTimeEvent(`health_status:${action}`, endTime - startTime)
+  }
+
+  // Handle remediation approval/rollback events (resource 'remediation')
+  handleRemediationEvent(action, eventData) {
+    const startTime = performance.now()
+    this.debug.log('remediation-event', `Received Remediation ${action} event:`, eventData)
+
+    if (eventData?.status === 'error') {
+      this.debug.error('remediation-event', `Remediation ${action} error:`, eventData.error)
+      return
+    }
+
+    const payload = eventData?.data ?? eventData
+    if (!payload) {
+      this.debug.warn('remediation-event', `No data in Remediation ${action} event`)
+      return
+    }
+
+    // backend does not yet emit these — ready for when it does. handleRemediationEvent
+    // would send the actionType as the event name with payload
+    // { vmId, vmName, actionType, result }.
+    switch (action) {
+      case 'approval-required': {
+        const { vmId, result } = payload
+        toast.warning('Approval required', {
+          description: `${result?.description ?? 'A remediation'} requires your approval`,
+          duration: 10000
+        })
+        if (!vmId) this.debug.warn('remediation-event', 'approval-required event missing vmId')
+        break
+      }
+
+      case 'rolled-back': {
+        const { result } = payload
+        toast.error('Remediation rolled back', {
+          description: result?.reason || 'The remediation was rolled back due to an error',
+          duration: 7000
+        })
+        break
+      }
+
+      default:
+        this.debug.warn('remediation-event', `Unknown Remediation action: ${action}`)
+    }
+
+    const endTime = performance.now()
+    trackRealTimeEvent(`remediation:${action}`, endTime - startTime)
   }
 
   // Cleanup subscriptions

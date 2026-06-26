@@ -61,6 +61,7 @@ export const fetchVmPorts = createAsyncThunk(
 
 const initialState = {
   items: [],
+  lastUpdated: null,
   loading: false,
   error: null
 };
@@ -82,6 +83,7 @@ const vmPortsSlice = createSlice({
       .addCase(fetchVmPorts.fulfilled, (state, action) => {
         state.loading = false;
         state.items = action.payload;
+        state.lastUpdated = Date.now();
       })
       .addCase(fetchVmPorts.rejected, (state, action) => {
         state.loading = false;

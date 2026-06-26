@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   User as UserIcon,
@@ -47,6 +47,7 @@ const DENSITY_ITEMS = [
  */
 export function UserMenu() {
   const dispatch = useDispatch();
+  const router = useRouter();
   const user = useSelector(selectUser);
   const interfaceSize = useSelector(selectInterfaceSize);
   const { theme, setTheme } = useAppTheme();
@@ -124,9 +125,12 @@ export function UserMenu() {
         </div>
       ) : null}
       <MenuSeparator />
-      <Link href="/profile" style={{ textDecoration: 'none', color: 'inherit' }}>
-        <MenuItem icon={<UserIcon size={14} />}>Profile</MenuItem>
-      </Link>
+      <MenuItem
+        icon={<UserIcon size={14} />}
+        onClick={() => router.push('/profile')}
+      >
+        Profile
+      </MenuItem>
       <MenuSeparator />
       <MenuItem
         icon={interfaceSize === 'sm' ? <Rows3 size={14} /> : <Rows2 size={14} />}

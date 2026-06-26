@@ -150,7 +150,7 @@ const VMDomainTab = ({ vmId, vm, vmStatus, vmSetupComplete, onJoined }) => {
           null}
 
           {blockedReason ?
-          <Alert tone="warning" icon={<AlertTriangle size={14} />} title="VM not ready">
+          <Alert tone="warning" icon={<AlertTriangle size={14} />} title="Desktop not ready">
               {blockedReason}
             </Alert> :
           null}

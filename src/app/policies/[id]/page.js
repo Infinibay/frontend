@@ -192,7 +192,7 @@ export default function PolicyDetailPage() {
                   </span>
                 </h2>
               </div>
-              <div className="flex flex-col divide-y divide-white/5">
+              <div className="flex flex-col divide-y divide-[color:var(--harbor-border-subtle)]">
                 {categories.map((c) => (
                   <div key={c.id} className="flex items-center gap-3 py-2 px-2">
                     <div className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -232,7 +232,7 @@ export default function PolicyDetailPage() {
                   No custom rules. Categories apply.
                 </span>
               ) : (
-                <div className="flex flex-col divide-y divide-white/5">
+                <div className="flex flex-col divide-y divide-[color:var(--harbor-border-subtle)]">
                   {customRules.map((r) => (
                     <div key={r.id} className="flex items-center gap-3 py-2 px-2">
                       <span className="font-mono text-sm flex-1">{r.domain}</span>

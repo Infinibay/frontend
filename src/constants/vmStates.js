@@ -107,20 +107,20 @@ export const getStatusColor = (status) => {
 export const getStatusBgClass = (status) => {
   switch (status) {
     case VM_STATES.RUNNING:
-      return 'bg-green-400'
+      return 'bg-success'
     case VM_STATES.OFF:
-      return 'bg-gray-400'
+      return 'bg-fg-subtle'
     case VM_STATES.SUSPENDED:
     case VM_STATES.PAUSED:
-      return 'bg-yellow-400'
+      return 'bg-warning'
     case VM_STATES.STARTING:
     case VM_STATES.UPDATING_HARDWARE:
-      return 'bg-blue-400'
+      return 'bg-info'
     case VM_STATES.POWERING_OFF_UPDATE:
-      return 'bg-orange-400'
+      return 'bg-warning'
     case VM_STATES.ERROR:
-      return 'bg-red-400'
+      return 'bg-danger'
     default:
-      return 'bg-gray-400' // Unknown state fallback
+      return 'bg-fg-subtle' // Unknown state fallback
   }
 }

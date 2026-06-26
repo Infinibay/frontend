@@ -168,14 +168,14 @@ export default function ScheduleScriptDialog({
       if (data?.scheduleScript?.success) {
         const count = data.scheduleScript.executionIds?.length || 0;
         toast.success(
-          `Schedule created for ${count} VM${count !== 1 ? 's' : ''}`,
+          `Schedule created for ${count} desktop${count !== 1 ? 's' : ''}`,
         );
         if (data.scheduleScript.warnings?.length) {
           const wc = data.scheduleScript.warnings.length;
           toast.warning(
-            `${wc} VM${wc > 1 ? 's are' : ' is'} offline. ${
+            `${wc} desktop${wc > 1 ? 's are' : ' is'} offline. ${
               wc > 1 ? 'Schedules' : 'Schedule'
-            } will execute when VM${wc > 1 ? 's come' : ' comes'} online.`,
+            } will execute when ${wc > 1 ? 'desktops come' : 'desktop comes'} online.`,
             { duration: 5000 },
           );
         }
@@ -379,7 +379,7 @@ export default function ScheduleScriptDialog({
           >
             <ResponsiveStack direction="col" gap={2}>
               <Checkbox
-                label={`Select all VMs in ${departmentName}`}
+                label={`Select all desktops in ${departmentName}`}
                 checked={selectAllVMs}
                 onChange={(e) => setSelectAllVMs(e.target.checked)}
               />
@@ -387,7 +387,7 @@ export default function ScheduleScriptDialog({
                 <ResponsiveStack direction="col" gap={1}>
                   {departmentVMs.length === 0 ? (
                     <Alert tone="warning" size="sm">
-                      No VMs available in this department.
+                      No desktops available in this department.
                     </Alert>
                   ) : (
                     departmentVMs.map((vm) => (
@@ -412,17 +412,17 @@ export default function ScheduleScriptDialog({
               selectedVMs.length === 0 &&
               departmentVMs.length > 0 ? (
                 <Alert tone="danger" size="sm">
-                  Please select at least one VM.
+                  Please select at least one desktop.
                 </Alert>
               ) : null}
               {departmentVMs.length === 0 ? (
                 <Alert tone="warning" size="sm">
-                  No VMs available in this department.
+                  No desktops available in this department.
                 </Alert>
               ) : null}
               {allOffline ? (
                 <Alert tone="warning" size="sm">
-                  All VMs are offline. Schedules will execute when VMs come
+                  All desktops are offline. Schedules will execute when desktops come
                   online.
                 </Alert>
               ) : null}

@@ -422,7 +422,7 @@ export function BlueprintStep({ id }) {
       {mode === 'custom' && (
         <ResponsiveStack direction="col" gap={6}>
           {/* OS selection */}
-          <FormField label="Operating System" error={osError}>
+          <FormField label="Operating System" required error={osError}>
             <ResponsiveGrid columns={{ base: 1, md: 2, lg: 4 }} gap={4}>
               {osOptions.map((os) => {
                 const Icon = os.icon;

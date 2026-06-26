@@ -1,22 +1,42 @@
-import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, from, CombinedGraphQLErrors } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { RetryLink } from '@apollo/client/link/retry';
 import { createDebugger } from '@/utils/debug';
 import { refreshAccessToken } from '@/utils/auth';
+import { persistor } from '@/state/store';
 
 const debug = createDebugger('frontend:utils:apollo-client');
 
-// Create HTTP link with timeout configuration
+// Real per-request timeout. Apollo Client 4's HttpOptions has no `timeout` key,
+// so we enforce it ourselves: a custom fetch that aborts via AbortController
+// after REQUEST_TIMEOUT_MS, otherwise a stalled-but-open connection would hang
+// the loading state indefinitely.
+const REQUEST_TIMEOUT_MS = 30000;
+
+const fetchWithTimeout = (input, init = {}) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  // Compose, don't clobber: HttpLink passes its own signal to cancel the request
+  // on unsubscribe/unmount. Honour both that signal and our timeout signal.
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, controller.signal])
+    : controller.signal;
+  return fetch(input, { ...init, signal }).finally(() => {
+    clearTimeout(timeoutId);
+  });
+};
+
 const httpLink = createHttpLink({
   uri: process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:4000/graphql',
-  timeout: 30000, // 30 second timeout
-  fetchOptions: {
-    keepalive: true,
-  },
+  fetch: fetchWithTimeout,
 });
 
-// Create retry link for handling network errors
+// Retry transient failures. Apollo Client 4 surfaces network/HTTP errors as a
+// single `error` (e.g. a ServerError carrying a numeric `statusCode`) — the old
+// `.networkError`/`.graphQLErrors` shape no longer exists. Retry ONLY genuine
+// network/5xx failures, and ONLY for queries — replaying a mutation could
+// duplicate a non-idempotent write.
 const retryLink = new RetryLink({
   delay: {
     initial: 300,
@@ -25,19 +45,34 @@ const retryLink = new RetryLink({
   },
   attempts: {
     max: 3,
-    retryIf: (error, _operation) => {
-      // Retry on network errors and server errors (5xx)
-      return !!error && (
-        error.networkError ||
-        (error.graphQLErrors && error.graphQLErrors.some(e => e.extensions?.code >= 500))
+    retryIf: (error, operation) => {
+      if (!error) return false;
+
+      // Our own timeout produces an AbortError — don't multiply the wait.
+      if (error.name === 'AbortError') return false;
+
+      // Never replay mutations/subscriptions; only queries are safe to retry.
+      const definition = operation.query?.definitions?.find(
+        (d) => d.kind === 'OperationDefinition'
       );
+      if (definition?.operation !== 'query') return false;
+
+      // HTTP errors arrive as ServerError with a numeric statusCode: retry 5xx,
+      // never 4xx. No statusCode means a real transport failure (fetch rejected).
+      if (typeof error.statusCode === 'number') {
+        return error.statusCode >= 500;
+      }
+      return true;
     }
   }
 });
 
-// Operations that must never trigger a proactive refresh (avoid recursion: the
-// refresh mutation goes through this same client/link chain).
-const AUTH_OPERATION_NAMES = ['refreshToken', 'login', 'Logout'];
+// Auth operations that must never trigger a proactive refresh or reactive
+// session-clearing here. (These actually run on the dedicated client in
+// utils/auth.js, so this is a defensive guard for anything routed through the
+// main client.) The logout op is named `logout` (lowercase) in utils/auth.js —
+// match that exactly so the guard isn't dead.
+const AUTH_OPERATION_NAMES = ['refreshToken', 'login', 'logout'];
 
 // Detect an AUTHENTICATION failure (not logged in / token expired-revoked-invalid).
 // Deliberately does NOT match AUTHORIZATION/permission denials such as
@@ -51,11 +86,19 @@ const isAuthError = ({ message, extensions }) => {
     /authentication required|not authenticated|token (has )?(expired|been revoked|is invalid)|invalid token/i.test(message);
 };
 
-const clearSessionAndRedirect = () => {
+const clearSessionAndRedirect = async () => {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('tokenExpiresAt');
+  localStorage.removeItem('socketNamespace');
+  // Purge the redux-persist 'auth' snapshot too, so prior-user PII and the dead
+  // token don't rehydrate after the redirect-triggered reload.
+  try {
+    await persistor.purge();
+  } catch (e) {
+    debug.warn('auth', 'persistor.purge() during reactive logout failed (ignored)', e);
+  }
   // Guard against redirect loops when the failing request originated on sign-in.
   if (!window.location.pathname.startsWith('/auth/sign-in')) {
     window.location.href = '/auth/sign-in';
@@ -67,8 +110,14 @@ const clearSessionAndRedirect = () => {
 // the refresh token is also dead (or auth failed for another reason), so we end
 // the session rather than retry. Apollo Client 4 removed `fromPromise`, so we do
 // not attempt an in-link async retry.
-const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
-  if (graphQLErrors) {
+const errorLink = onError(({ error, operation }) => {
+  if (!error) return;
+
+  // Apollo Client 4 delivers GraphQL errors wrapped in a CombinedGraphQLErrors
+  // instance; the individual errors live on `error.errors`. Anything else
+  // (ServerError / transport failure) is the network-error branch.
+  if (CombinedGraphQLErrors.is(error)) {
+    const graphQLErrors = error.errors || [];
     graphQLErrors.forEach(({ message, locations, path, extensions }) => {
       debug.warn('graphql', `GraphQL error: Message: ${message}, Location: ${locations}, Path: ${path}`, { extensions });
     });
@@ -81,18 +130,17 @@ const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
       debug.warn('auth', `Authentication error on "${operationName}", clearing session`);
       clearSessionAndRedirect();
     }
+    return;
   }
 
-  if (networkError) {
-    debug.error('network', `Network error: ${networkError.message}`, {
-      operation: operation.operationName,
-      networkError
-    });
+  debug.error('network', `Network error: ${error.message}`, {
+    operation: operation.operationName,
+    networkError: error
+  });
 
-    // Don't retry if it's a timeout or connection refused
-    if (networkError.code === 'NETWORK_ERROR' || networkError.code === 'TIMEOUT') {
-      debug.warn('network', 'Network connectivity issue detected');
-    }
+  // Don't retry if it's a timeout or connection refused
+  if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT') {
+    debug.warn('network', 'Network connectivity issue detected');
   }
 });
 
@@ -109,8 +157,8 @@ const authLink = setContext(async (operation, { headers }) => {
   let token = localStorage.getItem('token') || '';
 
   // Proactively rotate the access token when it is at/near expiry. Skip the auth
-  // operations themselves (the refresh mutation runs through this link too —
-  // refreshing here would recurse). refreshAccessToken() is single-flight.
+  // operations themselves as a defensive guard. (refreshAccessToken() itself runs
+  // on the dedicated client in utils/auth.js, not this link.) It is single-flight.
   if (token && !AUTH_OPERATION_NAMES.includes(operation.operationName)) {
     const expiresAt = Number(localStorage.getItem('tokenExpiresAt') || 0);
     if (expiresAt && Date.now() > expiresAt - REFRESH_SKEW_MS) {
@@ -177,11 +225,9 @@ const client = new ApolloClient({
   defaultOptions: {
     watchQuery: {
       fetchPolicy: 'cache-and-network',
-      timeout: 30000,
       notifyOnNetworkStatusChange: true,
     },
     query: {
-      timeout: 30000,
       fetchPolicy: 'cache-first',
       errorPolicy: 'all',
     },

@@ -23,10 +23,39 @@ import {
 } from 'lucide-react';
 
 import auth from '@/utils/auth';
+import { useMyPermissionsQuery } from '@/gql/hooks';
+import { isHrefAllowed } from '@/lib/permissions';
+
+/**
+ * Static destinations governed by the route guard. Entries whose resource the
+ * user can't reach are filtered out so end-users aren't offered Users /
+ * Settings / Infrastructure / New Desktop, etc. Commands with no path here
+ * (System actions, live resource hits) are always available.
+ */
+const COMMAND_PATHS = {
+  'nav-overview': '/overview',
+  'nav-departments': '/departments',
+  'nav-desktops': '/desktops',
+  'nav-blueprints': '/blueprints',
+  'nav-applications': '/applications',
+  'nav-scripts': '/scripts',
+  'nav-users': '/users',
+  'nav-events': '/events',
+  'nav-infrastructure': '/infrastructure',
+  'nav-settings': '/settings',
+  'nav-notifications': '/notification',
+  'nav-profile': '/profile',
+  'action-new-desktop': '/desktops/new',
+  'action-new-department': '/departments',
+};
 
 export function GlobalCommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const { data: permissionsData } = useMyPermissionsQuery({
+    fetchPolicy: 'cache-and-network',
+  });
+  const allowedResources = permissionsData?.myPermissions?.allowedResources;
 
   // Pull recent collections from Redux to power fuzzy search. Slices are
   // already persisted + populated by InitialDataLoader, so this is free.
@@ -82,6 +111,7 @@ export function GlobalCommandPalette() {
         section: 'Desktops',
         icon: <Monitor size={14} />,
         keywords: [deptName, d.localIP, d.publicIP].filter(Boolean),
+        path: dest,
         action: () => go(dest),
       });
     }
@@ -92,6 +122,7 @@ export function GlobalCommandPalette() {
         description: 'Department',
         section: 'Departments',
         icon: <Building2 size={14} />,
+        path: `/departments/${encodeURIComponent(d.name)}`,
         action: () => go(`/departments/${encodeURIComponent(d.name)}`),
       });
     }
@@ -102,6 +133,7 @@ export function GlobalCommandPalette() {
         description: `Blueprint · ${t.cores}c · ${t.ram} GB`,
         section: 'Blueprints',
         icon: <Blocks size={14} />,
+        path: '/blueprints',
         action: () => go('/blueprints'),
       });
     }
@@ -115,13 +147,14 @@ export function GlobalCommandPalette() {
         section: 'Users',
         icon: <Users size={14} />,
         keywords: [u.email, u.role].filter(Boolean),
+        path: '/users',
         action: () => go('/users'),
       });
     }
     return out;
   }, [desktops, departments, templates, users, go]);
 
-  const commands = useMemo(
+  const allCommands = useMemo(
     () => [
       ...resourceCommands,
       {
@@ -256,6 +289,19 @@ export function GlobalCommandPalette() {
     ],
     [resourceCommands, go, handleLogout, handleReload],
   );
+
+  // Hide any destination the route guard would bounce the user away from, so
+  // end-users aren't offered Users / Settings / Infrastructure / New Desktop —
+  // nor live department/user/blueprint hits that resolve to operator pages.
+  // Static nav entries declare their target in COMMAND_PATHS; resource entries
+  // carry their own `path`.
+  const commands = useMemo(() => {
+    if (!allowedResources) return allCommands;
+    return allCommands.filter((c) => {
+      const path = COMMAND_PATHS[c.id] ?? c.path;
+      return !path || isHrefAllowed(path, allowedResources);
+    });
+  }, [allCommands, allowedResources]);
 
   return (
     <CommandPalette

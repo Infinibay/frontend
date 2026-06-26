@@ -17,9 +17,11 @@ import {
 import { RowContextMenu } from "@/components/common/RowContextMenu";
 import {
   Page,
+  Badge,
   Button,
   IconButton,
   TextField,
+  Tooltip,
   Select,
   FormField,
   Avatar,
@@ -48,6 +50,7 @@ import {
 "@/state/slices/users";
 import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
 import { usePageHeader } from "@/hooks/usePageHeader";
+import { usePermissions } from "@/hooks/usePermissions";
 import { createDebugger } from "@/utils/debug";
 import { toast } from "sonner";
 
@@ -63,6 +66,11 @@ const ROLE_FILTER_OPTIONS = [
 { value: "ADMIN", label: "Admin" }];
 
 
+// Same address shape the auth (sign-in/sign-up) forms validate against, so a
+// typo is caught client-side instead of round-tripping to the GraphQL API.
+const EMAIL_RE = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+const MIN_PASSWORD_LENGTH = 8;
+
 const EMPTY_FORM = {
   firstName: "",
   lastName: "",
@@ -73,84 +81,123 @@ const EMPTY_FORM = {
 };
 
 /** User create/edit form shared between both drawer modes. */
-function UserFormFields({ form, setForm, mode }) {
+function UserFormFields({ form, setForm, mode, errors = {}, clearError, canEditRole = true }) {
   const [hideA, setHideA] = useState(true);
   const [hideB, setHideB] = useState(true);
 
   const update = (key) => (e) => {
     const value = e?.target ? e.target.value : e;
     setForm((prev) => ({ ...prev, [key]: value }));
+    clearError?.(key);
   };
+
+  const isCreate = mode === "create";
+
+  // Live confirm-password feedback, mirroring the CreateMachine BasicInfoStep:
+  // surface the match/mismatch as the user types rather than only on submit.
+  const passwordMismatch =
+    !!form.password &&
+    !!form.passwordConfirmation &&
+    form.password !== form.passwordConfirmation;
+  const passwordsMatch =
+    !!form.password &&
+    !!form.passwordConfirmation &&
+    form.password === form.passwordConfirmation;
+  const confirmError =
+    errors.passwordConfirmation ||
+    (passwordMismatch ? "Passwords do not match" : undefined);
 
   return (
     <ResponsiveStack direction="col" gap={4}>
       <ResponsiveGrid columns={{ base: 1, sm: 2 }} gap={3}>
-        <TextField
-          label="First name"
-          value={form.firstName}
-          onChange={update("firstName")} />
-        
-        <TextField
-          label="Last name"
-          value={form.lastName}
-          onChange={update("lastName")} />
-        
+        <FormField label="First name" required>
+          <TextField
+            value={form.firstName}
+            onChange={update("firstName")}
+            error={errors.firstName} />
+
+        </FormField>
+        <FormField label="Last name" required>
+          <TextField
+            value={form.lastName}
+            onChange={update("lastName")}
+            error={errors.lastName} />
+
+        </FormField>
       </ResponsiveGrid>
 
-      {mode === "create" &&
-      <TextField
-        label="Email"
-        type="email"
-        value={form.email}
-        onChange={update("email")} />
+      {isCreate &&
+      <FormField label="Email" required>
+        <TextField
+          type="email"
+          value={form.email}
+          onChange={update("email")}
+          error={errors.email} />
 
+      </FormField>
       }
 
       <ResponsiveGrid columns={{ base: 1, sm: 2 }} gap={3}>
-        <TextField
-          label={mode === "create" ? "Password" : "New password (optional)"}
-          type={hideA ? "password" : "text"}
-          icon={<Lock size={16} />}
-          suffix={
-          <IconButton
-            size="sm"
-            variant="ghost"
-            label={hideA ? "Show password" : "Hide password"}
-            icon={hideA ? <EyeOff size={16} /> : <Eye size={16} />}
-            onClick={() => setHideA((s) => !s)} />
+        <FormField
+          label={isCreate ? "Password" : "New password"}
+          required={isCreate}
+          optional={!isCreate}>
+          <TextField
+            type={hideA ? "password" : "text"}
+            icon={<Lock size={16} />}
+            suffix={
+            <IconButton
+              size="sm"
+              variant="ghost"
+              label={hideA ? "Show password" : "Hide password"}
+              icon={hideA ? <EyeOff size={16} /> : <Eye size={16} />}
+              onClick={() => setHideA((s) => !s)} />
 
-          }
-          value={form.password || ""}
-          onChange={update("password")} />
-        
-        <TextField
-          label="Confirm password"
-          type={hideB ? "password" : "text"}
-          icon={<Lock size={16} />}
-          suffix={
-          <IconButton
-            size="sm"
-            variant="ghost"
-            label={hideB ? "Show password" : "Hide password"}
-            icon={hideB ? <EyeOff size={16} /> : <Eye size={16} />}
-            onClick={() => setHideB((s) => !s)} />
+            }
+            value={form.password || ""}
+            onChange={update("password")}
+            error={errors.password} />
 
-          }
-          value={form.passwordConfirmation || ""}
-          onChange={update("passwordConfirmation")} />
-        
+        </FormField>
+        <FormField label="Confirm password" required={isCreate}>
+          <TextField
+            type={hideB ? "password" : "text"}
+            icon={<Lock size={16} />}
+            suffix={
+            <IconButton
+              size="sm"
+              variant="ghost"
+              label={hideB ? "Show password" : "Hide password"}
+              icon={hideB ? <EyeOff size={16} /> : <Eye size={16} />}
+              onClick={() => setHideB((s) => !s)} />
+
+            }
+            value={form.passwordConfirmation || ""}
+            onChange={update("passwordConfirmation")}
+            valid={passwordsMatch && !confirmError ? true : undefined}
+            error={confirmError} />
+
+        </FormField>
       </ResponsiveGrid>
 
       {form.password ?
       <PasswordStrength value={form.password} /> :
       null}
 
-      <FormField label="Role">
+      {passwordsMatch && !confirmError &&
+      <Badge tone="success">Passwords match</Badge>
+      }
+
+      <FormField label="Role" required error={errors.role}>
         <Select
           value={form.role}
-          onChange={(v) => setForm((prev) => ({ ...prev, role: v }))}
-          options={ROLE_OPTIONS} />
-        
+          onChange={(v) => {
+            setForm((prev) => ({ ...prev, role: v }));
+            clearError?.("role");
+          }}
+          options={ROLE_OPTIONS}
+          disabled={!canEditRole} />
+
       </FormField>
     </ResponsiveStack>);
 
@@ -158,6 +205,14 @@ function UserFormFields({ form, setForm, mode }) {
 
 export default function UsersPage() {
   const dispatch = useDispatch();
+  const { can, isLoading: permsLoading } = usePermissions();
+
+  // While permissions are still loading, stay optimistic (treat as allowed) so
+  // write controls don't flicker disabled→enabled for users who actually can.
+  const canCreate = permsLoading || can("user:create");
+  const canEdit = permsLoading || can("user:edit");
+  const canDelete = permsLoading || can("user:delete");
+  const canEditRole = permsLoading || can("role:edit");
 
   const {
     data: users,
@@ -178,10 +233,21 @@ export default function UsersPage() {
   const [editingId, setEditingId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+
+  const clearFormError = (field) =>
+    setFormErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
 
   const openCreate = () => {
     setDrawerForm(EMPTY_FORM);
     setEditingId(null);
+    setFormErrors({});
     setDrawerMode("create");
   };
 
@@ -195,6 +261,7 @@ export default function UsersPage() {
       role: user.role || "USER"
     });
     setEditingId(user.id);
+    setFormErrors({});
     setDrawerMode("edit");
   };
 
@@ -202,6 +269,7 @@ export default function UsersPage() {
     setDrawerMode(null);
     setEditingId(null);
     setDrawerForm(EMPTY_FORM);
+    setFormErrors({});
   };
 
   const filtered = useMemo(() => {
@@ -281,22 +349,44 @@ export default function UsersPage() {
 
   // ---- Mutations --------------------------------------------------
 
-  const handleSave = async () => {
+  // Collect every field error at once so the operator sees all problems in one
+  // pass, with inline field-level messages instead of a one-error-at-a-time toast.
+  const validateForm = () => {
     const form = drawerForm;
-    if (!form.firstName || !form.lastName || !form.role) {
-      toast.error("First name, last name and role are required");
-      return;
-    }
+    const e = {};
+    if (!form.firstName) e.firstName = "First name is required";
+    if (!form.lastName) e.lastName = "Last name is required";
+    if (!form.role) e.role = "Role is required";
 
     if (drawerMode === "create") {
-      if (!form.email || !form.password || !form.passwordConfirmation) {
-        toast.error("Email and password fields are required");
-        return;
-      }
-      if (form.password !== form.passwordConfirmation) {
-        toast.error("Passwords do not match");
-        return;
-      }
+      if (!form.email) e.email = "Email is required";
+      else if (!EMAIL_RE.test(form.email)) e.email = "Enter a valid email address";
+
+      if (!form.password) e.password = "Password is required";
+      else if (form.password.length < MIN_PASSWORD_LENGTH)
+        e.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+
+      if (!form.passwordConfirmation)
+        e.passwordConfirmation = "Please confirm your password";
+      else if (form.password !== form.passwordConfirmation)
+        e.passwordConfirmation = "Passwords do not match";
+    } else if (form.password || form.passwordConfirmation) {
+      // Edit mode: password is optional, but validate when the user is setting one.
+      if (form.password.length < MIN_PASSWORD_LENGTH)
+        e.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+      if (form.password !== form.passwordConfirmation)
+        e.passwordConfirmation = "Passwords do not match";
+    }
+    return e;
+  };
+
+  const handleSave = async () => {
+    const form = drawerForm;
+    const validation = validateForm();
+    setFormErrors(validation);
+    if (Object.keys(validation).length > 0) return;
+
+    if (drawerMode === "create") {
       setSaving(true);
       try {
         await dispatch(createUser(form)).unwrap();
@@ -310,13 +400,7 @@ export default function UsersPage() {
       return;
     }
 
-    // edit
-    if (form.password || form.passwordConfirmation) {
-      if (form.password !== form.passwordConfirmation) {
-        toast.error("Passwords do not match");
-        return;
-      }
-    }
+    // edit (password match / length already enforced by validateForm above)
     const input = {
       firstName: form.firstName,
       lastName: form.lastName,
@@ -343,6 +427,7 @@ export default function UsersPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     const isBulk = deleteTarget === "bulk";
+    setDeleting(true);
     try {
       if (isBulk) {
         await Promise.all(
@@ -354,10 +439,11 @@ export default function UsersPage() {
         await dispatch(deleteUser(deleteTarget.id)).unwrap();
         toast.success("User deleted");
       }
+      setDeleteTarget(null);
     } catch (e) {
       toast.error(e.message || "Failed to delete user");
     } finally {
-      setDeleteTarget(null);
+      setDeleting(false);
     }
   };
 
@@ -409,28 +495,34 @@ export default function UsersPage() {
         align="center">
         
             <span onClick={(e) => e.stopPropagation()}>
-              <IconButton
-            size="sm"
-            variant="ghost"
-            label="Edit user"
-            icon={<Pencil size={14} />}
-            onClick={() => openEdit(row)} />
-          
+              <Tooltip content={canEdit ? "Edit user" : "You don't have permission to edit users"}>
+                <IconButton
+              size="sm"
+              variant="ghost"
+              label="Edit user"
+              icon={<Pencil size={14} />}
+              disabled={!canEdit}
+              onClick={() => openEdit(row)} />
+
+              </Tooltip>
             </span>
             <span onClick={(e) => e.stopPropagation()}>
-              <IconButton
-            size="sm"
-            variant="ghost"
-            label="Delete user"
-            icon={<Trash2 size={14} />}
-            onClick={() => setDeleteTarget(row)} />
-          
+              <Tooltip content={canDelete ? "Delete user" : "You don't have permission to delete users"}>
+                <IconButton
+              size="sm"
+              variant="ghost"
+              label="Delete user"
+              icon={<Trash2 size={14} />}
+              disabled={!canDelete}
+              onClick={() => setDeleteTarget(row)} />
+
+              </Tooltip>
             </span>
           </ResponsiveStack>
 
     }],
 
-    []
+    [canEdit, canDelete]
   );
 
   debug.info("Users page:", {
@@ -462,14 +554,17 @@ export default function UsersPage() {
 
         }
         primary={
-        <Button
-          size="sm"
-          variant="primary"
-          icon={<UserPlus size={14} />}
-          onClick={openCreate}>
-          
-            New User
-          </Button>
+        <Tooltip content={canCreate ? "Create a new user" : "You don't have permission to create users"}>
+            <Button
+            size="sm"
+            variant="primary"
+            icon={<UserPlus size={14} />}
+            disabled={!canCreate}
+            onClick={openCreate}>
+
+              New User
+            </Button>
+          </Tooltip>
         }
         filters={
         <>
@@ -488,13 +583,13 @@ export default function UsersPage() {
               options={ROLE_FILTER_OPTIONS} />
             
             </div>
-            {selected.length > 0 &&
+            {selected.length > 0 && canDelete &&
           <Button
             variant="destructive"
             size="sm"
             icon={<Trash2 size={14} />}
             onClick={() => setDeleteTarget("bulk")}>
-            
+
                 Delete {selected.length}
               </Button>
           }
@@ -531,14 +626,17 @@ export default function UsersPage() {
         "Create the first user to get started."
         }
         actions={
-        <Button
-          size="sm"
-          variant="primary"
-          icon={<UserPlus size={14} />}
-          onClick={openCreate}>
-          
-              New User
-            </Button>
+        <Tooltip content={canCreate ? "Create a new user" : "You don't have permission to create users"}>
+            <Button
+            size="sm"
+            variant="primary"
+            icon={<UserPlus size={14} />}
+            disabled={!canCreate}
+            onClick={openCreate}>
+
+                New User
+              </Button>
+          </Tooltip>
         } /> :
 
 
@@ -549,6 +647,7 @@ export default function UsersPage() {
         {
           label: "Edit",
           icon: <Pencil size={14} />,
+          disabled: !canEdit,
           onSelect: () => openEdit(r)
         },
         { separator: true },
@@ -556,6 +655,7 @@ export default function UsersPage() {
           label: "Delete",
           icon: <Trash2 size={14} />,
           danger: true,
+          disabled: !canDelete,
           onSelect: () => setDeleteTarget(r)
         }]
         }>
@@ -567,7 +667,7 @@ export default function UsersPage() {
           selectable
           selected={selected}
           onSelectionChange={setSelected}
-          onRowClick={openEdit}
+          onRowClick={canEdit ? openEdit : undefined}
           defaultDensity="compact" />
         
         </RowContextMenu>
@@ -598,14 +698,19 @@ export default function UsersPage() {
         <UserFormFields
           form={drawerForm}
           setForm={setDrawerForm}
-          mode={drawerMode || "create"} />
+          mode={drawerMode || "create"}
+          errors={formErrors}
+          clearError={clearFormError}
+          canEditRole={canEditRole} />
         
       </Drawer>
 
       {/* Delete confirmation */}
       <Dialog
         open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
+        onClose={() => {
+          if (!deleting) setDeleteTarget(null);
+        }}
         size="sm">
         <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
@@ -630,10 +735,15 @@ export default function UsersPage() {
         <DialogButtons align="end">
           <Button
             variant="secondary"
-            onClick={() => setDeleteTarget(null)}>
+            onClick={() => setDeleteTarget(null)}
+            disabled={deleting}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleDelete}>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            loading={deleting}
+            disabled={deleting}>
             Delete
           </Button>
         </DialogButtons>

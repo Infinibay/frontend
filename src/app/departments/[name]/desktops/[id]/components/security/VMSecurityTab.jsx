@@ -334,7 +334,7 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
             </Button>
           }>
           
-          We couldn&apos;t load the firewall rules for this VM.
+          We couldn&apos;t load the firewall rules for this desktop.
         </Alert>
       </Page>);
 
@@ -363,7 +363,7 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
               </Button>
           }>
           
-            Without rules this VM cannot connect to the internet. Start with the{' '}
+            Without rules this desktop cannot connect to the internet. Start with the{' '}
             <strong>Desktop Secure</strong> profile for HTTPS, DNS and RDP
             access.
           </Alert> :
@@ -375,8 +375,8 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
           icon={<Shield size={14} />}
           title={`${departmentRules.length} inherited rule${departmentRules.length !== 1 ? 's' : ''} from the department`}>
           
-            VM-specific rules you add apply on top of these. Use{' '}
-            <em>Override</em> to weaken a department rule for this VM only.
+            Desktop-specific rules you add apply on top of these. Use{' '}
+            <em>Override</em> to weaken a department rule for this desktop only.
           </Alert> :
         null}
 
@@ -489,7 +489,7 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
         <DialogTitle>Delete firewall rule?</DialogTitle>
         <DialogDescription>
           {ruleToDelete ?
-          `This will permanently remove "${ruleToDelete.name}" from this VM.` :
+          `This will permanently remove "${ruleToDelete.name}" from this desktop.` :
           undefined}
         </DialogDescription>
         <DialogButtons align="end">

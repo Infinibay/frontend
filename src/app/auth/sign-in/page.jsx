@@ -187,8 +187,11 @@ const Page_ = () => {
                   control={control}
                   defaultValue=""
                   rules={{
+                    // No length cap on sign-in: a login form must accept whatever
+                    // credential the user already holds (password managers and
+                    // passphrases routinely exceed 20 chars). Length/complexity
+                    // policy belongs in sign-up / set-password, not at login.
                     required: "Password is required",
-                    maxLength: { value: 20, message: "Password must be less than 20 characters" },
                   }}
                   render={({ field, fieldState }) => (
                     <FormField label="Password" error={fieldState.error?.message}>

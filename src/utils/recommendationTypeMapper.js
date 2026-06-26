@@ -27,29 +27,29 @@ export const CATEGORIES = {
 export const URGENCY_BADGES = {
   IMMEDIATE: {
     text: 'URGENT',
-    color: 'bg-red-600 text-white',
-    borderColor: 'border-red-600',
+    color: 'bg-danger text-white',
+    borderColor: 'border-danger',
     icon: AlertTriangle,
     animate: true
   },
   URGENT: {
     text: 'HIGH PRIORITY',
-    color: 'bg-orange-500 text-white',
-    borderColor: 'border-orange-500',
+    color: 'bg-warning text-white',
+    borderColor: 'border-warning',
     icon: AlertTriangle,
     animate: false
   },
   SOON: {
     text: 'ATTENTION REQUIRED',
-    color: 'bg-yellow-500 text-white',
-    borderColor: 'border-yellow-500',
+    color: 'bg-warning text-white',
+    borderColor: 'border-warning',
     icon: Clock,
     animate: false
   },
   NORMAL: {
     text: 'NORMAL',
-    color: 'bg-blue-500 text-white',
-    borderColor: 'border-blue-500',
+    color: 'bg-info text-white',
+    borderColor: 'border-info',
     icon: Info,
     animate: false
   }
@@ -65,9 +65,9 @@ export const RECOMMENDATION_MAPPINGS = {
     priority: PRIORITY_LEVELS.CRITICAL,
     category: CATEGORIES.SECURITY,
     icon: Shield,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50 dark:bg-red-950/30',
-    borderColor: 'border-red-200 dark:border-red-800',
+    color: 'text-danger',
+    bgColor: 'bg-danger/10',
+    borderColor: 'border-danger/30',
     actions: ['Enable Windows Defender', 'Configure real-time protection'],
     userFriendlyExplanation: 'Your antivirus is turned off. This is dangerous because viruses can enter your computer. You should enable it immediately.',
     technicalDetails: 'Windows Defender provides real-time protection against malware, spyware, and other security threats.'
@@ -80,9 +80,9 @@ export const RECOMMENDATION_MAPPINGS = {
     priority: PRIORITY_LEVELS.CRITICAL,
     category: CATEGORIES.SECURITY,
     icon: Shield,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50 dark:bg-red-950/30',
-    borderColor: 'border-red-200 dark:border-red-800',
+    color: 'text-danger',
+    bgColor: 'bg-danger/10',
+    borderColor: 'border-danger/30',
     actions: ['Review detected threats', 'Run full scan', 'Clean quarantined items'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
@@ -102,9 +102,9 @@ export const RECOMMENDATION_MAPPINGS = {
     priority: PRIORITY_LEVELS.HIGH,
     category: CATEGORIES.PERFORMANCE,
     icon: Zap,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
-    borderColor: 'border-orange-200 dark:border-orange-800',
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
+    borderColor: 'border-warning/30',
     actions: ['Identify problematic applications', 'Close unnecessary applications', 'Restart specific applications'],
     userFriendlyExplanation: 'Some programs are using too much of your computer\'s processing power. You should close the ones you don\'t need.',
     technicalDetails: 'Specific applications are consuming CPU resources above normal thresholds.'
@@ -117,9 +117,9 @@ export const RECOMMENDATION_MAPPINGS = {
     priority: PRIORITY_LEVELS.HIGH,
     category: CATEGORIES.PERFORMANCE,
     icon: Zap,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
-    borderColor: 'border-orange-200 dark:border-orange-800',
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
+    borderColor: 'border-warning/30',
     actions: ['Identify memory-consuming applications', 'Close unnecessary applications', 'Restart specific applications'],
     userFriendlyExplanation: 'Some programs are using too much of your computer\'s memory. You should close the ones you don\'t need.',
     technicalDetails: 'Specific applications are consuming memory resources above normal thresholds.'
@@ -133,9 +133,9 @@ export const RECOMMENDATION_MAPPINGS = {
     priority: PRIORITY_LEVELS.CRITICAL,
     category: CATEGORIES.STORAGE,
     icon: HardDrive,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50 dark:bg-red-950/30',
-    borderColor: 'border-red-200 dark:border-red-800',
+    color: 'text-danger',
+    bgColor: 'bg-danger/10',
+    borderColor: 'border-danger/30',
     actions: ['Delete unnecessary files', 'Clean temporary files', 'Move files to external storage'],
     userFriendlyExplanation: 'Your hard drive is almost full. This can cause problems. You should delete files you don\'t need.',
     technicalDetails: 'It is recommended to maintain at least 15% free space for optimal performance.'
@@ -152,9 +152,9 @@ export const RECOMMENDATION_MAPPINGS = {
     },
     category: CATEGORIES.UPDATES,
     icon: Download,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
-    borderColor: 'border-blue-200 dark:border-blue-800',
+    color: 'text-info',
+    bgColor: 'bg-info/10',
+    borderColor: 'border-info/30',
     actions: ['Review available updates', 'Install security updates', 'Schedule automatic updates'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
@@ -176,9 +176,9 @@ export const RECOMMENDATION_MAPPINGS = {
     },
     category: CATEGORIES.UPDATES,
     icon: Download,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
-    borderColor: 'border-orange-200 dark:border-orange-800',
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
+    borderColor: 'border-warning/30',
     actions: ['Install system updates', 'Schedule reboot', 'Review automatic updates'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
@@ -200,9 +200,9 @@ export const RECOMMENDATION_MAPPINGS = {
     priority: PRIORITY_LEVELS.MEDIUM,
     category: CATEGORIES.PERFORMANCE,
     icon: Settings,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
-    borderColor: 'border-blue-200 dark:border-blue-800',
+    color: 'text-info',
+    bgColor: 'bg-info/10',
+    borderColor: 'border-info/30',
     actions: ['Review resource usage', 'Consider reducing CPU/RAM', 'Optimize configuration'],
     userFriendlyExplanation: 'Your virtual machine has more power than it needs. You can optimize it to save resources.',
     technicalDetails: 'Assigned resources consistently exceed actual usage over extended periods.'
@@ -215,9 +215,9 @@ export const RECOMMENDATION_MAPPINGS = {
     priority: PRIORITY_LEVELS.HIGH,
     category: CATEGORIES.PERFORMANCE,
     icon: Zap,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
-    borderColor: 'border-orange-200 dark:border-orange-800',
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
+    borderColor: 'border-warning/30',
     actions: ['Increase CPU/RAM', 'Review workload', 'Optimize applications'],
     userFriendlyExplanation: 'Your virtual machine needs more power to work well. Consider adding more resources.',
     technicalDetails: 'Resources are consistently over-utilized, causing performance degradation.'
@@ -231,9 +231,9 @@ export const RECOMMENDATION_MAPPINGS = {
     priority: PRIORITY_LEVELS.MEDIUM,
     category: CATEGORIES.SECURITY,
     icon: Shield,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50 dark:bg-yellow-950/30',
-    borderColor: 'border-yellow-200 dark:border-yellow-800',
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
+    borderColor: 'border-warning/30',
     actions: ['Review firewall rules', 'Configure exceptions', 'Verify affected applications'],
     userFriendlyExplanation: (recommendation) => {
       const metadata = extractRecommendationMetadata(recommendation);
@@ -368,28 +368,28 @@ export const requiresImmediateAction = (type) => {
 export const getPriorityColors = (priority) => {
   const colorMap = {
     [PRIORITY_LEVELS.CRITICAL]: {
-      text: 'text-red-600',
-      bg: 'bg-red-50 dark:bg-red-950/30',
-      border: 'border-red-200 dark:border-red-800',
-      badge: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
+      text: 'text-danger',
+      bg: 'bg-danger/10',
+      border: 'border-danger/30',
+      badge: 'bg-danger/15 text-danger'
     },
     [PRIORITY_LEVELS.HIGH]: {
-      text: 'text-orange-600',
-      bg: 'bg-orange-50 dark:bg-orange-950/30',
-      border: 'border-orange-200 dark:border-orange-800',
-      badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300'
+      text: 'text-warning',
+      bg: 'bg-warning/10',
+      border: 'border-warning/30',
+      badge: 'bg-warning/15 text-warning'
     },
     [PRIORITY_LEVELS.MEDIUM]: {
-      text: 'text-yellow-600',
-      bg: 'bg-yellow-50 dark:bg-yellow-950/30',
-      border: 'border-yellow-200 dark:border-yellow-800',
-      badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300'
+      text: 'text-warning',
+      bg: 'bg-warning/10',
+      border: 'border-warning/30',
+      badge: 'bg-warning/15 text-warning'
     },
     [PRIORITY_LEVELS.LOW]: {
-      text: 'text-blue-600',
-      bg: 'bg-blue-50 dark:bg-blue-950/30',
-      border: 'border-blue-200 dark:border-blue-800',
-      badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+      text: 'text-info',
+      bg: 'bg-info/10',
+      border: 'border-info/30',
+      badge: 'bg-info/15 text-info'
     }
   };
 

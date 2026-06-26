@@ -38,9 +38,20 @@ const executeGraphQLMutation = async (mutation, variables) => {
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
     debug.log('query', 'Executing GraphQL query', { query: query.loc?.source?.body, variables });
-    const { data } = await client.query({ query, variables });
-    debug.log('query', 'GraphQL query success', data);
-    return data;
+    const response = await client.query({
+      query,
+      variables,
+      fetchPolicy: 'network-only' // Force network request so mutations aren't masked by a stale cache-first read
+    });
+
+    // Surface GraphQL errors (errorPolicy:'all' resolves instead of throwing)
+    if (response.errors) {
+      const errorMessage = response.errors.map(err => err.message).join(', ');
+      throw new Error(errorMessage);
+    }
+
+    debug.log('query', 'GraphQL query success', response.data);
+    return response.data;
   } catch (error) {
     debug.error('query', 'GraphQL query error', error);
     console.error('GraphQL query error:', error);
@@ -92,6 +103,7 @@ const applicationsSlice = createSlice({
   name: 'applications',
   initialState: {
     items: [],
+    lastUpdated: null,
     selectedApplication: null,
     loading: {
       fetch: false,
@@ -153,6 +165,7 @@ const applicationsSlice = createSlice({
       .addCase(fetchApplications.fulfilled, (state, action) => {
         state.loading.fetch = false;
         state.items = action.payload;
+        state.lastUpdated = Date.now();
       })
       .addCase(fetchApplications.rejected, (state, action) => {
         state.loading.fetch = false;
@@ -209,6 +222,10 @@ const applicationsSlice = createSlice({
 const persistConfig = {
   key: 'applications',
   storage,
+  // Only persist the data; never persist transient loading/error flags (a
+  // mid-fetch reload would otherwise rehydrate loading.fetch=true and wedge
+  // the page in a permanent loading state).
+  whitelist: ['items'],
 };
 
 const persistedApplicaitonReducer = persistReducer(persistConfig, applicationsSlice.reducer);

@@ -33,6 +33,8 @@ import {
   DialogDescription,
   DialogBody,
   DialogButtons,
+  MenuItem,
+  Z,
 } from '@infinibay/harbor';
 import { PageHeader } from '@/components/common/PageHeader';
 import { OsBadge } from '@/components/common/OsBadge';
@@ -154,11 +156,11 @@ function ScriptRow({ script, onOpen, onDelete, onDuplicate }) {
           </span>
         ))}
         {tags.length > 3 ? (
-          <span className="text-xs text-fg-subtle">+{tags.length - 3}</span>
+          <span className="text-xs text-fg-muted">+{tags.length - 3}</span>
         ) : null}
       </div>
 
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
         {isSystem ? (
           <Tooltip content="Duplicate to edit">
             <span>
@@ -204,40 +206,39 @@ function ScriptRow({ script, onOpen, onDelete, onDuplicate }) {
         ? createPortal(
             <div
               ref={menuRef}
-              style={{ position: 'fixed', left: ctx.x, top: ctx.y, zIndex: 9999, minWidth: 180 }}
-              className="rounded-xl bg-[#14141c] border border-white/10 shadow-2xl p-1"
+              role="menu"
+              style={{ position: 'fixed', left: ctx.x, top: ctx.y, zIndex: Z.CONTEXT_MENU, minWidth: 180 }}
+              className="rounded-md bg-surface-2 border border-[var(--harbor-overlay-border)] shadow-harbor-lg p-1"
             >
-              <button
-                type="button"
-                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md hover:bg-white/5"
+              <MenuItem
+                icon={<Pencil size={14} />}
                 onClick={() => {
                   setCtx(null);
                   onOpen(script.id);
                 }}
               >
-                <Pencil size={14} /> Open
-              </button>
-              <button
-                type="button"
-                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md hover:bg-white/5"
+                Open
+              </MenuItem>
+              <MenuItem
+                icon={<Copy size={14} />}
                 onClick={() => {
                   setCtx(null);
                   onDuplicate(script);
                 }}
               >
-                <Copy size={14} /> Duplicate
-              </button>
+                Duplicate
+              </MenuItem>
               {isSystem ? null : (
-                <button
-                  type="button"
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md text-danger-fg hover:bg-danger-fg/10"
+                <MenuItem
+                  icon={<Trash2 size={14} />}
+                  danger
                   onClick={() => {
                     setCtx(null);
                     onDelete(script);
                   }}
                 >
-                  <Trash2 size={14} /> Delete
-                </button>
+                  Delete
+                </MenuItem>
               )}
             </div>,
             document.body
@@ -497,7 +498,7 @@ export default function ScriptsPage() {
       ) : null}
 
       {!loading && filtered.length > 0 ? (
-        <div className="flex flex-col divide-y divide-white/5">
+        <div className="flex flex-col divide-y divide-[var(--harbor-border-subtle)]">
           {filtered.map((s) => (
             <ScriptRow
               key={s.id}

@@ -62,15 +62,23 @@ const SUPPORTED_OS_QUERY = gql`
   }
 `;
 
+// Surface GraphQL errors (errorPolicy:'all' resolves instead of throwing)
+const assertNoGraphQLErrors = (response) => {
+  if (response.errors) {
+    throw new Error(response.errors.map(err => err.message).join(', '));
+  }
+  return response.data;
+};
+
 // Async thunks
 export const fetchAvailableISOs = createAsyncThunk(
   'iso/fetchAvailable',
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await client.query({
+      const data = assertNoGraphQLErrors(await client.query({
         query: AVAILABLE_ISOS_QUERY,
         fetchPolicy: 'network-only'
-      });
+      }));
       return data.availableISOs;
     } catch (error) {
       // Clear ISO cache on validation errors
@@ -86,11 +94,11 @@ export const checkISOStatus = createAsyncThunk(
   'iso/checkStatus',
   async (os, { rejectWithValue }) => {
     try {
-      const { data } = await client.query({
+      const data = assertNoGraphQLErrors(await client.query({
         query: CHECK_ISO_STATUS_QUERY,
         variables: { os },
         fetchPolicy: 'network-only'
-      });
+      }));
       return data.checkISOStatus;
     } catch (error) {
       // Clear ISO cache on validation errors
@@ -106,10 +114,10 @@ export const checkSystemReadiness = createAsyncThunk(
   'iso/checkSystemReadiness',
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await client.query({
+      const data = assertNoGraphQLErrors(await client.query({
         query: SYSTEM_READINESS_QUERY,
         fetchPolicy: 'network-only'
-      });
+      }));
       return data.checkSystemReadiness;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -121,12 +129,12 @@ export const checkMultipleOSAvailability = createAsyncThunk(
   'iso/checkMultiple',
   async (osList, { rejectWithValue }) => {
     try {
-      const { data } = await client.query({
+      const data = assertNoGraphQLErrors(await client.query({
         query: CHECK_MULTIPLE_OS_QUERY,
         variables: { osList },
         fetchPolicy: 'network-only'
-      });
-      
+      }));
+
       // Convert array to map for easier access
       const availabilityMap = {};
       data.checkMultipleOSAvailability.forEach(item => {
@@ -143,10 +151,10 @@ export const fetchSupportedOSTypes = createAsyncThunk(
   'iso/fetchSupported',
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await client.query({
+      const data = assertNoGraphQLErrors(await client.query({
         query: SUPPORTED_OS_QUERY,
         fetchPolicy: 'cache-first'
-      });
+      }));
       return data.getSupportedOSTypes;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -166,6 +174,7 @@ const initialState = {
   supportedOSTypes: [],
   currentISOStatus: null,
   uploadProgress: null,
+  lastUpdated: null,
   loading: {
     fetch: false,
     checkStatus: false,
@@ -234,7 +243,8 @@ const isoSlice = createSlice({
       .addCase(fetchAvailableISOs.fulfilled, (state, action) => {
         state.loading.fetch = false;
         state.availableISOs = action.payload;
-        
+        state.lastUpdated = Date.now();
+
         // Update availability map
         const availabilityMap = {};
         action.payload.forEach(iso => {

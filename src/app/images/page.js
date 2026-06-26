@@ -332,7 +332,7 @@ export default function GoldenImagesPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col divide-y divide-white/5">
+              <div className="flex flex-col divide-y divide-[color:var(--harbor-border-subtle)]">
                 {versions
                   .slice()
                   .reverse()
@@ -530,10 +530,10 @@ function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
   }, [mode, templateId, machineId, name, notes, sanitizeUserData, destroySource, onCreated]);
 
   return (
-    <Dialog open onClose={onClose}>
+    <Dialog open onClose={onClose} size="lg">
       <DialogTitle>New Golden Image</DialogTitle>
       <DialogBody>
-      <div className="flex flex-col gap-4 min-w-[480px]">
+      <div className="flex flex-col gap-4 w-full">
         <div className="flex gap-1 p-1 bg-white/5 rounded-md self-start">
           <button
             className={`px-3 py-1 text-sm rounded ${mode === 'blueprint' ? 'bg-white/10' : 'text-fg-muted'}`}
@@ -588,7 +588,7 @@ function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
               />
               Sanitize user data (remove home directories / profiles)
             </label>
-            <label className="flex items-start gap-2 text-sm text-warn-fg">
+            <label className="flex items-start gap-2 text-sm text-warning">
               <input
                 type="checkbox"
                 checked={destroySource}

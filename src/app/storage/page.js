@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  Alert,
   Page,
   Badge,
   Button,
@@ -12,7 +13,7 @@ import {
   Skeleton,
   StatusDot } from
 '@infinibay/harbor';
-import { Database, HardDrive, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Database, HardDrive, RefreshCw } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/PageHeader';
 import { useGetSystemResourcesQuery } from '@/gql/hooks';
@@ -171,6 +172,26 @@ export default function StorageListPage() {
             <Skeleton height={130} />
             <Skeleton height={180} />
           </ResponsiveStack> :
+        null}
+
+        {!disk && error ?
+        <Alert
+          tone="danger"
+          icon={<AlertTriangle size={14} />}
+          title="Couldn't load storage"
+          actions={
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<RefreshCw size={14} />}
+            onClick={() => refetch()}>
+
+              Retry
+            </Button>
+          }>
+
+            {String(error?.message || 'The storage service is unreachable. Check the backend or retry.')}
+          </Alert> :
         null}
 
         {disk ?

@@ -414,7 +414,7 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
           {filters.machineId && (
             <Badge tone="info">
               <ResponsiveStack direction="row" gap={1} align="center">
-                <span>VM: {departmentVMs.find((v) => v.id === filters.machineId)?.name}</span>
+                <span>Desktop: {departmentVMs.find((v) => v.id === filters.machineId)?.name}</span>
                 <IconButton
                   label="Remove desktop filter"
                   icon={<X size={12} />}
@@ -477,7 +477,7 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
                   {filters.status && <Badge tone="info">Status: {filters.status}</Badge>}
                   {filters.machineId && (
                     <Badge tone="info">
-                      VM: {departmentVMs.find((v) => v.id === filters.machineId)?.name}
+                      Desktop: {departmentVMs.find((v) => v.id === filters.machineId)?.name}
                     </Badge>
                   )}
                   {filters.executionType && (

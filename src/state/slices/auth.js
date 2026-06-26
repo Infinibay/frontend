@@ -37,7 +37,11 @@ const getInitialState = () => {
 			});
 
 			return {
-				isLoggedIn: !!token,
+				// isLoggedIn is NOT advertised from an unvalidated token: it is set
+				// true only after the session is validated (loginUser / the bootstrap
+				// fetchCurrentUser) so redux never diverges from the real auth state
+				// and the socket is never connected with a doomed credential.
+				isLoggedIn: false,
 				token: token || null,
 				refreshToken: refreshToken || null,
 				expiresIn: tokenExpiresAt ? Number(tokenExpiresAt) : null,
@@ -48,6 +52,7 @@ const getInitialState = () => {
 					lastName: null,
 					email: null,
 					role: null,
+					roleId: null,
 					avatar: null,
 				},
 				loading: {
@@ -78,6 +83,7 @@ const getInitialState = () => {
 			lastName: null,
 			email: null,
 			role: null,
+			roleId: null,
 			avatar: null,
 		},
 		loading: {
@@ -106,6 +112,7 @@ const authSlice = createSlice({
 				lastName: null,
 				email: null,
 				role: null,
+				roleId: null,
 				avatar: null,
 			};
 			state.isLoggedIn = false;
@@ -118,6 +125,23 @@ const authSlice = createSlice({
 				localStorage.removeItem('refreshToken');
 				localStorage.removeItem('tokenExpiresAt');
 				localStorage.removeItem('socketNamespace');
+			}
+		},
+		setTokens: (state, action) => {
+			// Sync freshly-rotated credentials (from refreshAccessToken) into redux so
+			// state.auth.token — the credential the socket connects with — stays current.
+			// Does NOT touch isLoggedIn: a refresh only happens within an already-active
+			// session, and the token change drives RealTimeProvider to re-init the socket
+			// with the fresh token.
+			const { token, refreshToken, expiresIn } = action.payload || {};
+			if (token) {
+				state.token = token;
+			}
+			if (refreshToken !== undefined && refreshToken !== null) {
+				state.refreshToken = refreshToken;
+			}
+			if (expiresIn !== undefined && expiresIn !== null) {
+				state.expiresIn = expiresIn;
 			}
 		},
 		setSocketNamespace: (state, action) => {
@@ -152,11 +176,13 @@ const authSlice = createSlice({
 					const socketNamespace = localStorage.getItem('socketNamespace');
 
 					if (token) {
+						// Restore the credential so the configured client / socket can read
+						// it, but do NOT flip isLoggedIn from an unvalidated token — the
+						// validated bootstrap path (fetchCurrentUser) owns that transition.
 						state.token = token;
 						state.refreshToken = refreshToken || null;
 						state.expiresIn = tokenExpiresAt ? Number(tokenExpiresAt) : null;
-						state.isLoggedIn = true;
-						debug.success('restore', 'Token restored from localStorage');
+						debug.success('restore', 'Token restored from localStorage (pending validation)');
 					}
 
 					if (socketNamespace) {
@@ -207,6 +233,7 @@ const authSlice = createSlice({
 					lastName: null,
 					email: null,
 					role: null,
+					roleId: null,
 					avatar: null,
 				};
 				state.isLoggedIn = false;
@@ -244,7 +271,7 @@ const authSlice = createSlice({
 	}
 });
 
-export const { logout, setSocketNamespace, restoreAuthFromStorage, realTimeCurrentUserUpdated } = authSlice.actions;
+export const { logout, setTokens, setSocketNamespace, restoreAuthFromStorage, realTimeCurrentUserUpdated } = authSlice.actions;
 export { fetchCurrentUser, loginUser };
 
 // Selectors

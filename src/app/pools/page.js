@@ -16,6 +16,7 @@ import {
   DialogBody,
   DialogButtons,
   EmptyState,
+  FormField,
   IconButton,
   Menu,
   MenuItem,
@@ -451,7 +452,7 @@ export default function PoolsListPage() {
           filters={
           pools.length > 0 ?
           <>
-                <div className="w-[180px]">
+                <div className="w-full sm:w-[180px]">
                   <Select
                 value={deptFilter}
                 onChange={setDeptFilter}
@@ -461,7 +462,7 @@ export default function PoolsListPage() {
                 } />
 
                 </div>
-                <div className="w-[170px]">
+                <div className="w-full sm:w-[170px]">
                   <Select
                 value={typeFilter}
                 onChange={setTypeFilter}
@@ -603,6 +604,34 @@ function NewPoolDialog({ onClose, onCreated }) {
   const [sizeMax, setSizeMax] = useState('10');
   const [idleTimeoutMinutes, setIdleTimeoutMinutes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  // Clear a single field's error as the user edits it, so inline messages
+  // disappear the moment they're addressed.
+  const clearError = (...fields) =>
+    setErrors((prev) => {
+      if (!fields.some((f) => prev[f])) return prev;
+      const next = { ...prev };
+      fields.forEach((f) => delete next[f]);
+      return next;
+    });
+
+  // Collect every field error at once (not first-failure-only) so the operator
+  // sees all problems in one pass instead of a fix→submit→repeat loop.
+  const validate = () => {
+    const e = {};
+    if (!name.trim()) e.name = 'Name is required';
+    if (!departmentId) e.departmentId = 'Department is required';
+    if (!templateId) e.templateId = 'Blueprint is required';
+    const min = parseInt(sizeMin, 10);
+    const max = parseInt(sizeMax, 10);
+    if (!Number.isFinite(min)) e.sizeMin = 'Enter a number';
+    if (!Number.isFinite(max)) e.sizeMax = 'Enter a number';
+    if (Number.isFinite(min) && Number.isFinite(max) && min > max) {
+      e.sizeMax = 'Min cannot exceed Max';
+    }
+    return e;
+  };
 
   // Load published golden images so the operator can pin the pool to a
   // specific sealed base instead of inheriting the blueprint's default.
@@ -620,13 +649,11 @@ function NewPoolDialog({ onClose, onCreated }) {
   }, []);
 
   const handleSubmit = async () => {
-    if (!name.trim()) return toast.error('Name required');
-    if (!departmentId) return toast.error('Department required');
-    if (!templateId) return toast.error('Blueprint required');
+    const validation = validate();
+    setErrors(validation);
+    if (Object.keys(validation).length > 0) return;
     const min = parseInt(sizeMin, 10);
     const max = parseInt(sizeMax, 10);
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return toast.error('Sizes must be numeric');
-    if (min > max) return toast.error('Min cannot exceed Max');
 
     setSubmitting(true);
     try {
@@ -658,32 +685,50 @@ function NewPoolDialog({ onClose, onCreated }) {
   };
 
   return (
-    <Dialog open onClose={onClose}>
+    <Dialog open onClose={onClose} className="max-w-lg">
       <DialogTitle>New Pool</DialogTitle>
       <DialogDescription>
         Group desktops sharing a blueprint and golden image, kept warm for instant hand-out.
       </DialogDescription>
       <DialogBody>
-        <div className="flex flex-col gap-4 min-w-[480px]">
-          <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-          <Select
-            label="Department"
-            value={departmentId}
-            onChange={setDepartmentId}
-            options={[
-            { value: '', label: '— pick a department —' },
-            ...departments.map((d) => ({ value: d.id, label: d.name }))]
-            } />
+        <div className="flex flex-col gap-4">
+          <FormField label="Name" required>
+            <TextField
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                clearError('name');
+              }}
+              error={errors.name}
+              autoFocus />
 
-          <Select
-            label="Blueprint"
-            value={templateId}
-            onChange={setTemplateId}
-            options={[
-            { value: '', label: '— pick a blueprint —' },
-            ...templates.map((t) => ({ value: t.id, label: t.name }))]
-            } />
+          </FormField>
+          <FormField label="Department" required error={errors.departmentId}>
+            <Select
+              value={departmentId}
+              onChange={(v) => {
+                setDepartmentId(v);
+                clearError('departmentId');
+              }}
+              options={[
+              { value: '', label: '— pick a department —' },
+              ...departments.map((d) => ({ value: d.id, label: d.name }))]
+              } />
 
+          </FormField>
+          <FormField label="Blueprint" required error={errors.templateId}>
+            <Select
+              value={templateId}
+              onChange={(v) => {
+                setTemplateId(v);
+                clearError('templateId');
+              }}
+              options={[
+              { value: '', label: '— pick a blueprint —' },
+              ...templates.map((t) => ({ value: t.id, label: t.name }))]
+              } />
+
+          </FormField>
           <Select
             label="Golden image (optional)"
             value={goldenImageId}
@@ -713,8 +758,30 @@ function NewPoolDialog({ onClose, onCreated }) {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <TextField label="Min (kept warm)" type="number" min={0} value={sizeMin} onChange={(e) => setSizeMin(e.target.value)} />
-            <TextField label="Max (cap)" type="number" min={1} value={sizeMax} onChange={(e) => setSizeMax(e.target.value)} />
+            <FormField label="Min (kept warm)" required>
+              <TextField
+                type="number"
+                min={0}
+                value={sizeMin}
+                onChange={(e) => {
+                  setSizeMin(e.target.value);
+                  clearError('sizeMin', 'sizeMax');
+                }}
+                error={errors.sizeMin} />
+
+            </FormField>
+            <FormField label="Max (cap)" required>
+              <TextField
+                type="number"
+                min={1}
+                value={sizeMax}
+                onChange={(e) => {
+                  setSizeMax(e.target.value);
+                  clearError('sizeMin', 'sizeMax');
+                }}
+                error={errors.sizeMax} />
+
+            </FormField>
           </div>
           <TextField
             label="Idle timeout (minutes)"

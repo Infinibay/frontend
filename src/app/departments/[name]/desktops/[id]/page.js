@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Badge,
@@ -41,11 +41,10 @@ import {
 } from '@/gql/hooks';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { openSpiceClient } from '@/utils/spiceConnect';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import LoadingState from './components/LoadingState';
 import ErrorState from './components/ErrorState';
-import ToastNotification from '../../components/ToastNotification';
 
 const debug = createDebugger('frontend:pages:vm-detail');
 
@@ -147,6 +146,26 @@ const VMDetailPage = () => {
     handlePowerAction,
     isAdmin,
   } = useVMDetail(vmId);
+
+  // Bridge the legacy show/toastProps state exposed by useVMDetail to Sonner so
+  // power-action feedback is surfaced through the same toaster as the rest of
+  // the app (no bespoke ToastNotification component).
+  useEffect(() => {
+    if (!showToast) return;
+    const { variant, title, description } = toastProps || {};
+    const message = title || description || '';
+    const opts = title && description ? { description } : undefined;
+    if (variant === 'destructive' || variant === 'error') {
+      toast.error(message, opts);
+    } else if (variant === 'success') {
+      toast.success(message, opts);
+    } else if (variant === 'warning') {
+      toast.warning(message, opts);
+    } else {
+      toast(message, opts);
+    }
+    setShowToast(false);
+  }, [showToast, toastProps, setShowToast]);
 
   const {
     data: nodeData,
@@ -272,16 +291,12 @@ const VMDetailPage = () => {
   const handleConnect = () => {
     try {
       openSpiceClient(graphicUrl, { vmName: vm?.name });
-      toast({
-        title: 'Opening SPICE client',
+      toast('Opening SPICE client', {
         description: 'A .vv file was downloaded. Your OS should open it with virt-viewer or the default SPICE client.',
-        variant: 'default',
       });
     } catch (err) {
-      toast({
-        title: 'Could not open SPICE client',
+      toast.error('Could not open SPICE client', {
         description: err?.message || 'Invalid connection info',
-        variant: 'destructive',
       });
     }
   };
@@ -298,26 +313,20 @@ const VMDetailPage = () => {
       const migration = result?.data?.migrateMachineToNode;
 
       if (!migration?.success) {
-        toast({
-          title: 'Migration blocked',
+        toast.error('Migration blocked', {
           description: migration?.error || 'The desktop could not be moved to the selected node.',
-          variant: 'destructive',
         });
         return;
       }
 
-      toast({
-        title: 'Desktop reassigned',
+      toast.success('Desktop reassigned', {
         description: target?.name ? `${vm.name} was moved to ${target.name}.` : `${vm.name} was moved to the selected node.`,
-        variant: 'default',
       });
       setTargetNodeId('');
       await Promise.all([refreshVM(), refetchNodes()]);
     } catch (err) {
-      toast({
-        title: 'Migration failed',
+      toast.error('Migration failed', {
         description: err?.message || 'The desktop could not be moved to the selected node.',
-        variant: 'destructive',
       });
     }
   };
@@ -337,7 +346,7 @@ const VMDetailPage = () => {
                 <IconTile icon={<Server size={22} />} tone="purple" size="lg" />
                 <ResponsiveStack direction="col" gap={2}>
                   <ResponsiveStack direction="row" gap={3} align="center" wrap>
-                    <span>{vm.name}</span>
+                    <h1 className="text-xl font-semibold leading-tight m-0">{vm.name}</h1>
                     <Badge tone={statusTone(status)} pulse={isRunning}>
                       <StatusDot status={status} />
                       {statusLabel(status, isInstalling)}
@@ -522,14 +531,6 @@ const VMDetailPage = () => {
           </Tabs>
         </ResponsiveStack>
       </Container>
-
-      <ToastNotification
-        show={showToast}
-        variant={toastProps.variant}
-        title={toastProps.title}
-        description={toastProps.description}
-        onOpenChange={(open) => !open && setShowToast(false)}
-      />
     </>
   );
 };

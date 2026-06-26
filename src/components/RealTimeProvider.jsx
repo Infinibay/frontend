@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
+import { Z } from '@infinibay/harbor'
 import { createRealTimeReduxService } from '@/services/realTimeReduxService'
 import { store } from '@/state/store'
 import { createDebugger } from '@/utils/debug'
@@ -163,7 +164,7 @@ function RealTimeConnectionIndicator({ status, error }) {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 z-50">
+    <div className="fixed bottom-4 left-4" style={{ zIndex: Z.TOAST }}>
       <div className={`px-3 py-1 rounded-full text-xs text-white ${getStatusColor()} shadow-lg`}>
         {getStatusText()}
         {error && (

@@ -54,6 +54,7 @@ export const fetchGraphics = createAsyncThunk(
 
 const initialState = {
   graphics: [],
+  lastUpdated: null,
   loading: false,
   error: null
 };
@@ -75,6 +76,7 @@ const systemSlice = createSlice({
       .addCase(fetchGraphics.fulfilled, (state, action) => {
         state.loading = false;
         state.graphics = action.payload;
+        state.lastUpdated = Date.now();
       })
       .addCase(fetchGraphics.rejected, (state, action) => {
         state.loading = false;

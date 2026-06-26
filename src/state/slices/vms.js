@@ -224,6 +224,7 @@ export const moveMachine = createAsyncThunk(
 
 const initialState = {
   items: [],
+  lastUpdated: null,
   selectedMachine: null,
   connectionStatus: {
     isConnected: true,
@@ -352,6 +353,7 @@ const vmsSlice = createSlice({
       .addCase(fetchVms.fulfilled, (state, action) => {
         state.loading.fetch = false;
         state.items = action.payload;
+        state.lastUpdated = Date.now();
         state.connectionStatus.isConnected = true;
         state.connectionStatus.lastSuccessfulFetch = Date.now();
         state.connectionStatus.retryCount = 0;
@@ -389,8 +391,18 @@ const vmsSlice = createSlice({
       })
       .addCase(createVm.fulfilled, (state, action) => {
         state.loading.create = false;
-        // Don't add the VM here - it will be added via real-time event
-        // This prevents duplicates when the real-time event arrives
+        // Optimistically add the new VM by id so the list updates even if the
+        // real-time socket is down. Idempotent with realTimeVmCreated: if the
+        // event later arrives it will find the VM already present and skip it.
+        const newVm = action.payload;
+        if (newVm && newVm.id) {
+          const existingIndex = state.items.findIndex((vm) => vm.id === newVm.id);
+          if (existingIndex === -1) {
+            state.items.push(newVm);
+          } else {
+            state.items[existingIndex] = newVm;
+          }
+        }
       })
       .addCase(createVm.rejected, (state, action) => {
         state.loading.create = false;

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  Z,
   ButtonGroup,
   ClusterView,
   ContentSwap,
@@ -462,10 +463,10 @@ function TableWithContextMenu({
             position: 'fixed',
             left: ctx.x,
             top: ctx.y,
-            zIndex: 9999,
+            zIndex: Z.CONTEXT_MENU,
             minWidth: 200
           }}
-          className="rounded-xl bg-[#14141c] border border-white/10 shadow-2xl p-1">
+          className="rounded-md bg-surface-2 border border-[color:var(--harbor-overlay-border)] shadow-harbor-lg p-1">
           
               <MenuLabel>{ctx.raw?.name}</MenuLabel>
               <MenuSeparator />

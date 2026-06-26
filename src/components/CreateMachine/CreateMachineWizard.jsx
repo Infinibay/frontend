@@ -161,9 +161,10 @@ export default function CreateMachineWizard({ departmentId }) {
               if (!values.customOs) {
                 errors.os = 'Please select an operating system';
               }
-              if (!values.customCores || !values.customRam || !values.customStorage) {
-                errors.hardware = 'Hardware configuration is required';
-              }
+              // Hardware (cores/RAM/storage) always carries a clamped default
+              // from the sliders, so there is no reachable empty state to guard
+              // here — and BlueprintStep has no field bound to a `hardware`
+              // error key, which would make it a dead-end message anyway.
             }
             if (Object.keys(errors).length > 0) throw errors;
           }}

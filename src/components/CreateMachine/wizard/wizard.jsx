@@ -11,15 +11,11 @@ import { createDebugger } from '@/utils/debug';
 import { FormErrorProvider, useFormError } from './form-error-provider';
 import {
   User,
-  Mail,
-  Settings,
   Info,
   Cpu,
   Zap,
   Package,
   ClipboardCheck,
-  ArrowRight,
-  Shield,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -264,51 +260,6 @@ function getStepConfig(stepId, index) {
       title: 'Review & Create',
       description: 'Review your configuration and create the machine',
       icon: ClipboardCheck,
-    },
-    personal: {
-      title: 'Personal Info',
-      description: 'Tell us about yourself',
-      icon: User,
-    },
-    contact: {
-      title: 'Contact Details',
-      description: 'How can we reach you?',
-      icon: Mail,
-    },
-    preferences: {
-      title: 'Preferences',
-      description: 'Customize your experience',
-      icon: Settings,
-    },
-    project: {
-      title: 'Project Details',
-      description: 'Set up your project',
-      icon: Info,
-    },
-    team: {
-      title: 'Team Setup',
-      description: 'Configure your team',
-      icon: User,
-    },
-    settings: {
-      title: 'Final Settings',
-      description: 'Complete your setup',
-      icon: Settings,
-    },
-    direction: {
-      title: 'What & Where',
-      description: 'Choose what you want to do and which direction',
-      icon: ArrowRight,
-    },
-    service: {
-      title: 'Service Type',
-      description: 'Select the service or application',
-      icon: Shield,
-    },
-    customization: {
-      title: 'Customize Rule',
-      description: 'Fine-tune the rule settings',
-      icon: Settings,
     },
   };
 

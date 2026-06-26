@@ -360,7 +360,7 @@ export default function OverviewPage() {
                 No activity yet. Create a desktop to see it here.
               </span> :
 
-            <div className="flex flex-col divide-y divide-white/5">
+            <div className="flex flex-col divide-y divide-[color:var(--harbor-border-subtle)]">
                 {recentActivity.map((ev) =>
               <div key={ev.id} className="flex items-center gap-3 py-2 group">
                     <StatusChip status={ev.tone === 'running' ? 'online' : ev.tone === 'paused' ? 'degraded' : 'offline'} label={

@@ -116,22 +116,22 @@ export const getStatusColor = (status) => {
 
   switch (category) {
     case STATUS_CATEGORY.ACTIVE:
-      return 'bg-green-500'
+      return 'bg-success'
 
     case STATUS_CATEGORY.OFF:
-      return 'bg-gray-400'
+      return 'bg-fg-subtle'
 
     case STATUS_CATEGORY.SUSPENDED:
-      return 'bg-yellow-500'
+      return 'bg-warning'
 
     case STATUS_CATEGORY.TRANSITIONAL:
-      return 'bg-blue-500 animate-pulse'
+      return 'bg-info animate-pulse'
 
     case STATUS_CATEGORY.ERROR:
-      return 'bg-red-500'
+      return 'bg-danger'
 
     default:
-      return 'bg-gray-400'
+      return 'bg-fg-subtle'
   }
 }
 
@@ -145,22 +145,22 @@ export const getStatusBadgeColors = (status) => {
 
   switch (category) {
     case STATUS_CATEGORY.ACTIVE:
-      return 'bg-emerald-500/30 text-emerald-800 dark:text-emerald-200 border-emerald-500/30 ring-1 ring-emerald-600/40'
+      return 'bg-success/15 text-success border-success/30 ring-1 ring-success/40'
 
     case STATUS_CATEGORY.OFF:
-      return 'bg-gray-500/30 text-gray-800 dark:text-gray-200 border-gray-500/30 ring-1 ring-gray-600/40'
+      return 'bg-fg-subtle/15 text-fg-muted border-fg-subtle/30 ring-1 ring-fg-subtle/40'
 
     case STATUS_CATEGORY.SUSPENDED:
-      return 'bg-amber-500/30 text-amber-800 dark:text-amber-200 border-amber-500/30 ring-1 ring-amber-600/40'
+      return 'bg-warning/15 text-warning border-warning/30 ring-1 ring-warning/40'
 
     case STATUS_CATEGORY.TRANSITIONAL:
-      return 'bg-blue-500/30 text-blue-800 dark:text-blue-200 border-blue-500/30 ring-1 ring-blue-600/40'
+      return 'bg-info/15 text-info border-info/30 ring-1 ring-info/40'
 
     case STATUS_CATEGORY.ERROR:
-      return 'bg-red-500/30 text-red-800 dark:text-red-200 border-red-500/30 ring-1 ring-red-600/40'
+      return 'bg-danger/15 text-danger border-danger/30 ring-1 ring-danger/40'
 
     default:
-      return 'bg-gray-500/30 text-gray-800 dark:text-gray-200 border-gray-500/30 ring-1 ring-gray-600/40'
+      return 'bg-fg-subtle/15 text-fg-muted border-fg-subtle/30 ring-1 ring-fg-subtle/40'
   }
 }
 

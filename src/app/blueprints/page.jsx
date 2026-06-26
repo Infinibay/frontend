@@ -31,6 +31,8 @@ import {
   IconButton,
   ResponsiveStack,
   Tooltip,
+  MenuItem,
+  Z,
 } from '@infinibay/harbor';
 import { PageHeader } from '@/components/common/PageHeader';
 import { OsIcon } from '@/components/common/OsBadge';
@@ -123,7 +125,7 @@ function BlueprintRow({ template, onEdit, onDelete }) {
         <span className="text-fg">{template.storage}</span>
         <span className="text-fg-subtle">GB</span>
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity">
         <IconButton
           size="sm"
           variant="ghost"
@@ -159,34 +161,31 @@ function BlueprintRow({ template, onEdit, onDelete }) {
         ? createPortal(
             <div
               ref={menuRef}
-              style={{ position: 'fixed', left: ctx.x, top: ctx.y, zIndex: 9999, minWidth: 180 }}
-              className="rounded-xl bg-[#14141c] border border-white/10 shadow-2xl p-1"
+              role="menu"
+              style={{ position: 'fixed', left: ctx.x, top: ctx.y, zIndex: Z.CONTEXT_MENU, minWidth: 180 }}
+              className="rounded-md bg-surface-2 border border-[var(--harbor-overlay-border)] shadow-harbor-lg p-1"
             >
-              <button
-                type="button"
-                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md hover:bg-white/5"
+              <MenuItem
+                icon={<Pencil size={14} />}
                 onClick={() => {
                   setCtx(null);
                   onEdit?.();
                 }}
               >
-                <Pencil size={14} /> Edit
-              </button>
-              <button
-                type="button"
-                className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md ${
-                  inUse ? 'text-fg-subtle cursor-not-allowed' : 'text-danger-fg hover:bg-danger-fg/10'
-                }`}
+                Edit
+              </MenuItem>
+              <MenuItem
+                icon={<Trash2 size={14} />}
+                danger
                 disabled={inUse}
-                title={inUse ? `In use by ${template.totalMachines} desktop(s)` : undefined}
                 onClick={() => {
                   if (inUse) return;
                   setCtx(null);
                   onDelete?.(template);
                 }}
               >
-                <Trash2 size={14} /> Delete
-              </button>
+                Delete
+              </MenuItem>
             </div>,
             document.body
           )
@@ -513,7 +512,7 @@ export default function TemplatesPage() {
                   </button>
                 </div>
               ) : (
-                <div className="flex flex-col divide-y divide-white/5">
+                <div className="flex flex-col divide-y divide-[var(--harbor-border-subtle)]">
                   {list.map((template) => (
                     <BlueprintRow
                       key={template.id}

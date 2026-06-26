@@ -35,6 +35,7 @@ import client from '@/apollo-client';
 import { PageHeader } from '@/components/common/PageHeader';
 import { fetchUsers } from '@/state/slices/users';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { usePermissions } from '@/hooks/usePermissions';
 import { getSocketService } from '@/services/socketService';
 import {
   usePermissionRegistryQuery,
@@ -357,6 +358,22 @@ export default function PoliciesListPage() {
   );
   const roleReadOnly = selectedRole?.key === 'SUPER_ADMIN';
 
+  // -------------------------------------------------------------------------
+  // Capability gating — ADMINs reach this page via role:view/audit:view but
+  // cannot perform the governance mutations (role:create/edit/delete/assign,
+  // permission:grantUser). Disable the write controls so they get a read-only
+  // page instead of raw FORBIDDEN toasts. While permissions are still loading
+  // stay optimistic (treat as allowed) to avoid a flash of disabled controls.
+  // -------------------------------------------------------------------------
+  const { can, isLoading: permsLoading } = usePermissions();
+  const canCreateRole = permsLoading || can('role:create');
+  const canEditRole = permsLoading || can('role:edit');
+  const canDeleteRole = permsLoading || can('role:delete');
+  const canAssignRole = permsLoading || can('role:assign');
+  const canGrantUser = permsLoading || can('permission:grantUser');
+  // SUPER_ADMIN is always locked; editing any other role also needs role:edit.
+  const roleEditLocked = roleReadOnly || !canEditRole;
+
   // Pick the first role when data lands.
   useEffect(() => {
     if (!selectedRoleId && roles.length) {
@@ -401,7 +418,7 @@ export default function PoliciesListPage() {
   }, [selectedRoleId]);
 
   const handleSaveRole = async () => {
-    if (!selectedRole || roleReadOnly) return;
+    if (!selectedRole || roleEditLocked) return;
     const name = editName.trim();
     if (!name) {
       toast.error('Give the role a name');
@@ -419,6 +436,7 @@ export default function PoliciesListPage() {
   };
 
   const handleCreateRole = async () => {
+    if (!canCreateRole) return;
     const name = newRoleName.trim();
     if (!name) {
       toast.error('Give the role a name');
@@ -444,6 +462,7 @@ export default function PoliciesListPage() {
   };
 
   const handleDeleteRole = async (role) => {
+    if (!canDeleteRole) return;
     try {
       await deleteRole({ variables: { id: role.id } });
       toast.success('Role deleted');
@@ -457,7 +476,7 @@ export default function PoliciesListPage() {
   // System presets (except the locked SUPER_ADMIN) can be reset to their seeded
   // defaults, discarding any in-place customizations.
   const handleResetRole = async (role) => {
-    if (!role || !role.isSystem || role.key === 'SUPER_ADMIN') return;
+    if (!role || !role.isSystem || role.key === 'SUPER_ADMIN' || !canEditRole) return;
     if (
       typeof window !== 'undefined' &&
       !window.confirm(`Reset "${role.name}" to its default permissions? This discards any customizations.`)
@@ -477,7 +496,7 @@ export default function PoliciesListPage() {
   // Permission editing
   // -------------------------------------------------------------------------
   const changeGrant = async (permission, nextValue) => {
-    if (!selectedRole || roleReadOnly) return;
+    if (!selectedRole || roleEditLocked) return;
     try {
       if (nextValue === NONE) {
         await removeRolePermission({
@@ -644,7 +663,7 @@ export default function PoliciesListPage() {
   }, [roles]);
 
   const handleChangeUserRole = async (userId, roleId) => {
-    if (!roleId) return;
+    if (!roleId || !canAssignRole) return;
     setChangingRoleFor(userId);
     try {
       await assignUserRole({ variables: { input: { userId, roleId } } });
@@ -690,6 +709,7 @@ export default function PoliciesListPage() {
   }, [registry, overrideResource]);
 
   const handleAddOverride = async () => {
+    if (!canGrantUser) return;
     const permission = overridePermission.trim();
     if (!overrideUserId || !permission) {
       toast.error('Pick a user and a permission');
@@ -716,6 +736,7 @@ export default function PoliciesListPage() {
   };
 
   const handleClearOverride = async (override) => {
+    if (!canGrantUser) return;
     try {
       await clearUserPermissionOverride({
         variables: { userId: override.userId, permission: override.permission }
@@ -860,10 +881,12 @@ export default function PoliciesListPage() {
       width: 80,
       align: 'right',
       cell: ({ row }) =>
-      <Button size="sm" variant="ghost" icon={<Trash2 size={12} />} onClick={() => handleClearOverride(row)} />
+      canGrantUser ?
+        <Button size="sm" variant="ghost" icon={<Trash2 size={12} />} onClick={() => handleClearOverride(row)} /> :
+        null
     }],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [canGrantUser]
   );
 
   // -------------------------------------------------------------------------
@@ -886,11 +909,11 @@ export default function PoliciesListPage() {
           <ScopeSegmented
             value={manageValue}
             scoped={resource.scoped}
-            disabled={roleReadOnly}
+            disabled={roleEditLocked}
             onChange={(v) => changeGrant(`${resource.key}:manage`, v)} />
         </div>
 
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-[color:var(--harbor-border-subtle)]">
           {(resource.verbs || []).map((verb) => {
             const permission = `${resource.key}:${verb}`;
             const directGrant = (selectedRole?.permissions || []).find(
@@ -926,7 +949,7 @@ export default function PoliciesListPage() {
                 <ScopeSegmented
                   value={value}
                   scoped={resource.scoped}
-                  disabled={roleReadOnly || derived}
+                  disabled={roleEditLocked || derived}
                   onChange={(v) => changeGrant(permission, v)} />
               </div>
             );
@@ -1003,17 +1026,19 @@ export default function PoliciesListPage() {
             icon={<ShieldCheck size={16} className="text-fg-muted" />}
             title="Roles"
             action={
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={<Plus size={14} />}
-                onClick={() => {
-                  setNewRoleName('');
-                  setNewRoleDescription('');
-                  setCreating(true);
-                }}>
-                New
-              </Button>
+              canCreateRole ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<Plus size={14} />}
+                  onClick={() => {
+                    setNewRoleName('');
+                    setNewRoleDescription('');
+                    setCreating(true);
+                  }}>
+                  New
+                </Button>
+              ) : null
             }>
             <ResponsiveStack direction="col" gap={2}>
               {rolesLoading && !roles.length ? (
@@ -1051,7 +1076,7 @@ export default function PoliciesListPage() {
                       </div>
                       {role.isSystem ? <Badge tone="info">system</Badge> : null}
                       <Badge tone="neutral">{role.userCount ?? 0}</Badge>
-                      {!role.isSystem ? (
+                      {!role.isSystem && canDeleteRole ? (
                         <IconButton
                           size="sm"
                           variant="ghost"
@@ -1079,11 +1104,13 @@ export default function PoliciesListPage() {
                     <input
                       className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
                       placeholder="Role name"
+                      aria-label="New role name"
                       value={newRoleName}
                       onChange={(e) => setNewRoleName(e.target.value)} />
                     <input
                       className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
                       placeholder="Description (optional)"
+                      aria-label="New role description"
                       value={newRoleDescription}
                       onChange={(e) => setNewRoleDescription(e.target.value)} />
                     <div className="flex gap-2">
@@ -1105,6 +1132,10 @@ export default function PoliciesListPage() {
                     <span className="text-xs text-fg-muted">
                       This system role is locked — its name and permissions can’t be changed.
                     </span>
+                  ) : !canEditRole ? (
+                    <span className="text-xs text-fg-muted">
+                      You don’t have permission to edit roles — this view is read-only.
+                    </span>
                   ) : (
                     <>
                       <span className="text-xs font-medium text-fg-muted">
@@ -1113,11 +1144,13 @@ export default function PoliciesListPage() {
                       <input
                         className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
                         placeholder="Role name"
+                        aria-label="Role name"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)} />
                       <input
                         className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
                         placeholder="Description (optional)"
+                        aria-label="Role description"
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)} />
                       <Button
@@ -1146,7 +1179,7 @@ export default function PoliciesListPage() {
             title={selectedRole ? `Permissions · ${selectedRole.name}` : 'Permissions'}
             action={
               <div className="flex items-center gap-2">
-                {selectedRole?.isSystem && selectedRole?.key !== 'SUPER_ADMIN' ? (
+                {selectedRole?.isSystem && selectedRole?.key !== 'SUPER_ADMIN' && canEditRole ? (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -1156,7 +1189,7 @@ export default function PoliciesListPage() {
                     Reset to default
                   </Button>
                 ) : null}
-                {roleReadOnly ? (
+                {roleEditLocked ? (
                   <Badge tone="warning" icon={<Lock size={12} />}>
                     read-only
                   </Badge>
@@ -1220,7 +1253,7 @@ export default function PoliciesListPage() {
                 title="No users"
                 description="There are no users to manage yet." />
             ) : (
-              <div className="divide-y divide-white/5 rounded-sm border border-white/10">
+              <div className="divide-y divide-[color:var(--harbor-border-subtle)] rounded-sm border border-white/10">
                 {roleableUsers.map((u) => (
                   <div key={u.id} className="flex items-center justify-between gap-3 px-3.5 py-2">
                     <div className="flex min-w-0 flex-col">
@@ -1231,7 +1264,7 @@ export default function PoliciesListPage() {
                       <Select
                         size="sm"
                         value={u.roleId || systemRoleIdByKey.get(u.role)}
-                        disabled={changingRoleFor === u.id}
+                        disabled={changingRoleFor === u.id || !canAssignRole}
                         onChange={(roleId) => handleChangeUserRole(u.id, roleId)}
                         options={roleOptions} />
                     </div>
@@ -1307,7 +1340,7 @@ export default function PoliciesListPage() {
                   variant="primary"
                   icon={<Plus size={14} />}
                   loading={settingOverride}
-                  disabled={!overridePermission}
+                  disabled={!overridePermission || !canGrantUser}
                   onClick={handleAddOverride}>
                   Add
                 </Button>

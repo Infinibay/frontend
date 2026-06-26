@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDispatch } from "react-redux";
+import { toast } from "sonner";
 
 // Redux actions
 import {
@@ -26,8 +27,6 @@ export const useDepartmentsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDeptDialogOpen, setIsCreateDeptDialogOpen] = useState(false);
   const [newDepartmentName, setNewDepartmentName] = useState("");
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState({});
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState(null);
 
@@ -94,12 +93,9 @@ export const useDepartmentsPage = () => {
       // Refresh departments to get the updated list
       refreshDepartments();
 
-      setToastProps({
-        variant: "success",
-        title: "Department Created",
+      toast.success("Department Created", {
         description: `Department "${trimmedName}" has been successfully created.`
       });
-      setShowToast(true);
 
       debug.info('Department created successfully:', trimmedName);
 
@@ -122,12 +118,9 @@ export const useDepartmentsPage = () => {
     // If error is provided (from resource fetch), show error toast
     if (error) {
       debug.error('Failed to fetch department resources:', error);
-      setToastProps({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to load department information. Please try again."
       });
-      setShowToast(true);
       return;
     }
 
@@ -137,23 +130,17 @@ export const useDepartmentsPage = () => {
       // Refresh departments to get the updated list
       refreshDepartments();
 
-      setToastProps({
-        variant: "success",
-        title: "Department Deleted",
+      toast.success("Department Deleted", {
         description: `Department "${departmentName}" has been successfully deleted.`
       });
-      setShowToast(true);
 
       debug.info('Department deleted successfully:', departmentName);
     } catch (deleteError) {
       debug.error('Failed to delete department:', deleteError);
-      setToastProps({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: deleteError.message || "Failed to delete department. Please try again."
       });
-      setShowToast(true);
-      // Re-throw so the card component can handle it
+      // Re-throw so the caller can handle dialog state
       throw deleteError;
     }
   }, [dispatch, refreshDepartments]);
@@ -203,8 +190,6 @@ export const useDepartmentsPage = () => {
     searchQuery,
     isCreateDeptDialogOpen,
     newDepartmentName,
-    showToast,
-    toastProps,
     filteredDepartments,
     hasError: !!(departmentsError || vmsError),
     error: departmentsError || vmsError,
@@ -216,7 +201,6 @@ export const useDepartmentsPage = () => {
     setSearchQuery,
     setIsCreateDeptDialogOpen: handleSetIsCreateDeptDialogOpen,
     setNewDepartmentName,
-    setShowToast,
     handleCreateDepartment,
     handleDeleteDepartment,
     refreshDepartments,

@@ -196,8 +196,16 @@ export default function ScriptsSection({ embedded = false, className = "" }) {
             return (
               <div
                 key={script.id}
-                className="group flex items-center gap-3 rounded-lg border border-white/8 bg-surface-1 p-3 hover:border-white/20 hover:bg-white/[0.04] transition-colors cursor-pointer"
+                role="button"
+                tabIndex={0}
+                className="group flex items-center gap-3 rounded-lg border border-white/8 bg-surface-1 p-3 hover:border-white/20 hover:bg-white/[0.04] transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-accent"
                 onClick={() => router.push(`/scripts/${script.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(`/scripts/${script.id}`);
+                  }
+                }}
               >
                 <span className="h-8 w-8 rounded-md bg-accent-2/15 text-accent-2 grid place-items-center shrink-0">
                   <FileCode className="h-4 w-4" />
@@ -247,7 +255,7 @@ export default function ScriptsSection({ embedded = false, className = "" }) {
                     e.stopPropagation();
                     setDeleteTarget({ id: script.id, name: script.name });
                   }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                 >
                   {""}
                 </Button>

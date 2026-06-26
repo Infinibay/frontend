@@ -140,6 +140,7 @@ const departmentsSlice = createSlice({
     name: 'departments',
     initialState: {
         items: [],
+        lastUpdated: null,
         loading: {
             fetch: false,
             fetchOne: false,
@@ -203,6 +204,7 @@ const departmentsSlice = createSlice({
             .addCase(fetchDepartments.fulfilled, (state, action) => {
                 state.loading.fetch = false;
                 state.items = action.payload;
+                state.lastUpdated = Date.now();
             })
             .addCase(fetchDepartments.rejected, (state, action) => {
                 state.loading.fetch = false;

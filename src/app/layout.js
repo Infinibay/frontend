@@ -16,7 +16,7 @@ import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppBackground } from '@/components/AppBackground';
 import auth from '@/utils/auth';
 import { CursorProvider } from '@infinibay/harbor/lib/cursor';
-import { AppShell, ToastProvider as HarborToastProvider } from '@infinibay/harbor';
+import { AppShell } from '@infinibay/harbor';
 import { Toaster as SonnerToaster } from 'sonner';
 import {
   selectInterfaceSize,
@@ -25,7 +25,7 @@ import {
 } from '@/state/slices/appSettings';
 import { RealTimeProvider } from '@/components/RealTimeProvider';
 import { SocketNamespaceGuard } from '@/components/SocketNamespaceGuard';
-import { isEndUser } from '@/lib/roles';
+import { isEndUserView } from '@/lib/roles';
 import { useMyPermissionsQuery } from '@/gql/hooks';
 import { firstAllowedRoute, isPathAllowed } from '@/lib/permissions';
 import { createThemeScript } from '@/utils/theme';
@@ -46,6 +46,10 @@ const debug = createDebugger('frontend:layout:root');
 function AppContent({ children, isAuthenticated, authChecked }) {
   const pathname = usePathname();
   const router = useRouter();
+  // Responsive shell: below lg the sidebar collapses into a drawer opened from
+  // the header hamburger. State lives here (the shell owner) and is handed to
+  // both GlobalHeader (opens it) and AppSidebar (renders + closes it).
+  const [navOpen, setNavOpen] = useState(false);
   const user = useSelector((state) => state.auth.user);
   const interfaceSize = useSelector(selectInterfaceSize);
   const appSettingsInitialized = useSelector(selectAppSettingsInitialized);
@@ -84,7 +88,10 @@ function AppContent({ children, isAuthenticated, authChecked }) {
     if (!allowedResources) return;
     if (isPathAllowed(pathname, allowedResources)) return;
 
-    const fallback = firstAllowedRoute(allowedResources, isEndUser(user) ? '/workspace' : '/overview');
+    const fallback = firstAllowedRoute(
+      allowedResources,
+      isEndUserView(user, allowedResources) ? '/workspace' : '/overview',
+    );
     debug.warn('routing', 'Redirecting user away from denied route', { pathname, fallback });
     router.replace(fallback);
   }, [allowedResources, isAuthenticated, pathname, router, user]);
@@ -140,8 +147,15 @@ function AppContent({ children, isAuthenticated, authChecked }) {
 
   return (
     <AppShell
-      sidebar={<AppSidebar user={sidebarUser} onLogOut={handleLogout} />}
-      header={<GlobalHeader />}
+      sidebar={
+        <AppSidebar
+          user={sidebarUser}
+          onLogOut={handleLogout}
+          mobileOpen={navOpen}
+          onMobileClose={() => setNavOpen(false)}
+        />
+      }
+      header={<GlobalHeader onMenuClick={() => setNavOpen(true)} />}
       contentPadding="none"
     >
       <BrandingApplier />
@@ -221,25 +235,25 @@ export default function RootLayout({ children }) {
                 <HeaderActionProvider>
                     <ApolloProvider client={client}>
                       <CursorProvider>
-                        <HarborToastProvider>
-                          <InitialDataLoader>
-                            <SocketNamespaceGuard>
-                              <RealTimeProvider>
-                                <AppContent
-                                  authChecked={isAuthenticated !== null}
-                                  isAuthenticated={isAuthenticated === true}
-                                >
-                                  {children}
-                                </AppContent>
-                              </RealTimeProvider>
-                            </SocketNamespaceGuard>
-                          </InitialDataLoader>
-                          <SonnerToaster
-                            theme="dark"
-                            position="bottom-right"
-                            richColors
-                          />
-                        </HarborToastProvider>
+                        <InitialDataLoader>
+                          <SocketNamespaceGuard>
+                            <RealTimeProvider>
+                              <AppContent
+                                authChecked={isAuthenticated !== null}
+                                isAuthenticated={isAuthenticated === true}
+                              >
+                                {children}
+                              </AppContent>
+                            </RealTimeProvider>
+                          </SocketNamespaceGuard>
+                        </InitialDataLoader>
+                        {/* Toasts standardize on Sonner. The harbor ToastProvider
+                            is removed; its consumers are migrated by group STATES. */}
+                        <SonnerToaster
+                          theme="dark"
+                          position="bottom-right"
+                          richColors
+                        />
                       </CursorProvider>
                     </ApolloProvider>
                 </HeaderActionProvider>

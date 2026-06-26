@@ -21,6 +21,7 @@ import {
   ResponsiveStack,
   ScrollArea,
   Spinner,
+  Z,
 } from '@infinibay/harbor';
 import { CheckCircle2, MoreHorizontal, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -72,7 +73,7 @@ export function RecommendationDropdown({ onClose, onActionComplete }) {
     marginTop: 8,
     width: 384,
     maxHeight: '70vh',
-    zIndex: 50,
+    zIndex: Z.POPOVER,
   };
 
   return (

@@ -17,13 +17,6 @@ import usersReducer from './slices/users'
 import vmPortsReducer from './slices/vmPorts'
 import vmsReducer from './slices/vms'
 
-const persistConfig = {
-  key: 'root',
-  version: 1,
-  storage,
-  blacklist: ['vms', 'templates', 'templateCategories', 'users', 'vmPorts', 'firewall', 'header'] // Don't persist these reducers
-};
-
 const persistAuthConfig = {
   key: 'auth',
   storage,

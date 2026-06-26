@@ -17,7 +17,7 @@ import {
   ResponsiveStack,
   SegmentedControl,
   Select,
-  Spinner,
+  Skeleton,
   Tooltip,
 } from "@infinibay/harbor";
 import {
@@ -149,6 +149,7 @@ export default function ComputersPage() {
     deleteConfirmation,
     confirmDelete,
     cancelDelete,
+    isDeleting,
   } = useComputerActions();
 
   const [statusFilter, setStatusFilter] = useState("all");
@@ -296,15 +297,7 @@ export default function ComputersPage() {
     []
   );
 
-  if (loading && !machines?.length) {
-    return (
-      <Page gap="lg">
-        <ResponsiveStack direction="row" gap={3} justify="center" align="center">
-          <Spinner /> Loading desktops…
-        </ResponsiveStack>
-      </Page>
-    );
-  }
+  const initialLoading = loading && !machines?.length;
 
   const countText = hosts.length === 0
     ? null
@@ -362,14 +355,14 @@ export default function ComputersPage() {
         filters={
           hosts.length > 0 ? (
             <>
-              <div className="w-[160px]">
+              <div className="w-full sm:w-[160px]">
                 <Select
                   value={statusFilter}
                   onChange={setStatusFilter}
                   options={statusOptions}
                 />
               </div>
-              <div className="w-[180px]">
+              <div className="w-full sm:w-[180px]">
                 <Select
                   value={deptFilter}
                   onChange={setDeptFilter}
@@ -412,7 +405,15 @@ export default function ComputersPage() {
         </Alert>
       )}
 
-      {hosts.length === 0 ? (
+      {initialLoading ? (
+        <ResponsiveStack direction="col" gap={2}>
+          <Skeleton height={44} />
+          <Skeleton height={56} />
+          <Skeleton height={56} />
+          <Skeleton height={56} />
+          <Skeleton height={56} />
+        </ResponsiveStack>
+      ) : hosts.length === 0 ? (
         <EmptyState
           icon={<Monitor size={18} />}
           title="No desktops yet"
@@ -498,10 +499,15 @@ export default function ComputersPage() {
           <p>All snapshots, volumes and attached configuration will be lost.</p>
         </DialogBody>
         <DialogButtons align="end">
-          <Button variant="secondary" onClick={cancelDelete}>
+          <Button variant="secondary" onClick={cancelDelete} disabled={isDeleting}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={confirmDelete}>
+          <Button
+            variant="destructive"
+            onClick={confirmDelete}
+            loading={isDeleting}
+            disabled={isDeleting}
+          >
             Delete
           </Button>
         </DialogButtons>

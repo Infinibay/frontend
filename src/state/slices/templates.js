@@ -10,8 +10,19 @@ import {
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
-    const { data } = await client.query({ query, variables });
-    return data;
+    const response = await client.query({
+      query,
+      variables,
+      fetchPolicy: 'network-only' // Force network request so mutations aren't masked by a stale cache-first read
+    });
+
+    // Surface GraphQL errors (errorPolicy:'all' resolves instead of throwing)
+    if (response.errors) {
+      const errorMessage = response.errors.map(err => err.message).join(', ');
+      throw new Error(errorMessage);
+    }
+
+    return response.data;
   } catch (error) {
     console.error('GraphQL query error:', error);
     throw error;
@@ -67,6 +78,7 @@ const templatesSlice = createSlice({
   name: 'templates',
   initialState: {
     items: [],
+    lastUpdated: null,
     loading: {
       fetch: false,
       create: false,
@@ -91,6 +103,7 @@ const templatesSlice = createSlice({
       .addCase(fetchTemplates.fulfilled, (state, action) => {
         state.loading.fetch = false;
         state.items = action.payload;
+        state.lastUpdated = Date.now();
       })
       .addCase(fetchTemplates.rejected, (state, action) => {
         state.loading.fetch = false;
