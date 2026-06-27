@@ -177,6 +177,8 @@ export default function PoolDetailPage({ params }) {
     [vms, id]
   );
 
+  // title intentionally omitted — the in-page <PageHeader> below renders the
+  // page <h1>; setting it here too would duplicate it in GlobalHeader.
   usePageHeader(
     {
       breadcrumbs: [
@@ -184,7 +186,6 @@ export default function PoolDetailPage({ params }) {
         { label: 'Pools', href: '/pools' },
         { label: pool?.name || 'Pool', isCurrent: true }
       ],
-      title: pool?.name || 'Pool',
       actions: []
     },
     [pool?.name]
@@ -405,28 +406,32 @@ function DesktopsTab({ machines, onRefresh }) {
         const isRunning = r.status === 'running';
         const isBusy = busyId === r.id || r.status === 'starting' || r.status === 'rebuilding';
         return (
-          <Menu
-            trigger={
-            <IconButton size="sm" variant="ghost" label="Desktop actions" icon={<MoreHorizontal size={14} />} disabled={isBusy} />
-            }>
-              <MenuItem icon={<ExternalLink size={14} />} onClick={() => openConsole(r)}>
-                Open console
-              </MenuItem>
-              {isRunning ?
-            <>
-                  <MenuItem icon={<Pause size={14} />} onClick={() => act(r, pauseVm, 'Suspending desktop')}>
-                    Suspend
-                  </MenuItem>
-                  <MenuItem icon={<PowerOff size={14} />} danger onClick={() => act(r, stopVm, 'Powering off desktop')}>
-                    Power off
-                  </MenuItem>
-                </> :
-
-            <MenuItem icon={<Power size={14} />} onClick={() => act(r, playVm, 'Powering on desktop')}>
-                  Power on
+          // Stop the click from bubbling to the row (onRowClick → openConsole),
+          // which would navigate away before the menu could open.
+          <div onClick={(e) => e.stopPropagation()}>
+            <Menu
+              trigger={
+              <IconButton size="sm" variant="ghost" label="Desktop actions" icon={<MoreHorizontal size={14} />} disabled={isBusy} />
+              }>
+                <MenuItem icon={<ExternalLink size={14} />} onClick={() => openConsole(r)}>
+                  Open console
                 </MenuItem>
-            }
-            </Menu>);
+                {isRunning ?
+              <>
+                    <MenuItem icon={<Pause size={14} />} onClick={() => act(r, pauseVm, 'Suspending desktop')}>
+                      Suspend
+                    </MenuItem>
+                    <MenuItem icon={<PowerOff size={14} />} danger onClick={() => act(r, stopVm, 'Powering off desktop')}>
+                      Power off
+                    </MenuItem>
+                  </> :
+
+              <MenuItem icon={<Power size={14} />} onClick={() => act(r, playVm, 'Powering on desktop')}>
+                    Power on
+                  </MenuItem>
+              }
+              </Menu>
+            </div>);
 
       }
     }],
@@ -528,7 +533,7 @@ function desktopDotStatus(status) {
 
 function Stat({ label, value, hint, mono }) {
   return (
-    <div className="flex flex-col gap-0.5 p-3 bg-white/[0.02] rounded-md border border-white/5">
+    <div className="flex flex-col gap-0.5 p-3 bg-surface-2 rounded-md border border-border-subtle">
       <span className="text-xs uppercase tracking-wide text-fg-muted">{label}</span>
       <span className={`text-2xl ${mono ? 'font-mono' : 'font-semibold'}`}>{value}</span>
       {hint ? <span className="text-xs text-fg-subtle">{hint}</span> : null}
@@ -538,7 +543,7 @@ function Stat({ label, value, hint, mono }) {
 
 function KV({ label, value, mono }) {
   return (
-    <div className="flex items-center gap-4 py-1.5 border-b border-white/5 last:border-b-0">
+    <div className="flex items-center gap-4 py-1.5 border-b border-border-subtle last:border-b-0">
       <span className="text-sm text-fg-muted w-36 shrink-0">{label}</span>
       <span className={`text-sm ${mono ? 'font-mono text-xs' : ''} truncate`}>{value}</span>
     </div>);

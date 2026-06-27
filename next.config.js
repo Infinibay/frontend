@@ -178,6 +178,7 @@ const nextConfig = {
       // subpaths.
       '@infinibay/harbor$': path.resolve(__dirname, 'harbor/src/components/index.ts'),
       '@infinibay/harbor/theme$': path.resolve(__dirname, 'harbor/src/lib/theme/index.ts'),
+      '@infinibay/harbor/a11y$': path.resolve(__dirname, 'harbor/src/lib/a11y/index.ts'),
       '@infinibay/harbor/lib/cursor$': path.resolve(__dirname, 'harbor/src/lib/cursor.tsx'),
       '@infinibay/harbor/index.css$': path.resolve(__dirname, 'harbor/src/index.css'),
     };

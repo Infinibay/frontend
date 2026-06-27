@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useSelector } from 'react-redux';
 import {
   Page,
+  Alert,
   Badge,
   Button,
   DataTable,
@@ -23,7 +24,7 @@ import {
   ResponsiveStack,
   SegmentedControl,
   Select,
-  Spinner,
+  Skeleton,
   StatusDot,
   TextField,
   Tooltip } from
@@ -191,6 +192,7 @@ export default function PoolsListPage() {
   const router = useRouter();
   const [pools, setPools] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [scaleTarget, setScaleTarget] = useState(null);
   const [poolToDelete, setPoolToDelete] = useState(null);
@@ -235,9 +237,15 @@ export default function PoolsListPage() {
         fetchPolicy: 'network-only'
       });
       setPools(data?.pools ?? []);
+      setError(null);
     } catch (err) {
       debug.error('fetch', err);
-      if (!silent) toast.error(`Failed to load pools: ${err.message}`);
+      // Only surface a persistent error on a foreground load; a failed silent
+      // poll shouldn't blow away an already-rendered table.
+      if (!silent) {
+        setError(err);
+        toast.error(`Failed to load pools: ${err.message}`);
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -295,13 +303,15 @@ export default function PoolsListPage() {
       totalRunning > 0 ? `${totalRunning} running` : null].
       filter(Boolean).join(' · ');
 
+  // title is intentionally omitted: the in-page <PageHeader> renders the page
+  // <h1> (with count + controls). Setting it here too would make GlobalHeader
+  // emit a duplicate <h1>. We still drive breadcrumbs + help from this hook.
   usePageHeader(
     {
       breadcrumbs: [
         { label: 'Home', href: '/' },
         { label: 'Pools', isCurrent: true }],
 
-      title: 'Pools',
       actions: [],
       helpConfig: HELP_CONFIG,
       helpTooltip: 'Pools help'
@@ -388,33 +398,38 @@ export default function PoolsListPage() {
       header: '',
       width: 40,
       cell: ({ row }) =>
-      <Menu
-        trigger={
-        <IconButton size="sm" variant="ghost" label="Actions" icon={<MoreHorizontal size={14} />} />
-        }>
-            <MenuItem icon={<Move3d size={14} />} onClick={() => setScaleTarget(row)}>
-              Scale…
-            </MenuItem>
-            {row.draining ?
-        <MenuItem
-          icon={<Play size={14} />}
-          onClick={() => runMutation(UNDRAIN_POOL, { id: row.id }, 'Pool resumed')}>
-                Resume
-              </MenuItem> :
-
-        <MenuItem
-          icon={<Pause size={14} />}
-          onClick={() => runMutation(DRAIN_POOL, { id: row.id }, 'Pool draining')}>
-                Drain
+      // Stop the click from bubbling to the DataTable row (onRowClick), which
+      // would navigate away before the menu could open. Harbor's Menu trigger
+      // does not stop propagation on its own.
+      <div onClick={(e) => e.stopPropagation()}>
+            <Menu
+          trigger={
+          <IconButton size="sm" variant="ghost" label="Actions" icon={<MoreHorizontal size={14} />} />
+          }>
+              <MenuItem icon={<Move3d size={14} />} onClick={() => setScaleTarget(row)}>
+                Scale…
               </MenuItem>
-        }
-            <MenuItem
-          icon={<Trash2 size={14} />}
-          danger
-          onClick={() => setPoolToDelete(row)}>
-              Delete
-            </MenuItem>
-          </Menu>
+              {row.draining ?
+          <MenuItem
+            icon={<Play size={14} />}
+            onClick={() => runMutation(UNDRAIN_POOL, { id: row.id }, 'Pool resumed')}>
+                  Resume
+                </MenuItem> :
+
+          <MenuItem
+            icon={<Pause size={14} />}
+            onClick={() => runMutation(DRAIN_POOL, { id: row.id }, 'Pool draining')}>
+                  Drain
+                </MenuItem>
+          }
+              <MenuItem
+            icon={<Trash2 size={14} />}
+            danger
+            onClick={() => setPoolToDelete(row)}>
+                Delete
+              </MenuItem>
+            </Menu>
+          </div>
 
 
     }],
@@ -489,9 +504,23 @@ export default function PoolsListPage() {
           } />
 
 
-        {loading && pools.length === 0 ?
-        <ResponsiveStack direction="row" gap={3} justify="center" align="center">
-            <Spinner /> <span className="text-fg-muted text-sm">Loading pools…</span>
+        {error && pools.length === 0 ?
+        <Alert
+          tone="danger"
+          title="Couldn't load pools"
+          actions={
+          <Button size="sm" onClick={() => fetchPools()} icon={<RefreshCcw size={16} />}>
+              Retry
+            </Button>
+          }>
+            {String(error?.message || error)}
+          </Alert> :
+        loading && pools.length === 0 ?
+        <ResponsiveStack direction="col" gap={2}>
+            <Skeleton height={40} />
+            <Skeleton height={48} />
+            <Skeleton height={48} />
+            <Skeleton height={48} />
           </ResponsiveStack> :
         pools.length === 0 ?
         <EmptyState
@@ -840,7 +869,7 @@ function ScalePoolDialog({ pool, onClose, onScaled }) {
         Set the number of desktops to provision now. The background refill job still keeps at least Min warm.
       </DialogDescription>
       <DialogBody>
-        <div className="flex flex-col gap-4 min-w-[360px]">
+        <div className="flex flex-col gap-4">
           <div className="text-sm text-fg-muted">
             Current: <span className="font-mono text-fg">{pool.currentSize}</span>
             {' · '}Range: <span className="font-mono text-fg">{pool.sizeMin}–{pool.sizeMax}</span>

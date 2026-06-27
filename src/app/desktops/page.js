@@ -283,13 +283,16 @@ export default function ComputersPage() {
     []
   );
 
+  // NOTE: title is intentionally omitted here. The in-page <PageHeader> below
+  // renders the page <h1> (with count + controls); setting `title` here too
+  // would make GlobalHeader emit a second, duplicate <h1>. We still drive the
+  // global breadcrumbs + help from this hook.
   usePageHeader(
     {
       breadcrumbs: [
         { label: "Home", href: "/" },
         { label: "Desktops", isCurrent: true },
       ],
-      title: "Desktops",
       actions: [],
       helpConfig,
       helpTooltip: "Desktops help",

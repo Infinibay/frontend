@@ -1,11 +1,18 @@
 'use client';
 
+import { useState } from 'react';
+import { Monitor } from 'lucide-react';
+
 /**
  * OsBadge — given a free-form OS/template string, returns a branded chip:
  * tiny logo (simple-icons CDN) + short name, colored to match the OS.
  *
  * Low saturation to match Harbor's muted palette — the chip is a signal,
  * not a sticker.
+ *
+ * Icons are fetched from the simple-icons CDN. On an air-gapped / offline
+ * on-prem install (or if a CSP blocks the CDN) the <img> fails; we degrade
+ * to a neutral local Monitor glyph instead of a broken-image box.
  */
 
 const OS_MAP = [
@@ -17,7 +24,7 @@ const OS_MAP = [
   { match: /rhel|red\s?hat/i,  slug: 'redhat',        label: 'RHEL',        tintBg: 'bg-[rgb(238_0_0_/_0.10)]',   tintFg: 'text-[rgb(240_130_130)]', color: 'F08282' },
   { match: /arch/i,            slug: 'archlinux',     label: 'Arch',        tintBg: 'bg-[rgb(23_147_209_/_0.10)]',tintFg: 'text-[rgb(100_180_220)]', color: '64B4DC' },
   { match: /alpine/i,          slug: 'alpinelinux',   label: 'Alpine',      tintBg: 'bg-[rgb(13_89_127_/_0.10)]', tintFg: 'text-[rgb(130_180_220)]', color: '82B4DC' },
-  { match: /macos|osx|darwin|apple|mac\s?os/i, slug: 'apple', label: 'macOS', tintBg: 'bg-white/5',               tintFg: 'text-fg',                color: 'FFFFFF' },
+  { match: /macos|osx|darwin|apple|mac\s?os/i, slug: 'apple', label: 'macOS', tintBg: 'bg-fg-muted/10',           tintFg: 'text-fg',                color: '888888' },
   { match: /freebsd|bsd/i,     slug: 'freebsd',       label: 'FreeBSD',     tintBg: 'bg-[rgb(171_43_40_/_0.10)]', tintFg: 'text-[rgb(220_140_140)]', color: 'DC8C8C' },
   { match: /linux|gnu/i,       slug: 'linux',         label: 'Linux',       tintBg: 'bg-[rgb(252_198_36_/_0.08)]',tintFg: 'text-[rgb(230_195_100)]', color: 'E6C364' },
 ];
@@ -32,6 +39,8 @@ function matchOs(os) {
  * returns 404). For Windows we render an inline SVG instead.
  */
 function InlineOsIcon({ hit, size }) {
+  const [failed, setFailed] = useState(false);
+
   if (hit.inline === 'windows') {
     return (
       <svg
@@ -46,6 +55,12 @@ function InlineOsIcon({ hit, size }) {
       </svg>
     );
   }
+
+  // CDN unreachable (offline / air-gapped on-prem / CSP) → neutral local glyph.
+  if (failed) {
+    return <Monitor size={size} aria-hidden="true" style={{ display: 'block' }} />;
+  }
+
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -54,6 +69,7 @@ function InlineOsIcon({ hit, size }) {
       width={size}
       height={size}
       style={{ display: 'block' }}
+      onError={() => setFailed(true)}
     />
   );
 }
@@ -66,7 +82,7 @@ export function OsBadge({ os, size = 14, className = '' }) {
       <span
         className={[
           'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md',
-          'text-xs text-fg-muted bg-white/5 whitespace-nowrap',
+          'text-xs text-fg-muted bg-fg-muted/10 whitespace-nowrap',
           className,
         ].join(' ')}
       >

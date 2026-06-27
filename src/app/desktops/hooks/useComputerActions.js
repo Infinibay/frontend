@@ -12,9 +12,7 @@ import {
   pauseVm,
   stopVm,
   deleteVm,
-  selectMachine,
   deselectMachine,
-  fetchVms,
 } from "@/state/slices/vms";
 
 export function useComputerActions() {
@@ -101,16 +99,6 @@ export function useComputerActions() {
     setDeleteConfirmation({ isOpen: false, machine: null });
   };
 
-  const handleRefresh = async () => {
-    try {
-      await dispatch(fetchVms()).unwrap();
-      toast.success("Machines data refreshed successfully");
-    } catch (err) {
-      const msg = typeof err === 'string' ? err : err?.message || '';
-      toast.error(msg || "Failed to refresh machines data");
-    }
-  };
-
   return {
     handlePcSelect,
     handleDetailsClose,
@@ -118,7 +106,6 @@ export function useComputerActions() {
     handlePause,
     handleStop,
     handleDelete,
-    handleRefresh,
     deleteConfirmation,
     confirmDelete,
     cancelDelete,

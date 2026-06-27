@@ -17,9 +17,9 @@ const STATUS_THEME = {
   degraded:     { label: 'Paused',       bg: 'bg-warning/12', fg: 'text-warning', dot: 'bg-warning' },
   provisioning: { label: 'Starting',     bg: 'bg-info/12',    fg: 'text-info',    dot: 'bg-info' },
   maintenance:  { label: 'Stopping',     bg: 'bg-info/12',    fg: 'text-info',    dot: 'bg-info' },
-  offline:      { label: 'Stopped',      bg: 'bg-white/5',    fg: 'text-fg-muted', dot: 'bg-white/30' },
+  offline:      { label: 'Stopped',      bg: 'bg-fg-muted/10', fg: 'text-fg-muted', dot: 'bg-fg-muted' },
   error:        { label: 'Error',        bg: 'bg-danger/12',  fg: 'text-danger',  dot: 'bg-danger' },
-  unknown:      { label: 'Unknown',      bg: 'bg-white/5',    fg: 'text-fg-muted', dot: 'bg-white/30' },
+  unknown:      { label: 'Unknown',      bg: 'bg-fg-muted/10', fg: 'text-fg-muted', dot: 'bg-fg-muted' },
 };
 
 export function StatusChip({ status, label, pulse }) {

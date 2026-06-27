@@ -26,6 +26,7 @@ import {
   MoreHorizontal,
   Camera } from
 'lucide-react';
+import { focusFirst, focusNextMenuItem } from '@infinibay/harbor/a11y';
 import { StatusChip } from '@/components/common/StatusChip';
 import { OsBadge } from '@/components/common/OsBadge';
 
@@ -80,6 +81,75 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
         onPlay?.(vm);
       }} />);
 
+
+}
+
+/**
+ * VmMenuItems — the single source of truth for a desktop's action menu.
+ *
+ * Shared by all three surfaces (table kebab, table right-click, grid
+ * right-click) so the available actions never drift between them — e.g.
+ * "Capture as Golden Image" now shows everywhere `onCapture` is provided,
+ * instead of only on the table right-click.
+ *
+ * `onAfter` runs before each action (used by the cursor-positioned table menu
+ * to close itself); Harbor's <Menu>/<ContextMenu> close themselves.
+ */
+function VmMenuItems({
+  vm,
+  pending,
+  onPlay,
+  onPause,
+  onStop,
+  onOpen,
+  onCapture,
+  onDelete,
+  onAfter
+}) {
+  const status = (vm?.status || '').toLowerCase();
+  const isRunning = status === 'running';
+  const isPaused = status === 'paused' || status === 'suspended';
+  const isStopped = !isRunning && !isPaused;
+  const isPending = !!pending?.[vm?.id];
+  const run = (fn) => () => {
+    onAfter?.();
+    fn?.(vm);
+  };
+
+  return (
+    <>
+      <MenuLabel>{vm?.name}</MenuLabel>
+      <MenuSeparator />
+      <MenuItem icon={<Play size={14} />} disabled={isPending || isRunning} onClick={run(onPlay)}>
+        Start
+      </MenuItem>
+      <MenuItem icon={<Pause size={14} />} disabled={isPending || !isRunning} onClick={run(onPause)}>
+        Pause
+      </MenuItem>
+      <MenuItem icon={<Square size={14} />} disabled={isPending || isStopped} onClick={run(onStop)}>
+        Stop
+      </MenuItem>
+      <MenuSeparator />
+      <MenuItem icon={<ExternalLink size={14} />} onClick={run(onOpen)}>
+        Open
+      </MenuItem>
+      {onCapture ?
+      <>
+          <MenuSeparator />
+          <MenuItem icon={<Camera size={14} />} onClick={run(onCapture)}>
+            Capture as Golden Image
+          </MenuItem>
+        </> :
+      null}
+      {onDelete ?
+      <>
+          <MenuSeparator />
+          <MenuItem icon={<Trash2 size={14} />} danger onClick={run(onDelete)}>
+            Delete
+          </MenuItem>
+        </> :
+      null}
+    </>);
 
 }
 
@@ -202,11 +272,6 @@ export function DesktopListView({
         align: 'right',
         cell: ({ row }) => {
           const raw = row._raw;
-          const status = (raw?.status || '').toLowerCase();
-          const isRunning = status === 'running';
-          const isPaused = status === 'paused' || status === 'suspended';
-          const isStopped = !isRunning && !isPaused;
-          const isPending = !!pendingActions?.[raw?.id];
           const stop = (e) => e.stopPropagation();
           return (
             <div onClick={stop}>
@@ -217,7 +282,7 @@ export function DesktopListView({
                   onPlay={onPlay}
                   onPause={onPause}
                   onStop={onStop} />
-                
+
                 <Menu
                   side="bottom"
                   align="end"
@@ -225,55 +290,23 @@ export function DesktopListView({
                   <button
                     type="button"
                     aria-label="More actions"
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-white/10 text-fg-muted hover:text-fg transition-colors"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--harbor-focus-ring)]"
                     onClick={stop}>
-                    
+
                       <MoreHorizontal size={14} />
                     </button>
                   }>
-                  
-                  <MenuLabel>{raw?.name}</MenuLabel>
-                  <MenuSeparator />
-                  <MenuItem
-                    icon={<Play size={14} />}
-                    disabled={isPending || isRunning}
-                    onClick={() => onPlay?.(raw)}>
-                    
-                    Start
-                  </MenuItem>
-                  <MenuItem
-                    icon={<Pause size={14} />}
-                    disabled={isPending || !isRunning}
-                    onClick={() => onPause?.(raw)}>
-                    
-                    Pause
-                  </MenuItem>
-                  <MenuItem
-                    icon={<Square size={14} />}
-                    disabled={isPending || isStopped}
-                    onClick={() => onStop?.(raw)}>
-                    
-                    Stop
-                  </MenuItem>
-                  <MenuSeparator />
-                  <MenuItem
-                    icon={<ExternalLink size={14} />}
-                    onClick={() => onOpen?.(raw)}>
-                    
-                    Open
-                  </MenuItem>
-                  {onDelete ?
-                  <>
-                      <MenuSeparator />
-                      <MenuItem
-                      icon={<Trash2 size={14} />}
-                      danger
-                      onClick={() => onDelete(raw)}>
-                      
-                        Delete
-                      </MenuItem>
-                    </> :
-                  null}
+
+                  <VmMenuItems
+                    vm={raw}
+                    pending={pendingActions}
+                    onPlay={onPlay}
+                    onPause={onPause}
+                    onStop={onStop}
+                    onOpen={onOpen}
+                    onCapture={onCapture}
+                    onDelete={onDelete} />
+
                 </Menu>
               </ResponsiveStack>
             </div>);
@@ -283,7 +316,7 @@ export function DesktopListView({
     );
 
     return cols;
-  }, [pendingActions, showDepartment, nodeNameById, onPlay, onPause, onStop, onOpen, onDelete]);
+  }, [pendingActions, showDepartment, nodeNameById, onPlay, onPause, onStop, onOpen, onCapture, onDelete]);
 
   const inner = view === 'grid' ?
   <ClusterView
@@ -306,60 +339,20 @@ export function DesktopListView({
     renderHost={(host, card) => {
       const raw = hosts.find((h) => h.id === host.id)?._raw;
       if (!raw) return card;
-      const status = (raw.status || '').toLowerCase();
-      const isRunning = status === 'running';
-      const isPaused = status === 'paused' || status === 'suspended';
-      const isStopped = !isRunning && !isPaused;
-      const isPending = !!pendingActions?.[raw.id];
       return (
         <ContextMenu
           menu={
-          <>
-                  <MenuLabel>{raw.name}</MenuLabel>
-                  <MenuSeparator />
-                  <MenuItem
-              icon={<Play size={14} />}
-              disabled={isPending || isRunning}
-              onClick={() => onPlay?.(raw)}>
-              
-                    Start
-                  </MenuItem>
-                  <MenuItem
-              icon={<Pause size={14} />}
-              disabled={isPending || !isRunning}
-              onClick={() => onPause?.(raw)}>
-              
-                    Pause
-                  </MenuItem>
-                  <MenuItem
-              icon={<Square size={14} />}
-              disabled={isPending || isStopped}
-              onClick={() => onStop?.(raw)}>
-              
-                    Stop
-                  </MenuItem>
-                  <MenuSeparator />
-                  <MenuItem
-              icon={<ExternalLink size={14} />}
-              onClick={() => onOpen?.(raw)}>
-              
-                    Open
-                  </MenuItem>
-                  {onDelete ?
-            <>
-                      <MenuSeparator />
-                      <MenuItem
-                icon={<Trash2 size={14} />}
-                danger
-                onClick={() => onDelete(raw)}>
-                
-                        Delete
-                      </MenuItem>
-                    </> :
-            null}
-                </>
+          <VmMenuItems
+            vm={raw}
+            pending={pendingActions}
+            onPlay={onPlay}
+            onPause={onPause}
+            onStop={onStop}
+            onOpen={onOpen}
+            onCapture={onCapture}
+            onDelete={onDelete} />
           }>
-          
+
               {card}
             </ContextMenu>);
 
@@ -403,6 +396,11 @@ function TableWithContextMenu({
 
   useEffect(() => {
     if (!ctx) return;
+    // Move focus into the menu on open so keyboard users can arrow through it
+    // and Escape back out — parity with Harbor's <Menu>/<ContextMenu>.
+    const raf = requestAnimationFrame(() => {
+      if (menuRef.current) focusFirst(menuRef.current);
+    });
     function down(e) {
       if (!menuRef.current?.contains(e.target)) setCtx(null);
     }
@@ -412,10 +410,21 @@ function TableWithContextMenu({
     document.addEventListener('mousedown', down);
     document.addEventListener('keydown', key);
     return () => {
+      cancelAnimationFrame(raf);
       document.removeEventListener('mousedown', down);
       document.removeEventListener('keydown', key);
     };
   }, [ctx]);
+
+  function onMenuKeyDown(e) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusNextMenuItem(menuRef.current, 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusNextMenuItem(menuRef.current, -1);
+    }
+  }
 
   function onContextMenu(e) {
     const tr = e.target.closest('tbody tr');
@@ -437,12 +446,6 @@ function TableWithContextMenu({
     setCtx({ x, y, raw });
   }
 
-  const status = (ctx?.raw?.status || '').toLowerCase();
-  const isRunning = status === 'running';
-  const isPaused = status === 'paused' || status === 'suspended';
-  const isStopped = !isRunning && !isPaused;
-  const isPending = !!(ctx && pendingActions?.[ctx.raw?.id]);
-
   return (
     <div ref={wrapRef} onContextMenu={onContextMenu}>
       <DataTable
@@ -459,6 +462,10 @@ function TableWithContextMenu({
       createPortal(
         <div
           ref={menuRef}
+          role="menu"
+          aria-label={`Actions for ${ctx.raw?.name || 'desktop'}`}
+          tabIndex={-1}
+          onKeyDown={onMenuKeyDown}
           style={{
             position: 'fixed',
             left: ctx.x,
@@ -466,79 +473,19 @@ function TableWithContextMenu({
             zIndex: Z.CONTEXT_MENU,
             minWidth: 200
           }}
-          className="rounded-md bg-surface-2 border border-[color:var(--harbor-overlay-border)] shadow-harbor-lg p-1">
-          
-              <MenuLabel>{ctx.raw?.name}</MenuLabel>
-              <MenuSeparator />
-              <MenuItem
-            icon={<Play size={14} />}
-            disabled={isPending || isRunning}
-            onClick={() => {
-              setCtx(null);
-              onPlay?.(ctx.raw);
-            }}>
-            
-                Start
-              </MenuItem>
-              <MenuItem
-            icon={<Pause size={14} />}
-            disabled={isPending || !isRunning}
-            onClick={() => {
-              setCtx(null);
-              onPause?.(ctx.raw);
-            }}>
-            
-                Pause
-              </MenuItem>
-              <MenuItem
-            icon={<Square size={14} />}
-            disabled={isPending || isStopped}
-            onClick={() => {
-              setCtx(null);
-              onStop?.(ctx.raw);
-            }}>
-            
-                Stop
-              </MenuItem>
-              <MenuSeparator />
-              <MenuItem
-            icon={<ExternalLink size={14} />}
-            onClick={() => {
-              setCtx(null);
-              onOpen?.(ctx.raw);
-            }}>
-            
-                Open
-              </MenuItem>
-              {onCapture ?
-          <>
-                  <MenuSeparator />
-                  <MenuItem
-              icon={<Camera size={14} />}
-              onClick={() => {
-                setCtx(null);
-                onCapture(ctx.raw);
-              }}>
-              
-                    Capture as Golden Image
-                  </MenuItem>
-                </> :
-          null}
-              {onDelete ?
-          <>
-                  <MenuSeparator />
-                  <MenuItem
-              icon={<Trash2 size={14} />}
-              danger
-              onClick={() => {
-                setCtx(null);
-                onDelete(ctx.raw);
-              }}>
-              
-                    Delete
-                  </MenuItem>
-                </> :
-          null}
+          className="rounded-[var(--harbor-menu-surface-radius)] border border-[color:var(--harbor-menu-surface-border)] bg-[var(--harbor-menu-surface-bg)] p-[var(--harbor-menu-surface-padding)] shadow-[var(--harbor-menu-surface-shadow)]">
+
+              <VmMenuItems
+                vm={ctx.raw}
+                pending={pendingActions}
+                onPlay={onPlay}
+                onPause={onPause}
+                onStop={onStop}
+                onOpen={onOpen}
+                onCapture={onCapture}
+                onDelete={onDelete}
+                onAfter={() => setCtx(null)} />
+
             </div>,
         document.body
       ) :
