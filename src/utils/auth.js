@@ -4,6 +4,7 @@ import { createDebugger } from '@/utils/debug';
 import { store, persistor } from '@/state/store';
 import { setTokens, logout as logoutAction } from '@/state/slices/auth';
 import { clearApolloCache } from '@/apollo-client';
+import { setSessionCookie, clearSessionCookie } from '@/utils/sessionCookie';
 
 // Define GraphQL documents
 const LoginDocument = gql`
@@ -121,6 +122,19 @@ const API_URL = process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:400
 // hang refresh/login/validation forever.
 const REQUEST_TIMEOUT_MS = 30000;
 
+/**
+ * Per-request fetch wrapper that enforces a hard timeout via AbortController.
+ *
+ * Apollo Client 4 has no `timeout` option, so a stalled connection could hang
+ * refresh/login/validation forever. This aborts the request after
+ * REQUEST_TIMEOUT_MS. It composes — rather than clobbers — any signal the
+ * HttpLink passes (used to cancel on unsubscribe/unmount) with the timeout
+ * signal, so both are honoured.
+ *
+ * @param {RequestInfo|URL} input - The fetch target.
+ * @param {RequestInit} [init] - Standard fetch options (may include its own signal).
+ * @returns {Promise<Response>} The fetch promise, rejected if the timeout fires.
+ */
 const fetchWithTimeout = (input, init = {}) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -158,6 +172,10 @@ const authLink = setContext((_, { headers }) => {
   }
 });
 
+// NOTE: This is a SECOND, dedicated Apollo client (separate cache) used only for
+// the auth operations below (login/refresh/logout/currentUser/settings/flags).
+// The main UI client lives in src/apollo-client.js; refreshAccessToken() runs on
+// THIS client, which is why it carries no errorLink/retryLink.
 const client = new ApolloClient({
   link: authLink.concat(httpLink),
   cache: new InMemoryCache(),
@@ -167,9 +185,15 @@ const client = new ApolloClient({
 // Create debug instance for auth
 const debug = createDebugger('frontend:auth');
 
-// Detect an authentication failure across the various Apollo Client 4 error
-// shapes (combined GraphQL errors, link errors, nested causes) plus the
-// message-text fallback, so we can decide whether a silent refresh is worth a try.
+/**
+ * Detect an authentication failure across the various Apollo Client 4 error
+ * shapes (combined GraphQL errors, link errors, nested causes) plus a
+ * message-text fallback. Used to decide whether a silent token refresh is
+ * worth attempting before giving up on the session.
+ *
+ * @param {Object} [error] - An Apollo Client error object.
+ * @returns {boolean} true if the error indicates the access token was rejected.
+ */
 const isUnauthenticatedError = (error) => {
   if (!error) return false;
   const candidates = [
@@ -218,6 +242,9 @@ export const refreshAccessToken = async () => {
           localStorage.setItem('token', result.token);
           localStorage.setItem('refreshToken', result.refreshToken);
           localStorage.setItem('tokenExpiresAt', String(expiresAt));
+          // Mirror session presence into a cookie the Edge middleware can read.
+          // Passes the computed exp (seconds) directly — no need to re-decode.
+          setSessionCookie(result.token, Math.floor(expiresAt / 1000));
         }
         // Keep redux state.auth.token current too — it is the credential the
         // socket connects with, so the change drives RealTimeProvider to
@@ -241,6 +268,7 @@ export const refreshAccessToken = async () => {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('tokenExpiresAt');
+        clearSessionCookie();
       }
       return null;
     } catch (error) {
@@ -249,6 +277,7 @@ export const refreshAccessToken = async () => {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('tokenExpiresAt');
+        clearSessionCookie();
       }
       return null;
     } finally {
@@ -267,14 +296,14 @@ export const auth = {
         mutation: LoginDocument,
         variables: { password, email },
       });
-      debug.success('login', 'Login successful:', { email, hasToken: !!data.login?.token });
-
       if (data.login && data.login.token) {
         // Only access localStorage in browser environment
         if (typeof window !== 'undefined') {
           localStorage.setItem('token', data.login.token);
           localStorage.setItem('refreshToken', data.login.refreshToken);
           localStorage.setItem('tokenExpiresAt', String(Date.now() + (data.login.expiresIn || 3600) * 1000));
+          // Mirror session presence into a cookie the Edge middleware can read.
+          setSessionCookie(data.login.token, Math.floor((Date.now() + (data.login.expiresIn || 3600) * 1000) / 1000));
         }
         return data.login.token;
       }
@@ -311,6 +340,9 @@ export const auth = {
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('tokenExpiresAt');
       localStorage.removeItem('socketNamespace');
+      // Clear the server-readable session cookie so the Edge middleware
+      // route gate immediately treats the session as dead.
+      clearSessionCookie();
     }
 
     // Clear in-memory redux auth state (the reducer also clears the same
@@ -365,6 +397,9 @@ export const auth = {
     const token = auth.getToken();
     if (!token) return false;
 
+    // Inner helper that validates the current access token by asking the backend
+    // for the current user. Uses network-only fetchPolicy so it never returns a
+    // cached value — a stale cache would make an invalid token look valid.
     const runQuery = async () => {
       const { data } = await client.query({
         query: CurrentUserDocument,

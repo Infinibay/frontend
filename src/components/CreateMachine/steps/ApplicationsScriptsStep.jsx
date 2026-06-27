@@ -39,6 +39,7 @@ import {
   Play,
 } from 'lucide-react';
 import { ScriptInputRenderer } from '@/components/ScriptInput/ScriptInputRenderer';
+import { createSanitizedSVGMarkup } from '@/utils/svg-sanitizer';
 
 const debug = createDebugger('frontend:components:applications-scripts-step');
 
@@ -237,7 +238,7 @@ export function ApplicationsScriptsStep({ id }) {
     if (app.iconType === 'svg') {
       return (
         <IconTile
-          icon={<span dangerouslySetInnerHTML={{ __html: app.icon }} />}
+          icon={<span dangerouslySetInnerHTML={createSanitizedSVGMarkup(app.icon)} />}
           tone="purple"
           size="md"
         />

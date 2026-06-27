@@ -56,6 +56,7 @@ import {
 } from 'lucide-react';
 import { useScriptsQuery } from '@/gql/hooks';
 import { getScriptDetails } from './script-details';
+import { createSanitizedSVGMarkup } from '@/utils/svg-sanitizer';
 
 // ---------------------------------------------------------------------------
 // OS model
@@ -552,7 +553,7 @@ function AppTile({ app, checked, onToggle }) {
       {app.icon ? (
         <div className="flex-shrink-0 mt-0.5 w-5 h-5 flex items-center justify-center">
           {app.icon.startsWith('<svg') ? (
-            <span dangerouslySetInnerHTML={{ __html: app.icon }} className="w-5 h-5 flex items-center justify-center" />
+            <span dangerouslySetInnerHTML={createSanitizedSVGMarkup(app.icon)} className="w-5 h-5 flex items-center justify-center" />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={app.icon} alt="" className="w-5 h-5 object-contain" />

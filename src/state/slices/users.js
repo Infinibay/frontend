@@ -82,18 +82,17 @@ export const updateUser = createAsyncThunk(
 export const deleteUser = createAsyncThunk(
   'users/deleteUser',
   async (id) => {
-    try {
-      const data = await executeGraphQLMutation(DELETE_USER_MUTATION, { id });
-      if (data.destroyUser) {
-        return id;
-      }
-    } catch (error) {
-      console.warn('GraphQL deletion failed, using mock deletion:', error);
-      // Mock successful deletion
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return id;
+    // NOTE: the backend `destroyUser` resolver is not implemented yet (see the
+    // TODO above). Until it ships, this mutation rejects — which is the correct
+    // behaviour: a real error surfaces in the UI instead of faking a deletion
+    // that never happened server-side. Do NOT re-add a catch that swallows the
+    // failure and returns `id`; that produced a silent data inconsistency where
+    // the row vanished from the UI but the user still existed in the backend.
+    const data = await executeGraphQLMutation(DELETE_USER_MUTATION, { id });
+    if (!data?.destroyUser) {
+      throw new Error('Failed to delete user');
     }
-    throw new Error('Failed to delete user');
+    return id;
   }
 );
 
