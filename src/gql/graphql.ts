@@ -1388,6 +1388,7 @@ export enum MaintenanceTrigger {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  approveNode: Scalars['Boolean']['output'];
   assignScriptToDepartment: Scalars['Boolean']['output'];
   assignUserRole: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
@@ -1482,6 +1483,7 @@ export type Mutation = {
   refreshToken: RefreshAuthResponse;
   /** Register uploaded ISO */
   registerISO: Iso;
+  rejectNode: Scalars['Boolean']['output'];
   removeDepartmentMember: Scalars['Boolean']['output'];
   /** Remove ISO file */
   removeISO: Scalars['Boolean']['output'];
@@ -1553,6 +1555,12 @@ export type Mutation = {
   upsertIdentityGroupRoleMapping: IdentityGroupRoleMappingType;
   /** Validate ISO file integrity */
   validateISO: Scalars['Boolean']['output'];
+};
+
+
+export type MutationApproveNodeArgs = {
+  id: Scalars['ID']['input'];
+  pairingCode?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1923,6 +1931,11 @@ export type MutationRegisterIsoArgs = {
   os: Scalars['String']['input'];
   path: Scalars['String']['input'];
   size: Scalars['Float']['input'];
+};
+
+
+export type MutationRejectNodeArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -2429,6 +2442,18 @@ export type PaginationInputType = {
   take?: InputMaybe<Scalars['Int']['input']>;
 };
 
+/** A node awaiting SAS approval, with the pairing code to compare against the one on the node terminal. */
+export type PendingNodeType = {
+  __typename?: 'PendingNodeType';
+  address?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  fingerprint?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  pairingCode: Scalars['String']['output'];
+  role: Scalars['String']['output'];
+};
+
 export type PermissionGrantType = {
   __typename?: 'PermissionGrantType';
   permission: Scalars['String']['output'];
@@ -2621,6 +2646,7 @@ export type Query = {
   packageStatuses: Array<PackageStatusType>;
   /** List all installed plugin packages */
   packages: Array<PackageType>;
+  pendingNodes: Array<PendingNodeType>;
   /** Get the count of pending (non-dismissed, non-snoozed) recommendations across all VMs */
   pendingRecommendationCount: Scalars['Int']['output'];
   permissionRegistry: PermissionRegistryType;

@@ -1507,6 +1507,8 @@ type Mutation {
   setNetworkIp(input: NetworkIpInput!): Boolean!
   setNetworkIpRange(input: IpRangeInput!): Boolean!
   setNodeMaintenanceMode(enabled: Boolean!, id: ID!): NodeType!
+  approveNode(id: ID!, pairingCode: String): Boolean!
+  rejectNode(id: ID!): Boolean!
   setRolePermission(input: SetRolePermissionInput!): RoleType!
   setUserPermissionOverride(input: SetUserPermissionOverrideInput!): UserPermissionOverrideType!
   setupNode: DyummyType!
@@ -1649,6 +1651,17 @@ type NodeType {
   ram: Int!
   runningMachineCount: Int!
   updatedAt: DateTimeISO!
+}
+
+"""A node awaiting SAS approval, with the pairing code to compare against the one on the node terminal."""
+type PendingNodeType {
+  address: String
+  createdAt: DateTimeISO!
+  fingerprint: String
+  id: ID!
+  name: String!
+  pairingCode: String!
+  role: String!
 }
 
 """Operating system"""
@@ -2019,6 +2032,7 @@ type Query {
   node(id: ID!): NodeType
   nodeInventorySummary: NodeInventorySummary!
   nodes: [NodeType!]!
+  pendingNodes: [PendingNodeType!]!
 
   """Get a specific plugin package by name"""
   package(name: String!): PackageType

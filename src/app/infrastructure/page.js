@@ -20,6 +20,7 @@ import {
   useSetNodeMaintenanceModeMutation
 } from '@/gql/hooks';
 import { PageHeader } from '@/components/common/PageHeader';
+import { PendingNodesSection } from '@/components/infrastructure/PendingNodesSection';
 
 function pctUsed(total, available) {
   if (!total || total <= 0) return 0;
@@ -268,6 +269,8 @@ export default function InfrastructurePage() {
             </Button>
           }
         />
+
+        <PendingNodesSection />
 
         {error && !resources ? (
           <EmptyState

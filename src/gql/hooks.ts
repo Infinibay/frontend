@@ -1391,6 +1391,7 @@ export enum MaintenanceTrigger {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  approveNode: Scalars['Boolean']['output'];
   assignScriptToDepartment: Scalars['Boolean']['output'];
   assignUserRole: Scalars['Boolean']['output'];
   /** Calculate ISO checksum */
@@ -1485,6 +1486,7 @@ export type Mutation = {
   refreshToken: RefreshAuthResponse;
   /** Register uploaded ISO */
   registerISO: Iso;
+  rejectNode: Scalars['Boolean']['output'];
   removeDepartmentMember: Scalars['Boolean']['output'];
   /** Remove ISO file */
   removeISO: Scalars['Boolean']['output'];
@@ -1556,6 +1558,12 @@ export type Mutation = {
   upsertIdentityGroupRoleMapping: IdentityGroupRoleMappingType;
   /** Validate ISO file integrity */
   validateISO: Scalars['Boolean']['output'];
+};
+
+
+export type MutationApproveNodeArgs = {
+  id: Scalars['ID']['input'];
+  pairingCode: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1926,6 +1934,11 @@ export type MutationRegisterIsoArgs = {
   os: Scalars['String']['input'];
   path: Scalars['String']['input'];
   size: Scalars['Float']['input'];
+};
+
+
+export type MutationRejectNodeArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -2432,6 +2445,18 @@ export type PaginationInputType = {
   take: InputMaybe<Scalars['Int']['input']>;
 };
 
+/** A node awaiting SAS approval, with the pairing code to compare against the one on the node terminal. */
+export type PendingNodeType = {
+  __typename?: 'PendingNodeType';
+  address: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTimeISO']['output'];
+  fingerprint: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  pairingCode: Scalars['String']['output'];
+  role: Scalars['String']['output'];
+};
+
 export type PermissionGrantType = {
   __typename?: 'PermissionGrantType';
   permission: Scalars['String']['output'];
@@ -2624,6 +2649,7 @@ export type Query = {
   packageStatuses: Array<PackageStatusType>;
   /** List all installed plugin packages */
   packages: Array<PackageType>;
+  pendingNodes: Array<PendingNodeType>;
   /** Get the count of pending (non-dismissed, non-snoozed) recommendations across all VMs */
   pendingRecommendationCount: Scalars['Int']['output'];
   permissionRegistry: PermissionRegistryType;
@@ -4483,6 +4509,21 @@ export type DeleteBackupScheduleMutationVariables = Exact<{
 
 export type DeleteBackupScheduleMutation = { __typename?: 'Mutation', deleteBackupSchedule: { __typename?: 'SuccessType', success: boolean, message: string } };
 
+export type ApproveNodeMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  pairingCode: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type ApproveNodeMutation = { __typename?: 'Mutation', approveNode: boolean };
+
+export type RejectNodeMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RejectNodeMutation = { __typename?: 'Mutation', rejectNode: boolean };
+
 export type EnablePackageMutationVariables = Exact<{
   name: Scalars['String']['input'];
 }>;
@@ -5019,6 +5060,11 @@ export type BackupSchedulesQueryVariables = Exact<{
 
 
 export type BackupSchedulesQuery = { __typename?: 'Query', backupSchedules: { __typename?: 'ScheduleListResult', success: boolean, message: string, schedules: Array<{ __typename?: 'BackupSchedule', id: string, scheduleId: string, vmId: string, type: BackupType, cronExpression: string, retentionCount: number, destinationDir: string, compression: BackupCompression, enabled: boolean, label: string | null, lastRunAt: string | null, nextRunAt: string | null, lastBackupId: string | null, createdAt: string, updatedAt: string }> } };
+
+export type PendingNodesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type PendingNodesQuery = { __typename?: 'Query', pendingNodes: Array<{ __typename?: 'PendingNodeType', id: string, name: string, role: string, address: string | null, fingerprint: string | null, pairingCode: string, createdAt: string }> };
 
 export type PackagesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -8101,6 +8147,65 @@ export function useDeleteBackupScheduleMutation(baseOptions?: ApolloReactHooks.M
       }
 export type DeleteBackupScheduleMutationHookResult = ReturnType<typeof useDeleteBackupScheduleMutation>;
 export type DeleteBackupScheduleMutationResult = ApolloReactCommon.MutationResult<DeleteBackupScheduleMutation>;
+export const ApproveNodeDocument = gql`
+    mutation ApproveNode($id: ID!, $pairingCode: String) {
+  approveNode(id: $id, pairingCode: $pairingCode)
+}
+    `;
+
+/**
+ * __useApproveNodeMutation__
+ *
+ * To run a mutation, you first call `useApproveNodeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useApproveNodeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [approveNodeMutation, { data, loading, error }] = useApproveNodeMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      pairingCode: // value for 'pairingCode'
+ *   },
+ * });
+ */
+export function useApproveNodeMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ApproveNodeMutation, ApproveNodeMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ApproveNodeMutation, ApproveNodeMutationVariables>(ApproveNodeDocument, options);
+      }
+export type ApproveNodeMutationHookResult = ReturnType<typeof useApproveNodeMutation>;
+export type ApproveNodeMutationResult = ApolloReactCommon.MutationResult<ApproveNodeMutation>;
+export const RejectNodeDocument = gql`
+    mutation RejectNode($id: ID!) {
+  rejectNode(id: $id)
+}
+    `;
+
+/**
+ * __useRejectNodeMutation__
+ *
+ * To run a mutation, you first call `useRejectNodeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRejectNodeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [rejectNodeMutation, { data, loading, error }] = useRejectNodeMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRejectNodeMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RejectNodeMutation, RejectNodeMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RejectNodeMutation, RejectNodeMutationVariables>(RejectNodeDocument, options);
+      }
+export type RejectNodeMutationHookResult = ReturnType<typeof useRejectNodeMutation>;
+export type RejectNodeMutationResult = ApolloReactCommon.MutationResult<RejectNodeMutation>;
 export const EnablePackageDocument = gql`
     mutation EnablePackage($name: String!) {
   enablePackage(name: $name) {
@@ -12213,6 +12318,57 @@ export type BackupSchedulesSuspenseQueryHookResult = ReturnType<typeof useBackup
 export type BackupSchedulesQueryResult = ApolloReactCommon.QueryResult<BackupSchedulesQuery, BackupSchedulesQueryVariables>;
 export function refetchBackupSchedulesQuery(variables?: BackupSchedulesQueryVariables) {
       return { query: BackupSchedulesDocument, variables: variables }
+    }
+export const PendingNodesDocument = gql`
+    query PendingNodes {
+  pendingNodes {
+    id
+    name
+    role
+    address
+    fingerprint
+    pairingCode
+    createdAt
+  }
+}
+    `;
+
+/**
+ * __usePendingNodesQuery__
+ *
+ * To run a query within a React component, call `usePendingNodesQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePendingNodesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePendingNodesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function usePendingNodesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<PendingNodesQuery, PendingNodesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PendingNodesQuery, PendingNodesQueryVariables>(PendingNodesDocument, options);
+      }
+export function usePendingNodesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PendingNodesQuery, PendingNodesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PendingNodesQuery, PendingNodesQueryVariables>(PendingNodesDocument, options);
+        }
+// @ts-ignore
+export function usePendingNodesSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<PendingNodesQuery, PendingNodesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<PendingNodesQuery, PendingNodesQueryVariables>;
+export function usePendingNodesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PendingNodesQuery, PendingNodesQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<PendingNodesQuery | undefined, PendingNodesQueryVariables>;
+export function usePendingNodesSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<PendingNodesQuery, PendingNodesQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<PendingNodesQuery, PendingNodesQueryVariables>(PendingNodesDocument, options);
+        }
+export type PendingNodesQueryHookResult = ReturnType<typeof usePendingNodesQuery>;
+export type PendingNodesLazyQueryHookResult = ReturnType<typeof usePendingNodesLazyQuery>;
+export type PendingNodesSuspenseQueryHookResult = ReturnType<typeof usePendingNodesSuspenseQuery>;
+export type PendingNodesQueryResult = ApolloReactCommon.QueryResult<PendingNodesQuery, PendingNodesQueryVariables>;
+export function refetchPendingNodesQuery(variables?: PendingNodesQueryVariables) {
+      return { query: PendingNodesDocument, variables: variables }
     }
 export const PackagesDocument = gql`
     query Packages {

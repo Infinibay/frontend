@@ -1,0 +1,7 @@
+mutation ApproveNode($id: ID!, $pairingCode: String) {
+  approveNode(id: $id, pairingCode: $pairingCode)
+}
+
+mutation RejectNode($id: ID!) {
+  rejectNode(id: $id)
+}

@@ -1,0 +1,11 @@
+query PendingNodes {
+  pendingNodes {
+    id
+    name
+    role
+    address
+    fingerprint
+    pairingCode
+    createdAt
+  }
+}
