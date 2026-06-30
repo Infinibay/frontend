@@ -19,6 +19,8 @@ import {
   useGetSystemResourcesQuery,
   useSetNodeMaintenanceModeMutation
 } from '@/gql/hooks';
+import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/usePermissions';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PendingNodesSection } from '@/components/infrastructure/PendingNodesSection';
 
@@ -100,6 +102,8 @@ export default function InfrastructurePage() {
     pollInterval: 30_000
   });
   const [setNodeMaintenanceMode, { loading: maintenanceUpdating }] = useSetNodeMaintenanceModeMutation();
+  const { can } = usePermissions();
+  const canEditNodes = can('node:edit');
 
   const resources = data?.getSystemResources;
   const nodes = useMemo(() => nodeData?.nodes || [], [nodeData?.nodes]);
@@ -222,14 +226,15 @@ export default function InfrastructurePage() {
             <Button
               size="sm"
               variant={row.maintenanceMode ? 'primary' : 'secondary'}
-              disabled={maintenanceUpdating}
+              disabled={maintenanceUpdating || !canEditNodes}
               onClick={() => {
                 setNodeMaintenanceMode({
                   variables: {
                     id: row.id,
                     enabled: !row.maintenanceMode
                   },
-                  onCompleted: () => refetchNodes()
+                  onCompleted: () => refetchNodes(),
+                  onError: (err) => toast.error(err.message || 'Failed to update maintenance mode')
                 });
               }}
             >
@@ -245,7 +250,7 @@ export default function InfrastructurePage() {
         cell: ({ row }) => <span className="text-xs text-fg-muted">{row.updatedAt}</span>
       }
     ],
-    [maintenanceUpdating, refetchNodes, setNodeMaintenanceMode]
+    [maintenanceUpdating, refetchNodes, setNodeMaintenanceMode, canEditNodes]
   );
 
   return (
