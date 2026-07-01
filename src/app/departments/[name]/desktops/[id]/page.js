@@ -284,7 +284,11 @@ const VMDetailPage = () => {
   const showFailure = Boolean(lastError) && rawStatus !== 'running';
   const failedInstall = showFailure && !setupComplete;
   const graphicUrl = typeof vm?.configuration?.graphic === 'string' ? vm.configuration.graphic : null;
-  const canConnect = isRunning && graphicUrl?.startsWith('spice://');
+  // The SPICE console is available whenever QEMU is up — that includes the
+  // INSTALL phase (status 'provisioning' / setupComplete=false), where being able
+  // to watch the installer is exactly what you want. Gate on a live display, not
+  // on setupComplete.
+  const canConnect = (isRunning || isInstalling) && graphicUrl?.startsWith('spice://');
   const nodes = nodeData?.nodes || [];
   const currentNode = nodes.find((node) => node.id === vm.nodeId);
   const migrationTargets = nodes.filter((node) => node.id !== vm.nodeId && !node.maintenanceMode);
@@ -396,7 +400,7 @@ const VMDetailPage = () => {
                     icon={<Monitor size={14} />}
                     onClick={handleConnect}
                   >
-                    Connect
+                    {isInstalling ? 'View install' : 'Connect'}
                   </Button>
                 ) : null}
                 {isRunning ? (
