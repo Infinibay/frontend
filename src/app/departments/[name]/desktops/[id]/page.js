@@ -361,6 +361,15 @@ const VMDetailPage = () => {
                     {vm?.ramGB ? <span>· {vm.ramGB} GB RAM</span> : null}
                     {vm?.localIP ? <span>· {vm.localIP}</span> : null}
                   </ResponsiveStack>
+                  {status === 'error' && vm?.configuration?.lastError ? (
+                    <div
+                      role="alert"
+                      className="mt-1 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger max-w-2xl"
+                    >
+                      <span className="font-medium">Creation/installation failed: </span>
+                      {vm.configuration.lastError}
+                    </div>
+                  ) : null}
                 </ResponsiveStack>
               </ResponsiveStack>
 
