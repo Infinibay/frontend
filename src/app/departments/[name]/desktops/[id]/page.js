@@ -268,11 +268,20 @@ const VMDetailPage = () => {
   debug.success('VM detail loaded successfully', { vmName: vm?.name });
 
   const setupComplete = vm?.setupComplete ?? false;
+  const rawStatus = (vm?.status || '').toLowerCase();
   const status = toHarborStatus(vm.status, setupComplete);
   const isInstalling = vm.status === 'running' && !setupComplete;
   const isRunning = status === 'online';
   const isBusy = status === 'provisioning' || status === 'maintenance';
   const os = vm?.configuration?.os;
+  // Surface a recorded failure reason whenever the VM is NOT actively running.
+  // Keys off raw status + lastError, NOT the mapped harbor status: raw 'error'
+  // maps to 'degraded', and a failed install can get reconciled back to 'off'
+  // (setupComplete never flipped) — both must still show the banner. Only an
+  // actively-running/installing VM (rawStatus === 'running') hides it.
+  const lastError = vm?.configuration?.lastError;
+  const showFailure = Boolean(lastError) && rawStatus !== 'running';
+  const failedInstall = showFailure && !setupComplete;
   const graphicUrl = typeof vm?.configuration?.graphic === 'string' ? vm.configuration.graphic : null;
   const canConnect = isRunning && graphicUrl?.startsWith('spice://');
   const nodes = nodeData?.nodes || [];
@@ -361,13 +370,20 @@ const VMDetailPage = () => {
                     {vm?.ramGB ? <span>· {vm.ramGB} GB RAM</span> : null}
                     {vm?.localIP ? <span>· {vm.localIP}</span> : null}
                   </ResponsiveStack>
-                  {status === 'error' && vm?.configuration?.lastError ? (
+                  {showFailure ? (
                     <div
                       role="alert"
                       className="mt-1 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger max-w-2xl"
                     >
-                      <span className="font-medium">Creation/installation failed: </span>
-                      {vm.configuration.lastError}
+                      <span className="font-medium">
+                        {failedInstall ? 'Installation failed: ' : 'Error: '}
+                      </span>
+                      {lastError}
+                      {failedInstall ? (
+                        <span className="mt-1 block text-danger/80">
+                          The installation did not complete, so this VM has no bootable OS. Delete it and create a new one to retry.
+                        </span>
+                      ) : null}
                     </div>
                   ) : null}
                 </ResponsiveStack>
