@@ -3,6 +3,7 @@ import { gql } from "@apollo/client";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import { getPowerActionError } from "@/utils/powerActionResult";
 
 // Check if IP fields are enabled via environment variable
 const IP_FIELDS_ENABLED = process.env.NEXT_PUBLIC_ENABLE_VM_IP_FIELDS === 'true';
@@ -311,7 +312,16 @@ export const useVMDetail = (vmId) => {
             "Processing",
             "Attempting to " + actionText + " the desktop..."
           );
-          await powerOnMutation({ variables: { id: vm.id } });
+          {
+            // powerOn resolves the async start and returns SuccessType
+            // { success, message }. Apollo only THROWS on a GraphQL/transport
+            // error, so a resolver returning success:false (e.g. QEMU failed to
+            // start) must be inspected explicitly — otherwise we falsely report
+            // success. See getPowerActionError.
+            const { data } = await powerOnMutation({ variables: { id: vm.id } });
+            const failure = getPowerActionError('start', data);
+            if (failure) throw new Error(failure);
+          }
           break;
         case 'stop':
           actionText = 'stop';
@@ -321,7 +331,11 @@ export const useVMDetail = (vmId) => {
             "Processing",
             "Attempting to " + actionText + " the desktop..."
           );
-          await powerOffMutation({ variables: { id: vm.id } });
+          {
+            const { data } = await powerOffMutation({ variables: { id: vm.id } });
+            const failure = getPowerActionError('stop', data);
+            if (failure) throw new Error(failure);
+          }
           break;
         case 'restart':
           // Restart functionality is disabled for now
@@ -347,10 +361,15 @@ export const useVMDetail = (vmId) => {
     } catch (error) {
       console.error("Error " + action + " VM:", error);
       const errorAction = action === 'start' ? 'start' : 'stop';
+      // Prefer the server-provided reason (e.g. "failed to initialize spice
+      // server") over a generic message so the user knows WHY it failed.
+      const detail = error?.message && typeof error.message === 'string'
+        ? error.message
+        : "Could not " + errorAction + " the desktop.";
       showToastNotification(
         "destructive",
         "Error",
-        "Could not " + errorAction + " the desktop."
+        detail
       );
     }
   };
