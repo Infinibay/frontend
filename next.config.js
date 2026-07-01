@@ -16,6 +16,22 @@ function safeOrigin (url) {
   }
 }
 
+/**
+ * Returns the WebSocket-scheme counterpart of an http(s) origin (http→ws,
+ * https→wss), or null. A CSP connect-src entry for `http://host:port` does NOT
+ * authorize `ws://host:port`, so Socket.IO — which upgrades to a WS connection on
+ * the SAME backend host — is blocked unless the ws(s) origin is listed too.
+ *
+ * @param {string|null} origin - An origin like `http://192.168.0.8:4000`.
+ * @returns {string|null} The ws(s) origin, or null.
+ */
+function wsOrigin (origin) {
+  if (!origin) return null
+  if (origin.startsWith('http://')) return 'ws://' + origin.slice(7)
+  if (origin.startsWith('https://')) return 'wss://' + origin.slice(8)
+  return null
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Allow an alternate build dir via env (e.g. when a prior root-owned
@@ -134,6 +150,11 @@ const nextConfig = {
                 process.env.NEXT_PUBLIC_GRAPHQL_API_URL
                   ? safeOrigin(process.env.NEXT_PUBLIC_GRAPHQL_API_URL)
                   : null,
+                // WebSocket (Socket.IO) counterparts of the configured backend
+                // origins. Without these a LAN backend host (e.g. 192.168.0.8)
+                // authorizes only http:// and the browser blocks the ws:// upgrade.
+                wsOrigin(safeOrigin(process.env.NEXT_PUBLIC_BACKEND_HOST)),
+                wsOrigin(safeOrigin(process.env.NEXT_PUBLIC_GRAPHQL_API_URL)),
               ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' '),
               "manifest-src 'self'",
             ].join('; '),
