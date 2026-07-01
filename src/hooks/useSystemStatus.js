@@ -113,6 +113,11 @@ export function useSystemStatus(options = {}) {
   return {
     // Status data
     systemReadiness,
+    // The list of OS types that HAVE an ISO (e.g. ['UBUNTU','FEDORA']). Exposed
+    // at the top level because consumers (IsosTab) read `availableOS` directly to
+    // decide the per-OS Available/Missing badge. Without this it was undefined, so
+    // every card fell back to "Missing" regardless of what the backend reported.
+    availableOS: systemReadiness.availableOS,
     osAvailabilityMap,
     loading: loading.checkReadiness || loading.fetch,
     error: error.checkReadiness || error.fetch,
