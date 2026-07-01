@@ -21,7 +21,7 @@ import client from '@/apollo-client';
 import { fetchVms } from '@/state/slices/vms';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import { selectUser } from '@/state/slices/auth';
-import { openSpiceClient } from '@/utils/spiceConnect';
+import { useOpenConsole } from '@/hooks/useOpenConsole';
 import { toast } from 'sonner';
 
 const POOLS_QUERY = gql`
@@ -67,20 +67,11 @@ function DesktopTile({ desktop }) {
     ? desktop.configuration.graphic
     : null;
   const canConnect = meta.dot === 'online' && graphic?.startsWith('spice://');
+  const openConsole = useOpenConsole();
 
   const onConnect = () => {
     if (!canConnect) return;
-    try {
-      openSpiceClient(graphic, { vmName: desktop.name });
-      toast.success('Opening SPICE client', {
-        description:
-          'A .vv file was downloaded. Your OS should open it with virt-viewer or the default SPICE client.',
-      });
-    } catch (err) {
-      toast.error('Could not open SPICE client', {
-        description: err?.message || 'Invalid connection info',
-      });
-    }
+    openConsole(desktop, graphic);
   };
 
   const os = desktop?.configuration?.os || desktop?.os;
@@ -172,6 +163,7 @@ function PoolTile({ pool, onConnect, connecting }) {
 
 export default function WorkspacePage() {
   const user = useSelector(selectUser);
+  const openConsole = useOpenConsole();
 
   const {
     data: machines,
@@ -242,10 +234,7 @@ export default function WorkspacePage() {
         const graphic =
           typeof m?.configuration?.graphic === 'string' ? m.configuration.graphic : null;
         if (graphic && graphic.startsWith('spice://')) {
-          openSpiceClient(graphic, { vmName: m.name });
-          toast.success('Opening SPICE client', {
-            description: 'A .vv file was downloaded. Open it with virt-viewer.',
-          });
+          await openConsole(m, graphic);
           launched = true;
           break;
         }
@@ -266,7 +255,7 @@ export default function WorkspacePage() {
     } finally {
       setConnectingPoolId(null);
     }
-  }, [refresh, fetchPools]);
+  }, [refresh, fetchPools, openConsole]);
 
   return (
     <Page>

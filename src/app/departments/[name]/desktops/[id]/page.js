@@ -39,8 +39,8 @@ import {
   useGetNodeInventoryQuery,
   useMigrateMachineToNodeMutation,
 } from '@/gql/hooks';
+import { useOpenConsole } from '@/hooks/useOpenConsole';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { openSpiceClient } from '@/utils/spiceConnect';
 import { toast } from 'sonner';
 
 import LoadingState from './components/LoadingState';
@@ -176,6 +176,7 @@ const VMDetailPage = () => {
     pollInterval: 30_000,
   });
   const [migrateMachineToNode, { loading: migrationLoading }] = useMigrateMachineToNodeMutation();
+  const openConsole = useOpenConsole();
 
   const helpConfig = useMemo(
     () => ({
@@ -297,18 +298,7 @@ const VMDetailPage = () => {
   const canMigrate = canColdMigrateStatus(vm.status) && !isBusy && !migrationLoading;
   const migrationDisabled = !canMigrate || !targetNodeId;
 
-  const handleConnect = () => {
-    try {
-      openSpiceClient(graphicUrl, { vmName: vm?.name });
-      toast('Opening SPICE client', {
-        description: 'A .vv file was downloaded. Your OS should open it with virt-viewer or the default SPICE client.',
-      });
-    } catch (err) {
-      toast.error('Could not open SPICE client', {
-        description: err?.message || 'Invalid connection info',
-      });
-    }
-  };
+  const handleConnect = () => openConsole(vm, graphicUrl);
 
   const handleMigrate = async () => {
     if (!targetNodeId) return;
