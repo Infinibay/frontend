@@ -5,18 +5,25 @@ import { RetryLink } from '@apollo/client/link/retry';
 import { createDebugger } from '@/utils/debug';
 import { refreshAccessToken } from '@/utils/auth';
 import { persistor } from '@/state/store';
+import { timeoutForRequestBody } from '@/utils/requestTimeout';
 
 const debug = createDebugger('frontend:utils:apollo-client');
 
 // Real per-request timeout. Apollo Client 4's HttpOptions has no `timeout` key,
-// so we enforce it ourselves: a custom fetch that aborts via AbortController
-// after REQUEST_TIMEOUT_MS, otherwise a stalled-but-open connection would hang
-// the loading state indefinitely.
-const REQUEST_TIMEOUT_MS = 30000;
-
+// so we enforce it ourselves: a custom fetch that aborts via AbortController,
+// otherwise a stalled-but-open connection would hang the loading state
+// indefinitely. The timeout is OPERATION-AWARE: mutations (slow VM lifecycle
+// ops) get a generous bound so a legitimately long-running delete/create/migrate
+// is not aborted mid-flight (see requestTimeout.js).
 const fetchWithTimeout = (input, init = {}) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutMs = timeoutForRequestBody(init.body);
+  // Abort WITH A REASON so the resulting error is "request timed out" rather than
+  // the opaque "signal is aborted without reason" that surfaced as a raw crash.
+  const timeoutId = setTimeout(
+    () => controller.abort(new DOMException(`Request timed out after ${timeoutMs}ms`, 'TimeoutError')),
+    timeoutMs
+  );
   // Compose, don't clobber: HttpLink passes its own signal to cancel the request
   // on unsubscribe/unmount. Honour both that signal and our timeout signal.
   const signal = init.signal
@@ -48,8 +55,10 @@ const retryLink = new RetryLink({
     retryIf: (error, operation) => {
       if (!error) return false;
 
-      // Our own timeout produces an AbortError — don't multiply the wait.
-      if (error.name === 'AbortError') return false;
+      // Our own timeout (TimeoutError) or an unmount/unsubscribe cancel
+      // (AbortError) must not be retried — don't multiply the wait or replay a
+      // deliberately-cancelled request.
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') return false;
 
       // Never replay mutations/subscriptions; only queries are safe to retry.
       const definition = operation.query?.definitions?.find(
