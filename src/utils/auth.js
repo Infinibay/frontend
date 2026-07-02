@@ -1,10 +1,18 @@
 import { ApolloClient, InMemoryCache, createHttpLink, gql } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { createDebugger } from '@/utils/debug';
-import { store, persistor } from '@/state/store';
-import { setTokens, logout as logoutAction } from '@/state/slices/auth';
 import { clearApolloCache } from '@/apollo-client';
 import { setSessionCookie, clearSessionCookie } from '@/utils/sessionCookie';
+
+// The redux store and auth-slice actions are imported LAZILY (dynamic import at
+// call time), never statically. store.js consumes every slice reducer at
+// module-init, and slices/auth imports this service — a static `@/state/store`
+// or `@/state/slices/auth` import here closes that cycle and crashes app boot
+// with a reducer TDZ ("Cannot access '__WEBPACK_DEFAULT_EXPORT__' before
+// initialization"). Both are only ever needed inside the async handlers below,
+// so a call-time import is correct; webpack caches the module, so it is cheap.
+const getStore = () => import('@/state/store');
+const getAuthSlice = () => import('@/state/slices/auth');
 
 // Define GraphQL documents
 const LoginDocument = gql`
@@ -251,6 +259,7 @@ export const refreshAccessToken = async () => {
         // re-initialise the socket with the fresh token (instead of dying on
         // the next reconnect with the stale original token).
         try {
+          const [{ store }, { setTokens }] = await Promise.all([getStore(), getAuthSlice()]);
           store.dispatch(setTokens({
             token: result.token,
             refreshToken: result.refreshToken,
@@ -355,6 +364,7 @@ export const auth = {
     // Clear in-memory redux auth state (the reducer also clears the same
     // localStorage keys, idempotently).
     try {
+      const [{ store }, { logout: logoutAction }] = await Promise.all([getStore(), getAuthSlice()]);
       store.dispatch(logoutAction());
     } catch (error) {
       debug.warn('logout', 'Redux logout dispatch failed (ignored):', error);
@@ -363,6 +373,7 @@ export const auth = {
     // Purge the persisted redux snapshot so prior-user PII and the dead token
     // don't survive on disk / rehydrate on next load.
     try {
+      const { persistor } = await getStore();
       await persistor.purge();
       await persistor.flush();
     } catch (error) {

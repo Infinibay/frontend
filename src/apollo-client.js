@@ -4,7 +4,6 @@ import { onError } from '@apollo/client/link/error';
 import { RetryLink } from '@apollo/client/link/retry';
 import { createDebugger } from '@/utils/debug';
 import { refreshAccessToken } from '@/utils/auth';
-import { persistor } from '@/state/store';
 import { timeoutForRequestBody } from '@/utils/requestTimeout';
 import { clearSessionCookie } from '@/utils/sessionCookie';
 
@@ -108,8 +107,14 @@ const clearSessionAndRedirect = async () => {
   // middleware gate open until the cookie's original max-age. Mirrors auth.logout.
   clearSessionCookie();
   // Purge the redux-persist 'auth' snapshot too, so prior-user PII and the dead
-  // token don't rehydrate after the redirect-triggered reload.
+  // token don't rehydrate after the redirect-triggered reload. The store is
+  // imported LAZILY here (never statically): store.js consumes every slice
+  // reducer at module-init and the slices import this service, so a static
+  // `@/state/store` import would close that cycle and crash app boot with a
+  // reducer TDZ ("Cannot access '__WEBPACK_DEFAULT_EXPORT__' before
+  // initialization"). This runs only at runtime, so a call-time import is fine.
   try {
+    const { persistor } = await import('@/state/store');
     await persistor.purge();
   } catch (e) {
     debug.warn('auth', 'persistor.purge() during reactive logout failed (ignored)', e);
