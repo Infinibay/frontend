@@ -12,7 +12,6 @@ import {
   FormSection,
   IconTile,
   LoadingOverlay,
-  Page,
   Progress,
   ResourceMeter,
   ResponsiveGrid,
@@ -120,7 +119,11 @@ export function BlueprintStep({ id }) {
     loading: templatesLoading,
     error: templatesError,
   } = useSelector(selectTemplatesState);
-  const { items: categories } = useSelector((state) => state.templateCategories);
+  const {
+    items: categories,
+    loading: categoriesLoading,
+    error: categoriesError,
+  } = useSelector((state) => state.templateCategories);
 
   const { data: systemResources } = useGetSystemResourcesQuery();
   const cpuLimit = systemResources?.getSystemResources?.cpu?.available || 64;
@@ -151,6 +154,31 @@ export function BlueprintStep({ id }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // System resource limits start at generous fallbacks (64 cores / 512 GB /
+  // 800 GB) and shrink once useGetSystemResourcesQuery resolves with the host's
+  // real capacity. Re-clamp the custom hardware whenever the limits change so we
+  // never submit a request for more resources than the host actually has.
+  useEffect(() => {
+    const cores = clamp(customHardware.cores, 1, cpuLimit);
+    const ram = clamp(customHardware.ram, 1, memoryLimit);
+    const storage = clamp(customHardware.storage, 10, Math.max(diskAvailable, 10));
+    if (
+      cores !== customHardware.cores ||
+      ram !== customHardware.ram ||
+      storage !== customHardware.storage
+    ) {
+      setCustomHardware({ cores, ram, storage });
+      // Only push into the wizard when custom hardware is the active source of
+      // truth; in blueprint mode the template supplies the hardware values.
+      if (mode === 'custom') {
+        setValue(`${id}.customCores`, cores);
+        setValue(`${id}.customRam`, ram);
+        setValue(`${id}.customStorage`, storage);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cpuLimit, memoryLimit, diskAvailable]);
 
   const templatesByCategory = useMemo(
     () =>
@@ -247,28 +275,133 @@ export function BlueprintStep({ id }) {
   const selectedOs = stepValues.os;
   const isWindows = typeof selectedOs === 'string' && selectedOs.startsWith('WINDOWS');
 
-  if (templatesLoading.fetch) {
-    return (
-      <Page size="md">
-        <LoadingOverlay label="Loading blueprints…" />
-      </Page>
+  // Templates whose categoryId doesn't match any known category would otherwise
+  // be silently dropped from the blueprint grid — surface them under "Other".
+  const knownCategoryIds = useMemo(
+    () => new Set(categories.map((c) => String(c.id))),
+    [categories],
+  );
+  const uncategorizedTemplates = useMemo(
+    () => templates.filter((t) => !knownCategoryIds.has(String(t.categoryId))),
+    [templates, knownCategoryIds],
+  );
+
+  const renderTemplateCard = (template) => {
+    const isSelected = selectedTemplateId === template.id;
+    const perf = calculatePerformanceScore(
+      template.cores,
+      template.ram,
+      template.storage,
     );
+    const osOption = osOptions.find(
+      (o) => o.id === template.osType?.toUpperCase(),
+    );
+    const OsIcon = osOption?.icon;
+
+    return (
+      <Card
+        key={template.id}
+        variant="default"
+        spotlight={false}
+        glow={false}
+        interactive
+        selected={isSelected}
+        fullHeight
+        leadingIcon={<Server size={18} />}
+        leadingIconTone="purple"
+        title={
+          <ResponsiveStack direction="row" gap={2} align="center" wrap>
+            <span>{template.name}</span>
+            {perf.score > 60 && <Badge tone="purple">Recommended</Badge>}
+            {OsIcon && (
+              <Badge tone={osOption.tone}>
+                <OsIcon size={12} />
+              </Badge>
+            )}
+          </ResponsiveStack>
+        }
+        description={template.description}
+        onClick={() => handleBlueprintSelect(template)}
+        footer={
+          <Progress
+            value={perf.percentage}
+            max={100}
+            tone={progressTone(perf.score)}
+            label="Performance"
+            valueSlot={`${perf.level} · ${perf.score}%`}
+          />
+        }
+      >
+        <ResponsiveStack direction="col" gap={3}>
+          {/* Specs */}
+          <ResponsiveGrid columns={{ base: 3 }} gap={2}>
+            <ResponsiveStack direction="row" gap={1} align="center">
+              <IconTile icon={<Cpu size={12} />} tone="sky" size="sm" />
+              <span className="text-xs">{template.cores} cores</span>
+            </ResponsiveStack>
+            <ResponsiveStack direction="row" gap={1} align="center">
+              <IconTile icon={<MemoryStick size={12} />} tone="green" size="sm" />
+              <span className="text-xs">{template.ram} GB</span>
+            </ResponsiveStack>
+            <ResponsiveStack direction="row" gap={1} align="center">
+              <IconTile icon={<HardDrive size={12} />} tone="purple" size="sm" />
+              <span className="text-xs">{template.storage} GB</span>
+            </ResponsiveStack>
+          </ResponsiveGrid>
+
+          {/* Included apps */}
+          {template.applications?.length > 0 && (
+            <ResponsiveStack direction="row" gap={1} wrap>
+              <Package size={12} className="text-fg-muted" />
+              {template.applications.map((app) => (
+                <Badge key={app.applicationId} tone="purple">
+                  {app.name}
+                </Badge>
+              ))}
+            </ResponsiveStack>
+          )}
+
+          {/* Included scripts */}
+          {template.scripts?.length > 0 && (
+            <ResponsiveStack direction="row" gap={1} wrap>
+              <ShieldCheck size={12} className="text-fg-muted" />
+              {template.scripts.map((s) => (
+                <Badge key={s.scriptId} tone="neutral">
+                  {s.name}
+                </Badge>
+              ))}
+            </ResponsiveStack>
+          )}
+
+          {/* Extra features */}
+          <ResponsiveStack direction="row" gap={1} wrap>
+            {template.encryptDisk && <Badge tone="danger">Encryption</Badge>}
+            {template.wallpaperUrl && <Badge tone="info">Wallpaper</Badge>}
+            {template.powerPlan && (
+              <Badge tone="warning">Power: {template.powerPlan}</Badge>
+            )}
+          </ResponsiveStack>
+        </ResponsiveStack>
+      </Card>
+    );
+  };
+
+  if (templatesLoading.fetch) {
+    return <LoadingOverlay label="Loading blueprints…" />;
   }
 
   if (templatesError.fetch) {
     return (
-      <Page size="md">
-        <EmptyState
-          icon={<Server />}
-          title="Error loading blueprints"
-          description="Something went wrong while fetching blueprints. Try again in a moment."
-        />
-      </Page>
+      <EmptyState
+        icon={<Server />}
+        title="Error loading blueprints"
+        description="Something went wrong while fetching blueprints. Try again in a moment."
+      />
     );
   }
 
   return (
-    <Page>
+    <ResponsiveStack direction="col" gap={6}>
       <ToggleGroup
         value={mode}
         onChange={handleModeChange}
@@ -281,136 +414,69 @@ export function BlueprintStep({ id }) {
       {/* ─── Blueprint mode ─── */}
       {mode === 'blueprint' && (
         <ResponsiveStack direction="col" gap={6}>
-          {categories.map((category) => (
-            <FormSection
-              key={category.id}
-              title={category.name}
-              description={category.description}
-            >
-              {!templatesByCategory[category.id] ||
-              templatesByCategory[category.id].length === 0 ? (
-                <EmptyState
-                  variant="dashed"
-                  icon={<Server />}
-                  title="No blueprints in this category"
-                />
-              ) : (
-                <ResponsiveGrid columns={{ base: 1, lg: 2 }} gap={4}>
-                  {templatesByCategory[category.id].map((template) => {
-                    const isSelected = selectedTemplateId === template.id;
-                    const perf = calculatePerformanceScore(
-                      template.cores,
-                      template.ram,
-                      template.storage,
-                    );
-                    const osOption = osOptions.find(
-                      (o) => o.id === template.osType?.toUpperCase(),
-                    );
-                    const OsIcon = osOption?.icon;
+          {categoriesError?.fetch ? (
+            <EmptyState
+              icon={<Server />}
+              title="Couldn't load blueprints"
+              description={categoriesError.fetch}
+              actions={
+                <Button
+                  variant="secondary"
+                  onClick={() => dispatch(fetchTemplateCategories())}
+                >
+                  Retry
+                </Button>
+              }
+            />
+          ) : categoriesLoading?.fetch && categories.length === 0 ? (
+            <EmptyState variant="inline" title="Loading blueprints…" />
+          ) : categories.length === 0 && uncategorizedTemplates.length === 0 ? (
+            <EmptyState
+              variant="dashed"
+              icon={<Server />}
+              title="No blueprints yet"
+              description="Build a custom desktop, or create a blueprint first."
+              actions={
+                <Button variant="primary" onClick={() => handleModeChange('custom')}>
+                  Build a custom desktop
+                </Button>
+              }
+            />
+          ) : (
+            <>
+              {categories.map((category) => (
+                <FormSection
+                  key={category.id}
+                  title={category.name}
+                  description={category.description}
+                >
+                  {!templatesByCategory[category.id] ||
+                  templatesByCategory[category.id].length === 0 ? (
+                    <EmptyState
+                      variant="dashed"
+                      icon={<Server />}
+                      title="No blueprints in this category"
+                    />
+                  ) : (
+                    <ResponsiveGrid columns={{ base: 1, lg: 2 }} gap={4}>
+                      {templatesByCategory[category.id].map(renderTemplateCard)}
+                    </ResponsiveGrid>
+                  )}
+                </FormSection>
+              ))}
 
-                    return (
-                      <Card
-                        key={template.id}
-                        variant="default"
-                        spotlight={false}
-                        glow={false}
-                        interactive
-                        selected={isSelected}
-                        fullHeight
-                        leadingIcon={<Server size={18} />}
-                        leadingIconTone="purple"
-                        title={
-                          <ResponsiveStack direction="row" gap={2} align="center" wrap>
-                            <span>{template.name}</span>
-                            {perf.score > 60 && (
-                              <Badge tone="purple">Recommended</Badge>
-                            )}
-                            {OsIcon && (
-                              <Badge tone={osOption.tone}>
-                                <OsIcon size={12} />
-                              </Badge>
-                            )}
-                          </ResponsiveStack>
-                        }
-                        description={template.description}
-                        onClick={() => handleBlueprintSelect(template)}
-                        footer={
-                          <Progress
-                            value={perf.percentage}
-                            max={100}
-                            tone={progressTone(perf.score)}
-                            label="Performance"
-                            valueSlot={`${perf.level} · ${perf.score}%`}
-                          />
-                        }
-                      >
-                        <ResponsiveStack direction="col" gap={3}>
-                          {/* Specs */}
-                          <ResponsiveGrid columns={{ base: 3 }} gap={2}>
-                            <ResponsiveStack direction="row" gap={1} align="center">
-                              <IconTile icon={<Cpu size={12} />} tone="sky" size="sm" />
-                              <span className="text-xs">{template.cores} cores</span>
-                            </ResponsiveStack>
-                            <ResponsiveStack direction="row" gap={1} align="center">
-                              <IconTile icon={<MemoryStick size={12} />} tone="green" size="sm" />
-                              <span className="text-xs">{template.ram} GB</span>
-                            </ResponsiveStack>
-                            <ResponsiveStack direction="row" gap={1} align="center">
-                              <IconTile icon={<HardDrive size={12} />} tone="purple" size="sm" />
-                              <span className="text-xs">{template.storage} GB</span>
-                            </ResponsiveStack>
-                          </ResponsiveGrid>
-
-                          {/* Included apps */}
-                          {template.applications?.length > 0 && (
-                            <ResponsiveStack direction="row" gap={1} wrap>
-                              <Package size={12} className="text-fg-muted" />
-                              {template.applications.map((app) => (
-                                <Badge key={app.applicationId} tone="purple">
-                                  {app.name}
-                                </Badge>
-                              ))}
-                            </ResponsiveStack>
-                          )}
-
-                          {/* Included scripts */}
-                          {template.scripts?.length > 0 && (
-                            <ResponsiveStack direction="row" gap={1} wrap>
-                              <ShieldCheck size={12} className="text-fg-muted" />
-                              {template.scripts.map((s) => (
-                                <Badge key={s.scriptId} tone="neutral">
-                                  {s.name}
-                                </Badge>
-                              ))}
-                            </ResponsiveStack>
-                          )}
-
-                          {/* Extra features */}
-                          <ResponsiveStack direction="row" gap={1} wrap>
-                            {template.encryptDisk && (
-                              <Badge tone="danger">
-                                Encryption
-                              </Badge>
-                            )}
-                            {template.wallpaperUrl && (
-                              <Badge tone="info">
-                                Wallpaper
-                              </Badge>
-                            )}
-                            {template.powerPlan && (
-                              <Badge tone="warning">
-                                Power: {template.powerPlan}
-                              </Badge>
-                            )}
-                          </ResponsiveStack>
-                        </ResponsiveStack>
-                      </Card>
-                    );
-                  })}
-                </ResponsiveGrid>
+              {uncategorizedTemplates.length > 0 && (
+                <FormSection
+                  title="Other blueprints"
+                  description="Blueprints not assigned to a category"
+                >
+                  <ResponsiveGrid columns={{ base: 1, lg: 2 }} gap={4}>
+                    {uncategorizedTemplates.map(renderTemplateCard)}
+                  </ResponsiveGrid>
+                </FormSection>
               )}
-            </FormSection>
-          ))}
+            </>
+          )}
 
           {templateError && (
             <EmptyState variant="inline" icon={<Server />} title={templateError} />
@@ -426,8 +492,11 @@ export function BlueprintStep({ id }) {
             <ResponsiveGrid columns={{ base: 1, md: 2, lg: 4 }} gap={4}>
               {osOptions.map((os) => {
                 const Icon = os.icon;
-                const available = isOSAvailable(os.id);
-                const isDisabled = !available;
+                // While the ISO availability probe is still running we don't know
+                // yet whether an OS is installable — treat it as available so we
+                // don't flash a false "ISO Required" / disabled state on every card.
+                const available = osLoading ? true : isOSAvailable(os.id);
+                const isDisabled = !osLoading && !available;
                 const isSelected = customOs === os.id && !isDisabled;
 
                 return (
@@ -642,6 +711,6 @@ export function BlueprintStep({ id }) {
           </FormField>
         </Card>
       )}
-    </Page>
+    </ResponsiveStack>
   );
 }

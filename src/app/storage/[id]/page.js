@@ -1,42 +1,46 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import {
   Page,
   Alert,
   Button,
-  EmptyState,
   ResponsiveStack,
+  Skeleton,
 } from '@infinibay/harbor';
 import { ArrowLeft, HardDrive } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/PageHeader';
+import useFeatureFlag from '@/hooks/useFeatureFlag';
 
 export default function StorageDetailPage() {
   const router = useRouter();
-  const params = useParams();
+  const storageEnabled = useFeatureFlag('storage');
+  // Feature flags load lazily; wait until initialized before redirecting so a
+  // hard refresh / deep-link doesn't bounce enabled users on the fail-safe default.
+  const flagsInitialized = useSelector((state) => !!state.featureFlags?.initialized);
 
-  if (!params.id) {
+  useEffect(() => {
+    if (flagsInitialized && !storageEnabled) {
+      router.replace('/desktops');
+    }
+  }, [flagsInitialized, storageEnabled, router]);
+
+  if (!flagsInitialized) {
     return (
       <Page>
         <ResponsiveStack direction="col" gap={4}>
-          <EmptyState
-            icon={<HardDrive size={18} />}
-            title="Mount not found"
-            actions={
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<ArrowLeft size={14} />}
-                onClick={() => router.push('/storage')}
-              >
-                Back
-              </Button>
-            }
-          />
+          <Skeleton height={130} />
+          <Skeleton height={180} />
         </ResponsiveStack>
       </Page>
     );
+  }
+
+  if (!storageEnabled) {
+    return null;
   }
 
   return (

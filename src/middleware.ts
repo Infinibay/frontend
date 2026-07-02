@@ -24,13 +24,16 @@ import type { NextRequest } from 'next/server';
 const SESSION_COOKIE = 'infinibay-session';
 
 // Routes that do not require an authenticated session.
+//
+// NOTE: everything under `/auth/*` is already treated as public by
+// `isPublicRoute` (the prefix short-circuit below), so this explicit list only
+// needs the live auth screens for documentation. Self-service sign-up /
+// password-recovery flows were removed (no secure backend existed — accounts
+// are administrator-managed), leaving only sign-in and the informational
+// forgot-password page.
 const PUBLIC_ROUTES = [
   '/auth/sign-in',
-  '/auth/sign-up',
   '/auth/forgot-password',
-  '/auth/create-new-password',
-  '/auth/email-verification',
-  '/auth/admin',
 ];
 
 /**

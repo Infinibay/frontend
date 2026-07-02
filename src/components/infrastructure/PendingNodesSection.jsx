@@ -63,7 +63,7 @@ export function PendingNodesSection() {
   const canView = can('node:view');
   const canEdit = can('node:edit');
 
-  const { data, refetch } = usePendingNodesQuery({
+  const { data, error, refetch } = usePendingNodesQuery({
     fetchPolicy: 'cache-and-network',
     pollInterval: 15_000,
     skip: !canView
@@ -77,6 +77,9 @@ export function PendingNodesSection() {
   // the node terminal and re-types (the strongest, server-cross-checked form).
   const [approveTarget, setApproveTarget] = useState(null);
   const [typedCode, setTypedCode] = useState('');
+  // The node queued for rejection — rejection is destructive (the host must
+  // re-run the join flow), so it is gated behind an explicit confirm dialog.
+  const [rejectTarget, setRejectTarget] = useState(null);
 
   const closeModal = () => {
     setApproveTarget(null);
@@ -84,7 +87,7 @@ export function PendingNodesSection() {
   };
 
   const handleApprove = () => {
-    if (!approveTarget || typedCode.length !== 6) return;
+    if (!approveTarget || typedCode.length !== 6 || approving) return;
     approveNode({
       variables: { id: approveTarget.id, pairingCode: typedCode },
       onCompleted: () => {
@@ -100,13 +103,17 @@ export function PendingNodesSection() {
     });
   };
 
-  const handleReject = (node) => {
+  const confirmReject = () => {
+    if (!rejectTarget || rejecting) return;
+    const node = rejectTarget;
     rejectNode({
       variables: { id: node.id },
       onCompleted: () => {
         toast.success(`Node "${node.name}" rejected.`);
+        setRejectTarget(null);
         refetch();
       },
+      // Keep the confirm dialog open on failure so the admin sees it did not go through.
       onError: (err) => toast.error(err.message || 'Reject failed')
     });
   };
@@ -154,14 +161,14 @@ export function PendingNodesSection() {
         id: 'actions',
         header: '',
         width: 190,
-        align: 'right',
+        align: 'end',
         cell: ({ row }) => (
           <ButtonGroup>
             <Button
               size="sm"
               variant="secondary"
               disabled={!canEdit || rejecting}
-              onClick={() => handleReject(row)}
+              onClick={() => setRejectTarget(row)}
             >
               Reject
             </Button>
@@ -180,18 +187,41 @@ export function PendingNodesSection() {
         )
       }
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [canEdit, rejecting]
   );
 
-  if (!canView || pending.length === 0) return null;
+  if (!canView) return null;
+
+  // A failing/forbidden poll must be visible — never silently indistinguishable
+  // from "no pending nodes". Surface a compact, dismissable/retryable warning.
+  if (error && pending.length === 0) {
+    return (
+      <section className="rounded-md border border-warning/30 bg-warning/5 p-4">
+        <ResponsiveStack direction="row" gap={2} align="center" justify="between">
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <ShieldQuestion size={16} className="text-warning" />
+            <span className="text-sm font-medium">Couldn&apos;t check for pending nodes</span>
+          </ResponsiveStack>
+          <Button size="sm" variant="secondary" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </ResponsiveStack>
+      </section>
+    );
+  }
+
+  // Keep the section mounted while the approve dialog is open even if the poll
+  // empties the list (approved/expired elsewhere), so the dialog doesn't vanish
+  // mid-typing; otherwise stay out of the way when there's nothing pending.
+  if (pending.length === 0 && !approveTarget) return null;
 
   return (
-    <section className="rounded-md border border-amber-400/30 bg-amber-500/5 p-4">
+    <section className="rounded-md border border-warning/30 bg-warning/5 p-4">
       <ResponsiveStack direction="col" gap={3}>
         <ResponsiveStack direction="row" gap={2} align="center" justify="between">
           <ResponsiveStack direction="row" gap={2} align="center">
-            <ShieldQuestion size={16} className="text-amber-300" />
+            <ShieldQuestion size={16} className="text-warning" />
             <span className="text-sm font-medium">Nodes awaiting approval</span>
             <Badge tone="warning">{pending.length}</Badge>
           </ResponsiveStack>
@@ -225,7 +255,12 @@ export function PendingNodesSection() {
             </ResponsiveStack>
             <ResponsiveStack direction="col" gap={2} align="center">
               <span className="text-xs text-fg-muted">Type the code from the node&apos;s terminal</span>
-              <OTPInput length={6} value={typedCode} onChange={setTypedCode} />
+              <OTPInput
+                length={6}
+                value={typedCode}
+                onChange={setTypedCode}
+                onComplete={() => handleApprove()}
+              />
             </ResponsiveStack>
             {approveTarget?.fingerprint ? (
               <span className="font-mono text-[11px] text-fg-subtle">
@@ -240,7 +275,7 @@ export function PendingNodesSection() {
             onClick={() => {
               const node = approveTarget;
               closeModal();
-              if (node) handleReject(node);
+              if (node) setRejectTarget(node);
             }}
             disabled={rejecting}
           >
@@ -257,6 +292,23 @@ export function PendingNodesSection() {
               onClick={handleApprove}
             >
               Approve
+            </Button>
+          </ButtonGroup>
+        </DialogButtons>
+      </Dialog>
+
+      <Dialog open={!!rejectTarget} onClose={() => setRejectTarget(null)} size="sm">
+        <DialogTitle>{rejectTarget ? `Reject "${rejectTarget.name}"?` : 'Reject node'}</DialogTitle>
+        <DialogDescription>
+          The join request will be discarded. The host will need to re-run the join flow to try again.
+        </DialogDescription>
+        <DialogButtons align="end">
+          <ButtonGroup>
+            <Button variant="secondary" onClick={() => setRejectTarget(null)} disabled={rejecting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmReject} disabled={rejecting}>
+              Reject node
             </Button>
           </ButtonGroup>
         </DialogButtons>

@@ -7,7 +7,6 @@ import {
   Card,
   FormField,
   IconButton,
-  Page,
   PasswordStrength,
   ResponsiveStack,
   Select,
@@ -101,7 +100,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
       : getError('confirmPassword') || undefined;
 
   return (
-    <Page size="lg">
+    <ResponsiveStack direction="col" gap={6}>
         <Card
           variant="default"
           spotlight={false}
@@ -117,6 +116,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
         >
           <FormField required error={getError('departmentId')}>
             <Select
+              aria-label="Department"
               options={departmentOptions}
               value={stepValues.departmentId || ''}
               onChange={(value) => {
@@ -143,6 +143,7 @@ export function BasicInfoStep({ id, departmentId = null }) {
           <FormField required>
             <TextField
               id="name"
+              aria-label="Machine name"
               icon={<Server size={14} />}
               placeholder="e.g., dev-server-01, web-app-prod"
               value={stepValues.name || ''}
@@ -245,6 +246,6 @@ export function BasicInfoStep({ id, departmentId = null }) {
           </ResponsiveStack>
         </Card>
 
-    </Page>
+    </ResponsiveStack>
   );
 }

@@ -57,15 +57,6 @@ const rowBetween = {
   justifyContent: "space-between",
 };
 
-const dividerFoot = {
-  borderTop: "1px solid rgba(255,255,255,0.08)",
-  marginTop: "1.25rem",
-  paddingTop: "1.25rem",
-  textAlign: "center",
-  fontSize: "0.875rem",
-  opacity: 0.7,
-};
-
 const fineprint = {
   textAlign: "center",
   fontSize: "0.75rem",
@@ -73,7 +64,7 @@ const fineprint = {
   marginTop: "1rem",
 };
 
-const linkAccent = { color: "rgb(232,121,249)", fontWeight: 500 };
+const linkAccent = { color: "rgb(var(--harbor-accent))", fontWeight: 500 };
 
 const Page_ = () => {
   const { handleSubmit, control } = useForm();
@@ -247,11 +238,6 @@ const Page_ = () => {
                 </Button>
               </ResponsiveStack>
             </form>
-
-            <div style={dividerFoot}>
-              <span>Don&apos;t have an account? </span>
-              <Link href="/auth/sign-up" style={linkAccent}>Sign up</Link>
-            </div>
           </ResponsiveStack>
         </Card>
 

@@ -29,6 +29,7 @@ import {
   Eye,
   FileCode,
   Play,
+  RefreshCw,
   XCircle,
 } from 'lucide-react';
 import {
@@ -88,7 +89,12 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
   const [runAsUser, setRunAsUser] = useState('system');
   const [validationErrors, setValidationErrors] = useState({});
 
-  const { data: scriptsData, loading: scriptsLoading } = useDepartmentScriptsQuery({
+  const {
+    data: scriptsData,
+    loading: scriptsLoading,
+    error: scriptsError,
+    refetch: refetchScripts,
+  } = useDepartmentScriptsQuery({
     variables: { departmentId },
     skip: !departmentId,
   });
@@ -96,6 +102,7 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
   const {
     data: executionsData,
     loading: executionsLoading,
+    error: executionsError,
     refetch: refetchExecutions,
   } = useScriptExecutionsQuery({
     variables: { machineId: vmId, limit: 50 },
@@ -115,32 +122,37 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
 
   useEffect(() => {
     const socketService = getSocketService();
+    // The backend (ScriptsEventManager) emits `scripts:execution_started|
+    // execution_completed|execution_cancelled` — NOT `script_execution_*`. The
+    // events/page.js, ExecutionLogsTab and ScheduleTab all use the `execution_*`
+    // names; using anything else means this tab never receives realtime updates.
+    // The execution payload's data carries machineId (but no scriptName).
     const unsubscribe = socketService.subscribeToAllResourceEvents(
       'scripts',
       (action, data) => {
-        if (data.data.machineId === vmId) {
+        if (data?.data?.machineId === vmId) {
           refetchExecutions();
           switch (action) {
-            case 'script_execution_started':
-              toast.info(`Script execution started: ${data.data.scriptName}`);
+            case 'execution_started':
+              toast.info('Script execution started');
               break;
-            case 'script_execution_completed':
+            case 'execution_completed':
               if (data.data.status === 'SUCCESS') {
                 toast.success('Script completed successfully');
               } else {
                 toast.error('Script execution failed');
               }
               break;
-            case 'script_execution_cancelled':
+            case 'execution_cancelled':
               toast.warning('Script execution cancelled');
               break;
           }
         }
       },
       [
-        'script_execution_started',
-        'script_execution_completed',
-        'script_execution_cancelled',
+        'execution_started',
+        'execution_completed',
+        'execution_cancelled',
       ],
     );
     return () => unsubscribe();
@@ -182,7 +194,7 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
       return;
     }
     try {
-      await executeScript({
+      const res = await executeScript({
         variables: {
           input: {
             scriptId: selectedScript.id,
@@ -192,6 +204,14 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
           },
         },
       });
+      // ExecuteScript resolves HTTP 200 with { success, message, error } even on a
+      // resolver-level failure (Apollo does not throw). Treat success:false as an
+      // error: keep the dialog open and surface the server message.
+      const r = res.data?.executeScript;
+      if (r && r.success === false) {
+        toast.error(r.error || r.message || 'Script execution failed');
+        return;
+      }
       toast.success('Script execution started');
       setShowExecuteDialog(false);
       setInputValues({});
@@ -260,6 +280,31 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
         >
           {scriptsLoading ? (
             <LoadingOverlay label="Loading scripts…" />
+          ) : scriptsError ? (
+            <Alert
+              tone="danger"
+              icon={<AlertCircle size={14} />}
+              title="Could not load scripts"
+              actions={
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={<RefreshCw size={14} />}
+                  onClick={() => refetchScripts()}
+                >
+                  Retry
+                </Button>
+              }
+            >
+              {scriptsError.message}
+            </Alert>
+          ) : !departmentId ? (
+            <EmptyState
+              variant="dashed"
+              icon={<FileCode size={18} />}
+              title="This desktop is not assigned to a department"
+              description="Scripts are published per department. Assign this desktop to a department to run scripts here."
+            />
           ) : scripts.length === 0 ? (
             <EmptyState
               variant="dashed"
@@ -276,7 +321,6 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
                   spotlight={false}
                   glow={false}
                   fullHeight
-                  interactive
                   leadingIcon={<FileCode size={18} />}
                   leadingIconTone="sky"
                   title={script.name}
@@ -316,6 +360,24 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
         >
           {executionsLoading ? (
             <LoadingOverlay label="Loading history…" />
+          ) : executionsError ? (
+            <Alert
+              tone="danger"
+              icon={<AlertCircle size={14} />}
+              title="Could not load execution history"
+              actions={
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={<RefreshCw size={14} />}
+                  onClick={() => refetchExecutions()}
+                >
+                  Retry
+                </Button>
+              }
+            >
+              {executionsError.message}
+            </Alert>
           ) : executions.length === 0 ? (
             <EmptyState
               variant="dashed"

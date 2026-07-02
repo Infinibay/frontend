@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
-import { createVm, selectVmsLoading, selectVmsError } from '@/state/slices/vms';
-import { EmptyState, LoadingOverlay, Page } from '@infinibay/harbor';
+import { createVm, fetchVms } from '@/state/slices/vms';
+import { Alert, Button, EmptyState, Page } from '@infinibay/harbor';
 import { Wizard } from './wizard/wizard';
 import { useToast } from '@/hooks/use-toast';
 import { BasicInfoStep } from './steps/BasicInfoStep';
@@ -12,15 +12,23 @@ import { BlueprintStep } from './steps/BlueprintStep';
 import { ApplicationsScriptsStep } from './steps/ApplicationsScriptsStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { GpuSelectionStep } from './steps/GpuSelectionStep';
-import { fetchDepartments, selectDepartments } from '@/state/slices/departments';
+import {
+  fetchDepartments,
+  selectDepartments,
+  selectDepartmentsLoading,
+  selectDepartmentError,
+} from '@/state/slices/departments';
 
 export default function CreateMachineWizard({ departmentId }) {
   const dispatch = useDispatch();
   const router = useRouter();
   const { toast } = useToast();
-  const { create: isCreating } = useSelector(selectVmsLoading);
-  const { create: createError } = useSelector(selectVmsError);
   const departments = useSelector(selectDepartments);
+  const departmentsLoading = useSelector(selectDepartmentsLoading);
+  const departmentsError = useSelector(selectDepartmentError);
+  // Timestamp of the last successful departments fetch — lets us distinguish a
+  // genuinely-empty result from the "not fetched yet" first render.
+  const departmentsLastUpdated = useSelector((state) => state.departments.lastUpdated);
   const [initialValues, setInitialValues] = useState(null);
   // Track validated departmentId - only set if it exists in departments
   const [validatedDepartmentId, setValidatedDepartmentId] = useState(null);
@@ -90,6 +98,13 @@ export default function CreateMachineWizard({ departmentId }) {
 
       await dispatch(createVm(machineData)).unwrap();
 
+      // createVm only optimistically updates the Redux vms slice. Re-fetch so the
+      // Apollo `machines` cache (written by fetchVms's network-only query) reconciles
+      // too — the script-scheduler pickers read m.status from that cache, so without
+      // this they can show a stale schedulable set right after a create. Fire-and-forget
+      // so it doesn't block the redirect below.
+      dispatch(fetchVms());
+
       toast({
         variant: "success",
         title: "Success!",
@@ -98,17 +113,63 @@ export default function CreateMachineWizard({ departmentId }) {
 
       router.push('/desktops');
     } catch (error) {
-      console.error('Failed to create machine:', error);
+      console.error('Failed to create machine:', error?.message || error);
       toast({
-        variant: "destructive",
+        variant: "error",
         title: "Error",
-        description: createError || "Failed to create desktop. Please try again."
+        description:
+          (typeof error === 'string' ? error : error?.message) ||
+          "Failed to create desktop. Please try again."
       });
     }
   };
 
-  // Don't render until initial values are ready
+  // Don't render the wizard until initial values are ready. Departments are
+  // required to create a desktop, so distinguish loading, error and the
+  // genuinely-empty case instead of hanging on "Loading…" forever.
   if (!initialValues) {
+    if (departmentsError) {
+      return (
+        <Page size="md">
+          <Alert
+            tone="danger"
+            title="Couldn't load departments"
+            actions={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => dispatch(fetchDepartments())}
+              >
+                Retry
+              </Button>
+            }
+          >
+            {departmentsError}
+          </Alert>
+        </Page>
+      );
+    }
+
+    if (!departmentsLoading && departmentsLastUpdated && departments.length === 0) {
+      return (
+        <Page size="md">
+          <EmptyState
+            variant="dashed"
+            title="No departments yet"
+            description="Create a department before adding a desktop."
+            actions={
+              <Button
+                variant="primary"
+                onClick={() => router.push('/departments')}
+              >
+                Go to Departments
+              </Button>
+            }
+          />
+        </Page>
+      );
+    }
+
     return (
       <Page size="md">
         <EmptyState variant="inline" title="Loading…" />
@@ -117,10 +178,6 @@ export default function CreateMachineWizard({ departmentId }) {
   }
 
   return (
-    <>
-      {isCreating && (
-        <LoadingOverlay label="Creating your desktop…" fill size={32} />
-      )}
       <Wizard onComplete={handleComplete} initialValues={initialValues}>
         <BasicInfoStep
           id="basicInfo"
@@ -173,6 +230,5 @@ export default function CreateMachineWizard({ departmentId }) {
         <ApplicationsScriptsStep id="applications" />
         <ReviewStep id="review" />
       </Wizard>
-    </>
   );
 }

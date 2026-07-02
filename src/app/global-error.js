@@ -6,10 +6,12 @@
 // errors thrown by the root layout itself (e.g. a provider crash), where
 // error.js cannot help because the layout frame is gone.
 //
-// Kept deliberately minimal: it cannot rely on Harbor's CSS variables (those
-// are injected by the app's theme provider, which lives inside the broken
-// layout), so it uses plain inline styles. The goal is a readable message and
-// a working reload button — nothing more.
+// Kept deliberately minimal: plain inline styles, no Harbor components. Colors
+// are fallback-chained to Harbor's token variables (tokens.css is a global
+// import that usually survives a layout render crash) so the crash screen
+// follows the user's theme, falling back to a hardcoded dark palette when the
+// tokens are unavailable. The goal is a readable message and a working reload
+// button — nothing more.
 
 import { useEffect } from 'react';
 
@@ -34,6 +36,24 @@ export default function GlobalError({ error, reset }) {
     }
   }, [error]);
 
+  // Recovery: try Next's in-place reset() first (cheapest, preserves client
+  // state). When the root layout itself threw, reset() commonly re-throws the
+  // same error and cannot recover, so fall back to a full-document reload,
+  // which reliably rebuilds the app from scratch.
+  const handleReload = () => {
+    try {
+      if (typeof reset === 'function') {
+        reset();
+        return;
+      }
+    } catch {
+      // reset() failed to recover — fall through to a hard reload.
+    }
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  };
+
   return (
     <html lang="en">
       <body
@@ -50,8 +70,11 @@ export default function GlobalError({ error, reset }) {
           padding: '32px',
           fontFamily:
             'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-          backgroundColor: '#0b0f17',
-          color: '#e6edf3',
+          // Follow the theme when Harbor's tokens.css survived the layout
+          // crash (it's a global import), falling back to the dark palette as
+          // a last resort. Tokens are RGB triplets, hence the rgb() wrappers.
+          backgroundColor: 'rgb(var(--harbor-bg, 11 15 23))',
+          color: 'rgb(var(--harbor-text, 230 237 243))',
           textAlign: 'center',
         }}
       >
@@ -63,15 +86,27 @@ export default function GlobalError({ error, reset }) {
           usually fixes this; if the problem persists, contact your
           administrator.
         </p>
+        {error?.digest ? (
+          <p
+            style={{
+              margin: 0,
+              fontSize: '12px',
+              opacity: 0.5,
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+            }}
+          >
+            Reference: {error.digest}
+          </p>
+        ) : null}
         <button
-          onClick={() => reset()}
+          onClick={handleReload}
           style={{
             cursor: 'pointer',
             padding: '10px 20px',
             fontSize: '14px',
             fontWeight: 500,
-            color: '#0b0f17',
-            backgroundColor: '#e6edf3',
+            color: 'rgb(var(--harbor-bg, 11 15 23))',
+            backgroundColor: 'rgb(var(--harbor-text, 230 237 243))',
             border: 'none',
             borderRadius: '8px',
           }}

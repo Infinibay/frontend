@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -15,6 +14,7 @@ import {
   Trash2,
   RefreshCw,
   AlertCircle,
+  Monitor,
 } from 'lucide-react';
 import {
   Page,
@@ -31,8 +31,9 @@ import {
   IconButton,
   ResponsiveStack,
   Tooltip,
+  ContextMenu,
+  Menu,
   MenuItem,
-  Z,
 } from '@infinibay/harbor';
 import { PageHeader } from '@/components/common/PageHeader';
 import { OsIcon } from '@/components/common/OsBadge';
@@ -59,46 +60,49 @@ const debug = createDebugger('frontend:pages:templates');
 /** Dense row for a single blueprint. Operator-console density, not card grid. */
 function BlueprintRow({ template, onEdit, onDelete }) {
   const inUse = (template.totalMachines || 0) > 0;
-  // Pull OS signal from template name or description (heuristic for mock).
-  const osHint = `${template.name} ${template.description || ''}`;
 
-  const [ctx, setCtx] = useState(null);
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    if (!ctx) return;
-    const down = (e) => {
-      if (!menuRef.current?.contains(e.target)) setCtx(null);
-    };
-    const key = (e) => {
-      if (e.key === 'Escape') setCtx(null);
-    };
-    document.addEventListener('mousedown', down);
-    document.addEventListener('keydown', key);
-    return () => {
-      document.removeEventListener('mousedown', down);
-      document.removeEventListener('keydown', key);
-    };
-  }, [ctx]);
-
-  const handleContextMenu = (e) => {
-    e.preventDefault();
-    const W = 200;
-    const H = 100;
-    let x = e.clientX;
-    let y = e.clientY;
-    if (x + W > window.innerWidth - 8) x = window.innerWidth - W - 8;
-    if (y + H > window.innerHeight - 8) y = window.innerHeight - H - 8;
-    setCtx({ x, y });
-  };
+  const rowMenu = (
+    <Menu>
+      <MenuItem
+        icon={<Pencil size={14} />}
+        onClick={() => onEdit?.()}
+      >
+        Edit
+      </MenuItem>
+      <MenuItem
+        icon={<Trash2 size={14} />}
+        danger
+        disabled={inUse}
+        onClick={() => {
+          if (inUse) return;
+          onDelete?.(template);
+        }}
+      >
+        Delete
+      </MenuItem>
+    </Menu>
+  );
 
   return (
+    <ContextMenu menu={rowMenu}>
     <div
-      className="group flex items-center gap-3 py-2 px-2 rounded-md hover:bg-white/[0.03] transition-colors duration-150"
-      onContextMenu={handleContextMenu}
+      role="button"
+      tabIndex={0}
+      onClick={() => onEdit?.()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onEdit?.();
+        }
+      }}
+      className="group flex items-center gap-3 py-2 px-2 rounded-md cursor-pointer hover:bg-white/[0.03] transition-colors duration-150 outline-none focus-visible:ring-1 focus-visible:ring-accent"
     >
       <div className="shrink-0 h-6 w-6 rounded-md bg-white/5 flex items-center justify-center">
-        <OsIcon os={osHint} size={14} />
+        {template.osType ? (
+          <OsIcon os={template.osType} size={14} />
+        ) : (
+          <Monitor size={14} className="text-fg-muted" />
+        )}
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <div className="flex items-center gap-2">
@@ -131,7 +135,10 @@ function BlueprintRow({ template, onEdit, onDelete }) {
           variant="ghost"
           label="Edit blueprint"
           icon={<Pencil size={14} />}
-          onClick={onEdit}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.();
+          }}
         />
         {inUse ? (
           <Tooltip
@@ -153,44 +160,15 @@ function BlueprintRow({ template, onEdit, onDelete }) {
             variant="ghost"
             label="Delete blueprint"
             icon={<Trash2 size={14} />}
-            onClick={() => onDelete?.(template)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete?.(template);
+            }}
           />
         )}
       </div>
-      {ctx && typeof document !== 'undefined'
-        ? createPortal(
-            <div
-              ref={menuRef}
-              role="menu"
-              style={{ position: 'fixed', left: ctx.x, top: ctx.y, zIndex: Z.CONTEXT_MENU, minWidth: 180 }}
-              className="rounded-md bg-surface-2 border border-[var(--harbor-overlay-border)] shadow-harbor-lg p-1"
-            >
-              <MenuItem
-                icon={<Pencil size={14} />}
-                onClick={() => {
-                  setCtx(null);
-                  onEdit?.();
-                }}
-              >
-                Edit
-              </MenuItem>
-              <MenuItem
-                icon={<Trash2 size={14} />}
-                danger
-                disabled={inUse}
-                onClick={() => {
-                  if (inUse) return;
-                  setCtx(null);
-                  onDelete?.(template);
-                }}
-              >
-                Delete
-              </MenuItem>
-            </div>,
-            document.body
-          )
-        : null}
     </div>
+    </ContextMenu>
   );
 }
 
@@ -229,9 +207,12 @@ export default function TemplatesPage() {
   const loading = templatesLoading || categoriesLoading;
   const error = templatesError || categoriesError;
 
+  // refresh() rethrows past its retry budget; the slice already records
+  // error.fetch for the UI, so swallow the rejection to avoid an unhandled
+  // promise rejection on a failing backend.
   const handleRefresh = () => {
-    refreshTemplates();
-    refreshCategories();
+    refreshTemplates().catch(() => {});
+    refreshCategories().catch(() => {});
   };
 
   const handleDeleteTemplate = async () => {
@@ -240,7 +221,7 @@ export default function TemplatesPage() {
     try {
       await dispatch(destroyTemplate(deleteTemplateTarget.id)).unwrap();
       toast.success('Blueprint deleted');
-      refreshTemplates();
+      refreshTemplates().catch(() => {});
       setDeleteTemplateTarget(null);
     } catch (err) {
       debug.error('delete template', err);
@@ -256,7 +237,7 @@ export default function TemplatesPage() {
     try {
       await dispatch(destroyTemplateCategory(deleteCategoryTarget.id)).unwrap();
       toast.success('Category deleted');
-      refreshCategories();
+      refreshCategories().catch(() => {});
       setDeleteCategoryTarget(null);
     } catch (err) {
       debug.error('delete category', err);
@@ -275,6 +256,14 @@ export default function TemplatesPage() {
     });
     return map;
   }, [templates]);
+
+  // Blueprints whose categoryId is null or points at a category we didn't
+  // fetch (deleted/unknown) would otherwise vanish from the list while still
+  // being counted in the header. Surface them under an "Uncategorized" section.
+  const uncategorized = useMemo(() => {
+    const known = new Set((categories || []).map((c) => c.id));
+    return (templates || []).filter((t) => !t.categoryId || !known.has(t.categoryId));
+  }, [templates, categories]);
 
   const stats = useMemo(
     () => ({
@@ -347,13 +336,15 @@ export default function TemplatesPage() {
     []
   );
 
+  // NOTE: title is intentionally omitted here. The in-page <PageHeader> below
+  // renders the page <h1>; setting `title` here too would make GlobalHeader
+  // emit a second, duplicate <h1>. We still drive breadcrumbs + help.
   usePageHeader(
     {
       breadcrumbs: [
         { label: 'Home', href: '/' },
         { label: 'Blueprints', isCurrent: true },
       ],
-      title: 'Blueprints',
       actions: [],
       helpConfig,
       helpTooltip: 'Blueprints help',
@@ -412,14 +403,22 @@ export default function TemplatesPage() {
   ) : null;
 
   let body;
-  if (loading && (templates || []).length === 0) {
+  // Show the spinner while EITHER resource is still loading and categories
+  // aren't yet available — never flash "No categories yet" mid-load or under an
+  // error alert.
+  if ((templatesLoading || categoriesLoading) && (categories || []).length === 0) {
     body = (
       <ResponsiveStack direction="row" gap={3} align="center" justify="center">
         <Spinner />
         <span>Loading blueprints…</span>
       </ResponsiveStack>
     );
-  } else if ((categories || []).length === 0) {
+  } else if (
+    !categoriesLoading &&
+    !categoriesError &&
+    (categories || []).length === 0 &&
+    uncategorized.length === 0
+  ) {
     body = (
       <EmptyState
         icon={<FolderTree size={18} />}
@@ -439,7 +438,10 @@ export default function TemplatesPage() {
       <ResponsiveStack direction="col" gap={6}>
         {(categories || []).map((category) => {
           const list = templatesByCategory[category.id] || [];
-          const canDelete = (category.totalTemplates || 0) === 0;
+          // Gate delete on the LIVE, locally-derived list length rather than
+          // the server-side category.totalTemplates snapshot, which goes stale
+          // after a blueprint is created/deleted without a categories refetch.
+          const canDelete = list.length === 0;
 
           return (
             <section key={category.id} className="flex flex-col gap-2">
@@ -477,7 +479,7 @@ export default function TemplatesPage() {
                     />
                   ) : (
                     <Tooltip
-                      content={`Contains ${category.totalTemplates} blueprint${category.totalTemplates !== 1 ? 's' : ''}`}
+                      content={`Contains ${list.length} blueprint${list.length !== 1 ? 's' : ''}`}
                     >
                       <span>
                         <IconButton
@@ -526,6 +528,35 @@ export default function TemplatesPage() {
             </section>
           );
         })}
+
+        {uncategorized.length > 0 ? (
+          <section className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-3 pb-2 border-b border-white/5">
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-base font-semibold m-0">Uncategorized</h2>
+                  <span className="text-fg-muted text-xs">
+                    · {uncategorized.length} blueprint{uncategorized.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <span className="text-fg-muted text-xs">
+                  Blueprints with no category, or whose category was deleted. Edit
+                  each one to assign it to a category.
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col divide-y divide-[var(--harbor-border-subtle)]">
+              {uncategorized.map((template) => (
+                <BlueprintRow
+                  key={template.id}
+                  template={template}
+                  onEdit={() => router.push(`/blueprints/${template.id}/edit`)}
+                  onDelete={setDeleteTemplateTarget}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </ResponsiveStack>
     );
   }
@@ -546,7 +577,7 @@ export default function TemplatesPage() {
 
       <Dialog
         open={!!deleteTemplateTarget}
-        onClose={() => setDeleteTemplateTarget(null)}
+        onClose={() => !isDeletingTemplate && setDeleteTemplateTarget(null)}
         size="sm"
       >
         <DialogTitle>
@@ -589,7 +620,7 @@ export default function TemplatesPage() {
 
       <Dialog
         open={!!deleteCategoryTarget}
-        onClose={() => setDeleteCategoryTarget(null)}
+        onClose={() => !isDeletingCategory && setDeleteCategoryTarget(null)}
         size="sm"
       >
         <DialogTitle>

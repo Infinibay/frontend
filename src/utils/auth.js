@@ -310,8 +310,15 @@ export const auth = {
       throw new Error('401'); // Unauthorized
     } catch (error) {
       debug.error('login', 'Login error:', error);
-      if (error.message.includes('401') || error.message.includes('403')) {
-        throw error; // Re-throw authentication errors
+      // Bad credentials come back as a GraphQL error (HTTP 200, code
+      // UNAUTHENTICATED, message 'Invalid credentials') whose message contains
+      // neither '401' nor '403'. Classify on the error's extensions/shape — not
+      // substrings — so the sign-in page can show "Invalid email or password"
+      // instead of a generic server error. Re-throw the ORIGINAL error so its
+      // message/extensions survive for the page's matcher.
+      const message = error?.message || '';
+      if (isUnauthenticatedError(error) || message.includes('401') || message.includes('403')) {
+        throw error; // Re-throw authentication errors untouched
       }
       throw new Error('An unexpected error occurred');
     }
@@ -463,7 +470,9 @@ export const auth = {
       return data.updateAppSettings;
     } catch (error) {
       debug.error('updateAppSettings', 'Failed to update app settings:', error);
-      throw new Error('Failed to update app settings');
+      // Re-throw the ORIGINAL error so callers can surface the server-provided
+      // message (e.g. in a toast) instead of a generic string.
+      throw error;
     }
   },
 
@@ -494,7 +503,9 @@ export const auth = {
       return data.setFeatureFlag;
     } catch (error) {
       debug.error('setFeatureFlag', 'Failed to set feature flag:', error);
-      throw new Error('Failed to set feature flag');
+      // Re-throw the ORIGINAL error so callers can surface the server-provided
+      // message (e.g. in a toast) instead of a generic string.
+      throw error;
     }
   }
 };

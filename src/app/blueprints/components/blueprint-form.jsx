@@ -19,7 +19,6 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useSelector } from 'react-redux';
 import {
   TextField,
   Textarea,
@@ -43,6 +42,7 @@ import {
   DialogButtons,
   IconButton,
   Button,
+  Spinner,
 } from '@infinibay/harbor';
 import {
   Cpu,
@@ -53,8 +53,12 @@ import {
   ShieldCheck,
   Monitor,
   Info,
+  RefreshCw,
 } from 'lucide-react';
 import { useScriptsQuery } from '@/gql/hooks';
+import { toast } from '@/hooks/use-toast';
+import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { fetchApplications } from '@/state/slices/applications';
 import { getScriptDetails } from './script-details';
 import { createSanitizedSVGMarkup } from '@/utils/svg-sanitizer';
 
@@ -118,16 +122,60 @@ const POWER_PLAN_OPTIONS = [
 ];
 
 // ---------------------------------------------------------------------------
+// Validation — shared by /blueprints/new and /blueprints/[id]/edit.
+// Returns a map of { field: message }; empty object means valid.
+// ---------------------------------------------------------------------------
+
+export function validateBlueprint(form) {
+  const errors = {};
+  if (!form.name?.trim()) errors.name = 'Name is required';
+  if (!form.osType) errors.osType = 'Operating system is required';
+  if (!form.categoryId) errors.categoryId = 'Category is required';
+  const cores = Number(form.cores);
+  const ram = Number(form.ram);
+  const storage = Number(form.storage);
+  if (!cores || cores <= 0 || cores > 128) errors.cores = 'CPU cores must be 1–128';
+  if (!ram || ram <= 0 || ram > 512) errors.ram = 'RAM must be 1–512 GB';
+  if (!storage || storage <= 0 || storage > 10000) errors.storage = 'Storage must be 1–10 000 GB';
+  return errors;
+}
+
+// ---------------------------------------------------------------------------
 // Public component
 // ---------------------------------------------------------------------------
 
-export function BlueprintForm({ form, onChange }) {
+export function BlueprintForm({ form, onChange, errors = {}, categories = [], onSubmit }) {
   const osType = form.osType ?? '';
   const family = osFamily(osType);
 
-  const apps = useSelector((s) => s.applications?.items ?? []);
-  const { data: scriptsData } = useScriptsQuery();
+  // Ensure the applications catalog is loaded (it may not have finished the
+  // background init fetch when a user deep-links straight to this form). This
+  // also gives us honest loading/error states so the Apps tab never flashes a
+  // false "No applications" empty state while the catalog is still in flight.
+  const {
+    data: apps = [],
+    isLoading: appsLoading,
+    error: appsError,
+    refresh: refreshApps,
+  } = useEnsureData('applications', fetchApplications, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 5 * 60 * 1000,
+  });
+  const {
+    data: scriptsData,
+    loading: scriptsLoading,
+    error: scriptsError,
+    refetch: refetchScripts,
+  } = useScriptsQuery();
   const scripts = useMemo(() => scriptsData?.scripts ?? [], [scriptsData]);
+
+  const categoryOptions = useMemo(
+    () => [
+      { value: '', label: '— pick a category —' },
+      ...(categories ?? []).map((c) => ({ value: c.id, label: c.name })),
+    ],
+    [categories]
+  );
 
   // Catalogs filtered by OS family.
   // Scripts use enum OS { WINDOWS, LINUX } — family-based match is enough.
@@ -183,11 +231,71 @@ export function BlueprintForm({ form, onChange }) {
     onChange({ [key]: Array.from(cur) });
   };
 
+  // Changing the OS re-filters compatible apps/scripts. Prune any previously
+  // selected IDs that are not valid for the newly chosen OS so we never submit
+  // hidden, incompatible selections (they'd be invisible in the filtered tabs
+  // but still counted and sent on save).
+  const handleOsChange = (newOsType) => {
+    const newFamily = osFamily(newOsType);
+    if (!newFamily) {
+      // No OS selected — the Apps/Scripts tabs are hidden and submission is
+      // blocked by validation, so keep selections until an OS is picked.
+      onChange({ osType: newOsType });
+      return;
+    }
+    const validApps = new Set(
+      apps
+        .filter((a) =>
+          (a.os ?? []).some((o) => {
+            const v = o.toLowerCase();
+            return v === newFamily || v === newOsType;
+          })
+        )
+        .map((a) => a.id)
+    );
+    const validScripts = new Set(
+      scripts
+        .filter((s) => (s.os ?? []).some((o) => o.toLowerCase() === newFamily))
+        .map((s) => s.id)
+    );
+    const prevApps = form.applicationIds ?? [];
+    const prevScripts = form.scriptIds ?? [];
+    // Only prune against a catalog we've actually loaded — otherwise a slow
+    // apps/scripts fetch would silently wipe the user's existing selections
+    // (e.g. on the edit page) just because the catalog isn't in yet.
+    const nextApps = apps.length > 0 ? prevApps.filter((id) => validApps.has(id)) : prevApps;
+    const nextScripts = scripts.length > 0 ? prevScripts.filter((id) => validScripts.has(id)) : prevScripts;
+    const dropped =
+      prevApps.length - nextApps.length + (prevScripts.length - nextScripts.length);
+    onChange({ osType: newOsType, applicationIds: nextApps, scriptIds: nextScripts });
+    if (dropped > 0) {
+      toast({
+        variant: 'warning',
+        title: `${dropped} selection${dropped !== 1 ? 's' : ''} removed`,
+        description: 'They were not compatible with the newly selected operating system.',
+      });
+    }
+  };
+
   const applyPreset = (presetName) => {
     const fileNames = HARDENING_PRESETS[presetName] ?? [];
     // Only map fileNames that match the currently-selected OS family.
-    const ids = goldenImageScripts.filter((s) => fileNames.includes(s.fileName)).map((s) => s.id);
-    onChange({ scriptIds: ids });
+    const presetIds = goldenImageScripts.filter((s) => fileNames.includes(s.fileName)).map((s) => s.id);
+    if (presetIds.length === 0) {
+      // Scripts catalog not loaded yet, or none of the preset's scripts are
+      // seeded for this OS — don't silently blow away existing selections.
+      toast({
+        variant: 'info',
+        title: 'Nothing to apply',
+        description: `No "${presetName}" hardening scripts are available for this operating system yet.`,
+      });
+      return;
+    }
+    // Preserve any custom (non-hardening) scripts the user already picked;
+    // a preset should set the hardening baseline, not wipe unrelated choices.
+    const hardeningIds = new Set(goldenImageScripts.map((s) => s.id));
+    const customPicks = (form.scriptIds ?? []).filter((id) => !hardeningIds.has(id));
+    onChange({ scriptIds: [...customPicks, ...presetIds] });
   };
 
   const activeTab = form._activeTab || 'basics';
@@ -228,27 +336,42 @@ export function BlueprintForm({ form, onChange }) {
           {!family ? (
             <Alert tone="info" size="sm">
               Pick an <strong>operating system</strong> to unlock the Apps,
-              Hardening, and OS tabs. Blueprint OS is permanent after creation.
+              Hardening, and OS tabs. Changing it later re-filters the apps and
+              scripts to those compatible with the new OS.
             </Alert>
           ) : null}
           <FieldRow template="1fr 1fr">
-            <FormField label="Name">
+            <FormField label="Name" required error={errors.name}>
               <TextField
                 placeholder="e.g. Win11 Contabilidad"
                 value={form.name ?? ''}
                 onChange={(e) => onChange({ name: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && onSubmit) {
+                    e.preventDefault();
+                    onSubmit();
+                  }
+                }}
                 autoFocus
                 required
               />
             </FormField>
-            <FormField label="Operating system">
+            <FormField label="Operating system" required error={errors.osType}>
               <Select
                 value={osType}
-                onChange={(v) => onChange({ osType: v })}
+                onChange={handleOsChange}
                 options={OS_OPTIONS}
               />
             </FormField>
           </FieldRow>
+
+          <FormField label="Category" required error={errors.categoryId}>
+            <Select
+              value={form.categoryId ?? ''}
+              onChange={(v) => onChange({ categoryId: v })}
+              options={categoryOptions}
+            />
+          </FormField>
 
           <FormField label="Description">
             <Textarea
@@ -260,7 +383,7 @@ export function BlueprintForm({ form, onChange }) {
           </FormField>
 
           <FieldRow template="1fr 1fr 1fr">
-            <FormField label="vCPU">
+            <FormField label="vCPU" error={errors.cores}>
               <TextField
                 type="number"
                 min={1}
@@ -270,7 +393,7 @@ export function BlueprintForm({ form, onChange }) {
                 onChange={(e) => onChange({ cores: e.target.value })}
               />
             </FormField>
-            <FormField label="RAM (GB)">
+            <FormField label="RAM (GB)" error={errors.ram}>
               <TextField
                 type="number"
                 min={1}
@@ -280,7 +403,7 @@ export function BlueprintForm({ form, onChange }) {
                 onChange={(e) => onChange({ ram: e.target.value })}
               />
             </FormField>
-            <FormField label="Disk (GB)">
+            <FormField label="Disk (GB)" error={errors.storage}>
               <TextField
                 type="number"
                 min={1}
@@ -303,9 +426,30 @@ export function BlueprintForm({ form, onChange }) {
               first-boot tasks via InfiniService. Showing {filteredApps.length}
               {' '}compatible with <Badge tone="neutral">{osType}</Badge>.
             </Alert>
-            {filteredApps.length === 0 ? (
+            {appsLoading && apps.length === 0 ? (
+              <ResponsiveStack direction="row" gap={3} align="center" justify="center" className="py-8">
+                <Spinner />
+                <span className="text-sm text-fg-muted">Loading applications…</span>
+              </ResponsiveStack>
+            ) : appsError && apps.length === 0 ? (
+              <Alert
+                tone="danger"
+                title="Couldn't load applications"
+                actions={
+                  <Button size="sm" icon={<RefreshCw size={14} />} onClick={() => refreshApps().catch(() => {})}>
+                    Retry
+                  </Button>
+                }
+              >
+                {String(appsError?.message || appsError)}
+              </Alert>
+            ) : filteredApps.length === 0 ? (
               <div className="text-sm text-fg-muted py-6 text-center">
-                No applications registered for this OS. Add some from the Applications page.
+                No applications registered for this OS. Add some from the{' '}
+                <Link className="text-accent underline underline-offset-2 hover:no-underline" href="/applications">
+                  Applications
+                </Link>
+                {' '}page.
               </div>
             ) : (
               <ResponsiveGrid columns={{ base: 1, sm: 2, lg: 3 }} gap={2}>
@@ -333,6 +477,25 @@ export function BlueprintForm({ form, onChange }) {
               scripts you've authored.
             </Alert>
 
+            {scriptsLoading ? (
+              <ResponsiveStack direction="row" gap={3} align="center" justify="center" className="py-8">
+                <Spinner />
+                <span className="text-sm text-fg-muted">Loading scripts…</span>
+              </ResponsiveStack>
+            ) : scriptsError ? (
+              <Alert
+                tone="danger"
+                title="Couldn't load scripts"
+                actions={
+                  <Button size="sm" icon={<RefreshCw size={14} />} onClick={() => refetchScripts()}>
+                    Retry
+                  </Button>
+                }
+              >
+                {scriptsError.message || 'The scripts catalog failed to load.'}
+              </Alert>
+            ) : (
+            <>
             {/* ----- Hardening section ----- */}
             <ResponsiveStack direction="col" gap={3}>
               <ResponsiveStack direction="row" gap={2} align="center" justify="between" wrap>
@@ -415,6 +578,8 @@ export function BlueprintForm({ form, onChange }) {
                 />
               )}
             </ResponsiveStack>
+            </>
+            )}
           </ResponsiveStack>
         </TabPanel>
       ) : null}

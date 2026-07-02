@@ -44,7 +44,8 @@ export const useDepartmentsPage = () => {
   const {
     data: vms,
     isLoading: vmsLoading,
-    error: vmsError
+    error: vmsError,
+    refresh: refreshVms
   } = useEnsureData('vms', fetchVms, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
     ttl: 2 * 60 * 1000, // 2 minutes
@@ -58,11 +59,23 @@ export const useDepartmentsPage = () => {
     hasErrors: !!(departmentsError || vmsError)
   });
   
-  // Retry mechanism for failed data loading
-  const retryLoading = useCallback(() => {
+  // Retry mechanism for failed data loading. Refresh BOTH resources: the
+  // Retry button is shared by the fatal (departments) error state and the
+  // non-fatal (vms) warning banner, so it must recover whichever failed.
+  const retryLoading = useCallback(async () => {
     debug.info('Retrying data loading...');
-    refreshDepartments();
-  }, [refreshDepartments]);
+    // Fire both refreshes in parallel and swallow rejections individually: a
+    // still-failing resource keeps its own error UI, and one failure must not
+    // prevent the other from recovering (nor cause an unhandled rejection).
+    await Promise.allSettled([
+      Promise.resolve(refreshDepartments()).catch((retryError) => {
+        debug.error('Departments retry failed:', retryError);
+      }),
+      Promise.resolve(refreshVms()).catch((retryError) => {
+        debug.error('VMs retry failed:', retryError);
+      })
+    ]);
+  }, [refreshDepartments, refreshVms]);
   
   // Handle creating a new department
   const handleCreateDepartment = useCallback(async (e, formData) => {
@@ -90,8 +103,9 @@ export const useDepartmentsPage = () => {
 
       await dispatch(createDepartment(input)).unwrap();
 
-      // Refresh departments to get the updated list
-      refreshDepartments();
+      // Refresh departments to get the updated list (best-effort; the create
+      // already succeeded, so don't surface a refresh failure as a create error)
+      Promise.resolve(refreshDepartments()).catch(() => {});
 
       toast.success("Department Created", {
         description: `Department "${trimmedName}" has been successfully created.`
@@ -127,8 +141,8 @@ export const useDepartmentsPage = () => {
     try {
       await dispatch(deleteDepartment({ id: departmentId })).unwrap();
 
-      // Refresh departments to get the updated list
-      refreshDepartments();
+      // Refresh departments to get the updated list (best-effort)
+      Promise.resolve(refreshDepartments()).catch(() => {});
 
       toast.success("Department Deleted", {
         description: `Department "${departmentName}" has been successfully deleted.`
@@ -158,23 +172,6 @@ export const useDepartmentsPage = () => {
     ).length;
   }, [vms]);
 
-  // Get a color based on department name (for visual variety)
-  const getDepartmentColor = useCallback((name) => {
-    const colors = [
-      "bg-blue-100 text-blue-800 border-blue-300",
-      "bg-green-100 text-green-800 border-green-300",
-      "bg-purple-100 text-purple-800 border-purple-300",
-      "bg-amber-100 text-amber-800 border-amber-300",
-      "bg-rose-100 text-rose-800 border-rose-300",
-      "bg-indigo-100 text-indigo-800 border-indigo-300",
-      "bg-cyan-100 text-cyan-800 border-cyan-300",
-    ];
-
-    // Use the sum of char codes to determine a consistent color for each name
-    const charSum = name.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    return colors[charSum % colors.length];
-  }, []);
-
   // Wrapper to clear error when dialog is closed
   const handleSetIsCreateDeptDialogOpen = useCallback((open) => {
     setIsCreateDeptDialogOpen(open);
@@ -191,8 +188,18 @@ export const useDepartmentsPage = () => {
     isCreateDeptDialogOpen,
     newDepartmentName,
     filteredDepartments,
+    // Legacy combined flags kept for backward compatibility. Prefer the split
+    // fatal/non-fatal flags below — a VMs-only failure must NOT blank the page.
     hasError: !!(departmentsError || vmsError),
     error: departmentsError || vmsError,
+    // FATAL: departments failed to load, so the page cannot render its list —
+    // show the full-page error state. Derived from departmentsError ONLY.
+    hasFatalError: !!departmentsError,
+    fatalError: departmentsError || null,
+    // NON-FATAL: the desktop inventory (vms) failed but departments loaded, so
+    // render the page normally plus a dismissible warning. Machine counts and
+    // running badges just degrade to their empty/zero fallbacks meanwhile.
+    vmsError: vmsError || null,
     isCreating,
     createError,
 
@@ -204,7 +211,6 @@ export const useDepartmentsPage = () => {
     handleCreateDepartment,
     handleDeleteDepartment,
     refreshDepartments,
-    getMachineCount,
-    getDepartmentColor
+    getMachineCount
   };
 };

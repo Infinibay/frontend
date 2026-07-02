@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useEffect } from 'react';
-import { useQuery } from '@apollo/client/react';
+import { useQuery, useApolloClient } from '@apollo/client/react';
 import { createDebugger } from '@/utils/debug';
 import { getSocketService } from '@/services/socketService';
 
@@ -101,6 +101,8 @@ const useVMRecommendations = (vmId, options = {}) => {
     return Object.keys(filterObj).length > 0 ? filterObj : null;
   }, [types, limit, createdAfter, createdBefore]);
 
+  const client = useApolloClient();
+
   // Apollo query with error handling
   const {
     data,
@@ -125,6 +127,11 @@ const useVMRecommendations = (vmId, options = {}) => {
   useEffect(() => {
     if (!vmId || skip) return undefined;
     const socketService = getSocketService();
+    // The backend emits the recommendation-generation lifecycle as
+    // `recommendations:started|completed|failed` (HealthSnapshotManager). We must
+    // pass these explicitly: without an actions override subscribeToAllResourceEvents
+    // defaults to ['create','update','delete'], so the 'completed' event below would
+    // never arrive and the refetch never fire.
     const unsubscribe = socketService.subscribeToAllResourceEvents(
       'recommendations',
       (action, event) => {
@@ -132,6 +139,7 @@ const useVMRecommendations = (vmId, options = {}) => {
         if (event?.data?.machineId !== vmId) return;
         refetch({ vmId, filter, refresh: false }).catch(() => {});
       },
+      ['started', 'completed', 'failed'],
     );
     return () => unsubscribe?.();
   }, [vmId, skip, filter, refetch]);
@@ -340,15 +348,23 @@ const useVMRecommendations = (vmId, options = {}) => {
   const refreshRecommendations = useCallback(async () => {
     try {
       debug.log('refresh', 'Forcing refresh to get latest snapshot recommendations for VM:', vmId);
-      await refetch({
-        vmId,
-        filter,
-        refresh: true // This triggers backend to create new health snapshot
+      // Fire the forced (refresh:true) fetch via client.query so the flag does
+      // NOT leak into the watched query's persistent variables. refetch() merges
+      // its argument into ObservableQuery.options.variables permanently, which
+      // would turn every subsequent 60s poll into a forced backend snapshot
+      // regeneration. client.query is a one-off and leaves the poll untouched.
+      await client.query({
+        query: GetVmRecommendationsDocument,
+        variables: { vmId, filter, refresh: true }, // triggers a new health snapshot
+        fetchPolicy: 'network-only'
       });
+      // Re-run the watched query with its existing (refresh:false) variables so
+      // the hook's data reflects the freshly generated snapshot.
+      await refetch();
     } catch (error) {
       debug.error('refresh', 'Error refreshing recommendations from latest snapshot:', error);
     }
-  }, [refetch, vmId, filter]);
+  }, [client, refetch, vmId, filter]);
 
   // Check if currently refreshing
   const isRefreshing = networkStatus === 4; // NetworkStatus.refetch

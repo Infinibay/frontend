@@ -4,19 +4,33 @@ function toast({ title, description, variant, duration } = {}) {
   const msg = title || description || "";
   const opts = description && title ? { description, duration } : { duration };
 
-  switch (variant) {
-    case "destructive":
-    case "error":
-      return { id: sonnerToast.error(msg, opts), dismiss: () => {}, update: () => {} };
-    case "success":
-      return { id: sonnerToast.success(msg, opts), dismiss: () => {}, update: () => {} };
-    case "warning":
-      return { id: sonnerToast.warning(msg, opts), dismiss: () => {}, update: () => {} };
-    case "info":
-      return { id: sonnerToast.info(msg, opts), dismiss: () => {}, update: () => {} };
-    default:
-      return { id: sonnerToast(msg, opts), dismiss: () => {}, update: () => {} };
-  }
+  // Fire (or, when given an `id`, re-render in place) the toast using the
+  // variant->method mapping. sonner's id-based API means passing the original
+  // id back lets dismiss/update target this exact toast instead of being no-ops.
+  const show = (extra) => {
+    const o = { ...opts, ...extra };
+    switch (variant) {
+      case "destructive":
+      case "error":
+        return sonnerToast.error(msg, o);
+      case "success":
+        return sonnerToast.success(msg, o);
+      case "warning":
+        return sonnerToast.warning(msg, o);
+      case "info":
+        return sonnerToast.info(msg, o);
+      default:
+        return sonnerToast(msg, o);
+    }
+  };
+
+  const id = show();
+
+  return {
+    id,
+    dismiss: () => sonnerToast.dismiss(id),
+    update: (updateOpts) => show({ ...updateOpts, id }),
+  };
 }
 
 export function useToast() {

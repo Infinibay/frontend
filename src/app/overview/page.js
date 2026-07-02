@@ -9,8 +9,7 @@ import {
   DataTable,
   ResponsiveStack,
   Button,
-  Skeleton,
-  Sparkline } from
+  Skeleton } from
 '@infinibay/harbor';
 import {
   Building2,
@@ -19,7 +18,8 @@ import {
   CheckCircle2,
   Server,
   Activity,
-  ArrowUpRight } from
+  ArrowUpRight,
+  RefreshCw } from
 'lucide-react';
 
 import { fetchVms } from '@/state/slices/vms';
@@ -28,6 +28,7 @@ import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import { useGetSystemResourcesQuery } from '@/gql/hooks';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusChip } from '@/components/common/StatusChip';
+import { usePageHeader } from '@/hooks/usePageHeader';
 
 const GB = (bytes) => bytes != null ? Math.round(bytes / 1024) : null;
 
@@ -40,19 +41,6 @@ function vmStatusGroup(status, setupComplete) {
   if (s === 'off' || s === 'shutoff' || s === 'stopped' || s === 'shut off') return 'stopped';
   if (s === 'paused' || s === 'suspended') return 'paused';
   return 'other';
-}
-
-/** Deterministic synthetic sparkline for a department, 12 points, based on
- *  the name hash + current running count. Not real history — honest proxy. */
-function syntheticTrend(name, running) {
-  let h = 0;
-  for (let i = 0; i < (name || '').length; i += 1) h = (h << 5) - h + name.charCodeAt(i) | 0;
-  const base = Math.max(1, running);
-  return Array.from({ length: 12 }).map((_, i) => {
-    const seed = Math.abs(Math.sin((h + i * 13) / 7.3));
-    const pct = 0.6 + seed * 0.8; // 0.6..1.4
-    return Math.round(base * pct);
-  });
 }
 
 function buildDepartmentRows(departments, machines) {
@@ -80,39 +68,44 @@ function buildDepartmentRows(departments, machines) {
       total: agg.total,
       running: agg.running,
       stopped: agg.stopped,
-      health,
-      trend: syntheticTrend(d.name, agg.running)
+      health
     };
   });
 }
 
-function buildRecentActivity(machines) {
-  const list = (machines || []).slice(0, 8).map((m, i) => {
+function buildCurrentState(machines) {
+  return (machines || []).slice(0, 8).map((m) => {
     const g = vmStatusGroup(m.status, m.setupComplete);
-    const minutesAgo = 3 + i * 7;
-    const action =
-    g === 'running' ? 'started' :
-    g === 'paused' ? 'was paused' :
-    g === 'stopped' ? 'was stopped' :
-    'state changed';
     return {
       id: m.id,
-      text: `${m.name} ${action}`,
+      name: m.name,
       dept: m.department?.name,
-      at: `${minutesAgo}m ago`,
       tone: g
     };
   });
-  return list;
 }
 
 export default function OverviewPage() {
   const router = useRouter();
 
+  // Register the global header so breadcrumbs/title/actions don't leak in from
+  // the previously visited page (usePageHeader intentionally skips resetHeader).
+  usePageHeader(
+    {
+      breadcrumbs: [
+      { label: 'Home', href: '/' },
+      { label: 'Overview', isCurrent: true }],
+      title: 'Overview',
+      actions: []
+    },
+    []
+  );
+
   const {
     data: machines,
     isLoading: vmsLoading,
-    error: vmsError
+    error: vmsError,
+    refresh: refreshVms
   } = useEnsureData('vms', fetchVms, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
     ttl: 30 * 1000,
@@ -122,7 +115,8 @@ export default function OverviewPage() {
   const {
     data: departments,
     isLoading: deptLoading,
-    error: deptError
+    error: deptError,
+    refresh: refreshDepartments
   } = useEnsureData('departments', fetchDepartments, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
     ttl: 5 * 60 * 1000,
@@ -139,6 +133,15 @@ export default function OverviewPage() {
 
   const loading = vmsLoading || deptLoading;
   const anyError = vmsError || deptError;
+
+  // Recover from a failed load without a full page reload: re-run whichever
+  // slice(s) failed (useEnsureData.refresh ignores cache + terminal-failure
+  // cooldown). Silently ignore rejections here — the banner stays visible and
+  // reflects the still-present slice error.
+  const handleRetry = () => {
+    if (vmsError) refreshVms().catch(() => {});
+    if (deptError) refreshDepartments().catch(() => {});
+  };
 
   const stats = useMemo(() => {
     const list = machines || [];
@@ -157,7 +160,7 @@ export default function OverviewPage() {
     [departments, machines]
   );
 
-  const recentActivity = useMemo(() => buildRecentActivity(machines), [machines]);
+  const machineStates = useMemo(() => buildCurrentState(machines), [machines]);
 
   const resources = useMemo(() => {
     const r = sysData?.getSystemResources;
@@ -233,24 +236,6 @@ export default function OverviewPage() {
       }
     },
     {
-      id: 'trend',
-      header: 'Trend · 12h',
-      width: 120,
-      cell: ({ row: r }) =>
-      r.total === 0 ?
-      <span className="text-fg-subtle text-xs">—</span> :
-
-      <Sparkline
-        data={r.trend}
-        width={100}
-        height={24}
-        stroke="rgb(var(--harbor-accent))"
-        fill="rgba(var(--harbor-accent), 0.12)"
-        showDot={false} />
-
-
-    },
-    {
       id: 'total',
       header: 'Desktops',
       width: 90,
@@ -263,7 +248,7 @@ export default function OverviewPage() {
 
   // Weighted attention banner: green muted strip on OK, red on alerts.
   const attentionBanner = anyError ?
-  <div className="flex items-start gap-3 rounded-md border-l-2 border-danger bg-danger/8 px-3 py-2">
+  <div className="flex items-start gap-3 rounded-md border-l-2 border-danger bg-danger/10 px-3 py-2">
       <AlertCircle size={18} className="text-danger shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
         <div className="font-medium text-fg">Couldn't load instance state</div>
@@ -271,6 +256,16 @@ export default function OverviewPage() {
           {String(anyError?.message || anyError)}
         </div>
       </div>
+      <Button
+      size="sm"
+      variant="ghost"
+      icon={<RefreshCw size={14} />}
+      onClick={handleRetry}
+      disabled={loading}
+      className="shrink-0">
+
+        Retry
+      </Button>
     </div> :
 
   <div className="flex items-center gap-3 rounded-md border-l-2 border-success/40 bg-success/5 px-3 py-2">
@@ -284,7 +279,6 @@ export default function OverviewPage() {
           </span> :
       null}
       </div>
-      <span className="text-fg-subtle text-xs font-mono">updated now</span>
     </div>;
 
 
@@ -352,27 +346,27 @@ export default function OverviewPage() {
             <div className="flex items-center justify-between pb-2 border-b border-white/5">
               <h2 className="text-base font-semibold m-0 flex items-center gap-2">
                 <Activity size={14} className="text-fg-muted" />
-                Recent activity
+                Current state
               </h2>
             </div>
-            {recentActivity.length === 0 ?
+            {machineStates.length === 0 ?
             <span className="text-fg-muted text-sm py-2">
-                No activity yet. Create a desktop to see it here.
+                No desktops yet. Create a desktop to see it here.
               </span> :
 
             <div className="flex flex-col divide-y divide-[color:var(--harbor-border-subtle)]">
-                {recentActivity.map((ev) =>
+                {machineStates.map((ev) =>
               <div key={ev.id} className="flex items-center gap-3 py-2 group">
                     <StatusChip status={ev.tone === 'running' ? 'online' : ev.tone === 'paused' ? 'degraded' : 'offline'} label={
-                ev.tone === 'running' ? 'Start' :
-                ev.tone === 'paused' ? 'Pause' :
-                'Stop'
+                ev.tone === 'running' ? 'Running' :
+                ev.tone === 'paused' ? 'Paused' :
+                ev.tone === 'stopped' ? 'Stopped' :
+                'Other'
                 } />
-                    <span className="flex-1 min-w-0 truncate text-sm">{ev.text}</span>
+                    <span className="flex-1 min-w-0 truncate text-sm">{ev.name}</span>
                     {ev.dept ?
                 <span className="text-fg-muted text-xs hidden md:inline">{ev.dept}</span> :
                 null}
-                    <span className="text-fg-subtle text-xs font-mono">{ev.at}</span>
                   </div>
               )}
               </div>

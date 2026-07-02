@@ -23,33 +23,34 @@ export const CATEGORIES = {
   GENERAL: 'general'
 };
 
-// Urgency badge configuration
+// Urgency badge configuration.
+// `tone` maps directly to a Harbor Badge tone; consumers should pass it to
+// <Badge tone={...}> rather than hand-building filled backgrounds. We deliberately
+// do NOT ship `bg-*`/`text-white` class strings here: --harbor-warning (amber-400)
+// and --harbor-info (sky-400) are light in both themes, so white-on-warning/info
+// would be ~1.6-2:1 contrast (illegible).
 export const URGENCY_BADGES = {
   IMMEDIATE: {
     text: 'URGENT',
-    color: 'bg-danger text-white',
-    borderColor: 'border-danger',
+    tone: 'danger',
     icon: AlertTriangle,
     animate: true
   },
   URGENT: {
     text: 'HIGH PRIORITY',
-    color: 'bg-warning text-white',
-    borderColor: 'border-warning',
+    tone: 'warning',
     icon: AlertTriangle,
     animate: false
   },
   SOON: {
     text: 'ATTENTION REQUIRED',
-    color: 'bg-warning text-white',
-    borderColor: 'border-warning',
+    tone: 'warning',
     icon: Clock,
     animate: false
   },
   NORMAL: {
     text: 'NORMAL',
-    color: 'bg-info text-white',
-    borderColor: 'border-info',
+    tone: 'info',
     icon: Info,
     animate: false
   }
@@ -286,32 +287,44 @@ export const getRecommendationInfo = (type, recommendation = null) => {
     technicalDetails: 'Technical information not available.'
   };
 
-  // Resolve dynamic properties if recommendation is provided
+  // Always resolve dynamic (function-typed) fields, even for type-only calls
+  // (recommendation === null). The dynamic resolvers null-guard their metadata,
+  // so calling them with null yields the sensible no-metadata fallback. Leaving
+  // them unresolved would leak raw functions to consumers that expect plain
+  // strings (e.g. `.toLowerCase()` on userFriendlyExplanation, priority compares).
+  const resolved = { ...mapping };
+
+  // Resolve dynamic priority
+  if (typeof resolved.priority === 'function') {
+    try {
+      resolved.priority = resolved.priority(recommendation);
+    } catch (error) {
+      console.error('Failed to resolve recommendation priority:', error);
+      resolved.priority = PRIORITY_LEVELS.MEDIUM;
+    }
+  }
+
+  // Resolve dynamic userFriendlyExplanation
+  if (typeof resolved.userFriendlyExplanation === 'function') {
+    try {
+      resolved.userFriendlyExplanation = resolved.userFriendlyExplanation(recommendation);
+    } catch (error) {
+      console.error('Failed to resolve recommendation explanation:', error);
+      resolved.userFriendlyExplanation = mapping.description || '';
+    }
+  }
+
+  // Extract metadata and attach enhanced info when a full recommendation is provided
   if (recommendation) {
-    const resolved = { ...mapping };
-
-    // Resolve dynamic priority
-    if (typeof mapping.priority === 'function') {
-      resolved.priority = mapping.priority(recommendation);
-    }
-
-    // Resolve dynamic userFriendlyExplanation
-    if (typeof mapping.userFriendlyExplanation === 'function') {
-      resolved.userFriendlyExplanation = mapping.userFriendlyExplanation(recommendation);
-    }
-
-    // Extract metadata and attach enhanced info
     const metadata = extractRecommendationMetadata(recommendation);
     if (metadata) {
       resolved.urgencyBadge = getUrgencyBadge(type, metadata);
       resolved.dataPreview = getDataPreview(type, metadata);
       resolved.affectedCount = getAffectedCount(type, metadata);
     }
-
-    return resolved;
   }
 
-  return mapping;
+  return resolved;
 };
 
 /**
@@ -416,37 +429,37 @@ export const getCategoryInfo = (category) => {
       label: 'Security',
       description: 'Recommendations related to system protection and security',
       icon: Shield,
-      color: 'text-red-600'
+      color: 'text-danger'
     },
     [CATEGORIES.PERFORMANCE]: {
       label: 'Performance',
       description: 'Recommendations to improve system speed and efficiency',
       icon: Zap,
-      color: 'text-orange-600'
+      color: 'text-warning'
     },
     [CATEGORIES.MAINTENANCE]: {
       label: 'Maintenance',
       description: 'Preventive maintenance and optimization tasks',
       icon: Settings,
-      color: 'text-blue-600'
+      color: 'text-info'
     },
     [CATEGORIES.STORAGE]: {
       label: 'Storage',
       description: 'Disk space management and file cleanup',
       icon: HardDrive,
-      color: 'text-purple-600'
+      color: 'text-info'
     },
     [CATEGORIES.UPDATES]: {
       label: 'Updates',
       description: 'System, application, and driver updates',
       icon: Download,
-      color: 'text-green-600'
+      color: 'text-success'
     },
     [CATEGORIES.GENERAL]: {
       label: 'General',
       description: 'General system recommendations',
       icon: Info,
-      color: 'text-muted-foreground'
+      color: 'text-fg-muted'
     }
   };
 

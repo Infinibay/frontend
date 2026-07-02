@@ -116,8 +116,13 @@ const appSettingsSlice = createSlice({
 			.addCase(fetchAppSettings.rejected, (state, action) => {
 				state.loading.fetch = false;
 				state.error.fetch = action.error.message;
-				// Use default settings if fetch fails
-				state.settings = defaultSettings;
+				// Do NOT overwrite settings on a transient fetch failure: they were
+				// rehydrated from redux-persist (or seeded from defaults in
+				// initialState) before this bootstrap fetch ran. Blindly resetting to
+				// defaultSettings here would wipe the operator's persisted
+				// theme/whitelabel/view preferences AND get written back over the
+				// persisted copy. Keep the current (rehydrated) settings; if nothing
+				// was ever persisted, state.settings already equals defaultSettings.
 				state.initialized = true;
 			})
 			// Update app settings

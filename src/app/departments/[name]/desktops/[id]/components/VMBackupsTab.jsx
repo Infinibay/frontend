@@ -167,24 +167,18 @@ const SCHEDULE_PRESETS = [
 }];
 
 
-const ACCENT_BG = {
-  sky: 'rgba(56,189,248,0.10)',
-  purple: 'rgba(168,85,247,0.12)',
-  amber: 'rgba(245,158,11,0.10)',
-  neutral: 'rgba(255,255,255,0.05)'
+// Map each decorative accent to a Harbor semantic color CHANNEL var so the
+// preset picker themes correctly in both light and dark mode (no hardcoded
+// white overlays or fixed pastels).
+const ACCENT_CHANNEL = {
+  sky: '--harbor-info',
+  purple: '--harbor-accent',
+  amber: '--harbor-warning',
+  neutral: '--harbor-text'
 };
-const ACCENT_BORDER = {
-  sky: 'rgba(56,189,248,0.35)',
-  purple: 'rgba(168,85,247,0.45)',
-  amber: 'rgba(245,158,11,0.35)',
-  neutral: 'rgba(255,255,255,0.15)'
-};
-const ACCENT_TEXT = {
-  sky: 'rgb(125,211,252)',
-  purple: 'rgb(216,180,254)',
-  amber: 'rgb(252,211,77)',
-  neutral: 'rgba(255,255,255,0.85)'
-};
+const accentBg = (a) => `rgb(var(${ACCENT_CHANNEL[a] || ACCENT_CHANNEL.neutral}) / 0.12)`;
+const accentBorder = (a) => `rgb(var(${ACCENT_CHANNEL[a] || ACCENT_CHANNEL.neutral}) / 0.40)`;
+const accentText = (a) => `rgb(var(${ACCENT_CHANNEL[a] || ACCENT_CHANNEL.neutral}))`;
 
 const STATUS_TONE = {
   PENDING: 'neutral',
@@ -255,12 +249,14 @@ const matchPreset = (presets, type, compression) => {
 function BackupPresetPicker({ presets, value, onChange }) {
   return (
     <div
+      role="radiogroup"
+      aria-label="Backup preset"
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
         gap: 10
       }}>
-      
+
       {presets.map((preset) => {
         const Icon = preset.icon;
         const selected = value === preset.id;
@@ -268,6 +264,8 @@ function BackupPresetPicker({ presets, value, onChange }) {
           <button
             key={preset.id}
             type="button"
+            role="radio"
+            aria-checked={selected}
             onClick={() => onChange(preset.id)}
             style={{
               textAlign: 'left',
@@ -275,20 +273,20 @@ function BackupPresetPicker({ presets, value, onChange }) {
               borderRadius: 12,
               cursor: 'pointer',
               background: selected ?
-              ACCENT_BG[preset.accent] :
-              'rgba(255,255,255,0.03)',
+              accentBg(preset.accent) :
+              'rgb(var(--harbor-bg-elev-1))',
               border: `1px solid ${
               selected ?
-              ACCENT_BORDER[preset.accent] :
-              'rgba(255,255,255,0.08)'}`,
+              accentBorder(preset.accent) :
+              'var(--harbor-border-subtle)'}`,
 
               boxShadow: selected ?
-              `0 0 0 2px ${ACCENT_BORDER[preset.accent]} inset` :
+              `0 0 0 2px ${accentBorder(preset.accent)} inset` :
               'none',
               color: 'inherit',
               transition: 'background 120ms, border-color 120ms'
             }}>
-            
+
             <div
               style={{
                 display: 'flex',
@@ -296,11 +294,14 @@ function BackupPresetPicker({ presets, value, onChange }) {
                 gap: 8,
                 marginBottom: 4
               }}>
-              
-              <Icon size={16} color={ACCENT_TEXT[preset.accent]} />
+
+              <Icon size={16} color={accentText(preset.accent)} />
               <span style={{ fontWeight: 600 }}>{preset.title}</span>
               {preset.recommended ?
               <Badge tone="info">Recommended</Badge> :
+              null}
+              {selected ?
+              <Check size={14} color={accentText(preset.accent)} aria-hidden style={{ marginLeft: 'auto', flexShrink: 0 }} /> :
               null}
             </div>
             <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
@@ -328,7 +329,7 @@ function BackupPresetPicker({ presets, value, onChange }) {
                 
                   <Check
                   size={11}
-                  color="rgb(134,239,172)"
+                  color="rgb(var(--harbor-success))"
                   style={{ marginTop: 3, flexShrink: 0 }} />
                 
                   <span>{p}</span>
@@ -346,7 +347,7 @@ function BackupPresetPicker({ presets, value, onChange }) {
                 
                   <X
                   size={11}
-                  color="rgb(252,165,165)"
+                  color="rgb(var(--harbor-danger))"
                   style={{ marginTop: 3, flexShrink: 0 }} />
                 
                   <span>{c}</span>
@@ -392,13 +393,20 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
   const backups = backupsQ.data?.backups?.backups ?? [];
   const schedules = schedulesQ.data?.backupSchedules?.schedules ?? [];
 
+  // Apollo binds refetch/startPolling/stopPolling to the observable query, so
+  // these references are stable across renders — depending on THEM (instead of
+  // the whole query result object, whose identity changes on every poll tick)
+  // avoids tearing down and re-creating the socket/polling effects repeatedly.
+  const { refetch: refetchBackups, startPolling, stopPolling } = backupsQ;
+  const { refetch: refetchSchedules } = schedulesQ;
+
   const showProgress = hasActiveBackup(backups);
 
   useEffect(() => {
-    if (showProgress) backupsQ.startPolling?.(3000);else
-    backupsQ.stopPolling?.();
-    return () => backupsQ.stopPolling?.();
-  }, [showProgress, backupsQ]);
+    if (showProgress) startPolling?.(3000);else
+    stopPolling?.();
+    return () => stopPolling?.();
+  }, [showProgress, startPolling, stopPolling]);
 
   // Live updates from backend BackupEventManager — saves a round-trip
   // compared to the 3s poll once the backup finishes.
@@ -409,21 +417,27 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
       'backups',
       (_action, event) => {
         if (event?.data?.vmId !== vmId) return;
-        backupsQ.refetch().catch(() => {});
-      }
+        refetchBackups().catch(() => {});
+      },
+      // The backend (BackupService) emits the run lifecycle as
+      // backups:started|completed|failed in addition to create/update/delete.
+      // Without this override subscribeToAllResourceEvents defaults to only
+      // create/update/delete, so a finishing backup would never push a refetch
+      // (we'd be stuck waiting on the 3s poll). Matches events/page.js.
+      ['create', 'update', 'delete', 'started', 'completed', 'failed']
     );
     const unsubSchedules = socketService.subscribeToAllResourceEvents(
       'backup_schedules',
       (_action, event) => {
         if (event?.data?.vmId !== vmId) return;
-        schedulesQ.refetch().catch(() => {});
+        refetchSchedules().catch(() => {});
       }
     );
     return () => {
       unsubBackups?.();
       unsubSchedules?.();
     };
-  }, [vmId, backupsQ, schedulesQ]);
+  }, [vmId, refetchBackups, refetchSchedules]);
 
   const [createBackup, createBackupState] = useCreateBackupMutation();
   const [restoreBackup, restoreBackupState] = useRestoreBackupMutation();
@@ -618,9 +632,16 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
       const res = await deleteSchedule({
         variables: { id: deleteScheduleTarget.id }
       });
-      if (res.data?.deleteBackupSchedule?.success) {
+      const r = res.data?.deleteBackupSchedule;
+      if (r?.success) {
         toast({ title: 'Schedule deleted' });
         schedulesQ.refetch();
+      } else {
+        toast({
+          title: 'Delete failed',
+          description: r?.message || 'Unknown error',
+          variant: 'destructive'
+        });
       }
     } catch (err) {
       toast({
@@ -658,7 +679,7 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
               </div>);
 
         }
-        return (
+        const badge = (
           <Badge
             tone={STATUS_TONE[row.status] || 'neutral'}
             icon={
@@ -668,10 +689,19 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
             <AlertTriangle size={12} /> :
             undefined
             }>
-            
+
               {row.status.replace('_', ' ').toLowerCase()}
             </Badge>);
+        // Surface the recorded failure reason instead of hiding it behind a bare
+        // "failed" badge.
+        if (row.status === 'FAILED' && row.errorMessage) {
+          return (
+            <Tooltip content={row.errorMessage}>
+              <span>{badge}</span>
+            </Tooltip>);
 
+        }
+        return badge;
       }
     },
     {
@@ -923,8 +953,8 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
               alignItems: 'center',
               padding: 10,
               borderRadius: 10,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)'
+              background: 'rgb(var(--harbor-bg-elev-1))',
+              border: '1px solid var(--harbor-border-subtle)'
             }}>
             
                 <Badge tone={s.enabled ? 'success' : 'neutral'}>

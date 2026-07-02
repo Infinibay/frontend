@@ -28,14 +28,15 @@ import {
 } from 'lucide-react';
 
 import { UpdateUserDocument } from '@/gql/hooks';
-import { realTimeCurrentUserUpdated } from '@/state/slices/auth';
+import { realTimeCurrentUserUpdated, fetchCurrentUser } from '@/state/slices/auth';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { getGravatarUrl } from '@/utils/gravatar';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
-  const [isPasswordSection, setIsPasswordSection] = useState(false);
+  const userLoading = useSelector((state) => state.auth.loading?.fetchUser);
+  const userError = useSelector((state) => state.auth.error?.fetchUser);
   const [hideCurrent, setHideCurrent] = useState(true);
   const [hideNew, setHideNew] = useState(true);
   const [hideConfirm, setHideConfirm] = useState(true);
@@ -57,16 +58,23 @@ export default function ProfilePage() {
     },
   });
 
+  // The password section is "active" purely as a function of its content —
+  // never merely because a field was focused. This prevents keyboard users who
+  // tab through the (empty) password fields from latching required-validation
+  // and being blocked from a name-only save.
+  const currentPassword = watch('currentPassword');
+  const newPassword = watch('newPassword');
+  const confirmPassword = watch('confirmPassword');
+  const isPasswordSection = Boolean(currentPassword || newPassword || confirmPassword);
+
   const [runUpdateUser, { loading: updateLoading }] = useMutation(UpdateUserDocument, {
     onCompleted: (data) => {
       dispatch(realTimeCurrentUserUpdated(data.updateUser));
       toast.success('Profile updated successfully');
-      if (isPasswordSection) {
-        setValue('currentPassword', '');
-        setValue('newPassword', '');
-        setValue('confirmPassword', '');
-        setIsPasswordSection(false);
-      }
+      // Clearing the fields also collapses the (now content-derived) section.
+      setValue('currentPassword', '');
+      setValue('newPassword', '');
+      setValue('confirmPassword', '');
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update profile');
@@ -123,12 +131,12 @@ export default function ProfilePage() {
       }
 
       await runUpdateUser({ variables: { id: user.id, input } });
-    } catch (error) {
-      console.error('Profile update error:', error);
+    } catch {
+      // The mutation's onError handler already surfaces failures via toast;
+      // this catch just guards against an unhandled rejection.
     }
   };
 
-  const newPassword = watch('newPassword');
   const gravatarUrl = useMemo(
     () => (user?.email ? getGravatarUrl(user.email, { size: 256 }) : undefined),
     [user?.email]
@@ -137,14 +145,33 @@ export default function ProfilePage() {
     ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
     : '';
 
-  if (!user) {
+  // The auth slice keeps `user` as an object with null fields (never null), so
+  // gate on a real id. Distinguish a failed fetch from an in-flight one so a
+  // broken load shows a retryable error instead of an eternal spinner.
+  if (!user?.id) {
     return (
       <Page size="md" gap="md">
         <Card variant="default">
-          <ResponsiveStack direction="row" gap={3} align="center" justify="center">
-            <Spinner />
-            <span>Loading profile…</span>
-          </ResponsiveStack>
+          {userError && !userLoading ? (
+            <ResponsiveStack direction="col" gap={4}>
+              <Alert tone="danger" title="Couldn't load your profile">
+                {userError || 'We were unable to load your profile. Please try again.'}
+              </Alert>
+              <ResponsiveStack direction="row" justify="start">
+                <Button
+                  variant="secondary"
+                  onClick={() => dispatch(fetchCurrentUser())}
+                >
+                  Retry
+                </Button>
+              </ResponsiveStack>
+            </ResponsiveStack>
+          ) : (
+            <ResponsiveStack direction="row" gap={3} align="center" justify="center">
+              <Spinner />
+              <span>Loading profile…</span>
+            </ResponsiveStack>
+          )}
         </Card>
       </Page>
     );
@@ -191,6 +218,7 @@ export default function ProfilePage() {
                     <TextField
                       label="First name"
                       placeholder="Your first name"
+                      autoComplete="given-name"
                       error={fieldState.error?.message}
                       {...field}
                     />
@@ -204,6 +232,7 @@ export default function ProfilePage() {
                     <TextField
                       label="Last name"
                       placeholder="Your last name"
+                      autoComplete="family-name"
                       error={fieldState.error?.message}
                       {...field}
                     />
@@ -247,6 +276,7 @@ export default function ProfilePage() {
                     <TextField
                       label="Current password"
                       type={hideCurrent ? 'password' : 'text'}
+                      autoComplete="current-password"
                       suffix={
                         <IconButton
                           size="sm"
@@ -257,7 +287,6 @@ export default function ProfilePage() {
                           type="button"
                         />
                       }
-                      onFocus={() => setIsPasswordSection(true)}
                       error={fieldState.error?.message}
                       {...field}
                     />
@@ -277,6 +306,7 @@ export default function ProfilePage() {
                     <TextField
                       label="New password"
                       type={hideNew ? 'password' : 'text'}
+                      autoComplete="new-password"
                       suffix={
                         <IconButton
                           size="sm"
@@ -287,7 +317,6 @@ export default function ProfilePage() {
                           type="button"
                         />
                       }
-                      onFocus={() => setIsPasswordSection(true)}
                       error={fieldState.error?.message}
                       {...field}
                     />
@@ -307,6 +336,7 @@ export default function ProfilePage() {
                     <TextField
                       label="Confirm new password"
                       type={hideConfirm ? 'password' : 'text'}
+                      autoComplete="new-password"
                       suffix={
                         <IconButton
                           size="sm"
@@ -317,7 +347,6 @@ export default function ProfilePage() {
                           type="button"
                         />
                       }
-                      onFocus={() => setIsPasswordSection(true)}
                       error={fieldState.error?.message}
                       {...field}
                     />
@@ -336,7 +365,7 @@ export default function ProfilePage() {
                     variant="secondary"
                     size="sm"
                     onClick={() => {
-                      setIsPasswordSection(false);
+                      // Clearing the fields collapses the content-derived section.
                       setValue('currentPassword', '');
                       setValue('newPassword', '');
                       setValue('confirmPassword', '');
@@ -386,7 +415,9 @@ export default function ProfilePage() {
                 variant="secondary"
                 size="sm"
                 icon={<ExternalLink size={16} />}
-                onClick={() => window.open('https://gravatar.com', '_blank')}
+                onClick={() =>
+                  window.open('https://gravatar.com', '_blank', 'noopener,noreferrer')
+                }
               >
                 Manage on Gravatar
               </Button>

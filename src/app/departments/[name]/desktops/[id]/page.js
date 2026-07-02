@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
+  Alert,
   Badge,
   Button,
   Card,
@@ -143,7 +144,9 @@ const VMDetailPage = () => {
     setActiveTab,
     setShowToast,
     refreshVM,
+    reloadVM,
     handlePowerAction,
+    powerActionLoading,
     isAdmin,
   } = useVMDetail(vmId);
 
@@ -170,6 +173,7 @@ const VMDetailPage = () => {
   const {
     data: nodeData,
     loading: nodesLoading,
+    error: nodesError,
     refetch: refetchNodes,
   } = useGetNodeInventoryQuery({
     fetchPolicy: 'cache-and-network',
@@ -207,7 +211,7 @@ const VMDetailPage = () => {
           id: 'hardware',
           title: 'Hardware Configuration',
           icon: <Cpu size={14} />,
-          content: 'Operators can edit CPU and RAM from the Overview tab, but only when the desktop is stopped.',
+          content: 'The Overview tab shows the CPU, RAM, disk and GPU assigned to this desktop. Hardware is defined by the desktop blueprint at creation time.',
         },
         {
           id: 'tabs',
@@ -215,7 +219,7 @@ const VMDetailPage = () => {
           icon: <Terminal size={14} />,
           content: (
             <ResponsiveStack direction="col" gap={2}>
-              <span>Overview — live metrics, hardware, network, snapshots, critical alerts.</span>
+              <span>Overview — health, hardware, network, and detected problems.</span>
               <span>Recommendations — suggestions to keep this desktop optimal.</span>
               <span>Firewall — desktop-specific firewall rules layered on top of department rules.</span>
               <span>Scripts — run automation scripts on this desktop.</span>
@@ -225,9 +229,9 @@ const VMDetailPage = () => {
         },
       ],
       quickTips: [
-        'Stop the desktop before modifying CPU or RAM settings',
+        'Stop the desktop before migrating it to another node',
         'Click IP addresses to copy them to clipboard',
-        'Check the Overview tab for live metrics',
+        'Check the Overview tab for detected problems and health',
       ],
     }),
     [],
@@ -326,7 +330,7 @@ const VMDetailPage = () => {
         description: target?.name ? `${vm.name} was moved to ${target.name}.` : `${vm.name} was moved to the selected node.`,
       });
       setTargetNodeId('');
-      await Promise.all([refreshVM(), refetchNodes()]);
+      await Promise.all([reloadVM(), refetchNodes()]);
     } catch (err) {
       toast.error('Migration failed', {
         description: err?.message || 'The desktop could not be moved to the selected node.',
@@ -351,7 +355,7 @@ const VMDetailPage = () => {
                   <ResponsiveStack direction="row" gap={3} align="center" wrap>
                     <h1 className="text-xl font-semibold leading-tight m-0">{vm.name}</h1>
                     <Badge tone={statusTone(status)} pulse={isRunning}>
-                      <StatusDot status={status} />
+                      <StatusDot status={status} label={null} />
                       {statusLabel(status, isInstalling)}
                     </Badge>
                     {vm.template?.name ? (
@@ -409,8 +413,8 @@ const VMDetailPage = () => {
                     size="sm"
                     icon={<PowerOff size={14} />}
                     onClick={() => handlePowerAction('stop')}
-                    loading={isBusy}
-                    disabled={isBusy}
+                    loading={isBusy || powerActionLoading}
+                    disabled={isBusy || powerActionLoading}
                   >
                     Stop
                   </Button>
@@ -420,8 +424,8 @@ const VMDetailPage = () => {
                     size="sm"
                     icon={<Power size={14} />}
                     onClick={() => handlePowerAction('start')}
-                    loading={isBusy}
-                    disabled={isBusy}
+                    loading={isBusy || powerActionLoading}
+                    disabled={isBusy || powerActionLoading}
                   >
                     Start
                   </Button>
@@ -430,52 +434,74 @@ const VMDetailPage = () => {
             </ResponsiveStack>
           </Card>
 
-          <Card variant="default" spotlight={false} glow={false}>
-            <ResponsiveStack
-              direction={{ base: 'col', lg: 'row' }}
-              gap={4}
-              justify="between"
-              align="center"
-            >
-              <ResponsiveStack direction="row" gap={3} align="center">
-                <IconTile icon={<MoveRight size={18} />} tone="blue" size="md" />
-                <ResponsiveStack direction="col" gap={1}>
-                  <span>Node placement</span>
-                  <span>
-                    {currentNode?.name
-                      ? `Current node: ${currentNode.name}`
-                      : vm.nodeId
-                        ? `Current node: ${vm.nodeId}`
-                        : 'Current node: unassigned'}
-                  </span>
-                  <span className="text-xs text-fg-muted">
-                    Cold migration requires shared VM storage across nodes.
-                  </span>
+          {isAdmin ? (
+            <Card variant="default" spotlight={false} glow={false}>
+              <ResponsiveStack
+                direction={{ base: 'col', lg: 'row' }}
+                gap={4}
+                justify="between"
+                align="center"
+              >
+                <ResponsiveStack direction="row" gap={3} align="center">
+                  <IconTile icon={<MoveRight size={18} />} tone="blue" size="md" />
+                  <ResponsiveStack direction="col" gap={1}>
+                    <span>Node placement</span>
+                    <span>
+                      {currentNode?.name
+                        ? `Current node: ${currentNode.name}`
+                        : vm.nodeId
+                          ? `Current node: ${vm.nodeId}`
+                          : 'Current node: unassigned'}
+                    </span>
+                    <span className="text-xs text-fg-muted">
+                      Cold migration requires shared VM storage across nodes.
+                    </span>
+                  </ResponsiveStack>
                 </ResponsiveStack>
-              </ResponsiveStack>
 
-              <ResponsiveStack direction={{ base: 'col', sm: 'row' }} gap={2} align="center">
-                <div style={{ minWidth: 260 }}>
-                  <Select
-                    value={targetNodeId}
-                    onChange={setTargetNodeId}
-                    options={migrationOptions}
-                    disabled={nodesLoading || migrationTargets.length === 0 || !canMigrate}
-                  />
-                </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<MoveRight size={14} />}
-                  onClick={handleMigrate}
-                  loading={migrationLoading}
-                  disabled={migrationDisabled}
-                >
-                  Migrate stopped desktop
-                </Button>
+                {nodesError ? (
+                  <Alert
+                    tone="danger"
+                    icon={<MoveRight size={14} />}
+                    title="Could not load target nodes"
+                    actions={
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={<RefreshCw size={14} />}
+                        onClick={() => refetchNodes()}
+                      >
+                        Retry
+                      </Button>
+                    }
+                  >
+                    {nodesError.message}
+                  </Alert>
+                ) : (
+                  <ResponsiveStack direction={{ base: 'col', sm: 'row' }} gap={2} align="center">
+                    <div style={{ minWidth: 260 }}>
+                      <Select
+                        value={targetNodeId}
+                        onChange={setTargetNodeId}
+                        options={migrationOptions}
+                        disabled={nodesLoading || migrationTargets.length === 0 || !canMigrate}
+                      />
+                    </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<MoveRight size={14} />}
+                      onClick={handleMigrate}
+                      loading={migrationLoading}
+                      disabled={migrationDisabled}
+                    >
+                      Migrate stopped desktop
+                    </Button>
+                  </ResponsiveStack>
+                )}
               </ResponsiveStack>
-            </ResponsiveStack>
-          </Card>
+            </Card>
+          ) : null}
 
           <Tabs
             value={activeTab || 'overview'}
@@ -519,10 +545,12 @@ const VMDetailPage = () => {
             <TabPanel value="firewall">
               <VMSecurityTab
                 vmId={vmId}
+                vmName={vm?.name}
                 vmStatus={vm?.status}
                 vmSetupComplete={setupComplete}
                 vmOs={vm?.configuration?.os}
                 departmentId={vm?.department?.id}
+                onVMStopped={reloadVM}
               />
             </TabPanel>
             <TabPanel value="scripts">
@@ -543,7 +571,7 @@ const VMDetailPage = () => {
                   vm={vm}
                   vmStatus={vm?.status}
                   vmSetupComplete={setupComplete}
-                  onJoined={refreshVM}
+                  onJoined={reloadVM}
                 />
               </TabPanel>
             ) : null}

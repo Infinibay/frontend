@@ -24,9 +24,12 @@
     --harbor-radius-2xl: 14px;
   }
 
-  /* Deep base fill so the blobs have something to glow on top of. */
+  /* Base page fill so the ambient blobs have something to glow on top of.
+     Must follow the active theme — a hardcoded near-black composited under
+     the 72%-alpha <main> surface turned the whole light theme into a murky
+     grey/black hybrid. `--harbor-bg` flips per [data-theme]. */
   html {
-    background-color: rgb(10 8 14);
+    background-color: rgb(var(--harbor-bg));
   }
   html body {
     background: transparent;

@@ -62,10 +62,15 @@ const SUPPORTED_OS_QUERY = gql`
   }
 `;
 
-// Surface GraphQL errors (errorPolicy:'all' resolves instead of throwing)
+// Apollo Client 4: a failing query (errorPolicy:'all') resolves with a SINGULAR
+// `error` — the plural `errors` was removed. Surface it (and a null-data payload)
+// as a real error instead of returning null/undefined into the reducers.
 const assertNoGraphQLErrors = (response) => {
-  if (response.errors) {
-    throw new Error(response.errors.map(err => err.message).join(', '));
+  if (response.error) {
+    throw response.error;
+  }
+  if (!response.data) {
+    throw new Error('No data returned from the server.');
   }
   return response.data;
 };

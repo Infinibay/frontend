@@ -29,7 +29,7 @@ import { isEndUserView } from '@/lib/roles';
 import { useMyPermissionsQuery } from '@/gql/hooks';
 import { firstAllowedRoute, isPathAllowed } from '@/lib/permissions';
 import { createThemeScript } from '@/utils/theme';
-import { ThemeProvider, useAppTheme } from '@/contexts/ThemeProvider';
+import { ThemeProvider, useAppTheme, useResolvedTheme } from '@/contexts/ThemeProvider';
 import { HarborThemeBridge } from '@/components/layout/HarborThemeBridge';
 import { HelpProvider } from '@/contexts/HelpProvider';
 import { HeaderActionProvider } from '@/contexts/HeaderActionContext';
@@ -96,10 +96,10 @@ function AppContent({ children, isAuthenticated, authChecked }) {
     router.replace(fallback);
   }, [allowedResources, isAuthenticated, pathname, router, user]);
 
-  // Auth gate: send unauthenticated users to sign-in. Covers EVERY route,
-  // including those not wrapped in <ProtectedRoute> (e.g. /identity, /policies,
-  // /settings). Wait for the async token check to finish (authChecked) so a
-  // valid session is never bounced during the initial verification.
+  // Auth gate: send unauthenticated users to sign-in. This is the SINGLE
+  // redirect for unauthenticated access and covers EVERY route (e.g. /identity,
+  // /policies, /settings). Wait for the async token check to finish
+  // (authChecked) so a valid session is never bounced during initial verification.
   React.useEffect(() => {
     if (!authChecked) return;
     if (isAuthenticated) return;
@@ -189,6 +189,20 @@ function ThemeProviderWrapper({ children }) {
   );
 }
 
+// Toasts follow the app theme instead of being hardcoded. Defined here so it
+// renders as a descendant of ThemeProviderWrapper and can read the resolved
+// 'light'/'dark' theme via context (the old theme="dark" ignored light mode).
+function ThemedToaster() {
+  const resolvedTheme = useResolvedTheme();
+  return (
+    <SonnerToaster
+      theme={resolvedTheme}
+      position="bottom-right"
+      richColors
+    />
+  );
+}
+
 export default function RootLayout({ children }) {
   // null = auth check still in progress; true/false = check completed.
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -217,6 +231,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Default document title so browser tabs show the product name
+            instead of the bare URL. This is a client component ('use client'),
+            so it cannot export Next.js metadata; a static <title> in <head> is
+            the honest stopgap. Individual pages may still override it. */}
+        <title>Infinibay</title>
+        <meta name="description" content="Infinibay virtualization management console" />
         {/* Harbor's design system is built on Inter (tokens.css sets
             --harbor-font-sans: "Inter"). Load it so the type scale, weights
             and metrics match Harbor instead of falling back to a system font
@@ -249,11 +269,7 @@ export default function RootLayout({ children }) {
                         </InitialDataLoader>
                         {/* Toasts standardize on Sonner. The harbor ToastProvider
                             is removed; its consumers are migrated by group STATES. */}
-                        <SonnerToaster
-                          theme="dark"
-                          position="bottom-right"
-                          richColors
-                        />
+                        <ThemedToaster />
                       </CursorProvider>
                     </ApolloProvider>
                 </HeaderActionProvider>

@@ -40,7 +40,10 @@ export const initializeDebugPanel = () => {
   }
 }
 
-// Listen for localStorage changes to enable/disable panel
+// Listen for localStorage changes to enable/disable panel.
+// Cross-tab changes arrive via the 'storage' event; same-tab changes are
+// dispatched explicitly from toggleDebugUI() below. This replaces the old
+// always-on 1 Hz setInterval poller.
 export const watchDebugChanges = () => {
   if (typeof window === 'undefined') return
 
@@ -50,16 +53,6 @@ export const watchDebugChanges = () => {
       handleDebugChange(e.newValue)
     }
   })
-
-  // Also check periodically for changes in the same tab
-  let lastDebugValue = localStorage.getItem('DEBUG')
-  setInterval(() => {
-    const currentDebugValue = localStorage.getItem('DEBUG')
-    if (currentDebugValue !== lastDebugValue) {
-      handleDebugChange(currentDebugValue)
-      lastDebugValue = currentDebugValue
-    }
-  }, 1000)
 }
 
 const handleDebugChange = (newDebugValue) => {
@@ -94,19 +87,25 @@ const toggleDebugUI = () => {
   const currentDebug = localStorage.getItem('DEBUG') || ''
   const debugValues = currentDebug.split(',').map(v => v.trim()).filter(v => v)
 
+  let newDebug
   if (debugValues.some(v => v.toLowerCase() === 'ui')) {
     // Remove UI mode
-    const newDebug = debugValues.filter(v => v.toLowerCase() !== 'ui').join(',')
-    localStorage.setItem('DEBUG', newDebug)
+    newDebug = debugValues.filter(v => v.toLowerCase() !== 'ui').join(',')
   } else {
     // Add UI mode
     debugValues.push('ui')
-    localStorage.setItem('DEBUG', debugValues.join(','))
+    newDebug = debugValues.join(',')
   }
+  localStorage.setItem('DEBUG', newDebug)
+  // The 'storage' event does not fire in the tab that made the change, so drive
+  // the panel directly here instead of relying on a polling loop.
+  handleDebugChange(newDebug)
 }
 
-// Auto-initialize when module is imported
-if (typeof window !== 'undefined') {
+// Auto-initialize when module is imported — DEVELOPMENT ONLY. In production this
+// tooling (a keydown hook on Ctrl+Shift+D, a cross-tab storage listener, and the
+// injected debug panel) must never run for end users.
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
   // Initialize on next tick to ensure DOM is ready
   setTimeout(() => {
     initializeDebugPanel()

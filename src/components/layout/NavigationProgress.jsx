@@ -16,15 +16,23 @@ export function NavigationProgress() {
   const [visible, setVisible] = useState(false);
   const rafRef = useRef(null);
   const startRef = useRef(0);
+  const stallTimerRef = useRef(null);
 
   useEffect(() => {
     function onClick(e) {
+      // Ignore clicks another handler already consumed (e.g. a programmatic
+      // download that called preventDefault, or a router intercept).
+      if (e.defaultPrevented) return;
       const a = e.target.closest?.('a[href]');
       if (!a) return;
+      // Downloads (openSpiceClient appends <a download href="blob:…"> and
+      // clicks it) never navigate — bubbling this into the trickle would hang
+      // the bar at 85% forever.
+      if (a.hasAttribute('download')) return;
       const href = a.getAttribute('href') || '';
       if (!href || href.startsWith('#') || href.startsWith('mailto:')) return;
-      // External link
-      if (/^https?:\/\//i.test(href)) return;
+      // Non-navigating schemes: external links, blob/data downloads, tel:, etc.
+      if (/^(https?|blob|data|tel):/i.test(href)) return;
       if (a.target === '_blank' || e.ctrlKey || e.metaKey || e.shiftKey) return;
       // Same pathname — no navigation
       if (href === pathname) return;
@@ -42,9 +50,23 @@ export function NavigationProgress() {
       };
       cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(tick);
+
+      // Safety net: if the pathname never changes (SPA navigation cancelled,
+      // same-route link, or a click we misjudged as a nav), stop the loop and
+      // hide the bar instead of trickling forever.
+      clearTimeout(stallTimerRef.current);
+      stallTimerRef.current = setTimeout(() => {
+        cancelAnimationFrame(rafRef.current);
+        setVisible(false);
+        setProgress(0);
+      }, 8000);
     }
     document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
+    return () => {
+      document.removeEventListener('click', onClick, true);
+      cancelAnimationFrame(rafRef.current);
+      clearTimeout(stallTimerRef.current);
+    };
   }, [pathname]);
 
   // Pathname changed → complete the bar and fade out.
@@ -55,6 +77,7 @@ export function NavigationProgress() {
   useEffect(() => {
     if (!visible) return;
     cancelAnimationFrame(rafRef.current);
+    clearTimeout(stallTimerRef.current);
     setProgress(100);
     const fadeTimer = setTimeout(() => {
       setVisible(false);

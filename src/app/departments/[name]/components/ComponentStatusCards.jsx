@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import {
   Check,
   CheckCircle,
@@ -106,11 +107,27 @@ const StatusCard = ({ icon, title, isHealthy, issues, metrics, extraContent, inf
 
 const ComponentStatusCards = ({ diagnostics }) => {
   const [copiedPath, setCopiedPath] = useState(null);
+  const copyTimerRef = useRef(null);
 
-  const copyToClipboard = (text, id) => {
-    navigator.clipboard.writeText(text);
-    setCopiedPath(id);
-    setTimeout(() => setCopiedPath(null), 2000);
+  useEffect(
+    () => () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    },
+    [],
+  );
+
+  const copyToClipboard = async (text, id) => {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard is only available over HTTPS.');
+      }
+      await navigator.clipboard.writeText(text);
+      setCopiedPath(id);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopiedPath(null), 2000);
+    } catch (err) {
+      toast.error(`Could not copy: ${err?.message || 'clipboard unavailable'}`);
+    }
   };
 
   const bridgeStatus = getComponentStatus('bridge', diagnostics);

@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
+import { createDebugger } from '@/utils/debug';
 
 import {
   MachineTemplateCategoriesDocument,
@@ -8,19 +9,31 @@ import {
   DestroyMachineTemplateCategoryDocument
 } from '@/gql/hooks';
 
+const debug = createDebugger('frontend:state:templateCategories');
+
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
-    const response = await client.query({ query, variables });
+    const response = await client.query({
+      query,
+      variables,
+      // Force a network request: with the client default 'cache-first', a TTL
+      // refetch after create/destroy would serve the stale cached list and
+      // resurrect deleted categories.
+      fetchPolicy: 'network-only'
+    });
 
-    // Surface GraphQL errors (errorPolicy:'all' resolves instead of throwing)
-    if (response.errors) {
-      const errorMessage = response.errors.map(err => err.message).join(', ');
-      throw new Error(errorMessage);
+    // Apollo Client 4: a failing query (errorPolicy:'all') resolves with a
+    // SINGULAR `error` — the plural `errors` was removed.
+    if (response.error) {
+      throw response.error;
+    }
+    if (!response.data) {
+      throw new Error('No data returned from the server.');
     }
 
     return response.data;
   } catch (error) {
-    console.error('GraphQL query error:', error);
+    debug.error('query', 'GraphQL query error:', error);
     throw error;
   }
 };
@@ -30,7 +43,7 @@ const executeGraphQLMutation = async (mutation, variables = {}) => {
     const { data } = await client.mutate({ mutation, variables });
     return data;
   } catch (error) {
-    console.error('GraphQL mutation error:', error);
+    debug.error('mutation', 'GraphQL mutation error:', error);
     throw error;
   }
 };

@@ -4,22 +4,10 @@ import { useQuery, useMutation } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { getPowerActionError } from "@/utils/powerActionResult";
+import { getSocketService } from "@/services/socketService";
 
 // Check if IP fields are enabled via environment variable
 const IP_FIELDS_ENABLED = process.env.NEXT_PUBLIC_ENABLE_VM_IP_FIELDS === 'true';
-
-// GraphQL queries - using inline gql instead of separate file import
-const allUsers = gql`
-  query allUsers($orderBy: UserOrderByInputType, $pagination: PaginationInputType) {
-    users(orderBy: $orderBy, pagination: $pagination) {
-      id
-      firstName
-      lastName
-      email
-      role
-    }
-  }
-`;
 
 const vmDetailedInfo = gql`
   query vmDetailedInfo($id: String!) {
@@ -82,133 +70,6 @@ const POWER_OFF = gql`
   }
 `;
 
-
-const UPDATE_MACHINE_HARDWARE = gql`
-  mutation updateMachineHardware($input: UpdateMachineHardwareInput!) {
-    updateMachineHardware(input: $input) {
-      id
-      name
-      configuration
-      status
-      userId
-      templateId
-      createdAt
-      template {
-        id
-        name
-        description
-        cores
-        ram
-        storage
-        createdAt
-        categoryId
-        totalMachines
-      }
-      department {
-        id
-        name
-        createdAt
-        internetSpeed
-        ipSubnet
-        totalMachines
-      }
-      user {
-        id
-        firstName
-        lastName
-        role
-        email
-        avatar
-        createdAt
-      }
-    }
-  }
-`;
-
-const UPDATE_MACHINE_NAME = gql`
-  mutation updateMachineName($input: UpdateMachineNameInput!) {
-    updateMachineName(input: $input) {
-      id
-      name
-      configuration
-      status
-      userId
-      templateId
-      createdAt
-      template {
-        id
-        name
-        description
-        cores
-        ram
-        storage
-        createdAt
-        categoryId
-        totalMachines
-      }
-      department {
-        id
-        name
-        createdAt
-        internetSpeed
-        ipSubnet
-        totalMachines
-      }
-      user {
-        id
-        firstName
-        lastName
-        role
-        email
-        avatar
-        createdAt
-      }
-    }
-  }
-`;
-
-const UPDATE_MACHINE_USER = gql`
-  mutation updateMachineUser($input: UpdateMachineUserInput!) {
-    updateMachineUser(input: $input) {
-      id
-      name
-      configuration
-      status
-      userId
-      templateId
-      createdAt
-      template {
-        id
-        name
-        description
-        cores
-        ram
-        storage
-        createdAt
-        categoryId
-        totalMachines
-      }
-      department {
-        id
-        name
-        createdAt
-        internetSpeed
-        ipSubnet
-        totalMachines
-      }
-      user {
-        id
-        firstName
-        lastName
-        role
-        email
-        avatar
-        createdAt
-      }
-    }
-  }
-`;
-
 /**
  * Custom hook for managing VM detail page state and logic
  */
@@ -222,7 +83,11 @@ export const useVMDetail = (vmId) => {
   // UI State
   const [showToast, setShowToast] = useState(false);
   const [toastProps, setToastProps] = useState({});
-  const [activeTab, setActiveTab] = useState("recommendations");
+  const [activeTab, setActiveTab] = useState("overview");
+  // True while a powerOn/powerOff mutation is in flight, so the caller can
+  // disable the Start/Stop control and prevent double-submits (the mapped VM
+  // status alone stays 'online'/'offline' during the request).
+  const [powerActionLoading, setPowerActionLoading] = useState(false);
 
   // GraphQL query for VM data
   const {
@@ -237,36 +102,11 @@ export const useVMDetail = (vmId) => {
     errorPolicy: 'all'
   });
 
-  // GraphQL query for users (admin only)
-  const {
-    data: usersData,
-    loading: usersLoading,
-    error: usersError
-  } = useQuery(allUsers, {
-    variables: {
-      orderBy: {
-        fieldName: 'FIRST_NAME',
-        direction: 'ASC'
-      },
-      pagination: {
-        take: 100,
-        skip: 0
-      }
-    },
-    skip: !isAdmin,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all'
-  });
-
   // GraphQL mutations
   const [powerOnMutation] = useMutation(POWER_ON);
   const [powerOffMutation] = useMutation(POWER_OFF);
-  const [updateMachineHardwareMutation, { loading: hardwareUpdateLoading }] = useMutation(UPDATE_MACHINE_HARDWARE);
-  const [updateMachineNameMutation, { loading: nameUpdateLoading }] = useMutation(UPDATE_MACHINE_NAME);
-  const [updateMachineUserMutation, { loading: userUpdateLoading }] = useMutation(UPDATE_MACHINE_USER);
 
   const vm = data?.machine;
-  const users = usersData?.users || [];
   const error = graphqlError;
 
   // Show toast notification
@@ -275,7 +115,19 @@ export const useVMDetail = (vmId) => {
     setShowToast(true);
   };
 
-  // Handle VM refresh
+  // Silent refetch for programmatic use (post-migrate, post-domain-join, socket
+  // events). Does NOT toast — the caller already surfaces its own feedback, so a
+  // toast here would double up.
+  const reloadVM = useCallback(async () => {
+    try {
+      await refetch();
+    } catch (error) {
+      console.error("Error refreshing VM:", error);
+    }
+  }, [refetch]);
+
+  // Explicit user-initiated refresh (header Refresh button) — toasts so the
+  // click has visible feedback.
   const refreshVM = async () => {
     try {
       await refetch();
@@ -297,20 +149,22 @@ export const useVMDetail = (vmId) => {
   // Handle power actions
   const handlePowerAction = async (action) => {
     if (!vm) return;
+    // Guard against double-submit: the mapped VM status stays online/offline
+    // while the mutation is in flight, so only this flag prevents a second click.
+    if (powerActionLoading) return;
 
+    setPowerActionLoading(true);
     try {
-      let actionText;
       let successText;
 
       // Show loading notification
       switch (action) {
         case 'start':
-          actionText = 'start';
-          successText = 'started';
+          successText = 'is starting up';
           showToastNotification(
             "default",
             "Processing",
-            "Attempting to " + actionText + " the desktop..."
+            "Attempting to start the desktop..."
           );
           {
             // powerOn resolves the async start and returns SuccessType
@@ -324,12 +178,11 @@ export const useVMDetail = (vmId) => {
           }
           break;
         case 'stop':
-          actionText = 'stop';
-          successText = 'stopped';
+          successText = 'is powering off';
           showToastNotification(
             "default",
             "Processing",
-            "Attempting to " + actionText + " the desktop..."
+            "Attempting to stop the desktop..."
           );
           {
             const { data } = await powerOffMutation({ variables: { id: vm.id } });
@@ -352,10 +205,13 @@ export const useVMDetail = (vmId) => {
       // Refresh VM data
       await refetch();
 
+      // The mutation only REQUESTS the transition — a graceful start/shutdown
+      // can take 30–120s. Report the request, not a completed state; the status
+      // badge confirms when it actually finishes.
       showToastNotification(
         "success",
-        "Success",
-        "The desktop has been " + successText + " successfully."
+        "Request sent",
+        "The desktop " + successText + ". The status will update when it completes."
       );
 
     } catch (error) {
@@ -371,157 +227,8 @@ export const useVMDetail = (vmId) => {
         "Error",
         detail
       );
-    }
-  };
-
-  // Handle hardware update (admin only)
-  const handleHardwareUpdate = async (hardwareUpdate) => {
-    if (!vm || !isAdmin) return;
-
-    // Validate VM is stopped
-    if (vm.status === 'running') {
-      showToastNotification(
-        "destructive",
-        "Error",
-        "VM must be stopped before updating hardware configuration."
-      );
-      return;
-    }
-
-    try {
-      showToastNotification(
-        "default",
-        "Processing",
-        "Updating hardware configuration..."
-      );
-
-      const input = {
-        id: vm.id,
-        ...hardwareUpdate
-      };
-
-      await updateMachineHardwareMutation({
-        variables: { input }
-      });
-
-      await refetch();
-
-      showToastNotification(
-        "success",
-        "Success",
-        "Hardware configuration has been updated successfully."
-      );
-
-    } catch (error) {
-      console.error("Error updating hardware:", error);
-      showToastNotification(
-        "destructive",
-        "Error",
-        "Could not update hardware configuration."
-      );
-    }
-  };
-
-  // Handle name update (admin only)
-  const handleNameUpdate = async (newName) => {
-    if (!vm || !isAdmin) return;
-
-    // Validate name is not empty
-    if (!newName || newName.trim() === '') {
-      showToastNotification(
-        "destructive",
-        "Error",
-        "VM name cannot be empty."
-      );
-      return;
-    }
-
-    // Don't update if name hasn't changed
-    if (newName.trim() === vm.name) {
-      return;
-    }
-
-    try {
-      showToastNotification(
-        "default",
-        "Processing",
-        "Updating VM name..."
-      );
-
-      const input = {
-        id: vm.id,
-        name: newName.trim()
-      };
-
-      await updateMachineNameMutation({
-        variables: { input }
-      });
-
-      await refetch();
-
-      showToastNotification(
-        "success",
-        "Success",
-        "VM name has been updated successfully."
-      );
-
-    } catch (error) {
-      console.error("Error updating name:", error);
-      const errorMessage = error?.graphQLErrors?.[0]?.message || "Could not update VM name.";
-      showToastNotification(
-        "destructive",
-        "Error",
-        errorMessage
-      );
-    }
-  };
-
-  // Handle user assignment update (admin only)
-  const handleUserUpdate = async (newUserId) => {
-    if (!vm || !isAdmin) return;
-
-    // Don't update if user hasn't changed
-    const currentUserId = vm.userId || null;
-    if (newUserId === currentUserId) {
-      return;
-    }
-
-    try {
-      showToastNotification(
-        "default",
-        "Processing",
-        "Updating user assignment..."
-      );
-
-      const input = {
-        id: vm.id,
-        userId: newUserId
-      };
-
-      await updateMachineUserMutation({
-        variables: { input }
-      });
-
-      await refetch();
-
-      const message = newUserId
-        ? "User assignment has been updated successfully."
-        : "User has been unassigned successfully.";
-
-      showToastNotification(
-        "success",
-        "Success",
-        message
-      );
-
-    } catch (error) {
-      console.error("Error updating user assignment:", error);
-      const errorMessage = error?.graphQLErrors?.[0]?.message || "Could not update user assignment.";
-      showToastNotification(
-        "destructive",
-        "Error",
-        errorMessage
-      );
+    } finally {
+      setPowerActionLoading(false);
     }
   };
 
@@ -534,17 +241,24 @@ export const useVMDetail = (vmId) => {
     }
   }, [router, vm]);
 
-  // Handle escape key to navigate back
+  // Keep this page's Apollo-rendered VM in sync with realtime backend events.
+  // The vmDetailedInfo query has no pollInterval, and status changes are only
+  // pushed into the Redux vms slice (which this page never reads) — so without
+  // this subscription the header/status would stay stale until a manual Refresh.
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        handleBackToDepartment();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleBackToDepartment]);
+    if (!vmId) return undefined;
+    const socketService = getSocketService();
+    const unsubscribe = socketService.subscribeToAllResourceEvents(
+      "vms",
+      (_action, event) => {
+        // Events carry the changed VM under event.data; only react to ours.
+        if (event?.data?.id && event.data.id !== vmId) return;
+        reloadVM();
+      },
+      ["create", "update", "delete", "power_on", "power_off", "suspend", "status_changed"]
+    );
+    return () => unsubscribe?.();
+  }, [vmId, reloadVM]);
 
   return {
     // State
@@ -554,27 +268,18 @@ export const useVMDetail = (vmId) => {
     showToast,
     toastProps,
     activeTab,
+    powerActionLoading,
 
     // Admin state
     isAdmin,
-    hardwareUpdateLoading,
-    nameUpdateLoading,
-    userUpdateLoading,
-    users,
-    usersLoading,
-    usersError,
 
     // Actions
     setActiveTab,
     setShowToast,
     refreshVM,
+    reloadVM,
     handlePowerAction,
     handleBackToDepartment,
     showToastNotification,
-
-    // Admin actions
-    handleHardwareUpdate,
-    handleNameUpdate,
-    handleUserUpdate
   };
 };

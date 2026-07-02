@@ -1,7 +1,8 @@
 import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
-  checkSystemReadiness, 
+import { createDebugger } from '@/utils/debug';
+import {
+  checkSystemReadiness,
   fetchAvailableISOs,
   fetchSupportedOSTypes,
   selectSystemReadiness,
@@ -9,6 +10,8 @@ import {
   selectISOLoading,
   selectISOError
 } from '@/state/slices/iso';
+
+const debug = createDebugger('frontend:hooks:useSystemStatus');
 
 /**
  * Hook to check and monitor system status, particularly ISO availability
@@ -39,7 +42,10 @@ export function useSystemStatus(options = {}) {
       
       await Promise.all(promises);
     } catch (err) {
-      console.error('Failed to check system status:', err);
+      // Dispatched thunks don't reject without .unwrap(); this guards against
+      // any unexpected synchronous throw. Failures surface via the slice's
+      // error state (exposed as `isError`/`error` below), not here.
+      debug.error('Failed to check system status:', err);
     }
   }, [dispatch]);
 
@@ -121,7 +127,7 @@ export function useSystemStatus(options = {}) {
     osAvailabilityMap,
     loading: loading.checkReadiness || loading.fetch,
     error: error.checkReadiness || error.fetch,
-    
+
     // Utility functions
     checkStatus,
     isOSAvailable,
@@ -130,8 +136,21 @@ export function useSystemStatus(options = {}) {
     getStatusMessage,
     getMissingISOs,
     getAvailableISOs,
-    
-    // Convenience flags
+
+    // Convenience flags.
+    // IMPORTANT: `isReady` / `hasAnyISO` are only meaningful when
+    // `!loading && !isError`. On a failed readiness check `ready` stays false,
+    // which is otherwise indistinguishable from a genuinely ISO-less system.
+    // Consumers should branch on `isError` (or `status`) first so a fetch
+    // failure isn't rendered as "no ISOs available".
+    isError: Boolean(error.checkReadiness || error.fetch),
+    status: (loading.checkReadiness || loading.fetch)
+      ? 'loading'
+      : (error.checkReadiness || error.fetch)
+        ? 'error'
+        : systemReadiness.ready
+          ? 'ready'
+          : 'not-ready',
     isReady: systemReadiness.ready,
     hasAnyISO: systemReadiness.availableOS.length > 0,
     hasAllISOs: systemReadiness.missingOS.length === 0

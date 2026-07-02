@@ -203,6 +203,29 @@ const authSlice = createSlice({
 			})
 			.addCase(fetchCurrentUser.fulfilled, (state, action) => {
 				state.loading.fetchUser = false;
+
+				// auth.fetchCurrentUser runs client.query with the app default
+				// errorPolicy 'all', so an errored bootstrap query can RESOLVE with
+				// data.currentUser === null instead of throwing. Guard against
+				// marking the session logged-in with a null user: only flip
+				// isLoggedIn when we actually have a validated user id, otherwise
+				// treat it as a failed validation.
+				if (!action.payload?.id) {
+					state.error.fetchUser = 'Session validation failed: no user returned.';
+					state.user = {
+						id: null,
+						firstName: null,
+						lastName: null,
+						email: null,
+						role: null,
+						roleId: null,
+						avatar: null,
+					};
+					state.isLoggedIn = false;
+					return;
+				}
+
+				state.error.fetchUser = null;
 				state.user = action.payload;
 				state.isLoggedIn = true;
 

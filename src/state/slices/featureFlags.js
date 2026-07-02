@@ -12,6 +12,7 @@ const initialState = {
 	flags: { ...FEATURE_FLAG_DEFAULTS }, // key -> boolean map (effective)
 	meta: [], // full array of { key, label, description, enabled } for the settings UI
 	loading: false,
+	error: null,
 	initialized: false
 };
 
@@ -23,9 +24,11 @@ const featureFlagsSlice = createSlice({
 		builder
 			.addCase(fetchFeatureFlags.pending, (state) => {
 				state.loading = true;
+				state.error = null;
 			})
 			.addCase(fetchFeatureFlags.fulfilled, (state, action) => {
 				state.loading = false;
+				state.error = null;
 				const payload = action.payload || [];
 				state.meta = payload;
 				state.flags = {
@@ -37,11 +40,16 @@ const featureFlagsSlice = createSlice({
 				};
 				state.initialized = true;
 			})
-			.addCase(fetchFeatureFlags.rejected, (state) => {
+			.addCase(fetchFeatureFlags.rejected, (state, action) => {
 				state.loading = false;
-				// Keep fail-safe defaults if fetch fails
-				state.flags = { ...FEATURE_FLAG_DEFAULTS };
-				state.meta = [];
+				// Surface the failure so the flags settings UI can show it.
+				state.error = action.error?.message || 'Failed to load feature flags';
+				// Do NOT reset flags/meta on a transient failure: flags are persisted
+				// (store.js whitelist ['flags']) and were rehydrated (or seeded from
+				// FEATURE_FLAG_DEFAULTS in initialState) before this fetch ran. Keep
+				// the current effective flags rather than overwriting the persisted
+				// copy with defaults; if nothing was ever loaded, state.flags already
+				// equals FEATURE_FLAG_DEFAULTS.
 				state.initialized = true;
 			});
 	}
@@ -50,6 +58,7 @@ const featureFlagsSlice = createSlice({
 // Selectors
 export const selectFeatureFlags = (state) => state.featureFlags.flags;
 export const selectFeatureFlagMeta = (state) => state.featureFlags.meta;
+export const selectFeatureFlagsError = (state) => state.featureFlags.error;
 
 export { fetchFeatureFlags };
 export default featureFlagsSlice.reducer;

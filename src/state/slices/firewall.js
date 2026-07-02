@@ -10,14 +10,6 @@ const firewallSlice = createSlice({
     lastEvent: null, // Last firewall event received via WebSocket
   },
   reducers: {
-    // Handle real-time generic filter assignment/unassignment
-    realTimeGenericFilterChanged: (state, action) => {
-      state.lastEvent = {
-        ...action.payload,
-        timestamp: Date.now()
-      };
-    },
-
     // Handle real-time department firewall rule changes
     realTimeDepartmentRuleChanged: (state, action) => {
       state.lastEvent = {
@@ -32,20 +24,13 @@ const firewallSlice = createSlice({
         ...action.payload,
         timestamp: Date.now()
       };
-    },
-
-    // Clear last event (optional, for cleanup)
-    clearLastEvent: (state) => {
-      state.lastEvent = null;
     }
   }
 });
 
 export const {
-  realTimeGenericFilterChanged,
   realTimeDepartmentRuleChanged,
-  realTimeVMRuleChanged,
-  clearLastEvent
+  realTimeVMRuleChanged
 } = firewallSlice.actions;
 
 export default firewallSlice.reducer;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { gql } from '@apollo/client';
 import {
   Alert,
@@ -53,7 +53,12 @@ const VMDomainTab = ({ vmId, vm, vmStatus, vmSetupComplete, onJoined }) => {
   const joinedAt = formatDate(cfg.domainJoinedAt);
   const joinError = cfg.domainJoinError || null;
 
-  const { data, loading: providersLoading } = useIdentityProvidersQuery({
+  const {
+    data,
+    loading: providersLoading,
+    error: providersError,
+    refetch: refetchProviders
+  } = useIdentityProvidersQuery({
     fetchPolicy: 'cache-and-network'
   });
 
@@ -118,6 +123,18 @@ const VMDomainTab = ({ vmId, vm, vmStatus, vmSetupComplete, onJoined }) => {
 
   const statusMeta = currentStatus ? STATUS_META[currentStatus] : null;
 
+  // While a join is in flight the backend updates configuration.domainJoinStatus
+  // asynchronously; the parent's machine query has no polling, so without this the
+  // "Joining…" badge would persist until a manual page refresh. Poll the parent
+  // refetch until the status leaves PENDING (JOINED / FAILED).
+  useEffect(() => {
+    if (currentStatus !== 'PENDING' || !onJoined) return undefined;
+    const interval = setInterval(() => {
+      onJoined();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [currentStatus, onJoined]);
+
   return (
     <Page>
       <Card
@@ -157,6 +174,21 @@ const VMDomainTab = ({ vmId, vm, vmStatus, vmSetupComplete, onJoined }) => {
 
           {providersLoading && providers.length === 0 ?
           <span className="text-fg-muted text-sm">Loading directories…</span> :
+          providersError && providers.length === 0 ?
+          <Alert
+            tone="danger"
+            icon={<AlertTriangle size={14} />}
+            title="Could not load directories"
+            actions={
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => refetchProviders()}>
+                Retry
+              </Button>
+            }>
+              {providersError.message || 'Failed to load identity providers.'}
+            </Alert> :
           providers.length === 0 ?
           <EmptyState
             icon={<ShieldCheck size={18} />}

@@ -43,6 +43,7 @@ import {
 } from "@/state/slices/appSettings";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DesktopListView } from "@/components/common/DesktopListView";
+import { OsIcon } from "@/components/common/OsBadge";
 import { useGetNodeInventoryQuery } from "@/gql/hooks";
 
 const debug = createDebugger("frontend:pages:computers");
@@ -67,36 +68,14 @@ const vmStatusToHarbor = (status, setupComplete) => {
   }
 };
 
-/** Map an OS string → simple-icons CDN slug + brand color. */
-const OS_ICON_MAP = [
-  { match: /windows|win\b|win10|win11|server/i, slug: "windows", color: "0078D6" },
-  { match: /ubuntu/i, slug: "ubuntu", color: "E95420" },
-  { match: /debian/i, slug: "debian", color: "A81D33" },
-  { match: /fedora/i, slug: "fedora", color: "51A2DA" },
-  { match: /centos/i, slug: "centos", color: "262577" },
-  { match: /rhel|red\s?hat/i, slug: "redhat", color: "EE0000" },
-  { match: /arch/i, slug: "archlinux", color: "1793D1" },
-  { match: /alpine/i, slug: "alpinelinux", color: "0D597F" },
-  { match: /macos|osx|darwin|apple/i, slug: "apple", color: "FFFFFF" },
-  { match: /freebsd|bsd/i, slug: "freebsd", color: "AB2B28" },
-  { match: /linux|gnu/i, slug: "linux", color: "FCC624" },
-];
-
-const osIconFor = (os) => {
-  if (!os) return null;
-  const hit = OS_ICON_MAP.find((m) => m.match.test(os));
-  if (!hit) return null;
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={`https://cdn.simpleicons.org/${hit.slug}/${hit.color}`}
-      alt={os}
-      title={os}
-      width={16}
-      height={16}
-    />
-  );
-};
+/**
+ * OS logo for a HostCard's leading slot. Reuses the shared OsIcon (components/
+ * common/OsBadge), which already handles the CDN 404 → local-glyph fallback,
+ * the Windows inline SVG, and theme-safe tints — instead of the page-local map
+ * this used to duplicate (which shipped a pure-white macOS glyph and a
+ * now-404'd Windows slug).
+ */
+const osIconFor = (os) => (os ? <OsIcon os={os} size={16} /> : null);
 
 /** Compose a HostCard subtitle line from VM metadata. */
 const vmSubtitle = (vm) => {
@@ -130,7 +109,11 @@ export default function ComputersPage() {
     strategy: LOADING_STRATEGIES.BACKGROUND,
     ttl: 10 * 60 * 1000,
   });
-  const { data: nodeData } = useGetNodeInventoryQuery({
+  const {
+    data: nodeData,
+    error: nodeError,
+    refetch: refetchNodes,
+  } = useGetNodeInventoryQuery({
     fetchPolicy: "cache-and-network",
     pollInterval: 30_000,
   });
@@ -138,7 +121,16 @@ export default function ComputersPage() {
   const loading = vmsLoading || departmentsLoading;
   const error = vmsError || departmentsError;
 
-  const { isReady: hasISOs } = useSystemStatus({ checkOnMount: true });
+  const {
+    isReady: hasISOs,
+    loading: isoChecking,
+    error: isoError,
+  } = useSystemStatus({ checkOnMount: true });
+  // Until the readiness check resolves we don't yet know whether ISOs exist, so
+  // we must NOT claim "no ISOs" — treat that in-flight window as "unknown" and
+  // show a neutral checking state rather than the false "Upload an ISO first".
+  const canCreate = hasISOs;
+  const isoUnknown = !hasISOs && isoChecking;
 
   const {
     handlePcSelect,
@@ -314,8 +306,24 @@ export default function ComputersPage() {
     <SegmentedControl
       size="sm"
       items={[
-        { value: "table", label: <Rows3 size={14} /> },
-        { value: "grid", label: <LayoutGrid size={14} /> },
+        {
+          value: "table",
+          label: (
+            <>
+              <Rows3 size={14} />
+              <span className="sr-only">Table view</span>
+            </>
+          ),
+        },
+        {
+          value: "grid",
+          label: (
+            <>
+              <LayoutGrid size={14} />
+              <span className="sr-only">Grid view</span>
+            </>
+          ),
+        },
       ]}
       value={view}
       onChange={onViewChange}
@@ -329,26 +337,50 @@ export default function ComputersPage() {
         count={countText}
         secondary={
           <ResponsiveStack direction="row" gap={1} align="center">
+            {nodeError ? (
+              <Tooltip content="Node names unavailable — showing IDs. Click to retry.">
+                <span>
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    label="Retry loading node names"
+                    icon={<AlertCircle size={14} className="text-warning" />}
+                    onClick={() => refetchNodes().catch(() => {})}
+                  />
+                </span>
+              </Tooltip>
+            ) : null}
             {viewToggle}
             <IconButton
               size="sm"
               variant="ghost"
               label="Refresh"
               icon={<RefreshCw size={14} />}
-              onClick={refreshVms}
+              onClick={() => refreshVms().catch(() => {})}
               disabled={vmsLoading}
             />
           </ResponsiveStack>
         }
         primary={
-          <Tooltip content={hasISOs ? "New Desktop" : "Upload an ISO image first"}>
+          <Tooltip
+            content={
+              canCreate
+                ? "New Desktop"
+                : isoUnknown
+                  ? "Checking ISO availability…"
+                  : isoError
+                    ? "Couldn't verify ISO availability — retry from Settings"
+                    : "Upload an ISO image first"
+            }
+          >
             <span>
               <Button
                 size="sm"
                 variant="primary"
-                icon={hasISOs ? <Plus size={14} /> : <AlertCircle size={14} />}
-                onClick={hasISOs ? handleNewVM : undefined}
-                disabled={!hasISOs}
+                icon={canCreate ? <Plus size={14} /> : <AlertCircle size={14} />}
+                onClick={canCreate ? handleNewVM : undefined}
+                loading={isoUnknown}
+                disabled={!canCreate}
               >
                 New Desktop
               </Button>
@@ -360,6 +392,7 @@ export default function ComputersPage() {
             <>
               <div className="w-full sm:w-[160px]">
                 <Select
+                  aria-label="Filter by status"
                   value={statusFilter}
                   onChange={setStatusFilter}
                   options={statusOptions}
@@ -367,6 +400,7 @@ export default function ComputersPage() {
               </div>
               <div className="w-full sm:w-[180px]">
                 <Select
+                  aria-label="Filter by department"
                   value={deptFilter}
                   onChange={setDeptFilter}
                   options={deptOptions}
@@ -399,7 +433,7 @@ export default function ComputersPage() {
           tone="danger"
           title="Couldn't load desktops"
           actions={
-            <Button size="sm" onClick={refreshVms} icon={<RefreshCw size={16} />}>
+            <Button size="sm" onClick={() => refreshVms().catch(() => {})} icon={<RefreshCw size={16} />}>
               Retry
             </Button>
           }
@@ -416,17 +450,25 @@ export default function ComputersPage() {
           <Skeleton height={56} />
           <Skeleton height={56} />
         </ResponsiveStack>
+      ) : error && hosts.length === 0 ? (
+        // The fetch failed and we have nothing to show — the danger Alert above
+        // (with Retry) is the whole story. Don't also render the first-run
+        // "No desktops yet" empty state, which would falsely imply the account
+        // has zero desktops.
+        null
       ) : hosts.length === 0 ? (
         <EmptyState
           icon={<Monitor size={18} />}
           title="No desktops yet"
           description={
-            hasISOs
+            canCreate
               ? "Create your first desktop to see it here."
-              : "Upload an ISO in Settings, then create your first desktop."
+              : isoUnknown
+                ? "Checking ISO availability…"
+                : "Upload an ISO in Settings, then create your first desktop."
           }
           actions={
-            hasISOs ? (
+            canCreate ? (
               <Tooltip content="New Desktop">
                 <span>
                   <Button
@@ -484,7 +526,12 @@ export default function ComputersPage() {
 
       <Dialog
         open={!!deleteConfirmation?.isOpen}
-        onClose={cancelDelete}
+        onClose={() => {
+          // Don't let Esc / overlay-click dismiss the confirmation while the
+          // delete is in flight — the mutation would keep running with no
+          // dialog context for its outcome toast.
+          if (!isDeleting) cancelDelete();
+        }}
         size="sm"
       >
         <DialogTitle>

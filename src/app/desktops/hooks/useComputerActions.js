@@ -7,6 +7,15 @@ import { toast } from "sonner";
 import { createDebugger } from '@/utils/debug';
 
 const debug = createDebugger('frontend:hooks:useComputerActions');
+
+/**
+ * The vms thunks reject via `rejectWithValue(error.message)` — a plain string.
+ * `unwrap()` therefore throws that string, so `err.message` would be undefined
+ * and every toast would collapse to its generic fallback. Normalize both the
+ * string-reject and Error-object shapes back into a human-readable message.
+ */
+const errMessage = (err, fallback) =>
+  (typeof err === 'string' ? err : err?.message) || fallback;
 import {
   playVm,
   pauseVm,
@@ -29,6 +38,9 @@ export function useComputerActions() {
     const departmentName = machine.department?.name;
     if (!departmentName) {
       debug.error('navigation', 'Cannot navigate to VM: department name is missing', machine);
+      toast.error(
+        `${machine?.name || 'This desktop'} has no department assigned, so its detail view can't be opened. Assign it to a department first.`
+      );
       return;
     }
     router.push(`/departments/${encodeURIComponent(departmentName)}/desktops/${machine.id}`);
@@ -47,7 +59,7 @@ export function useComputerActions() {
       await dispatch(playVm({ id: machine.id })).unwrap();
       toast.success("Machine started successfully");
     } catch (error) {
-      toast.error(error.message || "Failed to start machine");
+      toast.error(errMessage(error, "Failed to start machine"));
     }
   };
 
@@ -56,7 +68,7 @@ export function useComputerActions() {
       await dispatch(pauseVm({ id: machine.id })).unwrap();
       toast.success("Machine paused successfully");
     } catch (error) {
-      toast.error(error.message || "Failed to pause machine");
+      toast.error(errMessage(error, "Failed to pause machine"));
     }
   };
 
@@ -66,7 +78,7 @@ export function useComputerActions() {
       await dispatch(stopVm({ id: machine.id })).unwrap();
       toast.success("Machine stopped successfully");
     } catch (error) {
-      toast.error(error.message || "Failed to stop machine");
+      toast.error(errMessage(error, "Failed to stop machine"));
     }
   };
 
@@ -89,7 +101,7 @@ export function useComputerActions() {
       toast.success("Machine deleted successfully");
       setDeleteConfirmation({ isOpen: false, machine: null });
     } catch (error) {
-      toast.error(error.message || "Failed to delete machine");
+      toast.error(errMessage(error, "Failed to delete machine"));
     } finally {
       setIsDeleting(false);
     }

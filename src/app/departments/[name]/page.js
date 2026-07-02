@@ -88,17 +88,30 @@ const vmSubtitle = (vm) => {
   return bits.join(' · ');
 };
 
+const decodeSegment = (segment) => {
+  if (!segment) return undefined;
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+};
+
 const DepartmentPage = () => {
   const params = useParams();
   const router = useRouter();
-  const departmentName = params.name?.toLowerCase();
+  // App Router keeps the segment percent-encoded; decode once at the boundary.
+  const decodedName = decodeSegment(params.name);
+  const departmentName = decodedName?.toLowerCase();
 
   const {
     isLoading,
     department,
+    fetchError,
     machines = [],
     activeTab,
     setActiveTab,
+    retryLoadDepartment,
     handlePcSelect,
     handlePlayAction,
     handlePauseAction,
@@ -233,6 +246,39 @@ const DepartmentPage = () => {
     );
   }
 
+  // Distinguish a genuine backend failure from a successful "not found".
+  if (fetchError && !department) {
+    return (
+      <Page size="md">
+        <Alert
+          tone="danger"
+          title="Couldn't load this department"
+          actions={
+            <ResponsiveStack direction="row" gap={2}>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => retryLoadDepartment?.()}
+              >
+                Retry
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<ArrowLeft size={14} />}
+                onClick={() => router.push('/departments')}
+              >
+                Back to departments
+              </Button>
+            </ResponsiveStack>
+          }
+        >
+          {fetchError}
+        </Alert>
+      </Page>
+    );
+  }
+
   if (departmentName && !department) {
     return (
       <Page size="md">
@@ -251,13 +297,13 @@ const DepartmentPage = () => {
           }
         >
           We couldn&apos;t find a department named{' '}
-          <strong>{params.name}</strong>.
+          <strong>{decodedName}</strong>.
         </Alert>
       </Page>
     );
   }
 
-  const newComputerHref = `/departments/${departmentName}/desktops/new`;
+  const newComputerHref = `/departments/${encodeURIComponent(departmentName)}/desktops/new`;
 
   const countText = stats.total === 0
     ? null
@@ -316,7 +362,9 @@ const DepartmentPage = () => {
             <ResponsiveStack direction="col" gap={5}>
               {stats.total > 0 ? (
                 <ResponsiveStack direction="row" gap={2} wrap>
-                  <StatusChip status="online" label={`${stats.running} running`} />
+                  {stats.running > 0 ? (
+                    <StatusChip status="online" label={`${stats.running} running`} />
+                  ) : null}
                   {stats.busy > 0 ? (
                     <StatusChip status="provisioning" label={`${stats.busy} busy`} />
                   ) : null}
@@ -328,7 +376,7 @@ const DepartmentPage = () => {
 
               {department?.ipSubnet || department?.gatewayIP || department?.dnsServers ? (
                 <section className="flex flex-col gap-2">
-                  <div className="pb-2 border-b border-white/5">
+                  <div className="pb-2 border-b border-[color:var(--harbor-border-subtle)]">
                     <h2 className="text-base font-semibold m-0">Network</h2>
                   </div>
                   <div className="flex flex-col gap-1 py-2">
@@ -379,61 +427,28 @@ const DepartmentPage = () => {
                   }
                 />
               ) : (
-                <>
-                  <section className="flex flex-col gap-2">
-                    <div className="pb-2 border-b border-white/5">
-                      <h2 className="text-base font-semibold m-0">
-                        Recent desktops
-                        <span className="text-fg-muted text-xs font-normal ml-2">
-                          · {Math.min(5, hosts.length)} of {hosts.length}
-                        </span>
-                      </h2>
-                    </div>
-                    <DesktopListView
-                      hosts={hosts.slice(0, 5)}
-                      pendingActions={pendingActions}
-                      view="table"
-                      showDepartment={false}
-                      nodeNameById={nodeNameById}
-                      onOpen={handlePcSelect}
-                      onPlay={handlePlayAction}
-                      onPause={handlePauseAction}
-                      onStop={handleStopAction}
-                      onDelete={handleDeleteAction}
-                    />
-                  </section>
-
-                  <section className="flex flex-col gap-2">
-                    <div className="pb-2 border-b border-white/5">
-                      <h2 className="text-base font-semibold m-0">Recent activity</h2>
-                    </div>
-                    <div className="flex flex-col divide-y divide-[color:var(--harbor-border-subtle)]">
-                      {hosts.slice(0, 6).map((h, i) => {
-                        const s = (h._raw?.status || '').toLowerCase();
-                        const label =
-                          s === 'running' ? 'Start' :
-                          s === 'paused' || s === 'suspended' ? 'Pause' :
-                          'Stop';
-                        const status =
-                          s === 'running' ? 'online' :
-                          s === 'paused' || s === 'suspended' ? 'degraded' :
-                          'offline';
-                        const mins = 4 + i * 9;
-                        return (
-                          <div key={h.id} className="flex items-center gap-3 py-2">
-                            <StatusChip status={status} label={label} pulse={false} />
-                            <span className="flex-1 min-w-0 truncate text-sm">
-                              {h._raw?.name} changed state
-                            </span>
-                            <span className="text-fg-subtle text-xs font-mono">
-                              {mins}m ago
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                </>
+                <section className="flex flex-col gap-2">
+                  <div className="pb-2 border-b border-[color:var(--harbor-border-subtle)]">
+                    <h2 className="text-base font-semibold m-0">
+                      Recent desktops
+                      <span className="text-fg-muted text-xs font-normal ml-2">
+                        · {Math.min(5, hosts.length)} of {hosts.length}
+                      </span>
+                    </h2>
+                  </div>
+                  <DesktopListView
+                    hosts={hosts.slice(0, 5)}
+                    pendingActions={pendingActions}
+                    view="table"
+                    showDepartment={false}
+                    nodeNameById={nodeNameById}
+                    onOpen={handlePcSelect}
+                    onPlay={handlePlayAction}
+                    onPause={handlePauseAction}
+                    onStop={handleStopAction}
+                    onDelete={handleDeleteAction}
+                  />
+                </section>
               )}
             </ResponsiveStack>
           </TabPanel>
@@ -480,7 +495,10 @@ const DepartmentPage = () => {
           </TabPanel>
 
           <TabPanel value="scripts">
-            <DepartmentScriptsPage />
+            {/* embedded: render the scripts content WITHOUT its own <Page>
+                wrapper/header, since this tab already lives inside this page's
+                <Page> and PageHeader. */}
+            <DepartmentScriptsPage embedded />
           </TabPanel>
 
           <TabPanel value="network">

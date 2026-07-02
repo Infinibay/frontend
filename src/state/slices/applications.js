@@ -1,60 +1,71 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import client from '@/apollo-client';
-import { gql } from '@apollo/client';
 import { createDebugger } from '@/utils/debug';
 import {
   ApplicationsDocument,
   ApplicationDocument,
   CreateApplicationDocument,
   UpdateApplicationDocument,
-  // DestroyApplicationDocument // Does not exist yet
+  DeleteApplicationDocument,
 } from '@/gql/hooks';
 
-import { persistReducer } from 'redux-persist';
+import { persistReducer, createMigrate } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
 const debug = createDebugger('applications-slice');
 
-// TODO: Implement destroyApplication mutation in backend
-export const DELETE_APPLICATION_MUTATION = gql`
-  mutation DeleteApplication($id: String!) {
-    destroyApplication(id: $id)
+// Keys whose values must never be written to the console / debug panel.
+const SENSITIVE_KEYS = new Set([
+  'password', 'confirmPassword', 'newPassword', 'currentPassword', 'oldPassword',
+  'bindPassword', 'productKey', 'token', 'accessToken', 'refreshToken', 'secret'
+]);
+
+// Deep-clone GraphQL variables with sensitive fields redacted before logging.
+const sanitizeVariables = (value) => {
+  if (Array.isArray(value)) return value.map(sanitizeVariables);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, SENSITIVE_KEYS.has(k) ? '[REDACTED]' : sanitizeVariables(v)])
+    );
   }
-`;
+  return value;
+};
 
 const executeGraphQLMutation = async (mutation, variables) => {
   try {
-    debug.log('mutation', 'Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables });
+    debug.log('mutation', 'Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables: sanitizeVariables(variables) });
     const { data } = await client.mutate({ mutation, variables });
     debug.log('mutation', 'GraphQL mutation success', data);
     return data;
   } catch (error) {
     debug.error('mutation', 'GraphQL mutation error', error);
-    console.error('GraphQL mutation error:', error);
     throw error;
   }
 };
 
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
-    debug.log('query', 'Executing GraphQL query', { query: query.loc?.source?.body, variables });
+    debug.log('query', 'Executing GraphQL query', { query: query.loc?.source?.body, variables: sanitizeVariables(variables) });
     const response = await client.query({
       query,
       variables,
       fetchPolicy: 'network-only' // Force network request so mutations aren't masked by a stale cache-first read
     });
 
-    // Surface GraphQL errors (errorPolicy:'all' resolves instead of throwing)
-    if (response.errors) {
-      const errorMessage = response.errors.map(err => err.message).join(', ');
-      throw new Error(errorMessage);
+    // Apollo Client 4: a failing query (errorPolicy:'all') resolves with a
+    // SINGULAR `error` — the plural `errors` was removed. Surface it as a real
+    // error, and guard against a null `data` payload.
+    if (response.error) {
+      throw response.error;
+    }
+    if (!response.data) {
+      throw new Error('No data returned from the server.');
     }
 
     debug.log('query', 'GraphQL query success', response.data);
     return response.data;
   } catch (error) {
     debug.error('query', 'GraphQL query error', error);
-    console.error('GraphQL query error:', error);
     throw error;
   }
 };
@@ -93,9 +104,18 @@ export const updateApplication = createAsyncThunk(
 
 export const deleteApplication = createAsyncThunk(
   'applications/deleteApplication',
-  async (payload) => {
-    const data = await executeGraphQLMutation(DELETE_APPLICATION_MUTATION, { id: payload.id });
-    return data.destroyApplication;
+  async (payload, { rejectWithValue }) => {
+    try {
+      const data = await executeGraphQLMutation(DeleteApplicationDocument, { id: payload.id });
+      // deleteApplication resolves to Boolean! — false means the backend refused
+      // the delete without throwing, so treat it as an error.
+      if (!data?.deleteApplication) {
+        throw new Error('Failed to delete application');
+      }
+      return payload.id;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
   }
 );
 
@@ -107,12 +127,14 @@ const applicationsSlice = createSlice({
     selectedApplication: null,
     loading: {
       fetch: false,
+      fetchOne: false,
       create: false,
       update: false,
       delete: false
     },
     error: {
       fetch: null,
+      fetchOne: null,
       create: null,
       update: null,
       delete: null
@@ -172,6 +194,28 @@ const applicationsSlice = createSlice({
         state.error.fetch = action.error.message;
       })
 
+      // Fetch single Application (deep links / detail page)
+      .addCase(fetchApplicationById.pending, (state) => {
+        state.loading.fetchOne = true;
+        state.error.fetchOne = null;
+      })
+      .addCase(fetchApplicationById.fulfilled, (state, action) => {
+        state.loading.fetchOne = false;
+        const app = action.payload;
+        if (app && app.id) {
+          const index = state.items.findIndex((a) => a.id === app.id);
+          if (index !== -1) {
+            state.items[index] = app;
+          } else {
+            state.items.push(app);
+          }
+        }
+      })
+      .addCase(fetchApplicationById.rejected, (state, action) => {
+        state.loading.fetchOne = false;
+        state.error.fetchOne = action.error.message;
+      })
+
       // Create Application
       .addCase(createApplication.pending, (state) => {
         state.loading.create = true;
@@ -179,7 +223,17 @@ const applicationsSlice = createSlice({
       })
       .addCase(createApplication.fulfilled, (state, action) => {
         state.loading.create = false;
-        state.items.push(action.payload);
+        // Idempotent upsert by id: the realtime `created` socket event may arrive
+        // before this mutation resolves, so guard against pushing a duplicate row.
+        const app = action.payload;
+        if (app && app.id) {
+          const index = state.items.findIndex((a) => a.id === app.id);
+          if (index !== -1) {
+            state.items[index] = app;
+          } else {
+            state.items.push(app);
+          }
+        }
       })
       .addCase(createApplication.rejected, (state, action) => {
         state.loading.create = false;
@@ -210,11 +264,12 @@ const applicationsSlice = createSlice({
       })
       .addCase(deleteApplication.fulfilled, (state, action) => {
         state.loading.delete = false;
-        state.items = state.items.filter((app) => app.id !== action.payload.id);
+        // Thunk returns the deleted application's id (a scalar).
+        state.items = state.items.filter((app) => app.id !== action.payload);
       })
       .addCase(deleteApplication.rejected, (state, action) => {
         state.loading.delete = false;
-        state.error.delete = action.error.message;
+        state.error.delete = action.payload || action.error.message;
       });
   },
 });
@@ -222,13 +277,19 @@ const applicationsSlice = createSlice({
 const persistConfig = {
   key: 'applications',
   storage,
+  version: 1,
+  // No transform needed to reach v1 (baseline). When the persisted shape of
+  // `items` changes incompatibly, bump `version` and add a numbered migration
+  // (e.g. `2: (state) => ...`) so old payloads are migrated/purged instead of
+  // hydrating a corrupt shape.
+  migrate: createMigrate({ 1: (state) => state }, { debug: false }),
   // Only persist the data; never persist transient loading/error flags (a
   // mid-fetch reload would otherwise rehydrate loading.fetch=true and wedge
   // the page in a permanent loading state).
   whitelist: ['items'],
 };
 
-const persistedApplicaitonReducer = persistReducer(persistConfig, applicationsSlice.reducer);
+const persistedApplicationReducer = persistReducer(persistConfig, applicationsSlice.reducer);
 
-export default persistedApplicaitonReducer;
+export default persistedApplicationReducer;
 export const { selectApplication, deselectApplication } = applicationsSlice.actions;

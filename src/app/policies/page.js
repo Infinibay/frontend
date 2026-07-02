@@ -2,34 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { gql } from '@apollo/client';
 import {
   Page,
   Alert,
-  Badge,
   Button,
-  IconButton,
-  DataTable,
-  EmptyState,
-  Accordion,
-  AccordionItem,
+  Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogButtons,
   ResponsiveStack,
-  Select,
   Tabs,
   TabList,
   Tab,
   TabPanel } from
 '@infinibay/harbor';
-import {
-  History,
-  Lock,
-  Plus,
-  RefreshCw,
-  ShieldCheck,
-  Trash2,
-  UserPlus,
-  Users } from
-'lucide-react';
+import { RefreshCw, ShieldCheck, Users } from 'lucide-react';
 
 import client from '@/apollo-client';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -54,262 +41,28 @@ import {
 import { PermissionScope, GrantEffect } from '@/gql/graphql';
 import { toast } from 'sonner';
 
-// ---------------------------------------------------------------------------
-// GraphQL (inline — department-role + audit operations are admin-only and
-// not part of codegen). These are unchanged from the previous page.
-// ---------------------------------------------------------------------------
-
-const DEPARTMENTS_Q = gql`
-  query PolicyDepartments {
-    departments { id name }
-  }
-`;
-
-const MEMBERS_Q = gql`
-  query DepartmentMembers($departmentId: String!) {
-    departmentMembers(departmentId: $departmentId) {
-      id
-      departmentId
-      userId
-      role
-      userEmail
-      userName
-      userGlobalRole
-    }
-  }
-`;
-
-const SET_MEMBER_M = gql`
-  mutation SetDepartmentMember($input: SetDepartmentMemberInput!) {
-    setDepartmentMember(input: $input) {
-      id
-      userId
-      role
-      userEmail
-      userName
-      userGlobalRole
-    }
-  }
-`;
-
-const REMOVE_MEMBER_M = gql`
-  mutation RemoveDepartmentMember($departmentId: String!, $userId: String!) {
-    removeDepartmentMember(departmentId: $departmentId, userId: $userId)
-  }
-`;
-
-const AUDIT_Q = gql`
-  query PolicyAuditLog($input: PolicyAuditQueryInput) {
-    policyAuditLog(input: $input) {
-      id
-      actorName
-      action
-      targetType
-      summary
-      createdAt
-    }
-  }
-`;
-
-// ---------------------------------------------------------------------------
-// Scope helpers
-// ---------------------------------------------------------------------------
-
-const SCOPE_RANK = {
-  [PermissionScope.Own]: 1,
-  [PermissionScope.Department]: 2,
-  [PermissionScope.Any]: 3
-};
-
-const SCOPE_LABEL = {
-  [PermissionScope.Own]: 'Own',
-  [PermissionScope.Department]: 'Department',
-  [PermissionScope.Any]: 'Any'
-};
-
-const NONE = '__none__';
-
-function formatWhen(value) {
-  if (!value) return '—';
-  try {
-    return new Date(value).toLocaleString();
-  } catch {
-    return '—';
-  }
-}
-
-function roleLabel(role) {
-  if (role === 'SUPER_ADMIN') return 'Super admin';
-  if (role === 'ADMIN') return 'Admin';
-  return 'User';
-}
-
-// "joinDomain" -> "Join Domain", "manageExecutions" -> "Manage Executions".
-function humanizeVerb(verb) {
-  const spaced = String(verb).replace(/([a-z0-9])([A-Z])/g, '$1 $2');
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
-
-// Top-level sections, split into tabs so the page isn't one endless scroll.
-const POLICY_TABS = [
-  { id: 'roles', label: 'Roles & permissions', icon: ShieldCheck },
-  { id: 'users', label: 'User access', icon: UserPlus },
-  { id: 'departments', label: 'Departments', icon: Users },
-  { id: 'audit', label: 'Audit log', icon: History }
-];
-
-const SectionCard = ({ icon, title, action, children }) => (
-  <section className="rounded-sm border border-white/10 bg-surface-1 p-4 shadow-harbor-md">
-    <ResponsiveStack direction="col" gap={3}>
-      <ResponsiveStack direction="row" gap={2} align="center">
-        {icon}
-        <span className="text-sm font-medium">{title}</span>
-        {action ? <div className="ml-auto">{action}</div> : null}
-      </ResponsiveStack>
-      {children}
-    </ResponsiveStack>
-  </section>
-);
-
-// Compact segmented scope picker — replaces the bulky per-verb dropdowns. Reads
-// left→right as widening reach (— ⊂ Own ⊂ Dept ⊂ Any). Global (unscoped)
-// resources collapse to Off / On.
-const ScopeSegmented = ({ value, scoped, disabled = false, onChange }) => {
-  const segments = scoped
-    ? [
-        { value: NONE, label: '—', hint: 'No access' },
-        { value: PermissionScope.Own, label: 'Own', hint: 'Own resources only' },
-        { value: PermissionScope.Department, label: 'Dept', hint: 'Whole department' },
-        { value: PermissionScope.Any, label: 'Any', hint: 'Anywhere' }]
-    : [
-        { value: NONE, label: 'Off', hint: 'No access' },
-        { value: PermissionScope.Any, label: 'On', hint: 'Granted' }];
-
-  return (
-    <div
-      role="group"
-      className={`inline-flex shrink-0 select-none rounded border border-white/10 bg-surface-1 p-0.5 ${
-        disabled ? 'opacity-60' : ''
-      }`}>
-      {segments.map((seg) => {
-        const active = value === seg.value;
-        return (
-          <button
-            key={seg.value}
-            type="button"
-            title={seg.hint}
-            disabled={disabled}
-            onClick={() => onChange?.(seg.value)}
-            className={`min-w-[2.25rem] rounded-[3px] px-2.5 py-1 text-xs font-medium transition-colors ${
-              active ? 'bg-accent text-white shadow-sm' : 'text-fg-muted hover:bg-white/5 hover:text-fg'
-            } ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-            {seg.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Effective-grant lookup
-// ---------------------------------------------------------------------------
-// Build a map of `${resource}:${verb}` -> { scope, source } that expands:
-//   - `*`                     (all permissions)
-//   - `${resource}:manage`    (every verb of that resource)
-//   - cross-resource groups   (a grant on a group key fans out to its members)
-// `source` is 'direct' | 'manage' | 'group' | 'wildcard' so the UI can show
-// derived grants as disabled ("via *", "via manage", "via group").
-function buildEffectiveGrants(role, registry) {
-  const result = new Map();
-  if (!role || !registry) return result;
-
-  const resources = registry.resources || [];
-  const groups = registry.groups || [];
-  const groupMembers = new Map(groups.map((g) => [g.key, g.members || []]));
-
-  // resourceKey -> verbs[]
-  const verbsByResource = new Map(resources.map((r) => [r.key, r.verbs || []]));
-
-  const stronger = (a, b) => ((SCOPE_RANK[a] || 0) >= (SCOPE_RANK[b] || 0) ? a : b);
-
-  const apply = (resourceKey, verb, scope, source) => {
-    const key = `${resourceKey}:${verb}`;
-    const existing = result.get(key);
-    if (!existing) {
-      result.set(key, { scope, source });
-      return;
-    }
-    // Keep the strongest scope; a direct grant always wins as the source.
-    const nextScope = stronger(existing.scope, scope);
-    const nextSource = source === 'direct' ? 'direct' : existing.source;
-    result.set(key, { scope: nextScope, source: nextSource });
-  };
-
-  // Expand a single (permission, scope) grant into concrete resource:verb pairs.
-  const expandGrant = (permission, scope) => {
-    if (permission === '*') {
-      for (const r of resources) {
-        for (const v of r.verbs || []) apply(r.key, v, scope, 'wildcard');
-      }
-      return;
-    }
-
-    const [resourcePart, verbPart] = permission.split(':');
-
-    // Cross-resource group grant (group key in the registry groups list).
-    if (groupMembers.has(resourcePart) && verbPart === undefined) {
-      for (const member of groupMembers.get(resourcePart)) {
-        expandGrantMember(member, scope, 'group');
-      }
-      return;
-    }
-    if (groupMembers.has(permission)) {
-      for (const member of groupMembers.get(permission)) {
-        expandGrantMember(member, scope, 'group');
-      }
-      return;
-    }
-
-    if (verbPart === 'manage') {
-      const verbs = verbsByResource.get(resourcePart) || [];
-      for (const v of verbs) apply(resourcePart, v, scope, 'manage');
-      return;
-    }
-
-    if (resourcePart && verbPart) {
-      apply(resourcePart, verbPart, scope, 'direct');
-    }
-  };
-
-  // A group member is itself a permission string (e.g. "firewall:read" or
-  // "firewall:manage" or another group key); expand it with a 'group' source.
-  const expandGrantMember = (member, scope, sourceTag) => {
-    const [resourcePart, verbPart] = member.split(':');
-    if (member === '*') {
-      for (const r of resources) {
-        for (const v of r.verbs || []) apply(r.key, v, scope, sourceTag);
-      }
-      return;
-    }
-    if (groupMembers.has(member)) {
-      for (const m of groupMembers.get(member)) expandGrantMember(m, scope, sourceTag);
-      return;
-    }
-    if (verbPart === 'manage') {
-      const verbs = verbsByResource.get(resourcePart) || [];
-      for (const v of verbs) apply(resourcePart, v, scope, sourceTag);
-      return;
-    }
-    if (resourcePart && verbPart) apply(resourcePart, verbPart, scope, sourceTag);
-  };
-
-  for (const grant of role.permissions || []) {
-    expandGrant(grant.permission, grant.scope);
-  }
-
-  return result;
-}
+import {
+  DEPARTMENTS_Q,
+  MEMBERS_Q,
+  SET_MEMBER_M,
+  REMOVE_MEMBER_M,
+  AUDIT_Q
+} from './_components/policies-gql';
+import {
+  NONE,
+  POLICY_TABS,
+  buildEffectiveGrants,
+  humanizeVerb
+} from './_components/policy-helpers';
+import {
+  createMemberColumns,
+  createAuditColumns,
+  createOverrideColumns
+} from './_components/policy-columns';
+import { RolesTab } from './_components/roles-tab';
+import { UsersTab } from './_components/users-tab';
+import { DepartmentsTab } from './_components/departments-tab';
+import { AuditTab } from './_components/audit-tab';
 
 export default function PoliciesListPage() {
   const router = useRouter();
@@ -317,6 +70,7 @@ export default function PoliciesListPage() {
   const {
     data: users,
     isLoading,
+    error: usersError,
     refresh
   } = useEnsureData('users', fetchUsers, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
@@ -406,6 +160,29 @@ export default function PoliciesListPage() {
   const [editDescription, setEditDescription] = useState('');
   const [activeTab, setActiveTab] = useState('roles');
 
+  // Shared confirm dialog (delete role / reset role / remove member). `action`
+  // resolves to true on success (dialog closes) or false on failure (dialog
+  // stays open, the action already surfaced its own error toast).
+  const [confirmState, setConfirmState] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const runConfirm = async () => {
+    if (!confirmState) return;
+    setConfirmLoading(true);
+    let ok = false;
+    try {
+      ok = await confirmState.action();
+    } finally {
+      setConfirmLoading(false);
+    }
+    if (ok) setConfirmState(null);
+  };
+  const closeConfirm = () => {
+    if (!confirmLoading) setConfirmState(null);
+  };
+
+  // Per-permission in-flight scope changes → optimistic value + disabled group.
+  const [pendingGrants, setPendingGrants] = useState({});
+
   // Pre-fill the edit fields from the selected role; selecting a role also
   // leaves "create" mode so the bottom panel always reflects the current intent.
   useEffect(() => {
@@ -414,6 +191,7 @@ export default function PoliciesListPage() {
       setEditDescription(selectedRole.description || '');
     }
     setCreating(false);
+    setPendingGrants({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoleId]);
 
@@ -461,35 +239,57 @@ export default function PoliciesListPage() {
     }
   };
 
-  const handleDeleteRole = async (role) => {
-    if (!canDeleteRole) return;
+  const doDeleteRole = async (role) => {
     try {
       await deleteRole({ variables: { id: role.id } });
       toast.success('Role deleted');
       if (selectedRoleId === role.id) setSelectedRoleId(null);
       await refetchRoles();
+      return true;
     } catch (err) {
       toast.error(err?.message || 'Could not delete role');
+      return false;
     }
+  };
+
+  const handleDeleteRole = (role) => {
+    if (!canDeleteRole) return;
+    const count = role.userCount ?? 0;
+    setConfirmState({
+      title: `Delete role "${role.name}"?`,
+      message:
+        count > 0
+          ? `${count} user${count === 1 ? '' : 's'} currently have this role and will lose it. This permanently deletes the role and its permission set and can't be undone.`
+          : `This permanently deletes the role and its permission set and can't be undone.`,
+      confirmLabel: 'Delete role',
+      destructive: true,
+      action: () => doDeleteRole(role)
+    });
   };
 
   // System presets (except the locked SUPER_ADMIN) can be reset to their seeded
   // defaults, discarding any in-place customizations.
-  const handleResetRole = async (role) => {
-    if (!role || !role.isSystem || role.key === 'SUPER_ADMIN' || !canEditRole) return;
-    if (
-      typeof window !== 'undefined' &&
-      !window.confirm(`Reset "${role.name}" to its default permissions? This discards any customizations.`)
-    ) {
-      return;
-    }
+  const doResetRole = async (role) => {
     try {
       await resetRoleToDefault({ variables: { roleId: role.id } });
       toast.success(`"${role.name}" reset to defaults`);
       await refetchRoles();
+      return true;
     } catch (err) {
       toast.error(err?.message || 'Could not reset role');
+      return false;
     }
+  };
+
+  const handleResetRole = (role) => {
+    if (!role || !role.isSystem || role.key === 'SUPER_ADMIN' || !canEditRole) return;
+    setConfirmState({
+      title: `Reset "${role.name}" to defaults?`,
+      message: 'This discards any in-place customizations and restores the seeded default permissions for this system role.',
+      confirmLabel: 'Reset to default',
+      destructive: false,
+      action: () => doResetRole(role)
+    });
   };
 
   // -------------------------------------------------------------------------
@@ -497,6 +297,12 @@ export default function PoliciesListPage() {
   // -------------------------------------------------------------------------
   const changeGrant = async (permission, nextValue) => {
     if (!selectedRole || roleEditLocked) return;
+    // Ignore racing clicks on a segment whose mutation is already in flight.
+    if (pendingGrants[permission] !== undefined) return;
+    // Optimistically render the chosen scope and lock the group until the
+    // round-trip lands. The mutation returns the full RoleFields fragment, so
+    // Apollo updates the cache itself — no extra refetchRoles() needed.
+    setPendingGrants((p) => ({ ...p, [permission]: nextValue }));
     try {
       if (nextValue === NONE) {
         await removeRolePermission({
@@ -507,9 +313,14 @@ export default function PoliciesListPage() {
           variables: { input: { roleId: selectedRole.id, permission, scope: nextValue } }
         });
       }
-      await refetchRoles();
     } catch (err) {
       toast.error(err?.message || 'Could not update permission');
+    } finally {
+      setPendingGrants((p) => {
+        const next = { ...p };
+        delete next[permission];
+        return next;
+      });
     }
   };
 
@@ -517,15 +328,21 @@ export default function PoliciesListPage() {
   // Department roles + audit log (PRESERVED verbatim from the prior page)
   // -------------------------------------------------------------------------
   const [departments, setDepartments] = useState([]);
+  const [deptError, setDeptError] = useState(null);
   const [selectedDept, setSelectedDept] = useState('');
   const [members, setMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState(null);
+  const [changingMemberRoleFor, setChangingMemberRoleFor] = useState('');
+  const [pendingMemberRole, setPendingMemberRole] = useState({});
   const [newUserId, setNewUserId] = useState('');
   const [newDeptRole, setNewDeptRole] = useState('MEMBER');
   const [savingMember, setSavingMember] = useState(false);
   const [audit, setAudit] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState(null);
 
-  const userList = users || [];
+  const userList = useMemo(() => users || [], [users]);
   const userNameById = useMemo(() => {
     const map = new Map();
     for (const u of userList) {
@@ -537,6 +354,7 @@ export default function PoliciesListPage() {
   // Loaders are cache-first by default (instant on revisit); pass force=true to
   // pull fresh from the network — after a mutation, a socket event, or Refresh.
   const loadDepartments = useCallback(async (force = false) => {
+    setDeptError(null);
     try {
       const { data } = await client.query({
         query: DEPARTMENTS_Q,
@@ -545,32 +363,47 @@ export default function PoliciesListPage() {
       const list = data?.departments ?? [];
       setDepartments(list);
       setSelectedDept((cur) => cur || (list[0]?.id ?? ''));
-    } catch {
-      // Department-scoped roles need the departments query; degrade quietly.
+    } catch (err) {
+      // Surface the failure so an empty picker isn't mistaken for "no departments".
+      setDeptError(err?.message || 'Could not load departments');
     }
   }, []);
 
+  const membersReqRef = useRef(0);
   const loadMembers = useCallback(async (departmentId, force = false) => {
     if (!departmentId) {
+      membersReqRef.current += 1;
       setMembers([]);
+      setMembersError(null);
+      setMembersLoading(false);
       return;
     }
+    const reqId = ++membersReqRef.current;
     setMembersLoading(true);
+    setMembersError(null);
     try {
       const { data } = await client.query({
         query: MEMBERS_Q,
         variables: { departmentId },
         fetchPolicy: force ? 'network-only' : 'cache-first'
       });
+      // Ignore a stale response: a newer load (e.g. a fast department switch)
+      // has superseded this one, so it must not overwrite the current list.
+      if (reqId !== membersReqRef.current) return;
       setMembers(data?.departmentMembers ?? []);
     } catch (err) {
-      toast.error(err?.message || 'Could not load department members');
+      if (reqId !== membersReqRef.current) return;
+      // Surface the failure inline so a failed load isn't mistaken for
+      // "no members" (and doesn't silently show the previous department's list).
+      setMembersError(err?.message || 'Could not load department members');
     } finally {
-      setMembersLoading(false);
+      if (reqId === membersReqRef.current) setMembersLoading(false);
     }
   }, []);
 
   const loadAudit = useCallback(async (force = false) => {
+    setAuditLoading(true);
+    setAuditError(null);
     try {
       const { data } = await client.query({
         query: AUDIT_Q,
@@ -578,8 +411,11 @@ export default function PoliciesListPage() {
         fetchPolicy: force ? 'network-only' : 'cache-first'
       });
       setAudit(data?.policyAuditLog ?? []);
-    } catch {
-      // Audit log is best-effort UI; ignore if unavailable.
+    } catch (err) {
+      // Distinguish a failed fetch from a genuinely empty log.
+      setAuditError(err?.message || 'Could not load the audit log');
+    } finally {
+      setAuditLoading(false);
     }
   }, []);
 
@@ -596,8 +432,9 @@ export default function PoliciesListPage() {
   }, [selectedDept, loadMembers]);
 
   const memberUserIds = useMemo(() => new Set(members.map((m) => m.userId)), [members]);
+  // The users query already excludes deleted users, so no !u.deleted filter here.
   const assignableUsers = useMemo(
-    () => userList.filter((u) => !u.deleted && !memberUserIds.has(u.id)),
+    () => userList.filter((u) => !memberUserIds.has(u.id)),
     [userList, memberUserIds]
   );
 
@@ -624,27 +461,56 @@ export default function PoliciesListPage() {
   };
 
   const changeMemberRole = async (member, role) => {
+    // Optimistically reflect the pick and disable the row's Select until the
+    // reload lands, so it doesn't visibly snap back to the old value.
+    setChangingMemberRoleFor(member.userId);
+    setPendingMemberRole((p) => ({ ...p, [member.userId]: role }));
     try {
       await client.mutate({
         mutation: SET_MEMBER_M,
         variables: { input: { departmentId: selectedDept, userId: member.userId, role } }
       });
+      toast.success('Department role updated');
       await loadMembers(selectedDept, true);
     } catch (err) {
       toast.error(err?.message || 'Could not update role');
+    } finally {
+      setChangingMemberRoleFor('');
+      setPendingMemberRole((p) => {
+        const next = { ...p };
+        delete next[member.userId];
+        return next;
+      });
     }
   };
 
-  const removeMember = async (member) => {
+  const doRemoveMember = async (member) => {
+    const who = member.userName || userNameById.get(member.userId) || member.userEmail || 'this user';
+    const deptName = departments.find((d) => d.id === selectedDept)?.name || 'the department';
     try {
       await client.mutate({
         mutation: REMOVE_MEMBER_M,
         variables: { departmentId: selectedDept, userId: member.userId }
       });
+      toast.success(`Removed ${who} from ${deptName}`);
       await loadMembers(selectedDept, true);
+      return true;
     } catch (err) {
       toast.error(err?.message || 'Could not remove member');
+      return false;
     }
+  };
+
+  const removeMember = (member) => {
+    const who = member.userName || userNameById.get(member.userId) || member.userEmail || 'this user';
+    const deptName = departments.find((d) => d.id === selectedDept)?.name || 'the department';
+    setConfirmState({
+      title: 'Remove department member?',
+      message: `Remove ${who} from ${deptName}? They will lose the department-scoped access this grants. This does not delete their account or global role.`,
+      confirmLabel: 'Remove member',
+      destructive: true,
+      action: () => doRemoveMember(member)
+    });
   };
 
   // -------------------------------------------------------------------------
@@ -654,7 +520,8 @@ export default function PoliciesListPage() {
 
   // Inline "user → role" management. Every user has exactly one role, so we show
   // the current one and let it be changed in place (no separate assign step).
-  const roleableUsers = useMemo(() => userList.filter((u) => !u.deleted), [userList]);
+  // The users query already excludes deleted users, so no !u.deleted filter here.
+  const roleableUsers = useMemo(() => userList, [userList]);
   const roleOptions = useMemo(() => roles.map((r) => ({ value: r.id, label: r.name })), [roles]);
   const systemRoleIdByKey = useMemo(() => {
     const m = new Map();
@@ -683,6 +550,7 @@ export default function PoliciesListPage() {
   const {
     data: overridesData,
     loading: overridesLoading,
+    error: overridesError,
     refetch: refetchOverrides
   } = useUserPermissionOverridesQuery({
     variables: { userId: overrideUserId },
@@ -776,8 +644,9 @@ export default function PoliciesListPage() {
         if (d.kind === 'userRole') L.refreshUsers?.();
         if (d.kind === 'override' && d.userId === L.overrideUserId) L.refetchOverrides?.();
         if (d.kind === 'member' && d.departmentId === L.selectedDept) L.loadMembers?.(L.selectedDept, true);
-        // Every governance change writes the audit log; refresh it if it's open.
-        if (L.activeTab === 'audit') L.loadAudit?.(true);
+        // Every governance change writes the audit log; it's a single cheap list,
+        // so keep it fresh unconditionally (the tab may be opened right after).
+        L.loadAudit?.(true);
       },
       ['create', 'update', 'delete']
     );
@@ -787,177 +656,22 @@ export default function PoliciesListPage() {
   }, []);
 
   // -------------------------------------------------------------------------
-  // Table column definitions
+  // Table column definitions (pure factories live in ./_components/policy-columns;
+  // memoised here with the same deps so behaviour is unchanged).
   // -------------------------------------------------------------------------
   const memberColumns = useMemo(
-    () => [
-    {
-      id: 'user',
-      header: 'User',
-      cell: ({ row }) =>
-      <div className="flex flex-col">
-            <span className="font-medium">{row.userName || row.userEmail}</span>
-            <span className="text-fg-muted text-xs">{row.userEmail}</span>
-          </div>
-    },
-    {
-      id: 'globalRole',
-      header: 'Global role',
-      width: 130,
-      cell: ({ row }) => <Badge tone="neutral">{roleLabel(row.userGlobalRole)}</Badge>
-    },
-    {
-      id: 'deptRole',
-      header: 'Department role',
-      width: 200,
-      cell: ({ row }) =>
-      <Select
-        value={row.role}
-        onChange={(v) => changeMemberRole(row, v)}
-        options={[
-        { value: 'MEMBER', label: 'Member' },
-        { value: 'MANAGER', label: 'Manager' }]
-        } />
-    },
-    {
-      id: 'actions',
-      header: '',
-      width: 90,
-      align: 'right',
-      cell: ({ row }) =>
-      <Button size="sm" variant="ghost" icon={<Trash2 size={12} />} onClick={() => removeMember(row)} />
-    }],
+    () => createMemberColumns({ changeMemberRole, removeMember, changingMemberRoleFor, pendingMemberRole }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedDept]
+    [selectedDept, changingMemberRoleFor, pendingMemberRole]
   );
 
-  const auditColumns = useMemo(
-    () => [
-    {
-      id: 'createdAt',
-      header: 'When',
-      width: 190,
-      cell: ({ row }) => <span className="text-sm text-fg-muted">{formatWhen(row.createdAt)}</span>
-    },
-    {
-      id: 'actorName',
-      header: 'Actor',
-      width: 170,
-      cell: ({ row }) => <span className="text-sm">{row.actorName || 'system'}</span>
-    },
-    {
-      id: 'summary',
-      header: 'Change',
-      cell: ({ row }) => <span className="text-sm">{row.summary}</span>
-    }],
-    []
-  );
+  const auditColumns = useMemo(() => createAuditColumns(), []);
 
   const overrideColumns = useMemo(
-    () => [
-    {
-      id: 'permission',
-      header: 'Permission',
-      cell: ({ row }) => <span className="font-mono text-xs">{row.permission}</span>
-    },
-    {
-      id: 'scope',
-      header: 'Scope',
-      width: 130,
-      cell: ({ row }) => <Badge tone="neutral">{SCOPE_LABEL[row.scope] || row.scope}</Badge>
-    },
-    {
-      id: 'effect',
-      header: 'Effect',
-      width: 110,
-      cell: ({ row }) =>
-      <Badge tone={row.effect === GrantEffect.Allow ? 'success' : 'danger'}>
-            {row.effect === GrantEffect.Allow ? 'Allow' : 'Deny'}
-          </Badge>
-    },
-    {
-      id: 'actions',
-      header: '',
-      width: 80,
-      align: 'right',
-      cell: ({ row }) =>
-      canGrantUser ?
-        <Button size="sm" variant="ghost" icon={<Trash2 size={12} />} onClick={() => handleClearOverride(row)} /> :
-        null
-    }],
+    () => createOverrideColumns({ canGrantUser, handleClearOverride }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [canGrantUser]
   );
-
-  // -------------------------------------------------------------------------
-  // Render helpers
-  // -------------------------------------------------------------------------
-  const renderResourceItem = (resource) => {
-    // The resource-level "manage" grant value (direct grant only).
-    const manageGrant = (selectedRole?.permissions || []).find(
-      (g) => g.permission === `${resource.key}:manage`
-    );
-    const manageValue = manageGrant ? manageGrant.scope : NONE;
-
-    return (
-      <div className="overflow-hidden rounded-sm border border-white/10 bg-surface">
-        <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-surface-1 px-3.5 py-2.5">
-          <div className="flex min-w-0 flex-col">
-            <span className="text-sm font-medium">Manage all</span>
-            <span className="text-xs text-fg-muted">Grant every action on this resource at once</span>
-          </div>
-          <ScopeSegmented
-            value={manageValue}
-            scoped={resource.scoped}
-            disabled={roleEditLocked}
-            onChange={(v) => changeGrant(`${resource.key}:manage`, v)} />
-        </div>
-
-        <div className="divide-y divide-[color:var(--harbor-border-subtle)]">
-          {(resource.verbs || []).map((verb) => {
-            const permission = `${resource.key}:${verb}`;
-            const directGrant = (selectedRole?.permissions || []).find(
-              (g) => g.permission === permission
-            );
-            const eff = effectiveGrants.get(permission);
-            const derived = eff && eff.source !== 'direct';
-            const value = directGrant ? directGrant.scope : derived ? eff.scope : NONE;
-
-            const derivedLabel =
-              eff?.source === 'wildcard'
-                ? 'via *'
-                : eff?.source === 'manage'
-                  ? 'via manage'
-                  : eff?.source === 'group'
-                    ? 'via group'
-                    : null;
-
-            return (
-              <div
-                key={permission}
-                className="flex items-center justify-between gap-3 px-3.5 py-2 transition-colors hover:bg-white/[0.03]">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="truncate text-sm" title={humanizeVerb(verb)}>
-                    {humanizeVerb(verb)}
-                  </span>
-                  {!roleReadOnly && derived && derivedLabel ? (
-                    <span title={`Inherited ${derivedLabel}`} className="shrink-0 text-fg-muted">
-                      <Lock size={11} />
-                    </span>
-                  ) : null}
-                </div>
-                <ScopeSegmented
-                  value={value}
-                  scoped={resource.scoped}
-                  disabled={roleEditLocked || derived}
-                  onChange={(v) => changeGrant(permission, v)} />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
 
   const rbacError = registryError || rolesError;
 
@@ -979,10 +693,11 @@ export default function PoliciesListPage() {
               variant="secondary"
               onClick={() => {
                 refresh();
-                refetchRoles();
+                refetchRoles().catch(() => {});
                 loadDepartments(true);
                 loadMembers(selectedDept, true);
                 loadAudit(true);
+                if (overrideUserId) refetchOverrides().catch(() => {});
               }}
               disabled={isLoading || rolesLoading || registryLoading}>
               <RefreshCw size={14} />
@@ -998,7 +713,14 @@ export default function PoliciesListPage() {
 
         {/* Section tabs — Harbor underline tabs: animated sliding underline +
             per-panel content swap (fade-up), both built into Tabs/TabPanel. */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} variant="underline">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v);
+            // The audit log must reflect changes just made on other tabs.
+            if (v === 'audit') loadAudit(true);
+          }}
+          variant="underline">
           <TabList className="w-full overflow-x-auto">
             {POLICY_TABS.map((t) => {
               const Icon = t.icon;
@@ -1014,429 +736,134 @@ export default function PoliciesListPage() {
           {/* Roles list + permission editor                                   */}
           {/* ---------------------------------------------------------------- */}
           <TabPanel value="roles" className="flex flex-col gap-4">
-            {activeTab === 'roles' && (
-              <>
-            <Alert tone="info" icon={<ShieldCheck size={14} />} title="SUPER_ADMIN is protected; changes are audited">
-              The SUPER_ADMIN role is read-only and always retains full control. Every role, override, and
-              department-role change is recorded in the Audit log tab.
-            </Alert>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[20rem_1fr]">
-          <SectionCard
-            icon={<ShieldCheck size={16} className="text-fg-muted" />}
-            title="Roles"
-            action={
-              canCreateRole ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<Plus size={14} />}
-                  onClick={() => {
-                    setNewRoleName('');
-                    setNewRoleDescription('');
-                    setCreating(true);
-                  }}>
-                  New
-                </Button>
-              ) : null
-            }>
-            <ResponsiveStack direction="col" gap={2}>
-              {rolesLoading && !roles.length ? (
-                <span className="text-fg-muted text-sm">Loading roles…</span>
-              ) : roles.length ? (
-                roles.map((role) => {
-                  const active = role.id === selectedRoleId;
-                  return (
-                    <div
-                      key={role.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setSelectedRoleId(role.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setSelectedRoleId(role.id);
-                        }
-                      }}
-                      className={`flex cursor-pointer items-center gap-2 rounded-sm border px-3 py-2 text-left transition-colors ${
-                        active
-                          ? 'border-white/20 bg-surface-2'
-                          : 'border-white/10 hover:bg-surface-2'
-                      }`}>
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="flex items-center gap-2 truncate text-sm font-medium">
-                          {role.name}
-                          {role.key === 'SUPER_ADMIN' ? (
-                            <Lock size={12} className="text-fg-muted" />
-                          ) : null}
-                        </span>
-                        {role.description ? (
-                          <span className="text-fg-muted truncate text-xs">{role.description}</span>
-                        ) : null}
-                      </div>
-                      {role.isSystem ? <Badge tone="info">system</Badge> : null}
-                      <Badge tone="neutral">{role.userCount ?? 0}</Badge>
-                      {!role.isSystem && canDeleteRole ? (
-                        <IconButton
-                          size="sm"
-                          variant="ghost"
-                          label="Delete role"
-                          icon={<Trash2 size={12} />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteRole(role);
-                          }} />
-                      ) : null}
-                    </div>
-                  );
-                })
-              ) : (
-                <EmptyState
-                  icon={<ShieldCheck size={18} />}
-                  title="No roles yet"
-                  description="Create a role below to start granting permissions." />
-              )}
-
-              <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-3">
-                {creating ? (
-                  <>
-                    <span className="text-xs font-medium text-fg-muted">Create a new role</span>
-                    <input
-                      className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
-                      placeholder="Role name"
-                      aria-label="New role name"
-                      value={newRoleName}
-                      onChange={(e) => setNewRoleName(e.target.value)} />
-                    <input
-                      className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
-                      placeholder="Description (optional)"
-                      aria-label="New role description"
-                      value={newRoleDescription}
-                      onChange={(e) => setNewRoleDescription(e.target.value)} />
-                    <div className="flex gap-2">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        icon={<Plus size={14} />}
-                        loading={creatingRole}
-                        onClick={handleCreateRole}>
-                        Create role
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setCreating(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </>
-                ) : selectedRole ? (
-                  roleReadOnly ? (
-                    <span className="text-xs text-fg-muted">
-                      This system role is locked — its name and permissions can’t be changed.
-                    </span>
-                  ) : !canEditRole ? (
-                    <span className="text-xs text-fg-muted">
-                      You don’t have permission to edit roles — this view is read-only.
-                    </span>
-                  ) : (
-                    <>
-                      <span className="text-xs font-medium text-fg-muted">
-                        Edit details{selectedRole.isSystem ? ' · system preset' : ''}
-                      </span>
-                      <input
-                        className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
-                        placeholder="Role name"
-                        aria-label="Role name"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)} />
-                      <input
-                        className="rounded-sm border border-white/10 bg-surface px-3 py-2 text-sm outline-none focus:border-white/20"
-                        placeholder="Description (optional)"
-                        aria-label="Role description"
-                        value={editDescription}
-                        onChange={(e) => setEditDescription(e.target.value)} />
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        loading={updatingRole}
-                        disabled={
-                          !editName.trim() ||
-                          (editName.trim() === selectedRole.name &&
-                            editDescription.trim() === (selectedRole.description || ''))
-                        }
-                        onClick={handleSaveRole}>
-                        Save changes
-                      </Button>
-                    </>
-                  )
-                ) : (
-                  <span className="text-xs text-fg-muted">Select a role to edit, or “New” to create one.</span>
-                )}
-              </div>
-            </ResponsiveStack>
-          </SectionCard>
-
-          <SectionCard
-            icon={<ShieldCheck size={16} className="text-fg-muted" />}
-            title={selectedRole ? `Permissions · ${selectedRole.name}` : 'Permissions'}
-            action={
-              <div className="flex items-center gap-2">
-                {selectedRole?.isSystem && selectedRole?.key !== 'SUPER_ADMIN' && canEditRole ? (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    icon={<RefreshCw size={14} />}
-                    loading={resettingRole}
-                    onClick={() => handleResetRole(selectedRole)}>
-                    Reset to default
-                  </Button>
-                ) : null}
-                {roleEditLocked ? (
-                  <Badge tone="warning" icon={<Lock size={12} />}>
-                    read-only
-                  </Badge>
-                ) : null}
-              </div>
-            }>
-            {!selectedRole ? (
-              <EmptyState
-                icon={<ShieldCheck size={18} />}
-                title="Select a role"
-                description="Pick a role on the left to edit its permissions." />
-            ) : registryLoading && !registry ? (
-              <span className="text-fg-muted text-sm">Loading permission registry…</span>
-            ) : !resourcesByGroup.length ? (
-              <EmptyState
-                icon={<ShieldCheck size={18} />}
-                title="No permissions registered"
-                description="The permission registry returned no resources." />
-            ) : (
-              <Accordion multiple defaultValue={resourcesByGroup[0]?.[1]?.[0]?.key}>
-                {resourcesByGroup.map(([group, groupResources]) => (
-                  <div key={group} className="space-y-2">
-                    <span className="text-fg-muted text-xs font-semibold uppercase tracking-wide">
-                      {group}
-                    </span>
-                    {groupResources.map((resource) => (
-                      <AccordionItem
-                        key={resource.key}
-                        value={resource.key}
-                        title={
-                          <span className="flex items-center gap-2">
-                            {resource.label}
-                            {!resource.scoped ? (
-                              <Badge tone="neutral">global</Badge>
-                            ) : null}
-                          </span>
-                        }>
-                        {renderResourceItem(resource)}
-                      </AccordionItem>
-                    ))}
-                  </div>
-                ))}
-              </Accordion>
-            )}
-          </SectionCard>
-        </div>
-              </>
-            )}
+            <RolesTab
+              canCreateRole={canCreateRole}
+              canDeleteRole={canDeleteRole}
+              canEditRole={canEditRole}
+              rolesLoading={rolesLoading}
+              roles={roles}
+              selectedRoleId={selectedRoleId}
+              setSelectedRoleId={setSelectedRoleId}
+              creating={creating}
+              setCreating={setCreating}
+              newRoleName={newRoleName}
+              setNewRoleName={setNewRoleName}
+              newRoleDescription={newRoleDescription}
+              setNewRoleDescription={setNewRoleDescription}
+              creatingRole={creatingRole}
+              handleCreateRole={handleCreateRole}
+              selectedRole={selectedRole}
+              roleReadOnly={roleReadOnly}
+              roleEditLocked={roleEditLocked}
+              editName={editName}
+              setEditName={setEditName}
+              editDescription={editDescription}
+              setEditDescription={setEditDescription}
+              updatingRole={updatingRole}
+              handleSaveRole={handleSaveRole}
+              handleDeleteRole={handleDeleteRole}
+              resettingRole={resettingRole}
+              handleResetRole={handleResetRole}
+              registryLoading={registryLoading}
+              registry={registry}
+              resourcesByGroup={resourcesByGroup}
+              effectiveGrants={effectiveGrants}
+              pendingGrants={pendingGrants}
+              changeGrant={changeGrant} />
           </TabPanel>
 
           {/* User access */}
           <TabPanel value="users" className="flex flex-col gap-4">
-        <SectionCard icon={<UserPlus size={16} className="text-fg-muted" />} title="User roles">
-          <ResponsiveStack direction="col" gap={2}>
-            <span className="text-fg-muted text-xs">
-              Every user has exactly one role — change it inline. Fine-grained per-user tweaks live in “Per-user overrides” below.
-            </span>
-            {!roleableUsers.length ? (
-              <EmptyState
-                icon={<UserPlus size={18} />}
-                title="No users"
-                description="There are no users to manage yet." />
-            ) : (
-              <div className="divide-y divide-[color:var(--harbor-border-subtle)] rounded-sm border border-white/10">
-                {roleableUsers.map((u) => (
-                  <div key={u.id} className="flex items-center justify-between gap-3 px-3.5 py-2">
-                    <div className="flex min-w-0 flex-col">
-                      <span className="truncate text-sm font-medium">{userNameById.get(u.id)}</span>
-                      <span className="truncate text-xs text-fg-muted">{u.email}</span>
-                    </div>
-                    <div className="w-56 shrink-0">
-                      <Select
-                        size="sm"
-                        value={u.roleId || systemRoleIdByKey.get(u.role)}
-                        disabled={changingRoleFor === u.id || !canAssignRole}
-                        onChange={(roleId) => handleChangeUserRole(u.id, roleId)}
-                        options={roleOptions} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ResponsiveStack>
-        </SectionCard>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* Per-user overrides                                               */}
-        {/* ---------------------------------------------------------------- */}
-        <SectionCard icon={<ShieldCheck size={16} className="text-fg-muted" />} title="Per-user overrides">
-          <div className="w-full lg:w-96">
-            <Select
-              label="User"
-              value={overrideUserId}
-              onChange={setOverrideUserId}
-              options={[
-              { value: '', label: '— pick a user —' },
-              ...userList
-                .filter((u) => !u.deleted)
-                .map((u) => ({ value: u.id, label: `${userNameById.get(u.id)} · ${u.email}` }))]
-              } />
-          </div>
-
-          {!overrideUserId ? (
-            <EmptyState
-              icon={<ShieldCheck size={18} />}
-              title="Pick a user"
-              description="Choose a user to view and manage their permission overrides." />
-          ) : (
-            <ResponsiveStack direction="col" gap={3}>
-              <ResponsiveStack direction={{ base: 'col', lg: 'row' }} gap={2} align="end">
-                <div className="flex-1 min-w-0">
-                  <Select
-                    label="Resource"
-                    value={overrideResource}
-                    onChange={(v) => { setOverrideResource(v); setOverrideVerb(''); }}
-                    options={[{ value: '', label: '— resource —' }, ...overrideResourceOptions]} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <Select
-                    label="Action"
-                    value={overrideVerb}
-                    onChange={setOverrideVerb}
-                    disabled={!overrideResource}
-                    options={[{ value: '', label: '— action —' }, ...overrideVerbOptions]} />
-                </div>
-                <div className="w-full lg:w-44">
-                  <Select
-                    label="Scope"
-                    value={overrideScope}
-                    onChange={setOverrideScope}
-                    options={[
-                    { value: PermissionScope.Own, label: 'Own' },
-                    { value: PermissionScope.Department, label: 'Department' },
-                    { value: PermissionScope.Any, label: 'Any' }]
-                    } />
-                </div>
-                <div className="w-full lg:w-36">
-                  <Select
-                    label="Effect"
-                    value={overrideEffect}
-                    onChange={setOverrideEffect}
-                    options={[
-                    { value: GrantEffect.Allow, label: 'Allow' },
-                    { value: GrantEffect.Deny, label: 'Deny' }]
-                    } />
-                </div>
-                <Button
-                  variant="primary"
-                  icon={<Plus size={14} />}
-                  loading={settingOverride}
-                  disabled={!overridePermission || !canGrantUser}
-                  onClick={handleAddOverride}>
-                  Add
-                </Button>
-              </ResponsiveStack>
-
-              {overridesLoading && !overrides.length ? (
-                <span className="text-fg-muted text-sm">Loading overrides…</span>
-              ) : overrides.length ? (
-                <DataTable rows={overrides} columns={overrideColumns} rowId={(r) => r.id} defaultDensity="compact" />
-              ) : (
-                <EmptyState
-                  icon={<ShieldCheck size={18} />}
-                  title="No overrides"
-                  description="This user inherits everything from their role(s). Add an override above to allow or deny a specific permission." />
-              )}
-            </ResponsiveStack>
-          )}
-        </SectionCard>
+            <UsersTab
+              roleableUsers={roleableUsers}
+              usersLoading={isLoading}
+              usersError={usersError}
+              refreshUsers={refresh}
+              overridesError={overridesError}
+              refetchOverrides={refetchOverrides}
+              userNameById={userNameById}
+              canAssignRole={canAssignRole}
+              changingRoleFor={changingRoleFor}
+              handleChangeUserRole={handleChangeUserRole}
+              roleOptions={roleOptions}
+              systemRoleIdByKey={systemRoleIdByKey}
+              overrideUserId={overrideUserId}
+              setOverrideUserId={setOverrideUserId}
+              userList={userList}
+              overrideResource={overrideResource}
+              setOverrideResource={setOverrideResource}
+              overrideVerb={overrideVerb}
+              setOverrideVerb={setOverrideVerb}
+              overrideScope={overrideScope}
+              setOverrideScope={setOverrideScope}
+              overrideEffect={overrideEffect}
+              setOverrideEffect={setOverrideEffect}
+              overrideResourceOptions={overrideResourceOptions}
+              overrideVerbOptions={overrideVerbOptions}
+              settingOverride={settingOverride}
+              overridePermission={overridePermission}
+              canGrantUser={canGrantUser}
+              handleAddOverride={handleAddOverride}
+              overridesLoading={overridesLoading}
+              overrides={overrides}
+              overrideColumns={overrideColumns} />
           </TabPanel>
 
           {/* Departments */}
           <TabPanel value="departments" className="flex flex-col gap-4">
-        <SectionCard icon={<Users size={16} className="text-fg-muted" />} title="Department members">
-          <ResponsiveStack direction={{ base: 'col', lg: 'row' }} gap={2} align="end">
-            <div className="w-full lg:w-72">
-              <Select
-                label="Department"
-                value={selectedDept}
-                onChange={setSelectedDept}
-                options={
-                departments.length ?
-                departments.map((d) => ({ value: d.id, label: d.name })) :
-                [{ value: '', label: '— no departments —' }]
-                } />
-            </div>
-            <div className="flex-1 min-w-0">
-              <Select
-                label="Add user"
-                value={newUserId}
-                onChange={setNewUserId}
-                options={[
-                { value: '', label: '— pick a user —' },
-                ...assignableUsers.map((u) => ({
-                  value: u.id,
-                  label: `${userNameById.get(u.id)} · ${u.email}`
-                }))]
-                } />
-            </div>
-            <div className="w-full lg:w-40">
-              <Select
-                label="Role"
-                value={newDeptRole}
-                onChange={setNewDeptRole}
-                options={[
-                { value: 'MEMBER', label: 'Member' },
-                { value: 'MANAGER', label: 'Manager' }]
-                } />
-            </div>
-            <Button
-              variant="primary"
-              icon={<Plus size={14} />}
-              loading={savingMember}
-              disabled={!selectedDept || !newUserId}
-              onClick={addMember}>
-              Add
-            </Button>
-          </ResponsiveStack>
-
-          {membersLoading ? (
-            <span className="text-fg-muted text-sm">Loading members…</span>
-          ) : members.length ? (
-            <DataTable rows={members} columns={memberColumns} rowId={(r) => r.id} defaultDensity="compact" />
-          ) : (
-            <EmptyState
-              icon={<Users size={18} />}
-              title="No department members"
-              description="Add a user above to grant them scoped access to this department (Manager can operate it; Member can view it)." />
-          )}
-        </SectionCard>
+            <DepartmentsTab
+              selectedDept={selectedDept}
+              setSelectedDept={setSelectedDept}
+              departments={departments}
+              deptError={deptError}
+              reloadDepartments={() => loadDepartments(true)}
+              newUserId={newUserId}
+              setNewUserId={setNewUserId}
+              assignableUsers={assignableUsers}
+              userNameById={userNameById}
+              newDeptRole={newDeptRole}
+              setNewDeptRole={setNewDeptRole}
+              savingMember={savingMember}
+              addMember={addMember}
+              membersLoading={membersLoading}
+              membersError={membersError}
+              reloadMembers={() => loadMembers(selectedDept, true)}
+              members={members}
+              memberColumns={memberColumns} />
           </TabPanel>
 
           {/* Audit log */}
           <TabPanel value="audit" className="flex flex-col gap-4">
-        <SectionCard icon={<History size={16} className="text-fg-muted" />} title="Access change log">
-          {audit.length ? (
-            <DataTable rows={audit} columns={auditColumns} rowId={(r) => r.id} defaultDensity="compact" />
-          ) : (
-            <EmptyState
-              icon={<History size={18} />}
-              title="No changes recorded yet"
-              description="Permission and department-role changes will appear here as they happen." />
-          )}
-        </SectionCard>
+            {audit.length >= 100 ? (
+              <Alert tone="info">
+                Showing the most recent 100 changes. Older history is not loaded.
+              </Alert>
+            ) : null}
+            <AuditTab
+              audit={audit}
+              auditColumns={auditColumns}
+              loading={auditLoading}
+              error={auditError}
+              onRetry={() => loadAudit(true)} />
           </TabPanel>
         </Tabs>
       </ResponsiveStack>
+
+      <Dialog open={!!confirmState} onClose={closeConfirm} size="sm">
+        <DialogTitle>{confirmState?.title}</DialogTitle>
+        <DialogDescription>{confirmState?.message}</DialogDescription>
+        <DialogButtons align="end">
+          <Button variant="ghost" onClick={closeConfirm} disabled={confirmLoading}>
+            Cancel
+          </Button>
+          <Button
+            variant={confirmState?.destructive ? 'destructive' : 'primary'}
+            loading={confirmLoading}
+            onClick={runConfirm}>
+            {confirmState?.confirmLabel || 'Confirm'}
+          </Button>
+        </DialogButtons>
+      </Dialog>
     </Page>);
 
 }

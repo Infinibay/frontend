@@ -44,15 +44,22 @@ const OS_TABS = [
   { id: "fedora", label: "Fedora" },
 ];
 
+// Rows are user-removable, so each carries a stable id to key by (indices
+// shift when a middle row is removed and would remount the wrong inputs).
+const makeParam = () => ({
+  id: crypto.randomUUID(),
+  name: "",
+  type: "string",
+  required: false,
+});
+
 export default function NewApplicationPage() {
   const dispatch = useDispatch();
   const router = useRouter();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [params, setParams] = useState([
-    { name: "", type: "string", required: false },
-  ]);
+  const [params, setParams] = useState([makeParam()]);
   const [scripts, setScripts] = useState({
     windows: "",
     ubuntu: "",
@@ -75,8 +82,7 @@ export default function NewApplicationPage() {
     []
   );
 
-  const addParam = () =>
-    setParams((prev) => [...prev, { name: "", type: "string", required: false }]);
+  const addParam = () => setParams((prev) => [...prev, makeParam()]);
   const removeParam = (i) =>
     setParams((prev) => prev.filter((_, idx) => idx !== i));
   const updateParam = (i, patch) =>
@@ -108,6 +114,14 @@ export default function NewApplicationPage() {
       return acc;
     }, {});
 
+    // installCommand is a JSONObject scalar mapping OS -> command string; keep
+    // only the OSes that actually have a script, and derive the supported-OS
+    // list from that same set rather than hardcoding all three.
+    const installCommand = Object.fromEntries(
+      Object.entries(scripts).filter(([, v]) => v.trim() !== "")
+    );
+    const os = Object.keys(installCommand);
+
     setSaving(true);
     try {
       const created = await dispatch(
@@ -115,8 +129,8 @@ export default function NewApplicationPage() {
           name: name.trim(),
           description: description.trim(),
           parameters,
-          os: ["windows", "ubuntu", "fedora"],
-          installCommand: JSON.stringify(scripts),
+          os,
+          installCommand,
         })
       ).unwrap();
       toast.success(`Application "${name}" created`);
@@ -195,7 +209,7 @@ export default function NewApplicationPage() {
           ) : (
             <ResponsiveStack direction="col" gap={2}>
               {params.map((p, i) => (
-                <Card key={i} variant="default">
+                <Card key={p.id} variant="default">
                   <ResponsiveStack direction="row" gap={2} align="center">
                     <TextField
                       placeholder="name"

@@ -22,6 +22,7 @@ import {
   AppHeader,
   Breadcrumbs,
   Button,
+  IconButton,
   ResponsiveStack,
   Spinner,
 } from '@infinibay/harbor';
@@ -148,15 +149,13 @@ function GlobalHeaderInner({ onMenuClick }) {
       {/* Hamburger: opens the nav drawer below lg, where the static sidebar
           is hidden. Hidden on lg+ where the sidebar is always present. */}
       <span className="lg:hidden">
-        <Button
+        <IconButton
           variant="ghost"
           size="sm"
           icon={<Menu size={16} />}
           onClick={() => onMenuClick?.()}
-          title="Open navigation"
-        >
-          {''}
-        </Button>
+          label="Open navigation"
+        />
       </span>
 
       {backButton ? (
@@ -185,7 +184,11 @@ function GlobalHeaderInner({ onMenuClick }) {
         </h1>
       ) : null}
 
-      {subtitle ? <span>{subtitle.text}</span> : null}
+      {subtitle ? (
+        <span className={subtitle.className || 'text-sm text-fg-muted truncate'}>
+          {subtitle.text}
+        </span>
+      ) : null}
     </ResponsiveStack>
   );
 
@@ -194,15 +197,14 @@ function GlobalHeaderInner({ onMenuClick }) {
       {operator ? <NotificationBell /> : null}
 
       {helpConfig ? (
-        <Button
+        <IconButton
           variant="ghost"
           size="sm"
           icon={<HelpCircle size={14} />}
           onClick={() => setHelpSheetOpen(true)}
+          label={helpTooltip || 'Help'}
           title={helpTooltip || 'Help'}
-        >
-          {''}
-        </Button>
+        />
       ) : null}
 
       {actions.map((action) => {

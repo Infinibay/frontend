@@ -5095,6 +5095,13 @@ export type VmDetailedInfoQueryVariables = Exact<{
 
 export type VmDetailedInfoQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, createdAt: string | null, configuration: { [key: string]: any } | null, localIP: string | null, publicIP: string | null, department: { __typename?: 'DepartmentType', id: string, name: string } | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number } | null, user: { __typename?: 'UserType', id: string, email: string, firstName: string, lastName: string, role: string } | null } | null };
 
+export type GetVmHealthStatusQueryVariables = Exact<{
+  vmId: Scalars['ID']['input'];
+}>;
+
+
+export type GetVmHealthStatusQuery = { __typename?: 'Query', getVMHealthStatus: { __typename?: 'HealthCheckStatus', vmId: string, overallScore: number, success: boolean, timestamp: string, error: string | null, checks: Array<{ __typename?: 'HealthCheckResult', checkName: string, message: string, details: string | null, severity: HealthCheckSeverity, timestamp: string }> } };
+
 export type GetVmRecommendationsQueryVariables = Exact<{
   vmId: Scalars['ID']['input'];
   filter: InputMaybe<RecommendationFilterInput>;
@@ -12695,6 +12702,63 @@ export type VmDetailedInfoSuspenseQueryHookResult = ReturnType<typeof useVmDetai
 export type VmDetailedInfoQueryResult = ApolloReactCommon.QueryResult<VmDetailedInfoQuery, VmDetailedInfoQueryVariables>;
 export function refetchVmDetailedInfoQuery(variables: VmDetailedInfoQueryVariables) {
       return { query: VmDetailedInfoDocument, variables: variables }
+    }
+export const GetVmHealthStatusDocument = gql`
+    query GetVMHealthStatus($vmId: ID!) {
+  getVMHealthStatus(vmId: $vmId) {
+    vmId
+    overallScore
+    success
+    timestamp
+    error
+    checks {
+      checkName
+      message
+      details
+      severity
+      timestamp
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetVmHealthStatusQuery__
+ *
+ * To run a query within a React component, call `useGetVmHealthStatusQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetVmHealthStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetVmHealthStatusQuery({
+ *   variables: {
+ *      vmId: // value for 'vmId'
+ *   },
+ * });
+ */
+export function useGetVmHealthStatusQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetVmHealthStatusQuery, GetVmHealthStatusQueryVariables> & ({ variables: GetVmHealthStatusQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetVmHealthStatusQuery, GetVmHealthStatusQueryVariables>(GetVmHealthStatusDocument, options);
+      }
+export function useGetVmHealthStatusLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetVmHealthStatusQuery, GetVmHealthStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetVmHealthStatusQuery, GetVmHealthStatusQueryVariables>(GetVmHealthStatusDocument, options);
+        }
+// @ts-ignore
+export function useGetVmHealthStatusSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetVmHealthStatusQuery, GetVmHealthStatusQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetVmHealthStatusQuery, GetVmHealthStatusQueryVariables>;
+export function useGetVmHealthStatusSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetVmHealthStatusQuery, GetVmHealthStatusQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetVmHealthStatusQuery | undefined, GetVmHealthStatusQueryVariables>;
+export function useGetVmHealthStatusSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetVmHealthStatusQuery, GetVmHealthStatusQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetVmHealthStatusQuery, GetVmHealthStatusQueryVariables>(GetVmHealthStatusDocument, options);
+        }
+export type GetVmHealthStatusQueryHookResult = ReturnType<typeof useGetVmHealthStatusQuery>;
+export type GetVmHealthStatusLazyQueryHookResult = ReturnType<typeof useGetVmHealthStatusLazyQuery>;
+export type GetVmHealthStatusSuspenseQueryHookResult = ReturnType<typeof useGetVmHealthStatusSuspenseQuery>;
+export type GetVmHealthStatusQueryResult = ApolloReactCommon.QueryResult<GetVmHealthStatusQuery, GetVmHealthStatusQueryVariables>;
+export function refetchGetVmHealthStatusQuery(variables: GetVmHealthStatusQueryVariables) {
+      return { query: GetVmHealthStatusDocument, variables: variables }
     }
 export const GetVmRecommendationsDocument = gql`
     query getVMRecommendations($vmId: ID!, $filter: RecommendationFilterInput, $refresh: Boolean) {

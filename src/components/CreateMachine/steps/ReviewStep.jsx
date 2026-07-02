@@ -5,7 +5,6 @@ import {
   Badge,
   Card,
   EmptyState,
-  Page,
   PropertyList,
   ResponsiveGrid,
   ResponsiveStack,
@@ -115,17 +114,7 @@ export function ReviewStep() {
   ];
 
   const featureFlags = [
-    blueprint.backup && {
-      tone: 'success',
-      title: 'Backup enabled',
-      body: 'Daily backups will be performed automatically.',
-    },
-    blueprint.highAvailability && {
-      tone: 'success',
-      title: 'High availability',
-      body: 'Automatic failover protection is enabled.',
-    },
-    (blueprint.gpuEnabled || values.gpu?.gpuInfo) && {
+    values.gpu?.gpuInfo && {
       tone: 'success',
       title: 'GPU support',
       body: 'GPU acceleration is enabled for this machine.',
@@ -133,7 +122,7 @@ export function ReviewStep() {
   ].filter(Boolean);
 
   return (
-    <Page size="lg">
+    <ResponsiveStack direction="col" gap={6}>
         <ResponsiveGrid columns={{ base: 1, lg: 2 }} gap={6}>
           <Card
             variant="default"
@@ -249,6 +238,6 @@ export function ReviewStep() {
             ))}
           </ResponsiveStack>
         )}
-    </Page>
+    </ResponsiveStack>
   );
 }

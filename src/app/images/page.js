@@ -2,25 +2,33 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { gql } from '@apollo/client';
 import { toast } from 'sonner';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { getSocketService } from '@/services/socketService';
 import {
   Page,
   Badge,
   Button,
   EmptyState,
+  ErrorState,
   IconButton,
   Menu,
   MenuItem,
   ResponsiveStack,
   Dialog,
   DialogTitle,
+  DialogDescription,
   DialogBody,
+  DialogButtons,
   TextField,
   Textarea,
   Select,
+  Checkbox,
+  ToggleGroup,
+  Progress,
+  Skeleton,
 } from '@infinibay/harbor';
 import {
   Plus,
@@ -33,6 +41,9 @@ import {
 
 import client from '@/apollo-client';
 import { PageHeader } from '@/components/common/PageHeader';
+import { RowContextMenu } from '@/components/common/RowContextMenu';
+import { fetchTemplates } from '@/state/slices/templates';
+import { fetchVms } from '@/state/slices/vms';
 import { createDebugger } from '@/utils/debug';
 
 const debug = createDebugger('frontend:pages:images');
@@ -148,6 +159,20 @@ const STATUS_TONE = {
   failed: 'danger',
 };
 
+const STEP_LABELS = {
+  queued: 'Queued',
+  creating_temp_vm: 'Creating temp VM',
+  spawning_vm: 'Spawning VM',
+  waiting_for_agent: 'Waiting for agent',
+  sealing: 'Sealing image',
+  waiting_for_shutdown: 'Waiting for shutdown',
+  promoting_disk: 'Promoting disk',
+  stopping_source: 'Stopping source',
+  cloning_disk: 'Cloning disk',
+  starting_for_seal: 'Starting for seal',
+  preparing: 'Preparing',
+};
+
 /**
  * Group images into families. A family is the root (no parentImageId) plus
  * every descendant reachable via parentImageId. Ungrouped images appear as
@@ -183,9 +208,16 @@ function groupIntoFamilies(images) {
 export default function GoldenImagesPage() {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [prefillMachineId, setPrefillMachineId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const progressRef = useRef({});
+  // Tracks row mutations currently in flight (keyed by `${resultKey}:${id}`) so a
+  // rapid double-click on a Publish/Deprecate/Retry action can't fire the same
+  // mutation twice.
+  const inFlightRef = useRef(new Set());
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -196,7 +228,6 @@ export default function GoldenImagesPage() {
   useEffect(() => {
     const capture = searchParams?.get('capture');
     if (capture) {
-       
       setPrefillMachineId(capture);
       setDialogOpen(true);
       router.replace('/images');
@@ -210,17 +241,31 @@ export default function GoldenImagesPage() {
         query: GOLDEN_IMAGES_QUERY,
         fetchPolicy: 'network-only',
       });
-      setImages(data?.goldenImages ?? []);
+      const next = data?.goldenImages ?? [];
+      // Prune stale progress entries for images that are no longer building
+      // so a finished build doesn't leave a dangling progress bar behind.
+      const building = new Set(
+        next.filter((img) => img.status === 'building').map((img) => img.id)
+      );
+      for (const id of Object.keys(progressRef.current)) {
+        if (!building.has(id)) delete progressRef.current[id];
+      }
+      setImages(next);
+      setError(null);
     } catch (err) {
       debug.error('fetch', err);
-      toast.error(`Failed to load golden images: ${err.message}`);
+      const message = err.message || 'Failed to load golden images';
+      setError(message);
+      // The empty-state branch renders a persistent ErrorState; when a refresh
+      // fails while a list is already on screen that branch never shows, so
+      // surface a toast too rather than failing silently.
+      toast.error(`Failed to load golden images: ${message}`);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-     
     fetchImages();
   }, [fetchImages]);
 
@@ -246,11 +291,20 @@ export default function GoldenImagesPage() {
       unsubUpdate = socketService.subscribeToResource('golden_images', 'update', (event) => {
         const d = event?.data;
         if (!d?.id) return;
-        setImages((prev) =>
-          prev.map((img) =>
+        // A build that has moved past 'building' no longer needs its transient
+        // progress entry; drop it so the row stops rendering a progress bar.
+        if (d.status && d.status !== 'building') delete progressRef.current[d.id];
+        let known = false;
+        setImages((prev) => {
+          known = prev.some((img) => img.id === d.id);
+          if (!known) return prev;
+          return prev.map((img) =>
             img.id === d.id ? { ...img, ...d, updatedAt: d.updatedAt ?? img.updatedAt } : img
-          )
-        );
+          );
+        });
+        // The event references an image we don't have yet (created elsewhere,
+        // or a family member we never fetched) — reconcile with a full refetch.
+        if (!known) fetchImages();
       });
     } catch (err) {
       debug.warn('WebSocket subscription for golden_images failed', err);
@@ -260,22 +314,57 @@ export default function GoldenImagesPage() {
       unsubProgress?.();
       unsubUpdate?.();
     };
-  }, []);
+  }, [fetchImages]);
 
   const families = useMemo(() => groupIntoFamilies(images), [images]);
 
+  // resultKey is the mutation's top-level field. The publish/deprecate/retry
+  // mutations return a { success, error } envelope (HTTP 200 even on failure),
+  // so we must inspect it rather than relying on a thrown error.
   const onAction = useCallback(
-    async (mutation, id, successMsg) => {
+    async (mutation, id, successMsg, resultKey) => {
+      const key = `${resultKey}:${id}`;
+      if (inFlightRef.current.has(key)) return;
+      inFlightRef.current.add(key);
       try {
-        await client.mutate({ mutation, variables: { id } });
+        const { data } = await client.mutate({ mutation, variables: { id } });
+        const payload = data?.[resultKey];
+        if (!payload?.success) {
+          throw new Error(payload?.error || 'Operation failed');
+        }
         toast.success(successMsg);
         fetchImages();
       } catch (err) {
-        toast.error(err.message);
+        toast.error(err.message || 'Operation failed');
+      } finally {
+        inFlightRef.current.delete(key);
       }
     },
     [fetchImages]
   );
+
+  // Delete returns a bare Boolean, so its success check differs from the
+  // envelope mutations above. The confirm dialog stays open on failure.
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: DELETE,
+        variables: { id: deleteTarget.id },
+      });
+      if (data?.deleteGoldenImage !== true) {
+        throw new Error('Delete failed');
+      }
+      toast.success(`Deleted ${deleteTarget.name} v${deleteTarget.version}`);
+      setDeleteTarget(null);
+      fetchImages();
+    } catch (err) {
+      toast.error(err.message || 'Delete failed');
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteTarget, fetchImages]);
 
   return (
     <Page>
@@ -306,7 +395,35 @@ export default function GoldenImagesPage() {
         />
 
         {loading && images.length === 0 ? (
-          <div className="text-fg-muted text-sm">Loading…</div>
+          <div className="flex flex-col gap-4" aria-busy="true" aria-label="Loading golden images">
+            {[0, 1].map((f) => (
+              <section key={f} className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 pb-2 border-b border-[color:var(--harbor-border-subtle)]">
+                  <Skeleton height={20} width={180} />
+                  <Skeleton height={14} width={120} />
+                </div>
+                <div className="flex flex-col gap-2">
+                  {[0, 1].map((r) => (
+                    <div key={r} className="flex items-center gap-3 py-2 px-2">
+                      <Skeleton height={16} width={32} />
+                      <Skeleton height={20} width={72} />
+                      <div className="flex-1">
+                        <Skeleton height={14} />
+                      </div>
+                      <Skeleton height={14} width={60} />
+                      <Skeleton height={14} width={64} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : error && images.length === 0 ? (
+          <ErrorState
+            title="Couldn’t load golden images"
+            description={error}
+            onRetry={fetchImages}
+          />
         ) : images.length === 0 ? (
           <EmptyState
             title="No golden images yet"
@@ -318,40 +435,51 @@ export default function GoldenImagesPage() {
             }
           />
         ) : (
-           
-          families.map(({ root, versions }) => (
-            <section key={root.id} className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-3 pb-2 border-b border-white/5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-base font-semibold m-0">{root.name}</h2>
-                  <span className="text-fg-muted text-xs">
-                    · {root.osType}
-                    {root.osVersion ? ` ${root.osVersion}` : ''} · {versions.length}{' '}
-                    version{versions.length !== 1 ? 's' : ''}
-                  </span>
+          <RowContextMenu
+            rows={images}
+            buildItems={(img) => buildRowItems(img, { onAction, onRequestDelete: setDeleteTarget })}
+            labelFor={(img) => `${img.name} · v${img.version}`}
+          >
+            <div className="flex flex-col gap-4">
+            {families.map(({ root, versions }) => (
+              <section key={root.id} className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3 pb-2 border-b border-[color:var(--harbor-border-subtle)]">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-base font-semibold m-0">{root.name}</h2>
+                    <span className="text-fg-muted text-xs">
+                      · {root.osType}
+                      {root.osVersion ? ` ${root.osVersion}` : ''} · {versions.length}{' '}
+                      version{versions.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex flex-col divide-y divide-[color:var(--harbor-border-subtle)]">
-                {versions
-                  .slice()
-                  .reverse()
-                  .map((v) => (
+                <div className="flex flex-col divide-y divide-[color:var(--harbor-border-subtle)]">
+                  {versions
+                    .slice()
+                    .reverse()
+                    .map((v) => (
                       <GoldenImageRow
-                      key={v.id}
-                      image={v}
-                      progress={progressRef.current[v.id]}
-                      onPublish={() => onAction(PUBLISH, v.id, `Published ${v.name} v${v.version}`)}
-                      onDeprecate={() =>
-                        onAction(DEPRECATE, v.id, `Deprecated ${v.name} v${v.version}`)
-                      }
-                      onRetry={() => onAction(RETRY_BUILD, v.id, `Retrying build for ${v.name} v${v.version}`)}
-                      onDelete={() => onAction(DELETE, v.id, `Deleted ${v.name} v${v.version}`)}
-                    />
-                  ))}
-              </div>
-            </section>
-          ))
+                        key={v.id}
+                        image={v}
+                        progress={progressRef.current[v.id]}
+                        onPublish={() =>
+                          onAction(PUBLISH, v.id, `Published ${v.name} v${v.version}`, 'publishGoldenImage')
+                        }
+                        onDeprecate={() =>
+                          onAction(DEPRECATE, v.id, `Deprecated ${v.name} v${v.version}`, 'deprecateGoldenImage')
+                        }
+                        onRetry={() =>
+                          onAction(RETRY_BUILD, v.id, `Retrying build for ${v.name} v${v.version}`, 'retryBuildGoldenImage')
+                        }
+                        onDelete={() => setDeleteTarget(v)}
+                      />
+                    ))}
+                </div>
+              </section>
+            ))}
+            </div>
+          </RowContextMenu>
         )}
       </ResponsiveStack>
 
@@ -369,6 +497,24 @@ export default function GoldenImagesPage() {
           }}
         />
       )}
+
+      <Dialog open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} size="sm">
+        <DialogTitle>
+          {deleteTarget ? `Delete ${deleteTarget.name} v${deleteTarget.version}?` : 'Delete golden image'}
+        </DialogTitle>
+        <DialogDescription>
+          This permanently removes the sealed qcow2. Existing clones are unaffected, but you
+          won’t be able to create new desktops from this version.
+        </DialogDescription>
+        <DialogButtons>
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={confirmDelete} loading={deleting}>
+            Delete
+          </Button>
+        </DialogButtons>
+      </Dialog>
     </Page>
   );
 }
@@ -377,42 +523,69 @@ export default function GoldenImagesPage() {
 // Row
 // ---------------------------------------------------------------------------
 
+// Shared between the kebab Menu and the right-click RowContextMenu so both
+// surfaces offer exactly the same actions for a given image.
+function buildRowItems(image, { onAction, onRequestDelete }) {
+  const items = [];
+  if (image.status === 'draft') {
+    items.push({
+      label: 'Publish',
+      icon: <CheckCircle2 size={14} />,
+      onSelect: () => onAction(PUBLISH, image.id, `Published ${image.name} v${image.version}`, 'publishGoldenImage'),
+    });
+  }
+  if (image.status === 'published') {
+    items.push({
+      label: 'Deprecate',
+      icon: <CircleSlash size={14} />,
+      onSelect: () => onAction(DEPRECATE, image.id, `Deprecated ${image.name} v${image.version}`, 'deprecateGoldenImage'),
+    });
+  }
+  if (image.status === 'failed') {
+    items.push({
+      label: 'Retry build',
+      icon: <RefreshCcw size={14} />,
+      onSelect: () => onAction(RETRY_BUILD, image.id, `Retrying build for ${image.name} v${image.version}`, 'retryBuildGoldenImage'),
+    });
+  }
+  items.push({
+    label: 'Delete',
+    icon: <Trash2 size={14} />,
+    danger: true,
+    onSelect: () => onRequestDelete(image),
+  });
+  return items;
+}
+
 function GoldenImageRow({ image, progress, onPublish, onDeprecate, onRetry, onDelete }) {
   const tone = STATUS_TONE[image.status] || 'neutral';
   const isBuilding = image.status === 'building';
+  // `progress` is only present once a live 'progress' socket event has arrived.
+  // Until then (e.g. right after a page load mid-build) we render an
+  // indeterminate bar instead of a misleading "· 0%".
+  const hasProgress = !!progress;
   const pct = progress?.progressPercent ?? 0;
   const step = progress?.step ?? '';
-
-  const STEP_LABELS = {
-    queued: 'Queued',
-    creating_temp_vm: 'Creating temp VM',
-    spawning_vm: 'Spawning VM',
-    waiting_for_agent: 'Waiting for agent',
-    sealing: 'Sealing image',
-    waiting_for_shutdown: 'Waiting for shutdown',
-    promoting_disk: 'Promoting disk',
-    stopping_source: 'Stopping source',
-    cloning_disk: 'Cloning disk',
-    starting_for_seal: 'Starting for seal',
-    preparing: 'Preparing',
-  };
+  const stepLabel = STEP_LABELS[step] || step;
 
   return (
-    <div className="flex items-center gap-3 py-2 px-2">
+    <div role="row" data-row-id={image.id} className="flex items-center gap-3 py-2 px-2">
       <span className="font-mono text-sm w-12 shrink-0">v{image.version}</span>
       <Badge tone={tone}>
         {image.status}
       </Badge>
       {isBuilding && (
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden min-w-[80px] max-w-[160px]">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-300"
-              style={{ width: `${Math.min(pct, 100)}%` }}
+          <div className="flex-1 min-w-[80px] max-w-[160px]">
+            <Progress
+              value={pct}
+              tone="purple"
+              indeterminate={!hasProgress}
+              showValue={false}
             />
           </div>
           <span className="text-xs text-fg-muted whitespace-nowrap">
-            {STEP_LABELS[step] || step} · {pct}%
+            {hasProgress ? `${stepLabel ? `${stepLabel} · ` : ''}${pct}%` : 'Building…'}
           </span>
         </div>
       )}
@@ -446,11 +619,7 @@ function GoldenImageRow({ image, progress, onPublish, onDeprecate, onRetry, onDe
         <MenuItem
           icon={<Trash2 size={14} />}
           danger
-          onClick={() => {
-            if (confirm(`Delete ${image.name} v${image.version}? This removes the sealed qcow2.`)) {
-              onDelete();
-            }
-          }}
+          onClick={onDelete}
         >
           Delete
         </MenuItem>
@@ -464,9 +633,21 @@ function GoldenImageRow({ image, progress, onPublish, onDeprecate, onRetry, onDe
 // ---------------------------------------------------------------------------
 
 function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
+  const dispatch = useDispatch();
   const [mode, setMode] = useState(prefillMachineId ? 'desktop' : 'blueprint');
   const templates = useSelector((s) => s.templates?.items ?? []);
+  const templatesLoading = useSelector((s) => s.templates?.loading?.fetch ?? false);
   const vms = useSelector((s) => s.vms?.items ?? []);
+  const vmsLoading = useSelector((s) => s.vms?.loading?.fetch ?? false);
+
+  // Neither blueprints nor desktops are part of this page's own data tier, so
+  // fetch both when the dialog mounts — otherwise the "From Blueprint" and
+  // "From existing Desktop" Selects are empty on a fresh session (and a
+  // ?capture=<vmId> prefill can't resolve to an option) with no indication why.
+  useEffect(() => {
+    dispatch(fetchTemplates());
+    dispatch(fetchVms());
+  }, [dispatch]);
 
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
@@ -523,7 +704,7 @@ function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
       }
       onCreated();
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || 'Something went wrong');
     } finally {
       setSubmitting(false);
     }
@@ -534,22 +715,15 @@ function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
       <DialogTitle>New Golden Image</DialogTitle>
       <DialogBody>
       <div className="flex flex-col gap-4 w-full">
-        <div className="flex gap-1 p-1 bg-white/5 rounded-md self-start">
-          <button
-            className={`px-3 py-1 text-sm rounded ${mode === 'blueprint' ? 'bg-white/10' : 'text-fg-muted'}`}
-            onClick={() => setMode('blueprint')}
-            type="button"
-          >
-            From Blueprint
-          </button>
-          <button
-            className={`px-3 py-1 text-sm rounded ${mode === 'desktop' ? 'bg-white/10' : 'text-fg-muted'}`}
-            onClick={() => setMode('desktop')}
-            type="button"
-          >
-            From existing Desktop
-          </button>
-        </div>
+        <ToggleGroup
+          className="self-start"
+          value={mode}
+          onChange={(v) => setMode(Array.isArray(v) ? v[0] : v)}
+          items={[
+            { value: 'blueprint', label: 'From Blueprint' },
+            { value: 'desktop', label: 'From existing Desktop' },
+          ]}
+        />
 
         <TextField
           label="Name"
@@ -560,47 +734,74 @@ function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
         />
 
         {mode === 'blueprint' ? (
-          <Select
-            label="Blueprint"
-            value={templateId}
-            onChange={setTemplateId}
-            options={[
-              { value: '', label: '— pick a blueprint —' },
-              ...templates.map((t) => ({ value: t.id, label: t.name })),
-            ]}
-          />
-        ) : (
-          <>
+          <div className="flex flex-col gap-1">
             <Select
-              label="Source desktop"
-              value={machineId}
-              onChange={setMachineId}
+              label="Blueprint"
+              value={templateId}
+              onChange={setTemplateId}
+              disabled={templatesLoading}
               options={[
-                { value: '', label: '— pick a desktop —' },
-                ...eligibleVms.map((v) => ({ value: v.id, label: `${v.name} · ${v.os}` })),
+                {
+                  value: '',
+                  label: templatesLoading ? 'Loading blueprints…' : '— pick a blueprint —',
+                },
+                ...templates.map((t) => ({ value: t.id, label: t.name })),
               ]}
             />
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={sanitizeUserData}
-                onChange={(e) => setSanitizeUserData(e.target.checked)}
+            {!templatesLoading && templates.length === 0 && (
+              <p className="text-xs text-fg-muted m-0">
+                No blueprints yet.{' '}
+                <Link
+                  href="/blueprints/new"
+                  className="underline text-[rgb(var(--harbor-accent))]"
+                >
+                  Create one
+                </Link>{' '}
+                to build a golden image from a blueprint.
+              </p>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-1">
+              <Select
+                label="Source desktop"
+                value={machineId}
+                onChange={setMachineId}
+                disabled={vmsLoading}
+                options={[
+                  {
+                    value: '',
+                    label: vmsLoading ? 'Loading desktops…' : '— pick a desktop —',
+                  },
+                  ...eligibleVms.map((v) => {
+                    // `os` isn't a top-level field on the machines query; it lives
+                    // in the JSON `configuration`. Guard so the label never reads
+                    // "name · undefined".
+                    const os = v.configuration?.os || v.os;
+                    return { value: v.id, label: os ? `${v.name} · ${os}` : v.name };
+                  }),
+                ]}
               />
-              Sanitize user data (remove home directories / profiles)
-            </label>
-            <label className="flex items-start gap-2 text-sm text-warning">
-              <input
-                type="checkbox"
-                checked={destroySource}
-                onChange={(e) => setDestroySource(e.target.checked)}
-              />
-              <span>
-                Destroy source desktop after sealing
-                <span className="block text-xs text-fg-muted">
-                  Faster but irreversible — the source desktop will no longer be usable.
-                </span>
-              </span>
-            </label>
+              {!vmsLoading && eligibleVms.length === 0 && (
+                <p className="text-xs text-fg-muted m-0">
+                  No eligible desktops. A desktop must have finished installing and
+                  not be in an error state before it can be sealed into a golden image.
+                </p>
+              )}
+            </div>
+            <Checkbox
+              label="Sanitize user data"
+              description="Remove home directories / profiles from the sealed image."
+              checked={sanitizeUserData}
+              onChange={(e) => setSanitizeUserData(e.target.checked)}
+            />
+            <Checkbox
+              label="Destroy source desktop after sealing"
+              description="Faster but irreversible — the source desktop will no longer be usable."
+              checked={destroySource}
+              onChange={(e) => setDestroySource(e.target.checked)}
+            />
           </>
         )}
 

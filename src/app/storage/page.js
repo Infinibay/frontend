@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import {
   Alert,
@@ -32,12 +33,16 @@ function formatGB(value) {
 export default function StorageListPage() {
   const router = useRouter();
   const storageEnabled = useFeatureFlag('storage');
+  // Feature flags load lazily (DEFERRED init tier). Until they are initialized
+  // the effective value of every flag is its fail-safe default (storage: false),
+  // so redirecting before initialization bounces enabled users on a hard refresh.
+  const flagsInitialized = useSelector((state) => !!state.featureFlags?.initialized);
 
   useEffect(() => {
-    if (!storageEnabled) {
+    if (flagsInitialized && !storageEnabled) {
       router.replace('/desktops');
     }
-  }, [storageEnabled, router]);
+  }, [flagsInitialized, storageEnabled, router]);
 
   const {
     data,
@@ -111,7 +116,7 @@ export default function StorageListPage() {
               <span className="text-xs text-fg-muted">
                 {formatGB(row.used)} / {formatGB(row.total)} · {row.usage}%
               </span>
-              <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+              <div className="h-1 rounded-full bg-fg/10 overflow-hidden">
                 <div
                 className={[
                 'h-full',
@@ -128,7 +133,7 @@ export default function StorageListPage() {
       id: 'available',
       header: 'Available',
       width: 120,
-      align: 'right',
+      align: 'end',
       cell: ({ row }) =>
       <span className="font-mono text-xs">
             {formatGB(row.available)}
@@ -149,6 +154,19 @@ export default function StorageListPage() {
     []
   );
 
+  // Wait for the deferred feature-flag fetch to resolve before deciding to
+  // redirect, so a hard refresh / deep-link doesn't bounce on the default.
+  if (!flagsInitialized) {
+    return (
+      <Page>
+        <ResponsiveStack direction="col" gap={3}>
+          <Skeleton height={130} />
+          <Skeleton height={180} />
+        </ResponsiveStack>
+      </Page>);
+
+  }
+
   if (!storageEnabled) {
     return null;
   }
@@ -161,7 +179,7 @@ export default function StorageListPage() {
           count={disk ? `${formatGB(disk.available)} available` : 'local capacity'}
           description="Local host storage capacity reported by the backend."
           secondary={
-          <Button variant="secondary" onClick={() => refetch()} disabled={loading}>
+          <Button variant="secondary" onClick={() => refetch().catch(() => {})} disabled={loading}>
               <RefreshCw size={14} />
               Refresh
             </Button>
@@ -184,7 +202,7 @@ export default function StorageListPage() {
             size="sm"
             variant="primary"
             icon={<RefreshCw size={14} />}
-            onClick={() => refetch()}>
+            onClick={() => refetch().catch(() => {})}>
 
               Retry
             </Button>

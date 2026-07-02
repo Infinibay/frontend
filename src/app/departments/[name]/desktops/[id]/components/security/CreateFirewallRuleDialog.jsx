@@ -185,33 +185,42 @@ const CreateFirewallRuleDialog = ({
     onClose?.();
   };
 
-  const handleSubmit = async () => {
+  // Accepts an optional override patch so the "Override & retry" flow can apply
+  // overridesDept synchronously — reading from setState (which is async) would
+  // resubmit the OLD form and hit the same conflict.
+  const handleSubmit = async (overridePatch = null) => {
     if (!validateForm()) {
       toast.error('Please fix the errors above');
       return;
     }
-    debug.log('Creating firewall rule', form);
+    const effectiveForm =
+      overridePatch && typeof overridePatch === 'object' && !overridePatch.nativeEvent
+        ? { ...form, ...overridePatch }
+        : form;
+    // Keep the visible checkbox in sync with what we actually submit.
+    if (effectiveForm !== form) update(overridePatch);
+    debug.log('Creating firewall rule', effectiveForm);
     try {
       const priority =
-        form.priorityLabel === 'CUSTOM'
-          ? parseInt(form.customPriority, 10)
-          : getPriorityFromLabel(form.priorityLabel);
+        effectiveForm.priorityLabel === 'CUSTOM'
+          ? parseInt(effectiveForm.customPriority, 10)
+          : getPriorityFromLabel(effectiveForm.priorityLabel);
       const input = {
-        name: form.name,
-        description: form.description || null,
-        action: form.action,
-        direction: form.direction,
+        name: effectiveForm.name,
+        description: effectiveForm.description || null,
+        action: effectiveForm.action,
+        direction: effectiveForm.direction,
         priority,
-        protocol: form.protocol.toLowerCase(),
-        dstPortStart: form.dstPortStart ? parseInt(form.dstPortStart, 10) : null,
-        dstPortEnd: form.dstPortEnd ? parseInt(form.dstPortEnd, 10) : null,
-        srcPortStart: form.srcPortStart ? parseInt(form.srcPortStart, 10) : null,
-        srcPortEnd: form.srcPortEnd ? parseInt(form.srcPortEnd, 10) : null,
-        srcIpAddr: form.srcIpAddr || null,
-        srcIpMask: form.srcIpMask || null,
-        dstIpAddr: form.dstIpAddr || null,
-        dstIpMask: form.dstIpMask || null,
-        overridesDept: form.overridesDept,
+        protocol: effectiveForm.protocol.toLowerCase(),
+        dstPortStart: effectiveForm.dstPortStart ? parseInt(effectiveForm.dstPortStart, 10) : null,
+        dstPortEnd: effectiveForm.dstPortEnd ? parseInt(effectiveForm.dstPortEnd, 10) : null,
+        srcPortStart: effectiveForm.srcPortStart ? parseInt(effectiveForm.srcPortStart, 10) : null,
+        srcPortEnd: effectiveForm.srcPortEnd ? parseInt(effectiveForm.srcPortEnd, 10) : null,
+        srcIpAddr: effectiveForm.srcIpAddr || null,
+        srcIpMask: effectiveForm.srcIpMask || null,
+        dstIpAddr: effectiveForm.dstIpAddr || null,
+        dstIpMask: effectiveForm.dstIpMask || null,
+        overridesDept: effectiveForm.overridesDept,
       };
       await createRule({ variables: { vmId, input } });
       toast.success('Firewall rule created');
@@ -235,9 +244,10 @@ const CreateFirewallRuleDialog = ({
   };
 
   const handleOverrideAndRetry = () => {
-    update({ overridesDept: true });
     setValidationErrors([]);
-    setTimeout(handleSubmit, 0);
+    // Pass the override explicitly so it applies to THIS submission — not via a
+    // deferred setState that the current closure wouldn't see.
+    handleSubmit({ overridesDept: true });
   };
 
   const canOverride = validationErrors.some((e) => e.canOverride);
@@ -247,7 +257,7 @@ const CreateFirewallRuleDialog = ({
       open={!!isOpen}
       onClose={handleClose}
       side="right"
-      size={520}
+      size="min(520px, 100vw)"
       title={
         <ResponsiveStack direction="row" gap={2} align="center">
           <Shield size={14} />
@@ -261,7 +271,7 @@ const CreateFirewallRuleDialog = ({
           </Button>
           <Button
             variant="primary"
-            onClick={handleSubmit}
+            onClick={() => handleSubmit()}
             loading={loading}
             disabled={loading}
           >
@@ -440,6 +450,7 @@ const CreateFirewallRuleDialog = ({
                   </BentoItem>
                   <BentoItem>
                     <TextField
+                      aria-label="Destination port end (optional)"
                       placeholder="End (optional)"
                       value={form.dstPortEnd}
                       onChange={(e) => {
@@ -467,6 +478,7 @@ const CreateFirewallRuleDialog = ({
                   {form.priorityLabel === 'CUSTOM' ? (
                     <BentoItem>
                       <TextField
+                        aria-label="Custom priority (1–1000)"
                         type="number"
                         placeholder="1–1000"
                         value={form.customPriority}

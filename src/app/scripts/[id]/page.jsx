@@ -43,7 +43,11 @@ import {
   EmptyState,
   DataTable,
   PropertyList,
-  CodeBlock } from
+  CodeBlock,
+  Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogButtons } from
 '@infinibay/harbor';
 
 import {
@@ -52,8 +56,21 @@ import {
   useUpdateScriptMutation } from
 '@/gql/hooks';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { useResolvedTheme } from '@/contexts/ThemeProvider';
 import ScriptInputModal from '@/app/scripts/components/ScriptInputModal';
 import { parseScriptError } from '@/utils/parseScriptError';
+
+/** Stable serialization of the editable form used for dirty-tracking. */
+const snapshotForm = (v) =>
+JSON.stringify({
+  scriptName: v.scriptName,
+  scriptDescription: v.scriptDescription,
+  scriptTags: v.scriptTags,
+  scriptInputs: v.scriptInputs,
+  scriptContent: v.scriptContent,
+  selectedOS: v.selectedOS,
+  selectedShell: v.selectedShell
+});
 
 const OS_OPTIONS = [
 {
@@ -119,7 +136,15 @@ export default function ScriptEditorPage() {
   const sourceId = isNew ? searchParams.get('from') : null;
   const queryId = sourceId || scriptId;
 
+  const resolvedTheme = useResolvedTheme();
+  const editorTheme = resolvedTheme === 'light' ? 'vs' : 'vs-dark';
+
   const editorRef = useRef(null);
+  // Prevents a background refetch (cache-and-network) from clobbering in-progress
+  // edits, and gates Save until the source script has actually hydrated.
+  const seededRef = useRef(false);
+  const pristineRef = useRef(null);
+  const dirtyRef = useRef(false);
 
   const [scriptName, setScriptName] = useState('New Script');
   const [scriptDescription, setScriptDescription] = useState('');
@@ -134,8 +159,11 @@ export default function ScriptEditorPage() {
   const [activeTab, setActiveTab] = useState('edit');
   const [inputModalOpen, setInputModalOpen] = useState(false);
   const [editingInputIndex, setEditingInputIndex] = useState(null);
+  const [hydrated, setHydrated] = useState(isNew && !sourceId);
+  const [draftToRestore, setDraftToRestore] = useState(null);
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
-  const { data, loading } = useScriptQuery({
+  const { data, loading, error, refetch } = useScriptQuery({
     variables: { id: queryId },
     skip: isNew && !sourceId
   });
@@ -149,37 +177,104 @@ export default function ScriptEditorPage() {
   const [updateScript, { loading: updating }] = useUpdateScriptMutation();
 
   useEffect(() => {
+    // Seed exactly once. A cache-and-network refetch fires this effect again with
+    // fresh `data`; without this guard it would overwrite the user's live edits.
+    if (seededRef.current) return;
     if (data?.script?.content) {
       try {
         const parsed = yaml.load(data.script.content);
-         
+
         setOriginalYamlData(parsed);
         // When duplicating, suffix the name so the user knows which one they're on
         // and avoids fileName collision on the server side.
         const baseName = parsed?.name || 'New Script';
-        setScriptName(sourceId ? `${baseName} (Copy)` : baseName);
-        setScriptDescription(parsed?.description || '');
-        setScriptTags(data.script.tags || []);
-        setScriptContent(parsed?.script || '# Write your script here\n');
+        const name = sourceId ? `${baseName} (Copy)` : baseName;
+        const description = parsed?.description || '';
+        const tags = data.script.tags || [];
+        const content = parsed?.script || '# Write your script here\n';
 
         const normalized = (parsed?.inputs || []).map((i) => ({
           ...i,
           type: i.type === 'checkbox' ? 'boolean' : i.type
         }));
-        setScriptInputs(normalized);
 
         const os = Array.isArray(parsed?.os) ?
         parsed.os[0] || 'windows' :
         parsed?.os || 'windows';
-        setSelectedOS(os);
         const shell = parsed?.shell || (os === 'linux' ? 'bash' : 'powershell');
+
+        setScriptName(name);
+        setScriptDescription(description);
+        setScriptTags(tags);
+        setScriptContent(content);
+        setScriptInputs(normalized);
+        setSelectedOS(os);
         setSelectedShell(shell);
         setEditorLanguage(monacoLanguage(shell));
+
+        seededRef.current = true;
+        pristineRef.current = snapshotForm({
+          scriptName: name,
+          scriptDescription: description,
+          scriptTags: tags,
+          scriptInputs: normalized,
+          scriptContent: content,
+          selectedOS: os,
+          selectedShell: shell
+        });
+        setHydrated(true);
       } catch (err) {
         toast.error(`Failed to load script: ${err.message || err}`);
       }
+    } else if (data?.script) {
+      // Script exists but carries no YAML content — hydrate with what we have so
+      // the editor is usable and Save doesn't stay permanently disabled.
+      const tags = data.script.tags || [];
+      setScriptTags(tags);
+      seededRef.current = true;
+      pristineRef.current = snapshotForm({
+        scriptName,
+        scriptDescription,
+        scriptTags: tags,
+        scriptInputs,
+        scriptContent,
+        selectedOS,
+        selectedShell
+      });
+      setHydrated(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, sourceId]);
+
+  // Establish the pristine snapshot for a brand-new (non-duplicate) script so
+  // dirty-tracking works from the first keystroke.
+  useEffect(() => {
+    if (isNew && !sourceId && pristineRef.current === null) {
+      pristineRef.current = snapshotForm({
+        scriptName,
+        scriptDescription,
+        scriptTags,
+        scriptInputs,
+        scriptContent,
+        selectedOS,
+        selectedShell
+      });
+    }
+    // Run once on mount; initial state is the intended pristine baseline.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Offer to restore a locally auto-saved draft (captured once on mount, before
+  // the 30s interval writes a fresh one).
+  useEffect(() => {
+    if (readOnly) return;
+    try {
+      const raw = localStorage.getItem(`script-draft-${scriptId}`);
+      if (raw) setDraftToRestore(JSON.parse(raw));
+    } catch {
+      /* malformed draft — ignore */
+    }
+  }, [scriptId, readOnly]);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -214,17 +309,61 @@ export default function ScriptEditorPage() {
   );
 
   useEffect(() => {
-    if (
-    errors.length > 0 &&
-    scriptName.trim() &&
-    selectedOS &&
-    selectedShell &&
-    scriptContent.trim())
-    {
-       
-      setErrors([]);
-    }
+    if (errors.length === 0) return;
+    // Only auto-clear the *metadata* errors this effect can actually verify.
+    // Input-level errors (missing input name/label, duplicate names) must stay
+    // visible until they are genuinely fixed — clearing them here would let the
+    // user save an invalid script with no feedback.
+    setErrors((prev) => {
+      const next = prev.filter((e) => {
+        if (e.message === 'Script name is required' && scriptName.trim()) return false;
+        if (e.message === 'Operating system is required' && selectedOS) return false;
+        if (e.message === 'Shell type is required' && selectedShell) return false;
+        if (e.message === 'Script content cannot be empty' && scriptContent.trim())
+        return false;
+        return true;
+      });
+      return next.length === prev.length ? prev : next;
+    });
   }, [scriptName, selectedOS, selectedShell, scriptContent, errors.length]);
+
+  const isDirty = useCallback(
+    () =>
+    pristineRef.current !== null &&
+    snapshotForm({
+      scriptName,
+      scriptDescription,
+      scriptTags,
+      scriptInputs,
+      scriptContent,
+      selectedOS,
+      selectedShell
+    }) !== pristineRef.current,
+    [
+    scriptName,
+    scriptDescription,
+    scriptTags,
+    scriptInputs,
+    scriptContent,
+    selectedOS,
+    selectedShell]
+
+  );
+
+  // Keep a ref in sync so the native beforeunload handler never reads stale state.
+  useEffect(() => {
+    dirtyRef.current = !readOnly && isDirty();
+  });
+
+  useEffect(() => {
+    const beforeUnload = (e) => {
+      if (!dirtyRef.current) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => window.removeEventListener('beforeunload', beforeUnload);
+  }, []);
 
   const validate = useCallback(() => {
     const errs = [];
@@ -285,8 +424,20 @@ export default function ScriptEditorPage() {
 
       const yamlContent = yaml.dump(yamlData);
 
+      // Reflect the just-saved content in the pristine baseline so the page is no
+      // longer considered dirty (prevents a false unsaved-changes prompt).
+      const savedSnapshot = snapshotForm({
+        scriptName,
+        scriptDescription,
+        scriptTags,
+        scriptInputs,
+        scriptContent: currentContent,
+        selectedOS,
+        selectedShell
+      });
+
       if (isNew) {
-        await createScript({
+        const res = await createScript({
           variables: {
             input: {
               content: yamlContent,
@@ -296,10 +447,21 @@ export default function ScriptEditorPage() {
             }
           }
         });
+        // These mutations resolve HTTP 200 with a { success, message, error }
+        // envelope and do NOT throw on a business-rule failure. Treat
+        // success:false as an error and keep the editor open so edits survive.
+        const payload = res?.data?.createScript;
+        if (!payload?.success) {
+          toast.error(payload?.error || payload?.message || 'Failed to create script');
+          return;
+        }
+        localStorage.removeItem(`script-draft-${scriptId}`);
+        pristineRef.current = savedSnapshot;
+        dirtyRef.current = false;
         toast.success('Script created');
         router.push('/scripts');
       } else {
-        await updateScript({
+        const res = await updateScript({
           variables: {
             input: {
               id: scriptId,
@@ -309,16 +471,54 @@ export default function ScriptEditorPage() {
             }
           }
         });
+        const payload = res?.data?.updateScript;
+        if (!payload?.success) {
+          toast.error(payload?.error || payload?.message || 'Failed to update script');
+          return;
+        }
+        localStorage.removeItem(`script-draft-${scriptId}`);
+        pristineRef.current = savedSnapshot;
+        dirtyRef.current = false;
         toast.success('Script updated');
       }
-      localStorage.removeItem(`script-draft-${scriptId}`);
     } catch (err) {
       const msg = parseScriptError(err, isNew ? 'create' : 'update');
       toast.error(msg);
     }
   };
 
-  const handleCancel = () => router.push('/scripts');
+  const handleCancel = () => {
+    if (!readOnly && isDirty()) {
+      setConfirmLeave(true);
+      return;
+    }
+    router.push('/scripts');
+  };
+
+  const restoreDraft = () => {
+    const d = draftToRestore;
+    if (!d) return;
+    const shell = d.selectedShell ?? 'powershell';
+    setScriptContent(d.scriptContent ?? '# Write your script here\n');
+    setScriptName(d.scriptName ?? 'New Script');
+    setScriptDescription(d.scriptDescription ?? '');
+    setScriptTags(d.scriptTags ?? []);
+    setScriptInputs(d.scriptInputs ?? []);
+    setSelectedOS(d.selectedOS ?? 'windows');
+    setSelectedShell(shell);
+    setEditorLanguage(monacoLanguage(shell));
+    setDraftToRestore(null);
+    toast.success('Draft restored');
+  };
+
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(`script-draft-${scriptId}`);
+    } catch {
+      /* ignore */
+    }
+    setDraftToRestore(null);
+  };
 
   const openAddInput = () => {
     setEditingInputIndex(null);
@@ -452,9 +652,12 @@ export default function ScriptEditorPage() {
     [scriptInputs, readOnly, duplicateInput]
   );
 
-  if (!isNew && loading) {
+  // Show the loading state whenever we're fetching a source script — both when
+  // editing (!isNew) and when duplicating (isNew + sourceId) — so the form never
+  // renders with defaults that the incoming source would overwrite.
+  if ((!isNew || sourceId) && loading && !seededRef.current) {
     return (
-      <Page size="xl" gap={6}>
+      <Page size="xl" gap="lg">
         <Card variant="default">
           <ResponsiveStack direction="row" gap={2} align="center" justify="center">
             <Spinner />
@@ -465,11 +668,41 @@ export default function ScriptEditorPage() {
 
   }
 
+  // The fetch resolved but failed (network/auth/deleted id) — never fall back to a
+  // blank "New Script" editor whose Save could overwrite the real script. Once the
+  // script has hydrated we keep the editor mounted (a later background-refetch
+  // error must not discard in-progress edits).
+  if ((!isNew || sourceId) && !loading && !seededRef.current && (error || !data?.script)) {
+    return (
+      <Page size="xl" gap="lg">
+        <Alert
+          tone="danger"
+          title="Couldn't load this script"
+          icon={<XIcon size={14} />}
+          actions={
+          <ResponsiveStack direction="row" gap={2}>
+              <Button size="sm" variant="secondary" onClick={() => router.push('/scripts')}>
+                Back to scripts
+              </Button>
+              <Button size="sm" onClick={() => refetch()}>
+                Retry
+              </Button>
+            </ResponsiveStack>
+          }>
+
+          {error ?
+          String(error.message || error) :
+          'This script no longer exists or you do not have access to it.'}
+        </Alert>
+      </Page>);
+
+  }
+
   const fileExtension =
   selectedShell === 'powershell' ? 'ps1' : selectedShell === 'cmd' ? 'bat' : 'sh';
 
   return (
-    <Page size="xl" gap={6}>
+    <Page size="xl" gap="lg">
       <Card
         variant="default"
         leadingIcon={<FileCode size={20} />}
@@ -499,7 +732,7 @@ export default function ScriptEditorPage() {
               icon={<Save size={14} />}
               onClick={handleSave}
               loading={creating || updating}
-              disabled={creating || updating}>
+              disabled={creating || updating || !hydrated}>
 
                 Save
               </Button>
@@ -515,6 +748,26 @@ export default function ScriptEditorPage() {
         >
           This script ships with Infinibay and stays in sync with system updates.
           Use <strong>Duplicate to edit</strong> to create your own copy.
+        </Alert>
+      ) : null}
+
+      {draftToRestore && !readOnly ? (
+        <Alert
+          tone="info"
+          title="Unsaved draft found"
+          actions={
+          <ResponsiveStack direction="row" gap={2}>
+              <Button size="sm" variant="secondary" onClick={discardDraft}>
+                Discard
+              </Button>
+              <Button size="sm" onClick={restoreDraft}>
+                Restore draft
+              </Button>
+            </ResponsiveStack>
+          }>
+
+          A locally auto-saved draft of this script exists from a previous session.
+          Restore it to continue where you left off, or discard it.
         </Alert>
       ) : null}
 
@@ -557,21 +810,40 @@ export default function ScriptEditorPage() {
                   </FormField>
                 </ResponsiveGrid>
 
-                <FormField label="Tags" helper="Up to 10 tags. Enter to add.">
+                <FormField
+                  label="Tags"
+                  helper={readOnly ? undefined : 'Up to 10 tags. Enter to add.'}>
+
+                  {readOnly ?
+                  scriptTags.length > 0 ?
+                  <ResponsiveStack direction="row" gap={1} wrap>
+                        {scriptTags.map((t) =>
+                    <Badge key={t} tone="neutral">
+                            {t}
+                          </Badge>
+                    )}
+                      </ResponsiveStack> :
+
+                  <span className="text-fg-muted text-sm">No tags</span> :
+
+
                   <TagInput
                     value={scriptTags}
                     onChange={(next) => setScriptTags(next.slice(0, 10))}
                     placeholder="Type a tag, press Enter…" />
-
+                  }
                 </FormField>
 
                 <ResponsiveGrid columns={{ base: 1, md: 2 }} gap={3}>
                   <FormField label="Target OS">
+                    {readOnly ?
+                    <Badge tone="neutral">{selectedOS}</Badge> :
+
                     <SegmentedControl
                       items={OS_OPTIONS}
                       value={selectedOS}
-                      onChange={readOnly ? undefined : handleOSChange} />
-
+                      onChange={handleOSChange} />
+                    }
                   </FormField>
                   <FormField
                     label={
@@ -657,7 +929,7 @@ export default function ScriptEditorPage() {
                 language={editorLanguage}
                 value={scriptContent}
                 onChange={(v) => setScriptContent(v ?? '')}
-                theme="vs-dark"
+                theme={editorTheme}
                 onMount={(editor) => editorRef.current = editor}
                 options={{
                   minimap: { enabled: true },
@@ -768,7 +1040,28 @@ export default function ScriptEditorPage() {
         input={editingInputIndex !== null ? scriptInputs[editingInputIndex] : null}
         onSave={handleInputSave}
         mode={editingInputIndex !== null ? 'edit' : 'create'} />
-      
+
+      <Dialog open={confirmLeave} onClose={() => setConfirmLeave(false)} size="sm">
+        <DialogTitle>Discard unsaved changes?</DialogTitle>
+        <DialogDescription>
+          You have unsaved changes to this script. Leaving now will discard them.
+        </DialogDescription>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={() => setConfirmLeave(false)}>
+            Keep editing
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              setConfirmLeave(false);
+              dirtyRef.current = false;
+              router.push('/scripts');
+            }}>
+
+            Discard changes
+          </Button>
+        </DialogButtons>
+      </Dialog>
     </Page>);
 
 }

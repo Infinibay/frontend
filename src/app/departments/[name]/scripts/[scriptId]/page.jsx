@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import yaml from 'js-yaml';
 import {
   Calendar,
   Clock,
@@ -16,6 +17,7 @@ import {
 import {
   Alert,
   Badge,
+  Button,
   Card,
   CodeBlock,
   LoadingOverlay,
@@ -34,6 +36,28 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 
 import ExecutionLogsTab from './components/ExecutionLogsTab';
 import ScheduleTab from './components/ScheduleTab';
+
+// The Script query returns raw YAML in `content`; extract the runnable body the
+// same way the editor page does (there is no `parsedContent` field). Kept at
+// module scope so the try/catch lives outside the component's useMemo — the
+// React compiler cannot preserve memoization around a try/catch inside a hook.
+function parseScriptBody(content) {
+  if (!content) return '';
+  try {
+    const parsed = yaml.load(content);
+    return parsed?.script || '';
+  } catch {
+    return '';
+  }
+}
+
+// OS enum values arrive uppercase (WINDOWS / LINUX). Normalize before comparing
+// and render a human-friendly label.
+function formatOsLabel(os) {
+  const value = String(os || '').toLowerCase();
+  if (!value) return 'Unknown';
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 export default function ScriptDetailPage() {
   const params = useParams();
@@ -60,6 +84,11 @@ export default function ScriptDetailPage() {
   }, [departmentsData, departmentName]);
 
   const departmentId = department?.id;
+
+  const scriptBody = useMemo(
+    () => parseScriptBody(script?.content),
+    [script?.content],
+  );
 
   const helpConfig = useMemo(
     () => ({
@@ -167,9 +196,13 @@ export default function ScriptDetailPage() {
           title="Script not found"
           icon={<FileCode size={16} />}
           actions={
-            <button type="button" onClick={() => router.push(`/departments/${departmentName}/scripts`)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => router.push(`/departments/${departmentName}/scripts`)}
+            >
               Back to Scripts
-            </button>
+            </Button>
           }
         >
           The requested script could not be found.
@@ -184,7 +217,7 @@ export default function ScriptDetailPage() {
       ? [script.os]
       : [];
   const inputCount =
-    script.inputCount ?? script.parsedContent?.inputs?.length ?? 0;
+    script.inputCount ?? script.parsedInputs?.length ?? 0;
 
   const metadataItems = [
     {
@@ -215,7 +248,12 @@ export default function ScriptDetailPage() {
           <span>Created by</span>
         </ResponsiveStack>
       ),
-      value: script.createdBy.username,
+      value:
+        [script.createdBy.firstName, script.createdBy.lastName]
+          .filter(Boolean)
+          .join(' ') ||
+        script.createdBy.email ||
+        'Unknown',
     },
   ].filter(Boolean);
 
@@ -274,14 +312,14 @@ export default function ScriptDetailPage() {
                           key={os}
                           tone="neutral"
                           icon={
-                            os === 'windows' ? (
+                            String(os).toLowerCase() === 'windows' ? (
                               <Monitor size={10} />
                             ) : (
                               <Server size={10} />
                             )
                           }
                         >
-                          {os}
+                          {formatOsLabel(os)}
                         </Badge>
                       ))}
                     </ResponsiveStack>
@@ -311,14 +349,14 @@ export default function ScriptDetailPage() {
               </ResponsiveGrid>
             </Card>
 
-            {script.hasInputs && script.parsedContent?.inputs?.length ? (
+            {script.hasInputs && script.parsedInputs?.length ? (
               <Card
                 variant="default"
                 title="Script inputs"
                 description="Parameters requested when running this script"
               >
                 <ResponsiveStack direction="col" gap={2}>
-                  {script.parsedContent.inputs.map((input, index) => (
+                  {script.parsedInputs.map((input, index) => (
                     <Card
                       key={`${input.name}-${index}`}
                       variant="default"
@@ -351,7 +389,7 @@ export default function ScriptDetailPage() {
             <Card variant="default" title="Script content">
               <CodeBlock
                 lang={script.shell || 'bash'}
-                code={script.parsedContent?.script || '# No content available'}
+                code={scriptBody || '# No content available'}
               />
             </Card>
           </ResponsiveStack>

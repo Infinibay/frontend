@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { toast } from '@/hooks/use-toast';
@@ -67,31 +67,54 @@ const useResolveRecommendation = (recommendationId) => {
 
   const resolution = pollQuery.data?.recommendationResolution || null;
 
+  // Keep a stable handle to stopPolling so the terminal effect doesn't need the
+  // whole (per-render) pollQuery object in its dependency array.
+  const stopPollingRef = useRef(pollQuery.stopPolling);
+  stopPollingRef.current = pollQuery.stopPolling;
+
+  // Guard against re-firing the terminal toast. fetchPolicy: 'network-only'
+  // yields a new `resolution` identity on every poll response (and any consumer
+  // re-render re-runs this effect), so without a fired-once guard the same
+  // 'Action completed/failed' toast would fire repeatedly. We key on the
+  // resolution id + status and only toast on an unseen terminal transition.
+  const lastToastedRef = useRef(null);
+
+  const currentResolutionId = resolution?.id;
+  const resolutionStatus = resolution?.status;
+
   useEffect(() => {
-    if (!resolution) return;
-    if (isTerminalStatus(resolution.status)) {
-      pollQuery.stopPolling?.();
-      if (resolution.status === 'SUCCEEDED') {
-        toast({
-          title: 'Action completed',
-          description: resolution.progressMessage || 'The recommendation was resolved.',
-          variant: 'default',
-        });
-      } else if (resolution.status === 'REQUIRES_REBOOT') {
-        toast({
-          title: 'Reboot required',
-          description: resolution.progressMessage || 'Updates installed. Reboot the VM to finish.',
-          variant: 'default',
-        });
-      } else if (resolution.status === 'FAILED') {
-        toast({
-          title: 'Action failed',
-          description: resolution.error || 'The action could not be completed.',
-          variant: 'destructive',
-        });
-      }
+    if (!currentResolutionId || !resolutionStatus) return;
+    if (!isTerminalStatus(resolutionStatus)) return;
+
+    stopPollingRef.current?.();
+
+    const toastKey = `${currentResolutionId}:${resolutionStatus}`;
+    if (lastToastedRef.current === toastKey) return;
+    lastToastedRef.current = toastKey;
+
+    if (resolutionStatus === 'SUCCEEDED') {
+      toast({
+        title: 'Action completed',
+        description: resolution?.progressMessage || 'The recommendation was resolved.',
+        variant: 'success',
+      });
+    } else if (resolutionStatus === 'REQUIRES_REBOOT') {
+      toast({
+        title: 'Reboot required',
+        description: resolution?.progressMessage || 'Updates installed. Reboot the VM to finish.',
+        variant: 'warning',
+      });
+    } else if (resolutionStatus === 'FAILED') {
+      toast({
+        title: 'Action failed',
+        description: resolution?.error || 'The action could not be completed.',
+        variant: 'error',
+      });
     }
-  }, [resolution, pollQuery]);
+    // resolution is intentionally not a dep: we react to id/status transitions
+    // only, and read the latest resolution fields at fire time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentResolutionId, resolutionStatus]);
 
   const resolve = useCallback(
     async (actionKey, params) => {
@@ -105,7 +128,7 @@ const useResolveRecommendation = (recommendationId) => {
           toast({
             title: 'Action started',
             description: 'Your request was sent to the VM. Tracking progress…',
-            variant: 'default',
+            variant: 'info',
           });
         }
         return newResolution;
@@ -122,6 +145,7 @@ const useResolveRecommendation = (recommendationId) => {
   );
 
   const reset = useCallback(() => {
+    lastToastedRef.current = null;
     setResolutionId(null);
   }, []);
 

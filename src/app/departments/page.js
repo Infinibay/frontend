@@ -35,6 +35,7 @@ import { RowContextMenu } from '@/components/common/RowContextMenu';
 
 import { useDepartmentsPage } from './hooks/useDepartmentsPage';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // Deterministic tone per department name so each card has its own accent
 // without random flicker on re-renders. Harbor supports these tones.
@@ -42,12 +43,12 @@ const DepartmentsPage = () => {
   const router = useRouter();
   const {
     isLoading,
-    hasError,
+    hasFatalError,
+    vmsError,
     searchQuery,
     isCreateDeptDialogOpen,
     newDepartmentName,
     filteredDepartments,
-    useMockData,
     isCreating,
     createError,
     retryLoading,
@@ -63,6 +64,17 @@ const DepartmentsPage = () => {
   const vms = useSelector((state) => state.vms?.items || []);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Track WHICH vms error the operator dismissed (by message) rather than a bare
+  // boolean, so a later/different desktop-load failure surfaces a fresh warning
+  // instead of being permanently silenced.
+  const [dismissedVmsError, setDismissedVmsError] = useState(null);
+  const showVmsWarning = !!vmsError && vmsError !== dismissedVmsError;
+
+  // Action-level RBAC: stay optimistic while grants load to avoid a
+  // disabled→enabled flicker, then gate the CRUD write surfaces.
+  const { can, isLoading: permsLoading } = usePermissions();
+  const canCreate = permsLoading || can('department:create');
+  const canDelete = permsLoading || can('department:delete');
 
   const helpConfig = useMemo(
     () => ({
@@ -140,7 +152,10 @@ const DepartmentsPage = () => {
     }
   };
 
-  if (hasError) {
+  // FATAL only: the page cannot render its list without departments. A VMs-only
+  // failure is handled inline (see the non-fatal warning below) and must NOT
+  // blank the whole page.
+  if (hasFatalError) {
     return (
       <Page>
         <Alert
@@ -167,26 +182,6 @@ const DepartmentsPage = () => {
   return (
     <>
       <Page>
-        {useMockData &&
-        <Alert
-          tone="warning"
-          icon={<AlertTriangle size={14} />}
-          title="Using mock data"
-          actions={
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<RefreshCw size={14} />}
-            onClick={retryLoading}>
-            
-                Retry
-              </Button>
-          }>
-          
-            Could not connect to the departments API. Showing mock data.
-          </Alert>
-        }
-
         <PageHeader
           title="Departments"
           count={
@@ -209,14 +204,15 @@ const DepartmentsPage = () => {
 
           }
           primary={
-          <Tooltip content="New Department">
+          <Tooltip content={canCreate ? 'New Department' : "You don't have permission to create departments"}>
               <span>
                 <Button
                 variant="primary"
                 size="sm"
                 icon={<Plus size={14} />}
+                disabled={!canCreate}
                 onClick={() => setIsCreateDeptDialogOpen(true)}>
-                
+
                   New Department
                 </Button>
               </span>
@@ -232,6 +228,36 @@ const DepartmentsPage = () => {
           } />
         
 
+        {showVmsWarning ?
+        <Alert
+          tone="warning"
+          icon={<AlertTriangle size={14} />}
+          title="Couldn't load desktops"
+          actions={
+          <ResponsiveStack direction="row" gap={2}>
+              <Button
+              size="sm"
+              variant="primary"
+              icon={<RefreshCw size={14} />}
+              onClick={retryLoading}>
+
+                Retry
+              </Button>
+              <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setDismissedVmsError(vmsError)}>
+
+                Dismiss
+              </Button>
+            </ResponsiveStack>
+          }>
+
+            Desktop counts and running status may be incomplete. The departments
+            list itself is unaffected — retry to reload desktops.
+          </Alert> :
+        null}
+
         {isLoading && filteredDepartments.length === 0 ?
         <LoadingOverlay label="Loading departments…" /> :
         filteredDepartments.length === 0 ?
@@ -245,14 +271,15 @@ const DepartmentsPage = () => {
           }
           actions={
           !searchQuery ?
-          <Tooltip content="New Department">
+          <Tooltip content={canCreate ? 'New Department' : "You don't have permission to create departments"}>
                   <span>
                     <Button
                 size="sm"
                 variant="primary"
                 icon={<Plus size={14} />}
+                disabled={!canCreate}
                 onClick={() => setIsCreateDeptDialogOpen(true)}>
-                
+
                       New Department
                     </Button>
                   </span>
@@ -285,6 +312,7 @@ const DepartmentsPage = () => {
                 label: 'Delete',
                 icon: <Trash2 size={14} />,
                 danger: true,
+                disabled: !canDelete,
                 onSelect: () => setDeleteTarget(r)
               }]
               }>
@@ -347,7 +375,7 @@ const DepartmentsPage = () => {
                   id: 'total',
                   header: 'Desktops',
                   width: 100,
-                  align: 'right',
+                  align: 'end',
                   cell: ({ row }) =>
                   <span className="font-mono text-xs">{row._counts.total}</span>
 
@@ -356,18 +384,22 @@ const DepartmentsPage = () => {
                   id: 'actions',
                   header: '',
                   width: 50,
-                  align: 'right',
+                  align: 'end',
                   cell: ({ row }) =>
-                  <IconButton
-                    size="sm"
-                    variant="ghost"
-                    label={`Delete ${row.name}`}
-                    icon={<Trash2 size={14} />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteTarget(row);
-                    }} />
-
+                  <Tooltip content={canDelete ? `Delete ${row.name}` : "You don't have permission to delete departments"}>
+                    <span>
+                      <IconButton
+                        size="sm"
+                        variant="ghost"
+                        label={`Delete ${row.name}`}
+                        icon={<Trash2 size={14} />}
+                        disabled={!canDelete}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(row);
+                        }} />
+                    </span>
+                  </Tooltip>
 
                 }]
                 }
@@ -401,6 +433,11 @@ const DepartmentsPage = () => {
               placeholder="Engineering"
               value={newDepartmentName}
               onChange={(e) => setNewDepartmentName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isCreating && newDepartmentName.trim()) {
+                  handleCreateDepartment(e);
+                }
+              }}
               autoFocus />
 
             {createError ? <Alert tone="danger" size="sm">{createError}</Alert> : null}

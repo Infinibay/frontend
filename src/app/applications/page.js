@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import {
   Package,
@@ -9,7 +10,8 @@ import {
   Plus,
   RefreshCw,
   AppWindow,
-  ExternalLink } from
+  ExternalLink,
+  Trash2 } from
 "lucide-react";
 import {
   Page,
@@ -22,21 +24,28 @@ import {
   DataTable,
   IconTile,
   ResponsiveStack,
-  Tooltip } from
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons } from
 "@infinibay/harbor";
 import { PageHeader } from "@/components/common/PageHeader";
 import { OsBadge } from "@/components/common/OsBadge";
 import { RowContextMenu } from "@/components/common/RowContextMenu";
 
-import { fetchApplications } from "@/state/slices/applications";
+import { fetchApplications, deleteApplication } from "@/state/slices/applications";
 import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
 import { usePageHeader } from "@/hooks/usePageHeader";
+import { toast } from "@/hooks/use-toast";
 import { createDebugger } from "@/utils/debug";
 
 const debug = createDebugger("frontend:pages:applications");
 
 const ApplicationsPage = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
 
   const {
     data: applications,
@@ -47,6 +56,33 @@ const ApplicationsPage = () => {
     strategy: LOADING_STRATEGIES.BACKGROUND,
     ttl: 5 * 60 * 1000
   });
+
+  // Row targeted for deletion (drives the confirm dialog); null when closed.
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = useCallback(async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await dispatch(deleteApplication({ id: pendingDelete.id })).unwrap();
+      toast({
+        variant: "success",
+        title: "Application deleted",
+        description: `"${pendingDelete.name}" was removed from the catalogue.`
+      });
+      setPendingDelete(null);
+    } catch (err) {
+      // Keep the dialog open so the user can retry or cancel.
+      toast({
+        variant: "error",
+        title: "Could not delete application",
+        description: String(err?.message || err)
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }, [dispatch, pendingDelete]);
 
   debug.info("Applications list state:", {
     count: applications?.length || 0,
@@ -296,6 +332,12 @@ const ApplicationsPage = () => {
           label: "Open",
           icon: <ExternalLink size={14} />,
           onSelect: () => router.push(`/applications/${r.id}`)
+        },
+        {
+          label: "Delete",
+          icon: <Trash2 size={14} />,
+          danger: true,
+          onSelect: () => setPendingDelete(r)
         }]
         }>
 
@@ -308,6 +350,49 @@ const ApplicationsPage = () => {
         
         </RowContextMenu>
       }
+
+      <Dialog
+        open={!!pendingDelete}
+        onClose={() => !deleting && setPendingDelete(null)}
+        size="sm">
+
+        <DialogTitle>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <Trash2 size={16} />
+            Delete application
+          </ResponsiveStack>
+        </DialogTitle>
+        <DialogDescription>
+          Permanently delete “{pendingDelete?.name}”?
+        </DialogDescription>
+        <DialogBody>
+          <p className="text-sm text-fg-muted">
+            This removes the application catalogue entry and its install
+            scripts. Desktops will no longer be able to pull it. This action
+            cannot be undone.
+          </p>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => setPendingDelete(null)}
+            disabled={deleting}>
+
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            type="button"
+            icon={<Trash2 size={16} />}
+            onClick={handleDelete}
+            loading={deleting}
+            disabled={deleting}>
+
+            Delete
+          </Button>
+        </DialogButtons>
+      </Dialog>
     </Page>);
 
 };

@@ -1,16 +1,23 @@
 'use client';
 
-import { useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchVMHealthSnapshot,
+  selectVMHealthLoading,
+  selectVMHealthError,
+} from '@/state/slices/health';
 import {
   Alert,
   Badge,
+  Button,
   Card,
   EmptyState,
   Page,
   PropertyList,
   ResourceMeter,
   ResponsiveStack,
+  Skeleton,
 } from '@infinibay/harbor';
 import {
   AlertTriangle,
@@ -20,13 +27,38 @@ import {
   Info,
   MemoryStick,
   Network,
+  RefreshCw,
 } from 'lucide-react';
 import useVMProblems from '@/hooks/useVMProblems';
 
 const VMOverviewTab = ({ vmId, vm }) => {
+  const dispatch = useDispatch();
+
+  // Read from the slice's real key. The health snapshot (fetchVMHealthSnapshot)
+  // populates vmHealthData[vmId]; there is no `machines` map — the previous
+  // selector read a key that never exists, so metrics were permanently empty.
   const healthMachine = useSelector(
-    (state) => state.health?.machines?.[vmId] || null,
+    (state) => state.health?.vmHealthData?.[vmId] || null,
   );
+
+  // Per-VM snapshot loading/error, so the Health card can distinguish
+  // loading / error / empty / loaded instead of silently showing an
+  // "operating normally" empty state while a fetch is in flight or failing.
+  const healthLoading = useSelector((state) => selectVMHealthLoading(state, vmId));
+  const healthError = useSelector((state) => selectVMHealthError(state, vmId));
+  const hasSnapshot = !!healthMachine;
+  // Only treat it as a blocking skeleton when there is nothing to show yet; a
+  // background refresh over existing snapshot data must not blank the card.
+  const snapshotLoading = healthLoading && !hasSnapshot;
+
+  // Fetch a health snapshot on mount so the Problems panel is populated.
+  // A plain useEffect (not useEnsureData) because the health slice's lastUpdated
+  // is a per-vm map, which is incompatible with useEnsureData's single-TTL contract.
+  useEffect(() => {
+    if (vmId) {
+      dispatch(fetchVMHealthSnapshot({ vmId }));
+    }
+  }, [vmId, dispatch]);
 
   const {
     criticalProblems = [],
@@ -98,6 +130,35 @@ const VMOverviewTab = ({ vmId, vm }) => {
   const totalProblems =
     criticalProblems.length + importantProblems.length + informationalProblems.length;
 
+  // The health snapshot could not be resolved at all (fetch failed and we have
+  // no prior data to fall back on) — surface this instead of a green badge.
+  const healthUnresolved = !!healthError && !hasSnapshot;
+
+  const snapshotBadgeTone = snapshotLoading
+    ? 'neutral'
+    : healthUnresolved
+      ? 'warning'
+      : healthTone;
+  const snapshotBadgeLabel = snapshotLoading
+    ? 'Checking…'
+    : healthUnresolved
+      ? 'Health unavailable'
+      : healthLabel;
+  const snapshotBadgePulse =
+    !snapshotLoading && !healthUnresolved && healthLevel !== 'healthy';
+
+  const snapshotDescription = snapshotLoading
+    ? 'Running health checks…'
+    : healthUnresolved
+      ? 'The latest health snapshot could not be loaded.'
+      : totalProblems === 0
+        ? 'No detected issues for this VM.'
+        : `${totalProblems} detected issue${totalProblems !== 1 ? 's' : ''}.`;
+
+  const retryHealthSnapshot = () => {
+    if (vmId) dispatch(fetchVMHealthSnapshot({ vmId }));
+  };
+
   return (
     <Page>
         <Card
@@ -105,12 +166,16 @@ const VMOverviewTab = ({ vmId, vm }) => {
           spotlight={false}
           glow={false}
           leadingIcon={<Heart size={18} />}
-          leadingIconTone={healthLevel === 'healthy' ? 'green' : healthLevel === 'degraded' ? 'amber' : 'rose'}
+          leadingIconTone={
+            snapshotLoading || healthUnresolved
+              ? 'neutral'
+              : healthLevel === 'healthy' ? 'green' : healthLevel === 'degraded' ? 'amber' : 'rose'
+          }
           title={
             <ResponsiveStack direction="row" gap={3} align="center" wrap>
               <span>Health</span>
-              <Badge tone={healthTone} pulse={healthLevel !== 'healthy'}>
-                {healthLabel}
+              <Badge tone={snapshotBadgeTone} pulse={snapshotBadgePulse}>
+                {snapshotBadgeLabel}
               </Badge>
               {lastCheckTime ? (
                 <span>
@@ -119,13 +184,33 @@ const VMOverviewTab = ({ vmId, vm }) => {
               ) : null}
             </ResponsiveStack>
           }
-          description={
-            totalProblems === 0
-              ? 'No detected issues for this VM.'
-              : `${totalProblems} detected issue${totalProblems !== 1 ? 's' : ''}.`
-          }
+          description={snapshotDescription}
         >
-          {totalProblems > 0 ? (
+          {snapshotLoading ? (
+            <ResponsiveStack direction="col" gap={2}>
+              <Skeleton />
+              <Skeleton />
+            </ResponsiveStack>
+          ) : healthError ? (
+            <Alert
+              tone="danger"
+              size="sm"
+              icon={<AlertTriangle size={14} />}
+              title="Couldn't load the health snapshot"
+              actions={
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<RefreshCw size={14} />}
+                  onClick={retryHealthSnapshot}
+                >
+                  Retry
+                </Button>
+              }
+            >
+              {healthError}
+            </Alert>
+          ) : totalProblems > 0 ? (
             <ResponsiveStack direction="row" gap={2} wrap>
               {criticalProblems.length > 0 ? (
                 <Badge tone="danger" icon={<AlertTriangle size={12} />} pulse>

@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogBody,
+  IconButton,
   IconTile,
   PropertyList,
   ResponsiveStack,
@@ -47,13 +48,13 @@ const FlowNode = ({ icon, label, status, isOk, details, info }) => {
         >
           {status}
         </Badge>
-        <button
-          type="button"
+        <IconButton
+          size="sm"
+          variant="ghost"
+          label={`Details for ${label}`}
+          icon={<HelpCircle size={14} />}
           onClick={() => setIsOpen(true)}
-          aria-label={`Details for ${label}`}
-        >
-          <HelpCircle size={14} />
-        </button>
+        />
       </ResponsiveStack>
 
       <Dialog

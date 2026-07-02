@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { gql } from '@apollo/client';
+import { gql, CombinedGraphQLErrors, ServerError } from '@apollo/client';
 import client from '@/apollo-client';
 import { createDebugger } from '@/utils/debug';
 
@@ -15,21 +15,69 @@ import {
 
 const debug = createDebugger('vms-slice');
 
+// Keys whose values must never be written to the console / debug panel.
+const SENSITIVE_KEYS = new Set([
+  'password', 'confirmPassword', 'newPassword', 'currentPassword', 'oldPassword',
+  'bindPassword', 'productKey', 'token', 'accessToken', 'refreshToken', 'secret'
+]);
+
+// Deep-clone GraphQL variables with sensitive fields redacted so we can log the
+// SHAPE of a mutation/query without leaking VM admin or account credentials.
+const sanitizeVariables = (value) => {
+  if (Array.isArray(value)) return value.map(sanitizeVariables);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, SENSITIVE_KEYS.has(k) ? '[REDACTED]' : sanitizeVariables(v)])
+    );
+  }
+  return value;
+};
+
+// Categorize an Apollo Client 4 error into a friendly Error. v4 removed
+// ApolloError: GraphQL errors arrive as CombinedGraphQLErrors (errors live on
+// `err.errors`) and transport/HTTP failures as ServerError (carrying a numeric
+// `statusCode`). The old `.networkError` / `.graphQLErrors` / name==='ApolloError'
+// shapes no longer exist. Mirrors the idiom in src/apollo-client.js.
+const categorizeGraphQLError = (error) => {
+  // Transport / HTTP failure (non-2xx with a numeric statusCode).
+  if (ServerError.is(error)) {
+    return new Error(`Network error: Unable to connect to the backend server. Please check your connection.`);
+  }
+
+  // A raw fetch rejection (connection refused / DNS / abort) carries no
+  // statusCode; fall back to matching the message.
+  if (typeof error?.message === 'string' && error.message.includes('fetch')) {
+    return new Error(`Connection error: Failed to reach the backend server. Please verify the server is running.`);
+  }
+
+  // GraphQL errors are wrapped in CombinedGraphQLErrors; individual errors are
+  // on `error.errors`.
+  if (CombinedGraphQLErrors.is(error) && error.errors?.length > 0) {
+    const graphqlErrorMessages = error.errors.map(err => err.message).join(', ');
+    return new Error(`GraphQL error: ${graphqlErrorMessages}`);
+  }
+
+  // Already a plain Error (e.g. our own thrown payload error) — pass through.
+  return error instanceof Error ? error : new Error(String(error?.message || error || 'Unknown error'));
+};
+
 const executeGraphQLMutation = async (mutation, variables) => {
   try {
-    debug.log('mutation', 'Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables });
+    debug.log('mutation', 'Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables: sanitizeVariables(variables) });
     const response = await client.mutate({ mutation, variables });
     debug.log('mutation', 'GraphQL mutation response', response);
 
-    // Check for GraphQL errors in the response
-    if (response.errors) {
-      const errorMessage = response.errors.map(err => err.message).join(', ');
-      throw new Error(errorMessage);
+    // Apollo Client 4: client.mutate resolves with a SINGULAR `error` (there is
+    // no plural `errors`). With the default errorPolicy a failing mutation throws
+    // a CombinedGraphQLErrors instead (handled in catch), but honour a surfaced
+    // `error` too when errorPolicy:'all' is in play.
+    if (response.error) {
+      throw response.error;
     }
 
-    // Check for errors in the data response
-    const firstKey = Object.keys(response.data)[0];
-    if (response.data[firstKey]?.errors) {
+    // Check for domain-level errors embedded in the mutation payload itself.
+    const firstKey = Object.keys(response.data || {})[0];
+    if (response.data?.[firstKey]?.errors) {
       const errorMessage = response.data[firstKey].errors.map(err => err.message).join(', ');
       throw new Error(errorMessage);
     }
@@ -37,23 +85,7 @@ const executeGraphQLMutation = async (mutation, variables) => {
     return response.data;
   } catch (error) {
     debug.error('mutation', 'GraphQL mutation error', error);
-    console.error('GraphQL mutation error:', error);
-
-    // Enhanced error categorization for mutations
-    if (error.networkError) {
-      throw new Error(`Network error: Unable to connect to the backend server. Please check your connection.`);
-    }
-
-    if (error.message.includes('fetch')) {
-      throw new Error(`Connection error: Failed to reach the backend server. Please verify the server is running.`);
-    }
-
-    if (error.name === 'ApolloError' && error.graphQLErrors?.length > 0) {
-      const graphqlErrorMessages = error.graphQLErrors.map(err => err.message).join(', ');
-      throw new Error(`GraphQL error: ${graphqlErrorMessages}`);
-    }
-
-    throw error;
+    throw categorizeGraphQLError(error);
   }
 };
 
@@ -66,7 +98,7 @@ const withBackoff = async (fn, { retries=3, base=500 }={}) => {
 };
 
 const executeGraphQLQuery = async (query, variables = {}) => {
-  debug.log('graphql', 'Executing GraphQL query:', query.definitions[0]?.name?.value, variables);
+  debug.log('graphql', 'Executing GraphQL query:', query.definitions[0]?.name?.value, sanitizeVariables(variables));
   try {
     const response = await client.query({
       query,
@@ -74,13 +106,20 @@ const executeGraphQLQuery = async (query, variables = {}) => {
       fetchPolicy: 'network-only' // Force network request
     });
 
-    // Check for GraphQL errors in the response
-    if (response.errors) {
-      const errorMessage = response.errors.map(err => err.message).join(', ');
-      throw new Error(errorMessage);
+    // Apollo Client 4: client.query resolves with a SINGULAR `error` (no plural
+    // `errors`). With errorPolicy:'all' (the client default) a failing query does
+    // NOT throw — the error is surfaced here while `data` may be null or partial.
+    // Surface it as a real error instead of crashing on Object.keys(null) below
+    // or silently returning empty data (e.g. fetchVms's `data.machines || []`).
+    if (response.error) {
+      throw response.error;
     }
 
-    // Check for errors in the data response
+    if (!response.data) {
+      throw new Error('No data returned from the server.');
+    }
+
+    // Check for domain-level errors embedded in the payload itself.
     const firstKey = Object.keys(response.data)[0];
     if (response.data[firstKey]?.errors) {
       const errorMessage = response.data[firstKey].errors.map(err => err.message).join(', ');
@@ -90,22 +129,7 @@ const executeGraphQLQuery = async (query, variables = {}) => {
     return response.data;
   } catch (error) {
     debug.error('graphql', 'GraphQL query error:', error);
-
-    // Enhanced error categorization
-    if (error.networkError) {
-      throw new Error(`Network error: Unable to connect to the backend server. Please check your connection.`);
-    }
-
-    if (error.message.includes('fetch')) {
-      throw new Error(`Connection error: Failed to reach the backend server. Please verify the server is running.`);
-    }
-
-    if (error.name === 'ApolloError' && error.graphQLErrors?.length > 0) {
-      const graphqlErrorMessages = error.graphQLErrors.map(err => err.message).join(', ');
-      throw new Error(`GraphQL error: ${graphqlErrorMessages}`);
-    }
-
-    throw error;
+    throw categorizeGraphQLError(error);
   }
 };
 
@@ -174,7 +198,13 @@ export const playVm = createAsyncThunk(
   'vms/playVm',
   async (payload, { rejectWithValue }) => {
     try {
-      await executeGraphQLMutation(PowerOnDocument, { id: payload.id });
+      const data = await executeGraphQLMutation(PowerOnDocument, { id: payload.id });
+      // powerOn resolves { success, message } (SuccessType) with HTTP 200 even on
+      // failure — treat success:false as an error so the optimistic 'running'
+      // status is never forced into the store.
+      if (data?.powerOn && data.powerOn.success === false) {
+        return rejectWithValue(data.powerOn.message || 'Failed to start VM');
+      }
       return payload;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -186,7 +216,10 @@ export const pauseVm = createAsyncThunk(
   'vms/pauseVm',
   async (payload, { rejectWithValue }) => {
     try {
-      await executeGraphQLMutation(SuspendDocument, { id: payload.id });
+      const data = await executeGraphQLMutation(SuspendDocument, { id: payload.id });
+      if (data?.suspend && data.suspend.success === false) {
+        return rejectWithValue(data.suspend.message || 'Failed to pause VM');
+      }
       return payload;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -198,7 +231,10 @@ export const stopVm = createAsyncThunk(
   'vms/stopVm',
   async (payload, { rejectWithValue }) => {
     try {
-      await executeGraphQLMutation(PowerOffDocument, { id: payload.id });
+      const data = await executeGraphQLMutation(PowerOffDocument, { id: payload.id });
+      if (data?.powerOff && data.powerOff.success === false) {
+        return rejectWithValue(data.powerOff.message || 'Failed to stop VM');
+      }
       return payload;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -283,15 +319,19 @@ const vmsSlice = createSlice({
       const updatedVm = action.payload;
       const index = state.items.findIndex(vm => vm.id === updatedVm.id);
       if (index !== -1) {
-        state.items[index] = updatedVm;
-        debug.success('realtime', 'VM updated', updatedVm.name);
+        // MERGE, never full-replace: the backend health paths dispatch
+        // 'vms','update' with PARTIAL objects (e.g. { id, healthCheckStarted }),
+        // so overwriting the whole row would blank out name/status/etc. Merging
+        // preserves the existing fields and applies only what changed.
+        state.items[index] = { ...state.items[index], ...updatedVm };
+        debug.success('realtime', 'VM updated', state.items[index].name);
 
         // Clear pending action when real-time update arrives
         delete state.pendingActions[updatedVm.id];
 
         // Update selected machine if it's the one being updated
         if (state.selectedMachine?.id === updatedVm.id) {
-          state.selectedMachine = updatedVm;
+          state.selectedMachine = { ...state.selectedMachine, ...updatedVm };
         }
       }
     },
@@ -368,7 +408,11 @@ const vmsSlice = createSlice({
         const connectionStatus = typeof errorData === 'object' ? errorData?.connectionStatus : null;
 
         state.error.fetch = errorMessage;
-        state.items = []; // Set empty array on error to prevent undefined
+        // Do NOT clear items on a failed (re)fetch: a transient background
+        // revalidation error would otherwise wipe the already-rendered list and
+        // flip consuming pages to the first-run "No desktops yet" empty state.
+        // Keep the last successful payload and surface the error alongside it via
+        // connectionStatus below.
 
         // Update connection status if available
         if (connectionStatus) {

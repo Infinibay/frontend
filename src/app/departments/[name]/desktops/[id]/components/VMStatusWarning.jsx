@@ -12,6 +12,7 @@ import {
 } from '@infinibay/harbor';
 import { AlertTriangle, Clock, Info, Power } from 'lucide-react';
 import { usePowerOffMutation } from '@/gql/hooks';
+import { toast } from '@/hooks/use-toast';
 
 const VMStatusWarning = ({ vmStatus, vmSetupComplete, vmId, vmName, onVMStopped }) => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -23,11 +24,33 @@ const VMStatusWarning = ({ vmStatus, vmSetupComplete, vmId, vmName, onVMStopped 
 
   const handleStopVM = async () => {
     try {
-      await powerOffMachine({ variables: { id: vmId } });
+      // powerOff returns SuccessType { success, message } and only THROWS on a
+      // transport/GraphQL error — a resolver failure (e.g. QEMU refused to stop)
+      // comes back as success:false with HTTP 200. Inspect it explicitly so we
+      // don't close the dialog and report a shutdown that never happened.
+      const { data } = await powerOffMachine({ variables: { id: vmId } });
+      const result = data?.powerOff;
+      if (result && result.success === false) {
+        toast({
+          title: 'Could not shut down desktop',
+          description: result.message || 'The desktop could not be stopped.',
+          variant: 'error',
+        });
+        return;
+      }
+      toast({
+        title: 'Shutting down',
+        description: 'The desktop is powering off. This may take up to 2 minutes.',
+        variant: 'success',
+      });
       setIsConfirmOpen(false);
       onVMStopped?.();
     } catch (error) {
-      console.error('Error stopping VM:', error);
+      toast({
+        title: 'Could not shut down desktop',
+        description: error?.message || 'The desktop could not be stopped.',
+        variant: 'error',
+      });
     }
   };
 

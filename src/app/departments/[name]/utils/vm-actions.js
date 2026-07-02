@@ -1,7 +1,7 @@
 /**
  * Utility functions for VM actions in the department page
  */
-import { 
+import {
   playVm,
   pauseVm,
   stopVm,
@@ -9,6 +9,15 @@ import {
   fetchVms,
   deselectMachine
 } from "@/state/slices/vms";
+import { toast } from "sonner";
+import { createDebugger } from "@/utils/debug";
+
+const debug = createDebugger('frontend:utils:vm-actions');
+
+const errorMessage = (error, fallback) => {
+  if (typeof error === 'string') return error;
+  return error?.message || fallback;
+};
 
 /**
  * Handles playing a VM
@@ -17,9 +26,15 @@ import {
  * @returns {Promise<void>}
  */
 export const handlePlay = async (dispatch, pc) => {
-  if (pc) {
-    await dispatch(playVm({ id: pc.id }));
+  if (!pc) return;
+  try {
+    await dispatch(playVm({ id: pc.id })).unwrap();
     dispatch(fetchVms());
+  } catch (error) {
+    debug.error('play', 'Failed to start VM:', error);
+    toast.error(
+      `Could not start ${pc.name || 'desktop'}: ${errorMessage(error, 'Please try again.')}`
+    );
   }
 };
 
@@ -30,9 +45,15 @@ export const handlePlay = async (dispatch, pc) => {
  * @returns {Promise<void>}
  */
 export const handlePause = async (dispatch, pc) => {
-  if (pc) {
-    await dispatch(pauseVm({ id: pc.id }));
+  if (!pc) return;
+  try {
+    await dispatch(pauseVm({ id: pc.id })).unwrap();
     dispatch(fetchVms());
+  } catch (error) {
+    debug.error('pause', 'Failed to pause VM:', error);
+    toast.error(
+      `Could not pause ${pc.name || 'desktop'}: ${errorMessage(error, 'Please try again.')}`
+    );
   }
 };
 
@@ -43,9 +64,15 @@ export const handlePause = async (dispatch, pc) => {
  * @returns {Promise<void>}
  */
 export const handleStop = async (dispatch, pc) => {
-  if (pc) {
-    await dispatch(stopVm({ id: pc.id }));
+  if (!pc) return;
+  try {
+    await dispatch(stopVm({ id: pc.id })).unwrap();
     dispatch(fetchVms());
+  } catch (error) {
+    debug.error('stop', 'Failed to stop VM:', error);
+    toast.error(
+      `Could not stop ${pc.name || 'desktop'}: ${errorMessage(error, 'Please try again.')}`
+    );
   }
 };
 
@@ -54,23 +81,23 @@ export const handleStop = async (dispatch, pc) => {
  * @param {Object} dispatch - Redux dispatch function
  * @param {string} vmId - The VM ID to delete
  * @param {Function} onSuccess - Callback function on successful deletion
- * @param {Function} onError - Callback function on error
+ * @param {Function} onError - Callback function on error, receives the message
  * @returns {Promise<void>}
  */
 export const handleDelete = async (dispatch, vmId, onSuccess, onError) => {
   if (!vmId) {
-    console.error("Cannot delete VM: No VM ID provided");
+    debug.error('delete', 'Cannot delete VM: No VM ID provided');
     onError?.("Failed to delete the desktop: No VM ID provided.");
     return;
   }
-  
+
   try {
     await dispatch(deleteVm({ id: vmId })).unwrap();
     dispatch(fetchVms());
     dispatch(deselectMachine());
     onSuccess?.();
   } catch (error) {
-    console.error("Failed to delete VM:", error);
-    onError?.("Failed to delete the desktop. Please try again.");
+    debug.error('delete', 'Failed to delete VM:', error);
+    onError?.(errorMessage(error, 'Failed to delete the desktop. Please try again.'));
   }
 };

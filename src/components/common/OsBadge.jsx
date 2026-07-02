@@ -7,8 +7,11 @@ import { Monitor } from 'lucide-react';
  * OsBadge — given a free-form OS/template string, returns a branded chip:
  * tiny logo (simple-icons CDN) + short name, colored to match the OS.
  *
- * Low saturation to match Harbor's muted palette — the chip is a signal,
- * not a sticker.
+ * Only the icon carries the brand color. The label uses the semantic `text-fg`
+ * token and the background a subtle brand-tinted wash, so the chip stays legible
+ * on BOTH the light and dark themes — the previous per-OS pastel text colors
+ * (e.g. text-[rgb(120_180_240)]) were tuned for dark surfaces and washed out
+ * to near-invisible on the light theme.
  *
  * Icons are fetched from the simple-icons CDN. On an air-gapped / offline
  * on-prem install (or if a CSP blocks the CDN) the <img> fails; we degrade
@@ -16,17 +19,17 @@ import { Monitor } from 'lucide-react';
  */
 
 const OS_MAP = [
-  { match: /windows|\bwin\b|win10|win11|microsoft/i, slug: 'windows11', label: 'Windows', tintBg: 'bg-[rgb(0_120_214_/_0.10)]',   tintFg: 'text-[rgb(120_180_240)]', color: '5EB5FF', inline: 'windows' },
-  { match: /ubuntu/i,          slug: 'ubuntu',        label: 'Ubuntu',      tintBg: 'bg-[rgb(233_84_32_/_0.10)]', tintFg: 'text-[rgb(233_140_100)]', color: 'E95420' },
-  { match: /debian/i,          slug: 'debian',        label: 'Debian',      tintBg: 'bg-[rgb(168_29_51_/_0.10)]', tintFg: 'text-[rgb(220_140_150)]', color: 'DC7B8A' },
-  { match: /fedora/i,          slug: 'fedora',        label: 'Fedora',      tintBg: 'bg-[rgb(81_162_218_/_0.10)]',tintFg: 'text-[rgb(120_180_230)]', color: '78B4E6' },
-  { match: /centos/i,          slug: 'centos',        label: 'CentOS',      tintBg: 'bg-[rgb(62_115_167_/_0.10)]',tintFg: 'text-[rgb(130_170_220)]', color: '82AADB' },
-  { match: /rhel|red\s?hat/i,  slug: 'redhat',        label: 'RHEL',        tintBg: 'bg-[rgb(238_0_0_/_0.10)]',   tintFg: 'text-[rgb(240_130_130)]', color: 'F08282' },
-  { match: /arch/i,            slug: 'archlinux',     label: 'Arch',        tintBg: 'bg-[rgb(23_147_209_/_0.10)]',tintFg: 'text-[rgb(100_180_220)]', color: '64B4DC' },
-  { match: /alpine/i,          slug: 'alpinelinux',   label: 'Alpine',      tintBg: 'bg-[rgb(13_89_127_/_0.10)]', tintFg: 'text-[rgb(130_180_220)]', color: '82B4DC' },
-  { match: /macos|osx|darwin|apple|mac\s?os/i, slug: 'apple', label: 'macOS', tintBg: 'bg-fg-muted/10',           tintFg: 'text-fg',                color: '888888' },
-  { match: /freebsd|bsd/i,     slug: 'freebsd',       label: 'FreeBSD',     tintBg: 'bg-[rgb(171_43_40_/_0.10)]', tintFg: 'text-[rgb(220_140_140)]', color: 'DC8C8C' },
-  { match: /linux|gnu/i,       slug: 'linux',         label: 'Linux',       tintBg: 'bg-[rgb(252_198_36_/_0.08)]',tintFg: 'text-[rgb(230_195_100)]', color: 'E6C364' },
+  { match: /windows|\bwin\b|win10|win11|microsoft/i, slug: 'windows11', label: 'Windows', tintBg: 'bg-[rgb(0_120_214_/_0.10)]', color: '5EB5FF', inline: 'windows' },
+  { match: /ubuntu/i,          slug: 'ubuntu',        label: 'Ubuntu',      tintBg: 'bg-[rgb(233_84_32_/_0.10)]', color: 'E95420' },
+  { match: /debian/i,          slug: 'debian',        label: 'Debian',      tintBg: 'bg-[rgb(168_29_51_/_0.10)]', color: 'DC7B8A' },
+  { match: /fedora/i,          slug: 'fedora',        label: 'Fedora',      tintBg: 'bg-[rgb(81_162_218_/_0.10)]', color: '78B4E6' },
+  { match: /centos/i,          slug: 'centos',        label: 'CentOS',      tintBg: 'bg-[rgb(62_115_167_/_0.10)]', color: '82AADB' },
+  { match: /rhel|red\s?hat/i,  slug: 'redhat',        label: 'RHEL',        tintBg: 'bg-[rgb(238_0_0_/_0.10)]',   color: 'F08282' },
+  { match: /arch/i,            slug: 'archlinux',     label: 'Arch',        tintBg: 'bg-[rgb(23_147_209_/_0.10)]', color: '64B4DC' },
+  { match: /alpine/i,          slug: 'alpinelinux',   label: 'Alpine',      tintBg: 'bg-[rgb(13_89_127_/_0.10)]', color: '82B4DC' },
+  { match: /macos|osx|darwin|apple|mac\s?os/i, slug: 'apple', label: 'macOS', tintBg: 'bg-fg-muted/10', color: '888888' },
+  { match: /freebsd|bsd/i,     slug: 'freebsd',       label: 'FreeBSD',     tintBg: 'bg-[rgb(171_43_40_/_0.10)]', color: 'DC8C8C' },
+  { match: /linux|gnu/i,       slug: 'linux',         label: 'Linux',       tintBg: 'bg-[rgb(252_198_36_/_0.08)]', color: 'E6C364' },
 ];
 
 function matchOs(os) {
@@ -94,9 +97,8 @@ export function OsBadge({ os, size = 14, className = '' }) {
     <span
       className={[
         'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md',
-        'text-xs whitespace-nowrap',
+        'text-xs text-fg whitespace-nowrap',
         hit.tintBg,
-        hit.tintFg,
         className,
       ].join(' ')}
     >

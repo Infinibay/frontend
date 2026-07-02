@@ -96,42 +96,16 @@ class ProblemPriorityService {
   }
 
   /**
-   * Get priority label in Spanish
+   * Get priority label
    */
   getPriorityLabel(priority) {
     const labels = {
-      [PriorityLevel.CRITICAL]: 'CRÍTICO',
-      [PriorityLevel.IMPORTANT]: 'IMPORTANTE',
-      [PriorityLevel.INFORMATIONAL]: 'INFORMATIVO'
+      [PriorityLevel.CRITICAL]: 'CRITICAL',
+      [PriorityLevel.IMPORTANT]: 'IMPORTANT',
+      [PriorityLevel.INFORMATIONAL]: 'INFORMATIONAL'
     };
 
-    return labels[priority] || 'DESCONOCIDO';
-  }
-
-  /**
-   * Get priority icon
-   */
-  getPriorityIcon(priority) {
-    const icons = {
-      [PriorityLevel.CRITICAL]: '🚨',
-      [PriorityLevel.IMPORTANT]: '⚠️',
-      [PriorityLevel.INFORMATIONAL]: 'ℹ️'
-    };
-
-    return icons[priority] || '❓';
-  }
-
-  /**
-   * Get priority color class
-   */
-  getPriorityColor(priority) {
-    const colors = {
-      [PriorityLevel.CRITICAL]: 'text-red-600 bg-red-50 border-red-200',
-      [PriorityLevel.IMPORTANT]: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-      [PriorityLevel.INFORMATIONAL]: 'text-blue-600 bg-blue-50 border-blue-200'
-    };
-
-    return colors[priority] || 'text-muted-foreground bg-muted border-border';
+    return labels[priority] || 'UNKNOWN';
   }
 
   /**
@@ -139,12 +113,12 @@ class ProblemPriorityService {
    */
   getPriorityDescription(priority) {
     const descriptions = {
-      [PriorityLevel.CRITICAL]: 'Requiere atención inmediata. Puede afectar la operación del negocio o la seguridad.',
-      [PriorityLevel.IMPORTANT]: 'Debe resolverse pronto. Puede afectar el rendimiento o la productividad.',
-      [PriorityLevel.INFORMATIONAL]: 'Para monitoreo y optimización. No afecta la operación inmediata.'
+      [PriorityLevel.CRITICAL]: 'Requires immediate attention. May affect business operations or security.',
+      [PriorityLevel.IMPORTANT]: 'Should be resolved soon. May affect performance or productivity.',
+      [PriorityLevel.INFORMATIONAL]: 'For monitoring and optimization. Does not affect immediate operation.'
     };
 
-    return descriptions[priority] || 'Prioridad no definida';
+    return descriptions[priority] || 'Priority not defined';
   }
 
   /**
@@ -238,8 +212,8 @@ class ProblemPriorityService {
   requiresImmediateAction(problems) {
     return problems.some(problem =>
       problem.priority === PriorityLevel.CRITICAL &&
-      (problem.businessImpact.securityRisk === 'CRITICAL' ||
-        problem.businessImpact.systemStabilityRisk === 'CRITICAL')
+      (problem.businessImpact?.securityRisk === 'CRITICAL' ||
+        problem.businessImpact?.systemStabilityRisk === 'CRITICAL')
     );
   }
 
@@ -248,12 +222,12 @@ class ProblemPriorityService {
    */
   getRecommendedTimeline(priority) {
     const timelines = {
-      [PriorityLevel.CRITICAL]: 'Resolver inmediatamente (dentro de 1 hora)',
-      [PriorityLevel.IMPORTANT]: 'Resolver pronto (dentro de 24 horas)',
-      [PriorityLevel.INFORMATIONAL]: 'Revisar cuando sea conveniente (dentro de 1 semana)'
+      [PriorityLevel.CRITICAL]: 'Resolve immediately (within 1 hour)',
+      [PriorityLevel.IMPORTANT]: 'Resolve soon (within 24 hours)',
+      [PriorityLevel.INFORMATIONAL]: 'Review when convenient (within 1 week)'
     };
 
-    return timelines[priority] || 'Revisar según disponibilidad';
+    return timelines[priority] || 'Review as availability permits';
   }
 
   /**

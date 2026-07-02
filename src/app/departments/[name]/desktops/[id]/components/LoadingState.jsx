@@ -14,14 +14,14 @@ const LoadingState = () => {
         <Card variant="default" spotlight={false} glow={false}>
           <ResponsiveStack direction="col" gap={3}>
             <ResponsiveStack direction="row" gap={3} align="center">
-              <Skeleton />
-              <Skeleton />
+              <Skeleton circle width={44} height={44} />
+              <Skeleton width="40%" height={22} />
             </ResponsiveStack>
-            <Skeleton />
+            <Skeleton width="60%" height={14} />
             <ResponsiveStack direction="row" gap={2} wrap>
-              <Skeleton />
-              <Skeleton />
-              <Skeleton />
+              <Skeleton width={96} height={32} />
+              <Skeleton width={96} height={32} />
+              <Skeleton width={96} height={32} />
             </ResponsiveStack>
           </ResponsiveStack>
         </Card>
@@ -31,9 +31,9 @@ const LoadingState = () => {
             <BentoItem key={index}>
               <Card variant="default" spotlight={false} glow={false} fullHeight>
                 <ResponsiveStack direction="col" gap={3}>
-                  <Skeleton />
-                  <Skeleton />
-                  <Skeleton />
+                  <Skeleton width="50%" height={18} />
+                  <Skeleton width="100%" height={12} />
+                  <Skeleton width="80%" height={12} />
                 </ResponsiveStack>
               </Card>
             </BentoItem>

@@ -4,45 +4,19 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
-import { Page, Button, ButtonGroup, Alert, IconButton, ResponsiveStack } from '@infinibay/harbor';
+import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { Page, Button, ButtonGroup, Alert, IconButton, ResponsiveStack, Spinner } from '@infinibay/harbor';
 
 import { PageHeader } from '@/components/common/PageHeader';
-import { BlueprintForm } from '../../components/blueprint-form';
+import { usePageHeader } from '@/hooks/usePageHeader';
+import { BlueprintForm, validateBlueprint } from '../../components/blueprint-form';
 import {
   updateTemplate,
   fetchTemplates,
   selectTemplatesLoading,
   selectTemplatesError,
 } from '@/state/slices/templates';
-
-const blank = {
-  name: '',
-  description: '',
-  cores: '',
-  ram: '',
-  storage: '',
-  categoryId: '',
-  osType: '',
-  applicationIds: [],
-  scriptIds: [],
-  wallpaperUrl: '',
-  powerPlan: '',
-  encryptDisk: false,
-  _activeTab: 'basics',
-};
-
-function validate(form) {
-  if (!form.name.trim()) return 'Name is required';
-  if (!form.osType) return 'Operating system is required';
-  const cores = Number(form.cores);
-  const ram = Number(form.ram);
-  const storage = Number(form.storage);
-  if (!cores || cores <= 0 || cores > 128) return 'CPU cores must be 1–128';
-  if (!ram || ram <= 0 || ram > 512) return 'RAM must be 1–512 GB';
-  if (!storage || storage <= 0 || storage > 10000) return 'Storage must be 1–10 000 GB';
-  return null;
-}
+import { fetchTemplateCategories } from '@/state/slices/templateCategories';
 
 export default function EditBlueprintPage({ params }) {
   const { id } = use(params);
@@ -51,19 +25,38 @@ export default function EditBlueprintPage({ params }) {
   const loading = useSelector(selectTemplatesLoading);
   const error = useSelector(selectTemplatesError);
   const templates = useSelector((s) => s.templates?.items ?? []);
+  const categories = useSelector((s) => s.templateCategories?.items ?? []);
   const template = templates.find((t) => t.id === id);
-  const [form, setForm] = useState(blank);
-  const [ready, setReady] = useState(false);
+  const [form, setForm] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
+  const ready = form !== null;
 
-  // Make sure templates are loaded — if the user navigated directly to
-  // /blueprints/abc/edit without passing through /blueprints first.
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: 'Home', href: '/' },
+        { label: 'Blueprints', href: '/blueprints' },
+        { label: 'Edit blueprint', isCurrent: true },
+      ],
+      backButton: { href: '/blueprints', label: 'Back to blueprints' },
+      actions: [],
+    },
+    []
+  );
+
+  // Make sure templates + categories are loaded — the user may have navigated
+  // directly to /blueprints/abc/edit without passing through /blueprints first.
   useEffect(() => {
     if (templates.length === 0) dispatch(fetchTemplates());
   }, [dispatch, templates.length]);
 
   useEffect(() => {
+    if (categories.length === 0) dispatch(fetchTemplateCategories());
+  }, [dispatch, categories.length]);
+
+  useEffect(() => {
     if (!template || ready) return;
-     
     setForm({
       name: template.name || '',
       description: template.description || '',
@@ -76,20 +69,37 @@ export default function EditBlueprintPage({ params }) {
       scriptIds: (template.scripts ?? []).map((s) => s.scriptId),
       wallpaperUrl: template.wallpaperUrl || '',
       powerPlan: template.powerPlan || '',
+      encryptDisk: !!template.encryptDisk,
       _activeTab: 'basics',
     });
-     
-    setReady(true);
   }, [template, ready]);
 
-  const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
+  const update = (patch) => {
+    setForm((prev) => ({ ...(prev ?? {}), ...patch }));
+    setErrors((prev) => {
+      if (Object.keys(prev).length === 0) return prev;
+      const next = { ...prev };
+      let changed = false;
+      for (const k of Object.keys(patch)) {
+        if (k in next) {
+          delete next[k];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  };
 
   const handleSave = async () => {
-    const err = validate(form);
-    if (err) {
-      toast.error(err);
+    const fieldErrors = validateBlueprint(form);
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      update({ _activeTab: 'basics' });
+      toast.error(Object.values(fieldErrors)[0]);
       return;
     }
+    setErrors({});
+    setSubmitError(null);
     try {
       await dispatch(
         updateTemplate({
@@ -105,7 +115,7 @@ export default function EditBlueprintPage({ params }) {
             wallpaperUrl: form.wallpaperUrl?.trim() || null,
             powerPlan: form.powerPlan || null,
             encryptDisk: !!form.encryptDisk,
-            applications: form.applicationIds.map((id) => ({ applicationId: id })),
+            applications: form.applicationIds.map((appId) => ({ applicationId: appId })),
             scripts: form.scriptIds.map((sid, i) => ({ scriptId: sid, order: i })),
           },
         })
@@ -113,11 +123,43 @@ export default function EditBlueprintPage({ params }) {
       toast.success('Blueprint updated');
       router.push('/blueprints');
     } catch (err) {
-      toast.error(`Could not save: ${err.message || err}`);
+      const message = err?.message || String(err);
+      setSubmitError(message);
+      toast.error(`Could not save: ${message}`);
     }
   };
 
-  if (!template && ready === false && templates.length > 0) {
+  // The template is not (yet) in the store. Distinguish "still fetching" from
+  // "fetch settled and it genuinely isn't there" so a deep link never hangs on
+  // an eternal "Loading…".
+  if (!template && !ready) {
+    if (loading?.fetch) {
+      return (
+        <Page>
+          <ResponsiveStack direction="row" gap={3} align="center" justify="center" className="py-12">
+            <Spinner />
+            <span className="text-fg-muted text-sm">Loading blueprint…</span>
+          </ResponsiveStack>
+        </Page>
+      );
+    }
+    if (error?.fetch) {
+      return (
+        <Page>
+          <Alert
+            tone="danger"
+            title="Couldn't load blueprint"
+            actions={
+              <Button size="sm" icon={<RefreshCw size={14} />} onClick={() => dispatch(fetchTemplates())}>
+                Retry
+              </Button>
+            }
+          >
+            {String(error.fetch)}
+          </Alert>
+        </Page>
+      );
+    }
     return (
       <Page>
         <Alert tone="danger" title="Blueprint not found">
@@ -154,10 +196,15 @@ export default function EditBlueprintPage({ params }) {
           />
         </ResponsiveStack>
 
-        {error?.update ? <Alert tone="danger">{String(error.update)}</Alert> : null}
+        {submitError ? <Alert tone="danger">{submitError}</Alert> : null}
 
-        {ready ? <BlueprintForm form={form} onChange={update} /> : (
-          <div className="text-fg-muted text-sm">Loading blueprint…</div>
+        {ready ? (
+          <BlueprintForm form={form} onChange={update} errors={errors} categories={categories} onSubmit={handleSave} />
+        ) : (
+          <ResponsiveStack direction="row" gap={3} align="center" justify="center" className="py-12">
+            <Spinner />
+            <span className="text-fg-muted text-sm">Loading blueprint…</span>
+          </ResponsiveStack>
         )}
       </ResponsiveStack>
     </Page>

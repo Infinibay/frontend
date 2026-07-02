@@ -1,20 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
-import { Mail, ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, ShieldQuestion } from "lucide-react";
 import {
   Page,
   Card,
-  Button,
-  TextField,
-  FormField,
   Alert,
   ResponsiveStack,
 } from "@infinibay/harbor";
+
+// Honest recovery page.
+//
+// Infinibay accounts are administrator-managed: there is no self-service
+// password-reset backend (no forgotPassword/resetPassword GraphQL operation).
+// The previous version of this page faked a "we sent a recovery code" flow that
+// never contacted a server, deceiving locked-out users. Until a real, secure
+// reset flow exists on the backend, this page tells the user the truth and
+// points them at the only path that actually works: their administrator.
 
 const pageShell = {
   minHeight: "100vh",
@@ -35,35 +39,9 @@ const backLink = {
   opacity: 0.7,
   marginBottom: "0.5rem",
 };
-const dividerFoot = {
-  borderTop: "1px solid rgba(255,255,255,0.08)",
-  marginTop: "1.25rem",
-  paddingTop: "1.25rem",
-  textAlign: "center",
-  fontSize: "0.875rem",
-  opacity: 0.7,
-};
-const linkAccent = { color: "rgb(232,121,249)", fontWeight: 500 };
+const iconWrap = { display: "flex", justifyContent: "center", color: "rgb(var(--harbor-accent))" };
 
 const ForgotPasswordPage = () => {
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const { handleSubmit, control } = useForm();
-
-  const onSubmit = async (_data) => {
-    setError("");
-    setIsLoading(true);
-    try {
-      await new Promise((r) => setTimeout(r, 300));
-      router.push("/auth/email-verification");
-    } catch (_err) {
-      setError("Couldn't send the recovery email. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div style={pageShell}>
       <Page size="sm" gap="md" padded={false}>
@@ -77,57 +55,22 @@ const ForgotPasswordPage = () => {
               <Image alt="Infinibay" src="/images/logo.png" width={56} height={56} priority />
             </div>
 
+            <div style={iconWrap}>
+              <ShieldQuestion size={40} aria-hidden />
+            </div>
+
             <div>
-              <h1 style={heading}>Forgot password?</h1>
+              <h1 style={heading}>Need to reset your password?</h1>
               <p style={subtle}>
-                Enter the email you signed up with — we&apos;ll send a recovery code.
+                Infinibay accounts are managed by your administrator.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <ResponsiveStack direction="col" gap={4}>
-                <Controller
-                  name="email"
-                  control={control}
-                  defaultValue=""
-                  rules={{
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: "Enter a valid email address",
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
-                    <FormField label="Email address" error={fieldState.error?.message}>
-                      <TextField
-                        type="email"
-                        placeholder="you@example.com"
-                        icon={<Mail size={16} />}
-                        {...field}
-                      />
-                    </FormField>
-                  )}
-                />
-
-                {error && <Alert tone="danger">{error}</Alert>}
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  fullWidth
-                  loading={isLoading}
-                  disabled={isLoading}
-                  icon={<Send size={16} />}
-                >
-                  {isLoading ? "Sending…" : "Send recovery code"}
-                </Button>
-              </ResponsiveStack>
-            </form>
-
-            <div style={dividerFoot}>
-              <span>Don&apos;t have an account? </span>
-              <Link href="/auth/sign-up" style={linkAccent}>Sign up</Link>
-            </div>
+            <Alert tone="info">
+              To regain access, contact your Infinibay administrator and ask them
+              to reset your password from the Users section. For security, resets
+              are performed by an administrator — not by email.
+            </Alert>
           </ResponsiveStack>
         </Card>
       </Page>

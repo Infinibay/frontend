@@ -19,12 +19,13 @@ import {
   CheckCircle2,
   CircleDot,
   Clock,
-  RefreshCw,
+  Trash2,
   XCircle
 } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/PageHeader';
 import { useRealTimeContext } from '@/components/RealTimeProvider';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { getSocketService } from '@/services/socketService';
 
 const EVENT_LIMIT = 100;
@@ -102,6 +103,19 @@ const RESOURCE_LABELS = Object.fromEntries(
   WATCHED_RESOURCES.map((item) => [item.resource, item.label])
 );
 
+const CONNECTION_LABELS = {
+  connected: 'Connected',
+  connecting: 'Connecting…',
+  disconnected: 'Disconnected',
+  error: 'Connection error'
+};
+
+function connectionBadgeTone(realtime) {
+  if (realtime.isConnected) return 'success';
+  if (realtime.hasError) return 'danger';
+  return 'warning';
+}
+
 function eventTone(event) {
   if (event.status === 'error' || event.action === 'failed') return 'danger';
   if (event.action?.includes('delete') || event.action?.includes('cancel')) return 'warning';
@@ -162,6 +176,21 @@ export default function EventsPage() {
   const [events, setEvents] = useState([]);
   const [resourceFilter, setResourceFilter] = useState('all');
   const realtime = useRealTimeContext();
+
+  // Reset the global header slice on mount so this route does not inherit the
+  // previous page's title, breadcrumbs and (now dead) action buttons. The title
+  // is intentionally omitted — the in-page <PageHeader title="Events"> owns the
+  // page <h1> (matches the users/desktops/pools convention).
+  usePageHeader(
+    {
+      breadcrumbs: [
+        { label: 'Home', href: '/' },
+        { label: 'Events', isCurrent: true }
+      ],
+      actions: []
+    },
+    []
+  );
 
   useEffect(() => {
     if (!realtime.isConnected) return undefined;
@@ -253,6 +282,47 @@ export default function EventsPage() {
     []
   );
 
+  // Distinguish the four states of the live feed: populated, connection error,
+  // filtered-with-no-matches, and genuinely waiting/idle. An error must never be
+  // shown as a benign "waiting for events" empty state.
+  let timelinePanelBody;
+  if (timelineEvents.length > 0) {
+    timelinePanelBody = <Timeline events={timelineEvents} />;
+  } else if (realtime.hasError) {
+    timelinePanelBody = (
+      <EmptyState
+        icon={<AlertTriangle size={22} />}
+        title="Realtime connection error"
+        description="The connection to the backend socket dropped, so live events are paused. Check your network or backend status — events resume automatically once the connection recovers."
+      />
+    );
+  } else if (events.length > 0 && filteredEvents.length === 0) {
+    timelinePanelBody = (
+      <EmptyState
+        icon={<Activity size={22} />}
+        title="No events match this filter"
+        description="No buffered events match the selected resource. Pick a different resource or clear the filter to see all activity."
+        actions={
+          <Button variant="secondary" onClick={() => setResourceFilter('all')}>
+            Clear filter
+          </Button>
+        }
+      />
+    );
+  } else {
+    timelinePanelBody = (
+      <EmptyState
+        icon={<Clock size={22} />}
+        title="Waiting for events"
+        description={
+          realtime.isConnected
+            ? 'New events will appear here as operators and services make changes.'
+            : 'Connect to the backend socket to start receiving events.'
+        }
+      />
+    );
+  }
+
   return (
     <Page>
       <ResponsiveStack direction="col" gap={4}>
@@ -267,7 +337,7 @@ export default function EventsPage() {
                 size={8}
               />
               <Button variant="secondary" onClick={() => setEvents([])} disabled={events.length === 0}>
-                <RefreshCw size={14} />
+                <Trash2 size={14} />
                 Clear
               </Button>
             </ResponsiveStack>
@@ -277,6 +347,7 @@ export default function EventsPage() {
               value={resourceFilter}
               onChange={setResourceFilter}
               options={filterOptions}
+              aria-label="Filter events by resource"
             />
           }
         />
@@ -293,20 +364,12 @@ export default function EventsPage() {
                   <Activity size={16} className="text-fg-muted" />
                   <span className="text-sm font-medium">Latest events</span>
                 </ResponsiveStack>
-                <Badge tone={realtime.isConnected ? 'success' : 'warning'}>
-                  {realtime.connectionStatus}
+                <Badge tone={connectionBadgeTone(realtime)}>
+                  {CONNECTION_LABELS[realtime.connectionStatus] || realtime.connectionStatus}
                 </Badge>
               </ResponsiveStack>
 
-              {timelineEvents.length > 0 ? (
-                <Timeline events={timelineEvents} />
-              ) : (
-                <EmptyState
-                  icon={<Clock size={22} />}
-                  title="Waiting for events"
-                  description={realtime.isConnected ? 'New events will appear here as operators and services make changes.' : 'Connect to the backend socket to start receiving events.'}
-                />
-              )}
+              {timelinePanelBody}
             </ResponsiveStack>
           </div>
 

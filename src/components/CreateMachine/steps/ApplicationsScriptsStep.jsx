@@ -13,7 +13,6 @@ import {
   EmptyState,
   FormField,
   IconTile,
-  Page,
   ResponsiveGrid,
   ResponsiveStack,
   SearchField,
@@ -74,18 +73,59 @@ export function ApplicationsScriptsStep({ id }) {
     ttl: 5 * 60 * 1000,
   });
 
-  const { data: firewallData, loading: firewallLoading } =
-    useGetDepartmentFirewallRulesQuery({
-      variables: { departmentId: departmentId || '' },
-      skip: !departmentId,
-    });
+  const {
+    data: firewallData,
+    loading: firewallLoading,
+    error: firewallError,
+  } = useGetDepartmentFirewallRulesQuery({
+    variables: { departmentId: departmentId || '' },
+    skip: !departmentId,
+  });
 
-  const { data: scriptsData, loading: scriptsLoading } = useDepartmentScriptsQuery({
+  const {
+    data: scriptsData,
+    loading: scriptsLoading,
+    error: scriptsError,
+    refetch: refetchScripts,
+  } = useDepartmentScriptsQuery({
     variables: { departmentId: departmentId || '' },
     skip: !departmentId,
   });
 
   const selectedAppIds = stepValues.applications || [];
+
+  // The OS chosen in the Blueprint step. Applications/scripts that declare an
+  // incompatible OS must not be installable on this VM.
+  const selectedOs = values.blueprint?.os;
+
+  const osFamily = (os) => {
+    const v = String(os || '').toUpperCase();
+    if (v.startsWith('WIN')) return 'WINDOWS';
+    if (
+      v.startsWith('LIN') ||
+      ['UBUNTU', 'DEBIAN', 'FEDORA', 'CENTOS', 'RHEL', 'REDHAT', 'LINUX'].some(
+        (x) => v.includes(x),
+      )
+    ) {
+      return 'LINUX';
+    }
+    return v;
+  };
+
+  // Compatible when there is no target OS yet, the item declares no OS
+  // constraint, or one of its declared OSes matches the target exactly or by
+  // family. Items with an unknown/unmatched OS stay enabled (fail-open on data
+  // gaps) — we only ever disable items that explicitly declare a different OS.
+  const isOsCompatible = (osList) => {
+    if (!selectedOs) return true;
+    if (!Array.isArray(osList) || osList.length === 0) return true;
+    const targetExact = String(selectedOs).toUpperCase();
+    const targetFamily = osFamily(selectedOs);
+    return osList.some((o) => {
+      const ov = String(o).toUpperCase();
+      return ov === targetExact || osFamily(o) === targetFamily;
+    });
+  };
 
   const checkPortEnabled = (port) => {
     if (!firewallData?.getDepartmentFirewallRules?.rules) return false;
@@ -130,6 +170,7 @@ export function ApplicationsScriptsStep({ id }) {
         name: app.name,
         description: app.description || `Add ${app.name} to your machine`,
         category: app.category || 'Other',
+        os: Array.isArray(app.os) ? app.os : [],
         icon: app.icon || null,
         iconType:
           app.iconType ||
@@ -182,10 +223,13 @@ export function ApplicationsScriptsStep({ id }) {
   };
 
   const toggleApp = (appId) => {
+    const app = allApps.find((a) => a.id === appId);
+    if (app && !isOsCompatible(app.os)) return;
     handleSelectionChange(appId, !selectedAppIds.includes(appId));
   };
 
   const handleAddScript = (script) => {
+    if (!isOsCompatible(script.os)) return;
     const newScript = { scriptId: script.id, inputValues: {} };
     const updated = [...selectedScripts, newScript];
     setSelectedScripts(updated);
@@ -260,8 +304,20 @@ export function ApplicationsScriptsStep({ id }) {
 
   return (
     <>
-      <Page size="lg">
-        {!firewallLoading && !canInstallApps && departmentId && (
+      <ResponsiveStack direction="col" gap={6}>
+        {!firewallLoading && firewallError && departmentId && (
+          <Alert
+            tone="info"
+            icon={<AlertTriangle size={14} />}
+            title="Couldn't verify firewall rules"
+          >
+            We couldn&apos;t check the department&apos;s firewall configuration,
+            so application-installation availability is unknown. Applications may
+            fail to download if ports 443/80 are blocked.
+          </Alert>
+        )}
+
+        {!firewallLoading && !firewallError && !canInstallApps && departmentId && (
           <Alert
             tone="warning"
             icon={<AlertTriangle size={14} />}
@@ -332,9 +388,10 @@ export function ApplicationsScriptsStep({ id }) {
                     return allApps
                       .filter(
                         (app) =>
-                          app.name.toLowerCase().includes(term) ||
-                          (app.description &&
-                            app.description.toLowerCase().includes(term))
+                          isOsCompatible(app.os) &&
+                          (app.name.toLowerCase().includes(term) ||
+                            (app.description &&
+                              app.description.toLowerCase().includes(term)))
                       )
                       .map((app) => ({
                         id: app.id,
@@ -383,19 +440,21 @@ export function ApplicationsScriptsStep({ id }) {
                 <ResponsiveGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
                   {filteredApps.map((app) => {
                     const isSelected = selectedAppIds.includes(app.id);
+                    const compatible = isOsCompatible(app.os);
                     return (
                       <Card
                         key={app.id}
                         variant="default"
                         spotlight={false}
                         glow={false}
-                        interactive
+                        interactive={compatible}
+                        disabled={!compatible}
                         selected={isSelected}
                         fullHeight
                         leadingIcon={renderAppIcon(app)}
                         title={app.name}
                         description={app.description}
-                        onClick={() => toggleApp(app.id)}
+                        onClick={() => compatible && toggleApp(app.id)}
                         footer={
                           <ResponsiveStack
                             direction="row"
@@ -411,7 +470,25 @@ export function ApplicationsScriptsStep({ id }) {
                             ) : null}
                           </ResponsiveStack>
                         }
-                      />
+                      >
+                        {(app.os.length > 0 || !compatible) && (
+                          <ResponsiveStack direction="row" gap={2} align="center" wrap>
+                            {app.os.map((os) => (
+                              <Badge key={os} tone="neutral">
+                                {os}
+                              </Badge>
+                            ))}
+                            {!compatible && (
+                              <Badge
+                                tone="warning"
+                                icon={<AlertTriangle size={12} />}
+                              >
+                                Not compatible with {selectedOs}
+                              </Badge>
+                            )}
+                          </ResponsiveStack>
+                        )}
+                      </Card>
                     );
                   })}
                 </ResponsiveGrid>
@@ -431,12 +508,29 @@ export function ApplicationsScriptsStep({ id }) {
         >
           {scriptsLoading ? (
             <EmptyState variant="inline" title="Loading scripts…" />
+          ) : scriptsError ? (
+            <Alert
+              tone="danger"
+              title="Error loading scripts"
+              actions={
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => refetchScripts()}
+                >
+                  Retry
+                </Button>
+              }
+            >
+              {scriptsError.message || 'Failed to load first-boot scripts.'}
+            </Alert>
           ) : scriptsData?.departmentScripts?.length ? (
             <ResponsiveGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
               {scriptsData.departmentScripts.map((script) => {
                 const isSelected = selectedScripts.some(
                   (s) => s.scriptId === script.id,
                 );
+                const scriptCompatible = isOsCompatible(script.os);
                 return (
                   <Card
                     key={script.id}
@@ -474,6 +568,7 @@ export function ApplicationsScriptsStep({ id }) {
                           size="sm"
                           variant="primary"
                           icon={<Play size={14} />}
+                          disabled={!scriptCompatible}
                           onClick={() => handleAddScript(script)}
                         >
                           Add
@@ -489,6 +584,11 @@ export function ApplicationsScriptsStep({ id }) {
                       ))}
                       {script.hasInputs && (
                         <Badge tone="info">{script.inputCount} inputs</Badge>
+                      )}
+                      {!scriptCompatible && (
+                        <Badge tone="warning" icon={<AlertTriangle size={12} />}>
+                          Not compatible with {selectedOs}
+                        </Badge>
                       )}
                     </ResponsiveStack>
                   </Card>
@@ -510,7 +610,7 @@ export function ApplicationsScriptsStep({ id }) {
             <span />
           </FormField>
         )}
-      </Page>
+      </ResponsiveStack>
 
       <Dialog
         open={configureDialogOpen}

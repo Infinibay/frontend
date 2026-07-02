@@ -71,6 +71,7 @@ const CreateDepartmentFirewallRuleDialog = ({
   isOpen,
   onClose,
   onSuccess,
+  existingRules = [],
 }) => {
   const [mode, setMode] = useState('simple');
   const [form, setForm] = useState(EMPTY_FORM);
@@ -103,6 +104,7 @@ const CreateDepartmentFirewallRuleDialog = ({
 
   const handlePresetChange = (presetId) => {
     setSelectedPreset(presetId);
+    if (presetId) clearFieldError('preset');
     if (!presetId) return;
     const preset = SERVICE_PRESETS.find((p) => p.id === presetId);
     if (!preset || !preset.rules.length) return;
@@ -122,6 +124,44 @@ const CreateDepartmentFirewallRuleDialog = ({
       dstIpMask: '',
     });
   };
+
+  // Map a single preset rule + the shared (user-editable) fields into a
+  // firewall-rule input. In simple mode every rule of a multi-rule preset
+  // (DNS = UDP53 + TCP53, FTP = 21 + 20) must be created, not just the first.
+  const buildPresetRuleInput = (rule, shared, disambiguate) => {
+    const start = rule.port ?? rule.portRange?.start ?? null;
+    const rangeEnd =
+      rule.portRange && rule.portRange.end !== rule.portRange.start
+        ? rule.portRange.end
+        : null;
+    const suffix = disambiguate
+      ? ` (${rule.protocol.toUpperCase()} ${start ?? 'any'})`
+      : '';
+    return {
+      name: `${shared.name}${suffix}`,
+      description: shared.description || rule.description || null,
+      action: shared.action,
+      direction: rule.direction,
+      priority: shared.priority,
+      protocol: rule.protocol.toLowerCase(),
+      dstPortStart: start,
+      dstPortEnd: rangeEnd,
+      srcIpAddr: null,
+      srcIpMask: null,
+      dstIpAddr: null,
+      dstIpMask: null,
+    };
+  };
+
+  const isDuplicateRule = (input) =>
+    existingRules.some(
+      (ex) =>
+        (ex.protocol || '').toLowerCase() === input.protocol &&
+        ex.direction === input.direction &&
+        (ex.dstPortStart ?? null) === (input.dstPortStart ?? null) &&
+        (ex.dstPortEnd ?? null) === (input.dstPortEnd ?? null) &&
+        ex.action === input.action,
+    );
 
   const validateForm = () => {
     const next = {};
@@ -164,7 +204,52 @@ const CreateDepartmentFirewallRuleDialog = ({
       toast.error('Please fix the errors above');
       return;
     }
-    debug.log('Creating department firewall rule', form);
+
+    // Simple mode: expand the selected preset into one input per rule so
+    // multi-rule services (DNS, FTP, SMB…) are created in full.
+    if (mode === 'simple') {
+      const preset = SERVICE_PRESETS.find((p) => p.id === selectedPreset);
+      if (!preset || !preset.rules.length) {
+        setErrors((prev) => ({ ...prev, preset: 'Pick a service first' }));
+        return;
+      }
+      const shared = {
+        name: form.name.trim(),
+        description: form.description || preset.description || null,
+        action: form.action,
+        priority: getPriorityFromLabel('MEDIUM'),
+      };
+      const multi = preset.rules.length > 1;
+      const intended = preset.rules.map((rule) =>
+        buildPresetRuleInput(rule, shared, multi),
+      );
+      const toCreate = intended.filter((input) => !isDuplicateRule(input));
+      const skipped = intended.length - toCreate.length;
+
+      if (toCreate.length === 0) {
+        toast.error('Those rules already exist for this department.');
+        return;
+      }
+
+      try {
+        for (const input of toCreate) {
+          await createRule({ variables: { departmentId, input } });
+        }
+        const created = toCreate.length;
+        toast.success(
+          `${created} rule${created !== 1 ? 's' : ''} created` +
+            (skipped ? ` · ${skipped} already existed` : ''),
+        );
+        onSuccess?.();
+        reset();
+      } catch (err) {
+        toast.error(`Could not create rule: ${err.message || err}`);
+      }
+      return;
+    }
+
+    // Advanced mode: a single hand-crafted rule.
+    debug.log('Creating department firewall rule');
     try {
       const priority =
         form.priorityLabel === 'CUSTOM'
@@ -184,6 +269,10 @@ const CreateDepartmentFirewallRuleDialog = ({
         dstIpAddr: form.dstIpAddr || null,
         dstIpMask: form.dstIpMask || null,
       };
+      if (isDuplicateRule(input)) {
+        toast.error('A matching rule already exists for this department.');
+        return;
+      }
       await createRule({ variables: { departmentId, input } });
       toast.success('Department firewall rule created');
       onSuccess?.();
@@ -198,7 +287,7 @@ const CreateDepartmentFirewallRuleDialog = ({
       open={!!isOpen}
       onClose={handleClose}
       side="right"
-      size={520}
+      size="min(520px, 100vw)"
       title={
         <ResponsiveStack direction="row" gap={2} align="center">
           <Shield size={14} />
@@ -342,6 +431,8 @@ const CreateDepartmentFirewallRuleDialog = ({
                     error={errors.dstPortStart}
                   />
                   <TextField
+                    id="fw-dst-port-end"
+                    aria-label="Destination port end (optional)"
                     placeholder="End (optional)"
                     value={form.dstPortEnd}
                     onChange={(e) => {
@@ -365,6 +456,8 @@ const CreateDepartmentFirewallRuleDialog = ({
                   />
                   {form.priorityLabel === 'CUSTOM' ? (
                     <TextField
+                      id="fw-custom-priority"
+                      aria-label="Custom priority (1–1000)"
                       type="number"
                       placeholder="1–1000"
                       value={form.customPriority}

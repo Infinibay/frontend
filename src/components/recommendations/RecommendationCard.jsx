@@ -3,19 +3,18 @@
 /**
  * RecommendationCard Component
  *
- * Individual recommendation card with execute, snooze, and dismiss actions.
+ * Individual recommendation card with snooze and dismiss actions.
+ *
+ * NOTE: one-click remediation ("run script") is intentionally not offered
+ * here — the backend exposes no `executeRecommendation` mutation and the
+ * global recommendation payload (GlobalRecommendationType) carries no script
+ * reference. The suggested remediation is surfaced honestly as `actionText`;
+ * users action it from the VM's Scripts tab.
  */
 
-import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
 import {
   Button,
-  ButtonGroup,
-  Dialog,
-  DialogTitle,
-  DialogDescription,
-  DialogButtons,
   IconButton,
   Menu,
   MenuItem,
@@ -25,90 +24,71 @@ import {
   useDismissRecommendationMutation,
   useSnoozeRecommendationMutation,
 } from '@/gql/hooks';
-import {
-  Play,
-  Clock,
-  X,
-  ChevronDown,
-  Loader2,
-  CheckCircle,
-  XCircle,
-} from 'lucide-react';
+import { Clock, X, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Map recommendation severity onto Harbor semantic color tokens. Mirrors the
+// CRITICAL→danger / HIGH→warning / MEDIUM→info / LOW→success mapping used by
+// severityTone() in src/app/notification/page.jsx.
 const SEVERITY_COLORS = {
-  CRITICAL: 'rgb(239, 68, 68)',
-  HIGH: 'rgb(249, 115, 22)',
-  MEDIUM: 'rgb(234, 179, 8)',
-  LOW: 'rgb(59, 130, 246)',
+  CRITICAL: 'rgb(var(--harbor-danger))',
+  HIGH: 'rgb(var(--harbor-warning))',
+  MEDIUM: 'rgb(var(--harbor-info))',
+  LOW: 'rgb(var(--harbor-success))',
 };
 
 const SNOOZE_OPTIONS = [
-  { value: 'PT1H', label: '1 hora' },
-  { value: 'PT4H', label: '4 horas' },
-  { value: 'P1D', label: '24 horas' },
-  { value: 'P7D', label: '7 dias' },
+  { value: 'PT1H', label: '1 hour' },
+  { value: 'PT4H', label: '4 hours' },
+  { value: 'P1D', label: '24 hours' },
+  { value: 'P7D', label: '7 days' },
 ];
 
 export function RecommendationCard({ recommendation, onActionComplete }) {
-  const [executing, setExecuting] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [executionResult, setExecutionResult] = useState(null);
+  const [dismissRec, { loading: dismissing }] = useDismissRecommendationMutation();
+  const [snoozeRec, { loading: snoozing }] = useSnoozeRecommendationMutation();
 
-  const scriptName =
-    recommendation.script?.name ||
-    recommendation.systemScript?.displayName ||
-    'Script';
+  const busy = dismissing || snoozing;
 
-  // `executeRecommendation` mutation doesn't exist in the backend schema
-  // yet — stub it out so the component compiles. Replace with the real
-  // useExecuteRecommendationMutation hook when available.
-  const executeRec = async () => {
-    setExecutionResult('error');
-    toast.info(`"${scriptName}" — execute from the VM Scripts tab`, {
-      description: 'One-click remediation is not wired up yet.',
-    });
-    onActionComplete?.();
-  };
-
-  const [dismissRec] = useDismissRecommendationMutation({
-    onCompleted: () => {
-      toast.success('Recomendacion descartada');
+  const handleDismiss = async () => {
+    if (busy) return;
+    try {
+      const res = await dismissRec({ variables: { id: recommendation.id } });
+      const result = res.data?.dismissRecommendation;
+      if (!result?.success) {
+        toast.error(result?.error || 'Failed to dismiss recommendation');
+        return;
+      }
+      toast.success('Recommendation dismissed');
       onActionComplete?.();
-    },
-    onError: (err) => toast.error(err.message),
-  });
+    } catch (err) {
+      toast.error(err?.message || 'Failed to dismiss recommendation');
+    }
+  };
 
-  const [snoozeRec] = useSnoozeRecommendationMutation({
-    onCompleted: () => {
-      toast.success('Recomendacion pospuesta');
+  const handleSnooze = async (duration) => {
+    if (busy) return;
+    try {
+      const res = await snoozeRec({ variables: { id: recommendation.id, duration } });
+      const result = res.data?.snoozeRecommendation;
+      if (!result?.success) {
+        toast.error(result?.error || 'Failed to snooze recommendation');
+        return;
+      }
+      toast.success('Recommendation snoozed');
       onActionComplete?.();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  const handleExecuteClick = () => setShowConfirmDialog(true);
-
-  const handleConfirmExecute = async () => {
-    setShowConfirmDialog(false);
-    setExecuting(true);
-    setExecutionResult(null);
-    await executeRec();
-    setExecuting(false);
+    } catch (err) {
+      toast.error(err?.message || 'Failed to snooze recommendation');
+    }
   };
 
-  const handleDismiss = () => {
-    dismissRec({ variables: { id: recommendation.id } });
-  };
-
-  const handleSnooze = (duration) => {
-    snoozeRec({ variables: { id: recommendation.id, duration } });
-  };
-
-  const timeAgo = formatDistanceToNow(new Date(recommendation.createdAt), {
-    addSuffix: true,
-    locale: es,
-  });
+  // Guard against an invalid/missing timestamp so the whole dropdown doesn't
+  // crash on a bad row.
+  let timeAgo = '';
+  const created = recommendation.createdAt ? new Date(recommendation.createdAt) : null;
+  if (created && !Number.isNaN(created.getTime())) {
+    timeAgo = formatDistanceToNow(created, { addSuffix: true });
+  }
 
   const dotStyle = {
     width: 8,
@@ -116,111 +96,74 @@ export function RecommendationCard({ recommendation, onActionComplete }) {
     borderRadius: 9999,
     marginTop: 6,
     flexShrink: 0,
-    background: SEVERITY_COLORS[recommendation.severity] || 'rgb(107, 114, 128)',
+    background: SEVERITY_COLORS[recommendation.severity] || 'rgb(var(--harbor-text-muted))',
   };
 
   return (
-    <>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <ResponsiveStack direction="row" gap={3} align="start">
-          <span style={dotStyle} aria-label={`Severidad: ${recommendation.severity}`} />
+    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--harbor-border-subtle)' }}>
+      <ResponsiveStack direction="row" gap={3} align="start">
+        <span style={dotStyle} role="img" aria-label={`Severity: ${recommendation.severity}`} />
 
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 500, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {recommendation.title}
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.65 }}>
-              {recommendation.machine?.name} &middot; {timeAgo}
-            </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 500, fontSize: 14, color: 'rgb(var(--harbor-text))' }}>
+            {recommendation.text}
           </div>
-
-          {executionResult === 'success' && (
-            <CheckCircle size={16} color="rgb(34, 197, 94)" />
-          )}
-          {executionResult === 'error' && (
-            <XCircle size={16} color="rgb(239, 68, 68)" />
-          )}
-        </ResponsiveStack>
-
-        <div style={{ marginTop: 8, marginLeft: 20 }}>
-          <ResponsiveStack direction="row" gap={2} align="center">
-            <Button
-              size="sm"
-              variant="primary"
-              icon={
-                executing ? (
-                  <Loader2 size={12} />
-                ) : (
-                  <Play size={12} />
-                )
-              }
-              onClick={handleExecuteClick}
-              disabled={executing || executionResult === 'success'}
-            >
-              {`Ejecutar "${scriptName}"`}
-            </Button>
-
-            <Menu
-              align="start"
-              trigger={
-                <Button size="sm" variant="secondary" icon={<Clock size={12} />}>
-                  <ResponsiveStack direction="row" gap={1} align="center">
-                    <span>Posponer</span>
-                    <ChevronDown size={12} />
-                  </ResponsiveStack>
-                </Button>
-              }
-            >
-              {SNOOZE_OPTIONS.map((opt) => (
-                <MenuItem key={opt.value} onClick={() => handleSnooze(opt.value)}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </Menu>
-
-            <IconButton
-              variant="ghost"
-              size="sm"
-              icon={<X size={12} />}
-              onClick={handleDismiss}
-              label="Descartar"
-            />
-          </ResponsiveStack>
+          <div style={{ fontSize: 12, color: 'rgb(var(--harbor-text-muted))' }}>
+            {[recommendation.machineName, timeAgo].filter(Boolean).join(' · ')}
+          </div>
         </div>
-      </div>
+      </ResponsiveStack>
 
-      <Dialog
-        open={showConfirmDialog}
-        onClose={() => setShowConfirmDialog(false)}
-        size="sm"
-      >
-        <DialogTitle>{`Ejecutar "${scriptName}"?`}</DialogTitle>
-        <DialogDescription>
-          <span>
-            Se ejecutara este script en <strong>{recommendation.machine?.name}</strong>.
-            {recommendation.description ? (
-              <span style={{ display: 'block', marginTop: 8, opacity: 0.65 }}>
-                {recommendation.description}
-              </span>
-            ) : null}
-          </span>
-        </DialogDescription>
-        <DialogButtons align="end">
-          <ButtonGroup>
-            <Button variant="secondary" onClick={() => setShowConfirmDialog(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="primary"
-              icon={<Play size={14} />}
-              onClick={handleConfirmExecute}
-            >
-              Ejecutar
-            </Button>
-          </ButtonGroup>
-        </DialogButtons>
-      </Dialog>
-    </>
+      {recommendation.actionText ? (
+        <div
+          style={{
+            marginTop: 6,
+            marginLeft: 20,
+            fontSize: 12,
+            color: 'rgb(var(--harbor-text-muted))',
+          }}
+        >
+          {recommendation.actionText}
+        </div>
+      ) : null}
+
+      <div style={{ marginTop: 8, marginLeft: 20 }}>
+        <ResponsiveStack direction="row" gap={2} align="center">
+          <Menu
+            align="start"
+            trigger={
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<Clock size={12} />}
+                disabled={busy}
+                loading={snoozing}
+              >
+                <ResponsiveStack direction="row" gap={1} align="center">
+                  <span>Snooze</span>
+                  <ChevronDown size={12} />
+                </ResponsiveStack>
+              </Button>
+            }
+          >
+            {SNOOZE_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} onClick={() => handleSnooze(opt.value)} disabled={busy}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Menu>
+
+          <IconButton
+            variant="ghost"
+            size="sm"
+            icon={<X size={12} />}
+            onClick={handleDismiss}
+            disabled={busy}
+            label="Dismiss"
+          />
+        </ResponsiveStack>
+      </div>
+    </div>
   );
 }
 

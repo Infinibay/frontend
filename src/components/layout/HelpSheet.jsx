@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useState } from 'react';
 import { HelpCircle } from 'lucide-react';
 import {
   Accordion,
@@ -12,17 +11,14 @@ import {
 } from '@infinibay/harbor';
 
 export function HelpSheet({ open, onOpenChange, config }) {
-  const [defaultValue, setDefaultValue] = useState(null);
-
-  React.useEffect(() => {
-    if (open && config?.sections?.length && defaultValue == null) {
-      setDefaultValue(config.sections[0].id);
-    }
-  }, [open, config, defaultValue]);
-
   if (!config) return null;
 
   const { title, description, icon, sections = [], quickTips = [] } = config;
+  // First section auto-expands. Keyed on the config's title so navigating to a
+  // different page's help (HelpSheet persists in GlobalHeader across routes)
+  // remounts the Accordion with the new page's first section expanded, rather
+  // than leaving it stuck on the first-ever page's default.
+  const defaultSectionId = sections[0]?.id;
 
   return (
     <Drawer
@@ -41,7 +37,7 @@ export function HelpSheet({ open, onOpenChange, config }) {
         {description ? <span>{description}</span> : null}
 
         {sections.length > 0 && (
-          <Accordion defaultValue={defaultValue ?? undefined}>
+          <Accordion key={title || defaultSectionId} defaultValue={defaultSectionId ?? undefined}>
             {sections.map((section) => (
               <AccordionItem
                 key={section.id}

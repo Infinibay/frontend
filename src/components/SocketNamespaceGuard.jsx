@@ -40,7 +40,7 @@ export function SocketNamespaceGuard({ children }) {
       
       // If we're logged in but lost the namespace
       if (isLoggedIn && !socketNamespace) {
-        console.warn('⚠️ SocketNamespaceGuard: Namespace lost while logged in')
+        debug.warn('restore', '⚠️ SocketNamespaceGuard: Namespace lost while logged in')
         
         // Try to restore from localStorage first
         if (storedNamespace) {
@@ -52,17 +52,23 @@ export function SocketNamespaceGuard({ children }) {
           debug.success('restore', '✅ SocketNamespaceGuard: Restoring from memory:', lastKnownNamespace.current)
           dispatch(setSocketNamespace(lastKnownNamespace.current))
         }
-        // If we have user ID, generate it (fallback)
+        // If we have user ID, generate it (fallback). Use the FULL user id:
+        // the backend keys namespaces on the complete id to avoid the 32-bit
+        // prefix collision risk, so an 8-char prefix would never match.
         else if (user?.id) {
-          const generatedNamespace = `user_${user.id.substring(0, 8)}`
+          const generatedNamespace = `user_${user.id}`
           debug.success('generate', '✅ SocketNamespaceGuard: Generating namespace from user ID:', generatedNamespace)
           dispatch(setSocketNamespace(generatedNamespace))
         }
       }
-      
-      // Also ensure localStorage is in sync
-      if (socketNamespace && storedNamespace !== socketNamespace) {
-        debug.log('sync', '🔄 SocketNamespaceGuard: Syncing localStorage with Redux state')
+
+      // Backfill ONLY a MISSING localStorage key — never overwrite it. The
+      // server assigns the authoritative namespace on the socket 'connected'
+      // welcome and socketService writes it straight to localStorage; redux can
+      // lag behind that value, so overwriting here would stomp the server's
+      // assignment every interval tick.
+      if (socketNamespace && !storedNamespace) {
+        debug.log('sync', '🔄 SocketNamespaceGuard: Backfilling missing localStorage namespace')
         localStorage.setItem('socketNamespace', socketNamespace)
       }
     }

@@ -32,11 +32,15 @@ const executeGraphQLQuery = async (query, variables = {}) => {
             fetchPolicy: 'network-only' // Force network request
         });
 
-        // Check for GraphQL errors in the response
-        if (response.errors) {
-            const errorMessage = response.errors.map(err => err.message).join(', ');
-            debug.error('query', 'GraphQL query error:', errorMessage);
-            throw new Error(errorMessage);
+        // Apollo Client 4: a failing query (errorPolicy:'all') resolves with a
+        // SINGULAR `error` — the plural `errors` was removed. Surface it as a real
+        // error instead of falling through to Object.keys(null) below.
+        if (response.error) {
+            debug.error('query', 'GraphQL query error:', response.error.message);
+            throw response.error;
+        }
+        if (!response.data) {
+            throw new Error('No data returned from the server.');
         }
 
         // Get the first key in the data object (e.g., 'departments', 'findDepartmentByName')
@@ -251,7 +255,9 @@ const departmentsSlice = createSlice({
             })
             .addCase(fetchDepartmentByName.rejected, (state, action) => {
                 state.loading.fetchByName = false;
-                state.error.fetchByName = action.error.message;
+                // rejectWithValue puts the real message in action.payload; RTK sets
+                // action.error.message to the generic 'Rejected'.
+                state.error.fetchByName = action.payload ?? action.error.message;
             })
 
             // Create Department
@@ -261,7 +267,17 @@ const departmentsSlice = createSlice({
             })
             .addCase(createDepartment.fulfilled, (state, action) => {
                 state.loading.create = false;
-                state.items.push(action.payload);
+                // Idempotent upsert by id: the realtime `created` socket event may
+                // arrive before this mutation resolves, so avoid a duplicate row.
+                const dept = action.payload;
+                if (dept && dept.id) {
+                    const index = state.items.findIndex((d) => d.id === dept.id);
+                    if (index !== -1) {
+                        state.items[index] = dept;
+                    } else {
+                        state.items.push(dept);
+                    }
+                }
             })
             .addCase(createDepartment.rejected, (state, action) => {
                 state.loading.create = false;
@@ -279,7 +295,9 @@ const departmentsSlice = createSlice({
             })
             .addCase(deleteDepartment.rejected, (state, action) => {
                 state.loading.delete = false;
-                state.error.delete = action.error.message;
+                // rejectWithValue puts the real message in action.payload; RTK sets
+                // action.error.message to the generic 'Rejected'.
+                state.error.delete = action.payload ?? action.error.message;
             })
 
             // Update Department Name

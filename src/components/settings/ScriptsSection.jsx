@@ -12,6 +12,7 @@ import {
   Monitor,
   Server,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import {
   Button,
@@ -55,7 +56,7 @@ export default function ScriptsSection({ embedded = false, className = "" }) {
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef(null);
 
-  const { data, loading, refetch } = useScriptsQuery();
+  const { data, loading, error, refetch } = useScriptsQuery();
   const [deleteScript, { loading: deleting }] = useDeleteScriptMutation();
   const [createScript] = useCreateScriptMutation();
 
@@ -166,7 +167,23 @@ export default function ScriptsSection({ embedded = false, className = "" }) {
         </div>
       </div>
 
-      {loading && scripts.length === 0 ? (
+      {error && scripts.length === 0 ? (
+        <Alert
+          tone="danger"
+          title="Couldn't load scripts"
+          actions={
+            <Button
+              size="sm"
+              icon={<RefreshCw className="h-4 w-4" />}
+              onClick={() => refetch()}
+            >
+              Retry
+            </Button>
+          }
+        >
+          {error.message}
+        </Alert>
+      ) : loading && scripts.length === 0 ? (
         <div className="py-10 flex items-center justify-center gap-3 text-fg-muted">
           <Spinner /> Loading scripts…
         </div>
@@ -198,7 +215,7 @@ export default function ScriptsSection({ embedded = false, className = "" }) {
                 key={script.id}
                 role="button"
                 tabIndex={0}
-                className="group flex items-center gap-3 rounded-lg border border-white/8 bg-surface-1 p-3 hover:border-white/20 hover:bg-white/[0.04] transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                className="group flex items-center gap-3 rounded-lg border border-border-subtle bg-surface-1 p-3 hover:border-border-default hover:bg-surface-2 transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-accent"
                 onClick={() => router.push(`/scripts/${script.id}`)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -255,7 +272,7 @@ export default function ScriptsSection({ embedded = false, className = "" }) {
                     e.stopPropagation();
                     setDeleteTarget({ id: script.id, name: script.name });
                   }}
-                  className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+                  className="opacity-60 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity"
                 >
                   {""}
                 </Button>

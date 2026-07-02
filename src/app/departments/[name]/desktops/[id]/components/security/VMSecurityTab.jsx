@@ -32,6 +32,7 @@ import {
 '@/config/firewallTemplates';
 
 import CreateFirewallRuleDialog from './CreateFirewallRuleDialog';
+import VMStatusWarning from '../VMStatusWarning';
 
 const debug = createDebugger('frontend:components:vm-security-tab');
 
@@ -82,7 +83,15 @@ const directionArrow = (d) => {
   return v;
 };
 
-const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
+const VMSecurityTab = ({
+  vmId,
+  vmName,
+  vmOs,
+  vmStatus,
+  vmSetupComplete,
+  departmentId,
+  onVMStopped
+}) => {
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const [applyingId, setApplyingId] = useState(null);
   const [applyProgress, setApplyProgress] = useState({ done: 0, total: 0 });
@@ -224,7 +233,9 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
       sortable: true,
       cell: ({ row }) =>
       <ResponsiveStack direction="row" gap={2} align="center">
-            <StatusDot status={row.action === 'ACCEPT' ? 'online' : 'offline'} />
+            <StatusDot
+        status={row.action === 'ACCEPT' ? 'online' : 'offline'}
+        label={null} />
             <span>{row.name || '—'}</span>
           </ResponsiveStack>
 
@@ -310,9 +321,9 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
   if (loading) {
     return (
       <Page>
-        <Skeleton />
-        <Skeleton />
-        <Skeleton />
+        <Skeleton width="100%" height={72} />
+        <Skeleton width="100%" height={120} />
+        <Skeleton width="100%" height={220} />
       </Page>);
 
   }
@@ -345,6 +356,13 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
   return (
     <>
       <Page>
+        <VMStatusWarning
+          vmStatus={vmStatus}
+          vmSetupComplete={vmSetupComplete}
+          vmId={vmId}
+          vmName={vmName}
+          onVMStopped={onVMStopped} />
+
         {hasNoRules ?
         <Alert
           tone="warning"
@@ -478,7 +496,13 @@ const VMSecurityTab = ({ vmId, vmOs, departmentId }) => {
         vmOs={vmOs}
         isOpen={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
-        onSuccess={() => setIsCreateDialogOpen(false)}
+        onSuccess={() => {
+          setIsCreateDialogOpen(false);
+          // useFirewallData sets no refetchQueries (it relies on socket events);
+          // refetch explicitly so a new rule shows immediately, matching the
+          // delete/template-apply flows — the socket event is just an accelerator.
+          refetch();
+        }}
         existingRules={effectiveRules} />
       
 

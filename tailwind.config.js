@@ -60,6 +60,16 @@ module.exports = {
           1: "rgb(var(--harbor-bg-elev-1) / <alpha-value>)",
           2: "rgb(var(--harbor-bg-elev-2) / <alpha-value>)",
           3: "rgb(var(--harbor-bg-elev-3) / <alpha-value>)",
+          // Semantic surface aliases — these --harbor-surface-* tokens already
+          // exist in Harbor's tokens.css and flip per theme; they were referenced
+          // in app code (e.g. bg-surface-raised) but never mapped to a utility,
+          // so the class emitted no CSS. Map them here. Values are full rgb()
+          // strings, so no <alpha-value> channel.
+          raised: "var(--harbor-surface-raised)",
+          sunken: "var(--harbor-surface-sunken)",
+          panel: "var(--harbor-surface-panel)",
+          "panel-muted": "var(--harbor-surface-panel-muted)",
+          toolbar: "var(--harbor-surface-toolbar)",
         },
 
         /* Harbor foreground tones */
@@ -99,7 +109,16 @@ module.exports = {
           DEFAULT: "rgb(var(--destructive) / <alpha-value>)",
           foreground: "rgb(var(--destructive-foreground) / <alpha-value>)",
         },
-        border: "rgb(var(--border) / <alpha-value>)",
+        border: {
+          // DEFAULT keeps the shadcn shim so bare `border-border` is unchanged.
+          DEFAULT: "rgb(var(--border) / <alpha-value>)",
+          // Semantic border strengths — these --harbor-border-* tokens exist in
+          // tokens.css and flip per theme; `border-border-subtle` etc. were used
+          // in app code but never mapped, emitting no CSS. Full rgb() values.
+          subtle: "var(--harbor-border-subtle)",
+          default: "var(--harbor-border-default)",
+          strong: "var(--harbor-border-strong)",
+        },
         input: "rgb(var(--input) / <alpha-value>)",
         ring: "rgb(var(--ring) / <alpha-value>)",
       },

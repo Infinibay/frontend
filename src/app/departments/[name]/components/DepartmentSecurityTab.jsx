@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import {
   AlertTriangle,
@@ -47,6 +48,7 @@ import {
   getFirewallTemplate } from
 '@/config/firewallTemplates';
 import { useUpdateDepartmentFirewallPolicyMutation } from '@/gql/hooks';
+import { fetchDepartmentByName } from '@/state/slices/departments';
 import CreateDepartmentFirewallRuleDialog from './security/CreateDepartmentFirewallRuleDialog';
 
 const debug = createDebugger('frontend:components:department-security-tab');
@@ -120,6 +122,15 @@ const POLICY_CONFIG = {
 
 const getDefaultConfigFor = (policy) =>
 policy === 'BLOCK_ALL' ? 'allow_outbound' : 'none';
+
+// Human-readable fallback for a config id we don't have metadata for, so the
+// UI never surfaces a raw identifier like "allow_outbound".
+const humanizeConfigId = (id) =>
+!id ?
+'Custom default' :
+String(id).
+replace(/[_-]+/g, ' ').
+replace(/\b\w/g, (ch) => ch.toUpperCase());
 
 const shapeRules = (rules = []) =>
 rules.map((r, i) => ({
@@ -203,7 +214,7 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
         open={open}
         onClose={onClose}
         side="right"
-        size={520}
+        size="min(520px, 100vw)"
         title={
         <ResponsiveStack direction="row" gap={2} align="center">
             <Shield size={14} />
@@ -283,7 +294,7 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
                     leadingIconTone={c.risky ? 'amber' : 'sky'}
                     title={
                     <ResponsiveStack direction="row" gap={2} align="center">
-                        <span>{c.label}</span>
+                        <span>{c.header}</span>
                         {c.risky ? <Badge tone="warning">Risky</Badge> : null}
                         {active ? <Check size={12} /> : null}
                       </ResponsiveStack>
@@ -334,6 +345,7 @@ function PolicyEditor({ open, onClose, department, onSaved }) {
 }
 
 const DepartmentSecurityTab = ({ department }) => {
+  const dispatch = useDispatch();
   const departmentId = department?.id;
   const [applyingId, setApplyingId] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -342,6 +354,8 @@ const DepartmentSecurityTab = ({ department }) => {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteProgress, setDeleteProgress] = useState({ done: 0, total: 0 });
+  const [rowDelete, setRowDelete] = useState(null);
+  const [isRowDeleting, setIsRowDeleting] = useState(false);
 
   const {
     rules = [],
@@ -361,6 +375,17 @@ const DepartmentSecurityTab = ({ department }) => {
   const policyInfo = POLICY_CONFIG[policyKey];
   const PolicyIcon = policyInfo?.icon || Shield;
   const configInfo = policyInfo?.configs.find((c) => c.id === policyCfgId);
+
+  // After a policy change the mutation returns the updated department, but the
+  // header card reads it from the Redux store, so refetch both the firewall
+  // rules and the department itself to keep the displayed policy in sync.
+  const departmentName = department?.name;
+  const handlePolicySaved = useCallback(() => {
+    refetch();
+    if (departmentName) {
+      dispatch(fetchDepartmentByName(departmentName));
+    }
+  }, [dispatch, departmentName, refetch]);
 
   const applyTemplate = async (templateId) => {
     setApplyingId(templateId);
@@ -401,6 +426,9 @@ const DepartmentSecurityTab = ({ department }) => {
       toast.error(`Template failed: ${err.message}`);
     } finally {
       setApplyingId(null);
+      // Reflect whatever rules were actually created — even on a partial
+      // failure — instead of waiting on a websocket event that may not arrive.
+      await refetch();
     }
   };
 
@@ -417,27 +445,85 @@ const DepartmentSecurityTab = ({ department }) => {
     setDeleteProgress({ done: 0, total: ids.length });
     try {
       let done = 0;
-      await Promise.all(
+      // deleteFirewallRule resolves to a plain boolean — a `false` result is a
+      // silent server-side failure, so treat it as a rejection for this id.
+      const results = await Promise.allSettled(
         ids.map((ruleId) =>
-        deleteRule({ variables: { ruleId } }).then(() => {
+        deleteRule({ variables: { ruleId } }).then((res) => {
           done += 1;
           setDeleteProgress({ done, total: ids.length });
+          if (res?.data?.deleteFirewallRule === false) {
+            throw new Error(`Rule ${ruleId} was not deleted`);
+          }
+          return ruleId;
         })
         )
       );
-      toast.success(
-        `${ids.length} rule${ids.length !== 1 ? 's' : ''} deleted`
-      );
-      setSelectedIds([]);
+      const deletedIds = results.
+      filter((r) => r.status === 'fulfilled').
+      map((r) => r.value);
+      const failedCount = ids.length - deletedIds.length;
+
+      if (deletedIds.length > 0) {
+        setSelectedIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
+      }
+
+      if (failedCount > 0) {
+        const firstReason = results.find((r) => r.status === 'rejected')?.reason;
+        debug.error('Bulk delete partial failure:', firstReason);
+        toast.error(
+          `Deleted ${deletedIds.length} of ${ids.length} rule` +
+          `${ids.length !== 1 ? 's' : ''} · ${failedCount} could not be removed`
+        );
+      } else {
+        toast.success(
+          `${deletedIds.length} rule${deletedIds.length !== 1 ? 's' : ''} deleted`
+        );
+      }
     } catch (err) {
       debug.error('Failed to bulk delete:', err);
-      toast.error(`Could not delete all rules: ${err.message}`);
+      toast.error(`Could not delete rules: ${err.message}`);
     } finally {
       setIsDeleting(false);
       setDeleteProgress({ done: 0, total: 0 });
       await refetch();
     }
   };
+
+  const handleRowDelete = async () => {
+    const rule = rowDelete;
+    if (!rule) return;
+    setIsRowDeleting(true);
+    try {
+      const res = await deleteRule({ variables: { ruleId: rule.id } });
+      if (res?.data?.deleteFirewallRule === false) {
+        throw new Error('The server did not delete this rule.');
+      }
+      toast.success(`Rule "${rule.name || 'rule'}" deleted`);
+      setSelectedIds((prev) => prev.filter((id) => id !== rule.id));
+      setRowDelete(null);
+      await refetch();
+    } catch (err) {
+      debug.error('Failed to delete rule:', err);
+      toast.error(`Could not delete rule: ${err.message}`);
+    } finally {
+      setIsRowDeleting(false);
+    }
+  };
+
+  const rowActions = useMemo(
+    () => (row) =>
+    [
+    {
+      label: 'Delete',
+      icon: <Trash2 size={14} />,
+      danger: true,
+      disabled: isDeleting || isRowDeleting || !!applyingId,
+      onClick: () => setRowDelete(row)
+    }],
+
+    [isDeleting, isRowDeleting, applyingId]
+  );
 
   const columns = useMemo(
     () => [
@@ -561,7 +647,7 @@ const DepartmentSecurityTab = ({ department }) => {
                 {policyInfo.label}
               </Badge>
               <span>·</span>
-              <span>{configInfo?.label || policyCfgId}</span>
+              <span>{configInfo?.header || humanizeConfigId(policyCfgId)}</span>
             </ResponsiveStack>
           }
           description={configInfo?.description || policyInfo.tagline}
@@ -685,6 +771,7 @@ const DepartmentSecurityTab = ({ department }) => {
             selectable
             selected={selectedIds}
             onSelectionChange={setSelectedIds}
+            rowActions={rowActions}
             defaultDensity="compact" />
 
           }
@@ -696,14 +783,17 @@ const DepartmentSecurityTab = ({ department }) => {
         open={policyOpen}
         onClose={() => setPolicyOpen(false)}
         department={department}
-        onSaved={refetch} />
-      
+        onSaved={handlePolicySaved} />
+
 
       <CreateDepartmentFirewallRuleDialog
         departmentId={departmentId}
         isOpen={createOpen}
         onClose={() => setCreateOpen(false)}
-        onSuccess={() => setCreateOpen(false)}
+        onSuccess={() => {
+          setCreateOpen(false);
+          refetch();
+        }}
         existingRules={rules} />
       
 
@@ -736,6 +826,41 @@ const DepartmentSecurityTab = ({ department }) => {
 
             Delete {selectedIds.length} rule
             {selectedIds.length !== 1 ? 's' : ''}
+          </Button>
+        </DialogButtons>
+      </Dialog>
+
+      <Dialog
+        open={!!rowDelete}
+        onClose={() => !isRowDeleting && setRowDelete(null)}
+        size="sm">
+        <DialogTitle>Delete rule?</DialogTitle>
+        <DialogDescription>
+          {rowDelete
+          ? `Remove "${rowDelete.name || 'this rule'}" from this department? This cannot be undone.`
+          : 'This action cannot be undone.'}
+        </DialogDescription>
+        <DialogBody>
+          <Alert tone="warning" size="sm" icon={<AlertTriangle size={14} />}>
+            VMs inheriting this rule will lose it immediately.
+          </Alert>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            disabled={isRowDeleting}
+            onClick={() => setRowDelete(null)}>
+
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            loading={isRowDeleting}
+            disabled={isRowDeleting}
+            icon={<Trash2 size={14} />}
+            onClick={handleRowDelete}>
+
+            Delete rule
           </Button>
         </DialogButtons>
       </Dialog>

@@ -8,6 +8,7 @@ import {
   Stepper,
 } from '@infinibay/harbor';
 import { createDebugger } from '@/utils/debug';
+import { toast } from '@/hooks/use-toast';
 import { FormErrorProvider, useFormError } from './form-error-provider';
 import {
   User,
@@ -36,6 +37,7 @@ function WizardContent({ children, onComplete, initialValues = {} }) {
   const [currentStep, setCurrentStep] = React.useState(0);
   const [values, setValues] = React.useState(initialValues);
   const [isValidating, setIsValidating] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { setFieldError, clearAllErrors, clearFieldError } = useFormError();
 
   const steps = React.useMemo(() => React.Children.toArray(children), [children]);
@@ -57,7 +59,47 @@ function WizardContent({ children, onComplete, initialValues = {} }) {
     });
   }, [currentStep, currentStepElement?.props?.id, isLastStep]);
 
+  // Field-level validators throw a plain object of { field: message }. Anything
+  // else (a thrown Error/string from a runtime bug or future async validator)
+  // has no field to attach to, so surface it as a toast instead of silently
+  // swallowing it and leaving Continue looking like a no-op.
+  const reportValidationError = (error) => {
+    const isFieldErrors =
+      error && typeof error === 'object' && !(error instanceof Error);
+    const entries = isFieldErrors ? Object.entries(error) : [];
+    if (entries.length > 0) {
+      entries.forEach(([field, message]) => setFieldError(field, message));
+      return;
+    }
+    toast({
+      variant: 'error',
+      title: 'Validation failed',
+      description:
+        (error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : '') || 'Something went wrong validating this step. Please try again.',
+    });
+  };
+
+  const complete = async () => {
+    debug.success('completion', 'Wizard completed successfully:', {
+      totalSteps: steps.length,
+      finalValues: Object.keys(values),
+    });
+    try {
+      setIsSubmitting(true);
+      await onComplete?.(values);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const next = async () => {
+    // Guard against double-submit / re-entrancy while validating or creating.
+    if (isValidating || isSubmitting) return;
+
     const stepId = currentStepElement.props.id;
     debug.info('navigation', 'Moving to next step:', {
       stepId,
@@ -73,37 +115,22 @@ function WizardContent({ children, onComplete, initialValues = {} }) {
         const stepValues = values[stepId] || {};
         await currentStepElement.props.validate(stepValues);
         debug.success('validation', 'Step validation passed:', stepId);
-        if (isLastStep) {
-          debug.success('completion', 'Wizard completed successfully:', {
-            totalSteps: steps.length,
-            finalValues: Object.keys(values),
-          });
-          onComplete?.(values);
-        } else {
-          setCurrentStep((prev) => prev + 1);
-        }
       } catch (error) {
         debug.warn('validation', 'Step validation failed:', { stepId, error });
-        if (error && typeof error === 'object') {
-          Object.entries(error).forEach(([field, message]) => {
-            setFieldError(field, message);
-          });
-        }
+        reportValidationError(error);
+        return;
       } finally {
         setIsValidating(false);
       }
     } else {
       debug.log('validation', 'No validation required for step:', stepId);
-      if (isLastStep) {
-        debug.success(
-          'completion',
-          'Wizard completed without validation:',
-          Object.keys(values),
-        );
-        onComplete?.(values);
-      } else {
-        setCurrentStep((prev) => prev + 1);
-      }
+    }
+
+    // Validation passed (or none required) → advance or complete.
+    if (isLastStep) {
+      await complete();
+    } else {
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
@@ -188,7 +215,7 @@ function WizardContent({ children, onComplete, initialValues = {} }) {
             <Button
               variant="secondary"
               onClick={previous}
-              disabled={currentStep === 0}
+              disabled={currentStep === 0 || isValidating || isSubmitting}
               icon={<ChevronLeft size={14} />}
             >
               Previous
@@ -201,17 +228,21 @@ function WizardContent({ children, onComplete, initialValues = {} }) {
             <Button
               variant="primary"
               onClick={next}
-              loading={isValidating}
-              disabled={isValidating}
+              loading={isValidating || isSubmitting}
+              disabled={isValidating || isSubmitting}
               iconRight={
-                !isValidating && !isLastStep ? <ChevronRight size={14} /> : null
+                !isValidating && !isSubmitting && !isLastStep ? (
+                  <ChevronRight size={14} />
+                ) : null
               }
             >
               {isValidating
                 ? 'Validating…'
-                : isLastStep
-                  ? 'Complete Setup'
-                  : 'Continue'}
+                : isSubmitting
+                  ? 'Creating…'
+                  : isLastStep
+                    ? 'Complete Setup'
+                    : 'Continue'}
             </Button>
           </ResponsiveStack>
         </Card>

@@ -20,7 +20,6 @@ import {
 import {
   createTemplateCategory,
   selectTemplateCategoriesLoading,
-  selectTemplateCategoriesError,
 } from "@/state/slices/templateCategories";
 
 /**
@@ -31,7 +30,10 @@ export function CreateCategoryDialog({ children }) {
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   const loading = useSelector(selectTemplateCategoriesLoading);
-  const error = useSelector(selectTemplateCategoriesError);
+  // Local error captured from the rejected unwrap — reading the global slice
+  // error would resurface a stale banner from an unrelated previous attempt
+  // when this dialog is reopened.
+  const [createError, setCreateError] = useState(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
@@ -39,6 +41,7 @@ export function CreateCategoryDialog({ children }) {
     setOpen(false);
     setName("");
     setDescription("");
+    setCreateError(null);
   };
 
   const handleCreate = async () => {
@@ -46,6 +49,7 @@ export function CreateCategoryDialog({ children }) {
       toast.error("Name is required");
       return;
     }
+    setCreateError(null);
     try {
       await dispatch(
         createTemplateCategory({ name: name.trim(), description: description.trim() })
@@ -53,7 +57,9 @@ export function CreateCategoryDialog({ children }) {
       toast.success(`Category "${name}" created`);
       close();
     } catch (err) {
-      toast.error(`Could not create category: ${err.message || err}`);
+      const message = err?.message || String(err);
+      setCreateError(message);
+      toast.error(`Could not create category: ${message}`);
     }
   };
 
@@ -63,6 +69,7 @@ export function CreateCategoryDialog({ children }) {
     return cloneElement(child, {
       onClick: (e) => {
         prev?.(e);
+        setCreateError(null);
         setOpen(true);
       },
     });
@@ -87,14 +94,20 @@ export function CreateCategoryDialog({ children }) {
         </DialogDescription>
         <DialogBody>
           <ResponsiveStack direction="col" gap={3}>
-            {error?.create ? (
-              <Alert tone="danger">{String(error.create)}</Alert>
+            {createError ? (
+              <Alert tone="danger">{String(createError)}</Alert>
             ) : null}
             <TextField
               label="Name"
               placeholder="Production, Development, Testing…"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleCreate();
+                }
+              }}
               autoFocus
             />
             <Textarea

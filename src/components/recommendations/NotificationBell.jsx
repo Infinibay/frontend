@@ -24,10 +24,21 @@ export function NotificationBell() {
 
   const count = data?.pendingRecommendationCount ?? 0;
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside. Harbor Menu/Dialog content portals to
+  // document.body, so it lives OUTSIDE dropdownRef — ignore clicks that land in
+  // any portaled overlay (menu/dialog/listbox), otherwise selecting a snooze
+  // option or "Dismiss all" would unmount the tree before the click fires.
   useEffect(() => {
     function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const target = event.target;
+      if (
+        target &&
+        typeof target.closest === 'function' &&
+        target.closest('[role="menu"],[role="dialog"],[role="listbox"]')
+      ) {
+        return;
+      }
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsOpen(false);
       }
     }
@@ -60,7 +71,7 @@ export function NotificationBell() {
     height: 18,
     padding: '0 5px',
     borderRadius: 9999,
-    background: 'rgb(239, 68, 68)',
+    background: 'rgb(var(--harbor-danger))',
     color: 'white',
     fontSize: 11,
     fontWeight: 500,
@@ -78,9 +89,9 @@ export function NotificationBell() {
         size="sm"
         icon={<Bell size={16} />}
         onClick={() => setIsOpen(!isOpen)}
-        label={`${count} recomendaciones pendientes`}
+        label={`${count} pending recommendations`}
         aria-expanded={isOpen}
-        aria-haspopup="true"
+        aria-haspopup="dialog"
       />
       {count > 0 && (
         <span style={badgeStyle}>{count > 99 ? '99+' : count}</span>

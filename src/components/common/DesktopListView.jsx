@@ -5,10 +5,10 @@ import { createPortal } from 'react-dom';
 import {
   Z,
   ButtonGroup,
-  ClusterView,
   ContentSwap,
-  ContextMenu,
   DataTable,
+  FluidGrid,
+  HostCard,
   IconButton,
   Menu,
   MenuItem,
@@ -32,6 +32,7 @@ import { OsBadge } from '@/components/common/OsBadge';
 
 function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
   const status = (vm?.status || '').toLowerCase();
+  const isPaused = status === 'paused' || status === 'suspended';
   const stop = (e) => e.stopPropagation();
   const isPending = !!pending?.[vm?.id];
 
@@ -55,7 +56,7 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
             stop(e);
             onPause?.(vm);
           }} />
-        
+
         <IconButton
           size="sm"
           variant="ghost"
@@ -65,7 +66,36 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
             stop(e);
             onStop?.(vm);
           }} />
-        
+
+      </ButtonGroup>);
+
+  }
+
+  // Paused / suspended: Play resumes, Stop is still valid (mirrors the menu's
+  // isPaused logic) — so inline controls match the menu's valid-action set.
+  if (isPaused) {
+    return (
+      <ButtonGroup>
+        <IconButton
+          size="sm"
+          variant="ghost"
+          label="Start"
+          icon={<Play size={14} />}
+          onClick={(e) => {
+            stop(e);
+            onPlay?.(vm);
+          }} />
+
+        <IconButton
+          size="sm"
+          variant="ghost"
+          label="Stop"
+          icon={<Square size={14} />}
+          onClick={(e) => {
+            stop(e);
+            onStop?.(vm);
+          }} />
+
       </ButtonGroup>);
 
   }
@@ -92,8 +122,9 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
  * "Capture as Golden Image" now shows everywhere `onCapture` is provided,
  * instead of only on the table right-click.
  *
- * `onAfter` runs before each action (used by the cursor-positioned table menu
- * to close itself); Harbor's <Menu>/<ContextMenu> close themselves.
+ * `onAfter` runs before each action. The cursor-positioned right-click menus
+ * (table + grid) pass it to close themselves; Harbor's <Menu> closes itself via
+ * MenuCtx, so the kebab menu doesn't need it.
  */
 function VmMenuItems({
   vm,
@@ -319,44 +350,15 @@ export function DesktopListView({
   }, [pendingActions, showDepartment, nodeNameById, onPlay, onPause, onStop, onOpen, onCapture, onDelete]);
 
   const inner = view === 'grid' ?
-  <ClusterView
-    hosts={hosts.map((h) => ({
-      ...h,
-      actions:
-      <InlinePowerButtons
-        vm={h._raw}
-        pending={pendingActions}
-        onPlay={onPlay}
-        onPause={onPause}
-        onStop={onStop} />
-
-
-    }))}
-    onHostClick={(host) => {
-      const raw = hosts.find((h) => h.id === host.id)?._raw;
-      if (raw && onOpen) onOpen(raw);
-    }}
-    renderHost={(host, card) => {
-      const raw = hosts.find((h) => h.id === host.id)?._raw;
-      if (!raw) return card;
-      return (
-        <ContextMenu
-          menu={
-          <VmMenuItems
-            vm={raw}
-            pending={pendingActions}
-            onPlay={onPlay}
-            onPause={onPause}
-            onStop={onStop}
-            onOpen={onOpen}
-            onCapture={onCapture}
-            onDelete={onDelete} />
-          }>
-
-              {card}
-            </ContextMenu>);
-
-    }} /> :
+  <GridWithContextMenu
+    hosts={hosts}
+    pendingActions={pendingActions}
+    onOpen={onOpen}
+    onPlay={onPlay}
+    onPause={onPause}
+    onStop={onStop}
+    onDelete={onDelete}
+    onCapture={onCapture} /> :
 
 
   <TableWithContextMenu
@@ -379,6 +381,106 @@ export function DesktopListView({
 
 }
 
+/**
+ * useCursorMenu — cursor-positioned right-click menu shared by the table and
+ * grid surfaces. Unlike Harbor's <ContextMenu> (which has no MenuCtx.Provider,
+ * so its MenuItems never close it), this closes itself when an item runs via
+ * the `onAfter` hook the menu renderer wires to `close`. It also moves focus
+ * into the menu on open and supports ArrowUp/Down roving + Escape — parity with
+ * Harbor's <Menu>.
+ */
+function useCursorMenu() {
+  const menuRef = useRef(null);
+  const [ctx, setCtx] = useState(null);
+
+  useEffect(() => {
+    if (!ctx) return;
+    const raf = requestAnimationFrame(() => {
+      if (menuRef.current) focusFirst(menuRef.current);
+    });
+    function down(e) {
+      if (!menuRef.current?.contains(e.target)) setCtx(null);
+    }
+    function key(e) {
+      if (e.key === 'Escape') setCtx(null);
+    }
+    // Fixed-position cursor menu: close on scroll so it can't drift off its row.
+    function onScroll() {
+      setCtx(null);
+    }
+    document.addEventListener('mousedown', down);
+    document.addEventListener('keydown', key);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('mousedown', down);
+      document.removeEventListener('keydown', key);
+      window.removeEventListener('scroll', onScroll, true);
+    };
+  }, [ctx]);
+
+  function openAt(e, raw) {
+    if (!raw) return;
+    e.preventDefault();
+    let x = e.clientX;
+    let y = e.clientY;
+    const W = 220;
+    const H = 280;
+    if (x + W > window.innerWidth - 8) x = window.innerWidth - W - 8;
+    if (y + H > window.innerHeight - 8) y = window.innerHeight - H - 8;
+    setCtx({ x, y, raw });
+  }
+
+  function onMenuKeyDown(e) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusNextMenuItem(menuRef.current, 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusNextMenuItem(menuRef.current, -1);
+    }
+  }
+
+  const close = () => setCtx(null);
+
+  return { ctx, menuRef, openAt, close, onMenuKeyDown };
+}
+
+function CursorMenu({ menu, pendingActions, onOpen, onPlay, onPause, onStop, onDelete, onCapture }) {
+  const { ctx, menuRef, close, onMenuKeyDown } = menu;
+  if (!ctx || typeof document === 'undefined') return null;
+  return createPortal(
+    <div
+      ref={menuRef}
+      role="menu"
+      aria-label={`Actions for ${ctx.raw?.name || 'desktop'}`}
+      tabIndex={-1}
+      onKeyDown={onMenuKeyDown}
+      style={{
+        position: 'fixed',
+        left: ctx.x,
+        top: ctx.y,
+        zIndex: Z.CONTEXT_MENU,
+        minWidth: 200
+      }}
+      className="rounded-[var(--harbor-menu-surface-radius)] border border-[color:var(--harbor-menu-surface-border)] bg-[var(--harbor-menu-surface-bg)] p-[var(--harbor-menu-surface-padding)] shadow-[var(--harbor-menu-surface-shadow)]">
+
+      <VmMenuItems
+        vm={ctx.raw}
+        pending={pendingActions}
+        onPlay={onPlay}
+        onPause={onPause}
+        onStop={onStop}
+        onOpen={onOpen}
+        onCapture={onCapture}
+        onDelete={onDelete}
+        onAfter={close} />
+
+    </div>,
+    document.body);
+
+}
+
 function TableWithContextMenu({
   hosts,
   columns,
@@ -391,59 +493,20 @@ function TableWithContextMenu({
   onCapture
 }) {
   const wrapRef = useRef(null);
-  const menuRef = useRef(null);
-  const [ctx, setCtx] = useState(null);
-
-  useEffect(() => {
-    if (!ctx) return;
-    // Move focus into the menu on open so keyboard users can arrow through it
-    // and Escape back out — parity with Harbor's <Menu>/<ContextMenu>.
-    const raf = requestAnimationFrame(() => {
-      if (menuRef.current) focusFirst(menuRef.current);
-    });
-    function down(e) {
-      if (!menuRef.current?.contains(e.target)) setCtx(null);
-    }
-    function key(e) {
-      if (e.key === 'Escape') setCtx(null);
-    }
-    document.addEventListener('mousedown', down);
-    document.addEventListener('keydown', key);
-    return () => {
-      cancelAnimationFrame(raf);
-      document.removeEventListener('mousedown', down);
-      document.removeEventListener('keydown', key);
-    };
-  }, [ctx]);
-
-  function onMenuKeyDown(e) {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      focusNextMenuItem(menuRef.current, 1);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      focusNextMenuItem(menuRef.current, -1);
-    }
-  }
+  const menu = useCursorMenu();
 
   function onContextMenu(e) {
-    const tr = e.target.closest('tbody tr');
-    if (!tr || !wrapRef.current?.contains(tr)) return;
-    const allRows = Array.from(
-      wrapRef.current.querySelectorAll('tbody tr')
-    );
-    const idx = allRows.indexOf(tr);
-    const host = hosts[idx];
-    const raw = host?._raw;
+    // Harbor's DataTable renders CSS-grid <div role="row"> and stamps each data
+    // row with `data-row-id` (its rowId). Resolve by that stable id — never by
+    // positional index — so the menu targets the clicked record even after the
+    // table is sorted / filtered / paginated internally.
+    const rowEl = e.target.closest('[role="row"]');
+    if (!rowEl || !wrapRef.current?.contains(rowEl)) return;
+    const domRowId = rowEl.getAttribute('data-row-id');
+    if (domRowId == null) return;
+    const raw = hosts.find((h) => String(h.id) === domRowId)?._raw;
     if (!raw) return;
-    e.preventDefault();
-    let x = e.clientX;
-    let y = e.clientY;
-    const W = 220;
-    const H = 280;
-    if (x + W > window.innerWidth - 8) x = window.innerWidth - W - 8;
-    if (y + H > window.innerHeight - 8) y = window.innerHeight - H - 8;
-    setCtx({ x, y, raw });
+    menu.openAt(e, raw);
   }
 
   return (
@@ -457,39 +520,76 @@ function TableWithContextMenu({
           const raw = row._raw;
           if (raw && onOpen) onOpen(raw);
         }} />
-      
-      {ctx && typeof document !== 'undefined' ?
-      createPortal(
-        <div
-          ref={menuRef}
-          role="menu"
-          aria-label={`Actions for ${ctx.raw?.name || 'desktop'}`}
-          tabIndex={-1}
-          onKeyDown={onMenuKeyDown}
-          style={{
-            position: 'fixed',
-            left: ctx.x,
-            top: ctx.y,
-            zIndex: Z.CONTEXT_MENU,
-            minWidth: 200
-          }}
-          className="rounded-[var(--harbor-menu-surface-radius)] border border-[color:var(--harbor-menu-surface-border)] bg-[var(--harbor-menu-surface-bg)] p-[var(--harbor-menu-surface-padding)] shadow-[var(--harbor-menu-surface-shadow)]">
 
-              <VmMenuItems
-                vm={ctx.raw}
-                pending={pendingActions}
-                onPlay={onPlay}
-                onPause={onPause}
-                onStop={onStop}
-                onOpen={onOpen}
-                onCapture={onCapture}
-                onDelete={onDelete}
-                onAfter={() => setCtx(null)} />
+      <CursorMenu
+        menu={menu}
+        pendingActions={pendingActions}
+        onOpen={onOpen}
+        onPlay={onPlay}
+        onPause={onPause}
+        onStop={onStop}
+        onDelete={onDelete}
+        onCapture={onCapture} />
+    </div>);
 
-            </div>,
-        document.body
-      ) :
-      null}
+}
+
+/**
+ * GridWithContextMenu — the aerial card grid. Renders FluidGrid + HostCard
+ * directly (rather than Harbor's <ClusterView>) so the page header stays the
+ * single filter system: ClusterView ships its own Status/Region/Tag chip bar +
+ * density toggle + "No hosts match" empty state, which competed with the page's
+ * own Selects and filtered-empty state. Filtering/empty are owned by the page.
+ */
+function GridWithContextMenu({
+  hosts,
+  pendingActions,
+  onOpen,
+  onPlay,
+  onPause,
+  onStop,
+  onDelete,
+  onCapture
+}) {
+  const menu = useCursorMenu();
+
+  return (
+    <div>
+      <FluidGrid minItemWidth={280} gap={12}>
+        {hosts.map((h) => {
+          const raw = h._raw;
+          return (
+            <div key={h.id}>
+              <HostCard
+                name={h.name}
+                subtitle={h.subtitle}
+                status={h.status}
+                tags={h.tags}
+                leadingIcon={h.osIcon}
+                actions={
+                <InlinePowerButtons
+                  vm={raw}
+                  pending={pendingActions}
+                  onPlay={onPlay}
+                  onPause={onPause}
+                  onStop={onStop} />
+                }
+                onClick={raw && onOpen ? () => onOpen(raw) : undefined}
+                onContextMenu={raw ? (e) => menu.openAt(e, raw) : undefined} />
+            </div>);
+
+        })}
+      </FluidGrid>
+
+      <CursorMenu
+        menu={menu}
+        pendingActions={pendingActions}
+        onOpen={onOpen}
+        onPlay={onPlay}
+        onPause={onPause}
+        onStop={onStop}
+        onDelete={onDelete}
+        onCapture={onCapture} />
     </div>);
 
 }

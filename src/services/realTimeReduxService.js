@@ -2,7 +2,45 @@ import { toast } from 'sonner'
 import { getSocketService } from './socketService'
 import { createDebugger } from '@/utils/debug'
 import { trackRealTimeEvent } from '@/utils/performance'
+import { fetchVMHealthSnapshot } from '@/state/slices/health'
+import client from '@/apollo-client'
+// Pool state is not in Redux — it lives in Apollo (see handlePoolEvent). Import
+// the SAME document the pools pages query so a realtime pool event can refresh
+// the shared cache. pools-gql.js is a pure gql module (no React/'use client'),
+// so importing it from this service pulls in no page/UI code.
+import { POOLS_QUERY } from '@/app/pools/_components/pools-gql'
 
+// Derive the ProblemTransformationService category bucket from a realtime
+// autocheck check/issue name. This mirrors the heuristic in the health slice's
+// deriveCategory (state/slices/health.js): the snapshot path categorises checks
+// there, and the realtime issue-detected path must produce the SAME bucket or a
+// critical live issue gets defaulted to 'system' → INFORMATIONAL and never flips
+// the VM health badge. Keep in sync with health.js if new check types are added.
+const deriveIssueCategory = (checkName) => {
+  if (!checkName) return 'system'
+  const key = String(checkName).toLowerCase()
+  if (key.includes('firewall')) return 'firewall'
+  if (key.includes('defender') || key.includes('security') || key.includes('antivirus') || key.includes('event_log')) return 'security'
+  if (key.includes('disk') || key.includes('storage')) return 'storage'
+  if (key.includes('update')) return 'updates'
+  if (key.includes('cpu') || key.includes('memory') || key.includes('performance') || key.includes('resource') || key.includes('temperature') || key.includes('boot')) return 'performance'
+  if (key.includes('service') || key.includes('application') || key.includes('startup') || key.includes('app')) return 'applications'
+  return 'system'
+}
+
+// Map the realtime (lowercase) severity to the autoChecks status the snapshot
+// path uses (mapChecksToAutoChecks: FAILED→failed, WARNING→warning, INFO→info),
+// so realtime issues drive the health badge/priority the same way snapshots do.
+const severityToStatus = (severity) => {
+  switch (String(severity || '').toLowerCase()) {
+    case 'critical':
+      return 'failed'
+    case 'warning':
+      return 'warning'
+    default:
+      return 'info'
+  }
+}
 
 // Redux Real-time Service - integrates Socket.io events with Redux store
 export class RealTimeReduxService {
@@ -12,6 +50,9 @@ export class RealTimeReduxService {
     this.subscriptions = []
     this.isInitialized = false
     this.debug = createDebugger('frontend:realtime:redux')
+    // Debounce handle for the pools cache refresh (a scale op emits a burst of
+    // events; we only need one network refetch to converge). See handlePoolEvent.
+    this.poolsRefetchTimer = null
   }
 
   // Initialize real-time Redux integration
@@ -84,6 +125,21 @@ export class RealTimeReduxService {
       this.socketService.subscribeToAllResourceEvents('applications', (action, data) => {
         this.handleApplicationEvent(action, data)
       })
+    )
+
+    // Subscribe to Pool events. The backend emits 'pools' on pool
+    // create/update/scale/delete; without this the pools list/detail pages rely
+    // purely on their 15-20s poll. Pools are NOT in Redux, so this is a cache
+    // refresh + DOM broadcast rather than a slice dispatch — see handlePoolEvent.
+    this.subscriptions.push(
+      this.socketService.subscribeToAllResourceEvents('pools', (action, data) => {
+        this.handlePoolEvent(action, data)
+      }, [
+        'create',
+        'update',
+        'scale',
+        'delete'
+      ])
     )
 
     // Subscribe to Firewall rule changes.
@@ -346,22 +402,6 @@ export class RealTimeReduxService {
         })
         break
 
-      case 'firewall_policy_changed':
-        this.debug.info('dept-event', `Department firewall policy changed for "${deptData.name}"`)
-        this.store.dispatch({
-          type: 'departments/realTimeDepartmentUpdated',
-          payload: deptData
-        })
-        break
-
-      case 'firewall_default_config_changed':
-        this.debug.info('dept-event', `Department firewall default config changed for "${deptData.name}"`)
-        this.store.dispatch({
-          type: 'departments/realTimeDepartmentUpdated',
-          payload: deptData
-        })
-        break
-
       default:
         this.debug.warn('dept-event', `Unknown Department action: ${action}`)
     }
@@ -422,6 +462,62 @@ export class RealTimeReduxService {
 
     const endTime = performance.now()
     trackRealTimeEvent(`application:${action}`, endTime - startTime)
+  }
+
+  // Handle Pool real-time events (create / update / scale / delete).
+  //
+  // PARTIAL BY DESIGN: pool state does NOT live in Redux (there is no pools
+  // slice), and the pools list/detail pages hold it in local React state fed by
+  // imperative `client.query(POOLS_QUERY, { fetchPolicy: 'network-only' })`
+  // calls — they neither watch the Apollo cache nor read Redux, so this service
+  // cannot push directly into their render. Two things we CAN do from here:
+  //   1. Refetch POOLS_QUERY through the shared Apollo client (the SAME
+  //      mechanism the pages use) so the cache is authoritative for any
+  //      cache-first consumer and primed ahead of the pages' next read.
+  //   2. Broadcast a DOM CustomEvent so a pools page can opt into instant
+  //      refresh with a one-line listener:
+  //        window.addEventListener('infinibay:pools:changed', () => fetchPools())
+  //      Until such a listener exists, the pages still converge via their
+  //      existing 15-20s poll, which is intentionally LEFT IN PLACE as the
+  //      fallback — nothing here removes it.
+  handlePoolEvent(action, eventData) {
+    const startTime = performance.now()
+    this.debug.log('pool-event', `Received Pool ${action} event:`, eventData)
+
+    if (eventData?.status === 'error') {
+      this.debug.error('pool-event', `Pool ${action} error:`, eventData.error)
+      return
+    }
+
+    // Backend wraps payloads as { status, data, timestamp }; fall back to the
+    // raw payload for resilience to either shape.
+    const poolData = eventData?.data ?? eventData
+
+    // Broadcast immediately so any listening page can refresh without waiting
+    // for its poll. Guarded for SSR / no-DOM safety.
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(
+        new CustomEvent('infinibay:pools:changed', {
+          detail: { action, pool: poolData ?? null }
+        })
+      )
+    }
+
+    // Keep the Apollo cache fresh. Debounced: a scale operation fires a burst of
+    // events and we only need one network refetch to converge.
+    if (this.poolsRefetchTimer) clearTimeout(this.poolsRefetchTimer)
+    this.poolsRefetchTimer = setTimeout(() => {
+      this.poolsRefetchTimer = null
+      client
+        .query({ query: POOLS_QUERY, fetchPolicy: 'network-only' })
+        .catch((err) => {
+          // A failed refresh is non-fatal: the pages' own poll retries anyway.
+          this.debug.warn('pool-event', 'Pools cache refetch failed:', err)
+        })
+    }, 400)
+
+    const endTime = performance.now()
+    trackRealTimeEvent(`pool:${action}`, endTime - startTime)
   }
 
   // Handle Firewall events (generic filters + rule changes)
@@ -499,12 +595,32 @@ export class RealTimeReduxService {
     switch (action) {
       case 'issue-detected': {
         // Backend payload.data is FLAT: { vmId, vmName, issueType, severity, description, details }
-        const { vmId, issueType, severity, description, details } = payload
+        const { vmId, issueType, severity, description } = payload
         if (vmId && issueType) {
+          // useVMProblems gates the VM Overview problems panel on BOTH
+          // state.health.vmHealthData[vmId] AND autoChecks[vmId] being present.
+          // Nothing currently writes vmHealthData (the fetchVMHealthData thunk is
+          // dead — it queries a non-existent `vm` field and is dispatched nowhere),
+          // so without this seed the panel stays permanently empty even as issues
+          // stream in. Seed a minimal record, but ONLY when absent so a future real
+          // health snapshot is never clobbered.
+          const existingHealth = this.store.getState().health?.vmHealthData?.[vmId]
+          if (!existingHealth) {
+            this.store.dispatch({
+              type: 'health/setVMHealthData',
+              payload: { vmId, data: { id: vmId, name: payload.vmName ?? null } }
+            })
+          }
+
           const issue = {
             id: `${issueType}-${Date.now()}`,
             checkName: issueType,
-            status: 'issue',
+            // category + status must match the snapshot path (mapChecksToAutoChecks)
+            // or useVMProblems defaults category → 'system' and the priority service
+            // maps 'system' to INFORMATIONAL, so a critical live issue would never
+            // flip the VM health badge.
+            category: deriveIssueCategory(issueType),
+            status: severityToStatus(severity),
             severity,
             message: description
           }
@@ -536,12 +652,19 @@ export class RealTimeReduxService {
 
       case 'remediation-completed': {
         // Backend payload.data is FLAT: { vmId, vmName, checkType, remediationType, success, description, ... }
-        const { success, description } = payload
+        const { vmId, success, description } = payload
         if (success) {
           toast.success('Remediation completed successfully', {
             description,
             duration: 5000
           })
+          // Reconcile the problems panel: the resolved issue must leave
+          // autoChecks[vmId]. The health slice has no per-issue removal reducer, so
+          // refetch the authoritative snapshot to prune it (merges into existing
+          // autoChecks; PASSED checks are dropped by mapChecksToAutoChecks).
+          if (vmId) {
+            this.store.dispatch(fetchVMHealthSnapshot({ vmId }))
+          }
         } else {
           toast.error('Remediation failed', {
             description: description || 'Please check the logs for details',
@@ -637,6 +760,11 @@ export class RealTimeReduxService {
         toast.success(`${description} completed`, {
           duration: 5000
         })
+        // Reconcile the problems panel so the resolved issue leaves autoChecks[vmId]
+        // instead of lingering. vmId lives on the flat data payload.
+        if (data.vmId) {
+          this.store.dispatch(fetchVMHealthSnapshot({ vmId: data.vmId }))
+        }
         break
 
       case 'requires-reboot':
@@ -668,6 +796,13 @@ export class RealTimeReduxService {
   // Cleanup subscriptions
   cleanup() {
     this.debug.info('cleanup', 'Cleaning up real-time Redux service')
+
+    // Cancel any pending debounced pools cache refetch so it can't fire after
+    // teardown (or against a torn-down/re-authed client).
+    if (this.poolsRefetchTimer) {
+      clearTimeout(this.poolsRefetchTimer)
+      this.poolsRefetchTimer = null
+    }
 
     // Unsubscribe from all events
     this.subscriptions.forEach(unsubscribe => {

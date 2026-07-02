@@ -29,11 +29,17 @@ import {
   Spinner,
   FormField,
   ResponsiveStack,
+  Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
 } from "@infinibay/harbor";
 
 import {
   fetchApplicationById,
   updateApplication,
+  deleteApplication,
 } from "@/state/slices/applications";
 import { usePageHeader } from "@/hooks/usePageHeader";
 
@@ -69,6 +75,8 @@ export default function EditApplicationPage() {
   const [activeTab, setActiveTab] = useState("windows");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -86,6 +94,7 @@ export default function EditApplicationPage() {
     setDescription(application.description || "");
     setParams(
       Object.keys(application.parameters || {}).map((key) => ({
+        id: crypto.randomUUID(),
         name: key,
         type: application.parameters[key].type,
         required: !!application.parameters[key].required,
@@ -125,7 +134,10 @@ export default function EditApplicationPage() {
   );
 
   const addParam = () =>
-    setParams((prev) => [...prev, { name: "", type: "string", required: false }]);
+    setParams((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), name: "", type: "string", required: false },
+    ]);
   const removeParam = (i) =>
     setParams((prev) => prev.filter((_, idx) => idx !== i));
   const updateParam = (i, patch) =>
@@ -149,6 +161,15 @@ export default function EditApplicationPage() {
       return acc;
     }, {});
 
+    // Persist only the OS scripts that have content, and derive the supported-OS
+    // list from them instead of clobbering it with a hardcoded triple. Fall back
+    // to the record's existing os list if the user cleared every script.
+    const installCommand = Object.fromEntries(
+      Object.entries(scripts).filter(([, v]) => v.trim() !== "")
+    );
+    const derivedOs = Object.keys(installCommand);
+    const os = derivedOs.length ? derivedOs : application.os || [];
+
     setSaving(true);
     try {
       await dispatch(
@@ -158,8 +179,8 @@ export default function EditApplicationPage() {
             name: name.trim(),
             description: description.trim(),
             parameters,
-            os: ["windows", "ubuntu", "fedora"],
-            installCommand: scripts,
+            os,
+            installCommand,
           },
         })
       ).unwrap();
@@ -168,6 +189,21 @@ export default function EditApplicationPage() {
       toast.error(`Could not save: ${err.message || err}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await dispatch(deleteApplication({ id })).unwrap();
+      toast.success("Application deleted");
+      setConfirmDelete(false);
+      router.push("/applications");
+    } catch (err) {
+      // Keep the dialog open so the user can retry or cancel.
+      toast.error(`Could not delete: ${err.message || err}`);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -226,6 +262,16 @@ export default function EditApplicationPage() {
             >
               Back
             </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              icon={<Trash2 size={16} />}
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              disabled={saving || deleting}
+            >
+              Delete
+            </Button>
           </ResponsiveStack>
         </Card>
 
@@ -270,7 +316,7 @@ export default function EditApplicationPage() {
           ) : (
             <ResponsiveStack direction="col" gap={2}>
               {params.map((p, i) => (
-                <Card key={i} variant="default">
+                <Card key={p.id} variant="default">
                   <ResponsiveStack direction="row" gap={2} align="center">
                     <TextField
                       placeholder="name"
@@ -360,6 +406,49 @@ export default function EditApplicationPage() {
             Save changes
           </Button>
         </ResponsiveStack>
+
+        <Dialog
+          open={confirmDelete}
+          onClose={() => !deleting && setConfirmDelete(false)}
+          size="sm"
+        >
+          <DialogTitle>
+            <ResponsiveStack direction="row" gap={2} align="center">
+              <Trash2 size={16} />
+              Delete application
+            </ResponsiveStack>
+          </DialogTitle>
+          <DialogDescription>
+            Permanently delete “{application.name}”?
+          </DialogDescription>
+          <DialogBody>
+            <p className="text-sm text-fg-muted">
+              This removes the application catalogue entry and its install
+              scripts. Desktops will no longer be able to pull it. This action
+              cannot be undone.
+            </p>
+          </DialogBody>
+          <DialogButtons align="end">
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              type="button"
+              icon={<Trash2 size={16} />}
+              onClick={handleDelete}
+              loading={deleting}
+              disabled={deleting}
+            >
+              Delete
+            </Button>
+          </DialogButtons>
+        </Dialog>
       </Page>
     </form>
   );

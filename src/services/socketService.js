@@ -37,8 +37,9 @@ export class SocketService {
     this.eventListeners = new Map() // Maps eventPattern -> Set of callbacks
     this.eventHandlers = new Map() // Maps fullEventName -> actual socket handler
     this.userNamespace = null
+    // Truthful reconnect counter: updated from the manager's 'reconnect_attempt'
+    // event and reset to 0 on a successful (re)connect. Surfaced via getConnectionInfo().
     this.reconnectAttempts = 0
-    this.maxReconnectAttempts = 5
     this.pendingSubscriptions = [] // Queue of subscriptions requested before the socket existed; flushed on connect
     this.debug = createDebugger('frontend:realtime:socket')
   }
@@ -85,7 +86,10 @@ export class SocketService {
         timeout: 10000,
         forceNew: true, // Force new connection for namespace changes
         reconnection: true, // Enable auto-reconnection
-        reconnectionAttempts: 5,
+        // Retry forever with capped backoff. A finite cap (was 5 ≈ 15-20s) made
+        // real-time die permanently after a brief backend outage with no recovery
+        // path; socket.io's default is Infinity and the backoff below bounds load.
+        reconnectionAttempts: Infinity,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000
       })
@@ -139,8 +143,13 @@ export class SocketService {
         // (reconnection:true, configured above) already handles transport drops with
         // proper backoff. A second manual loop only conflicts with it.
         if (reason === 'io server disconnect') {
-          // Server forcibly disconnected us — built-in reconnection won't fire either.
-          this.debug.warn('disconnect', 'Server disconnected us, not reconnecting automatically')
+          // Server forcibly disconnected us (e.g. backend restart) — the built-in
+          // manager will NOT auto-reconnect in this case, so trigger it explicitly.
+          // The auth callback re-reads the freshest token on this new attempt.
+          this.debug.warn('disconnect', 'Server disconnected us, reconnecting explicitly')
+          if (this.socket) {
+            this.socket.connect()
+          }
         } else if (reason === 'io client disconnect') {
           // Intentional client teardown (disconnect()) — must not reconnect.
           this.debug.info('disconnect', 'Client-initiated disconnect, not reconnecting')
@@ -152,6 +161,13 @@ export class SocketService {
 
       // Reconnection lifecycle events are emitted on the Manager (socket.io), not the
       // Socket. Bind them to this.socket.io or they never fire (socket.io-client v4).
+      this.socket.io.on('reconnect_attempt', (attemptNumber) => {
+        // Keep the counter truthful so getConnectionInfo().reconnectAttempts reflects
+        // reality (a stale-data banner can read this to show retry progress).
+        this.reconnectAttempts = attemptNumber
+        this.debug.info('reconnect', `Reconnection attempt ${attemptNumber}`)
+      })
+
       this.socket.io.on('reconnect', (attemptNumber) => {
         this.debug.success('reconnect', `Reconnected after ${attemptNumber} attempts`)
         this.connectionState = ConnectionState.CONNECTED
@@ -159,8 +175,14 @@ export class SocketService {
       })
 
       this.socket.io.on('reconnect_failed', () => {
-        this.debug.error('reconnect', 'Failed to reconnect to Socket.io server')
+        // With reconnectionAttempts:Infinity this should not normally fire, but if it
+        // ever does, surface the error state and schedule a fresh manual retry so
+        // real-time is never left permanently dead.
+        this.debug.error('reconnect', 'Failed to reconnect to Socket.io server, scheduling manual retry')
         this.connectionState = ConnectionState.ERROR
+        if (this.socket) {
+          this.socket.connect()
+        }
       })
     })
   }
@@ -185,11 +207,16 @@ export class SocketService {
     }
   }
 
-  // Reconnect to server
-  reconnect() {
-    if (this.socket) {
-      this.socket.connect()
+  // Resolve the namespaced socket event name for a pattern using the CURRENT
+  // namespace. Used both when registering handlers and when tearing them down, so
+  // cleanup always targets the active handler even after a namespace reassignment.
+  resolveFullEventName(eventPattern) {
+    if (this.userNamespace && eventPattern.includes(':')) {
+      return eventPattern.startsWith(this.userNamespace)
+        ? eventPattern
+        : `${this.userNamespace}:${eventPattern}`
     }
+    return eventPattern
   }
 
   // Subscribe to events with pattern matching
@@ -223,9 +250,7 @@ export class SocketService {
 
     // For namespace-specific events, listen for the full event name
     if (this.userNamespace && eventPattern.includes(':')) {
-      const fullEventName = eventPattern.startsWith(this.userNamespace)
-        ? eventPattern
-        : `${this.userNamespace}:${eventPattern}`
+      const fullEventName = this.resolveFullEventName(eventPattern)
 
       this.debug.info('subscribe', `Subscribing to event: ${fullEventName} (namespace: ${this.userNamespace})`)
       
@@ -257,14 +282,18 @@ export class SocketService {
       return () => {
         this.removeEventListener(eventPattern, callback)
 
-        // Only remove the socket handler if no more callbacks exist
+        // Only remove the socket handler if no more callbacks exist.
+        // Recompute the full event name from the CURRENT namespace: after a
+        // namespace reassignment the active handler is keyed by the new namespace,
+        // so the fullEventName captured at subscribe time would miss it and leak.
         const callbacks = this.eventListeners.get(eventPattern)
         if (!callbacks || callbacks.size === 0) {
-          if (this.socket && this.eventHandlers.has(fullEventName)) {
-            const handler = this.eventHandlers.get(fullEventName)
-            this.socket.off(fullEventName, handler)
-            this.eventHandlers.delete(fullEventName)
-            this.debug.info('unsubscribe', `Removed handler for: ${fullEventName}`)
+          const currentFullEventName = this.resolveFullEventName(eventPattern)
+          if (this.socket && this.eventHandlers.has(currentFullEventName)) {
+            const handler = this.eventHandlers.get(currentFullEventName)
+            this.socket.off(currentFullEventName, handler)
+            this.eventHandlers.delete(currentFullEventName)
+            this.debug.info('unsubscribe', `Removed handler for: ${currentFullEventName}`)
           }
         }
       }
@@ -426,20 +455,30 @@ export class SocketService {
     // Re-subscribe with new namespace
     this.eventListeners.forEach((callbacks, eventPattern) => {
       if (eventPattern.includes(':')) {
-        const newFullEventName = `${newNamespace}:${eventPattern}`
-        
-        // Create new handler for this event
+        const newFullEventName = eventPattern.startsWith(newNamespace)
+          ? eventPattern
+          : `${newNamespace}:${eventPattern}`
+
+        // Create new handler for this event. Do a LIVE lookup of the current
+        // callbacks Set (matching subscribe()) instead of capturing the Set that
+        // exists now: a later unsubscribe of the last callback replaces/empties the
+        // stored Set, and future subscribe()s create a brand-new Set. Capturing the
+        // stale Set would leave this handler firing an orphaned Set while new
+        // subscribers silently receive nothing.
         const eventHandler = (data) => {
           this.debug.log('event', `Received event: ${newFullEventName}`, data)
-          callbacks.forEach(cb => {
-            try {
-              cb(data)
-            } catch (error) {
-              this.debug.error('event', `Error in callback for ${newFullEventName}:`, error)
-            }
-          })
+          const currentCallbacks = this.eventListeners.get(eventPattern)
+          if (currentCallbacks) {
+            currentCallbacks.forEach(cb => {
+              try {
+                cb(data)
+              } catch (error) {
+                this.debug.error('event', `Error in callback for ${newFullEventName}:`, error)
+              }
+            })
+          }
         }
-        
+
         // Store and register the new handler
         this.eventHandlers.set(newFullEventName, eventHandler)
         this.socket.on(newFullEventName, eventHandler)

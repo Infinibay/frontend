@@ -52,11 +52,15 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
 
   // Recommendations need a fully-ready VM (process running AND OS finished setup);
   // running an action against a still-installing VM would queue indefinitely.
-  const isRunning = (vmStatus === 'running' && !!vmSetupComplete) || vmStatus === 'poweredOn';
+  const vmReady = (vmStatus === 'running' && !!vmSetupComplete) || vmStatus === 'poweredOn';
 
   const info = getRecommendationInfo(recommendation.type, recommendation);
   const metadata = extractRecommendationMetadata(recommendation);
-  const { resolve, resolution, isStarting, isResolving } = useResolveRecommendation(recommendation.id);
+  // The hook exposes `isRunning` = a resolution is in progress (non-terminal).
+  // Alias it to `isResolving` so it is never confused with the VM-readiness flag
+  // above — mixing the two previously disabled every button whenever the VM was up.
+  const { resolve, resolution, isStarting, isRunning: isResolving } =
+    useResolveRecommendation(recommendation.id);
 
   const getActionConfig = (type, canInstallUpdates) => {
     const actions = [];
@@ -273,14 +277,6 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
     }
   };
 
-  const getMockProcesses = () => [
-    { name: 'chrome.exe', cpu: 25.4, memory: 512, pid: 1234 },
-    { name: 'devenv.exe', cpu: 18.2, memory: 1024, pid: 2345 },
-    { name: 'firefox.exe', cpu: 12.1, memory: 768, pid: 3456 },
-    { name: 'code.exe', cpu: 8.7, memory: 456, pid: 4567 },
-    { name: 'teams.exe', cpu: 6.3, memory: 892, pid: 5678 },
-  ];
-
   const handleAction = (actionType) => {
     switch (actionType) {
       case 'reboot':
@@ -402,18 +398,27 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
         break;
       }
       case 'processes':
+        // Live per-process data isn't streamed to the console yet, so guide the
+        // operator to inspect it inside the VM instead of showing fabricated rows.
         setDialogContent({
-          title: 'System Processes',
-          description: 'List of processes consuming the most resources',
-          processes: getMockProcesses(),
+          title: 'Check running processes',
+          description:
+            'Live process data is not available from here yet — inspect it inside the desktop.',
+          guidanceSteps: [
+            'Connect to the desktop using the Connect button in the header.',
+            'Open Task Manager (Ctrl+Shift+Esc) on Windows, or run top/htop on Linux.',
+            'Sort by CPU or Memory to find the heaviest process.',
+            'Close or restart the offending application if it is not needed.',
+          ],
         });
         setShowInfoDialog(true);
         break;
       default:
         toast({
-          title: 'Action executed',
-          description: 'The action was executed successfully',
-          variant: 'default',
+          title: 'Not automated yet',
+          description:
+            "This action can't be run automatically yet. Use the recommendation details to complete it inside the desktop.",
+          variant: 'info',
         });
     }
   };
@@ -439,15 +444,17 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
       return;
     }
 
-    // Non-auto-resolvable confirmations keep the legacy informational toast
+    // Non-auto-resolvable confirmations have no backend automation — be honest
+    // rather than claiming a fake success.
     toast({
-      title: 'Action completed',
-      description: 'The action was executed successfully.',
-      variant: 'default',
+      title: 'Not automated yet',
+      description:
+        "This action can't be run automatically yet. Complete it inside the desktop.",
+      variant: 'info',
     });
   };
 
-  const actionConfig = getActionConfig(recommendation.type, isRunning && agentOnline);
+  const actionConfig = getActionConfig(recommendation.type, vmReady && agentOnline);
 
   return (
     <>
@@ -455,8 +462,12 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
         <ResponsiveStack direction="row" gap={2} align="center" wrap>
           {actionConfig.actions.map((action, index) => {
             const IconComp = action.icon;
-            const busy = isStarting || isRunning;
+            const busy = isStarting || isResolving;
             const isDisabled = action.comingSoon || action.disabled || busy;
+            // Distinguish WHY a plainly-disabled install action is unavailable.
+            const disabledReason = !vmReady
+              ? 'Start the desktop to run this action.'
+              : 'Agent offline — waiting for connection.';
             const btn = (
               <Button
                 key={index}
@@ -476,7 +487,7 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
                 <span>{btn}</span>
               </Tooltip>
             ) : action.disabled ? (
-              <Tooltip key={index} content="Agent offline — waiting for connection">
+              <Tooltip key={index} content={disabledReason}>
                 <span>{btn}</span>
               </Tooltip>
             ) : (
@@ -558,22 +569,6 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
                 ))}
               </ResponsiveStack>
             </Alert>
-          ) : null}
-          {dialogContent.processes ? (
-            <Card
-              variant="default"
-              spotlight={false}
-              glow={false}
-              title="Top resource-consuming processes"
-            >
-              <PropertyList
-                items={dialogContent.processes.map((process, idx) => ({
-                  key: `p-${idx}`,
-                  label: process.name,
-                  value: `CPU ${process.cpu}% · RAM ${process.memory} MB · PID ${process.pid}`,
-                }))}
-              />
-            </Card>
           ) : null}
         </ResponsiveStack>
         </DialogBody>

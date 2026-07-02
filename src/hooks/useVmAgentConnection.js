@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useQuery } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import { createDebugger } from '@/utils/debug'
@@ -38,11 +38,17 @@ export const useVmAgentConnection = (vmId, options = {}) => {
     pollInterval,
     skip: skip || !vmId,
     fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-and-network',
-    onError: (err) => {
-      debug.warn('query-error', 'Failed to fetch socket connection stats:', err.message)
-    }
+    nextFetchPolicy: 'cache-and-network'
   })
+
+  // Apollo Client v4 removed the onError/onCompleted useQuery callbacks, so we
+  // log failures by observing the returned `error` instead. Consumers should
+  // still surface `error` in the UI.
+  useEffect(() => {
+    if (error) {
+      debug.warn('query-error', 'Failed to fetch socket connection stats:', error.message)
+    }
+  }, [error])
 
   const connectionInfo = useMemo(() => {
     if (!data?.socketConnectionStats?.connections) {

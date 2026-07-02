@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { CombinedGraphQLErrors, ServerError } from '@apollo/client';
 import {
   Alert,
   Button,
@@ -13,6 +14,7 @@ import { createDebugger } from '@/utils/debug';
 const debug = createDebugger('frontend:components:vm-error-state');
 
 const ErrorState = ({ error, vmId, onRetry }) => {
+  const router = useRouter();
   debug.error('VM Error State rendered', { error, vmId });
 
   const getErrorInfo = () => {
@@ -25,8 +27,10 @@ const ErrorState = ({ error, vmId, onRetry }) => {
         isNotFound: true,
       };
     }
-    if (error.graphQLErrors && error.graphQLErrors.length > 0) {
-      const graphqlError = error.graphQLErrors[0];
+    // Apollo Client 4: GraphQL errors are wrapped in CombinedGraphQLErrors with the
+    // individual errors on `error.errors` (the old `error.graphQLErrors` is removed).
+    if (CombinedGraphQLErrors.is(error) && error.errors.length > 0) {
+      const graphqlError = error.errors[0];
       if (graphqlError.extensions?.code === 'NOT_FOUND') {
         return {
           title: 'Desktop not found',
@@ -52,7 +56,9 @@ const ErrorState = ({ error, vmId, onRetry }) => {
         isNotFound: false,
       };
     }
-    if (error.networkError) {
+    // Apollo Client 4: transport/HTTP failures arrive as ServerError (the old
+    // `error.networkError` is removed).
+    if (ServerError.is(error)) {
       return {
         title: 'Connection error',
         message:
@@ -93,11 +99,14 @@ const ErrorState = ({ error, vmId, onRetry }) => {
                   Try again
                 </Button>
               ) : null}
-              <Link href="/departments" legacyBehavior passHref>
-                <Button variant="secondary" size="sm" icon={<Home size={14} />}>
-                  Back to departments
-                </Button>
-              </Link>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Home size={14} />}
+                onClick={() => router.push('/departments')}
+              >
+                Back to departments
+              </Button>
             </ResponsiveStack>
           }
         >

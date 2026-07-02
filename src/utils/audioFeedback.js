@@ -3,6 +3,27 @@
  * Provides accessible audio feedback for user interactions
  */
 
+// Single, lazily-created AudioContext reused for every tone. Constructing a fresh
+// context per tone leaks contexts (browsers cap the number of live ones, after
+// which construction throws and tones silently stop). One shared context avoids
+// the cap and is resumed on demand to satisfy autoplay policies.
+let sharedAudioContext = null;
+
+const getAudioContext = () => {
+  if (typeof window === 'undefined') return null;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+
+  if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
+    sharedAudioContext = new AudioContextClass();
+  }
+  // A context can be 'suspended' until a user gesture resumes it.
+  if (sharedAudioContext.state === 'suspended' && typeof sharedAudioContext.resume === 'function') {
+    sharedAudioContext.resume().catch(() => {});
+  }
+  return sharedAudioContext;
+};
+
 /**
  * Play a low-frequency error tone (200Hz)
  * Used for subtle negative feedback (e.g., disabled actions)
@@ -22,11 +43,9 @@ export const playErrorTone = (options = {}) => {
   if (typeof window === 'undefined') return;
 
   try {
-    // Check for AudioContext support (including Safari's webkitAudioContext)
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
+    const audioContext = getAudioContext();
+    if (!audioContext) return;
 
-    const audioContext = new AudioContextClass();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 

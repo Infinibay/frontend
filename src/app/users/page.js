@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   UserPlus,
   Shield,
@@ -48,6 +48,7 @@ import {
   updateUser,
   deleteUser } from
 "@/state/slices/users";
+import { selectUser } from "@/state/slices/auth";
 import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -65,6 +66,12 @@ const ROLE_FILTER_OPTIONS = [
 { value: "USER", label: "User" },
 { value: "ADMIN", label: "Admin" }];
 
+// The backend `destroyUser` resolver is not implemented yet (see
+// src/state/slices/users.js). Until it ships we disable the delete controls and
+// explain why via tooltip rather than presenting an action that always fails.
+const USER_DELETE_ENABLED = false;
+const DELETE_UNAVAILABLE_TIP = "User deletion isn't available yet";
+
 
 // Same address shape the auth (sign-in/sign-up) forms validate against, so a
 // typo is caught client-side instead of round-tripping to the GraphQL API.
@@ -75,15 +82,17 @@ const EMPTY_FORM = {
   firstName: "",
   lastName: "",
   email: "",
+  currentPassword: "",
   password: "",
   passwordConfirmation: "",
   role: "USER"
 };
 
 /** User create/edit form shared between both drawer modes. */
-function UserFormFields({ form, setForm, mode, errors = {}, clearError, canEditRole = true }) {
+function UserFormFields({ form, setForm, mode, errors = {}, clearError, canEditRole = true, isSelfEdit = false }) {
   const [hideA, setHideA] = useState(true);
   const [hideB, setHideB] = useState(true);
+  const [hideCurrent, setHideCurrent] = useState(true);
 
   const update = (key) => (e) => {
     const value = e?.target ? e.target.value : e;
@@ -92,6 +101,20 @@ function UserFormFields({ form, setForm, mode, errors = {}, clearError, canEditR
   };
 
   const isCreate = mode === "create";
+  const isSuperAdmin = form.role === "SUPER_ADMIN";
+
+  // A SUPER_ADMIN's role is not one of the pickable options, so surface it as a
+  // (non-selectable) entry — otherwise Harbor Select would render a blank value
+  // and the only choices would silently demote the account.
+  const roleOptions = isSuperAdmin ?
+    [...ROLE_OPTIONS, { value: "SUPER_ADMIN", label: "Super admin" }] :
+    ROLE_OPTIONS;
+  // Never allow demoting a SUPER_ADMIN from this generic list.
+  const roleSelectDisabled = !canEditRole || isSuperAdmin;
+
+  // Editing your own account: the backend requires the current password before
+  // it will accept a password change (user/resolver rejects otherwise).
+  const requiresCurrentPassword = isSelfEdit && !isCreate;
 
   // Live confirm-password feedback, mirroring the CreateMachine BasicInfoStep:
   // surface the match/mismatch as the user types rather than only on submit.
@@ -133,6 +156,30 @@ function UserFormFields({ form, setForm, mode, errors = {}, clearError, canEditR
           value={form.email}
           onChange={update("email")}
           error={errors.email} />
+
+      </FormField>
+      }
+
+      {requiresCurrentPassword &&
+      <FormField
+        label="Current password"
+        optional={!form.password}
+        required={!!form.password}>
+        <TextField
+          type={hideCurrent ? "password" : "text"}
+          icon={<Lock size={16} />}
+          suffix={
+          <IconButton
+            size="sm"
+            variant="ghost"
+            label={hideCurrent ? "Show password" : "Hide password"}
+            icon={hideCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+            onClick={() => setHideCurrent((s) => !s)} />
+
+          }
+          value={form.currentPassword || ""}
+          onChange={update("currentPassword")}
+          error={errors.currentPassword} />
 
       </FormField>
       }
@@ -195,8 +242,8 @@ function UserFormFields({ form, setForm, mode, errors = {}, clearError, canEditR
             setForm((prev) => ({ ...prev, role: v }));
             clearError?.("role");
           }}
-          options={ROLE_OPTIONS}
-          disabled={!canEditRole} />
+          options={roleOptions}
+          disabled={roleSelectDisabled} />
 
       </FormField>
     </ResponsiveStack>);
@@ -205,6 +252,7 @@ function UserFormFields({ form, setForm, mode, errors = {}, clearError, canEditR
 
 export default function UsersPage() {
   const dispatch = useDispatch();
+  const currentUser = useSelector(selectUser);
   const { can, isLoading: permsLoading } = usePermissions();
 
   // While permissions are still loading, stay optimistic (treat as allowed) so
@@ -256,6 +304,7 @@ export default function UsersPage() {
       firstName: user.firstName || "",
       lastName: user.lastName || "",
       email: user.email || "",
+      currentPassword: "",
       password: "",
       passwordConfirmation: "",
       role: user.role || "USER"
@@ -276,7 +325,14 @@ export default function UsersPage() {
     const list = users || [];
     const q = search.trim().toLowerCase();
     return list.filter((u) => {
-      if (roleFilter !== "all" && u.role !== roleFilter) return false;
+      if (roleFilter !== "all") {
+        // The "Admin" filter and the admins stat both treat SUPER_ADMIN as an admin.
+        const matchesRole =
+          roleFilter === "ADMIN" ?
+          u.role === "ADMIN" || u.role === "SUPER_ADMIN" :
+          u.role === roleFilter;
+        if (!matchesRole) return false;
+      }
       if (!q) return true;
       return (
         u.email?.toLowerCase().includes(q) ||
@@ -339,7 +395,9 @@ export default function UsersPage() {
       { label: "Home", href: "/" },
       { label: "Users", isCurrent: true }],
 
-      title: "Users",
+      // Title intentionally omitted: the in-page <PageHeader title="Users"> owns
+      // the page <h1>. Setting it here too would render a second, duplicate <h1>
+      // (matches the desktops/pools convention).
       actions: [],
       helpConfig,
       helpTooltip: "Users help"
@@ -348,6 +406,11 @@ export default function UsersPage() {
   );
 
   // ---- Mutations --------------------------------------------------
+
+  // Editing your own account has extra rules (the backend requires the current
+  // password before it will change your password).
+  const isSelfEdit =
+    drawerMode === "edit" && editingId != null && currentUser?.id === editingId;
 
   // Collect every field error at once so the operator sees all problems in one
   // pass, with inline field-level messages instead of a one-error-at-a-time toast.
@@ -376,6 +439,9 @@ export default function UsersPage() {
         e.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
       if (form.password !== form.passwordConfirmation)
         e.passwordConfirmation = "Passwords do not match";
+      // Changing your own password requires confirming the current one.
+      if (isSelfEdit && !form.currentPassword)
+        e.currentPassword = "Enter your current password to change it";
     }
     return e;
   };
@@ -404,11 +470,18 @@ export default function UsersPage() {
     const input = {
       firstName: form.firstName,
       lastName: form.lastName,
-      role: form.role,
+      // The backend rejects any self-update that carries a role (user/resolver
+      // "You cannot change your own role"), and it keys off the field's presence
+      // rather than whether it actually changed — so a self-edit must never send
+      // role, otherwise even a name/password change would fail. Role edits for
+      // your own account go through a privileged path, not this drawer.
+      ...(isSelfEdit ? {} : { role: form.role }),
       ...(form.password && form.passwordConfirmation ?
       {
         password: form.password,
-        passwordConfirmation: form.passwordConfirmation
+        passwordConfirmation: form.passwordConfirmation,
+        // The backend rejects a self password change without the current one.
+        ...(isSelfEdit ? { currentPassword: form.currentPassword } : {})
       } :
       {})
     };
@@ -427,19 +500,46 @@ export default function UsersPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     const isBulk = deleteTarget === "bulk";
+    const labelFor = (id) => {
+      const u = (users || []).find((x) => x.id === id);
+      return u?.email || u?.firstName || id;
+    };
     setDeleting(true);
     try {
       if (isBulk) {
-        await Promise.all(
-          selected.map((id) => dispatch(deleteUser(id)).unwrap())
+        const ids = [...selected];
+        const results = await Promise.allSettled(
+          ids.map((id) => dispatch(deleteUser(id)).unwrap())
         );
-        toast.success("Users deleted");
-        setSelected([]);
+        const succeededIds = ids.filter((_, i) => results[i].status === "fulfilled");
+        const failed = ids.
+        map((id, i) => ({ id, result: results[i] })).
+        filter(({ result }) => result.status === "rejected");
+
+        // Drop only the users that were actually deleted; keep failures selected.
+        setSelected((prev) => prev.filter((id) => !succeededIds.includes(id)));
+
+        if (failed.length === 0) {
+          toast.success(
+            `${succeededIds.length} ${succeededIds.length === 1 ? "user" : "users"} deleted`
+          );
+          setDeleteTarget(null);
+        } else if (succeededIds.length === 0) {
+          const reason =
+            failed[0].result.reason?.message || "deletion failed";
+          toast.error(`Couldn't delete users: ${reason}`);
+        } else {
+          const first = failed[0];
+          const reason = first.result.reason?.message || "unknown error";
+          toast.warning(
+            `${succeededIds.length} deleted, ${failed.length} failed (${labelFor(first.id)}: ${reason})`
+          );
+        }
       } else {
         await dispatch(deleteUser(deleteTarget.id)).unwrap();
         toast.success("User deleted");
+        setDeleteTarget(null);
       }
-      setDeleteTarget(null);
     } catch (e) {
       toast.error(e.message || "Failed to delete user");
     } finally {
@@ -496,26 +596,38 @@ export default function UsersPage() {
         
             <span onClick={(e) => e.stopPropagation()}>
               <Tooltip content={canEdit ? "Edit user" : "You don't have permission to edit users"}>
-                <IconButton
-              size="sm"
-              variant="ghost"
-              label="Edit user"
-              icon={<Pencil size={14} />}
-              disabled={!canEdit}
-              onClick={() => openEdit(row)} />
+                {/* span so hover events fire even when the button is disabled */}
+                <span>
+                  <IconButton
+                size="sm"
+                variant="ghost"
+                label="Edit user"
+                icon={<Pencil size={14} />}
+                disabled={!canEdit}
+                onClick={() => openEdit(row)} />
 
+                </span>
               </Tooltip>
             </span>
             <span onClick={(e) => e.stopPropagation()}>
-              <Tooltip content={canDelete ? "Delete user" : "You don't have permission to delete users"}>
-                <IconButton
-              size="sm"
-              variant="ghost"
-              label="Delete user"
-              icon={<Trash2 size={14} />}
-              disabled={!canDelete}
-              onClick={() => setDeleteTarget(row)} />
+              <Tooltip
+              content={
+              !USER_DELETE_ENABLED ?
+              DELETE_UNAVAILABLE_TIP :
+              canDelete ?
+              "Delete user" :
+              "You don't have permission to delete users"
+              }>
+                <span>
+                  <IconButton
+                size="sm"
+                variant="ghost"
+                label="Delete user"
+                icon={<Trash2 size={14} />}
+                disabled={!canDelete || !USER_DELETE_ENABLED}
+                onClick={() => setDeleteTarget(row)} />
 
+                </span>
               </Tooltip>
             </span>
           </ResponsiveStack>
@@ -555,15 +667,18 @@ export default function UsersPage() {
         }
         primary={
         <Tooltip content={canCreate ? "Create a new user" : "You don't have permission to create users"}>
-            <Button
-            size="sm"
-            variant="primary"
-            icon={<UserPlus size={14} />}
-            disabled={!canCreate}
-            onClick={openCreate}>
+            {/* span so the tooltip fires on hover even when the button is disabled */}
+            <span>
+              <Button
+              size="sm"
+              variant="primary"
+              icon={<UserPlus size={14} />}
+              disabled={!canCreate}
+              onClick={openCreate}>
 
-              New User
-            </Button>
+                New User
+              </Button>
+            </span>
           </Tooltip>
         }
         filters={
@@ -583,7 +698,7 @@ export default function UsersPage() {
               options={ROLE_FILTER_OPTIONS} />
             
             </div>
-            {selected.length > 0 && canDelete &&
+            {selected.length > 0 && canDelete && USER_DELETE_ENABLED &&
           <Button
             variant="destructive"
             size="sm"
@@ -627,22 +742,27 @@ export default function UsersPage() {
         }
         actions={
         <Tooltip content={canCreate ? "Create a new user" : "You don't have permission to create users"}>
-            <Button
-            size="sm"
-            variant="primary"
-            icon={<UserPlus size={14} />}
-            disabled={!canCreate}
-            onClick={openCreate}>
+            {/* span so the tooltip fires on hover even when the button is disabled */}
+            <span>
+              <Button
+              size="sm"
+              variant="primary"
+              icon={<UserPlus size={14} />}
+              disabled={!canCreate}
+              onClick={openCreate}>
 
                 New User
               </Button>
+            </span>
           </Tooltip>
         } /> :
 
 
       <RowContextMenu
         rows={filtered}
-        labelFor={(r) => r.email || r.namespace || "User"}
+        labelFor={(r) =>
+        r.email || `${r.firstName || ""} ${r.lastName || ""}`.trim() || "User"
+        }
         buildItems={(r) => [
         {
           label: "Edit",
@@ -652,10 +772,10 @@ export default function UsersPage() {
         },
         { separator: true },
         {
-          label: "Delete",
+          label: USER_DELETE_ENABLED ? "Delete" : "Delete (unavailable)",
           icon: <Trash2 size={14} />,
           danger: true,
-          disabled: !canDelete,
+          disabled: !canDelete || !USER_DELETE_ENABLED,
           onSelect: () => setDeleteTarget(r)
         }]
         }>
@@ -678,7 +798,7 @@ export default function UsersPage() {
         open={drawerMode !== null}
         onClose={closeDrawer}
         side="right"
-        size={440}
+        size="min(440px, 100vw)"
         title={drawerMode === "create" ? "Add user" : "Edit user"}
         footer={
         <ResponsiveStack direction="row" gap={2} justify="end">
@@ -701,7 +821,8 @@ export default function UsersPage() {
           mode={drawerMode || "create"}
           errors={formErrors}
           clearError={clearFormError}
-          canEditRole={canEditRole} />
+          canEditRole={canEditRole}
+          isSelfEdit={isSelfEdit} />
         
       </Drawer>
 

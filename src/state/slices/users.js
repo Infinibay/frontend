@@ -18,39 +18,58 @@ export const DELETE_USER_MUTATION = gql`
   }
 `;
 
+// Keys whose values must never be written to the console / debug panel
+// (user account passwords are passed as mutation inputs).
+const SENSITIVE_KEYS = new Set([
+  'password', 'confirmPassword', 'newPassword', 'currentPassword', 'oldPassword',
+  'bindPassword', 'productKey', 'token', 'accessToken', 'refreshToken', 'secret'
+]);
+
+// Deep-clone GraphQL variables with sensitive fields redacted before logging.
+const sanitizeVariables = (value) => {
+  if (Array.isArray(value)) return value.map(sanitizeVariables);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, SENSITIVE_KEYS.has(k) ? '[REDACTED]' : sanitizeVariables(v)])
+    );
+  }
+  return value;
+};
+
 const executeGraphQLQuery = async (query, variables = {}) => {
   try {
-    debug.log('query', 'Executing GraphQL query', { query: query.loc?.source?.body, variables });
+    debug.log('query', 'Executing GraphQL query', { query: query.loc?.source?.body, variables: sanitizeVariables(variables) });
     const response = await client.query({
       query,
       variables,
       fetchPolicy: 'network-only' // Force network request so mutations aren't masked by a stale cache-first read
     });
 
-    // Surface GraphQL errors (errorPolicy:'all' resolves instead of throwing)
-    if (response.errors) {
-      const errorMessage = response.errors.map(err => err.message).join(', ');
-      throw new Error(errorMessage);
+    // Apollo Client 4: a failing query (errorPolicy:'all') resolves with a
+    // SINGULAR `error` — the plural `errors` was removed.
+    if (response.error) {
+      throw response.error;
+    }
+    if (!response.data) {
+      throw new Error('No data returned from the server.');
     }
 
     debug.log('query', 'GraphQL query success', response.data);
     return response.data;
   } catch (error) {
     debug.error('query', 'GraphQL query error', error);
-    console.error('GraphQL query error:', error);
     throw error;
   }
 };
 
 const executeGraphQLMutation = async (mutation, variables = {}) => {
   try {
-    debug.log('mutation', 'Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables });
+    debug.log('mutation', 'Executing GraphQL mutation', { mutation: mutation.loc?.source?.body, variables: sanitizeVariables(variables) });
     const { data } = await client.mutate({ mutation, variables });
     debug.log('mutation', 'GraphQL mutation success', data);
     return data;
   } catch (error) {
     debug.error('mutation', 'GraphQL mutation error', error);
-    console.error('GraphQL mutation error:', error);
     throw error;
   }
 };

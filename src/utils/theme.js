@@ -52,8 +52,13 @@ export function applyTheme(theme) {
 
   if (resolvedTheme === 'dark') {
     htmlElement.classList.add('dark')
+    // Harbor tokens default to dark; drop the light override.
+    htmlElement.removeAttribute('data-theme')
   } else {
     htmlElement.classList.remove('dark')
+    // Harbor's light token set only activates under [data-theme="light"], so the
+    // class and the attribute must always travel together.
+    htmlElement.setAttribute('data-theme', 'light')
   }
 }
 
@@ -239,6 +244,13 @@ export function createThemeScript() {
 
       if (resolvedTheme === 'dark') {
         document.documentElement.classList.add('dark')
+        document.documentElement.removeAttribute('data-theme')
+      } else {
+        // Harbor's light token set only activates under [data-theme="light"].
+        // Set it here (in lockstep with what HarborProvider applies post-mount)
+        // so light-theme users don't get a dark flash before React hydrates.
+        document.documentElement.classList.remove('dark')
+        document.documentElement.setAttribute('data-theme', 'light')
       }
     })()
   `

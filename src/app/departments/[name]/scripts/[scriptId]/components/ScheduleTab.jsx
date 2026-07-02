@@ -6,9 +6,10 @@ import {
   useScheduleScriptMutation,
   useScheduledScriptsQuery,
   useCancelScheduledScriptMutation,
-  useUpdateScheduledScriptMutation,
-  useMachinesQuery
+  useUpdateScheduledScriptMutation
 } from '@/gql/hooks'
+import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData'
+import { fetchVms } from '@/state/slices/vms'
 import {
   Card,
   Button,
@@ -73,21 +74,29 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
     pollInterval: 30000
   })
 
-  const { data: machinesData } = useMachinesQuery()
+  // Read VMs from Redux (state.vms.items) rather than the Apollo `machines`
+  // cache. Realtime socket events only update the Redux slice, so reading from
+  // here keeps the running-only filter below in sync with VMs that start/stop
+  // while this tab is open. The Redux vms shape comes from the same `machines`
+  // query, so the consumed fields (id, name, status, department.id) match.
+  const { data: machines } = useEnsureData('vms', fetchVms, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 2 * 60 * 1000
+  })
 
   const departmentVMs = useMemo(() => {
-    if (!machinesData?.machines) return []
-    return machinesData.machines.filter(
+    if (!machines) return []
+    return machines.filter(
       (m) => m.department?.id === departmentId && m.status === 'running'
     )
-  }, [machinesData, departmentId])
+  }, [machines, departmentId])
 
   // Mutations with optimistic updates
   const [scheduleScript, { loading: scheduling }] = useScheduleScriptMutation({
     optimisticResponse: () => ({
       __typename: 'Mutation',
       scheduleScript: {
-        __typename: 'ScheduleScriptResponse',
+        __typename: 'ScheduleScriptResponseType',
         success: true,
         message: 'Scheduling...',
         executionIds: [],
@@ -104,8 +113,11 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
               if (!filters) return existingRefs
               const newExecutionRefs = data.scheduleScript.executions
                 .filter((execution) => {
+                  // The mutation only scopes results to this script/department
+                  // server-side, and the returned `machine` selection does not
+                  // include `department`, so we can only re-filter on the fields
+                  // actually present in the payload.
                   if (filters.scriptId && execution.script?.id !== filters.scriptId) return false
-                  if (filters.departmentId && execution.machine?.department?.id !== filters.departmentId) return false
                   if (filters.status && Array.isArray(filters.status)) {
                     if (!filters.status.includes(execution.status)) return false
                   }
@@ -126,7 +138,7 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
                         nextExecutionAt
                         isActive
                         script { id name }
-                        machine { id name status department { id } }
+                        machine { id name status }
                       }
                     `
                   })
@@ -159,7 +171,7 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
     optimisticResponse: ({ input }) => ({
       __typename: 'Mutation',
       updateScheduledScript: {
-        __typename: 'ScheduleScriptResponse',
+        __typename: 'ScheduleScriptResponseType',
         success: true,
         message: 'Updating...',
         executionIds: [input.executionId]
@@ -194,7 +206,7 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
     optimisticResponse: ({ executionId }) => ({
       __typename: 'Mutation',
       cancelScheduledScript: {
-        __typename: 'ScheduleScriptResponse',
+        __typename: 'ScheduleScriptResponseType',
         success: true,
         message: 'Cancelling...',
         executionIds: [executionId]
@@ -220,10 +232,12 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
     const socketService = getSocketService()
     const unsubscribeFns = []
 
+    // Only refetch on schedule create/update/cancel events. The toast for these
+    // is emitted by the initiating mutation handler, so toasting here as well
+    // would double- or triple-stack notifications for the acting client.
     const unsubscribeCreated = socketService.subscribeToResource('scripts', 'schedule_created', (data) => {
       if (data.data?.scriptId === scriptId) {
         refetchSchedules()
-        toast.success('Schedule created successfully')
       }
     })
     unsubscribeFns.push(unsubscribeCreated)
@@ -231,7 +245,6 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
     const unsubscribeUpdated = socketService.subscribeToResource('scripts', 'schedule_updated', (data) => {
       if (data.data?.scriptId === scriptId) {
         refetchSchedules()
-        toast.info('Schedule updated')
       }
     })
     unsubscribeFns.push(unsubscribeUpdated)
@@ -239,7 +252,6 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
     const unsubscribeCancelled = socketService.subscribeToResource('scripts', 'schedule_cancelled', (data) => {
       if (data.data?.scriptId === scriptId) {
         refetchSchedules()
-        toast.warning('Schedule cancelled')
       }
     })
     unsubscribeFns.push(unsubscribeCancelled)
@@ -316,6 +328,12 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
     }
 
     const machineIds = selectAllVMs ? departmentVMs.map((vm) => vm.id) : selectedVMs
+    // Guard against submitting an empty target set (e.g. "select all" while no
+    // running VM exists) which would send machineIds: [] to the server.
+    if (!editingSchedule && machineIds.length === 0) {
+      toast.error('No running desktops available to schedule this script')
+      return
+    }
     const input = {
       scriptId,
       machineIds,
@@ -355,18 +373,29 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
           executionId: editingSchedule.id,
           scheduledFor: input.scheduledFor,
           repeatIntervalMinutes: input.repeatIntervalMinutes,
-          maxExecutions: input.maxExecutions
+          maxExecutions: input.maxExecutions,
+          inputValues: input.inputValues
         }
-        await updateScheduledScript({ variables: { input: updateInput } })
+        const res = await updateScheduledScript({ variables: { input: updateInput } })
+        const payload = res?.data?.updateScheduledScript
+        // Mutations resolve HTTP 200 with { success:false } instead of throwing.
+        if (payload && payload.success === false) {
+          toast.error(payload.message || 'Failed to update schedule')
+          return
+        }
         toast.success('Schedule updated successfully')
       } else {
-        await scheduleScript({ variables: { input } })
-        toast.success('Script scheduled successfully')
+        const res = await scheduleScript({ variables: { input } })
+        const payload = res?.data?.scheduleScript
+        if (payload && payload.success === false) {
+          toast.error(payload.message || 'Failed to schedule script')
+          return
+        }
+        // Success toast is emitted once by the mutation's onCompleted handler.
       }
       setShowScheduleDialog(false)
       refetchSchedules()
     } catch (error) {
-      console.error('Schedule error:', error)
       toast.error(error.message || 'Failed to schedule script')
     }
   }
@@ -390,14 +419,20 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
   const handleCancelScheduleConfirm = async () => {
     if (!confirmAction) return
     try {
-      await cancelScheduledScript({ variables: { executionId: confirmAction.executionId } })
+      const res = await cancelScheduledScript({
+        variables: { executionId: confirmAction.executionId }
+      })
+      const payload = res?.data?.cancelScheduledScript
+      if (payload && payload.success === false) {
+        toast.error(payload.message || 'Failed to cancel schedule')
+        return
+      }
       toast.success('Schedule cancelled')
       setConfirmAction(null)
       refetchSchedules()
     } catch (error) {
-      console.error('Cancel error:', error)
+      // Keep the confirm dialog open so the user can retry.
       toast.error(error.message || 'Failed to cancel schedule')
-      setConfirmAction(null)
     }
   }
 
@@ -546,7 +581,8 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
           scheduling ||
           updating ||
           Object.keys(validationErrors).length > 0 ||
-          (!selectAllVMs && selectedVMs.length === 0)
+          (!selectAllVMs && selectedVMs.length === 0) ||
+          (!editingSchedule && selectAllVMs && departmentVMs.length === 0)
         }
       >
         {scheduling || updating
@@ -574,14 +610,14 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
   )
 
   return (
-    <ResponsiveStack direction="column" gap={6}>
+    <ResponsiveStack direction="col" gap={6}>
       {/* Create New Schedule */}
       <Card
         variant="default"
         title="Schedule Script Execution"
         description="Execute this script immediately, schedule for later, or set up recurring executions"
       >
-        <ResponsiveStack direction="column" gap={3}>
+        <ResponsiveStack direction="col" gap={3}>
           <ResponsiveStack direction="row" gap={2}>
             <Button
               variant="primary"
@@ -609,10 +645,10 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
           ) : null
         }
       >
-        {schedulesLoading ? (
+        {schedulesLoading && !scheduledScriptsData ? (
           <ResponsiveStack direction="row" gap={2} justify="center" align="center">
             <Spinner />
-            <span style={{ color: 'rgba(255,255,255,0.6)' }}>Loading schedules...</span>
+            <span className="text-fg-muted">Loading schedules...</span>
           </ResponsiveStack>
         ) : activeSchedules.length === 0 ? (
           <EmptyState
@@ -621,24 +657,24 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
             description='Click "Schedule Execution" to create a new schedule'
           />
         ) : (
-          <ResponsiveStack direction="column" gap={2}>
+          <ResponsiveStack direction="col" gap={2}>
             {activeSchedules.map((schedule) => {
               const { tone, label } = formatScheduleType(schedule.scheduleType)
               const isOffline = schedule.machine?.status !== 'running'
               return (
                 <Card key={schedule.id} variant="default">
                   <ResponsiveStack direction="row" gap={3} justify="between" align="start">
-                    <ResponsiveStack direction="column" gap={1} style={{ flex: 1, minWidth: 0 }}>
+                    <ResponsiveStack direction="col" gap={1} style={{ flex: 1, minWidth: 0 }}>
                       <ResponsiveStack direction="row" gap={2} align="center" wrap>
                         <Badge tone={tone}>{label}</Badge>
                         <StatusDot status={statusToDot(schedule.status)} label={schedule.status} />
                         <strong style={{ fontSize: '0.875rem' }}>{schedule.machine.name}</strong>
                       </ResponsiveStack>
-                      <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>
+                      <span className="text-sm text-fg-muted">
                         Next execution: {formatNextExecution(schedule)}
                       </span>
                       {schedule.scheduleType === 'PERIODIC' && (
-                        <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>
+                        <span className="text-sm text-fg-muted">
                           {formatInterval(schedule.repeatIntervalMinutes)}
                           {schedule.maxExecutions && (
                             <> ({schedule.executionCount || 0}/{schedule.maxExecutions} executions)</>
@@ -696,20 +732,33 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
       >
         <DialogTitle>{`${editingSchedule ? 'Edit Schedule' : 'Schedule Script'}: ${script?.name || ''}`}</DialogTitle>
         <DialogBody>
-        <ResponsiveStack direction="column" gap={5}>
+        <ResponsiveStack direction="col" gap={5}>
           {/* Schedule Mode */}
-          <FormField label="Schedule Type">
-            <ToggleGroup
-              items={modeItems}
-              value={scheduleMode}
-              onChange={(v) => !editingSchedule && setScheduleMode(v)}
-            />
+          <FormField
+            label="Schedule Type"
+            helper={
+              editingSchedule
+                ? 'Schedule type cannot be changed after creation'
+                : undefined
+            }
+          >
+            {editingSchedule ? (
+              <Badge tone={formatScheduleType(editingSchedule.scheduleType).tone}>
+                {formatScheduleType(editingSchedule.scheduleType).label}
+              </Badge>
+            ) : (
+              <ToggleGroup
+                items={modeItems}
+                value={scheduleMode}
+                onChange={setScheduleMode}
+              />
+            )}
           </FormField>
 
           {/* VM Selection */}
           {!editingSchedule && (
             <FormField label="Target desktops">
-              <ResponsiveStack direction="column" gap={3}>
+              <ResponsiveStack direction="col" gap={3}>
                 <Checkbox
                   checked={selectAllVMs}
                   onChange={(e) => setSelectAllVMs(e.target.checked)}
@@ -717,7 +766,7 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
                 />
                 {!selectAllVMs && (
                   <Card variant="default">
-                    <ResponsiveStack direction="column" gap={2}>
+                    <ResponsiveStack direction="col" gap={2}>
                       {departmentVMs.map((vm) => (
                         <ResponsiveStack
                           key={vm.id}
@@ -783,7 +832,7 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
                 label="Maximum Executions (Optional)"
                 helper="Leave empty or toggle 'Run indefinitely' for unlimited executions"
               >
-                <ResponsiveStack direction="column" gap={2}>
+                <ResponsiveStack direction="col" gap={2}>
                   <Switch
                     checked={runIndefinitely}
                     onChange={(e) => {
@@ -808,7 +857,7 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
           {/* Script inputs */}
           {script?.hasInputs && script?.parsedInputs && (
             <FormField label="Script Parameters">
-              <ResponsiveStack direction="column" gap={3}>
+              <ResponsiveStack direction="col" gap={3}>
                 {script.parsedInputs.map((input) => (
                   <ScriptInputRenderer
                     key={input.name}

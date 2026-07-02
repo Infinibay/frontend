@@ -4,14 +4,15 @@
  * Supported solution templates:
  * - updates/outdated_packages: Install security updates
  * - storage/low_disk_space: Free up disk space
+ * - security/weak_passwords: Strengthen weak passwords
+ * - security/open_ports: Close unnecessary network ports
+ * - performance/high_cpu: Reduce processor load
+ * - performance/high_memory: Free up memory
+ * - applications/service_down: Restore the affected service
+ * - firewall/blocked_traffic: Fix incorrectly blocked traffic
  *
- * TODO: Add templates for:
- * - security/weak_passwords
- * - security/open_ports
- * - performance/high_cpu
- * - performance/high_memory
- * - applications/service_down
- * - firewall/blocked_traffic
+ * Issue types without an explicit template fall back to the generic path
+ * (localized title/description, no guided steps) via generateSolutions().
  */
 
 import {
@@ -24,7 +25,7 @@ import {
 
 class ProblemTransformationService {
   constructor() {
-    this.language = 'es'; // Default to Spanish for PyME/SMB users
+    this.language = 'en'; // Default to English
     this.technicalLevel = 'basic';
     this.initializeResources();
   }
@@ -195,7 +196,7 @@ class ProblemTransformationService {
    * @param {string} config.language - Language preference ('es' or 'en')
    * @param {string} config.technicalLevel - Technical level ('basic', 'intermediate', 'advanced')
    */
-  configure({ language = 'es', technicalLevel = 'basic' } = {}) {
+  configure({ language = 'en', technicalLevel = 'basic' } = {}) {
     this.language = language;
     this.technicalLevel = technicalLevel;
   }
@@ -204,7 +205,7 @@ class ProblemTransformationService {
    * Get localized resources for current language
    */
   getResources() {
-    return this.resources[this.language] || this.resources.es;
+    return this.resources[this.language] || this.resources.en;
   }
 
   /**
@@ -315,24 +316,24 @@ class ProblemTransformationService {
     const solutionTemplates = {
       updates: {
         'outdated_packages': {
-          title: 'Instalar actualizaciones de seguridad',
+          title: 'Install security updates',
           difficulty: DifficultyLevel.EASY,
           steps: [
             {
-              title: 'Verificar actualizaciones disponibles',
-              description: 'Revisar qué actualizaciones están pendientes',
+              title: 'Check available updates',
+              description: 'Review which updates are pending',
               type: SolutionStepType.VERIFICATION,
               estimatedTime: 5
             },
             {
-              title: 'Instalar actualizaciones',
-              description: 'Aplicar todas las actualizaciones de seguridad',
+              title: 'Install updates',
+              description: 'Apply all security updates',
               type: SolutionStepType.AUTOMATED,
               estimatedTime: 15
             },
             {
-              title: 'Verificar instalación',
-              description: 'Confirmar que las actualizaciones se instalaron correctamente',
+              title: 'Verify installation',
+              description: 'Confirm the updates were installed correctly',
               type: SolutionStepType.VERIFICATION,
               estimatedTime: 5
             }
@@ -341,25 +342,177 @@ class ProblemTransformationService {
       },
       storage: {
         'low_disk_space': {
-          title: 'Liberar espacio en disco',
+          title: 'Free up disk space',
           difficulty: DifficultyLevel.EASY,
           steps: [
             {
-              title: 'Limpiar archivos temporales',
-              description: 'Eliminar archivos temporales y caché del sistema',
+              title: 'Clean temporary files',
+              description: 'Delete temporary files and system cache',
               type: SolutionStepType.AUTOMATED,
               estimatedTime: 10
             },
             {
-              title: 'Revisar archivos grandes',
-              description: 'Identificar y revisar archivos que ocupan mucho espacio',
+              title: 'Review large files',
+              description: 'Identify and review files taking up a lot of space',
               type: SolutionStepType.MANUAL,
               estimatedTime: 15
             },
             {
-              title: 'Configurar limpieza automática',
-              description: 'Activar limpieza automática para prevenir el problema',
+              title: 'Set up automatic cleanup',
+              description: 'Enable automatic cleanup to prevent the problem',
               type: SolutionStepType.AUTOMATED,
+              estimatedTime: 5
+            }
+          ]
+        }
+      },
+      security: {
+        'weak_passwords': {
+          title: 'Strengthen weak passwords',
+          difficulty: DifficultyLevel.MEDIUM,
+          steps: [
+            {
+              title: 'Identify affected accounts',
+              description: 'Review which accounts were flagged for weak passwords',
+              type: SolutionStepType.VERIFICATION,
+              estimatedTime: 5
+            },
+            {
+              title: 'Set strong passwords',
+              description: 'Update each account with a strong, unique password',
+              type: SolutionStepType.MANUAL,
+              estimatedTime: 15
+            },
+            {
+              title: 'Enforce a password policy',
+              description: 'Require minimum length and complexity to prevent recurrence',
+              type: SolutionStepType.MANUAL,
+              estimatedTime: 10
+            }
+          ]
+        },
+        'open_ports': {
+          title: 'Close unnecessary network ports',
+          difficulty: DifficultyLevel.MEDIUM,
+          steps: [
+            {
+              title: 'Review exposed ports',
+              description: 'Confirm which open ports are not required by any service',
+              type: SolutionStepType.VERIFICATION,
+              estimatedTime: 10
+            },
+            {
+              title: 'Restrict or close the ports',
+              description: 'Update firewall rules to block or limit access to the ports',
+              type: SolutionStepType.MANUAL,
+              estimatedTime: 15
+            },
+            {
+              title: 'Verify connectivity',
+              description: 'Confirm required services still work after tightening access',
+              type: SolutionStepType.VERIFICATION,
+              estimatedTime: 5
+            }
+          ]
+        }
+      },
+      performance: {
+        'high_cpu': {
+          title: 'Reduce processor load',
+          difficulty: DifficultyLevel.MEDIUM,
+          steps: [
+            {
+              title: 'Identify the demanding processes',
+              description: 'Review which processes are consuming the most CPU',
+              type: SolutionStepType.VERIFICATION,
+              estimatedTime: 5
+            },
+            {
+              title: 'Stop or reconfigure them',
+              description: 'Close unneeded processes or adjust their resource usage',
+              type: SolutionStepType.MANUAL,
+              estimatedTime: 15
+            },
+            {
+              title: 'Confirm the load dropped',
+              description: 'Verify CPU usage returned to normal levels',
+              type: SolutionStepType.VERIFICATION,
+              estimatedTime: 5
+            }
+          ]
+        },
+        'high_memory': {
+          title: 'Free up memory',
+          difficulty: DifficultyLevel.MEDIUM,
+          steps: [
+            {
+              title: 'Identify memory-heavy applications',
+              description: 'Review which applications are using the most RAM',
+              type: SolutionStepType.VERIFICATION,
+              estimatedTime: 5
+            },
+            {
+              title: 'Close or restart them',
+              description: 'Close unused applications or restart those leaking memory',
+              type: SolutionStepType.MANUAL,
+              estimatedTime: 10
+            },
+            {
+              title: 'Consider adding memory',
+              description: 'If usage stays high, plan to increase the VM memory allocation',
+              type: SolutionStepType.MANUAL,
+              estimatedTime: 15
+            }
+          ]
+        }
+      },
+      applications: {
+        'service_down': {
+          title: 'Restore the affected service',
+          difficulty: DifficultyLevel.MEDIUM,
+          steps: [
+            {
+              title: 'Confirm the service status',
+              description: 'Check that the reported service is actually stopped',
+              type: SolutionStepType.VERIFICATION,
+              estimatedTime: 5
+            },
+            {
+              title: 'Restart the service',
+              description: 'Start the service and review its logs for the failure cause',
+              type: SolutionStepType.MANUAL,
+              estimatedTime: 10
+            },
+            {
+              title: 'Verify it stays up',
+              description: 'Confirm the service is running and responding as expected',
+              type: SolutionStepType.VERIFICATION,
+              estimatedTime: 5
+            }
+          ]
+        }
+      },
+      firewall: {
+        'blocked_traffic': {
+          title: 'Fix incorrectly blocked traffic',
+          difficulty: DifficultyLevel.MEDIUM,
+          steps: [
+            {
+              title: 'Identify the blocked traffic',
+              description: 'Review which legitimate traffic the firewall is blocking',
+              type: SolutionStepType.VERIFICATION,
+              estimatedTime: 10
+            },
+            {
+              title: 'Adjust the firewall rules',
+              description: 'Add or update rules to allow the required traffic',
+              type: SolutionStepType.MANUAL,
+              estimatedTime: 15
+            },
+            {
+              title: 'Verify the connection',
+              description: 'Confirm the affected applications now connect correctly',
+              type: SolutionStepType.VERIFICATION,
               estimatedTime: 5
             }
           ]
@@ -374,7 +527,7 @@ class ProblemTransformationService {
       return [{
         id: `solution-${category}-${issue.type || issue.severity}`,
         title: template.title,
-        description: `Solución paso a paso para resolver: ${this.generateProblemTitle(category, issue)}`,
+        description: `Step-by-step solution to resolve: ${this.generateProblemTitle(category, issue)}`,
         difficulty: template.difficulty,
         totalEstimatedTime: template.steps.reduce((total, step) => total + step.estimatedTime, 0),
         steps: template.steps.map((step, index) => ({
@@ -385,7 +538,7 @@ class ProblemTransformationService {
         })),
         prerequisites: [],
         warnings: this.getWarningsForCategory(category),
-        successCriteria: [`El problema "${this.generateProblemTitle(category, issue)}" debe estar resuelto`]
+        successCriteria: [`The problem "${this.generateProblemTitle(category, issue)}" must be resolved`]
       }];
     }
 
@@ -436,25 +589,25 @@ class ProblemTransformationService {
   calculateBusinessImpact(category, issue) {
     const impactMap = {
       security: {
-        description: 'Riesgo de seguridad que podría comprometer datos confidenciales',
+        description: 'Security risk that could compromise confidential data',
         productivityImpact: 'HIGH',
         securityRisk: 'CRITICAL',
         systemStabilityRisk: 'MEDIUM'
       },
       storage: {
-        description: 'Problemas de almacenamiento que pueden causar pérdida de datos',
+        description: 'Storage problems that can cause data loss',
         productivityImpact: 'MEDIUM',
         securityRisk: 'LOW',
         systemStabilityRisk: 'HIGH'
       },
       performance: {
-        description: 'Rendimiento reducido que afecta la productividad diaria',
+        description: 'Reduced performance that affects daily productivity',
         productivityImpact: 'HIGH',
         securityRisk: 'NONE',
         systemStabilityRisk: 'MEDIUM'
       },
       updates: {
-        description: 'Actualizaciones pendientes que mejoran seguridad y estabilidad',
+        description: 'Pending updates that improve security and stability',
         productivityImpact: 'LOW',
         securityRisk: 'MEDIUM',
         systemStabilityRisk: 'MEDIUM'
@@ -462,7 +615,7 @@ class ProblemTransformationService {
     };
 
     return impactMap[category] || {
-      description: 'Problema que requiere atención',
+      description: 'Problem that requires attention',
       productivityImpact: 'LOW',
       securityRisk: 'LOW',
       systemStabilityRisk: 'LOW'
@@ -514,9 +667,9 @@ class ProblemTransformationService {
    */
   getWarningsForCategory(category) {
     const warnings = {
-      security: ['Asegúrese de tener copias de seguridad antes de realizar cambios de seguridad'],
-      storage: ['Haga una copia de seguridad de datos importantes antes de continuar'],
-      updates: ['El sistema puede necesitar reiniciarse después de las actualizaciones']
+      security: ['Make sure you have backups before making security changes'],
+      storage: ['Back up important data before continuing'],
+      updates: ['The system may need to restart after updates']
     };
 
     return warnings[category] || [];

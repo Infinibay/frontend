@@ -15,10 +15,13 @@ const executeGraphQLQuery = async (query, variables = {}) => {
       fetchPolicy: 'network-only' // Force network request
     });
 
-    // Check for GraphQL errors in the response
-    if (response.errors) {
-      const errorMessage = response.errors.map(err => err.message).join(', ');
-      throw new Error(errorMessage);
+    // Apollo Client 4: a failing query (errorPolicy:'all') resolves with a
+    // SINGULAR `error` — the plural `errors` was removed.
+    if (response.error) {
+      throw response.error;
+    }
+    if (!response.data) {
+      throw new Error('No data returned from the server.');
     }
 
     // Check for errors in the data response
@@ -38,14 +41,14 @@ const executeGraphQLQuery = async (query, variables = {}) => {
 export const fetchVmPorts = createAsyncThunk(
   'vmPorts/fetchVmPorts',
   async (_, { rejectWithValue }) => {
-    try {
-      // TODO: Implement ListVmPortsDocument query in GraphQL schema
-      // const data = await executeGraphQLQuery(ListVmPortsDocument);
-      // return data.listVmPorts || [];
-      return []; // Return empty array for now
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+    // The backend `listVmPorts` query does not exist yet (see the TODO import
+    // above). Fail loudly instead of silently resolving to an empty list — a fake
+    // empty payload would render a misleading "no ports" state and hide the gap
+    // from any accidental consumer.
+    // TODO: once ListVmPortsDocument ships, replace this with:
+    //   const data = await executeGraphQLQuery(ListVmPortsDocument);
+    //   return data.listVmPorts || [];
+    return rejectWithValue('VM ports are unavailable: the backend listVmPorts query is not implemented yet.');
   },
   {
     condition: (_, { getState }) => {

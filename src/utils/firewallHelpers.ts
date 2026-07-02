@@ -65,25 +65,25 @@ export function getActionInfo(action: FirewallRule['action']): {
     ACCEPT: {
       label: 'Allow',
       icon: Check,
-      color: 'text-green-700 dark:text-green-400',
-      bgColor: 'bg-green-50 dark:bg-green-950',
-      borderColor: 'border-green-200 dark:border-green-800',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+      borderColor: 'border-success/30',
       description: 'Traffic is permitted'
     },
     DROP: {
       label: 'Block (Silent)',
       icon: Ban,
-      color: 'text-red-700 dark:text-red-400',
-      bgColor: 'bg-red-50 dark:bg-red-950',
-      borderColor: 'border-red-200 dark:border-red-800',
+      color: 'text-danger',
+      bgColor: 'bg-danger/10',
+      borderColor: 'border-danger/30',
       description: 'Traffic is silently dropped without notification'
     },
     REJECT: {
       label: 'Block (Notify)',
       icon: XCircle,
-      color: 'text-orange-700 dark:text-orange-400',
-      bgColor: 'bg-orange-50 dark:bg-orange-950',
-      borderColor: 'border-orange-200 dark:border-orange-800',
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+      borderColor: 'border-warning/30',
       description: 'Traffic is blocked and sender is notified'
     }
   };
@@ -104,19 +104,19 @@ export function getDirectionInfo(direction: FirewallRule['direction']): {
     IN: {
       label: 'Incoming',
       icon: ArrowDownToLine,
-      color: 'text-blue-600 dark:text-blue-400',
+      color: 'text-info',
       description: 'Applies to incoming traffic to this VM'
     },
     OUT: {
       label: 'Outgoing',
       icon: ArrowUpFromLine,
-      color: 'text-purple-600 dark:text-purple-400',
+      color: 'text-fg',
       description: 'Applies to outgoing traffic from this VM'
     },
     INOUT: {
       label: 'Both Directions',
       icon: ArrowUpDown,
-      color: 'text-gray-600 dark:text-gray-400',
+      color: 'text-fg-muted',
       description: 'Applies to both incoming and outgoing traffic'
     }
   };
@@ -202,20 +202,20 @@ export function getPriorityLabel(priority: number): {
     return {
       label: 'HIGH',
       description: 'Applied first (priority < 300)',
-      color: 'text-red-600 dark:text-red-400'
+      color: 'text-danger'
     };
   }
   if (priority < 600) {
     return {
       label: 'MEDIUM',
       description: 'Standard priority (300-599)',
-      color: 'text-yellow-600 dark:text-yellow-400'
+      color: 'text-warning'
     };
   }
   return {
     label: 'LOW',
     description: 'Applied last (priority ≥ 600)',
-    color: 'text-green-600 dark:text-green-400'
+    color: 'text-success'
   };
 }
 
@@ -533,7 +533,7 @@ export function calculateSecurityScore(rules: FirewallRule[]): {
   else if (score < 70) level = 'MODERATE';
   else level = 'SECURE';
 
-  debug.log('Security score calculated:', { score, level, issues });
+  debug.log('securityScore', 'Security score calculated:', { score, level, issues });
 
   return { score, level, issues };
 }

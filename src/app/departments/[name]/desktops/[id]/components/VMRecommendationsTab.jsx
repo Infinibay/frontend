@@ -311,7 +311,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus, vmSetupComplete }) => {
           gap: 8,
           alignItems: 'center',
           background: 'rgb(var(--harbor-bg-elev-1))',
-          border: '1px solid rgba(255,255,255,0.10)',
+          border: '1px solid var(--harbor-border-subtle)',
           borderRadius: 12,
           padding: 10,
         }}

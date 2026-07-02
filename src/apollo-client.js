@@ -6,6 +6,7 @@ import { createDebugger } from '@/utils/debug';
 import { refreshAccessToken } from '@/utils/auth';
 import { persistor } from '@/state/store';
 import { timeoutForRequestBody } from '@/utils/requestTimeout';
+import { clearSessionCookie } from '@/utils/sessionCookie';
 
 const debug = createDebugger('frontend:utils:apollo-client');
 
@@ -101,6 +102,11 @@ const clearSessionAndRedirect = async () => {
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('tokenExpiresAt');
   localStorage.removeItem('socketNamespace');
+  // Clear the server-readable session cookie too. src/middleware.ts gates routes
+  // solely on this cookie's presence; without clearing it a reactive
+  // UNAUTHENTICATED logout (revoked/expired-beyond-refresh token) would leave the
+  // middleware gate open until the cookie's original max-age. Mirrors auth.logout.
+  clearSessionCookie();
   // Purge the redux-persist 'auth' snapshot too, so prior-user PII and the dead
   // token don't rehydrate after the redirect-triggered reload.
   try {
@@ -235,6 +241,10 @@ const client = new ApolloClient({
     watchQuery: {
       fetchPolicy: 'cache-and-network',
       notifyOnNetworkStatusChange: true,
+      // Match client.query()'s policy: keep any partial data on a GraphQL error
+      // (errorPolicy 'none' — the default — would discard the whole result), so
+      // useQuery/watchQuery hooks surface both data and error instead of blanking.
+      errorPolicy: 'all',
     },
     query: {
       fetchPolicy: 'cache-first',

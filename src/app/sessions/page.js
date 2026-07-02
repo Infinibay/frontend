@@ -1,10 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import {
   Page,
+  Alert,
   Badge,
   Button,
   DataTable,
@@ -52,6 +54,7 @@ function timeAgo(iso) {
 }
 
 export default function SessionsListPage() {
+  const router = useRouter();
   const {
     data,
     loading,
@@ -177,7 +180,27 @@ export default function SessionsListPage() {
         <EmptyState
           icon={<PlugZap size={22} />}
           title="Connection stats unavailable"
-          description="The backend socket watcher did not return VM agent connection data." /> :
+          description={error.message || 'The backend socket watcher did not return VM agent connection data.'}
+          actions={
+          <Button variant="secondary" onClick={() => refetch()} disabled={loading}>
+                <RefreshCw size={14} />
+                Retry
+              </Button>
+          } /> :
+        null}
+
+        {error && rows.length > 0 ?
+        <Alert
+          tone="warning"
+          title="Live data may be stale"
+          actions={
+          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={loading}>
+                <RefreshCw size={14} />
+                Retry
+              </Button>
+          }>
+            The latest connection-stats poll failed{error.message ? ` — ${error.message}` : ''}. Showing the last successful data.
+          </Alert> :
         null}
 
         {rows.length > 0 ?
@@ -185,6 +208,7 @@ export default function SessionsListPage() {
           rows={rows}
           columns={columns}
           rowId={(r) => r.id}
+          onRowClick={(row) => router.push(`/sessions/${row.id}`)}
           defaultDensity="compact" /> :
         !loading && !error ?
         <EmptyState

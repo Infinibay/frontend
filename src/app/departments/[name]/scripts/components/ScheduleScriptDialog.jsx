@@ -30,10 +30,11 @@ import {
 } from '@infinibay/harbor';
 
 import {
-  useMachinesQuery,
   useScheduleScriptMutation,
   useScriptQuery,
 } from '@/gql/hooks';
+import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { fetchVms } from '@/state/slices/vms';
 import { ScriptInputRenderer } from '@/components/ScriptInput/ScriptInputRenderer';
 import { validateScriptInput } from '@/utils/validateScriptInput';
 
@@ -79,14 +80,22 @@ export default function ScheduleScriptDialog({
 
   const script = scriptData?.script;
 
-  const { data: machinesData } = useMachinesQuery();
+  // Read VMs from Redux (state.vms.items) rather than the Apollo `machines`
+  // cache: realtime socket events only refresh the Redux slice, so the target
+  // desktop list and the offline badges below stay in sync while the dialog is
+  // open. The Redux vms shape comes from the same `machines` query, so the
+  // consumed fields (id, name, status, department.id) are identical.
+  const { data: machines } = useEnsureData('vms', fetchVms, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 2 * 60 * 1000,
+  });
 
   const departmentVMs = useMemo(() => {
-    if (!machinesData?.machines) return [];
-    return machinesData.machines.filter(
+    if (!machines) return [];
+    return machines.filter(
       (m) => m.department?.id === departmentId,
     );
-  }, [machinesData, departmentId]);
+  }, [machines, departmentId]);
 
   const [scheduleScript, { loading: scheduling }] = useScheduleScriptMutation({
     optimisticResponse: () => ({
@@ -95,6 +104,7 @@ export default function ScheduleScriptDialog({
         __typename: 'ScheduleScriptResponse',
         success: true,
         message: 'Scheduling...',
+        error: null,
         executionIds: [],
         executions: [],
         warnings: null,
@@ -165,13 +175,15 @@ export default function ScheduleScriptDialog({
       }
     },
     onCompleted: (data) => {
-      if (data?.scheduleScript?.success) {
-        const count = data.scheduleScript.executionIds?.length || 0;
+      const result = data?.scheduleScript;
+      if (!result) return;
+      if (result.success) {
+        const count = result.executionIds?.length || 0;
         toast.success(
           `Schedule created for ${count} desktop${count !== 1 ? 's' : ''}`,
         );
-        if (data.scheduleScript.warnings?.length) {
-          const wc = data.scheduleScript.warnings.length;
+        if (result.warnings?.length) {
+          const wc = result.warnings.length;
           toast.warning(
             `${wc} desktop${wc > 1 ? 's are' : ' is'} offline. ${
               wc > 1 ? 'Schedules' : 'Schedule'
@@ -180,6 +192,13 @@ export default function ScheduleScriptDialog({
           );
         }
         onOpenChange(false);
+      } else {
+        // The mutation resolved HTTP 200 with success:false (SuccessType
+        // envelope) and did NOT throw — surface the server message and keep
+        // the dialog open so the user can adjust and retry.
+        toast.error(
+          result.error || result.message || 'Failed to schedule script',
+        );
       }
     },
     onError: (error) => {
@@ -202,9 +221,31 @@ export default function ScheduleScriptDialog({
       setRunIndefinitely(false);
       setInputValues({});
       setValidationErrors({});
-       
+
     }
   }, [open]);
+
+  // Seed input values from each script input's `default` once the script loads
+  // (the Script query resolves after the dialog opens). Only fill keys the user
+  // hasn't already touched so re-renders never clobber edits.
+  useEffect(() => {
+    if (!open || !script?.parsedInputs?.length) return;
+    setInputValues((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      script.parsedInputs.forEach((input) => {
+        if (
+          next[input.name] === undefined &&
+          input.default !== undefined &&
+          input.default !== null
+        ) {
+          next[input.name] = input.default;
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [open, script]);
 
   const validateInputs = () => {
     const errors = {};
@@ -360,7 +401,7 @@ export default function ScheduleScriptDialog({
       <DialogBody>
       <div className="relative">
         {scriptLoading && (
-          <div className="absolute inset-0 z-10 grid place-items-center bg-bg/60 backdrop-blur-sm">
+          <div className="absolute inset-0 z-10 grid place-items-center bg-surface/60 backdrop-blur-sm">
             <LoadingOverlay label="Loading script…" />
           </div>
         )}
@@ -383,29 +424,23 @@ export default function ScheduleScriptDialog({
                 checked={selectAllVMs}
                 onChange={(e) => setSelectAllVMs(e.target.checked)}
               />
-              {!selectAllVMs ? (
+              {!selectAllVMs && departmentVMs.length > 0 ? (
                 <ResponsiveStack direction="col" gap={1}>
-                  {departmentVMs.length === 0 ? (
-                    <Alert tone="warning" size="sm">
-                      No desktops available in this department.
-                    </Alert>
-                  ) : (
-                    departmentVMs.map((vm) => (
-                      <ResponsiveStack
-                        key={vm.id}
-                        direction="row"
-                        gap={2}
-                        align="center"
-                      >
-                        <Checkbox
-                          label={vm.name}
-                          checked={selectedVMs.includes(vm.id)}
-                          onChange={() => handleVMToggle(vm.id)}
-                        />
-                        <Badge tone="neutral">{vm.status}</Badge>
-                      </ResponsiveStack>
-                    ))
-                  )}
+                  {departmentVMs.map((vm) => (
+                    <ResponsiveStack
+                      key={vm.id}
+                      direction="row"
+                      gap={2}
+                      align="center"
+                    >
+                      <Checkbox
+                        label={vm.name}
+                        checked={selectedVMs.includes(vm.id)}
+                        onChange={() => handleVMToggle(vm.id)}
+                      />
+                      <Badge tone="neutral">{vm.status}</Badge>
+                    </ResponsiveStack>
+                  ))}
                 </ResponsiveStack>
               ) : null}
               {!selectAllVMs &&

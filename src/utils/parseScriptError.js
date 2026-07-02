@@ -1,3 +1,5 @@
+import { CombinedGraphQLErrors, ServerError } from '@apollo/client';
+
 /**
  * Parses GraphQL/backend errors and returns user-friendly error messages
  * while logging full error details to console for debugging.
@@ -40,19 +42,32 @@ function extractErrorMessage(error) {
     return error
   }
 
-  // Try GraphQL errors array
-  if (error.graphQLErrors && error.graphQLErrors.length > 0) {
-    return error.graphQLErrors[0].message
+  // Apollo Client 4: GraphQL errors are wrapped in CombinedGraphQLErrors with the
+  // individual errors on `error.errors` (the old `error.graphQLErrors` is removed).
+  if (CombinedGraphQLErrors.is(error) && error.errors?.length > 0) {
+    return error.errors[0].message
   }
 
-  // Try nested network error with result.errors
-  if (error.networkError?.result?.errors?.[0]?.message) {
-    return error.networkError.result.errors[0].message
+  // Resilience: some callers pass a raw object that still exposes an `errors` array.
+  if (Array.isArray(error.errors) && error.errors[0]?.message) {
+    return error.errors[0].message
   }
 
-  // Try network error
-  if (error.networkError && error.networkError.message) {
-    return error.networkError.message
+  // Apollo Client 4: transport/HTTP failures arrive as ServerError (the old
+  // `error.networkError` is removed). The raw response body lives on `bodyText`;
+  // try to recover a GraphQL-style message from it before falling back.
+  if (ServerError.is(error)) {
+    try {
+      const parsed = JSON.parse(error.bodyText)
+      if (Array.isArray(parsed?.errors) && parsed.errors[0]?.message) {
+        return parsed.errors[0].message
+      }
+    } catch {
+      // bodyText wasn't JSON — ignore and fall through.
+    }
+    if (error.message) {
+      return error.message
+    }
   }
 
   // Try direct message

@@ -1,8 +1,8 @@
 'use client'
 
-import { Checkbox } from '@infinibay/harbor'
+import { Checkbox, FormField } from '@infinibay/harbor'
 
-export function BooleanInput({ input, value, onChange }) {
+export function BooleanInput({ input, value, onChange, error }) {
   const checkedValue = input.validation?.checkedValue ?? '1'
   const uncheckedValue = input.validation?.uncheckedValue ?? '0'
 
@@ -16,18 +16,22 @@ export function BooleanInput({ input, value, onChange }) {
   const label = (
     <>
       {input.label}
-      {input.required ? ' *' : ''}
+      {input.required ? (
+        <span className="text-[rgb(var(--harbor-danger))]" aria-hidden> *</span>
+      ) : null}
     </>
   )
 
   return (
-    <Checkbox
-      id={input.name}
-      checked={isChecked}
-      onChange={handleChange}
-      label={label}
-      description={input.description}
-    />
+    <FormField labelless error={error || undefined}>
+      <Checkbox
+        id={input.name}
+        checked={isChecked}
+        onChange={handleChange}
+        label={label}
+        description={input.description}
+      />
+    </FormField>
   )
 }
 

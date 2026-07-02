@@ -30,62 +30,67 @@ import {
  * Constantes de categorías de aplicaciones con metadatos de UI
  * Cada categoría incluye etiqueta, descripción, icono y color
  */
+// Labels/descriptions are English to match the rest of the UI, and `color` uses
+// Harbor semantic foreground tokens (text-info / text-success / text-warning /
+// text-danger / text-fg / text-fg-muted) which resolve correctly in both light
+// and dark themes — never raw palette classes like text-blue-600 (which have no
+// dark variant and clash with the theme).
 export const APP_CATEGORIES = {
   DESARROLLO: {
     value: 'DESARROLLO',
-    label: 'Desarrollo',
-    description: 'Herramientas de desarrollo y programación',
+    label: 'Development',
+    description: 'Development and programming tools',
     icon: Code,
-    color: 'text-blue-600'
+    color: 'text-info'
   },
   NAVEGADORES: {
     value: 'NAVEGADORES',
-    label: 'Navegadores',
-    description: 'Navegadores web y herramientas de navegación',
+    label: 'Browsers',
+    description: 'Web browsers and navigation tools',
     icon: Globe,
-    color: 'text-green-600'
+    color: 'text-success'
   },
   MULTIMEDIA: {
     value: 'MULTIMEDIA',
     label: 'Multimedia',
-    description: 'Aplicaciones de audio, video e imagen',
+    description: 'Audio, video, and image applications',
     icon: Play,
-    color: 'text-purple-600'
+    color: 'text-info'
   },
   PRODUCTIVIDAD: {
     value: 'PRODUCTIVIDAD',
-    label: 'Productividad',
-    description: 'Herramientas de oficina y productividad',
+    label: 'Productivity',
+    description: 'Office and productivity tools',
     icon: Briefcase,
-    color: 'text-orange-600'
+    color: 'text-warning'
   },
   JUEGOS: {
     value: 'JUEGOS',
-    label: 'Juegos',
-    description: 'Juegos y plataformas gaming',
+    label: 'Games',
+    description: 'Games and gaming platforms',
     icon: Gamepad2,
-    color: 'text-red-600'
+    color: 'text-danger'
   },
   COMUNICACION: {
     value: 'COMUNICACION',
-    label: 'Comunicación',
-    description: 'Herramientas de comunicación y colaboración',
+    label: 'Communication',
+    description: 'Communication and collaboration tools',
     icon: MessageSquare,
-    color: 'text-indigo-600'
+    color: 'text-info'
   },
   UTILIDADES: {
     value: 'UTILIDADES',
-    label: 'Utilidades',
-    description: 'Utilidades del sistema y herramientas',
+    label: 'Utilities',
+    description: 'System utilities and tools',
     icon: Settings,
-    color: 'text-gray-600'
+    color: 'text-fg-muted'
   },
   GENERAL: {
     value: 'GENERAL',
     label: 'General',
-    description: 'Aplicaciones generales y misceláneas',
+    description: 'General and miscellaneous applications',
     icon: Info,
-    color: 'text-slate-600'
+    color: 'text-fg'
   }
 };
 

@@ -79,6 +79,16 @@ function navFor(user, allowedResources) {
 }
 
 function filterAllowedNav(items, allowedResources) {
+  // `allowedResources` is undefined only while the permissions query is still
+  // resolving its first response (or has errored before any data/cache exists).
+  // In that unknown state we intentionally keep the full role-based nav visible
+  // rather than fail closed: the operator/end-user split (isEndUserView) is
+  // already decided by the role enum, the server remains the real authorization
+  // boundary and bounces disallowed routes, and hiding an admin's whole nav on a
+  // transient permissions-fetch blip is a far worse regression than a brief
+  // over-show for a restricted custom role. With cache-and-network the resolved
+  // set is served instantly on every subsequent mount, so the over-show is a
+  // one-time first-paint flash, not persistent.
   if (!allowedResources) return items;
 
   const allowed = new Set(allowedResources);
@@ -159,6 +169,12 @@ const AppSidebarInner = React.forwardRef(function AppSidebar(
     skip: !user,
     fetchPolicy: 'cache-and-network',
   });
+  // A query error is deliberately not surfaced here: on failure Apollo retains
+  // the last cached value in `permissionsData`, so an established session keeps
+  // its resolved nav, and a first-ever load that errors leaves `allowedResources`
+  // undefined — which filterAllowedNav intentionally treats as fail-open-visible
+  // (the server still enforces access; hiding an admin's nav on a transient blip
+  // would be the worse regression).
   const allowedResources = permissionsData?.myPermissions?.allowedResources;
 
   // Close the mobile drawer whenever the route changes (selecting an item,

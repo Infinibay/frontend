@@ -8,17 +8,19 @@
  *   <StatusChip status="online" />                  // Running
  *   <StatusChip status="offline" label="Stopped" /> // override label
  *
- * Tone is deliberately low-saturation (10-15% alpha backgrounds) so chips
- * don't compete with the data row.
+ * Tone is deliberately low-saturation (~10% alpha backgrounds) so chips
+ * don't compete with the data row. Backgrounds use the `/10` opacity step,
+ * which Tailwind generates from the default scale — arbitrary steps like `/12`
+ * are NOT emitted by the project config, so the tint would silently vanish.
  */
 
 const STATUS_THEME = {
-  online:       { label: 'Running',      bg: 'bg-success/12', fg: 'text-success', dot: 'bg-success' },
-  degraded:     { label: 'Paused',       bg: 'bg-warning/12', fg: 'text-warning', dot: 'bg-warning' },
-  provisioning: { label: 'Starting',     bg: 'bg-info/12',    fg: 'text-info',    dot: 'bg-info' },
-  maintenance:  { label: 'Stopping',     bg: 'bg-info/12',    fg: 'text-info',    dot: 'bg-info' },
+  online:       { label: 'Running',      bg: 'bg-success/10', fg: 'text-success', dot: 'bg-success' },
+  degraded:     { label: 'Paused',       bg: 'bg-warning/10', fg: 'text-warning', dot: 'bg-warning' },
+  provisioning: { label: 'Starting',     bg: 'bg-info/10',    fg: 'text-info',    dot: 'bg-info' },
+  maintenance:  { label: 'Stopping',     bg: 'bg-info/10',    fg: 'text-info',    dot: 'bg-info' },
   offline:      { label: 'Stopped',      bg: 'bg-fg-muted/10', fg: 'text-fg-muted', dot: 'bg-fg-muted' },
-  error:        { label: 'Error',        bg: 'bg-danger/12',  fg: 'text-danger',  dot: 'bg-danger' },
+  error:        { label: 'Error',        bg: 'bg-danger/10',  fg: 'text-danger',  dot: 'bg-danger' },
   unknown:      { label: 'Unknown',      bg: 'bg-fg-muted/10', fg: 'text-fg-muted', dot: 'bg-fg-muted' },
 };
 

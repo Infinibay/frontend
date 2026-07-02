@@ -104,13 +104,16 @@ export default function PackagesSection({ embedded = false, className = "" }) {
       toast.info("Built-in packages cannot be disabled");
       return;
     }
-    if (pkg.isEnabled) {
-      await disablePackage({ variables: { name: pkg.name } });
-      toast.success(`${pkg.displayName} disabled`);
-    } else {
-      await enablePackage({ variables: { name: pkg.name } });
-      toast.success(`${pkg.displayName} enabled`);
-    }
+    const wasEnabled = pkg.isEnabled;
+    const mutate = wasEnabled ? disablePackage : enablePackage;
+    const op = wasEnabled ? "disablePackage" : "enablePackage";
+    // These mutations are created with an onError handler, so Apollo RESOLVES
+    // (never rejects) on failure — the returned envelope carries `errors` and a
+    // null payload. Only toast success when the server actually returned the
+    // updated package; onError already surfaced any error message.
+    const res = await mutate({ variables: { name: pkg.name } });
+    if (res?.errors?.length || !res?.data?.[op]) return;
+    toast.success(`${pkg.displayName} ${wasEnabled ? "disabled" : "enabled"}`);
   };
 
   const packages = data?.packages || [];
@@ -192,8 +195,8 @@ export default function PackagesSection({ embedded = false, className = "" }) {
                 key={pkg.id}
                 className={`rounded-lg border ${
                   pkg.isEnabled
-                    ? "border-white/8 bg-surface-1"
-                    : "border-white/4 bg-surface-1/40"
+                    ? "border-border-default bg-surface-1"
+                    : "border-border-subtle bg-surface-1/40"
                 }`}
               >
                 <div className="flex items-center gap-3 p-3">
@@ -282,7 +285,7 @@ export default function PackagesSection({ embedded = false, className = "" }) {
                 </div>
 
                 {isOpen && (
-                  <div className="border-t border-white/8 p-4 grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="border-t border-border-subtle p-4 grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <h4 className="text-xs font-semibold text-fg-muted uppercase tracking-wide mb-2">
                         Health checkers ({pkg.checkers?.length || 0})
@@ -395,7 +398,7 @@ export default function PackagesSection({ embedded = false, className = "" }) {
               <p className="text-xs text-fg-muted mt-0.5 mb-2">
                 External packages are installed via the Infinibay CLI:
               </p>
-              <code className="block text-xs font-mono text-fg bg-surface-2 px-3 py-2 rounded-md border border-white/8">
+              <code className="block text-xs font-mono text-fg bg-surface-2 px-3 py-2 rounded-md border border-border-subtle">
                 infinibay package install ./my-package.tar.gz
               </code>
             </div>

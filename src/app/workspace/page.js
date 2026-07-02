@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gql } from '@apollo/client';
 import { useSelector } from 'react-redux';
 import {
@@ -61,17 +61,23 @@ function statusMeta(status) {
   return { dot: 'offline', label: 'Stopped' };
 }
 
-function DesktopTile({ desktop }) {
+function DesktopTile({ desktop, busy }) {
   const meta = statusMeta(desktop.status);
   const graphic = typeof desktop?.configuration?.graphic === 'string'
     ? desktop.configuration.graphic
     : null;
   const canConnect = meta.dot === 'online' && graphic?.startsWith('spice://');
   const openConsole = useOpenConsole();
+  const [connecting, setConnecting] = useState(false);
 
-  const onConnect = () => {
-    if (!canConnect) return;
-    openConsole(desktop, graphic);
+  const onConnect = async () => {
+    if (!canConnect || connecting) return;
+    setConnecting(true);
+    try {
+      await openConsole(desktop, graphic);
+    } finally {
+      setConnecting(false);
+    }
   };
 
   const os = desktop?.configuration?.os || desktop?.os;
@@ -97,7 +103,8 @@ function DesktopTile({ desktop }) {
             variant="primary"
             size="sm"
             icon={<Play size={14} />}
-            disabled={!canConnect}
+            disabled={!canConnect || busy}
+            loading={connecting}
             onClick={onConnect}
           >
             Connect
@@ -117,9 +124,9 @@ function DesktopTile({ desktop }) {
   );
 }
 
-function PoolTile({ pool, onConnect, connecting }) {
+function PoolTile({ pool, onConnect, connecting, busy }) {
   const atCapacity = pool.currentSize >= pool.sizeMax;
-  const disabled = pool.draining || (atCapacity && pool.currentSize === 0);
+  const disabled = pool.draining || (atCapacity && pool.currentSize === 0) || busy;
   return (
     <Card
       variant="default"
@@ -186,10 +193,24 @@ export default function WorkspacePage() {
 
   const [pools, setPools] = useState([]);
   const [poolsLoading, setPoolsLoading] = useState(true);
+  const [poolsError, setPoolsError] = useState(null);
   const [connectingPoolId, setConnectingPoolId] = useState(null);
+  const anyPoolConnecting = connectingPoolId !== null;
+
+  // Tracks whether the component is still mounted so long-running pool
+  // connect polling can bail out instead of querying / launching a console
+  // on a page the user has already navigated away from.
+  const abortedRef = useRef(false);
+  useEffect(() => {
+    abortedRef.current = false;
+    return () => {
+      abortedRef.current = true;
+    };
+  }, []);
 
   const fetchPools = useCallback(async () => {
     setPoolsLoading(true);
+    setPoolsError(null);
     try {
       const { data } = await client.query({
         query: POOLS_QUERY,
@@ -197,8 +218,7 @@ export default function WorkspacePage() {
       });
       setPools(data?.pools ?? []);
     } catch (err) {
-      // Don't noisy-toast: pools are a bonus, not critical for the
-      // direct-assignment path that already works.
+      setPoolsError(err?.message || String(err));
       setPools([]);
     } finally {
       setPoolsLoading(false);
@@ -208,6 +228,11 @@ export default function WorkspacePage() {
   useEffect(() => {
     fetchPools();
   }, [fetchPools]);
+
+  const handleRefresh = useCallback(() => {
+    refresh();
+    fetchPools();
+  }, [refresh, fetchPools]);
 
   const handlePoolConnect = useCallback(async (pool) => {
     setConnectingPoolId(pool.id);
@@ -225,6 +250,7 @@ export default function WorkspacePage() {
       const deadline = Date.now() + 60_000;
       let launched = false;
       while (Date.now() < deadline) {
+        if (abortedRef.current) return;
         const { data: mdata } = await client.query({
           query: MACHINE_QUERY,
           variables: { id: machineId },
@@ -234,12 +260,14 @@ export default function WorkspacePage() {
         const graphic =
           typeof m?.configuration?.graphic === 'string' ? m.configuration.graphic : null;
         if (graphic && graphic.startsWith('spice://')) {
+          if (abortedRef.current) return;
           await openConsole(m, graphic);
           launched = true;
           break;
         }
         await new Promise((r) => setTimeout(r, 2500));
       }
+      if (abortedRef.current) return;
       if (!launched) {
         toast('Desktop is still starting', {
           description:
@@ -249,11 +277,12 @@ export default function WorkspacePage() {
       refresh();
       fetchPools();
     } catch (err) {
+      if (abortedRef.current) return;
       toast.error('Could not connect', {
         description: err?.message || String(err),
       });
     } finally {
-      setConnectingPoolId(null);
+      if (!abortedRef.current) setConnectingPoolId(null);
     }
   }, [refresh, fetchPools, openConsole]);
 
@@ -273,8 +302,8 @@ export default function WorkspacePage() {
             variant="ghost"
             size="sm"
             icon={<RefreshCw size={14} />}
-            onClick={refresh}
-            disabled={isLoading}
+            onClick={handleRefresh}
+            disabled={isLoading || poolsLoading}
           >
             Refresh
           </Button>
@@ -295,12 +324,32 @@ export default function WorkspacePage() {
           </Alert>
         ) : null}
 
-        {isLoading && myDesktops.length === 0 ? (
+        {poolsError ? (
+          <Alert
+            tone="danger"
+            icon={<AlertCircle size={14} />}
+            title="Couldn't load desktop pools"
+            actions={
+              <Button
+                size="sm"
+                icon={<RefreshCw size={14} />}
+                onClick={fetchPools}
+                disabled={poolsLoading}
+              >
+                Retry
+              </Button>
+            }
+          >
+            {poolsError}
+          </Alert>
+        ) : null}
+
+        {(isLoading || poolsLoading) && myDesktops.length === 0 && pools.length === 0 ? (
           <ResponsiveGrid columns={{ base: 1, sm: 2 }} gap={3}>
             <Skeleton height={160} />
             <Skeleton height={160} />
           </ResponsiveGrid>
-        ) : myDesktops.length === 0 && pools.length === 0 && !poolsLoading ? (
+        ) : !error && !poolsError && myDesktops.length === 0 && pools.length === 0 ? (
           <EmptyState
             variant="dashed"
             icon={<Monitor size={18} />}
@@ -316,7 +365,7 @@ export default function WorkspacePage() {
                 </h2>
                 <ResponsiveGrid columns={{ base: 1, sm: 2, lg: 3 }} gap={3}>
                   {myDesktops.map((d) => (
-                    <DesktopTile key={d.id} desktop={d} />
+                    <DesktopTile key={d.id} desktop={d} busy={anyPoolConnecting} />
                   ))}
                 </ResponsiveGrid>
               </ResponsiveStack>
@@ -334,6 +383,7 @@ export default function WorkspacePage() {
                       pool={p}
                       onConnect={handlePoolConnect}
                       connecting={connectingPoolId === p.id}
+                      busy={anyPoolConnecting}
                     />
                   ))}
                 </ResponsiveGrid>

@@ -1,26 +1,26 @@
 "use client";
 
 import { useMemo } from "react";
-import { useSelector } from "react-redux";
 import {
   Page,
   Card,
-  Badge,
   Alert,
   EmptyState,
   Stat,
   IconTile,
   ResponsiveStack,
   ResponsiveGrid,
-  Timestamp,
+  Spinner,
+  Button,
 } from "@infinibay/harbor";
 import {
   Bell,
   AlertTriangle,
-  Info,
   CheckCircle,
 } from "lucide-react";
 
+import { useGlobalPendingRecommendationsQuery } from "@/gql/hooks";
+import { RecommendationCard } from "@/components/recommendations/RecommendationCard";
 import { usePageHeader } from "@/hooks/usePageHeader";
 
 const severityTone = (severity) => {
@@ -42,52 +42,31 @@ const severityTone = (severity) => {
   }
 };
 
-// Map semantic severity tones to IconTile's palette.
-const toneToIconTile = (tone) => {
-  switch (tone) {
-    case "danger":
-      return "rose";
-    case "warning":
-      return "amber";
-    case "success":
-      return "green";
-    case "info":
-      return "sky";
-    default:
-      return "neutral";
-  }
-};
-
-const severityIcon = (severity) => {
-  switch ((severity || "").toUpperCase()) {
-    case "CRITICAL":
-    case "ERROR":
-    case "HIGH":
-    case "WARNING":
-      return AlertTriangle;
-    case "LOW":
-    case "SUCCESS":
-      return CheckCircle;
-    case "INFO":
-    default:
-      return Info;
-  }
-};
-
 /**
- * Notifications center. Reads system-generated recommendations from
- * Redux (populated by the socket subscription in the app chrome's
- * NotificationBell) and renders them as a chronological Harbor-native
- * feed. Dismiss / snooze actions still live on each individual
- * recommendation's detail view.
+ * Notifications center. Reads the fleet-wide pending recommendations from the
+ * backend via the same Apollo query that powers the header bell/dropdown
+ * (globalPendingRecommendations) and renders them as a Harbor-native feed.
+ * Each item exposes real dismiss / snooze actions through RecommendationCard;
+ * acting on one refetches the list so the feed and header stay in sync.
  */
 export default function NotificationsPage() {
-  const recommendations = useSelector(
-    (state) =>
-      state.health?.recommendations ||
-      state.recommendations?.items ||
-      []
+  const { data, loading, error, refetch } =
+    useGlobalPendingRecommendationsQuery({
+      pollInterval: 30000,
+      // Don't let a transient poll error blank out the last good list.
+      notifyOnNetworkStatusChange: true,
+    });
+
+  // Memoize so the `?? []` fallback doesn't produce a fresh array reference on
+  // every render (which would invalidate the useMemo below each time).
+  const recommendations = useMemo(
+    () => data?.globalPendingRecommendations ?? [],
+    [data],
   );
+
+  // Only trust "empty"/"error" once we actually have (or lack) data.
+  const isLoading = loading && recommendations.length === 0;
+  const hasError = Boolean(error) && recommendations.length === 0;
 
   const stats = useMemo(() => {
     const byTone = {
@@ -116,17 +95,17 @@ export default function NotificationsPage() {
           icon: <Bell size={16} />,
           content: (
             <p>
-              Recommendations, alerts and status changes surfaced by the
-              backend arrive here in real time. Click any item to open
-              its source VM or resource.
+              Recommendations and alerts surfaced by the backend arrive here
+              and refresh automatically. Snooze or dismiss an item with its
+              inline actions.
             </p>
           ),
         },
       ],
       quickTips: [
-        "Critical items stay until acknowledged",
-        "Click an item to jump to its context",
-        "The bell icon in the header shows unread count",
+        "Critical items stay until dismissed or snoozed",
+        "Use an item's actions to snooze or dismiss it",
+        "The bell icon in the header shows the pending count",
       ],
     }),
     []
@@ -146,6 +125,14 @@ export default function NotificationsPage() {
     []
   );
 
+  const summaryLabel = () => {
+    if (isLoading) return "Loading notifications…";
+    if (hasError) return "Unable to load notifications";
+    return stats.total === 0
+      ? "All clear across your fleet"
+      : `${stats.total} item${stats.total !== 1 ? "s" : ""} to review`;
+  };
+
   return (
     <Page size="xl" gap="lg">
       <Card variant="default">
@@ -159,11 +146,7 @@ export default function NotificationsPage() {
             <IconTile icon={<Bell size={20} />} tone="sky" size="md" />
             <ResponsiveStack direction="col" gap={1}>
               <Stat
-                label={
-                  stats.total === 0
-                    ? "All clear across your fleet"
-                    : `${stats.total} item${stats.total !== 1 ? "s" : ""} to review`
-                }
+                label={summaryLabel()}
                 value={stats.total}
                 variant="plain"
               />
@@ -183,7 +166,30 @@ export default function NotificationsPage() {
         </ResponsiveGrid>
       </Card>
 
-      {recommendations.length === 0 ? (
+      {isLoading ? (
+        <Card variant="default">
+          <ResponsiveStack direction="row" gap={2} align="center" justify="center">
+            <Spinner />
+            <span className="text-fg-muted">Loading notifications…</span>
+          </ResponsiveStack>
+        </Card>
+      ) : hasError ? (
+        <Card variant="default">
+          <ResponsiveStack direction="col" gap={3} align="center">
+            <EmptyState
+              icon={<AlertTriangle size={40} />}
+              title="Couldn't load notifications"
+              description={
+                error?.message ||
+                "Something went wrong fetching your notifications. Please try again."
+              }
+            />
+            <Button size="sm" variant="secondary" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </ResponsiveStack>
+        </Card>
+      ) : recommendations.length === 0 ? (
         <Card variant="default">
           <EmptyState
             icon={<CheckCircle size={40} />}
@@ -192,57 +198,23 @@ export default function NotificationsPage() {
           />
         </Card>
       ) : (
-        <ResponsiveStack direction="col" gap={3}>
-          {recommendations.map((rec) => {
-            const tone = severityTone(rec.severity);
-            const Icon = severityIcon(rec.severity);
-            return (
-              <Card key={rec.id} variant="default" interactive>
-                <ResponsiveStack direction="row" gap={4} align="start">
-                  <IconTile
-                    icon={<Icon size={20} />}
-                    tone={toneToIconTile(tone)}
-                    size="md"
-                  />
-                  <ResponsiveStack direction="col" gap={2} align="stretch">
-                    <ResponsiveStack
-                      direction={{ base: "col", md: "row" }}
-                      gap={2}
-                      justify="between"
-                      align="start"
-                      wrap
-                    >
-                      <ResponsiveStack direction="col" gap={1}>
-                        <strong>
-                          {rec.title || rec.type || "Notification"}
-                        </strong>
-                        <span>
-                          {rec.description || rec.text || "No description"}
-                        </span>
-                      </ResponsiveStack>
-                      <ResponsiveStack direction="row" gap={2} align="center">
-                        <Badge tone={tone}>{rec.severity || "INFO"}</Badge>
-                        {rec.machine?.name ? (
-                          <Badge tone="neutral">{rec.machine.name}</Badge>
-                        ) : null}
-                      </ResponsiveStack>
-                    </ResponsiveStack>
-                    {rec.createdAt ? (
-                      <Timestamp value={rec.createdAt} relative />
-                    ) : null}
-                  </ResponsiveStack>
-                </ResponsiveStack>
-              </Card>
-            );
-          })}
-        </ResponsiveStack>
+        <Card variant="default">
+          <ResponsiveStack direction="col" gap={0}>
+            {recommendations.map((rec) => (
+              <RecommendationCard
+                key={rec.id}
+                recommendation={rec}
+                onActionComplete={() => refetch()}
+              />
+            ))}
+          </ResponsiveStack>
+        </Card>
       )}
 
       <Alert tone="info">
-        One-click actions for individual notifications (execute / dismiss /
-        snooze) live on each recommendation&apos;s detail. Execution from
-        this feed will be wired when the executeRecommendation mutation
-        lands on the backend.
+        Snooze and dismiss actions apply immediately and update the header
+        bell. One-click remediation is actioned from each VM&apos;s Scripts
+        tab.
       </Alert>
     </Page>
   );

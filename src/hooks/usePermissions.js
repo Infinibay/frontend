@@ -24,11 +24,15 @@ import { selectIsLoggedIn } from '@/state/slices/auth';
  * While grants are still loading we answer optimistically (`can` → true) so
  * controls don't flash disabled→enabled on first paint.
  *
- * @returns {{ can: (permission: string) => boolean, isLoading: boolean, grants: Array<{permission: string, scope: string}> }}
+ * On query failure `grants` is empty and `can()` returns false for everything,
+ * so consumers get an `error` (and `refetch`) to surface a "couldn't verify
+ * permissions — retry" affordance instead of silently-disabled controls.
+ *
+ * @returns {{ can: (permission: string) => boolean, isLoading: boolean, error: object|undefined, refetch: Function, grants: Array<{permission: string, scope: string}> }}
  */
 export function usePermissions() {
   const isLoggedIn = useSelector(selectIsLoggedIn);
-  const { data, loading } = useMyPermissionsQuery({
+  const { data, loading, error, refetch } = useMyPermissionsQuery({
     skip: !isLoggedIn,
     fetchPolicy: 'cache-and-network',
   });
@@ -52,5 +56,5 @@ export function usePermissions() {
     [grantSet, isLoading],
   );
 
-  return { can, isLoading, grants: grants || [] };
+  return { can, isLoading, error, refetch, grants: grants || [] };
 }

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Page,
+  Alert,
   Badge,
   Button,
   Checkbox,
@@ -18,24 +19,60 @@ import {
   Select,
   Skeleton,
   StatusDot,
+  Textarea,
   TextField } from
 '@infinibay/harbor';
-import { AlertCircle, Fingerprint, RefreshCw, Shield, UserRoundCog, Users } from 'lucide-react';
+import {
+  AlertCircle,
+  ExternalLink,
+  Fingerprint,
+  PlugZap,
+  RefreshCw,
+  Shield,
+  Trash2,
+  UserRoundCog,
+  Users } from
+'lucide-react';
 import { toast } from 'sonner';
 
 import { PageHeader } from '@/components/common/PageHeader';
+import { RowContextMenu } from '@/components/common/RowContextMenu';
 import { fetchUsers } from '@/state/slices/users';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import {
   useCreateIdentityProviderMutation,
+  useDeleteIdentityProviderMutation,
   useIdentityProvidersQuery,
-  useTestIdentityProviderConfigMutation
+  useSyncIdentityProviderMutation,
+  useTestIdentityProviderConfigMutation,
+  useTestIdentityProviderMutation
 } from '@/gql/hooks';
+// Shared identity helper — single source of truth lives with the detail page.
+import { timeAgo } from './[id]/_components/utils';
 
 const TYPE_LABEL = {
   local: 'Local directory',
   ACTIVE_DIRECTORY: 'Active Directory',
   LDAP: 'LDAP'
+};
+
+// Initial state for the "Add directory" form. Reused to reset the form whenever
+// the dialog closes so a previous connector's values (including the bind
+// password secret) never leak into the next open.
+const EMPTY_CONNECTOR_FORM = {
+  providerType: 'ACTIVE_DIRECTORY',
+  name: 'Active Directory',
+  domain: '',
+  host: '',
+  port: '389',
+  useTls: false,
+  tlsCa: '',
+  tlsInsecureSkipVerify: false,
+  baseDn: '',
+  bindDn: '',
+  bindPassword: '',
+  userFilter: '(objectClass=user)',
+  groupFilter: '(objectClass=group)'
 };
 
 function parsePort(value, useTls) {
@@ -61,17 +98,6 @@ function statusMeta(status) {
   }
 }
 
-function timeAgo(iso) {
-  if (!iso) return '-';
-  const ms = Date.now() - new Date(iso).getTime();
-  const min = Math.round(ms / 60000);
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min}m ago`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.round(h / 24)}d ago`;
-}
-
 function roleLabel(role) {
   if (role === 'SUPER_ADMIN') return 'Super admin';
   if (role === 'ADMIN') return 'Admin';
@@ -81,19 +107,12 @@ function roleLabel(role) {
 export default function IdentityListPage() {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [connectorForm, setConnectorForm] = useState({
-    providerType: 'ACTIVE_DIRECTORY',
-    name: 'Active Directory',
-    domain: '',
-    host: '',
-    port: '389',
-    useTls: false,
-    baseDn: '',
-    bindDn: '',
-    bindPassword: '',
-    userFilter: '(objectClass=user)',
-    groupFilter: '(objectClass=group)'
-  });
+  const [connectorForm, setConnectorForm] = useState(EMPTY_CONNECTOR_FORM);
+  // Tracks whether the user has manually edited name/port so the Type/TLS
+  // helpers don't clobber values the user typed themselves.
+  const [touched, setTouched] = useState({ name: false, port: false });
+  const [formErrors, setFormErrors] = useState({});
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const {
     data: users,
@@ -115,26 +134,42 @@ export default function IdentityListPage() {
   });
   const [createIdentityProvider, { loading: creatingProvider }] = useCreateIdentityProviderMutation();
   const [testIdentityProviderConfig, { loading: testingProviderConfig }] = useTestIdentityProviderConfigMutation();
+  const [testIdentityProvider, { loading: providerTesting }] = useTestIdentityProviderMutation();
+  const [syncIdentityProvider, { loading: providerSyncing }] = useSyncIdentityProviderMutation();
+  const [deleteIdentityProvider, { loading: providerDeleting }] = useDeleteIdentityProviderMutation();
 
   const updateConnectorForm = (key, value) => {
     setConnectorForm((current) => ({ ...current, [key]: value }));
   };
 
+  const clearFieldError = (key) => {
+    setFormErrors((current) => (current[key] ? { ...current, [key]: undefined } : current));
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setConnectorForm(EMPTY_CONNECTOR_FORM);
+    setTouched({ name: false, port: false });
+    setFormErrors({});
+  };
+
   // Builds the create/test input, validating required fields and the port.
-  // Returns null (and toasts) when the form is invalid so callers can bail.
+  // Returns null when the form is invalid (and highlights the offending fields
+  // inline via FormField `error`) so callers can bail.
   const connectorInput = () => {
     const name = connectorForm.name.trim();
     const host = connectorForm.host.trim();
     const baseDn = connectorForm.baseDn.trim();
-    if (!name || !host || !baseDn) {
-      toast.error('Name, host, and base DN are required');
-      return null;
-    }
     const port = parsePort(connectorForm.port, connectorForm.useTls);
-    if (port === null) {
-      toast.error('Port must be an integer between 1 and 65535');
-      return null;
-    }
+
+    const nextErrors = {};
+    if (!name) nextErrors.name = 'Name is required';
+    if (!host) nextErrors.host = 'Host is required';
+    if (!baseDn) nextErrors.baseDn = 'Base DN is required';
+    if (port === null) nextErrors.port = 'Port must be an integer between 1 and 65535';
+    setFormErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return null;
+
     return {
       providerType: connectorForm.providerType,
       name,
@@ -142,6 +177,8 @@ export default function IdentityListPage() {
       host,
       port,
       useTls: connectorForm.useTls,
+      tlsCa: connectorForm.tlsCa.trim() || null,
+      tlsInsecureSkipVerify: connectorForm.tlsInsecureSkipVerify,
       baseDn,
       bindDn: connectorForm.bindDn.trim() || null,
       bindPassword: connectorForm.bindPassword || null,
@@ -157,7 +194,7 @@ export default function IdentityListPage() {
       await createIdentityProvider({ variables: { input } });
       toast.success('Identity connector created');
       toast.info('Run Test or Sync to verify the directory connection');
-      setDialogOpen(false);
+      closeDialog();
       await refetchProviders();
     } catch (err) {
       toast.error(err?.message || 'Could not create identity connector');
@@ -174,6 +211,50 @@ export default function IdentityListPage() {
     } catch (err) {
       toast.error(err?.message || 'Connection test failed');
     }
+  };
+
+  // Row action: test the saved provider by id.
+  const handleRowTest = async (provider) => {
+    if (!provider?.id) return;
+    try {
+      const result = await testIdentityProvider({ variables: { id: provider.id } });
+      const test = result?.data?.testIdentityProvider;
+      toast[test?.success ? 'success' : 'error'](test?.message || 'Connection test finished');
+      await refetchProviders();
+    } catch (err) {
+      toast.error(err?.message || 'Connection test failed');
+    }
+  };
+
+  // Row action: sync the saved provider by id.
+  const handleRowSync = async (provider) => {
+    if (!provider?.id) return;
+    try {
+      const result = await syncIdentityProvider({ variables: { id: provider.id } });
+      const sync = result?.data?.syncIdentityProvider;
+      toast[sync?.success ? 'success' : 'error'](sync?.message || 'Directory sync finished');
+      await refetchProviders();
+    } catch (err) {
+      toast.error(err?.message || 'Directory sync failed');
+    }
+  };
+
+  const confirmDeleteProvider = async () => {
+    if (!deleteTarget?.id) return;
+    try {
+      await deleteIdentityProvider({ variables: { id: deleteTarget.id } });
+      toast.success('Directory provider deleted');
+      setDeleteTarget(null);
+      await refetchProviders();
+    } catch (err) {
+      toast.error(err?.message || 'Could not delete directory provider');
+    }
+  };
+
+  // Refresh/Retry: never leave the promise rejection unhandled when the backend
+  // is unreachable (the exact scenario these buttons exist for).
+  const handleRefresh = async () => {
+    await Promise.allSettled([refresh(), refetchProviders()]);
   };
 
   const stats = useMemo(() => {
@@ -209,9 +290,13 @@ export default function IdentityListPage() {
         name: provider.name,
         type: provider.providerType,
         status: provider.status,
-        lastSyncAt: provider.lastSyncAt || provider.lastTestAt,
-        usersSynced: 0,
-        groupsSynced: 0,
+        // Show the real sync time only; a connection test is not a sync. timeAgo
+        // renders "-" when the directory has never synced.
+        lastSyncAt: provider.lastSyncAt,
+        // The provider type carries no synced counts and we don't fetch per-row
+        // sync runs on the list, so render "unknown" (—) rather than a false 0.
+        usersSynced: null,
+        groupsSynced: null,
         host: provider.host,
         port: provider.port,
         enabled: provider.enabled,
@@ -297,14 +382,18 @@ export default function IdentityListPage() {
       header: 'Users',
       width: 80,
       align: 'right',
-      cell: ({ row }) => <span className="font-mono text-xs">{row.usersSynced}</span>
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">{row.usersSynced == null ? '—' : row.usersSynced}</span>
+      )
     },
     {
       id: 'groupsSynced',
       header: 'Groups',
       width: 80,
       align: 'right',
-      cell: ({ row }) => <span className="font-mono text-xs">{row.groupsSynced}</span>
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">{row.groupsSynced == null ? '—' : row.groupsSynced}</span>
+      )
     },
     {
       id: 'actions',
@@ -312,11 +401,25 @@ export default function IdentityListPage() {
       width: 100,
       align: 'right',
       cell: ({ row }) => row._external ? (
-        <Button size="sm" variant="ghost" onClick={() => router.push(`/identity/${row.id}`)}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={(event) => {
+            event.stopPropagation();
+            router.push(`/identity/${row.id}`);
+          }}
+        >
           Open
         </Button>
       ) : (
-        <Button size="sm" variant="ghost" onClick={() => router.push('/users')}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={(event) => {
+            event.stopPropagation();
+            router.push('/users');
+          }}
+        >
           Users
         </Button>
       )
@@ -353,6 +456,14 @@ export default function IdentityListPage() {
     []
   );
 
+  // Exclusive page states: loading → skeleton; else fatal (users unavailable) →
+  // EmptyState; else content. A providers-only failure keeps the page and is
+  // surfaced inline in the sign-in-sources section (never as a full EmptyState).
+  const initialLoading = (isLoading && !users) || (providersLoading && !providerData && !providersError);
+  const fatalError = !users && Boolean(error);
+  const providersFailed = Boolean(providersError && !providerData);
+  const providerCount = providerData?.identityProviders?.length || 0;
+
   return (
     <Page>
       <ResponsiveStack direction="col" gap={4}>
@@ -374,10 +485,7 @@ export default function IdentityListPage() {
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => {
-                  refresh();
-                  refetchProviders();
-                }}
+                onClick={handleRefresh}
                 disabled={isLoading || providersLoading}
               >
                 <RefreshCw size={14} />
@@ -387,33 +495,23 @@ export default function IdentityListPage() {
           }
         />
 
-        {(isLoading && !users) || (providersLoading && !providerData) ? (
+        {initialLoading ? (
           <ResponsiveStack direction="col" gap={3}>
             <Skeleton height={160} />
             <Skeleton height={180} />
           </ResponsiveStack>
-        ) : null}
-
-        {(error && !users) || (providersError && !providerData) ? (
+        ) : fatalError ? (
           <EmptyState
             icon={<Fingerprint size={22} />}
             title="Identity data unavailable"
             description="The backend identity directory could not be loaded."
             actions={
-              <Button
-                variant="primary"
-                onClick={() => {
-                  refresh();
-                  refetchProviders();
-                }}
-              >
+              <Button variant="primary" onClick={handleRefresh}>
                 Retry
               </Button>
             }
           />
-        ) : null}
-
-        {users ? (
+        ) : users ? (
           <>
             <ResponsiveStack
               direction={{ base: 'col', lg: 'row' }}
@@ -450,35 +548,121 @@ export default function IdentityListPage() {
                     <span className="text-sm font-medium">External directories</span>
                   </ResponsiveStack>
                   <ResponsiveStack direction="col" gap={1}>
-                    <Badge tone={providerData?.identityProviders?.length ? 'success' : 'warning'}>
-                      {providerData?.identityProviders?.length || 0} configured
-                    </Badge>
-                    <span className="text-sm text-fg-muted">
-                      Active Directory and LDAP connector profiles are stored in the backend. User/group sync is the next integration step.
-                    </span>
+                    {providersFailed ? (
+                      <>
+                        <Badge tone="warning">Unavailable</Badge>
+                        <span className="text-sm text-fg-muted">
+                          External directory connectors could not be loaded. Retry from the sign-in sources below.
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Badge tone={providerCount ? 'success' : 'warning'}>
+                          {providerCount} configured
+                        </Badge>
+                        <span className="text-sm text-fg-muted">
+                          Active Directory and LDAP connector profiles are stored in the backend. User/group sync is the next integration step.
+                        </span>
+                      </>
+                    )}
                   </ResponsiveStack>
                 </ResponsiveStack>
               </div>
             </ResponsiveStack>
 
-            <DataTable
-              rows={providerRows}
-              columns={columns}
-              rowId={(r) => r.id}
-              defaultDensity="compact" />
+            <section className="flex flex-col gap-2">
+              <h2 className="text-base font-semibold m-0">
+                Sign-in sources{' '}
+                <span className="text-fg-muted text-xs font-normal">· {providerRows.length}</span>
+              </h2>
+              {providersError ? (
+                <Alert
+                  tone="warning"
+                  title="Could not load external directories"
+                  actions={
+                    <Button size="sm" variant="secondary" onClick={() => refetchProviders()}>
+                      Retry
+                    </Button>
+                  }
+                >
+                  {providersError.message ||
+                    'The local directory is shown. External connectors may be missing or out of date.'}
+                </Alert>
+              ) : null}
+              <RowContextMenu
+                rows={providerRows}
+                rowId={(r) => r.id}
+                labelFor={(r) => r.name}
+                buildItems={(r) =>
+                  r._external
+                    ? [
+                        {
+                          label: 'Open',
+                          icon: <ExternalLink size={14} />,
+                          onSelect: () => router.push(`/identity/${r.id}`)
+                        },
+                        {
+                          label: 'Test connection',
+                          icon: <PlugZap size={14} />,
+                          disabled: providerTesting,
+                          onSelect: () => handleRowTest(r)
+                        },
+                        {
+                          label: 'Sync now',
+                          icon: <RefreshCw size={14} />,
+                          disabled: providerSyncing,
+                          onSelect: () => handleRowSync(r)
+                        },
+                        { separator: true },
+                        {
+                          label: 'Delete',
+                          icon: <Trash2 size={14} />,
+                          danger: true,
+                          onSelect: () => setDeleteTarget(r)
+                        }
+                      ]
+                    : [
+                        {
+                          label: 'Manage users',
+                          icon: <Users size={14} />,
+                          onSelect: () => router.push('/users')
+                        }
+                      ]
+                }
+              >
+                <DataTable
+                  rows={providerRows}
+                  columns={columns}
+                  rowId={(r) => r.id}
+                  onRowClick={(row) => router.push(row._external ? `/identity/${row.id}` : '/users')}
+                  defaultDensity="compact" />
+              </RowContextMenu>
+            </section>
 
-            <DataTable
-              rows={roleRows}
-              columns={roleColumns}
-              rowId={(r) => r.id}
-              defaultDensity="compact" />
+            <section className="flex flex-col gap-2">
+              <h2 className="text-base font-semibold m-0">
+                Role coverage{' '}
+                <span className="text-fg-muted text-xs font-normal">· {roleRows.length}</span>
+              </h2>
+              <DataTable
+                rows={roleRows}
+                columns={roleColumns}
+                rowId={(r) => r.id}
+                defaultDensity="compact" />
+            </section>
           </>
         ) : null}
-        
+
       </ResponsiveStack>
 
       {dialogOpen ? (
-        <Dialog open size="lg" onClose={() => setDialogOpen(false)}>
+        <Dialog
+          open
+          size="lg"
+          onClose={() => {
+            if (!creatingProvider && !testingProviderConfig) closeDialog();
+          }}
+        >
           <DialogTitle>Add Directory</DialogTitle>
           <DialogBody>
             <div className="flex flex-col gap-4 w-full">
@@ -489,8 +673,13 @@ export default function IdentityListPage() {
                     value={connectorForm.providerType}
                     onChange={(value) => {
                       updateConnectorForm('providerType', value);
-                      updateConnectorForm('name', value === 'LDAP' ? 'LDAP Directory' : 'Active Directory');
-                      updateConnectorForm('port', connectorForm.useTls ? '636' : '389');
+                      // Only auto-fill fields the user hasn't touched.
+                      if (!touched.name) {
+                        updateConnectorForm('name', value === 'LDAP' ? 'LDAP Directory' : 'Active Directory');
+                      }
+                      if (!touched.port) {
+                        updateConnectorForm('port', connectorForm.useTls ? '636' : '389');
+                      }
                     }}
                     options={[
                       { value: 'ACTIVE_DIRECTORY', label: 'Active Directory' },
@@ -498,27 +687,38 @@ export default function IdentityListPage() {
                     ]}
                   />
                 </FormField>
-                <FormField label="Name" required>
+                <FormField label="Name" required error={formErrors.name}>
                   <TextField
                     value={connectorForm.name}
-                    onChange={(event) => updateConnectorForm('name', event.target.value)}
+                    onChange={(event) => {
+                      updateConnectorForm('name', event.target.value);
+                      setTouched((current) => ({ ...current, name: true }));
+                      clearFieldError('name');
+                    }}
                     placeholder="Corporate AD"
                   />
                 </FormField>
               </FieldRow>
 
               <FieldRow>
-                <FormField label="Host" required>
+                <FormField label="Host" required error={formErrors.host}>
                   <TextField
                     value={connectorForm.host}
-                    onChange={(event) => updateConnectorForm('host', event.target.value)}
+                    onChange={(event) => {
+                      updateConnectorForm('host', event.target.value);
+                      clearFieldError('host');
+                    }}
                     placeholder="dc01.example.com"
                   />
                 </FormField>
-                <FormField label="Port" required>
+                <FormField label="Port" required error={formErrors.port}>
                   <TextField
                     value={connectorForm.port}
-                    onChange={(event) => updateConnectorForm('port', event.target.value)}
+                    onChange={(event) => {
+                      updateConnectorForm('port', event.target.value);
+                      setTouched((current) => ({ ...current, port: true }));
+                      clearFieldError('port');
+                    }}
                     placeholder={connectorForm.useTls ? '636' : '389'}
                   />
                 </FormField>
@@ -529,9 +729,29 @@ export default function IdentityListPage() {
                 checked={connectorForm.useTls}
                 onChange={(event) => {
                   updateConnectorForm('useTls', event.target.checked);
-                  updateConnectorForm('port', event.target.checked ? '636' : '389');
+                  if (!touched.port) {
+                    updateConnectorForm('port', event.target.checked ? '636' : '389');
+                  }
                 }}
               />
+
+              {connectorForm.useTls ? (
+                <>
+                  <FormField label="TLS CA certificate (PEM)">
+                    <Textarea
+                      rows={4}
+                      value={connectorForm.tlsCa}
+                      onChange={(event) => updateConnectorForm('tlsCa', event.target.value)}
+                      placeholder="-----BEGIN CERTIFICATE-----"
+                    />
+                  </FormField>
+                  <Checkbox
+                    label="Skip TLS certificate validation (insecure — disables cert validation; ignored in production)"
+                    checked={connectorForm.tlsInsecureSkipVerify}
+                    onChange={(event) => updateConnectorForm('tlsInsecureSkipVerify', event.target.checked)}
+                  />
+                </>
+              ) : null}
 
               <FormField label="Domain">
                 <TextField
@@ -540,10 +760,13 @@ export default function IdentityListPage() {
                   placeholder="example.com"
                 />
               </FormField>
-              <FormField label="Base DN" required>
+              <FormField label="Base DN" required error={formErrors.baseDn}>
                 <TextField
                   value={connectorForm.baseDn}
-                  onChange={(event) => updateConnectorForm('baseDn', event.target.value)}
+                  onChange={(event) => {
+                    updateConnectorForm('baseDn', event.target.value);
+                    clearFieldError('baseDn');
+                  }}
                   placeholder="DC=example,DC=com"
                 />
               </FormField>
@@ -581,7 +804,7 @@ export default function IdentityListPage() {
               <div className="flex justify-end gap-2 pt-2">
                 <Button
                   variant="secondary"
-                  onClick={() => setDialogOpen(false)}
+                  onClick={closeDialog}
                   disabled={creatingProvider || testingProviderConfig}
                 >
                   Cancel
@@ -601,6 +824,43 @@ export default function IdentityListPage() {
                   disabled={testingProviderConfig}
                 >
                   Create
+                </Button>
+              </div>
+            </div>
+          </DialogBody>
+        </Dialog>
+      ) : null}
+
+      {deleteTarget ? (
+        <Dialog
+          open
+          size="sm"
+          onClose={() => {
+            if (!providerDeleting) setDeleteTarget(null);
+          }}
+        >
+          <DialogTitle>Delete this directory?</DialogTitle>
+          <DialogBody>
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-fg-muted m-0">
+                Removing <span className="font-medium text-fg">{deleteTarget.name}</span> deletes this
+                connector. Users already imported from it stay in Infinibay but will no longer be
+                synced or able to sign in through this directory. This cannot be undone.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={providerDeleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={confirmDeleteProvider}
+                  loading={providerDeleting}
+                >
+                  Delete directory
                 </Button>
               </div>
             </div>

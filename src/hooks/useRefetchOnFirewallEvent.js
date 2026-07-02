@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { createDebugger } from '@/utils/debug';
 
@@ -28,18 +28,21 @@ export const useRefetchOnFirewallEvent = (refetch, { departmentId, vmId } = {}) 
     vmIdRef.current = vmId;
   }, [departmentId, vmId]);
 
-  // Only subscribe to timestamp to trigger effect when events occur
-  // This prevents unnecessary re-renders when other event properties change
-  const lastEventTimestamp = useSelector(
-    state => state.firewall?.lastEvent?.timestamp,
-    (prev, next) => prev === next // Only re-render if timestamp changes
-  );
+  // Baseline captured at mount. The firewall slice keeps `lastEvent` until the
+  // next event arrives, so without this a component mounting AFTER an event was
+  // dispatched would replay that stale event and fire a spurious refetch of data
+  // it just fetched. We only react to events newer than mount.
+  const mountTimeRef = useRef(Date.now());
 
-  // Get the full event data only when timestamp changes
+  // Subscribe to the full event; its reference only changes when a new event is
+  // dispatched (the slice replaces the object), so this alone drives the effect.
   const lastEvent = useSelector(state => state.firewall?.lastEvent);
 
   useEffect(() => {
-    if (!lastEvent || !lastEventTimestamp) return;
+    if (!lastEvent?.timestamp) return;
+
+    // Ignore stale events that predate this hook instance mounting.
+    if (lastEvent.timestamp <= mountTimeRef.current) return;
 
     const shouldRefetch =
       (departmentIdRef.current && lastEvent.departmentId === departmentIdRef.current) ||
@@ -53,10 +56,14 @@ export const useRefetchOnFirewallEvent = (refetch, { departmentId, vmId } = {}) 
         ruleId: lastEvent.ruleId
       });
 
-      // Use ref to avoid including refetch in dependency array
-      refetchRef.current();
+      // Use ref to avoid including refetch in dependency array. Apollo's refetch
+      // rejects on network/GraphQL errors — swallow it (with a debug log) so it
+      // doesn't surface as an unhandled promise rejection.
+      Promise.resolve(refetchRef.current?.()).catch((err) => {
+        debug.warn('Refetch after firewall event failed:', err?.message || err);
+      });
     }
-  }, [lastEventTimestamp, lastEvent]);
+  }, [lastEvent]);
 };
 
 export default useRefetchOnFirewallEvent;

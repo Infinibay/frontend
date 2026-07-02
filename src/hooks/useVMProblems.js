@@ -21,7 +21,13 @@ const useVMProblems = (vmId, vmName) => {
     return state.health?.autoChecks?.[vmId] || null;
   });
 
-  const isLoading = useSelector(state => state.health?.isLoading || false);
+  // Per-VM loading flag. The slice tracks `loadingByVm[vmId]` so one VM's
+  // snapshot fetch doesn't mark every VM's problems as loading (which the
+  // shared global `state.health.isLoading` would).
+  const isLoading = useSelector(state => {
+    if (!vmId) return false;
+    return !!state.health?.loadingByVm?.[vmId];
+  });
   const error = useSelector(state => state.health?.error || null);
 
   // Helper to normalize autoChecks to ProblemTransformationService's expected structure
@@ -112,47 +118,6 @@ const useVMProblems = (vmId, vmName) => {
     return problemsByPriority[PriorityLevel.INFORMATIONAL] || [];
   }, [problemsByPriority]);
 
-  // Determine overall VM status
-  const overallStatus = useMemo(() => {
-    if (summary.critical > 0) {
-      return {
-        level: 'critical',
-        label: 'Problemas críticos',
-        description: 'Su VM tiene problemas que requieren atención inmediata',
-        color: 'red',
-        icon: '🚨'
-      };
-    }
-
-    if (summary.important > 0) {
-      return {
-        level: 'warning',
-        label: 'Requiere atención',
-        description: 'Su VM tiene algunos problemas que deben resolverse pronto',
-        color: 'yellow',
-        icon: '⚠️'
-      };
-    }
-
-    if (summary.informational > 0) {
-      return {
-        level: 'info',
-        label: 'Funcionando bien',
-        description: 'Su VM está funcionando correctamente con algunas recomendaciones',
-        color: 'blue',
-        icon: 'ℹ️'
-      };
-    }
-
-    return {
-      level: 'healthy',
-      label: 'VM funcionando correctamente',
-      description: 'Su VM está funcionando sin problemas detectados',
-      color: 'green',
-      icon: '✅'
-    };
-  }, [summary]);
-
   // Get last check timestamp
   const lastCheckTime = useMemo(() => {
     if (!healthData?.lastUpdated) return null;
@@ -171,7 +136,6 @@ const useVMProblems = (vmId, vmName) => {
 
     // Summary and status
     summary,
-    overallStatus,
     requiresImmediateAction,
     nextRecommendedProblem,
     lastCheckTime,

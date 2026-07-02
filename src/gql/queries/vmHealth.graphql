@@ -1,0 +1,16 @@
+query GetVMHealthStatus($vmId: ID!) {
+  getVMHealthStatus(vmId: $vmId) {
+    vmId
+    overallScore
+    success
+    timestamp
+    error
+    checks {
+      checkName
+      message
+      details
+      severity
+      timestamp
+    }
+  }
+}

@@ -1,11 +1,17 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Page,
+  Alert,
   Badge,
   Button,
   DataTable,
+  Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogButtons,
   EmptyState,
   ResourceMeter,
   ResponsiveStack,
@@ -105,6 +111,32 @@ export default function InfrastructurePage() {
   const { can } = usePermissions();
   const canEditNodes = can('node:edit');
 
+  // Node pending confirmation before it is put into maintenance mode.
+  const [maintenanceTarget, setMaintenanceTarget] = useState(null);
+
+  const applyMaintenance = useCallback(async (node, enabled) => {
+    try {
+      await setNodeMaintenanceMode({ variables: { id: node.id, enabled } });
+      await refetchNodes();
+      toast.success(
+        enabled
+          ? `${node.name} entering maintenance mode`
+          : `${node.name} resumed from maintenance`
+      );
+      return true;
+    } catch (err) {
+      toast.error(err?.message || 'Failed to update maintenance mode');
+      return false;
+    }
+  }, [setNodeMaintenanceMode, refetchNodes]);
+
+  const confirmMaintenance = useCallback(async () => {
+    if (!maintenanceTarget) return;
+    const ok = await applyMaintenance(maintenanceTarget, true);
+    // Keep the confirmation open on failure so the user can retry.
+    if (ok) setMaintenanceTarget(null);
+  }, [maintenanceTarget, applyMaintenance]);
+
   const resources = data?.getSystemResources;
   const nodes = useMemo(() => nodeData?.nodes || [], [nodeData?.nodes]);
   const nodeSummary = nodeData?.nodeInventorySummary;
@@ -146,23 +178,26 @@ export default function InfrastructurePage() {
     const memoryUsed = pctUsed(resources.memory?.total, resources.memory?.available);
     const diskUsed = pctDiskUsed(resources.disk?.total, resources.disk?.used);
     const highestUse = Math.max(cpuUsed, memoryUsed, diskUsed);
+    const inventoryFailed = !!nodesError;
 
     return [
       {
         id: 'local',
         name: 'Local node',
-        role: 'Primary',
+        role: inventoryFailed ? 'Inventory unavailable' : 'Primary',
         status: error ? 'degraded' : 'online',
         cpu: `${formatNumber(resources.cpu?.available)} free / ${formatNumber(resources.cpu?.total)} vCPU`,
         memory: `${formatNumber(resources.memory?.available, ' GB')} free / ${formatNumber(resources.memory?.total, ' GB')}`,
         storage: `${formatNumber(resources.disk?.available, ' GB')} free / ${formatNumber(resources.disk?.total, ' GB')}`,
-        workload: 'Local telemetry',
+        workload: inventoryFailed ? 'Local telemetry only' : 'Local telemetry',
         usage: highestUse,
         maintenanceMode: false,
-        updatedAt: error ? 'Stale local sample' : 'Live local sample'
+        updatedAt: inventoryFailed
+          ? 'Inventory unavailable — showing local telemetry only'
+          : (error ? 'Stale local sample' : 'Live local sample')
       }
     ];
-  }, [nodes, resources, error]);
+  }, [nodes, resources, error, nodesError]);
 
   const columns = useMemo(
     () => [
@@ -207,7 +242,7 @@ export default function InfrastructurePage() {
         id: 'usage',
         header: 'Pressure',
         width: 120,
-        align: 'right',
+        align: 'end',
         cell: ({ row }) => (
           <Badge tone={capacityTone(row.usage)}>
             {row.usage}%
@@ -218,7 +253,7 @@ export default function InfrastructurePage() {
         id: 'maintenance',
         header: 'Maintenance',
         width: 150,
-        align: 'right',
+        align: 'end',
         cell: ({ row }) => (
           row.id === 'local' ? (
             <Badge tone="neutral">Local only</Badge>
@@ -228,14 +263,13 @@ export default function InfrastructurePage() {
               variant={row.maintenanceMode ? 'primary' : 'secondary'}
               disabled={maintenanceUpdating || !canEditNodes}
               onClick={() => {
-                setNodeMaintenanceMode({
-                  variables: {
-                    id: row.id,
-                    enabled: !row.maintenanceMode
-                  },
-                  onCompleted: () => refetchNodes(),
-                  onError: (err) => toast.error(err.message || 'Failed to update maintenance mode')
-                });
+                if (row.maintenanceMode) {
+                  // Resuming is non-destructive — apply directly.
+                  applyMaintenance(row, false);
+                } else {
+                  // Entering maintenance drains the node — confirm first.
+                  setMaintenanceTarget(row);
+                }
               }}
             >
               {row.maintenanceMode ? 'Resume' : 'Maintain'}
@@ -250,7 +284,7 @@ export default function InfrastructurePage() {
         cell: ({ row }) => <span className="text-xs text-fg-muted">{row.updatedAt}</span>
       }
     ],
-    [maintenanceUpdating, refetchNodes, setNodeMaintenanceMode, canEditNodes]
+    [maintenanceUpdating, applyMaintenance, canEditNodes]
   );
 
   return (
@@ -264,8 +298,8 @@ export default function InfrastructurePage() {
             <Button
               variant="secondary"
               onClick={() => {
-                refetch();
-                refetchNodes();
+                refetch().catch(() => {});
+                refetchNodes().catch(() => {});
               }}
               disabled={loading || nodesLoading}
             >
@@ -277,13 +311,33 @@ export default function InfrastructurePage() {
 
         <PendingNodesSection />
 
+        {nodesError ? (
+          <Alert
+            tone="warning"
+            title="Node inventory unavailable"
+            actions={
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => refetchNodes().catch(() => {})}
+              >
+                Retry
+              </Button>
+            }
+          >
+            The registered node inventory could not be loaded — showing local host
+            telemetry only. Maintenance controls and per-node health are unavailable
+            until this recovers.
+          </Alert>
+        ) : null}
+
         {error && !resources ? (
           <EmptyState
             icon={<Server size={22} />}
             title="Infrastructure data unavailable"
             description="The backend could not read host resources."
             actions={
-              <Button variant="primary" onClick={() => refetch()}>
+              <Button variant="primary" onClick={() => refetch().catch(() => {})}>
                 Retry
               </Button>
             }
@@ -346,6 +400,47 @@ export default function InfrastructurePage() {
           </>
         ) : null}
       </ResponsiveStack>
+
+      <Dialog
+        open={!!maintenanceTarget}
+        onClose={maintenanceUpdating ? () => {} : () => setMaintenanceTarget(null)}
+        size="sm"
+      >
+        <DialogTitle>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <Server size={16} />
+            Enter maintenance mode
+          </ResponsiveStack>
+        </DialogTitle>
+        <DialogDescription>
+          {maintenanceTarget
+            ? `Put “${maintenanceTarget.name}” into maintenance mode?`
+            : 'Put this node into maintenance mode?'}
+        </DialogDescription>
+        <DialogBody>
+          <p className="text-sm text-fg-muted">
+            The scheduler will stop placing new workloads on this node. Running
+            machines are not stopped automatically. You can resume the node at any
+            time.
+          </p>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={() => setMaintenanceTarget(null)}
+            disabled={maintenanceUpdating}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            loading={maintenanceUpdating}
+            onClick={confirmMaintenance}
+          >
+            Enter maintenance
+          </Button>
+        </DialogButtons>
+      </Dialog>
     </Page>
   );
 }

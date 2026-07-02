@@ -7,7 +7,7 @@ import {
   IconButton,
   ResponsiveStack,
 } from '@infinibay/harbor'
-import { FileCode, Trash2, Calendar, Monitor, Server } from 'lucide-react'
+import { FileCode, Trash2, Monitor, Server } from 'lucide-react'
 
 /**
  * ScriptCard — rich grid-card view for the scripts library.
@@ -19,29 +19,29 @@ export function ScriptCard({
   script,
   onEdit,
   onDelete,
-  selected,
-  onToggleSelect,
 }) {
   const router = useRouter()
 
   const osList = Array.isArray(script.os) ? script.os : []
   const tags = Array.isArray(script.tags) ? script.tags : []
-  const scheduleCount = script.scheduleCount || 0
 
   const handleClick = onEdit
     ? () => onEdit(script.id)
     : () => router.push(`/scripts/${script.id}`)
 
   const osBadges = osList.map((os) => {
-    const isWin = os === 'windows'
-    const isLinux = os === 'linux'
+    // The OS enum comes back upper-cased (WINDOWS/LINUX); normalise before
+    // matching so the branded icon/tone and label render correctly.
+    const key = String(os).toLowerCase()
+    const isWin = key === 'windows'
+    const isLinux = key === 'linux'
     return (
       <Badge
         key={os}
         tone={isWin ? 'info' : isLinux ? 'success' : 'neutral'}
       >
         {isWin ? <Monitor size={10} /> : isLinux ? <Server size={10} /> : null}
-        <span style={{ marginLeft: isWin || isLinux ? 3 : 0 }}>{os}</span>
+        <span style={{ marginLeft: isWin || isLinux ? 3 : 0 }}>{key}</span>
       </Badge>
     )
   })
@@ -70,14 +70,6 @@ export function ScriptCard({
           </ResponsiveStack>
 
           <ResponsiveStack direction="row" gap={1.5} align="center">
-            {scheduleCount > 0 ? (
-              <ResponsiveStack direction="row" gap={1} align="center">
-                <span className="inline-grid place-items-center w-5 h-5 rounded-md bg-emerald-500/15 text-emerald-200 text-xs">
-                  <Calendar size={10} />
-                </span>
-                <span className="text-xs font-medium text-emerald-200">{scheduleCount}</span>
-              </ResponsiveStack>
-            ) : null}
             <div onClick={(e) => e.stopPropagation()}>
               <IconButton
                 size="sm"

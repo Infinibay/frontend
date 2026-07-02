@@ -14,7 +14,6 @@ import {
   Lock,
   RefreshCw,
   AlertCircle,
-  Calendar,
 } from 'lucide-react';
 import {
   Page,
@@ -23,7 +22,7 @@ import {
   Alert,
   EmptyState,
   Spinner,
-  SearchField,
+  TextField,
   SegmentedControl,
   Select,
   ResponsiveStack,
@@ -78,6 +77,45 @@ function ScriptRow({ script, onOpen, onDelete, onDuplicate }) {
     };
   }, [ctx]);
 
+  const focusMenuItem = (dir) => {
+    const items = menuRef.current?.querySelectorAll(
+      '[role="menuitem"]:not([disabled]):not([aria-disabled="true"])'
+    );
+    if (!items || items.length === 0) return;
+    const arr = Array.from(items);
+    const idx = arr.indexOf(document.activeElement);
+    let next;
+    if (dir === 'first') next = 0;
+    else if (dir === 'last') next = arr.length - 1;
+    else if (dir === 'down') next = idx < 0 ? 0 : (idx + 1) % arr.length;
+    else next = idx <= 0 ? arr.length - 1 : idx - 1;
+    arr[next]?.focus();
+  };
+
+  // Move focus into the menu when it opens so keyboard users can operate it
+  // (the hand-rolled portal is otherwise unreachable once open).
+  useEffect(() => {
+    if (!ctx) return;
+    const id = requestAnimationFrame(() => focusMenuItem('first'));
+    return () => cancelAnimationFrame(id);
+  }, [ctx]);
+
+  const handleMenuKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusMenuItem('down');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusMenuItem('up');
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      focusMenuItem('first');
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      focusMenuItem('last');
+    }
+  };
+
   const handleContextMenu = (e) => {
     e.preventDefault();
     const W = 200;
@@ -91,7 +129,6 @@ function ScriptRow({ script, onOpen, onDelete, onDuplicate }) {
 
   const oses = script.os || [];
   const tags = script.tags || [];
-  const scheduleCount = script.scheduleCount || 0;
 
   return (
     <div
@@ -105,10 +142,10 @@ function ScriptRow({ script, onOpen, onDelete, onDuplicate }) {
         }
       }}
       onContextMenu={handleContextMenu}
-      className="group flex items-center gap-3 py-2 px-2 rounded-md hover:bg-white/[0.03] transition-colors duration-150 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-accent"
+      className="group flex items-center gap-3 py-2 px-2 rounded-md hover:bg-[var(--harbor-state-hover)] transition-colors duration-150 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-accent"
     >
       <div className={`shrink-0 h-6 w-6 rounded-md flex items-center justify-center ${
-        isSystem ? 'bg-amber-500/10 text-amber-200' : 'bg-white/5 text-fg-muted'
+        isSystem ? 'bg-warning/10 text-warning' : 'bg-white/5 text-fg-muted'
       }`}>
         {isSystem ? <Lock size={12} /> : <FileCode size={14} />}
       </div>
@@ -117,19 +154,13 @@ function ScriptRow({ script, onOpen, onDelete, onDuplicate }) {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium truncate">{script.name}</span>
           {isSystem ? (
-            <span className="text-[10px] uppercase tracking-wide font-medium text-amber-200/90 bg-amber-500/10 border border-amber-400/20 px-1.5 py-0.5 rounded shrink-0">
+            <span className="text-[10px] uppercase tracking-wide font-medium text-warning bg-warning/10 border border-warning/30 px-1.5 py-0.5 rounded shrink-0">
               System
             </span>
           ) : null}
           {script.category ? (
             <span className="text-fg-muted text-xs shrink-0">
               · {script.category.toLowerCase()}
-            </span>
-          ) : null}
-          {scheduleCount > 0 ? (
-            <span className="inline-flex items-center gap-1 text-xs text-fg-muted shrink-0">
-              <Calendar size={11} />
-              {scheduleCount}
             </span>
           ) : null}
         </div>
@@ -207,6 +238,8 @@ function ScriptRow({ script, onOpen, onDelete, onDuplicate }) {
             <div
               ref={menuRef}
               role="menu"
+              aria-label={`Actions for ${script.name}`}
+              onKeyDown={handleMenuKeyDown}
               style={{ position: 'fixed', left: ctx.x, top: ctx.y, zIndex: Z.CONTEXT_MENU, minWidth: 180 }}
               className="rounded-md bg-surface-2 border border-[var(--harbor-overlay-border)] shadow-harbor-lg p-1"
             >
@@ -258,6 +291,9 @@ export default function ScriptsPage() {
   const [osFilter, setOsFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // Second confirmation state: the script has active schedules and the server
+  // rejected the plain delete; the user must explicitly opt into force-delete.
+  const [needsForce, setNeedsForce] = useState(false);
 
   const scripts = useMemo(() => data?.scripts || [], [data?.scripts]);
 
@@ -287,7 +323,6 @@ export default function ScriptsPage() {
       total: scripts.length,
       windows: scripts.filter((s) => hasOs(s, 'windows')).length,
       linux: scripts.filter((s) => hasOs(s, 'linux')).length,
-      scheduled: scripts.filter((s) => (s.scheduleCount || 0) > 0).length,
     };
   }, [scripts]);
 
@@ -335,7 +370,9 @@ export default function ScriptsPage() {
         { label: 'Home', href: '/' },
         { label: 'Scripts', isCurrent: true },
       ],
-      title: 'Scripts',
+      // Title intentionally omitted: the in-page PageHeader owns the <h1>
+      // (with the count/filters row). Keeping it here too would render a
+      // duplicate <h1> "Scripts" in the GlobalHeader.
       actions: [],
       helpConfig,
       helpTooltip: 'Scripts help',
@@ -349,33 +386,48 @@ export default function ScriptsPage() {
     router.push(`/scripts/new?from=${script.id}`);
   };
 
-  const handleDelete = async () => {
+  const closeDeleteDialog = () => {
+    setDeleteTarget(null);
+    setNeedsForce(false);
+  };
+
+  // The server rejects a plain delete when the script still has active
+  // schedules. Detect that so we can surface an explicit force-confirmation in
+  // the same dialog instead of a native window.confirm — whether the failure
+  // arrives as a thrown error or as a { success:false } envelope.
+  const isScheduleConflict = (message) => /schedule/i.test(message || '');
+
+  const handleDelete = async (force = false) => {
     if (!deleteTarget) return;
     try {
-      await deleteScript({ variables: { id: deleteTarget.id, force: false } });
-      toast.success(`Deleted "${deleteTarget.name}"`);
-      setDeleteTarget(null);
-      await refetch();
-    } catch (err) {
-      if (/schedule/i.test(err.message || '')) {
-        const confirmForce = window.confirm(
-          `"${deleteTarget.name}" has active schedules. Delete anyway and cancel them?`
-        );
-        if (confirmForce) {
-          try {
-            await deleteScript({
-              variables: { id: deleteTarget.id, force: true },
-            });
-            toast.success('Script deleted and schedules cancelled');
-            setDeleteTarget(null);
-            await refetch();
-          } catch (e2) {
-            toast.error(`Could not delete: ${e2.message}`);
-          }
+      const res = await deleteScript({ variables: { id: deleteTarget.id, force } });
+      // deleteScript resolves HTTP 200 with a { success, message, error }
+      // envelope and does NOT throw on a business-rule rejection; inspect it so
+      // we never report a false success or skip the force-confirmation flow.
+      const payload = res?.data?.deleteScript;
+      if (!payload?.success) {
+        const message = payload?.error || payload?.message || 'Delete failed';
+        if (!force && isScheduleConflict(message)) {
+          setNeedsForce(true);
           return;
         }
+        toast.error(`Could not delete: ${message}`);
+        return; // keep the dialog open on failure
       }
-      toast.error(`Could not delete: ${err.message}`);
+      toast.success(
+        force
+          ? `Deleted "${deleteTarget.name}" and cancelled its schedules`
+          : `Deleted "${deleteTarget.name}"`
+      );
+      closeDeleteDialog();
+      await refetch();
+    } catch (err) {
+      const message = err?.message || 'Delete failed';
+      if (!force && isScheduleConflict(message)) {
+        setNeedsForce(true);
+        return;
+      }
+      toast.error(`Could not delete: ${message}`);
     }
   };
 
@@ -385,7 +437,6 @@ export default function ScriptsPage() {
         `${stats.total} script${stats.total !== 1 ? 's' : ''}`,
         stats.windows > 0 ? `${stats.windows} Windows` : null,
         stats.linux > 0 ? `${stats.linux} Linux` : null,
-        stats.scheduled > 0 ? `${stats.scheduled} scheduled` : null,
       ].filter(Boolean).join(' · ');
 
   return (
@@ -398,7 +449,7 @@ export default function ScriptsPage() {
             size="sm"
             variant="ghost"
             label="Refresh"
-            icon={<RefreshCw size={14} />}
+            icon={<RefreshCw size={14} className={loading ? 'animate-spin' : undefined} />}
             onClick={() => refetch()}
             disabled={loading}
           />
@@ -415,27 +466,12 @@ export default function ScriptsPage() {
         }
         filters={
           <>
-            <SearchField
+            <TextField
+              icon={<Search size={14} />}
               placeholder="Search name, description, tags…"
-              onSearch={(q) => {
-                setSearch(q);
-                const term = q.trim().toLowerCase();
-                if (!term) return [];
-                return scripts
-                  .filter(
-                    (s) =>
-                      s.name?.toLowerCase().includes(term) ||
-                      s.description?.toLowerCase().includes(term) ||
-                      s.tags?.some((t) => t.toLowerCase().includes(term))
-                  )
-                  .map((s) => ({
-                    id: s.id,
-                    title: s.name,
-                    subtitle: s.description,
-                    icon: <FileCode size={16} />,
-                  }));
-              }}
-              onPick={(r) => router.push(`/scripts/${r.id}`)}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Filter scripts"
             />
             <SegmentedControl
               items={OS_FILTER_OPTIONS}
@@ -466,14 +502,18 @@ export default function ScriptsPage() {
         </Alert>
       ) : null}
 
-      {loading && scripts.length === 0 ? (
+      {/* Initial load only. Background refetches (Refresh / post-delete) keep the
+          cached list mounted and surface progress via the header spin icon. */}
+      {loading && scripts.length === 0 && !error ? (
         <ResponsiveStack direction="row" gap={2} align="center" justify="center">
           <Spinner />
           <span>Loading scripts…</span>
         </ResponsiveStack>
       ) : null}
 
-      {!loading && filtered.length === 0 ? (
+      {/* Empty state must never appear on error or during a refetch that still
+          has cached data — only when we truly have zero results. */}
+      {!error && !(loading && scripts.length === 0) && filtered.length === 0 ? (
         <EmptyState
           icon={<FileCode size={18} />}
           title={scripts.length ? 'No matches' : 'No scripts yet'}
@@ -497,14 +537,17 @@ export default function ScriptsPage() {
         />
       ) : null}
 
-      {!loading && filtered.length > 0 ? (
+      {filtered.length > 0 ? (
         <div className="flex flex-col divide-y divide-[var(--harbor-border-subtle)]">
           {filtered.map((s) => (
             <ScriptRow
               key={s.id}
               script={s}
               onOpen={(id) => router.push(`/scripts/${id}`)}
-              onDelete={setDeleteTarget}
+              onDelete={(script) => {
+                setDeleteTarget(script);
+                setNeedsForce(false);
+              }}
               onDuplicate={handleDuplicate}
             />
           ))}
@@ -513,37 +556,46 @@ export default function ScriptsPage() {
 
       <Dialog
         open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
+        onClose={closeDeleteDialog}
         size="sm"
       >
         <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
             <AlertCircle size={16} />
-            <span>Delete script</span>
+            <span>{needsForce ? 'Script has active schedules' : 'Delete script'}</span>
           </ResponsiveStack>
         </DialogTitle>
         <DialogDescription>
           {deleteTarget
-            ? `Remove "${deleteTarget.name}"? Any active schedules will be cancelled.`
+            ? needsForce
+              ? `"${deleteTarget.name}" still has active schedules. Delete it anyway and cancel them?`
+              : `Remove "${deleteTarget.name}"? Any active schedules will be cancelled.`
             : ''}
         </DialogDescription>
         <DialogBody>
-          <p>
-            Existing execution history is kept. The script body and its schedules are
-            removed for good.
-          </p>
+          {needsForce ? (
+            <Alert tone="warning" title="This will cancel running schedules">
+              Any schedules attached to this script will be cancelled and cannot be
+              recovered. Execution history is kept.
+            </Alert>
+          ) : (
+            <p>
+              Existing execution history is kept. The script body and its schedules are
+              removed for good.
+            </p>
+          )}
         </DialogBody>
         <DialogButtons align="end">
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+          <Button variant="secondary" onClick={closeDeleteDialog} disabled={deleting}>
             Cancel
           </Button>
           <Button
             variant="destructive"
-            onClick={handleDelete}
+            onClick={() => handleDelete(needsForce)}
             loading={deleting}
             disabled={deleting}
           >
-            Delete
+            {needsForce ? 'Delete anyway' : 'Delete'}
           </Button>
         </DialogButtons>
       </Dialog>

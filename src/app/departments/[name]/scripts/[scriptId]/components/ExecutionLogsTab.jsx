@@ -17,11 +17,12 @@ import {
   Filter,
 } from 'lucide-react'
 
-import { useScriptExecutionsFilteredQuery, useMachinesQuery } from '@/gql/hooks'
+import { useScriptExecutionsFilteredQuery } from '@/gql/hooks'
 import { getSocketService } from '@/services/socketService'
+import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData'
+import { fetchVms } from '@/state/slices/vms'
 
 import {
-  Page,
   Card,
   Alert,
   Badge,
@@ -146,12 +147,19 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
     skip: !scriptId || !departmentId,
   })
 
-  const { data: machinesData } = useMachinesQuery()
+  // Read VMs from Redux (state.vms.items) rather than the Apollo `machines`
+  // cache: realtime socket events only refresh the Redux slice, so a VM created
+  // while this tab is open still shows up in the desktop filter. The Redux vms
+  // shape comes from the same `machines` query (id, name, department.id).
+  const { data: machines } = useEnsureData('vms', fetchVms, {
+    strategy: LOADING_STRATEGIES.BACKGROUND,
+    ttl: 2 * 60 * 1000,
+  })
 
   const departmentVMs = useMemo(() => {
-    if (!machinesData?.machines || !departmentId) return []
-    return machinesData.machines.filter((m) => m.department?.id === departmentId)
-  }, [machinesData, departmentId])
+    if (!machines || !departmentId) return []
+    return machines.filter((m) => m.department?.id === departmentId)
+  }, [machines, departmentId])
 
   useEffect(() => {
     if (!scriptId) return
@@ -266,29 +274,27 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
   // Loading
   if (executionsLoading && !executionsData) {
     return (
-      <Page size="xl" gap="lg">
+      <ResponsiveStack direction="col" gap={6}>
         <Card>
           <LoadingOverlay label="Loading execution history…" fill />
         </Card>
-      </Page>
+      </ResponsiveStack>
     )
   }
 
   // Error
   if (executionsError) {
     let errorMessage = 'Failed to load execution history'
-    if (executionsError.message.includes('Network'))
+    const rawMessage = executionsError.message || ''
+    if (rawMessage.includes('Network'))
       errorMessage = 'Unable to connect to server. Check your connection.'
-    else if (
-      executionsError.message.includes('permission') ||
-      executionsError.message.includes('authorized')
-    )
+    else if (rawMessage.includes('permission') || rawMessage.includes('authorized'))
       errorMessage = "You don't have permission to view these logs."
-    else if (executionsError.message.includes('not found'))
+    else if (rawMessage.includes('not found'))
       errorMessage = 'Script not found or has been deleted.'
 
     return (
-      <Page size="xl" gap="lg">
+      <ResponsiveStack direction="col" gap={6}>
         <Alert
           tone="danger"
           title="Could not load executions"
@@ -298,11 +304,11 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
               <Button variant="secondary" size="sm" icon={<RefreshCw size={14} />} onClick={() => refetch()}>
                 Retry
               </Button>
-              {executionsError.message && (
+              {rawMessage && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => toast.error(`Error details: ${executionsError.message}`)}
+                  onClick={() => toast.error(`Error details: ${rawMessage}`)}
                 >
                   Show Details
                 </Button>
@@ -312,12 +318,12 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
         >
           {errorMessage}
         </Alert>
-      </Page>
+      </ResponsiveStack>
     )
   }
 
   return (
-    <Page size="xl" gap="lg">
+    <ResponsiveStack direction="col" gap={6}>
       {/* Filters */}
       <Card title="Filters" leadingIcon={<Filter size={16} />}>
         <ResponsiveStack direction={{ base: 'col', md: 'row' }} gap={3} wrap align="center">
@@ -358,17 +364,14 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
                     label="Start date"
                     type="datetime-local"
                     value={filters.startDate}
-                    onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
                   />
                   <TextField
                     label="End date"
                     type="datetime-local"
                     value={filters.endDate}
-                    onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
                   />
-                  <Button size="sm" fullWidth onClick={() => setCurrentPage(1)}>
-                    Apply
-                  </Button>
                 </ResponsiveStack>
               </Card>
             }
@@ -684,6 +687,6 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
           <Pagination page={currentPage} total={totalPages} onChange={handlePageChange} />
         </ResponsiveStack>
       )}
-    </Page>
+    </ResponsiveStack>
   )
 }
