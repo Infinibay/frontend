@@ -13,7 +13,7 @@
 #                     --build-arg NEXT_PUBLIC_GRAPHQL_API_URL=https://app.example.com/graphql \
 #                     -t infinibay/frontend .
 
-FROM node:20-bookworm AS base
+FROM docker.io/library/node:20-bookworm AS base
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       curl ca-certificates bash git \
