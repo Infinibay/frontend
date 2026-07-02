@@ -91,7 +91,7 @@
     ]
   },
   "overrides": {
-    "dompurify": "^3.4.0",
+    "dompurify": "$dompurify",
     "postcss": "$postcss"
   }
 }
