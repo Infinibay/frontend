@@ -93,7 +93,10 @@ export function GroupRoleMappingsSection({
         </ResponsiveStack>
       );
     }
-    if (error) {
+    // Block with the error Alert only when there is nothing to show. A transient
+    // poll error over already-loaded mappings surfaces inline (below) instead of
+    // unmounting the table.
+    if (error && mappings.length === 0) {
       return (
         <Alert
           tone="danger"
@@ -112,12 +115,29 @@ export function GroupRoleMappingsSection({
     }
     if (mappings.length > 0) {
       return (
-        <DataTable
-          rows={mappings}
-          columns={providerMappingColumns}
-          rowId={(r) => r.id}
-          defaultDensity="compact"
-        />
+        <ResponsiveStack direction="col" gap={2}>
+          {error ? (
+            <Alert
+              tone="danger"
+              title="Couldn't refresh group mappings"
+              actions={
+                onRetry ? (
+                  <Button size="sm" variant="secondary" onClick={onRetry}>
+                    Retry
+                  </Button>
+                ) : null
+              }
+            >
+              Showing the last-known mappings.
+            </Alert>
+          ) : null}
+          <DataTable
+            rows={mappings}
+            columns={providerMappingColumns}
+            rowId={(r) => r.id}
+            defaultDensity="compact"
+          />
+        </ResponsiveStack>
       );
     }
     return (

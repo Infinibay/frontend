@@ -245,7 +245,16 @@ const client = new ApolloClient({
   defaultOptions: {
     watchQuery: {
       fetchPolicy: 'cache-and-network',
-      notifyOnNetworkStatusChange: true,
+      // Deliberately NOT setting notifyOnNetworkStatusChange: true here. As a
+      // GLOBAL default it made every useQuery in the app re-emit loading:true on
+      // every background refetch, every pollInterval tick, and every warm-cache
+      // mount — which, combined with the ubiquitous `if (loading) return
+      // <Skeleton/>` guard, unmounted/remounted whole subtrees on each realtime
+      // update (the "parpadea todo el tiempo" flicker). Leaving it at the default
+      // (false) keeps rendered content mounted and updates it in place on
+      // background refresh. Components that genuinely need the refresh signal opt
+      // in PER-QUERY (e.g. useVMRecommendations, VMBackupsTab) and guard it with a
+      // first-load-only check, so they are unaffected.
       // Match client.query()'s policy: keep any partial data on a GraphQL error
       // (errorPolicy 'none' — the default — would discard the whole result), so
       // useQuery/watchQuery hooks surface both data and error instead of blanking.

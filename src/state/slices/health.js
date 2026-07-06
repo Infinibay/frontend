@@ -114,13 +114,23 @@ const initialState = {
 export const fetchVMHealthSnapshot = createAsyncThunk(
   'health/fetchVMHealthSnapshot',
   async ({ vmId }) => {
-    const { data } = await client.query({
+    const { data, error } = await client.query({
       query: GetVmHealthStatusDocument,
       variables: { vmId },
       fetchPolicy: 'network-only',
     });
 
-    return { vmId, status: data.getVMHealthStatus };
+    // errorPolicy is 'all' app-wide (see apollo-client.js), so a GraphQL error
+    // resolves with data === undefined instead of throwing. Reading
+    // `data.getVMHealthStatus` blindly then threw an opaque "Cannot read
+    // properties of undefined (reading 'getVMHealthStatus')" — surface a clean,
+    // actionable message via the thunk's rejected path instead.
+    const status = data?.getVMHealthStatus;
+    if (!status) {
+      throw new Error(error?.message || 'Health status is not available yet.');
+    }
+
+    return { vmId, status };
   }
 );
 
@@ -134,6 +144,18 @@ const healthSlice = createSlice({
       const { vmId, data } = action.payload;
       state.vmHealthData[vmId] = data;
       state.lastUpdated[vmId] = Date.now();
+    },
+
+    // Set live resource metrics for a VM (from the realtime 'metrics:update'
+    // socket event; see realTimeReduxService.handleMetricsEvent). MERGE into the
+    // existing vmHealthData record so health-snapshot fields (overallScore,
+    // checks) seeded elsewhere survive — and, symmetrically, the snapshot
+    // reducer preserves `metrics` via its `...(prev||{})` spread. VMOverviewTab
+    // reads state.health.vmHealthData[vmId].metrics.{cpu,memory,storage,network}.
+    setVMMetrics: (state, action) => {
+      const { vmId, metrics } = action.payload;
+      const prev = state.vmHealthData[vmId] || { id: vmId };
+      state.vmHealthData[vmId] = { ...prev, metrics };
     },
     
     // Update health score
@@ -232,8 +254,9 @@ const healthSlice = createSlice({
     builder
       .addCase(fetchVMHealthSnapshot.pending, (state, action) => {
         const { vmId } = action.meta.arg;
-        state.isLoading = true;
-        state.error = null;
+        // Per-VM ONLY. A global isLoading/error here made one VM's snapshot fetch
+        // re-render (and, via `loading` guards, blank) every OTHER VM's problems
+        // panel. The per-VM maps scope loading/error to the VM being shown.
         state.loadingByVm[vmId] = true;
         state.errorByVm[vmId] = null;
       })
@@ -242,34 +265,64 @@ const healthSlice = createSlice({
         state.loadingByVm[vmId] = false;
         state.errorByVm[vmId] = null;
         if (status) {
-          state.vmHealthData[vmId] = {
+          // Merge over the prior record (preserves fields seeded elsewhere, e.g.
+          // `name`/`metrics`) and SKIP the write when the snapshot is unchanged, so
+          // the object reference stays stable across no-op refreshes. A fresh
+          // reference every refetch needlessly re-rendered/re-animated every
+          // consumer (ResourceMeter, health badges) — part of the flicker.
+          const prev = state.vmHealthData[vmId];
+          const next = {
+            ...(prev || {}),
             id: vmId,
             lastUpdated: status.timestamp,
             overallScore: status.overallScore,
             success: status.success,
           };
+          if (
+            !prev ||
+            prev.lastUpdated !== next.lastUpdated ||
+            prev.overallScore !== next.overallScore ||
+            prev.success !== next.success
+          ) {
+            state.vmHealthData[vmId] = next;
+          }
 
           // MERGE, never clobber: realTimeReduxService seeds issue-detected
-          // entries into the same autoChecks[vmId] map. Snapshot ids are
-          // `${checkName}-${i}` and realtime ids are `${issueType}-${Date.now()}`,
-          // so they coexist without collisions.
+          // entries (id `${vmId}:${issueType}`) into the same autoChecks[vmId] map;
+          // snapshot ids are `${checkName}-${i}`, so they coexist. REUSE the prior
+          // per-check object reference when its fields are unchanged so identical
+          // snapshots don't churn identity and re-trigger useVMProblems' memos.
           const mappedChecks = mapChecksToAutoChecks(status.checks);
-          state.autoChecks[vmId] = {
-            ...(state.autoChecks[vmId] || {}),
-            ...mappedChecks,
-          };
+          const prevChecks = state.autoChecks[vmId] || {};
+          const mergedChecks = { ...prevChecks };
+          let checksChanged = false;
+          for (const [id, check] of Object.entries(mappedChecks)) {
+            const prevCheck = prevChecks[id];
+            if (
+              prevCheck &&
+              prevCheck.status === check.status &&
+              prevCheck.message === check.message &&
+              prevCheck.category === check.category &&
+              prevCheck.checkName === check.checkName
+            ) {
+              mergedChecks[id] = prevCheck; // unchanged — keep old reference
+            } else {
+              mergedChecks[id] = check;
+              checksChanged = true;
+            }
+          }
+          if (checksChanged) {
+            state.autoChecks[vmId] = mergedChecks;
+          }
 
           state.lastUpdated[vmId] = Date.now();
         }
-        state.isLoading = false;
       })
       .addCase(fetchVMHealthSnapshot.rejected, (state, action) => {
         const { vmId } = action.meta.arg;
-        const message = action.error.message;
-        state.error = message;
-        state.isLoading = false;
+        // Per-VM ONLY (see pending) — no global error write.
         state.loadingByVm[vmId] = false;
-        state.errorByVm[vmId] = message;
+        state.errorByVm[vmId] = action.error.message;
       });
   },
 });
@@ -277,6 +330,7 @@ const healthSlice = createSlice({
 // Export actions
 export const {
   setVMHealthData,
+  setVMMetrics,
   updateHealthScore,
   updateAutoCheck,
   addHealthIssue,
@@ -292,8 +346,11 @@ export const {
 } = healthSlice.actions;
 
 // Selectors
+// Stable empty reference so a VM with no checks doesn't hand consumers a fresh
+// `{}` every call (which would defeat downstream memoization).
+const EMPTY_CHECKS = Object.freeze({});
 export const selectVMHealthData = (state, vmId) => state.health.vmHealthData[vmId];
-export const selectVMAutoChecks = (state, vmId) => state.health.autoChecks[vmId] || {};
+export const selectVMAutoChecks = (state, vmId) => state.health.autoChecks[vmId] || EMPTY_CHECKS;
 export const selectVMHealthTrends = (state, vmId) => state.health.healthTrends[vmId];
 export const selectVMFirewallStatus = (state, vmId) => state.health.firewallStatus[vmId];
 export const selectRemediationStatus = (state, remediationId) => state.health.activeRemediations[remediationId];

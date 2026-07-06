@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchVMHealthSnapshot,
   selectVMHealthLoading,
   selectVMHealthError,
 } from '@/state/slices/health';
+import ChangeOwnerDialog from './ChangeOwnerDialog';
 import {
   Alert,
   Badge,
@@ -28,11 +29,15 @@ import {
   MemoryStick,
   Network,
   RefreshCw,
+  UserCog,
 } from 'lucide-react';
 import useVMProblems from '@/hooks/useVMProblems';
 
-const VMOverviewTab = ({ vmId, vm }) => {
+const VMOverviewTab = ({ vmId, vm, hostNodeName = null }) => {
   const dispatch = useDispatch();
+  const currentUser = useSelector((state) => state.auth.user);
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+  const [ownerDialogOpen, setOwnerDialogOpen] = useState(false);
 
   // Read from the slice's real key. The health snapshot (fetchVMHealthSnapshot)
   // populates vmHealthData[vmId]; there is no `machines` map — the previous
@@ -51,14 +56,25 @@ const VMOverviewTab = ({ vmId, vm }) => {
   // background refresh over existing snapshot data must not blank the card.
   const snapshotLoading = healthLoading && !hasSnapshot;
 
+  // Health checks run inside the guest via infiniservice, which only comes online
+  // after the OS install finishes and the agent completes its first handshake
+  // (setupComplete). Querying before then just fails ("agent not connected") and
+  // surfaced a raw "Cannot read properties of undefined (reading 'getVMHealthStatus')"
+  // on the card, so gate every health fetch on the VM being running AND set up.
+  const setupComplete = vm?.setupComplete ?? false;
+  const isInstalling = vm?.status === 'running' && !setupComplete;
+  const healthCheckReady = vm?.status === 'running' && setupComplete;
+
   // Fetch a health snapshot on mount so the Problems panel is populated.
   // A plain useEffect (not useEnsureData) because the health slice's lastUpdated
   // is a per-vm map, which is incompatible with useEnsureData's single-TTL contract.
+  // healthCheckReady is in the deps so the snapshot auto-loads the moment install
+  // completes and setupComplete flips true.
   useEffect(() => {
-    if (vmId) {
+    if (vmId && healthCheckReady) {
       dispatch(fetchVMHealthSnapshot({ vmId }));
     }
-  }, [vmId, dispatch]);
+  }, [vmId, healthCheckReady, dispatch]);
 
   const {
     criticalProblems = [],
@@ -101,11 +117,14 @@ const VMOverviewTab = ({ vmId, vm }) => {
       { key: 'cores', section: 'Hardware', label: 'vCPU cores', value: vm?.cpuCores ?? '—' },
       { key: 'ram', section: 'Hardware', label: 'RAM', value: vm?.ramGB ? `${vm.ramGB} GB` : '—' },
       { key: 'disk', section: 'Hardware', label: 'Disk', value: vm?.template?.storage ? `${vm.template.storage} GB` : '—' },
-      { key: 'gpu', section: 'Hardware', label: 'GPU', value: vm?.gpuPciAddress || '—' },
+      // Show the assigned passthrough PCI address, or "None" so users understand
+      // no GPU is assigned by design (vs an unknown "—").
+      { key: 'gpu', section: 'Hardware', label: 'GPU passthrough', value: vm?.gpuPciAddress || 'None' },
+      { key: 'os', section: 'Hardware', label: 'OS', value: vm?.os || '—' },
       { key: 'template', section: 'Hardware', label: 'Blueprint', value: vm?.template?.name || '—' },
+      // Local IP is populated by infiniservice telemetry once the guest agent is
+      // connected; blank until then.
       { key: 'localIP', section: 'Network', label: 'Local IP', value: vm?.localIP || '—', copyable: !!vm?.localIP },
-      { key: 'publicIP', section: 'Network', label: 'Public IP', value: vm?.publicIP || '—', copyable: !!vm?.publicIP },
-      { key: 'os', section: 'Network', label: 'OS', value: vm?.configuration?.os || vm?.os || '—' },
       { key: 'department', section: 'Identity', label: 'Department', value: vm?.department?.name || '—' },
       {
         key: 'owner',
@@ -116,6 +135,11 @@ const VMOverviewTab = ({ vmId, vm }) => {
             vm.user.email
           : '—',
       },
+      // Only shown on multi-node clusters (page.js passes null otherwise), and
+      // always a resolved name — never a raw node UUID.
+      ...(hostNodeName
+        ? [{ key: 'hostNode', section: 'Identity', label: 'Host node', value: hostNodeName }]
+        : []),
       {
         key: 'created',
         section: 'Identity',
@@ -124,7 +148,7 @@ const VMOverviewTab = ({ vmId, vm }) => {
       },
       { key: 'id', section: 'Identity', label: 'VM ID', value: vm?.id || '—', copyable: !!vm?.id },
     ],
-    [vm],
+    [vm, hostNodeName],
   );
 
   const totalProblems =
@@ -134,29 +158,35 @@ const VMOverviewTab = ({ vmId, vm }) => {
   // no prior data to fall back on) — surface this instead of a green badge.
   const healthUnresolved = !!healthError && !hasSnapshot;
 
-  const snapshotBadgeTone = snapshotLoading
+  const snapshotBadgeTone = isInstalling
     ? 'neutral'
-    : healthUnresolved
-      ? 'warning'
-      : healthTone;
-  const snapshotBadgeLabel = snapshotLoading
-    ? 'Checking…'
-    : healthUnresolved
-      ? 'Health unavailable'
-      : healthLabel;
+    : snapshotLoading
+      ? 'neutral'
+      : healthUnresolved
+        ? 'warning'
+        : healthTone;
+  const snapshotBadgeLabel = isInstalling
+    ? 'Installing…'
+    : snapshotLoading
+      ? 'Checking…'
+      : healthUnresolved
+        ? 'Health unavailable'
+        : healthLabel;
   const snapshotBadgePulse =
-    !snapshotLoading && !healthUnresolved && healthLevel !== 'healthy';
+    !isInstalling && !snapshotLoading && !healthUnresolved && healthLevel !== 'healthy';
 
-  const snapshotDescription = snapshotLoading
-    ? 'Running health checks…'
-    : healthUnresolved
-      ? 'The latest health snapshot could not be loaded.'
-      : totalProblems === 0
-        ? 'No detected issues for this VM.'
-        : `${totalProblems} detected issue${totalProblems !== 1 ? 's' : ''}.`;
+  const snapshotDescription = isInstalling
+    ? 'Health checks start once the OS install finishes and the guest agent connects.'
+    : snapshotLoading
+      ? 'Running health checks…'
+      : healthUnresolved
+        ? 'The latest health snapshot could not be loaded.'
+        : totalProblems === 0
+          ? 'No detected issues for this VM.'
+          : `${totalProblems} detected issue${totalProblems !== 1 ? 's' : ''}.`;
 
   const retryHealthSnapshot = () => {
-    if (vmId) dispatch(fetchVMHealthSnapshot({ vmId }));
+    if (vmId && healthCheckReady) dispatch(fetchVMHealthSnapshot({ vmId }));
   };
 
   return (
@@ -191,7 +221,7 @@ const VMOverviewTab = ({ vmId, vm }) => {
               <Skeleton />
               <Skeleton />
             </ResponsiveStack>
-          ) : healthError ? (
+          ) : healthUnresolved ? (
             <Alert
               tone="danger"
               size="sm"
@@ -321,6 +351,20 @@ const VMOverviewTab = ({ vmId, vm }) => {
           leadingIcon={<Info size={18} />}
           leadingIconTone="purple"
           title="Details"
+          footer={
+            isAdmin ? (
+              <ResponsiveStack direction="row" justify="end">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<UserCog size={14} />}
+                  onClick={() => setOwnerDialogOpen(true)}
+                >
+                  Change owner
+                </Button>
+              </ResponsiveStack>
+            ) : undefined
+          }
         >
           <PropertyList items={propertyItems} />
         </Card>
@@ -337,6 +381,15 @@ const VMOverviewTab = ({ vmId, vm }) => {
               ))}
             </ResponsiveStack>
           </Alert>
+        ) : null}
+
+        {isAdmin ? (
+          <ChangeOwnerDialog
+            open={ownerDialogOpen}
+            onClose={() => setOwnerDialogOpen(false)}
+            vmId={vmId}
+            currentUser={vm?.user}
+          />
         ) : null}
     </Page>
   );

@@ -1905,6 +1905,9 @@ type Query {
   """Return active (non-terminal) resolutions for a machine"""
   activeResolutionsForMachine(machineId: ID!): [RecommendationResolutionType!]!
 
+  """Return recent resolutions (any status) for a machine, newest first. Use to show run history — what was triggered, whether it succeeded/failed, and why."""
+  resolutionHistoryForMachine(machineId: ID!, limit: Int): [RecommendationResolutionType!]!
+
   """Get all ISOs (available and unavailable)"""
   allISOs: [ISO!]!
   application(id: String!): ApplicationType

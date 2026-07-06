@@ -45,7 +45,10 @@ export function SyncRunsSection({ runs, loading, error, onRetry }) {
         </ResponsiveStack>
       );
     }
-    if (error) {
+    // Block with the error Alert only when there is nothing to show. A transient
+    // poll error over already-loaded runs surfaces inline (below) instead of
+    // unmounting the table.
+    if (error && runs.length === 0) {
       return (
         <Alert
           tone="danger"
@@ -64,12 +67,29 @@ export function SyncRunsSection({ runs, loading, error, onRetry }) {
     }
     if (runs.length > 0) {
       return (
-        <DataTable
-          rows={runs}
-          columns={providerRunColumns}
-          rowId={(r) => r.id}
-          defaultDensity="compact"
-        />
+        <ResponsiveStack direction="col" gap={2}>
+          {error ? (
+            <Alert
+              tone="danger"
+              title="Couldn't refresh sync runs"
+              actions={
+                onRetry ? (
+                  <Button size="sm" variant="secondary" onClick={onRetry}>
+                    Retry
+                  </Button>
+                ) : null
+              }
+            >
+              Showing the last-known runs.
+            </Alert>
+          ) : null}
+          <DataTable
+            rows={runs}
+            columns={providerRunColumns}
+            rowId={(r) => r.id}
+            defaultDensity="compact"
+          />
+        </ResponsiveStack>
       );
     }
     return (

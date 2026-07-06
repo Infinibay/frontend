@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { getPowerActionError } from "@/utils/powerActionResult";
 import { getSocketService } from "@/services/socketService";
-
-// Check if IP fields are enabled via environment variable
-const IP_FIELDS_ENABLED = process.env.NEXT_PUBLIC_ENABLE_VM_IP_FIELDS === 'true';
+import { useRestartMachineMutation, useResetMachineMutation } from "@/gql/hooks";
 
 const vmDetailedInfo = gql`
   query vmDetailedInfo($id: String!) {
@@ -24,10 +22,8 @@ const vmDetailedInfo = gql`
       cpuCores
       ramGB
       gpuPciAddress
-      ${IP_FIELDS_ENABLED ? `
+      os
       localIP
-      publicIP
-      ` : ''}
       department {
         id
         name
@@ -99,12 +95,21 @@ export const useVMDetail = (vmId) => {
     variables: { id: vmId },
     skip: !vmId,
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all'
+    errorPolicy: 'all',
+    // Defense-in-depth: socket-driven reloadVM() refetches must NOT flip isLoading
+    // (which page.js uses to blank the whole page). Explicit here so this holds even
+    // if the global default is ever changed back.
+    notifyOnNetworkStatusChange: false,
   });
 
   // GraphQL mutations
   const [powerOnMutation] = useMutation(POWER_ON);
   const [powerOffMutation] = useMutation(POWER_OFF);
+  // Reboot variants (backend already implements both). restartMachine is a
+  // graceful shutdown-then-boot; resetMachine is a hardware reset (QMP
+  // system_reset) for when the guest is unresponsive.
+  const [restartMachineMutation] = useRestartMachineMutation();
+  const [resetMachineMutation] = useResetMachineMutation();
 
   const vm = data?.machine;
   const error = graphqlError;
@@ -191,13 +196,40 @@ export const useVMDetail = (vmId) => {
           }
           break;
         case 'restart':
-          // Restart functionality is disabled for now
+          successText = 'is rebooting';
           showToastNotification(
             "default",
-            "Function not available",
-            "The restart function is not currently available."
+            "Processing",
+            "Attempting to reboot the desktop..."
           );
-          return;
+          {
+            // Graceful reboot: backend does a shutdown-then-boot. Same
+            // success:false-with-HTTP-200 caveat as start/stop, so inspect the
+            // result explicitly.
+            const { data } = await restartMachineMutation({ variables: { id: vm.id } });
+            const result = data?.restartMachine;
+            if (result && result.success === false) {
+              throw new Error(result.message || "Could not reboot the desktop.");
+            }
+          }
+          break;
+        case 'reset':
+          successText = 'is being force-reset';
+          showToastNotification(
+            "default",
+            "Processing",
+            "Force-resetting the desktop..."
+          );
+          {
+            // Hardware reset (QMP system_reset) — instant power-cycle for an
+            // unresponsive guest, no graceful shutdown.
+            const { data } = await resetMachineMutation({ variables: { id: vm.id } });
+            const result = data?.resetMachine;
+            if (result && result.success === false) {
+              throw new Error(result.message || "Could not reset the desktop.");
+            }
+          }
+          break;
         default:
           return;
       }
@@ -248,16 +280,30 @@ export const useVMDetail = (vmId) => {
   useEffect(() => {
     if (!vmId) return undefined;
     const socketService = getSocketService();
+    // Coalesce bursts of VM events (status_changed + update + telemetry can arrive
+    // within milliseconds of a single transition) into ONE trailing refetch, so we
+    // don't fire a stream of overlapping network requests per power action.
+    let debounceTimer = null;
+    const scheduleReload = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        reloadVM();
+      }, 400);
+    };
     const unsubscribe = socketService.subscribeToAllResourceEvents(
       "vms",
       (_action, event) => {
         // Events carry the changed VM under event.data; only react to ours.
         if (event?.data?.id && event.data.id !== vmId) return;
-        reloadVM();
+        scheduleReload();
       },
       ["create", "update", "delete", "power_on", "power_off", "suspend", "status_changed"]
     );
-    return () => unsubscribe?.();
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      unsubscribe?.();
+    };
   }, [vmId, reloadVM]);
 
   return {

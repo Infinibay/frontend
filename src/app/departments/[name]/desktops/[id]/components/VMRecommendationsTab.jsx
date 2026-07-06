@@ -22,8 +22,10 @@ import {
 
 import useVMRecommendations from '@/hooks/useVMRecommendations';
 import useVmAgentConnection from '@/hooks/useVmAgentConnection';
+import useActiveResolutions from '@/hooks/useActiveResolutions';
 import { RecommendationsGeneralHelp } from './RecommendationHelp';
 import RecommendationActions from './RecommendationActions';
+import RecommendationActivityPanel from './RecommendationActivityPanel';
 import {
   CATEGORIES,
   PRIORITY_LEVELS,
@@ -83,7 +85,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus, vmSetupComplete }) => {
     categoryStats,
     requiresImmediateAttention,
     lastUpdateTime,
-    isLoading,
+    isInitialLoading,
     isRefreshing,
     error,
     refreshRecommendations,
@@ -92,6 +94,10 @@ const VMRecommendationsTab = ({ vmId, vmStatus, vmSetupComplete }) => {
   const { isConnected: agentOnline } = useVmAgentConnection(vmId, {
     pollInterval: 20_000,
   });
+
+  // In-flight resolutions per recommendation — keeps action buttons disabled
+  // while a resolution is running, even after a page refresh.
+  const { byRecommendationId: activeByRecommendation } = useActiveResolutions(vmId);
 
   const filtered = useMemo(() => {
     let list = [...recommendations];
@@ -233,7 +239,11 @@ const VMRecommendationsTab = ({ vmId, vmStatus, vmSetupComplete }) => {
     />
   );
 
-  if (isLoading) {
+  // Block with the overlay ONLY on the genuine first load (no data yet). The 60s
+  // poll and scan-completed socket refetch keep the query's raw loading flipping,
+  // but isInitialLoading stays false once data has arrived — so the list updates
+  // in place and the "Scanning…" button (isRefreshing) is the only moving part.
+  if (isInitialLoading) {
     return (
       <Page>
         <RecommendationsGeneralHelp />
@@ -274,6 +284,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus, vmSetupComplete }) => {
     return (
       <Page>
         <RecommendationsGeneralHelp />
+        <RecommendationActivityPanel vmId={vmId} />
         <Alert
           tone="success"
           icon={<CheckCircle size={14} />}
@@ -303,6 +314,8 @@ const VMRecommendationsTab = ({ vmId, vmStatus, vmSetupComplete }) => {
       <RecommendationsGeneralHelp />
 
       {renderHeader()}
+
+      <RecommendationActivityPanel vmId={vmId} />
 
       <div
         style={{
@@ -401,6 +414,7 @@ const VMRecommendationsTab = ({ vmId, vmStatus, vmSetupComplete }) => {
                     vmStatus={vmStatus}
                     vmSetupComplete={vmSetupComplete}
                     agentOnline={agentOnline}
+                    activeResolution={activeByRecommendation.get(rec.id) || null}
                   />
                 }
               >

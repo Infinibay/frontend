@@ -6,7 +6,6 @@ import {
   pauseVm,
   stopVm,
   deleteVm,
-  fetchVms,
   deselectMachine
 } from "@/state/slices/vms";
 import { toast } from "sonner";
@@ -28,8 +27,11 @@ const errorMessage = (error, fallback) => {
 export const handlePlay = async (dispatch, pc) => {
   if (!pc) return;
   try {
+    // playVm.fulfilled already sets this row's status to "running", and the
+    // realtime power_on event reconciles it — no fetchVms() needed. A full
+    // fetchVms() here replaced the ENTIRE items array, reflowing every desktop
+    // card in the grid on a single VM's action (visible flicker).
     await dispatch(playVm({ id: pc.id })).unwrap();
-    dispatch(fetchVms());
   } catch (error) {
     debug.error('play', 'Failed to start VM:', error);
     toast.error(
@@ -47,8 +49,9 @@ export const handlePlay = async (dispatch, pc) => {
 export const handlePause = async (dispatch, pc) => {
   if (!pc) return;
   try {
+    // pauseVm.fulfilled sets this row to "suspended" and the realtime event
+    // reconciles it — no full-grid fetchVms() reflow.
     await dispatch(pauseVm({ id: pc.id })).unwrap();
-    dispatch(fetchVms());
   } catch (error) {
     debug.error('pause', 'Failed to pause VM:', error);
     toast.error(
@@ -66,8 +69,9 @@ export const handlePause = async (dispatch, pc) => {
 export const handleStop = async (dispatch, pc) => {
   if (!pc) return;
   try {
+    // stopVm.fulfilled sets this row to "off" and the realtime event reconciles
+    // it — no full-grid fetchVms() reflow.
     await dispatch(stopVm({ id: pc.id })).unwrap();
-    dispatch(fetchVms());
   } catch (error) {
     debug.error('stop', 'Failed to stop VM:', error);
     toast.error(
@@ -92,8 +96,9 @@ export const handleDelete = async (dispatch, vmId, onSuccess, onError) => {
   }
 
   try {
+    // deleteVm.fulfilled already removes this row from the grid (and the realtime
+    // delete event reconciles it) — no full-grid fetchVms() reflow.
     await dispatch(deleteVm({ id: vmId })).unwrap();
-    dispatch(fetchVms());
     dispatch(deselectMachine());
     onSuccess?.();
   } catch (error) {

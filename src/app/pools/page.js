@@ -90,10 +90,16 @@ export default function PoolsListPage() {
   const fetchPools = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
     try {
-      const { data } = await client.query({
+      const { data, error } = await client.query({
         query: POOLS_QUERY,
         fetchPolicy: 'network-only'
       });
+      // errorPolicy:'all' (apollo-client.js) RESOLVES a GraphQL error instead of
+      // throwing, so the catch below never fires for one. On a silent poll that
+      // resolved with an error or no list, keep the last-good table instead of
+      // blanking it. Guard on `!data?.pools` (undefined), NOT empty array, so a
+      // genuine "all pools deleted" still shows the EmptyState.
+      if (silent && (error || !data?.pools)) return;
       setPools(data?.pools ?? []);
       setError(null);
     } catch (err) {

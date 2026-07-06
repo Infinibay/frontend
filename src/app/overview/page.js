@@ -116,6 +116,7 @@ export default function OverviewPage() {
     data: departments,
     isLoading: deptLoading,
     error: deptError,
+    lastUpdated: deptLastUpdated,
     refresh: refreshDepartments
   } = useEnsureData('departments', fetchDepartments, {
     strategy: LOADING_STRATEGIES.BACKGROUND,
@@ -306,7 +307,7 @@ export default function OverviewPage() {
               View all
             </Button>
           </div>
-          {loading && deptRows.length === 0 ?
+          {loading && deptRows.length === 0 && !deptLastUpdated ?
           <ResponsiveStack direction="col" gap={1}>
               <Skeleton height={28} />
               <Skeleton height={28} />

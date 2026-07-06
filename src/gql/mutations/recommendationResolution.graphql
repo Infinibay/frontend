@@ -43,3 +43,9 @@ query activeResolutionsForMachine($machineId: ID!) {
     ...RecommendationResolutionFields
   }
 }
+
+query resolutionHistoryForMachine($machineId: ID!, $limit: Int) {
+  resolutionHistoryForMachine(machineId: $machineId, limit: $limit) {
+    ...RecommendationResolutionFields
+  }
+}

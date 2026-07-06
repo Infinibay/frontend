@@ -57,13 +57,13 @@ const VMStatusWarning = ({ vmStatus, vmSetupComplete, vmId, vmName, onVMStopped 
   return (
     <ResponsiveStack direction="col" gap={3}>
       <Alert
-        tone="warning"
-        icon={<AlertTriangle size={14} />}
-        title="The desktop must be turned off to modify the firewall configuration"
+        tone="info"
+        icon={<Info size={14} />}
+        title="Turn the desktop off to apply firewall changes"
         actions={
           <ResponsiveStack direction="row" gap={2} align="center">
-            <Badge tone="warning" icon={<Power size={12} />}>
-              Current status: Running
+            <Badge tone="neutral" icon={<Power size={12} />}>
+              Running
             </Badge>
             <Button
               variant="secondary"
@@ -77,31 +77,9 @@ const VMStatusWarning = ({ vmStatus, vmSetupComplete, vmId, vmName, onVMStopped 
           </ResponsiveStack>
         }
       >
-        Firewall rules are applied during desktop startup. Changes made while it
-        is running will not take effect until the next restart.
-      </Alert>
-
-      <Alert
-        tone="info"
-        icon={<Info size={14} />}
-        title="Recommendations for firewall changes"
-      >
-        <ResponsiveStack direction="col" gap={1}>
-          <span>• Make changes during maintenance windows</span>
-          <span>• Plan changes during off-peak hours</span>
-          <span>• Test rules in a development environment first</span>
-          <span>• Document all changes made</span>
-          <span>• Have a rollback plan ready</span>
-        </ResponsiveStack>
-      </Alert>
-
-      <Alert
-        tone="info"
-        icon={<Clock size={14} />}
-        title="Performance impact"
-      >
-        Firewall changes require a temporary restart to apply correctly. This
-        guarantees the new rules are loaded cleanly at boot.
+        Rules are loaded at startup, so edits made while it is running take effect
+        on the next boot. See the Help panel (top-right) for guidance on applying
+        changes safely.
       </Alert>
 
       <Dialog

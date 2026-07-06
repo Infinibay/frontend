@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { createRealTimeReduxService } from '@/services/realTimeReduxService'
 import { getSocketService } from '@/services/socketService'
@@ -244,25 +244,29 @@ export function RealTimeProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, socketNamespace])
 
-  // Context value
-  const contextValue = {
+  const getStatus = useCallback(() => {
+    if (!realTimeService) {
+      return {
+        isInitialized: false,
+        socketInfo: { isConnected: false },
+        subscriptionCount: 0
+      }
+    }
+    return realTimeService.getStatus()
+  }, [realTimeService])
+
+  // Context value — MEMOISED. A fresh object every render made every context
+  // consumer re-render whenever the provider re-rendered (e.g. a reconnect that
+  // only flips connectionStatus/error), cascading through the whole app tree.
+  const contextValue = useMemo(() => ({
     realTimeService,
     connectionStatus,
     isConnected: connectionStatus === 'connected',
     isConnecting: connectionStatus === 'connecting',
     hasError: connectionStatus === 'error',
     error,
-    getStatus: () => {
-      if (!realTimeService) {
-        return {
-          isInitialized: false,
-          socketInfo: { isConnected: false },
-          subscriptionCount: 0
-        }
-      }
-      return realTimeService.getStatus()
-    }
-  }
+    getStatus
+  }), [realTimeService, connectionStatus, error, getStatus])
 
   return (
     <RealTimeContext.Provider value={contextValue}>

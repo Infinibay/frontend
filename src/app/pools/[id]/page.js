@@ -126,11 +126,17 @@ export default function PoolDetailPage({ params }) {
   const fetchPool = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
     try {
-      const { data } = await client.query({
+      const { data, error } = await client.query({
         query: POOL_QUERY,
         variables: { id },
         fetchPolicy: 'network-only'
       });
+      // errorPolicy:'all' (apollo-client.js) RESOLVES a GraphQL error instead of
+      // throwing, so the catch below never fires for one — a transient silent-poll
+      // error would fall straight through to setPool(null) and unmount the page to
+      // "Pool not found". On a silent poll that resolved with an error or no pool,
+      // keep the last-good render.
+      if (silent && (error || !data?.pool)) return;
       setPool(data?.pool ?? null);
       setError(null);
     } catch (err) {

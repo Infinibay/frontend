@@ -106,7 +106,8 @@ const VMSecurityTab = ({
     rules: vmRules,
     effectiveRules,
     departmentRules,
-    loading,
+    initialLoading,
+    hasLoaded,
     error,
     createRule,
     deleteRule,
@@ -318,7 +319,10 @@ const VMSecurityTab = ({
     []
   );
 
-  if (loading) {
+  // Block the tab with skeletons ONLY on the first load. Background refetches
+  // (firewall socket events) keep `initialLoading` false so the rules table
+  // updates in place instead of flashing three skeletons on every event.
+  if (initialLoading) {
     return (
       <Page>
         <Skeleton width="100%" height={72} />
@@ -328,7 +332,10 @@ const VMSecurityTab = ({
 
   }
 
-  if (error) {
+  // Blank to the error screen only when nothing has loaded yet. A transient
+  // background-refetch error over already-loaded rules is surfaced inline below
+  // (see the banner in the main return) instead of tearing down the table.
+  if (error && !hasLoaded) {
     return (
       <Page>
         <Alert
@@ -363,6 +370,24 @@ const VMSecurityTab = ({
           vmName={vmName}
           onVMStopped={onVMStopped} />
 
+        {error && hasLoaded ?
+        <Alert
+          tone="danger"
+          icon={<RefreshCw size={14} />}
+          title="Couldn't refresh firewall rules"
+          actions={
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<RefreshCw size={14} />}
+            onClick={handleRefresh}>
+              Retry
+            </Button>
+          }>
+            Showing the last-known rules. {error.message}
+          </Alert> :
+        null}
+
         {hasNoRules ?
         <Alert
           tone="warning"
@@ -384,17 +409,6 @@ const VMSecurityTab = ({
             Without rules this desktop cannot connect to the internet. Start with the{' '}
             <strong>Desktop Secure</strong> profile for HTTPS, DNS and RDP
             access.
-          </Alert> :
-        null}
-
-        {departmentRules.length > 0 ?
-        <Alert
-          tone="info"
-          icon={<Shield size={14} />}
-          title={`${departmentRules.length} inherited rule${departmentRules.length !== 1 ? 's' : ''} from the department`}>
-          
-            Desktop-specific rules you add apply on top of these. Use{' '}
-            <em>Override</em> to weaken a department rule for this desktop only.
           </Alert> :
         null}
 

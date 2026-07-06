@@ -180,7 +180,10 @@ export default function ScriptDetailPage() {
     [departmentName, script?.name, scriptId],
   );
 
-  if (loading) {
+  // First-load only: warm-cache navigation / background revalidation keeps prior
+  // data, so don't blank the whole page (and remount the active polling tab) once
+  // the script has loaded.
+  if (loading && !data) {
     return (
       <Page>
         <LoadingOverlay label="Loading script details…" />

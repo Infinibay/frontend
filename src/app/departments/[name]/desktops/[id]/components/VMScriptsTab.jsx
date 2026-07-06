@@ -278,9 +278,9 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
           title="Available scripts"
           description={`${scripts.length} script${scripts.length === 1 ? '' : 's'}`}
         >
-          {scriptsLoading ? (
+          {scriptsLoading && !scriptsData ? (
             <LoadingOverlay label="Loading scripts…" />
-          ) : scriptsError ? (
+          ) : scriptsError && !scriptsData ? (
             <Alert
               tone="danger"
               icon={<AlertCircle size={14} />}
@@ -358,9 +358,9 @@ export default function VMScriptsTab({ vmId, vmStatus, vmSetupComplete, departme
           leadingIconTone="neutral"
           title="Execution history"
         >
-          {executionsLoading ? (
+          {executionsLoading && !executionsData ? (
             <LoadingOverlay label="Loading history…" />
-          ) : executionsError ? (
+          ) : executionsError && !executionsData ? (
             <Alert
               tone="danger"
               icon={<AlertCircle size={14} />}

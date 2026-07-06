@@ -95,7 +95,11 @@ export default function InfrastructurePage() {
     refetch
   } = useGetSystemResourcesQuery({
     fetchPolicy: 'cache-and-network',
-    pollInterval: 30_000
+    pollInterval: 30_000,
+    // Don't re-emit loading:true on the 30s poll — getSystemResources is a
+    // non-nullable root field, so a poll error nulls `data` and the `loading &&
+    // !resources` guard below would flash a skeleton over the rendered content.
+    notifyOnNetworkStatusChange: false
   });
 
   const {
@@ -301,7 +305,7 @@ export default function InfrastructurePage() {
                 refetch().catch(() => {});
                 refetchNodes().catch(() => {});
               }}
-              disabled={loading || nodesLoading}
+              disabled={(loading && !resources) || (nodesLoading && !nodeData?.nodes)}
             >
               <RefreshCw size={14} />
               Refresh

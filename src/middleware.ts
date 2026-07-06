@@ -34,6 +34,9 @@ const SESSION_COOKIE = 'infinibay-session';
 const PUBLIC_ROUTES = [
   '/auth/sign-in',
   '/auth/forgot-password',
+  // First-run onboarding must be reachable pre-login while setup is open (the
+  // page does its own admin sign-in). It self-closes once completeSetup runs.
+  '/setup',
 ];
 
 /**

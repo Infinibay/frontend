@@ -28,7 +28,13 @@ const useVMProblems = (vmId, vmName) => {
     if (!vmId) return false;
     return !!state.health?.loadingByVm?.[vmId];
   });
-  const error = useSelector(state => state.health?.error || null);
+  // Per-VM error (matches the per-VM loading above). The slice no longer writes a
+  // global state.health.error, so one VM's failed snapshot no longer surfaces on
+  // every VM's problems panel.
+  const error = useSelector(state => {
+    if (!vmId) return null;
+    return state.health?.errorByVm?.[vmId] || null;
+  });
 
   // Helper to normalize autoChecks to ProblemTransformationService's expected structure
   const buildTransformInput = (autoChecksData) => {

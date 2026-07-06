@@ -31,11 +31,10 @@ import {
   Drawer,
   EmptyState,
   LoadingOverlay,
-  ResponsiveGrid,
+  Page,
   ResponsiveStack,
   SegmentedControl,
   Skeleton,
-  Stat,
   StatusDot } from
 '@infinibay/harbor';
 
@@ -588,17 +587,17 @@ const DepartmentSecurityTab = ({ department }) => {
 
   if (loading && rules.length === 0) {
     return (
-      <ResponsiveStack direction="col" gap={6}>
-        <Skeleton />
-        <Skeleton />
-        <Skeleton />
-      </ResponsiveStack>);
+      <Page>
+        <Skeleton width="100%" height={120} />
+        <Skeleton width="100%" height={120} />
+        <Skeleton width="100%" height={240} />
+      </Page>);
 
   }
 
   if (error) {
     return (
-      <ResponsiveStack direction="col" gap={6}>
+      <Page>
         <Alert
           tone="danger"
           title="Firewall unavailable"
@@ -615,25 +614,13 @@ const DepartmentSecurityTab = ({ department }) => {
           
           We couldn&apos;t load the firewall rules for this department.
         </Alert>
-      </ResponsiveStack>);
+      </Page>);
 
   }
 
   return (
     <>
-      <ResponsiveStack direction="col" gap={6}>
-        <Alert
-          tone="info"
-          icon={<Shield size={14} />}
-          title="Inherited by all desktops">
-          
-          Every desktop in{' '}
-          <strong>{department?.name || 'this department'}</strong> starts
-          with these rules applied on top of its own stack. Individual
-          desktops can mark their own rules with “overrides department” and
-          take precedence for matching traffic.
-        </Alert>
-
+      <Page>
         <Card
           variant="default"
           spotlight={false}
@@ -664,22 +651,6 @@ const DepartmentSecurityTab = ({ department }) => {
             </ResponsiveStack>
           } />
         
-
-        <ResponsiveGrid columns={{ base: 1, md: 3 }} gap={4}>
-          <Stat
-            label="Rules"
-            value={rules.length}
-            icon={<Shield size={12} />} />
-          
-          <Stat
-            label="Allow"
-            value={rules.filter((r) => r.action === 'ACCEPT').length} />
-          
-          <Stat
-            label="Block"
-            value={rules.filter((r) => r.action !== 'ACCEPT').length} />
-          
-        </ResponsiveGrid>
 
         <Card
           variant="default"
@@ -777,7 +748,7 @@ const DepartmentSecurityTab = ({ department }) => {
           }
         </Card>
 
-      </ResponsiveStack>
+      </Page>
 
       <PolicyEditor
         open={policyOpen}

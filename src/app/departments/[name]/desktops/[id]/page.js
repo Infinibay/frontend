@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  Alert,
   Badge,
   Button,
   Card,
   Container,
+  IconButton,
   IconTile,
+  Menu,
+  MenuItem,
+  MenuSeparator,
   ResponsiveStack,
-  Select,
   StatusDot,
   Tab,
   TabList,
@@ -26,14 +28,17 @@ import {
   LayoutDashboard,
   Lightbulb,
   Monitor,
+  MoreVertical,
   MoveRight,
   Network,
   Power,
   PowerOff,
   RefreshCw,
+  RotateCcw,
   Server,
   Shield,
   Terminal,
+  Zap,
 } from 'lucide-react';
 import { useVMDetail } from './hooks/useVMDetail';
 import {
@@ -46,6 +51,7 @@ import { toast } from 'sonner';
 
 import LoadingState from './components/LoadingState';
 import ErrorState from './components/ErrorState';
+import NodePlacementDialog from './components/NodePlacementDialog';
 
 const debug = createDebugger('frontend:pages:vm-detail');
 
@@ -122,15 +128,13 @@ function statusTone(status) {
   }
 }
 
-function canColdMigrateStatus(status) {
-  return ['off', 'powered_off', 'stopped', 'error'].includes((status || '').toLowerCase());
-}
-
 const VMDetailPage = () => {
   const params = useParams();
   const departmentName = params.name;
   const vmId = params.id;
-  const [targetNodeId, setTargetNodeId] = useState('');
+  // Cold-migration is now a deliberate modal (admin + multi-node only) instead of
+  // an always-on card above the tabs.
+  const [placementOpen, setPlacementOpen] = useState(false);
 
   debug.log('VM Detail Page mounted', { departmentName, vmId });
 
@@ -172,8 +176,6 @@ const VMDetailPage = () => {
 
   const {
     data: nodeData,
-    loading: nodesLoading,
-    error: nodesError,
     refetch: refetchNodes,
   } = useGetNodeInventoryQuery({
     fetchPolicy: 'cache-and-network',
@@ -183,58 +185,123 @@ const VMDetailPage = () => {
   const openConsole = useOpenConsole();
 
   const helpConfig = useMemo(
-    () => ({
-      title: 'Desktop Help',
-      description: 'Learn how to manage and control this desktop',
-      icon: <Server size={14} />,
-      sections: [
-        {
-          id: 'power-management',
-          title: 'Power Management',
-          icon: <Power size={14} />,
-          content: (
-            <ResponsiveStack direction="col" gap={2}>
-              <span>Starting a desktop</span>
-              <span>
-                Click the &quot;Start&quot; button when the desktop is stopped. The
-                system will initiate the boot process.
-              </span>
-              <span>Stopping a desktop</span>
-              <span>
-                Click the &quot;Stop&quot; button when the desktop is running to
-                trigger a graceful shutdown.
-              </span>
-            </ResponsiveStack>
-          ),
-        },
-        {
-          id: 'hardware',
-          title: 'Hardware Configuration',
-          icon: <Cpu size={14} />,
-          content: 'The Overview tab shows the CPU, RAM, disk and GPU assigned to this desktop. Hardware is defined by the desktop blueprint at creation time.',
-        },
-        {
-          id: 'tabs',
-          title: 'Tabs',
-          icon: <Terminal size={14} />,
-          content: (
-            <ResponsiveStack direction="col" gap={2}>
-              <span>Overview — health, hardware, network, and detected problems.</span>
-              <span>Recommendations — suggestions to keep this desktop optimal.</span>
-              <span>Firewall — desktop-specific firewall rules layered on top of department rules.</span>
-              <span>Scripts — run automation scripts on this desktop.</span>
-              <span>Backups — snapshots and backup schedule.</span>
-            </ResponsiveStack>
-          ),
-        },
-      ],
-      quickTips: [
-        'Stop the desktop before migrating it to another node',
-        'Click IP addresses to copy them to clipboard',
-        'Check the Overview tab for detected problems and health',
-      ],
-    }),
-    [],
+    () => {
+      // Contextual help: when the user is on the Firewall tab, the top-right Help
+      // drawer carries the firewall advisory content (moved out of the tab body so
+      // the tab isn't a wall of info banners — see VMStatusWarning/VMSecurityTab).
+      const isFirewall = activeTab === 'firewall';
+
+      const tabsSection = {
+        id: 'tabs',
+        title: 'Tabs',
+        icon: <Terminal size={14} />,
+        content: (
+          <ResponsiveStack direction="col" gap={2}>
+            <span>Overview — health, hardware, network, and detected problems.</span>
+            <span>Recommendations — suggestions to keep this desktop optimal.</span>
+            <span>Firewall — desktop-specific firewall rules layered on top of department rules.</span>
+            <span>Scripts — run automation scripts on this desktop.</span>
+            <span>Backups — snapshots and backup schedule.</span>
+          </ResponsiveStack>
+        ),
+      };
+
+      if (isFirewall) {
+        return {
+          title: 'Firewall Help',
+          description: 'How firewall rules are applied and inherited',
+          icon: <Shield size={14} />,
+          sections: [
+            {
+              id: 'firewall-applying',
+              title: 'Applying firewall changes',
+              icon: <Shield size={14} />,
+              content: (
+                <ResponsiveStack direction="col" gap={2}>
+                  <span>
+                    Rules are loaded when the desktop boots, so changes take effect
+                    on the next start. For a clean apply:
+                  </span>
+                  <span>• Make changes during maintenance windows or off-peak hours</span>
+                  <span>• Test new rules in a development environment first</span>
+                  <span>• Document each change and keep a rollback plan ready</span>
+                  <span>• Stop the desktop, edit the rules, then start it again</span>
+                </ResponsiveStack>
+              ),
+            },
+            {
+              id: 'firewall-inheritance',
+              title: 'Inherited & override rules',
+              icon: <Shield size={14} />,
+              content: (
+                <ResponsiveStack direction="col" gap={2}>
+                  <span>
+                    Department rules are inherited by every desktop and shown as
+                    &quot;Inherited&quot;. Desktop-specific rules you add apply on
+                    top of them.
+                  </span>
+                  <span>
+                    Use <em>Override</em> to weaken a department rule for this
+                    desktop only, without changing the department policy.
+                  </span>
+                </ResponsiveStack>
+              ),
+            },
+            tabsSection,
+          ],
+          quickTips: [
+            'Stop the desktop before editing firewall rules so they apply on the next boot',
+            'If the desktop has no rules, start with the Desktop Secure profile',
+            'Inherited rules come from the department; custom rules are desktop-only',
+          ],
+        };
+      }
+
+      return {
+        title: 'Desktop Help',
+        description: 'Learn how to manage and control this desktop',
+        icon: <Server size={14} />,
+        sections: [
+          {
+            id: 'power-management',
+            title: 'Power Management',
+            icon: <Power size={14} />,
+            content: (
+              <ResponsiveStack direction="col" gap={2}>
+                <span>Starting a desktop</span>
+                <span>
+                  Click the &quot;Start&quot; button when the desktop is stopped. The
+                  system will initiate the boot process.
+                </span>
+                <span>Stopping a desktop</span>
+                <span>
+                  Click the &quot;Stop&quot; button when the desktop is running to
+                  trigger a graceful shutdown.
+                </span>
+                <span>
+                  Use &quot;Reboot&quot; to restart the guest gracefully;
+                  &quot;Force reset&quot; (in the ⋯ menu) power-cycles it instantly
+                  when it stops responding.
+                </span>
+              </ResponsiveStack>
+            ),
+          },
+          {
+            id: 'hardware',
+            title: 'Hardware Configuration',
+            icon: <Cpu size={14} />,
+            content: 'The Overview tab shows the CPU, RAM, disk and GPU assigned to this desktop. Hardware is defined by the desktop blueprint at creation time.',
+          },
+          tabsSection,
+        ],
+        quickTips: [
+          'Click IP addresses to copy them to clipboard',
+          'Check the Overview tab for detected problems and health',
+          'Use the Overview tab to reassign the desktop to another user',
+        ],
+      };
+    },
+    [activeTab],
   );
 
   usePageHeader(
@@ -257,15 +324,24 @@ const VMDetailPage = () => {
       helpConfig,
       helpTooltip: 'Desktop detail help',
     },
-    [vm?.name, departmentName],
+    [vm?.name, departmentName, activeTab],
   );
 
-  if (isLoading) {
+  // Only block the WHOLE page on the first load (no VM yet). useVMDetail refetches
+  // on every VM socket event (power_on/off, status_changed, telemetry); with a bare
+  // `if (isLoading)` that flips true on each refetch and blanked the page to
+  // LoadingState — remounting every dynamic() tab (each re-showing "Loading…").
+  // Gating on `!vm` keeps the page mounted and updates it in place: seamless.
+  if (isLoading && !vm) {
     debug.log('Showing loading state');
     return <LoadingState />;
   }
 
-  if (error || !vm) {
+  // Blank to the error screen only when there is NO VM to show. A transient
+  // background-refetch error while `vm` is already loaded must not tear down the
+  // page (errorPolicy:'all' keeps the prior data), so guard on `!vm`, not
+  // `error || !vm`.
+  if (!vm) {
     debug.error('VM detail error:', error);
     return <ErrorState error={error} vmId={vmId} onRetry={refreshVM} />;
   }
@@ -278,7 +354,7 @@ const VMDetailPage = () => {
   const isInstalling = vm.status === 'running' && !setupComplete;
   const isRunning = status === 'online';
   const isBusy = status === 'provisioning' || status === 'maintenance';
-  const os = vm?.configuration?.os;
+  const os = vm?.os;
   // Surface a recorded failure reason whenever the VM is NOT actively running.
   // Keys off raw status + lastError, NOT the mapped harbor status: raw 'error'
   // maps to 'degraded', and a failed install can get reconciled back to 'off'
@@ -294,21 +370,18 @@ const VMDetailPage = () => {
   // on setupComplete.
   const canConnect = (isRunning || isInstalling) && graphicUrl?.startsWith('spice://');
   const nodes = nodeData?.nodes || [];
+  const totalNodes = nodeData?.nodeInventorySummary?.totalNodes ?? nodes.length;
+  const isMultiNode = totalNodes > 1;
   const currentNode = nodes.find((node) => node.id === vm.nodeId);
   const migrationTargets = nodes.filter((node) => node.id !== vm.nodeId && !node.maintenanceMode);
-  const migrationOptions = [
-    { value: '', label: migrationTargets.length > 0 ? 'Select target node' : 'No eligible target nodes' },
-    ...migrationTargets.map((node) => ({
-      value: node.id,
-      label: `${node.name} · ${node.cores} cores · ${Math.round((node.ram || 0) / 1024)} GB RAM`,
-    })),
-  ];
-  const canMigrate = canColdMigrateStatus(vm.status) && !isBusy && !migrationLoading;
-  const migrationDisabled = !canMigrate || !targetNodeId;
+  // Placement UI (host-node row + Move action) only makes sense on a real cluster;
+  // hide it entirely on single-node installs so it stops cluttering every desktop.
+  const canShowPlacement = isAdmin && isMultiNode;
+  const hostNodeName = isMultiNode ? (currentNode?.name || null) : null;
 
   const handleConnect = () => openConsole(vm, graphicUrl);
 
-  const handleMigrate = async () => {
+  const handleMigrate = async (targetNodeId) => {
     if (!targetNodeId) return;
 
     const target = nodes.find((node) => node.id === targetNodeId);
@@ -329,7 +402,7 @@ const VMDetailPage = () => {
       toast.success('Desktop reassigned', {
         description: target?.name ? `${vm.name} was moved to ${target.name}.` : `${vm.name} was moved to the selected node.`,
       });
-      setTargetNodeId('');
+      setPlacementOpen(false);
       await Promise.all([reloadVM(), refetchNodes()]);
     } catch (err) {
       toast.error('Migration failed', {
@@ -408,16 +481,28 @@ const VMDetailPage = () => {
                   </Button>
                 ) : null}
                 {isRunning ? (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    icon={<PowerOff size={14} />}
-                    onClick={() => handlePowerAction('stop')}
-                    loading={isBusy || powerActionLoading}
-                    disabled={isBusy || powerActionLoading}
-                  >
-                    Stop
-                  </Button>
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<RotateCcw size={14} />}
+                      onClick={() => handlePowerAction('restart')}
+                      loading={isBusy || powerActionLoading}
+                      disabled={isBusy || powerActionLoading}
+                    >
+                      Reboot
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      icon={<PowerOff size={14} />}
+                      onClick={() => handlePowerAction('stop')}
+                      loading={isBusy || powerActionLoading}
+                      disabled={isBusy || powerActionLoading}
+                    >
+                      Stop
+                    </Button>
+                  </>
                 ) : (
                   <Button
                     variant="primary"
@@ -430,78 +515,42 @@ const VMDetailPage = () => {
                     Start
                   </Button>
                 )}
+                {isRunning || canShowPlacement ? (
+                  <Menu
+                    align="end"
+                    trigger={
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<MoreVertical size={16} />}
+                        label="More actions"
+                      />
+                    }
+                  >
+                    {isRunning ? (
+                      <MenuItem
+                        icon={<Zap size={14} />}
+                        danger
+                        disabled={powerActionLoading}
+                        onClick={() => handlePowerAction('reset')}
+                      >
+                        Force reset
+                      </MenuItem>
+                    ) : null}
+                    {isRunning && canShowPlacement ? <MenuSeparator /> : null}
+                    {canShowPlacement ? (
+                      <MenuItem
+                        icon={<MoveRight size={14} />}
+                        onClick={() => setPlacementOpen(true)}
+                      >
+                        Move to another node…
+                      </MenuItem>
+                    ) : null}
+                  </Menu>
+                ) : null}
               </ResponsiveStack>
             </ResponsiveStack>
           </Card>
-
-          {isAdmin ? (
-            <Card variant="default" spotlight={false} glow={false}>
-              <ResponsiveStack
-                direction={{ base: 'col', lg: 'row' }}
-                gap={4}
-                justify="between"
-                align="center"
-              >
-                <ResponsiveStack direction="row" gap={3} align="center">
-                  <IconTile icon={<MoveRight size={18} />} tone="blue" size="md" />
-                  <ResponsiveStack direction="col" gap={1}>
-                    <span>Node placement</span>
-                    <span>
-                      {currentNode?.name
-                        ? `Current node: ${currentNode.name}`
-                        : vm.nodeId
-                          ? `Current node: ${vm.nodeId}`
-                          : 'Current node: unassigned'}
-                    </span>
-                    <span className="text-xs text-fg-muted">
-                      Cold migration requires shared VM storage across nodes.
-                    </span>
-                  </ResponsiveStack>
-                </ResponsiveStack>
-
-                {nodesError ? (
-                  <Alert
-                    tone="danger"
-                    icon={<MoveRight size={14} />}
-                    title="Could not load target nodes"
-                    actions={
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        icon={<RefreshCw size={14} />}
-                        onClick={() => refetchNodes()}
-                      >
-                        Retry
-                      </Button>
-                    }
-                  >
-                    {nodesError.message}
-                  </Alert>
-                ) : (
-                  <ResponsiveStack direction={{ base: 'col', sm: 'row' }} gap={2} align="center">
-                    <div style={{ minWidth: 260 }}>
-                      <Select
-                        value={targetNodeId}
-                        onChange={setTargetNodeId}
-                        options={migrationOptions}
-                        disabled={nodesLoading || migrationTargets.length === 0 || !canMigrate}
-                      />
-                    </div>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={<MoveRight size={14} />}
-                      onClick={handleMigrate}
-                      loading={migrationLoading}
-                      disabled={migrationDisabled}
-                    >
-                      Migrate stopped desktop
-                    </Button>
-                  </ResponsiveStack>
-                )}
-              </ResponsiveStack>
-            </Card>
-          ) : null}
 
           <Tabs
             value={activeTab || 'overview'}
@@ -532,7 +581,7 @@ const VMDetailPage = () => {
             </TabList>
 
             <TabPanel value="overview">
-              <VMOverviewTab vmId={vmId} vm={vm} />
+              <VMOverviewTab vmId={vmId} vm={vm} hostNodeName={hostNodeName} />
             </TabPanel>
             <TabPanel value="recommendations">
               <VMRecommendationsTab
@@ -578,6 +627,20 @@ const VMDetailPage = () => {
           </Tabs>
         </ResponsiveStack>
       </Container>
+
+      {canShowPlacement ? (
+        <NodePlacementDialog
+          open={placementOpen}
+          onClose={() => setPlacementOpen(false)}
+          vm={vm}
+          currentNodeName={currentNode?.name || null}
+          targets={migrationTargets}
+          onMigrate={handleMigrate}
+          migrating={migrationLoading}
+          onStopVM={() => handlePowerAction('stop')}
+          stopping={powerActionLoading}
+        />
+      ) : null}
     </>
   );
 };

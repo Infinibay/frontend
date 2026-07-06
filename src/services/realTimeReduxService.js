@@ -53,6 +53,10 @@ export class RealTimeReduxService {
     // Debounce handle for the pools cache refresh (a scale op emits a burst of
     // events; we only need one network refetch to converge). See handlePoolEvent.
     this.poolsRefetchTimer = null
+    // Last network sample per vmId ({ t, bytes }) so handleMetricsEvent can turn
+    // cumulative interface byte counters into a Mbps rate across successive
+    // metrics events. Cleared on teardown.
+    this.lastNetSample = new Map()
   }
 
   // Initialize real-time Redux integration
@@ -205,7 +209,100 @@ export class RealTimeReduxService {
       ])
     )
 
+    // Subscribe to live resource metrics (resource 'metrics', action 'update').
+    // The backend emits these ~every 30s per running VM to owner+admins+dept
+    // (VmEventManager.handleMetricsUpdate → sendToUser(_, 'metrics','update',…)).
+    // We map the flat guest SystemMetrics payload into the nested shape the VM
+    // Overview "Live resources" card reads (health.vmHealthData[vmId].metrics).
+    this.subscriptions.push(
+      this.socketService.subscribeToAllResourceEvents('metrics', (action, data) => {
+        this.handleMetricsEvent(action, data)
+      }, [
+        'update'
+      ])
+    )
+
     this.debug.success('subscribe', `Subscribed to ${this.subscriptions.length} real-time event groups`)
+  }
+
+  // Handle live resource metrics events (resource 'metrics', action 'update').
+  // Payload: eventData.data = { vmId, metrics } where `metrics` is the flat
+  // backend SystemMetrics shape (cpuUsagePercent, usedMemoryKB/totalMemoryKB,
+  // diskUsageStats[], networkStats[]). Map to the nested UI shape and dispatch.
+  handleMetricsEvent(_action, eventData) {
+    const startTime = performance.now()
+
+    if (eventData?.status === 'error') {
+      this.debug.error('metrics-event', 'Metrics error:', eventData.error)
+      return
+    }
+
+    const payload = eventData?.data ?? eventData
+    const vmId = payload?.vmId
+    const raw = payload?.metrics
+    if (!vmId || !raw) {
+      this.debug.warn('metrics-event', 'Metrics event missing vmId/metrics')
+      return
+    }
+
+    // CPU — already a percentage.
+    const cpuUsage = Number.isFinite(Number(raw.cpuUsagePercent))
+      ? Math.max(0, Math.min(100, Number(raw.cpuUsagePercent)))
+      : null
+
+    // Memory — derive % from used/total KB.
+    const totalMem = Number(raw.totalMemoryKB)
+    const usedMem = Number(raw.usedMemoryKB)
+    const memoryUsage = totalMem > 0 && Number.isFinite(usedMem)
+      ? Math.max(0, Math.min(100, (usedMem / totalMem) * 100))
+      : null
+
+    // Disk — aggregate used/total across real filesystems (GB).
+    const disks = Array.isArray(raw.diskUsageStats) ? raw.diskUsageStats : []
+    let totalGb = 0
+    let usedGb = 0
+    for (const d of disks) {
+      const t = Number(d?.total_gb)
+      const u = Number(d?.used_gb)
+      if (t > 0 && Number.isFinite(u)) {
+        totalGb += t
+        usedGb += u
+      }
+    }
+    const storageUsage = totalGb > 0 ? Math.max(0, Math.min(100, (usedGb / totalGb) * 100)) : null
+
+    // Network — the interface counters are cumulative bytes, so compute Mbps from
+    // the delta since the previous sample for this VM. First sample → 0.
+    const ifaces = Array.isArray(raw.networkStats) ? raw.networkStats : []
+    let totalBytes = 0
+    for (const nic of ifaces) {
+      const name = typeof nic?.name === 'string' ? nic.name : ''
+      if (nic?.is_up === false) continue
+      if (name === 'lo' || name.startsWith('lo')) continue // skip loopback
+      totalBytes += (Number(nic?.bytes_received) || 0) + (Number(nic?.bytes_sent) || 0)
+    }
+    const now = Date.now()
+    const prevSample = this.lastNetSample.get(vmId)
+    let bandwidth = 0
+    if (prevSample && totalBytes >= prevSample.bytes && now > prevSample.t) {
+      const seconds = (now - prevSample.t) / 1000
+      if (seconds > 0) {
+        bandwidth = ((totalBytes - prevSample.bytes) * 8) / (seconds * 1e6) // Mbps
+      }
+    }
+    this.lastNetSample.set(vmId, { t: now, bytes: totalBytes })
+
+    const metrics = {
+      cpu: { usage: cpuUsage },
+      memory: { usage: memoryUsage },
+      storage: { usage: storageUsage },
+      network: { bandwidth },
+      updatedAt: now,
+    }
+
+    this.store.dispatch({ type: 'health/setVMMetrics', payload: { vmId, metrics } })
+
+    trackRealTimeEvent('metrics:update', performance.now() - startTime)
   }
 
   // Handle VM real-time events
@@ -613,7 +710,14 @@ export class RealTimeReduxService {
           }
 
           const issue = {
-            id: `${issueType}-${Date.now()}`,
+            // STABLE id keyed by (vm, issue type), NOT `${issueType}-${Date.now()}`.
+            // The backend re-emits issue-detected for the same ongoing problem every
+            // health cycle; a timestamped id inserted a NEW autoChecks entry each
+            // cycle, so badge counts climbed unbounded and every `key={p.id}` row
+            // remounted on each tick (visible flicker). A stable id makes a
+            // re-detection overwrite in place. Detection time lives in `timestamp`.
+            id: `${vmId}:${issueType}`,
+            timestamp: Date.now(),
             checkName: issueType,
             // category + status must match the snapshot path (mapChecksToAutoChecks)
             // or useVMProblems defaults category → 'system' and the priority service
@@ -634,6 +738,10 @@ export class RealTimeReduxService {
         }
         const notif = severityMap[severity] || severityMap.info
         notif.fn(`${notif.title}: ${description ?? ''}`, {
+          // Stable toast id so repeated detections of the SAME issue collapse onto
+          // one toast (sonner replaces by id) instead of stacking a fresh toast
+          // every health cycle.
+          id: vmId && issueType ? `issue:${vmId}:${issueType}` : undefined,
           description: vmId ? `VM: ${vmId}` : undefined,
           duration: 5000
         })
@@ -803,6 +911,9 @@ export class RealTimeReduxService {
       clearTimeout(this.poolsRefetchTimer)
       this.poolsRefetchTimer = null
     }
+
+    // Drop cached network samples so a fresh session recomputes rates from scratch.
+    this.lastNetSample.clear()
 
     // Unsubscribe from all events
     this.subscriptions.forEach(unsubscribe => {

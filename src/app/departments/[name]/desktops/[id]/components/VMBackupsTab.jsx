@@ -378,6 +378,11 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
     form: emptyScheduleForm
   });
   const [deleteScheduleTarget, setDeleteScheduleTarget] = useState(null);
+  // Tracks a user-clicked Refresh so its button spinner reflects THAT action only.
+  // backupsQ keeps notifyOnNetworkStatusChange:true (for progress polling), so
+  // backupsQ.loading pulses on every 3s poll during an active backup — binding the
+  // button to it made the Refresh control flicker constantly.
+  const [manualRefreshing, setManualRefreshing] = useState(false);
 
   const backupsQ = useBackupsQuery({
     variables: { vmId },
@@ -863,12 +868,16 @@ const VMBackupsTab = ({ vmId, vmStatus }) => {
             size="sm"
             variant="secondary"
             icon={<RefreshCw size={14} />}
-            onClick={() => {
-              backupsQ.refetch();
-              schedulesQ.refetch();
+            onClick={async () => {
+              setManualRefreshing(true);
+              try {
+                await Promise.all([backupsQ.refetch(), schedulesQ.refetch()]);
+              } finally {
+                setManualRefreshing(false);
+              }
             }}
-            loading={backupsQ.loading}>
-            
+            loading={manualRefreshing}>
+
               Refresh
             </Button>
           </ResponsiveStack>

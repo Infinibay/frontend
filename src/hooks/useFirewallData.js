@@ -98,6 +98,18 @@ export const useFirewallData = ({ entityType, entityId, departmentId }) => {
     // Loading states
     error: primaryQuery.error || effectiveQuery.error,
     loading: primaryQuery.loading || effectiveQuery.loading,
+    // First-load-only flag: true ONLY while there is genuinely nothing to show yet
+    // (data === undefined). Socket-driven background refetches keep this false, so
+    // the rules table updates in place instead of blanking to skeletons on every
+    // firewall event. (A VM with zero rules is a valid loaded state — gate on
+    // `data === undefined`, never on rules.length.)
+    initialLoading:
+      (primaryQuery.loading && primaryQuery.data === undefined) ||
+      (effectiveQuery.loading && effectiveQuery.data === undefined),
+    // True once any underlying query has returned (even an empty result), so a
+    // transient background error can be shown inline instead of tearing down the
+    // already-rendered table.
+    hasLoaded: primaryQuery.data !== undefined || effectiveQuery.data !== undefined,
 
     // Actions
     createRule,

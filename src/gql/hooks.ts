@@ -4577,6 +4577,14 @@ export type ActiveResolutionsForMachineQueryVariables = Exact<{
 
 export type ActiveResolutionsForMachineQuery = { __typename?: 'Query', activeResolutionsForMachine: Array<{ __typename?: 'RecommendationResolutionType', id: string, recommendationId: string, machineId: string, actionKey: string, status: ResolutionStatus, progress: number, progressMessage: string | null, params: { [key: string]: any } | null, result: { [key: string]: any } | null, error: string | null, triggeredByUserId: string, startedAt: string | null, completedAt: string | null, createdAt: string, updatedAt: string }> };
 
+export type ResolutionHistoryForMachineQueryVariables = Exact<{
+  machineId: Scalars['ID']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type ResolutionHistoryForMachineQuery = { __typename?: 'Query', resolutionHistoryForMachine: Array<{ __typename?: 'RecommendationResolutionType', id: string, recommendationId: string, machineId: string, actionKey: string, status: ResolutionStatus, progress: number, progressMessage: string | null, params: { [key: string]: any } | null, result: { [key: string]: any } | null, error: string | null, triggeredByUserId: string, startedAt: string | null, completedAt: string | null, createdAt: string, updatedAt: string }> };
+
 export type CreateMaintenanceTaskMutationVariables = Exact<{
   input: CreateMaintenanceTaskInput;
 }>;
@@ -8495,6 +8503,53 @@ export type ActiveResolutionsForMachineSuspenseQueryHookResult = ReturnType<type
 export type ActiveResolutionsForMachineQueryResult = ApolloReactCommon.QueryResult<ActiveResolutionsForMachineQuery, ActiveResolutionsForMachineQueryVariables>;
 export function refetchActiveResolutionsForMachineQuery(variables: ActiveResolutionsForMachineQueryVariables) {
       return { query: ActiveResolutionsForMachineDocument, variables: variables }
+    }
+export const ResolutionHistoryForMachineDocument = gql`
+    query resolutionHistoryForMachine($machineId: ID!, $limit: Int) {
+  resolutionHistoryForMachine(machineId: $machineId, limit: $limit) {
+    ...RecommendationResolutionFields
+  }
+}
+    ${RecommendationResolutionFieldsFragmentDoc}`;
+
+/**
+ * __useResolutionHistoryForMachineQuery__
+ *
+ * To run a query within a React component, call `useResolutionHistoryForMachineQuery` and pass it any options that fit your needs.
+ * When your component renders, `useResolutionHistoryForMachineQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useResolutionHistoryForMachineQuery({
+ *   variables: {
+ *      machineId: // value for 'machineId'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useResolutionHistoryForMachineQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ResolutionHistoryForMachineQuery, ResolutionHistoryForMachineQueryVariables> & ({ variables: ResolutionHistoryForMachineQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ResolutionHistoryForMachineQuery, ResolutionHistoryForMachineQueryVariables>(ResolutionHistoryForMachineDocument, options);
+      }
+export function useResolutionHistoryForMachineLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ResolutionHistoryForMachineQuery, ResolutionHistoryForMachineQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ResolutionHistoryForMachineQuery, ResolutionHistoryForMachineQueryVariables>(ResolutionHistoryForMachineDocument, options);
+        }
+// @ts-ignore
+export function useResolutionHistoryForMachineSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ResolutionHistoryForMachineQuery, ResolutionHistoryForMachineQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ResolutionHistoryForMachineQuery, ResolutionHistoryForMachineQueryVariables>;
+export function useResolutionHistoryForMachineSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ResolutionHistoryForMachineQuery, ResolutionHistoryForMachineQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ResolutionHistoryForMachineQuery | undefined, ResolutionHistoryForMachineQueryVariables>;
+export function useResolutionHistoryForMachineSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ResolutionHistoryForMachineQuery, ResolutionHistoryForMachineQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<ResolutionHistoryForMachineQuery, ResolutionHistoryForMachineQueryVariables>(ResolutionHistoryForMachineDocument, options);
+        }
+export type ResolutionHistoryForMachineQueryHookResult = ReturnType<typeof useResolutionHistoryForMachineQuery>;
+export type ResolutionHistoryForMachineLazyQueryHookResult = ReturnType<typeof useResolutionHistoryForMachineLazyQuery>;
+export type ResolutionHistoryForMachineSuspenseQueryHookResult = ReturnType<typeof useResolutionHistoryForMachineSuspenseQuery>;
+export type ResolutionHistoryForMachineQueryResult = ApolloReactCommon.QueryResult<ResolutionHistoryForMachineQuery, ResolutionHistoryForMachineQueryVariables>;
+export function refetchResolutionHistoryForMachineQuery(variables: ResolutionHistoryForMachineQueryVariables) {
+      return { query: ResolutionHistoryForMachineDocument, variables: variables }
     }
 export const CreateMaintenanceTaskDocument = gql`
     mutation createMaintenanceTask($input: CreateMaintenanceTaskInput!) {

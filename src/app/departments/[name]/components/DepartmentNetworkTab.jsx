@@ -56,11 +56,14 @@ const DepartmentNetworkTab = ({ departmentId }) => {
     setTimeout(() => setCopiedCommand(false), 2000);
   };
 
-  if (loading) {
+  // First-load only: on Refresh / tab revisit the query keeps prior data, so gate
+  // the full-tab skeleton on there being nothing to show yet. The Refresh button
+  // has its own isRefreshing spinner for background refreshes.
+  if (loading && !data?.departmentNetworkDiagnostics) {
     return <DepartmentNetworkTabSkeleton />;
   }
 
-  if (error) {
+  if (error && !data?.departmentNetworkDiagnostics) {
     return (
       <Alert
         tone="danger"

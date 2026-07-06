@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ApolloProvider } from '@apollo/client/react';
+import { ApolloProvider, useQuery } from '@apollo/client/react';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { useSelector } from 'react-redux';
@@ -28,6 +28,7 @@ import { SocketNamespaceGuard } from '@/components/SocketNamespaceGuard';
 import { isEndUserView } from '@/lib/roles';
 import { useMyPermissionsQuery } from '@/gql/hooks';
 import { firstAllowedRoute, isPathAllowed } from '@/lib/permissions';
+import { SETUP_STATUS } from '@/lib/setupOps';
 import { createThemeScript } from '@/utils/theme';
 import { ThemeProvider, useAppTheme, useResolvedTheme } from '@/contexts/ThemeProvider';
 import { HarborThemeBridge } from '@/components/layout/HarborThemeBridge';
@@ -58,18 +59,37 @@ function AppContent({ children, isAuthenticated, authChecked }) {
     fetchPolicy: 'cache-and-network',
   });
   const allowedResources = permissionsData?.myPermissions?.allowedResources;
-  // React Compiler auto-memoises pure derivations, so just let it see the
-  // shape; AppSidebar is React.memo'd and will skip re-render when the
-  // user identity is stable.
-  const sidebarUser = user?.firstName
-    ? {
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-      }
-    : null;
+
+  // First-run setup gate. Public query (works pre-login). While setup is OPEN,
+  // every route funnels to /setup; once completed, /setup bounces back to the app.
+  const { data: setupStatusData } = useQuery(SETUP_STATUS, { fetchPolicy: 'cache-and-network' });
+  const setupOpen = setupStatusData?.setupStatus?.completed === false;
+  React.useEffect(() => {
+    const s = setupStatusData?.setupStatus;
+    if (s == null) return;
+    if (!s.completed) {
+      if (pathname !== '/setup' && !pathname?.startsWith('/auth/')) router.replace('/setup');
+    } else if (pathname === '/setup') {
+      router.replace('/');
+    }
+  }, [setupStatusData, pathname, router]);
+  // Memoise on the user identity fields so AppSidebar's React.memo actually holds.
+  // (React Compiler is NOT enabled in this project, so without useMemo this literal
+  // is a fresh object every layout render — which defeats the memo and re-renders
+  // the sidebar on every unrelated layout state change.)
+  const sidebarUser = React.useMemo(
+    () =>
+      user?.firstName
+        ? {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role,
+            avatar: user.avatar,
+          }
+        : null,
+    [user?.firstName, user?.lastName, user?.email, user?.role, user?.avatar],
+  );
   React.useEffect(() => {
     debug.info('layout', 'AppContent rendered:', {
       isAuthenticated,
@@ -84,6 +104,7 @@ function AppContent({ children, isAuthenticated, authChecked }) {
   // URL entry aligned with the operator navigation.
   React.useEffect(() => {
     if (!isAuthenticated) return;
+    if (setupOpen || pathname === '/setup') return;
     if (pathname?.startsWith('/auth/')) return;
     if (!allowedResources) return;
     if (isPathAllowed(pathname, allowedResources)) return;
@@ -103,10 +124,13 @@ function AppContent({ children, isAuthenticated, authChecked }) {
   React.useEffect(() => {
     if (!authChecked) return;
     if (isAuthenticated) return;
+    // /setup is reachable pre-login (it signs the admin in itself); and while setup
+    // is open the setup gate above owns routing, so don't bounce to sign-in here.
+    if (pathname === '/setup' || setupOpen) return;
     if (pathname?.startsWith('/auth/')) return;
     debug.warn('auth', 'Unauthenticated access — redirecting to sign-in', { pathname });
     router.replace('/auth/sign-in');
-  }, [authChecked, isAuthenticated, pathname, router]);
+  }, [authChecked, isAuthenticated, pathname, router, setupOpen]);
 
   const handleLogout = React.useCallback(() => {
     debug.info('auth', 'Logout initiated');
@@ -114,8 +138,9 @@ function AppContent({ children, isAuthenticated, authChecked }) {
     window.location.href = '/auth/sign-in';
   }, []);
 
-  // Auth pages (sign-in, sign-up, forgot-password, …) render without the app shell.
-  if (pathname?.startsWith('/auth/')) {
+  // Auth pages (sign-in, forgot-password, …) and the first-run /setup flow render
+  // without the app shell (chrome-free, reachable pre-login).
+  if (pathname?.startsWith('/auth/') || pathname === '/setup') {
     return (
       <>
         <BrandingApplier />

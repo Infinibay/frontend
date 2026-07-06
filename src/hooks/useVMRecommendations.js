@@ -385,6 +385,13 @@ const useVMRecommendations = (vmId, options = {}) => {
 
     // State management
     isLoading,
+    // First-load-only flag: true ONLY before the first response arrives (data
+    // === undefined). Because this query keeps notifyOnNetworkStatusChange:true to
+    // drive `isRefreshing`, the raw `isLoading` also flips true on every 60s poll
+    // and every socket refetch — gating a blocking skeleton on it blanked the whole
+    // tab. Consumers should block on `isInitialLoading` and let `isRefreshing`
+    // drive the inline "Scanning…" affordance instead.
+    isInitialLoading: isLoading && !data,
     isRefreshing,
     error,
 

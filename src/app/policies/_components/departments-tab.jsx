@@ -106,7 +106,7 @@ export const DepartmentsTab = ({
           }>
           {membersError}
         </Alert>
-      ) : membersLoading ? (
+      ) : membersLoading && !members.length ? (
         <span className="text-fg-muted text-sm">Loading members…</span>
       ) : members.length ? (
         <DataTable rows={members} columns={memberColumns} rowId={(r) => r.id} defaultDensity="compact" />

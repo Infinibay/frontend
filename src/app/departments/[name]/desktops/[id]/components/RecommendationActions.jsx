@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -7,8 +7,10 @@ import {
   Info,
   List,
   RefreshCw,
+  Search,
   Settings,
   Shield,
+  XCircle,
 } from 'lucide-react';
 import {
   Alert,
@@ -20,8 +22,8 @@ import {
   DialogDescription,
   DialogBody,
   DialogButtons,
-  PropertyList,
   ResponsiveStack,
+  TextField,
   Tooltip,
 } from '@infinibay/harbor';
 import { toast } from '@/hooks/use-toast';
@@ -39,9 +41,80 @@ const variantMap = {
   ghost: 'ghost',
 };
 
-const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agentOnline }) => {
+/**
+ * Compact single-line row for the item-list dialog. Keeps each update/threat/port
+ * to ~2 lines (primary + muted metadata) so a long list fits in a modest, scrollable
+ * modal instead of a wall of large Cards. Badges carry the at-a-glance signals.
+ */
+function renderCompactListRow(item, index, type) {
+  let primary;
+  const secondary = [];
+  const badges = [];
+
+  if (type === 'DEFENDER_THREAT') {
+    primary = item.name;
+    badges.push(
+      <Badge key="st" tone={item.status === 'Active' ? 'danger' : 'neutral'}>
+        {item.status}
+      </Badge>,
+    );
+    if (item.severity) secondary.push(`Severity: ${item.severity}`);
+    if (item.detectionTime)
+      secondary.push(`Detected ${new Date(item.detectionTime).toLocaleDateString()}`);
+    if (item.path) secondary.push(item.path);
+  } else if (type === 'PORT_BLOCKED') {
+    primary = `Port ${item.port} (${item.protocol})`;
+    if (item.processName)
+      secondary.push(
+        item.processId ? `${item.processName} (PID ${item.processId})` : item.processName,
+      );
+    if (item.ruleName) secondary.push(`Rule: ${item.ruleName}`);
+    if (item.lastAttempt)
+      secondary.push(`Last ${new Date(item.lastAttempt).toLocaleString()}`);
+  } else if (type === 'APP_UPDATE_AVAILABLE') {
+    primary = item.name;
+    if (item.isSecurity) badges.push(<Badge key="sec" tone="danger">Security</Badge>);
+    if (item.currentVersion && item.newVersion)
+      secondary.push(`${item.currentVersion} → ${item.newVersion}`);
+    if (item.size) secondary.push(item.size);
+  } else {
+    primary = item.title || item.name;
+    if (item.type)
+      badges.push(
+        <Badge key="ty" tone={item.type === 'Security' ? 'danger' : 'neutral'}>
+          {item.type}
+        </Badge>,
+      );
+    if (item.requiresReboot)
+      badges.push(<Badge key="rb" tone="warning">Requires reboot</Badge>);
+    if (item.kb) secondary.push(`KB ${item.kb}`);
+    if (item.size) secondary.push(item.size);
+  }
+
+  return (
+    <div
+      key={index}
+      className="flex items-start justify-between gap-3 rounded-[var(--harbor-target-radius)] border border-[color:var(--harbor-border-subtle)] px-3 py-2"
+    >
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium text-fg">{primary}</div>
+        {secondary.length > 0 ? (
+          <div className="truncate text-xs text-fg-muted">{secondary.join(' · ')}</div>
+        ) : null}
+      </div>
+      {badges.length > 0 ? (
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+          {badges}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agentOnline, activeResolution = null }) => {
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [showListDialog, setShowListDialog] = useState(false);
+  const [listFilter, setListFilter] = useState('');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [dialogContent, setDialogContent] = useState({
     title: '',
@@ -59,8 +132,16 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
   // The hook exposes `isRunning` = a resolution is in progress (non-terminal).
   // Alias it to `isResolving` so it is never confused with the VM-readiness flag
   // above — mixing the two previously disabled every button whenever the VM was up.
-  const { resolve, resolution, isStarting, isRunning: isResolving } =
+  const { resolve, cancel, resolution, isStarting, isCancelling, isRunning: isResolving } =
     useResolveRecommendation(recommendation.id);
+
+  // The click-time hook only knows about a resolution it started; after a refresh
+  // its state is empty. `activeResolution` (from the server, via the parent) fills
+  // that gap so a running action still disables its buttons and shows a badge.
+  const effectiveResolution = resolution || activeResolution;
+  const hasActiveResolution = Boolean(
+    activeResolution || (resolution && isResolving),
+  );
 
   const getActionConfig = (type, canInstallUpdates) => {
     const actions = [];
@@ -394,6 +475,7 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
           items: listItems || [],
           type: recommendation.type,
         });
+        setListFilter('');
         setShowListDialog(true);
         break;
       }
@@ -454,6 +536,25 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
     });
   };
 
+  // Client-side filter for the item-list dialog so a long update list stays
+  // navigable inside the (now height-capped, scrollable) modal.
+  const filteredListItems = useMemo(() => {
+    const items = dialogContent.items || [];
+    const q = listFilter.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((item) => {
+      const haystack = [
+        item.title, item.name, item.kb, item.type, item.size,
+        item.currentVersion, item.newVersion, item.severity, item.status,
+        item.path, item.processName, item.ruleName, item.port, item.protocol,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [dialogContent.items, listFilter]);
+
   const actionConfig = getActionConfig(recommendation.type, vmReady && agentOnline);
 
   return (
@@ -462,7 +563,7 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
         <ResponsiveStack direction="row" gap={2} align="center" wrap>
           {actionConfig.actions.map((action, index) => {
             const IconComp = action.icon;
-            const busy = isStarting || isResolving;
+            const busy = isStarting || isResolving || hasActiveResolution;
             const isDisabled = action.comingSoon || action.disabled || busy;
             // Distinguish WHY a plainly-disabled install action is unavailable.
             const disabledReason = !vmReady
@@ -495,7 +596,23 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
             );
           })}
         </ResponsiveStack>
-        {resolution ? <RecommendationResolutionBadge resolution={resolution} /> : null}
+        {effectiveResolution ? (
+          <ResponsiveStack direction="row" gap={2} align="center" wrap>
+            <RecommendationResolutionBadge resolution={effectiveResolution} />
+            {hasActiveResolution ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={<XCircle size={12} />}
+                disabled={isCancelling}
+                loading={isCancelling}
+                onClick={() => cancel(effectiveResolution.id)}
+              >
+                Cancel
+              </Button>
+            ) : null}
+          </ResponsiveStack>
+        ) : null}
       </ResponsiveStack>
 
       <Dialog
@@ -582,147 +699,37 @@ const RecommendationActions = ({ recommendation, vmStatus, vmSetupComplete, agen
       <Dialog
         open={showListDialog}
         onClose={() => setShowListDialog(false)}
-        size="lg"
+        size="md"
       >
         <DialogTitle>{dialogContent.title}</DialogTitle>
         <DialogDescription>{dialogContent.description}</DialogDescription>
+        {/* Filter row lives OUTSIDE DialogBody so it stays pinned while the list
+            scrolls. Only shown once the list is long enough to warrant it. */}
+        {(dialogContent.items?.length || 0) > 8 ? (
+          <div className="px-[calc(var(--harbor-target-panel-padding)+4px)] pt-2">
+            <TextField
+              value={listFilter}
+              onChange={(e) => setListFilter(e.target.value)}
+              placeholder="Filter…"
+              icon={<Search size={14} />}
+            />
+            <p className="mt-1 text-xs text-fg-muted">
+              Showing {filteredListItems.length} of {dialogContent.items.length}
+            </p>
+          </div>
+        ) : null}
         <DialogBody>
-        <ResponsiveStack direction="col" gap={3}>
+        <ResponsiveStack direction="col" gap={2}>
           {dialogContent.items && dialogContent.items.length > 0 ? (
-            dialogContent.items.map((item, index) => {
-              if (dialogContent.type === 'DEFENDER_THREAT') {
-                return (
-                  <Card
-                    key={index}
-                    variant="default"
-                    spotlight={false}
-                    glow={false}
-                    title={
-                      <ResponsiveStack direction="row" gap={2} align="center">
-                        <span>{item.name}</span>
-                        <Badge
-                          tone={item.status === 'Active' ? 'danger' : 'neutral'}
-                        >
-                          {item.status}
-                        </Badge>
-                      </ResponsiveStack>
-                    }
-                  >
-                    <PropertyList
-                      items={[
-                        { key: 'sev', label: 'Severity', value: item.severity },
-                        item.detectionTime && {
-                          key: 'det',
-                          label: 'Detected',
-                          value: new Date(item.detectionTime).toLocaleDateString(),
-                        },
-                        item.path && {
-                          key: 'path',
-                          label: 'Path',
-                          value: item.path,
-                        },
-                      ].filter(Boolean)}
-                    />
-                  </Card>
-                );
-              }
-              if (dialogContent.type === 'PORT_BLOCKED') {
-                return (
-                  <Card
-                    key={index}
-                    variant="default"
-                    spotlight={false}
-                    glow={false}
-                    title={`Port ${item.port} (${item.protocol})`}
-                  >
-                    <PropertyList
-                      items={[
-                        {
-                          key: 'proc',
-                          label: 'Process',
-                          value: item.processId
-                            ? `${item.processName} (PID ${item.processId})`
-                            : item.processName,
-                        },
-                        item.ruleName && {
-                          key: 'rule',
-                          label: 'Rule',
-                          value: item.ruleName,
-                        },
-                        item.lastAttempt && {
-                          key: 'last',
-                          label: 'Last attempt',
-                          value: new Date(item.lastAttempt).toLocaleString(),
-                        },
-                      ].filter(Boolean)}
-                    />
-                  </Card>
-                );
-              }
-              if (dialogContent.type === 'APP_UPDATE_AVAILABLE') {
-                return (
-                  <Card
-                    key={index}
-                    variant="default"
-                    spotlight={false}
-                    glow={false}
-                    title={
-                      <ResponsiveStack direction="row" gap={2} align="center">
-                        <span>{item.name}</span>
-                        {item.isSecurity ? (
-                          <Badge tone="danger">Security</Badge>
-                        ) : null}
-                      </ResponsiveStack>
-                    }
-                  >
-                    <PropertyList
-                      items={[
-                        item.currentVersion && item.newVersion && {
-                          key: 'ver',
-                          label: 'Version',
-                          value: `${item.currentVersion} → ${item.newVersion}`,
-                        },
-                        item.size && {
-                          key: 'size',
-                          label: 'Size',
-                          value: item.size,
-                        },
-                      ].filter(Boolean)}
-                    />
-                  </Card>
-                );
-              }
-              return (
-                <Card
-                  key={index}
-                  variant="default"
-                  spotlight={false}
-                  glow={false}
-                  title={
-                    <ResponsiveStack direction="row" gap={2} align="center">
-                      <span>{item.title || item.name}</span>
-                      {item.type ? (
-                        <Badge
-                          tone={item.type === 'Security' ? 'danger' : 'neutral'}
-                        >
-                          {item.type}
-                        </Badge>
-                      ) : null}
-                      {item.requiresReboot ? (
-                        <Badge tone="warning">Requires reboot</Badge>
-                      ) : null}
-                    </ResponsiveStack>
-                  }
-                >
-                  <PropertyList
-                    items={[
-                      item.kb && { key: 'kb', label: 'KB', value: item.kb },
-                      item.size && { key: 'size', label: 'Size', value: item.size },
-                    ].filter(Boolean)}
-                  />
-                </Card>
-              );
-            })
+            filteredListItems.length > 0 ? (
+              filteredListItems.map((item, index) =>
+                renderCompactListRow(item, index, dialogContent.type),
+              )
+            ) : (
+              <Alert tone="info" title="No matches">
+                No items match “{listFilter}”.
+              </Alert>
+            )
           ) : (
             <Alert tone="info" title="No structured data available">
               Detailed data will appear when available.
