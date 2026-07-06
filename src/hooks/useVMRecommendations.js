@@ -12,8 +12,7 @@ import {
   getRecommendationPriority,
   getRecommendationCategory,
   extractRecommendationMetadata,
-  PRIORITY_LEVELS,
-  requiresImmediateAction
+  PRIORITY_LEVELS
 } from '@/utils/recommendationTypeMapper';
 
 /**

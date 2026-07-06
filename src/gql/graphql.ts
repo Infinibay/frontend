@@ -2655,6 +2655,8 @@ export type Query = {
   pools: Array<Pool>;
   /** Fetch a single resolution. Poll this query to track progress. */
   recommendationResolution?: Maybe<RecommendationResolutionType>;
+  /** Return recent resolutions (any status) for a machine, newest first. Use to show run history — what was triggered, whether it succeeded/failed, and why. */
+  resolutionHistoryForMachine: Array<RecommendationResolutionType>;
   role?: Maybe<RoleType>;
   roles: Array<RoleType>;
   /** Run a specific health check on a VM */
@@ -2948,6 +2950,12 @@ export type QueryPoolArgs = {
 
 export type QueryRecommendationResolutionArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryResolutionHistoryForMachineArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  machineId: Scalars['ID']['input'];
 };
 
 
