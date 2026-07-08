@@ -18,12 +18,14 @@ import {
   Skeleton,
   StatusDot
 } from '@infinibay/harbor';
-import { Cpu, Database, HardDrive, MemoryStick, RefreshCw, Server } from 'lucide-react';
+import { Ban, Cpu, Database, HardDrive, MemoryStick, RefreshCw, Server, Trash2, Wrench } from 'lucide-react';
 
 import {
   useGetNodeInventoryQuery,
   useGetSystemResourcesQuery,
-  useSetNodeMaintenanceModeMutation
+  useSetNodeMaintenanceModeMutation,
+  useRejectNodeMutation,
+  useDeleteNodeMutation
 } from '@/gql/hooks';
 import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -112,11 +114,15 @@ export default function InfrastructurePage() {
     pollInterval: 30_000
   });
   const [setNodeMaintenanceMode, { loading: maintenanceUpdating }] = useSetNodeMaintenanceModeMutation();
+  const [rejectNode, { loading: rejecting }] = useRejectNodeMutation();
+  const [deleteNode, { loading: deleting }] = useDeleteNodeMutation();
   const { can } = usePermissions();
   const canEditNodes = can('node:edit');
 
-  // Node pending confirmation before it is put into maintenance mode.
+  // Nodes queued for a confirmation dialog (each action is destructive/draining).
   const [maintenanceTarget, setMaintenanceTarget] = useState(null);
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const applyMaintenance = useCallback(async (node, enabled) => {
     try {
@@ -141,6 +147,34 @@ export default function InfrastructurePage() {
     if (ok) setMaintenanceTarget(null);
   }, [maintenanceTarget, applyMaintenance]);
 
+  // Decommission: revoke the node's mTLS cert (status → rejected). It must re-join
+  // to come back. Reversible via re-enrollment; keeps the row.
+  const confirmReject = useCallback(async () => {
+    if (!rejectTarget) return;
+    try {
+      await rejectNode({ variables: { id: rejectTarget.id } });
+      await refetchNodes();
+      toast.success(`${rejectTarget.name} decommissioned — its certificate was revoked`);
+      setRejectTarget(null);
+    } catch (err) {
+      toast.error(err?.message || 'Failed to decommission node');
+    }
+  }, [rejectTarget, rejectNode, refetchNodes]);
+
+  // Delete: permanently remove the row from inventory. Its VMs are detached, not
+  // deleted. A still-running agent re-registers, so decommission/stop it first.
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteNode({ variables: { id: deleteTarget.id } });
+      await refetchNodes();
+      toast.success(`${deleteTarget.name} removed from inventory`);
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err?.message || 'Failed to delete node');
+    }
+  }, [deleteTarget, deleteNode, refetchNodes]);
+
   const resources = data?.getSystemResources;
   const nodes = useMemo(() => nodeData?.nodes || [], [nodeData?.nodes]);
   const nodeSummary = nodeData?.nodeInventorySummary;
@@ -152,26 +186,37 @@ export default function InfrastructurePage() {
         const degradedDisks = Math.max(0, node.diskCount - node.healthyDiskCount);
         const diskLabel = node.diskCount === 0
           ? 'No disks registered'
-          : `${node.healthyDiskCount}/${node.diskCount} healthy`;
+          : `${node.healthyDiskCount}/${node.diskCount} healthy${degradedDisks > 0 ? ` · ${degradedDisks} degraded` : ''}`;
         const totalRamGB = Math.round(node.ram / 1024);
         const cpuPressure = pctUsed(node.cores, node.availableCores);
         const memoryPressure = pctUsed(totalRamGB, node.availableRamGB);
         const pressure = node.health === 'online'
           ? Math.max(cpuPressure, memoryPressure)
           : 100;
+        const isMaster = node.role === 'master';
+        const lastReport = formatUpdatedAt(node.updatedAt);
 
         return {
           id: node.id,
           name: node.name,
-          role: node.currentRaid ? `RAID ${node.currentRaid}` : 'Registered node',
+          isMaster,
+          isLocal: false,
+          // Subtitle carries the cluster role + last report — folds the old wide
+          // "Last report" column into the Node cell so the table fits.
+          subtitle: `${isMaster ? 'master' : 'compute'} · ${lastReport}`,
           status: node.health === 'online' ? 'online' : 'degraded',
+          lifecycle: node.status,
+          machineCount: node.machineCount,
           maintenanceMode: node.maintenanceMode,
-          cpu: `${formatNumber(node.availableCores)} free / ${formatNumber(node.cores)} cores`,
-          memory: `${formatNumber(node.availableRamGB, ' GB')} free / ${formatNumber(totalRamGB, ' GB')}`,
-          storage: degradedDisks > 0 ? `${diskLabel} · ${degradedDisks} degraded` : diskLabel,
-          workload: `${formatNumber(node.runningMachineCount)} running / ${formatNumber(node.machineCount)} total`,
-          usage: pressure,
-          updatedAt: formatUpdatedAt(node.updatedAt)
+          cpu: `${formatNumber(node.availableCores)}/${formatNumber(node.cores)}`,
+          cpuTitle: `${formatNumber(node.availableCores)} free of ${formatNumber(node.cores)} cores`,
+          memory: `${formatNumber(node.availableRamGB)}/${formatNumber(totalRamGB)} GB`,
+          memoryTitle: `${formatNumber(node.availableRamGB, ' GB')} free of ${formatNumber(totalRamGB, ' GB')}`,
+          storage: node.diskCount === 0 ? '—' : `${node.healthyDiskCount}/${node.diskCount}`,
+          storageTitle: diskLabel,
+          workload: `${formatNumber(node.runningMachineCount)}/${formatNumber(node.machineCount)}`,
+          workloadTitle: `${formatNumber(node.runningMachineCount)} running of ${formatNumber(node.machineCount)} total VMs`,
+          usage: pressure
         };
       });
     }
@@ -188,17 +233,24 @@ export default function InfrastructurePage() {
       {
         id: 'local',
         name: 'Local node',
-        role: inventoryFailed ? 'Inventory unavailable' : 'Primary',
-        status: error ? 'degraded' : 'online',
-        cpu: `${formatNumber(resources.cpu?.available)} free / ${formatNumber(resources.cpu?.total)} vCPU`,
-        memory: `${formatNumber(resources.memory?.available, ' GB')} free / ${formatNumber(resources.memory?.total, ' GB')}`,
-        storage: `${formatNumber(resources.disk?.available, ' GB')} free / ${formatNumber(resources.disk?.total, ' GB')}`,
-        workload: inventoryFailed ? 'Local telemetry only' : 'Local telemetry',
-        usage: highestUse,
-        maintenanceMode: false,
-        updatedAt: inventoryFailed
+        isMaster: true,
+        isLocal: true,
+        subtitle: inventoryFailed
           ? 'Inventory unavailable — showing local telemetry only'
-          : (error ? 'Stale local sample' : 'Live local sample')
+          : (error ? 'Primary · stale local sample' : 'Primary · live local sample'),
+        status: error ? 'degraded' : 'online',
+        lifecycle: 'local',
+        machineCount: 0,
+        maintenanceMode: false,
+        cpu: `${formatNumber(resources.cpu?.available)}/${formatNumber(resources.cpu?.total)}`,
+        cpuTitle: `${formatNumber(resources.cpu?.available)} free of ${formatNumber(resources.cpu?.total)} vCPU`,
+        memory: `${formatNumber(resources.memory?.available)}/${formatNumber(resources.memory?.total)} GB`,
+        memoryTitle: `${formatNumber(resources.memory?.available, ' GB')} free of ${formatNumber(resources.memory?.total, ' GB')}`,
+        storage: `${formatNumber(resources.disk?.available)}/${formatNumber(resources.disk?.total)} GB`,
+        storageTitle: `${formatNumber(resources.disk?.available, ' GB')} free of ${formatNumber(resources.disk?.total, ' GB')}`,
+        workload: '—',
+        workloadTitle: 'Local telemetry only',
+        usage: highestUse
       }
     ];
   }, [nodes, resources, error, nodesError]);
@@ -208,12 +260,13 @@ export default function InfrastructurePage() {
       {
         id: 'name',
         header: 'Node',
+        minWidth: 200,
         cell: ({ row }) => (
           <ResponsiveStack direction="row" gap={2} align="center">
             <StatusDot status={row.status} size={8} />
             <ResponsiveStack direction="col" gap={0}>
               <span className="font-medium">{row.name}</span>
-              <span className="text-xs text-fg-subtle">{row.role}</span>
+              <span className="text-xs text-fg-subtle">{row.subtitle}</span>
             </ResponsiveStack>
           </ResponsiveStack>
         )
@@ -221,75 +274,94 @@ export default function InfrastructurePage() {
       {
         id: 'cpu',
         header: 'CPU',
-        width: 190,
-        cell: ({ row }) => <span className="font-mono text-xs text-fg-muted">{row.cpu}</span>
+        width: 96,
+        cell: ({ row }) => (
+          <span title={row.cpuTitle} className="font-mono text-xs text-fg-muted">{row.cpu}</span>
+        )
       },
       {
         id: 'memory',
         header: 'Memory',
-        width: 210,
-        cell: ({ row }) => <span className="font-mono text-xs text-fg-muted">{row.memory}</span>
+        width: 120,
+        cell: ({ row }) => (
+          <span title={row.memoryTitle} className="font-mono text-xs text-fg-muted">{row.memory}</span>
+        )
       },
       {
         id: 'storage',
-        header: 'Storage',
-        width: 210,
-        cell: ({ row }) => <span className="font-mono text-xs text-fg-muted">{row.storage}</span>
+        header: 'Disks',
+        width: 110,
+        cell: ({ row }) => (
+          <span title={row.storageTitle} className="font-mono text-xs text-fg-muted">{row.storage}</span>
+        )
       },
       {
         id: 'workload',
-        header: 'Workload',
-        width: 170,
-        cell: ({ row }) => <span className="font-mono text-xs text-fg-muted">{row.workload}</span>
+        header: 'VMs',
+        width: 84,
+        cell: ({ row }) => (
+          <span title={row.workloadTitle} className="font-mono text-xs text-fg-muted">{row.workload}</span>
+        )
       },
       {
         id: 'usage',
         header: 'Pressure',
-        width: 120,
+        width: 108,
         align: 'end',
         cell: ({ row }) => (
-          <Badge tone={capacityTone(row.usage)}>
-            {row.usage}%
-          </Badge>
+          (row.lifecycle === 'rejected' || row.lifecycle === 'decommissioned')
+            ? <Badge tone="danger">{row.lifecycle}</Badge>
+            : row.maintenanceMode
+              ? <Badge tone="warning">Maintenance</Badge>
+              : <Badge tone={capacityTone(row.usage)}>{row.usage}%</Badge>
         )
-      },
-      {
-        id: 'maintenance',
-        header: 'Maintenance',
-        width: 150,
-        align: 'end',
-        cell: ({ row }) => (
-          row.id === 'local' ? (
-            <Badge tone="neutral">Local only</Badge>
-          ) : (
-            <Button
-              size="sm"
-              variant={row.maintenanceMode ? 'primary' : 'secondary'}
-              disabled={maintenanceUpdating || !canEditNodes}
-              onClick={() => {
-                if (row.maintenanceMode) {
-                  // Resuming is non-destructive — apply directly.
-                  applyMaintenance(row, false);
-                } else {
-                  // Entering maintenance drains the node — confirm first.
-                  setMaintenanceTarget(row);
-                }
-              }}
-            >
-              {row.maintenanceMode ? 'Resume' : 'Maintain'}
-            </Button>
-          )
-        )
-      },
-      {
-        id: 'updatedAt',
-        header: 'Last report',
-        width: 190,
-        cell: ({ row }) => <span className="text-xs text-fg-muted">{row.updatedAt}</span>
       }
     ],
-    [maintenanceUpdating, applyMaintenance, canEditNodes]
+    []
   );
+
+  // Per-row kebab (pinned actions column) — keeps all node actions off the grid so
+  // the table stays narrow. Empty for the synthetic local row / without permission;
+  // destructive actions are hidden on the master (the backend refuses them anyway).
+  const rowActions = useCallback((row) => {
+    if (row.isLocal || !canEditNodes) return [];
+    const items = [
+      {
+        label: row.maintenanceMode ? 'Resume from maintenance' : 'Enter maintenance',
+        icon: <Wrench size={14} />,
+        disabled: maintenanceUpdating,
+        onClick: () => {
+          if (row.maintenanceMode) applyMaintenance(row, false);
+          else setMaintenanceTarget(row);
+        }
+      }
+    ];
+    if (!row.isMaster) {
+      const alreadyDown = row.lifecycle === 'rejected' || row.lifecycle === 'decommissioned';
+      if (!alreadyDown) {
+        items.push({
+          label: 'Decommission (revoke cert)',
+          icon: <Ban size={14} />,
+          danger: true,
+          disabled: rejecting,
+          onClick: () => setRejectTarget(row)
+        });
+      }
+      // Deleting a node that still owns VMs would strand them (backend refuses it),
+      // so reflect that here: disabled with a "migrate first" hint.
+      const hasVMs = row.machineCount > 0;
+      items.push({
+        label: hasVMs
+          ? `Delete (migrate ${row.machineCount} VM${row.machineCount > 1 ? 's' : ''} first)`
+          : 'Delete from inventory',
+        icon: <Trash2 size={14} />,
+        danger: true,
+        disabled: deleting || hasVMs,
+        onClick: () => setDeleteTarget(row)
+      });
+    }
+    return items;
+  }, [canEditNodes, maintenanceUpdating, rejecting, deleting, applyMaintenance]);
 
   return (
     <Page>
@@ -395,12 +467,15 @@ export default function InfrastructurePage() {
               </div>
             </ResponsiveStack>
 
-            <DataTable
-              rows={nodeRows}
-              columns={columns}
-              rowId={(row) => row.id}
-              defaultDensity="compact"
-            />
+            <div className="overflow-x-auto">
+              <DataTable
+                rows={nodeRows}
+                columns={columns}
+                rowId={(row) => row.id}
+                rowActions={canEditNodes ? rowActions : undefined}
+                defaultDensity="compact"
+              />
+            </div>
           </>
         ) : null}
       </ResponsiveStack>
@@ -412,7 +487,7 @@ export default function InfrastructurePage() {
       >
         <DialogTitle>
           <ResponsiveStack direction="row" gap={2} align="center">
-            <Server size={16} />
+            <Wrench size={16} />
             Enter maintenance mode
           </ResponsiveStack>
         </DialogTitle>
@@ -442,6 +517,89 @@ export default function InfrastructurePage() {
             onClick={confirmMaintenance}
           >
             Enter maintenance
+          </Button>
+        </DialogButtons>
+      </Dialog>
+
+      <Dialog
+        open={!!rejectTarget}
+        onClose={rejecting ? () => {} : () => setRejectTarget(null)}
+        size="sm"
+      >
+        <DialogTitle>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <Ban size={16} />
+            Decommission node
+          </ResponsiveStack>
+        </DialogTitle>
+        <DialogDescription>
+          {rejectTarget
+            ? `Decommission “${rejectTarget.name}”?`
+            : 'Decommission this node?'}
+        </DialogDescription>
+        <DialogBody>
+          <p className="text-sm text-fg-muted">
+            Its cluster certificate is revoked, so the node can no longer authenticate
+            and stops participating. The entry stays in the list (marked rejected) and
+            the host must re-join to come back. Running machines are not moved.
+          </p>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={() => setRejectTarget(null)}
+            disabled={rejecting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            loading={rejecting}
+            onClick={confirmReject}
+          >
+            Decommission
+          </Button>
+        </DialogButtons>
+      </Dialog>
+
+      <Dialog
+        open={!!deleteTarget}
+        onClose={deleting ? () => {} : () => setDeleteTarget(null)}
+        size="sm"
+      >
+        <DialogTitle>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <Trash2 size={16} />
+            Delete node
+          </ResponsiveStack>
+        </DialogTitle>
+        <DialogDescription>
+          {deleteTarget
+            ? `Permanently remove “${deleteTarget.name}” from the inventory?`
+            : 'Permanently remove this node from the inventory?'}
+        </DialogDescription>
+        <DialogBody>
+          <p className="text-sm text-fg-muted">
+            The node row and its disk records are removed. Any machine still assigned
+            to it is detached (not deleted). If the node’s agent is still running it
+            will re-register on its next heartbeat — decommission it or stop the agent
+            first for a permanent removal.
+          </p>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button
+            variant="secondary"
+            onClick={() => setDeleteTarget(null)}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            loading={deleting}
+            onClick={confirmDelete}
+          >
+            Delete node
           </Button>
         </DialogButtons>
       </Dialog>

@@ -1436,6 +1436,7 @@ export type Mutation = {
   deleteIdentityProvider: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
+  deleteNode: Scalars['Boolean']['output'];
   deletePool: Scalars['Boolean']['output'];
   deleteRole: Scalars['Boolean']['output'];
   deleteScript: ScriptResponseType;
@@ -1746,6 +1747,11 @@ export type MutationDeleteMaintenanceTaskArgs = {
 
 export type MutationDeleteNetworkArgs = {
   input: DeleteNetworkInput;
+};
+
+
+export type MutationDeleteNodeArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -2310,7 +2316,9 @@ export type NodeType = {
   name: Scalars['String']['output'];
   nextRaid?: Maybe<Scalars['String']['output']>;
   ram: Scalars['Int']['output'];
+  role: Scalars['String']['output'];
   runningMachineCount: Scalars['Int']['output'];
+  status: Scalars['String']['output'];
   updatedAt: Scalars['DateTimeISO']['output'];
 };
 

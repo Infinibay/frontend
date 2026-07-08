@@ -28,6 +28,8 @@ query GetNodeInventory {
   nodes {
     id
     name
+    role
+    status
     currentRaid
     nextRaid
     maintenanceMode

@@ -1439,6 +1439,7 @@ export type Mutation = {
   deleteIdentityProvider: Scalars['Boolean']['output'];
   deleteMaintenanceTask: MaintenanceTaskResponse;
   deleteNetwork: Scalars['Boolean']['output'];
+  deleteNode: Scalars['Boolean']['output'];
   deletePool: Scalars['Boolean']['output'];
   deleteRole: Scalars['Boolean']['output'];
   deleteScript: ScriptResponseType;
@@ -1749,6 +1750,11 @@ export type MutationDeleteMaintenanceTaskArgs = {
 
 export type MutationDeleteNetworkArgs = {
   input: DeleteNetworkInput;
+};
+
+
+export type MutationDeleteNodeArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -2313,7 +2319,9 @@ export type NodeType = {
   name: Scalars['String']['output'];
   nextRaid: Maybe<Scalars['String']['output']>;
   ram: Scalars['Int']['output'];
+  role: Scalars['String']['output'];
   runningMachineCount: Scalars['Int']['output'];
+  status: Scalars['String']['output'];
   updatedAt: Scalars['DateTimeISO']['output'];
 };
 
@@ -4532,6 +4540,13 @@ export type RejectNodeMutationVariables = Exact<{
 
 export type RejectNodeMutation = { __typename?: 'Mutation', rejectNode: boolean };
 
+export type DeleteNodeMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteNodeMutation = { __typename?: 'Mutation', deleteNode: boolean };
+
 export type EnablePackageMutationVariables = Exact<{
   name: Scalars['String']['input'];
 }>;
@@ -5102,7 +5117,7 @@ export type PackageStatusesQuery = { __typename?: 'Query', packageStatuses: Arra
 export type GetNodeInventoryQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetNodeInventoryQuery = { __typename?: 'Query', nodeInventorySummary: { __typename?: 'NodeInventorySummary', totalNodes: number, onlineNodes: number, staleNodes: number, totalCores: number, totalRam: number, totalDisks: number }, nodes: Array<{ __typename?: 'NodeType', id: string, name: string, currentRaid: string, nextRaid: string | null, maintenanceMode: boolean, health: string, cores: number, ram: number, availableCores: number, availableRamGB: number, machineCount: number, runningMachineCount: number, diskCount: number, healthyDiskCount: number, updatedAt: string, disks: Array<{ __typename?: 'DiskType', id: string, path: string, status: string, updatedAt: string }> }> };
+export type GetNodeInventoryQuery = { __typename?: 'Query', nodeInventorySummary: { __typename?: 'NodeInventorySummary', totalNodes: number, onlineNodes: number, staleNodes: number, totalCores: number, totalRam: number, totalDisks: number }, nodes: Array<{ __typename?: 'NodeType', id: string, name: string, role: string, status: string, currentRaid: string, nextRaid: string | null, maintenanceMode: boolean, health: string, cores: number, ram: number, availableCores: number, availableRamGB: number, machineCount: number, runningMachineCount: number, diskCount: number, healthyDiskCount: number, updatedAt: string, disks: Array<{ __typename?: 'DiskType', id: string, path: string, status: string, updatedAt: string }> }> };
 
 export type VmDetailedInfoQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -8229,6 +8244,35 @@ export function useRejectNodeMutation(baseOptions?: ApolloReactHooks.MutationHoo
       }
 export type RejectNodeMutationHookResult = ReturnType<typeof useRejectNodeMutation>;
 export type RejectNodeMutationResult = ApolloReactCommon.MutationResult<RejectNodeMutation>;
+export const DeleteNodeDocument = gql`
+    mutation DeleteNode($id: ID!) {
+  deleteNode(id: $id)
+}
+    `;
+
+/**
+ * __useDeleteNodeMutation__
+ *
+ * To run a mutation, you first call `useDeleteNodeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteNodeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteNodeMutation, { data, loading, error }] = useDeleteNodeMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteNodeMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteNodeMutation, DeleteNodeMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteNodeMutation, DeleteNodeMutationVariables>(DeleteNodeDocument, options);
+      }
+export type DeleteNodeMutationHookResult = ReturnType<typeof useDeleteNodeMutation>;
+export type DeleteNodeMutationResult = ApolloReactCommon.MutationResult<DeleteNodeMutation>;
 export const EnablePackageDocument = gql`
     mutation EnablePackage($name: String!) {
   enablePackage(name: $name) {
@@ -12631,6 +12675,8 @@ export const GetNodeInventoryDocument = gql`
   nodes {
     id
     name
+    role
+    status
     currentRaid
     nextRaid
     maintenanceMode

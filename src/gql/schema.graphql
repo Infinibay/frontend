@@ -1509,6 +1509,7 @@ type Mutation {
   setNodeMaintenanceMode(enabled: Boolean!, id: ID!): NodeType!
   approveNode(id: ID!, pairingCode: String): Boolean!
   rejectNode(id: ID!): Boolean!
+  deleteNode(id: ID!): Boolean!
   setRolePermission(input: SetRolePermissionInput!): RoleType!
   setUserPermissionOverride(input: SetUserPermissionOverrideInput!): UserPermissionOverrideType!
   setupNode: DyummyType!
@@ -1649,7 +1650,9 @@ type NodeType {
   name: String!
   nextRaid: String
   ram: Int!
+  role: String!
   runningMachineCount: Int!
+  status: String!
   updatedAt: DateTimeISO!
 }
 

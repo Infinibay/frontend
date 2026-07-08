@@ -5,3 +5,7 @@ mutation ApproveNode($id: ID!, $pairingCode: String) {
 mutation RejectNode($id: ID!) {
   rejectNode(id: $id)
 }
+
+mutation DeleteNode($id: ID!) {
+  deleteNode(id: $id)
+}
