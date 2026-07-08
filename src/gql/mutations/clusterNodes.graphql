@@ -2,10 +2,10 @@ mutation ApproveNode($id: ID!, $pairingCode: String) {
   approveNode(id: $id, pairingCode: $pairingCode)
 }
 
-mutation RejectNode($id: ID!) {
-  rejectNode(id: $id)
+mutation RejectNode($id: ID!, $stopRunningVms: Boolean) {
+  rejectNode(id: $id, stopRunningVms: $stopRunningVms)
 }
 
-mutation DeleteNode($id: ID!) {
-  deleteNode(id: $id)
+mutation DeleteNode($id: ID!, $stopRunningVms: Boolean) {
+  deleteNode(id: $id, stopRunningVms: $stopRunningVms)
 }

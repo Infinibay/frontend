@@ -1508,8 +1508,8 @@ type Mutation {
   setNetworkIpRange(input: IpRangeInput!): Boolean!
   setNodeMaintenanceMode(enabled: Boolean!, id: ID!): NodeType!
   approveNode(id: ID!, pairingCode: String): Boolean!
-  rejectNode(id: ID!): Boolean!
-  deleteNode(id: ID!): Boolean!
+  rejectNode(id: ID!, stopRunningVms: Boolean): Boolean!
+  deleteNode(id: ID!, stopRunningVms: Boolean): Boolean!
   setRolePermission(input: SetRolePermissionInput!): RoleType!
   setUserPermissionOverride(input: SetUserPermissionOverrideInput!): UserPermissionOverrideType!
   setupNode: DyummyType!

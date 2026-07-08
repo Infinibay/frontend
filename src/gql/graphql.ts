@@ -1752,6 +1752,7 @@ export type MutationDeleteNetworkArgs = {
 
 export type MutationDeleteNodeArgs = {
   id: Scalars['ID']['input'];
+  stopRunningVms?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -1942,6 +1943,7 @@ export type MutationRegisterIsoArgs = {
 
 export type MutationRejectNodeArgs = {
   id: Scalars['ID']['input'];
+  stopRunningVms?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 

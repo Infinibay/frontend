@@ -1755,6 +1755,7 @@ export type MutationDeleteNetworkArgs = {
 
 export type MutationDeleteNodeArgs = {
   id: Scalars['ID']['input'];
+  stopRunningVms: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -1945,6 +1946,7 @@ export type MutationRegisterIsoArgs = {
 
 export type MutationRejectNodeArgs = {
   id: Scalars['ID']['input'];
+  stopRunningVms: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -4535,6 +4537,7 @@ export type ApproveNodeMutation = { __typename?: 'Mutation', approveNode: boolea
 
 export type RejectNodeMutationVariables = Exact<{
   id: Scalars['ID']['input'];
+  stopRunningVms: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -4542,6 +4545,7 @@ export type RejectNodeMutation = { __typename?: 'Mutation', rejectNode: boolean 
 
 export type DeleteNodeMutationVariables = Exact<{
   id: Scalars['ID']['input'];
+  stopRunningVms: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -8216,8 +8220,8 @@ export function useApproveNodeMutation(baseOptions?: ApolloReactHooks.MutationHo
 export type ApproveNodeMutationHookResult = ReturnType<typeof useApproveNodeMutation>;
 export type ApproveNodeMutationResult = ApolloReactCommon.MutationResult<ApproveNodeMutation>;
 export const RejectNodeDocument = gql`
-    mutation RejectNode($id: ID!) {
-  rejectNode(id: $id)
+    mutation RejectNode($id: ID!, $stopRunningVms: Boolean) {
+  rejectNode(id: $id, stopRunningVms: $stopRunningVms)
 }
     `;
 
@@ -8235,6 +8239,7 @@ export const RejectNodeDocument = gql`
  * const [rejectNodeMutation, { data, loading, error }] = useRejectNodeMutation({
  *   variables: {
  *      id: // value for 'id'
+ *      stopRunningVms: // value for 'stopRunningVms'
  *   },
  * });
  */
@@ -8245,8 +8250,8 @@ export function useRejectNodeMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type RejectNodeMutationHookResult = ReturnType<typeof useRejectNodeMutation>;
 export type RejectNodeMutationResult = ApolloReactCommon.MutationResult<RejectNodeMutation>;
 export const DeleteNodeDocument = gql`
-    mutation DeleteNode($id: ID!) {
-  deleteNode(id: $id)
+    mutation DeleteNode($id: ID!, $stopRunningVms: Boolean) {
+  deleteNode(id: $id, stopRunningVms: $stopRunningVms)
 }
     `;
 
@@ -8264,6 +8269,7 @@ export const DeleteNodeDocument = gql`
  * const [deleteNodeMutation, { data, loading, error }] = useDeleteNodeMutation({
  *   variables: {
  *      id: // value for 'id'
+ *      stopRunningVms: // value for 'stopRunningVms'
  *   },
  * });
  */

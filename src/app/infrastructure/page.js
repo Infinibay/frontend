@@ -147,33 +147,51 @@ export default function InfrastructurePage() {
     if (ok) setMaintenanceTarget(null);
   }, [maintenanceTarget, applyMaintenance]);
 
-  // Decommission: revoke the node's mTLS cert (status → rejected). It must re-join
-  // to come back. Reversible via re-enrollment; keeps the row.
+  // Decommission: first DRAIN the node (migrate every VM off it), then revoke its
+  // mTLS cert (status → rejected). Confirming here authorizes powering off any
+  // running VMs (stopRunningVms), which the dialog warns about. It must re-join to
+  // come back. Reversible via re-enrollment; keeps the row.
   const confirmReject = useCallback(async () => {
     if (!rejectTarget) return;
     try {
-      await rejectNode({ variables: { id: rejectTarget.id } });
+      await rejectNode({ variables: { id: rejectTarget.id, stopRunningVms: true } });
       await refetchNodes();
-      toast.success(`${rejectTarget.name} decommissioned — its certificate was revoked`);
+      toast.success(`${rejectTarget.name} drained and decommissioned — its certificate was revoked`);
       setRejectTarget(null);
     } catch (err) {
+      // Drain failures (a VM that could not be migrated) come back as a clear
+      // message; keep the dialog open so the operator can read it and retry.
       toast.error(err?.message || 'Failed to decommission node');
     }
   }, [rejectTarget, rejectNode, refetchNodes]);
 
-  // Delete: permanently remove the row from inventory. Its VMs are detached, not
-  // deleted. A still-running agent re-registers, so decommission/stop it first.
+  // Delete: DRAIN the node (migrate every VM to another node) and then permanently
+  // remove the row. Confirming authorizes powering off running VMs (stopRunningVms).
+  // If any VM can't be migrated, the backend leaves the node in maintenance and the
+  // delete fails with which VMs are stuck.
   const confirmDelete = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await deleteNode({ variables: { id: deleteTarget.id } });
+      await deleteNode({ variables: { id: deleteTarget.id, stopRunningVms: true } });
       await refetchNodes();
-      toast.success(`${deleteTarget.name} removed from inventory`);
+      toast.success(`${deleteTarget.name} drained and removed from inventory`);
       setDeleteTarget(null);
     } catch (err) {
       toast.error(err?.message || 'Failed to delete node');
     }
   }, [deleteTarget, deleteNode, refetchNodes]);
+
+  // One-line summary of what removing a node will do to its VMs, for the confirm
+  // dialogs. Returns null when the node has no VMs (nothing to warn about).
+  const drainSummary = useCallback((t) => {
+    const total = t?.machineCount ?? 0;
+    if (total === 0) return null;
+    const running = t?.runningMachineCount ?? 0;
+    const vmWord = (n) => `${n} VM${n === 1 ? '' : 's'}`;
+    return running > 0
+      ? `${vmWord(running)} currently running will be POWERED OFF, and all ${vmWord(total)} will be migrated to another node (master preferred) before the node is removed.`
+      : `${vmWord(total)} (stopped) will be migrated to another node (master preferred) before the node is removed.`;
+  }, []);
 
   const resources = data?.getSystemResources;
   const nodes = useMemo(() => nodeData?.nodes || [], [nodeData?.nodes]);
@@ -207,6 +225,7 @@ export default function InfrastructurePage() {
           status: node.health === 'online' ? 'online' : 'degraded',
           lifecycle: node.status,
           machineCount: node.machineCount,
+          runningMachineCount: node.runningMachineCount,
           maintenanceMode: node.maintenanceMode,
           cpu: `${formatNumber(node.availableCores)}/${formatNumber(node.cores)}`,
           cpuTitle: `${formatNumber(node.availableCores)} free of ${formatNumber(node.cores)} cores`,
@@ -347,16 +366,16 @@ export default function InfrastructurePage() {
           onClick: () => setRejectTarget(row)
         });
       }
-      // Deleting a node that still owns VMs would strand them (backend refuses it),
-      // so reflect that here: disabled with a "migrate first" hint.
+      // Deleting a node with VMs now DRAINS it first (migrates every VM to another
+      // node), so it's allowed — the confirm dialog warns what will move / power off.
       const hasVMs = row.machineCount > 0;
       items.push({
         label: hasVMs
-          ? `Delete (migrate ${row.machineCount} VM${row.machineCount > 1 ? 's' : ''} first)`
+          ? `Delete (migrates ${row.machineCount} VM${row.machineCount > 1 ? 's' : ''} off first)`
           : 'Delete from inventory',
         icon: <Trash2 size={14} />,
         danger: true,
-        disabled: deleting || hasVMs,
+        disabled: deleting,
         onClick: () => setDeleteTarget(row)
       });
     }
@@ -541,8 +560,13 @@ export default function InfrastructurePage() {
           <p className="text-sm text-fg-muted">
             Its cluster certificate is revoked, so the node can no longer authenticate
             and stops participating. The entry stays in the list (marked rejected) and
-            the host must re-join to come back. Running machines are not moved.
+            the host must re-join to come back.
           </p>
+          {drainSummary(rejectTarget) && (
+            <p className="mt-2 text-sm font-medium text-warning">
+              {drainSummary(rejectTarget)}
+            </p>
+          )}
         </DialogBody>
         <DialogButtons align="end">
           <Button
@@ -580,11 +604,15 @@ export default function InfrastructurePage() {
         </DialogDescription>
         <DialogBody>
           <p className="text-sm text-fg-muted">
-            The node row and its disk records are removed. Any machine still assigned
-            to it is detached (not deleted). If the node’s agent is still running it
-            will re-register on its next heartbeat — decommission it or stop the agent
-            first for a permanent removal.
+            The node row and its disk records are removed. If the node’s agent is still
+            running it will re-register on its next heartbeat — decommission it or stop
+            the agent first for a permanent removal.
           </p>
+          {drainSummary(deleteTarget) && (
+            <p className="mt-2 text-sm font-medium text-warning">
+              {drainSummary(deleteTarget)}
+            </p>
+          )}
         </DialogBody>
         <DialogButtons align="end">
           <Button
