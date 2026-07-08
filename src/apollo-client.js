@@ -215,6 +215,17 @@ const cache = new InMemoryCache({
             return incoming;
           }
         },
+        goldenImages: {
+          // Root list of golden images. The images page refetches this
+          // network-only after every create/delete, so the incoming array is
+          // authoritative and shorter/longer than what's cached (delete 2→1,
+          // create 1→2). Without an explicit policy Apollo logs "Cache data may
+          // be lost when replacing the goldenImages field". These are normalized
+          // entities (by id), so a wholesale replace is correct and lossless.
+          merge(_existing, incoming) {
+            return incoming;
+          }
+        },
         listFilters: {
           merge(_existing, incoming) {
             return incoming;
