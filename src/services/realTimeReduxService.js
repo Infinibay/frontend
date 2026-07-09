@@ -243,10 +243,24 @@ export class RealTimeReduxService {
   // background-tasks bar. The backend streams the PHASE (not a byte percent), so this
   // is a monotonic "feels like progress" mapping, not a precise fraction.
   static MIGRATION_PHASES = {
-    starting: { detail: 'Preparing migration…', progress: 6 },
-    copying: { detail: 'Copying disk to the target node…', progress: 45 },
-    committing: { detail: 'Finalizing ownership…', progress: 82 },
-    reclaiming: { detail: 'Reclaiming source disk…', progress: 94 },
+    starting: { detail: 'Preparing migration…', progress: 4 },
+    // Baseline copying (before any byte event) sits at the LOW end of the copy band so
+    // the first real byte update refines it forward, never backward. Byte events replace
+    // this with an exact fraction (see handleMigrationEvent).
+    copying: { detail: 'Copying disk to the target node…', progress: 5 },
+    committing: { detail: 'Finalizing ownership…', progress: 90 },
+    reclaiming: { detail: 'Reclaiming source disk…', progress: 96 },
+  }
+
+  // Compact human byte size (binary units) for the migration progress detail line.
+  static formatBytes(n) {
+    if (!Number.isFinite(n) || n < 0) return '0 B'
+    if (n < 1024) return `${n} B`
+    const units = ['KB', 'MB', 'GB', 'TB']
+    let v = n / 1024
+    let i = 0
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i += 1 }
+    return `${v < 10 ? v.toFixed(1) : Math.round(v)} ${units[i]}`
   }
 
   // Best-effort VM display name from the vms slice (may be empty if that page's data
@@ -272,8 +286,22 @@ export class RealTimeReduxService {
     if (action === 'started' || action === 'progress') {
       const phase = data.phase || (action === 'started' ? 'starting' : 'copying')
       const meta = RealTimeReduxService.MIGRATION_PHASES[phase] || RealTimeReduxService.MIGRATION_PHASES.copying
+
+      // Byte-level copy progress (backend emits transferred/total during 'copying'):
+      // show the real fraction and an "X / Y" line. Map the fraction into the 5–85%
+      // band so committing (90) / reclaiming (96) / done (100) still read as forward
+      // motion. Falls back to the coarse phase mapping when no bytes are present.
+      let { detail, progress } = meta
+      const total = Number(data.total)
+      const transferred = Number(data.transferred)
+      if (phase === 'copying' && Number.isFinite(total) && total > 0 && Number.isFinite(transferred)) {
+        const frac = Math.max(0, Math.min(1, transferred / total))
+        progress = 5 + Math.round(frac * 80)
+        detail = `Copying disk… ${RealTimeReduxService.formatBytes(transferred)} / ${RealTimeReduxService.formatBytes(total)}`
+      }
+
       this.store.dispatch(taskUpserted({
-        id, kind: 'migration', title, status: 'running', phase, detail: meta.detail, progress: meta.progress, updatedAt: now,
+        id, kind: 'migration', title, status: 'running', phase, detail, progress, updatedAt: now,
       }))
     } else if (action === 'completed') {
       this.store.dispatch(taskFinished({

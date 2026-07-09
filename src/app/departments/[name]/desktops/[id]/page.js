@@ -60,6 +60,17 @@ const MIGRATION_PHASE_LABEL = {
   reclaiming: 'Cleaning up the source…',
 };
 
+// Compact binary byte size for the migration toast (mirrors the header dropdown).
+function fmtMigrationBytes(n) {
+  if (!Number.isFinite(n) || n < 0) return '0 B';
+  if (n < 1024) return `${n} B`;
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let v = n / 1024;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i += 1; }
+  return `${v < 10 ? v.toFixed(1) : Math.round(v)} ${units[i]}`;
+}
+
 import LoadingState from './components/LoadingState';
 import ErrorState from './components/ErrorState';
 import NodePlacementDialog from './components/NodePlacementDialog';
@@ -223,9 +234,15 @@ const VMDetailPage = () => {
         } else if (action === 'progress') {
           const phase = data.phase || 'copying';
           setMigrationPhase(phase);
+          // Prefer the real byte progress the backend streams during 'copying'.
+          const total = Number(data.total);
+          const transferred = Number(data.transferred);
+          const description = phase === 'copying' && Number.isFinite(total) && total > 0 && Number.isFinite(transferred)
+            ? `Copying disk… ${fmtMigrationBytes(transferred)} / ${fmtMigrationBytes(total)}`
+            : (MIGRATION_PHASE_LABEL[phase] || 'Migrating…');
           toast.loading(`Moving ${vmNameRef.current || 'desktop'}…`, {
             id: toastId,
-            description: MIGRATION_PHASE_LABEL[phase] || 'Migrating…',
+            description,
           });
         } else if (action === 'completed') {
           setMigrationPhase(null);
