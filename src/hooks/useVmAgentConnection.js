@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { useQuery } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import { createDebugger } from '@/utils/debug'
+import { useRealtimeRefetch } from './useRealtimeRefetch'
 
 const debug = createDebugger('frontend:hooks:useVmAgentConnection')
 
@@ -27,18 +28,25 @@ const SOCKET_CONNECTION_STATS_QUERY = gql`
  *
  * @param {string} vmId - The VM ID to check connection status for
  * @param {object} [options] - Options
- * @param {number} [options.pollInterval=20000] - Polling interval in ms (default 20s)
  * @param {boolean} [options.skip=false] - Skip the query entirely
  * @returns {{ isConnected: boolean, isLoading: boolean, lastMessageTime: string|null, error: object|null }}
  */
 export const useVmAgentConnection = (vmId, options = {}) => {
-  const { pollInterval = 20000, skip = false } = options
+  const { skip = false } = options
 
-  const { data, loading, error } = useQuery(SOCKET_CONNECTION_STATS_QUERY, {
-    pollInterval,
+  const { data, loading, error, refetch } = useQuery(SOCKET_CONNECTION_STATS_QUERY, {
     skip: skip || !vmId,
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-and-network'
+  })
+
+  // No polling: the backend emits 'agent_connections:update' when this VM's
+  // InfiniService agent connects/disconnects — refetch on that instead of a 20s poll.
+  useRealtimeRefetch('agent_connections', refetch, {
+    actions: ['update'],
+    minIntervalMs: 2000,
+    skip: skip || !vmId,
+    predicate: (_action, event) => event?.data?.vmId === vmId,
   })
 
   // Apollo Client v4 removed the onError/onCompleted useQuery callbacks, so we

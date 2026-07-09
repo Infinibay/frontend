@@ -25,6 +25,7 @@ import {
 import { fetchVms } from '@/state/slices/vms';
 import { fetchDepartments } from '@/state/slices/departments';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 import { useGetSystemResourcesQuery } from '@/gql/hooks';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusChip } from '@/components/common/StatusChip';
@@ -126,11 +127,15 @@ export default function OverviewPage() {
 
   const {
     data: sysData,
-    loading: sysLoading
+    loading: sysLoading,
+    refetch: refetchSys
   } = useGetSystemResourcesQuery({
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 15_000
+    fetchPolicy: 'cache-and-network'
   });
+
+  // No polling: host CPU/RAM/disk changes as VMs are created/removed/powered,
+  // so refetch on 'vms' events over the websocket instead of every 15s.
+  useRealtimeRefetch('vms', refetchSys, { minIntervalMs: 2000 });
 
   const loading = vmsLoading || deptLoading;
   const anyError = vmsError || deptError;

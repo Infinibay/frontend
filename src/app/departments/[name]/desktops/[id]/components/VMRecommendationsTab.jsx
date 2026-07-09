@@ -89,11 +89,11 @@ const VMRecommendationsTab = ({ vmId, vmStatus, vmSetupComplete }) => {
     isRefreshing,
     error,
     refreshRecommendations,
-  } = useVMRecommendations(vmId, { pollInterval: 60_000 }) || {};
+    // No polling: the hook refetches on 'recommendations:completed' socket events.
+  } = useVMRecommendations(vmId) || {};
 
-  const { isConnected: agentOnline } = useVmAgentConnection(vmId, {
-    pollInterval: 20_000,
-  });
+  // No polling: refetches on 'agent_connections' socket events for this VM.
+  const { isConnected: agentOnline } = useVmAgentConnection(vmId);
 
   // In-flight resolutions per recommendation — keeps action buttons disabled
   // while a resolution is running, even after a page refresh.

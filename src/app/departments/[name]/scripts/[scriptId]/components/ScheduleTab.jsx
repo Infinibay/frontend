@@ -70,8 +70,9 @@ export default function ScheduleTab({ scriptId, departmentId, script }) {
     loading: schedulesLoading,
     refetch: refetchSchedules
   } = useScheduledScriptsQuery({
-    variables: { filters: { scriptId, departmentId } },
-    pollInterval: 30000
+    variables: { filters: { scriptId, departmentId } }
+    // No polling: this component already subscribes to 'scripts' schedule events
+    // (schedule_created/updated/cancelled) and refetches on them — see the socket effect below.
   })
 
   // Read VMs from Redux (state.vms.items) rather than the Apollo `machines`

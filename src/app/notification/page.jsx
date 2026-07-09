@@ -22,6 +22,7 @@ import {
 import { useGlobalPendingRecommendationsQuery } from "@/gql/hooks";
 import { RecommendationCard } from "@/components/recommendations/RecommendationCard";
 import { usePageHeader } from "@/hooks/usePageHeader";
+import { useRealtimeRefetch } from "@/hooks/useRealtimeRefetch";
 
 const severityTone = (severity) => {
   switch ((severity || "").toUpperCase()) {
@@ -52,10 +53,12 @@ const severityTone = (severity) => {
 export default function NotificationsPage() {
   const { data, loading, error, refetch } =
     useGlobalPendingRecommendationsQuery({
-      pollInterval: 30000,
-      // Don't let a transient poll error blank out the last good list.
+      // Don't let a transient error blank out the last good list.
       notifyOnNetworkStatusChange: true,
     });
+  // No polling: refetch when the backend finishes regenerating a VM's
+  // recommendations ('recommendations:completed') instead of every 30s.
+  useRealtimeRefetch("recommendations", refetch, { actions: ["completed"], minIntervalMs: 1000 });
 
   // Memoize so the `?? []` fallback doesn't produce a fresh array reference on
   // every render (which would invalidate the useMemo below each time).

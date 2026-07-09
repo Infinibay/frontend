@@ -39,6 +39,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { RowContextMenu } from '@/components/common/RowContextMenu';
 import { fetchUsers } from '@/state/slices/users';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 import {
   useCreateIdentityProviderMutation,
   useDeleteIdentityProviderMutation,
@@ -129,8 +130,12 @@ export default function IdentityListPage() {
     error: providersError,
     refetch: refetchProviders
   } = useIdentityProvidersQuery({
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 30_000
+    fetchPolicy: 'cache-and-network'
+  });
+  // No polling: the backend emits 'identity' events on provider create/update/delete
+  // and sync completion — refetch the list on those instead of every 30s.
+  useRealtimeRefetch('identity', refetchProviders, {
+    actions: ['create', 'update', 'delete', 'completed', 'failed']
   });
   const [createIdentityProvider, { loading: creatingProvider }] = useCreateIdentityProviderMutation();
   const [testIdentityProviderConfig, { loading: testingProviderConfig }] = useTestIdentityProviderConfigMutation();

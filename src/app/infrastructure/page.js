@@ -29,6 +29,7 @@ import {
 } from '@/gql/hooks';
 import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PendingNodesSection } from '@/components/infrastructure/PendingNodesSection';
 
@@ -97,10 +98,8 @@ export default function InfrastructurePage() {
     refetch
   } = useGetSystemResourcesQuery({
     fetchPolicy: 'cache-and-network',
-    pollInterval: 30_000,
-    // Don't re-emit loading:true on the 30s poll — getSystemResources is a
-    // non-nullable root field, so a poll error nulls `data` and the `loading &&
-    // !resources` guard below would flash a skeleton over the rendered content.
+    // No polling: host capacity changes when VMs are allocated/freed, so we
+    // refetch on 'vms' events instead (see useRealtimeRefetch below).
     notifyOnNetworkStatusChange: false
   });
 
@@ -110,9 +109,17 @@ export default function InfrastructurePage() {
     error: nodesError,
     refetch: refetchNodes
   } = useGetNodeInventoryQuery({
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 30_000
+    fetchPolicy: 'cache-and-network'
   });
+
+  // Live inventory over websocket instead of a 30s poll. The backend emits
+  // 'nodes' events on heartbeat/approve/reject/delete/maintenance (and a master
+  // liveness tick that recomputes online/stale); throttle to coalesce heartbeat
+  // bursts into at most one refetch every few seconds.
+  useRealtimeRefetch('nodes', refetchNodes, { minIntervalMs: 4000 });
+  // Host CPU/RAM/disk shifts as VMs are created/removed/powered — refetch on
+  // 'vms' events (create/update/delete/power_*) rather than polling.
+  useRealtimeRefetch('vms', refetch, { minIntervalMs: 2000 });
   const [setNodeMaintenanceMode, { loading: maintenanceUpdating }] = useSetNodeMaintenanceModeMutation();
   const [rejectNode, { loading: rejecting }] = useRejectNodeMutation();
   const [deleteNode, { loading: deleting }] = useDeleteNodeMutation();

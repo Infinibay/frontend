@@ -47,6 +47,7 @@ import {
 } from '@/gql/hooks';
 import { useOpenConsole } from '@/hooks/useOpenConsole';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 import { toast } from 'sonner';
 import { getSocketService } from '@/services/socketService';
 
@@ -196,8 +197,9 @@ const VMDetailPage = () => {
     refetch: refetchNodes,
   } = useGetNodeInventoryQuery({
     fetchPolicy: 'cache-and-network',
-    pollInterval: 30_000,
   });
+  // Live node inventory (migration target list) over websocket instead of a 30s poll.
+  useRealtimeRefetch('nodes', refetchNodes, { actions: ['update', 'delete'], minIntervalMs: 4000 });
   const [migrateMachineToNode, { loading: migrationLoading }] = useMigrateMachineToNodeMutation();
   const openConsole = useOpenConsole();
 

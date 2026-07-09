@@ -24,6 +24,7 @@ import {
   useRejectNodeMutation
 } from '@/gql/hooks';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 
 /** Group a 6-digit code as "123 456" for readability; pass anything else through. */
 function formatPairingCode(code) {
@@ -65,9 +66,12 @@ export function PendingNodesSection() {
 
   const { data, error, refetch } = usePendingNodesQuery({
     fetchPolicy: 'cache-and-network',
-    pollInterval: 15_000,
     skip: !canView
   });
+  // No polling: the backend emits 'nodes' events when a node requests to join
+  // or is approved/rejected, so refetch the pending list on those instead of
+  // every 15s. Skip the subscription when the viewer can't see nodes anyway.
+  useRealtimeRefetch('nodes', refetch, { minIntervalMs: 3000, skip: !canView });
   const pending = useMemo(() => data?.pendingNodes || [], [data?.pendingNodes]);
 
   const [approveNode, { loading: approving }] = useApproveNodeMutation();

@@ -30,6 +30,7 @@ import {
   useUpdateIdentityProviderMutation,
   useUpsertIdentityGroupRoleMappingMutation
 } from '@/gql/hooks';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 
 import { ProviderDetailHeader } from './_components/ProviderDetailHeader';
 import { ProviderOverviewCards } from './_components/ProviderOverviewCards';
@@ -84,8 +85,7 @@ export default function IdentityDetailPage() {
   } = useIdentityProviderQuery({
     variables: { id: connectorId },
     skip: connectorId === 'local',
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 30000
+    fetchPolicy: 'cache-and-network'
   });
   const {
     data: syncRunsData,
@@ -95,8 +95,7 @@ export default function IdentityDetailPage() {
   } = useIdentitySyncRunsQuery({
     variables: { providerId: connectorId },
     skip: connectorId === 'local',
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 30000
+    fetchPolicy: 'cache-and-network'
   });
   const {
     data: mappingData,
@@ -106,8 +105,25 @@ export default function IdentityDetailPage() {
   } = useIdentityGroupRoleMappingsQuery({
     variables: { providerId: connectorId },
     skip: connectorId === 'local',
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 30000
+    fetchPolicy: 'cache-and-network'
+  });
+
+  // No polling: the backend emits 'identity' events for this provider (config
+  // changes, sync started/completed/failed) — refetch on them instead of every 30s.
+  // Filter to events for THIS provider so another provider's activity is ignored.
+  const isThisProvider = (_action, event) => {
+    const d = event?.data;
+    return d?.id === connectorId || d?.providerId === connectorId;
+  };
+  const skipIdentityRealtime = connectorId === 'local';
+  useRealtimeRefetch('identity', refetchProvider, {
+    actions: ['update', 'completed', 'failed'], predicate: isThisProvider, skip: skipIdentityRealtime
+  });
+  useRealtimeRefetch('identity', refetchSyncRuns, {
+    actions: ['started', 'completed', 'failed'], predicate: isThisProvider, skip: skipIdentityRealtime
+  });
+  useRealtimeRefetch('identity', refetchMappings, {
+    actions: ['update'], predicate: isThisProvider, skip: skipIdentityRealtime
   });
   const [testIdentityProvider, { loading: providerTesting }] = useTestIdentityProviderMutation();
   const [syncIdentityProvider, { loading: providerSyncing }] = useSyncIdentityProviderMutation();

@@ -143,7 +143,8 @@ export default function ExecutionLogsTab({ scriptId, departmentId }) {
         offset: (currentPage - 1) * pageSize,
       },
     },
-    pollInterval: 30000,
+    // No polling: this component already subscribes to 'scripts' execution events
+    // (execution_started/completed) and refetches on them — see the socket effect below.
     skip: !scriptId || !departmentId,
   })
 

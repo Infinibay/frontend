@@ -37,6 +37,7 @@ import { fetchDepartments } from "@/state/slices/departments";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import useEnsureData, { LOADING_STRATEGIES } from "@/hooks/useEnsureData";
 import { usePageHeader } from "@/hooks/usePageHeader";
+import { useRealtimeRefetch } from "@/hooks/useRealtimeRefetch";
 import {
   selectDesktopsView,
   setDesktopsView,
@@ -115,8 +116,9 @@ export default function ComputersPage() {
     refetch: refetchNodes,
   } = useGetNodeInventoryQuery({
     fetchPolicy: "cache-and-network",
-    pollInterval: 30_000,
   });
+  // Live node inventory over websocket instead of a 30s poll (see useRealtimeRefetch).
+  useRealtimeRefetch("nodes", refetchNodes, { actions: ["update", "delete"], minIntervalMs: 4000 });
 
   const loading = vmsLoading || departmentsLoading;
   const error = vmsError || departmentsError;

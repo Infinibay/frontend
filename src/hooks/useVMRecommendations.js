@@ -84,7 +84,7 @@ const useVMRecommendations = (vmId, options = {}) => {
     limit = null,
     createdAfter = null,
     createdBefore = null,
-    pollInterval = 60000, // Poll every 60 seconds - backend now filters by latest snapshot, reducing need for frequent polling
+    pollInterval = 0, // No polling: this hook refetches on 'recommendations:completed' socket events (see effect below). Callers may still pass a pollInterval to opt back in.
     skip = false
   } = options;
 

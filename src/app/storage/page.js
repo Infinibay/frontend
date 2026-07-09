@@ -18,6 +18,7 @@ import { AlertTriangle, Database, HardDrive, RefreshCw } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/PageHeader';
 import { useGetSystemResourcesQuery } from '@/gql/hooks';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 import useFeatureFlag from '@/hooks/useFeatureFlag';
 
 function pctUsed(total, used) {
@@ -50,9 +51,12 @@ export default function StorageListPage() {
     error,
     refetch
   } = useGetSystemResourcesQuery({
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 30_000
+    fetchPolicy: 'cache-and-network'
   });
+
+  // No polling: local storage usage moves as VMs/disks are created and removed,
+  // so refetch on 'vms' events over the websocket instead of every 30s.
+  useRealtimeRefetch('vms', refetch, { minIntervalMs: 2000 });
 
   const disk = data?.getSystemResources?.disk;
   const usedPct = pctUsed(disk?.total, disk?.used);

@@ -42,6 +42,7 @@ import { StatusChip } from '@/components/common/StatusChip';
 
 import { useDepartmentPage } from './hooks/useDepartmentPage';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 import { useGetNodeInventoryQuery } from '@/gql/hooks';
 
 const SecuritySection = dynamic(() => import('./components/SecuritySection.jsx'), {
@@ -124,10 +125,11 @@ const DepartmentPage = () => {
   } = useDepartmentPage(departmentName);
 
   const pendingActions = useSelector((state) => state.vms?.pendingActions || {});
-  const { data: nodeData } = useGetNodeInventoryQuery({
+  const { data: nodeData, refetch: refetchNodes } = useGetNodeInventoryQuery({
     fetchPolicy: 'cache-and-network',
-    pollInterval: 30_000,
   });
+  // Live node inventory over websocket instead of a 30s poll (see useRealtimeRefetch).
+  useRealtimeRefetch('nodes', refetchNodes, { actions: ['update', 'delete'], minIntervalMs: 4000 });
 
   const helpConfig = useMemo(
     () => ({

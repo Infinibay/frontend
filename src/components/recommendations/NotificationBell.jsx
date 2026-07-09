@@ -11,16 +11,18 @@ import { useState, useRef, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { IconButton } from '@infinibay/harbor';
 import { useGetPendingRecommendationCountQuery } from '@/gql/hooks';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 import { RecommendationDropdown } from './RecommendationDropdown';
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Poll every 30 seconds for new recommendations
-  const { data, refetch } = useGetPendingRecommendationCountQuery({
-    pollInterval: 30000,
-  });
+  // No polling: the backend emits 'recommendations:completed' after each health
+  // snapshot regenerates a VM's recommendations, so refetch the badge count on
+  // that instead of every 30s.
+  const { data, refetch } = useGetPendingRecommendationCountQuery();
+  useRealtimeRefetch('recommendations', refetch, { actions: ['completed'], minIntervalMs: 1000 });
 
   const count = data?.pendingRecommendationCount ?? 0;
 

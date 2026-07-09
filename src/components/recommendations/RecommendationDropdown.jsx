@@ -11,6 +11,7 @@ import {
   useDismissAllRecommendationsMutation,
   useSnoozeAllRecommendationsMutation,
 } from '@/gql/hooks';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 import { RecommendationCard } from './RecommendationCard';
 import {
   Button,
@@ -37,10 +38,12 @@ const SNOOZE_OPTIONS = [
 
 export function RecommendationDropdown({ onClose, onActionComplete }) {
   const { data, loading, error, refetch } = useGlobalPendingRecommendationsQuery({
-    pollInterval: 30000,
-    // Keep polling errors from wiping the last good list; surface via `error`.
+    // Keep transient errors from wiping the last good list; surface via `error`.
     notifyOnNetworkStatusChange: true,
   });
+  // No polling: refetch the list when the backend finishes regenerating a VM's
+  // recommendations ('recommendations:completed') instead of every 30s.
+  useRealtimeRefetch('recommendations', refetch, { actions: ['completed'], minIntervalMs: 1000 });
 
   const [dismissAll, { loading: dismissingAll }] = useDismissAllRecommendationsMutation();
   const [snoozeAll, { loading: snoozingAll }] = useSnoozeAllRecommendationsMutation();

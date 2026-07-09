@@ -20,6 +20,7 @@ import { PlugZap, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { fetchVms } from '@/state/slices/vms';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
+import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 
 const SOCKET_CONNECTION_STATS_QUERY = gql`
   query SessionsSocketConnectionStats {
@@ -61,9 +62,12 @@ export default function SessionsListPage() {
     error,
     refetch
   } = useQuery(SOCKET_CONNECTION_STATS_QUERY, {
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 20_000
+    fetchPolicy: 'cache-and-network'
   });
+  // No polling: the backend emits 'agent_connections:update' when any VM's
+  // InfiniService agent connects/disconnects — refetch the fleet stats on those
+  // instead of every 20s. No vmId filter here: this page shows ALL connections.
+  useRealtimeRefetch('agent_connections', refetch, { actions: ['update'], minIntervalMs: 2000 });
 
   const {
     data: machines,
