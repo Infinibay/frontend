@@ -1167,6 +1167,7 @@ export type MachineApplicationInputType = {
 
 export type MachineMigrationResultType = {
   __typename?: 'MachineMigrationResultType';
+  accepted: Scalars['Boolean']['output'];
   error: Maybe<Scalars['String']['output']>;
   machineId: Scalars['String']['output'];
   sourceNodeId: Maybe<Scalars['String']['output']>;
@@ -4002,7 +4003,7 @@ export type MigrateMachineToNodeMutationVariables = Exact<{
 }>;
 
 
-export type MigrateMachineToNodeMutation = { __typename?: 'Mutation', migrateMachineToNode: { __typename?: 'MachineMigrationResultType', success: boolean, machineId: string, sourceNodeId: string | null, targetNodeId: string, error: string | null } };
+export type MigrateMachineToNodeMutation = { __typename?: 'Mutation', migrateMachineToNode: { __typename?: 'MachineMigrationResultType', accepted: boolean, success: boolean, machineId: string, sourceNodeId: string | null, targetNodeId: string, error: string | null } };
 
 export type CreateMachineTemplateMutationVariables = Exact<{
   input: MachineTemplateInputType;
@@ -5306,6 +5307,7 @@ export type SetNodeMaintenanceModeMutationResult = ApolloReactCommon.MutationRes
 export const MigrateMachineToNodeDocument = gql`
     mutation MigrateMachineToNode($id: String!, $targetNodeId: String!) {
   migrateMachineToNode(id: $id, targetNodeId: $targetNodeId) {
+    accepted
     success
     machineId
     sourceNodeId

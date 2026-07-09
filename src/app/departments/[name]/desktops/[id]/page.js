@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Badge,
@@ -48,6 +48,16 @@ import {
 import { useOpenConsole } from '@/hooks/useOpenConsole';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { toast } from 'sonner';
+import { getSocketService } from '@/services/socketService';
+
+// Human labels for the coarse migration phases the backend streams over Socket.IO
+// ('migrations' resource) while the background worker copies the disk.
+const MIGRATION_PHASE_LABEL = {
+  starting: 'Starting…',
+  copying: 'Copying disk to the target node…',
+  committing: 'Finalizing ownership…',
+  reclaiming: 'Cleaning up the source…',
+};
 
 import LoadingState from './components/LoadingState';
 import ErrorState from './components/ErrorState';
@@ -135,6 +145,13 @@ const VMDetailPage = () => {
   // Cold-migration is now a deliberate modal (admin + multi-node only) instead of
   // an always-on card above the tabs.
   const [placementOpen, setPlacementOpen] = useState(false);
+  // Non-null while a background migration is running (holds the current coarse phase).
+  // Driven by the mutation's `accepted` ack + live 'migrations' Socket.IO events.
+  const [migrationPhase, setMigrationPhase] = useState(null);
+  // Refs so the socket handler (subscribed once, before the loading/error guards) can
+  // read the latest nodes/vm name without re-subscribing on every data change.
+  const nodesRef = useRef([]);
+  const vmNameRef = useRef('');
 
   debug.log('VM Detail Page mounted', { departmentName, vmId });
 
@@ -183,6 +200,54 @@ const VMDetailPage = () => {
   });
   const [migrateMachineToNode, { loading: migrationLoading }] = useMigrateMachineToNodeMutation();
   const openConsole = useOpenConsole();
+
+  // Live migration lifecycle from the backend MigrationEventManager. The mutation only
+  // ACKs (accepted) and returns; the disk copy runs on a background worker that emits
+  // started → progress(phase) → completed|failed. We drive a single sonner toast (keyed
+  // by vmId so progress replaces in place) and refresh the VM + nodes on the terminal
+  // event. Subscribed here — before the loading/error guards — so it's an unconditional
+  // hook; nodes/vm name are read from refs to avoid re-subscribing on every data change.
+  useEffect(() => {
+    if (!vmId) return undefined;
+    const socketService = getSocketService();
+    const toastId = `migrate-${vmId}`;
+    const unsub = socketService.subscribeToAllResourceEvents(
+      'migrations',
+      (action, event) => {
+        const data = event?.data;
+        if (!data || data.vmId !== vmId) return;
+        if (action === 'started') {
+          setMigrationPhase((prev) => prev || 'starting');
+        } else if (action === 'progress') {
+          const phase = data.phase || 'copying';
+          setMigrationPhase(phase);
+          toast.loading(`Moving ${vmNameRef.current || 'desktop'}…`, {
+            id: toastId,
+            description: MIGRATION_PHASE_LABEL[phase] || 'Migrating…',
+          });
+        } else if (action === 'completed') {
+          setMigrationPhase(null);
+          const target = nodesRef.current.find((n) => n.id === data.targetNodeId);
+          toast.success('Desktop reassigned', {
+            id: toastId,
+            description: target?.name
+              ? `${vmNameRef.current || 'The desktop'} is now on ${target.name}.`
+              : `${vmNameRef.current || 'The desktop'} was moved to the selected node.`,
+          });
+          Promise.all([reloadVM(), refetchNodes()]).catch(() => {});
+        } else if (action === 'failed') {
+          setMigrationPhase(null);
+          toast.error('Migration failed', {
+            id: toastId,
+            description: data.error || 'The desktop could not be moved to the selected node.',
+          });
+          Promise.all([reloadVM(), refetchNodes()]).catch(() => {});
+        }
+      },
+      ['started', 'progress', 'completed', 'failed'],
+    );
+    return () => unsub?.();
+  }, [vmId, reloadVM, refetchNodes]);
 
   const helpConfig = useMemo(
     () => {
@@ -370,6 +435,9 @@ const VMDetailPage = () => {
   // on setupComplete.
   const canConnect = (isRunning || isInstalling) && graphicUrl?.startsWith('spice://');
   const nodes = nodeData?.nodes || [];
+  // Keep the refs the migration socket handler reads in sync with the latest render.
+  nodesRef.current = nodes;
+  vmNameRef.current = vm?.name || '';
   const totalNodes = nodeData?.nodeInventorySummary?.totalNodes ?? nodes.length;
   const isMultiNode = totalNodes > 1;
   const currentNode = nodes.find((node) => node.id === vm.nodeId);
@@ -392,18 +460,25 @@ const VMDetailPage = () => {
       });
       const migration = result?.data?.migrateMachineToNode;
 
-      if (!migration?.success) {
+      // The mutation only ACKs now — it validates + claims the VM and returns. A
+      // rejection (busy, not stopped, insufficient capacity) comes back as accepted=false
+      // with an error; the real work (and its success/failure) arrives over Socket.IO.
+      if (!migration?.accepted) {
         toast.error('Migration blocked', {
           description: migration?.error || 'The desktop could not be moved to the selected node.',
         });
         return;
       }
 
-      toast.success('Desktop reassigned', {
-        description: target?.name ? `${vm.name} was moved to ${target.name}.` : `${vm.name} was moved to the selected node.`,
-      });
       setPlacementOpen(false);
-      await Promise.all([reloadVM(), refetchNodes()]);
+      setMigrationPhase('starting');
+      toast.loading(
+        target?.name ? `Moving ${vm.name} to ${target.name}…` : `Moving ${vm.name}…`,
+        {
+          id: `migrate-${vmId}`,
+          description: 'This can take a few minutes for large disks — you can keep working.',
+        },
+      );
     } catch (err) {
       toast.error('Migration failed', {
         description: err?.message || 'The desktop could not be moved to the selected node.',
@@ -636,7 +711,7 @@ const VMDetailPage = () => {
           currentNodeName={currentNode?.name || null}
           targets={migrationTargets}
           onMigrate={handleMigrate}
-          migrating={migrationLoading}
+          migrating={migrationLoading || migrationPhase !== null}
           onStopVM={() => handlePowerAction('stop')}
           stopping={powerActionLoading}
         />

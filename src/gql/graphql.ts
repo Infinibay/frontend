@@ -1164,6 +1164,7 @@ export type MachineApplicationInputType = {
 
 export type MachineMigrationResultType = {
   __typename?: 'MachineMigrationResultType';
+  accepted: Scalars['Boolean']['output'];
   error?: Maybe<Scalars['String']['output']>;
   machineId: Scalars['String']['output'];
   sourceNodeId?: Maybe<Scalars['String']['output']>;
