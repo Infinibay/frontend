@@ -3,6 +3,7 @@ import { getSocketService } from './socketService'
 import { createDebugger } from '@/utils/debug'
 import { trackRealTimeEvent } from '@/utils/performance'
 import { fetchVMHealthSnapshot } from '@/state/slices/health'
+import { taskUpserted, taskFinished } from '@/state/slices/backgroundTasks'
 import client from '@/apollo-client'
 // Pool state is not in Redux — it lives in Apollo (see handlePoolEvent). Import
 // the SAME document the pools pages query so a realtime pool event can refresh
@@ -222,7 +223,67 @@ export class RealTimeReduxService {
       ])
     )
 
+    // Subscribe to cross-node migration lifecycle (resource 'migrations') APP-WIDE so
+    // the header's background-tasks dropdown tracks a move regardless of which page is
+    // open. The backend background worker emits started → progress(phase) →
+    // completed|failed (MigrationEventManager); the desktop page keeps its own per-VM
+    // toast — these are independent subscribers.
+    this.subscriptions.push(
+      this.socketService.subscribeToAllResourceEvents('migrations', (action, data) => {
+        this.handleMigrationEvent(action, data)
+      }, [
+        'started', 'progress', 'completed', 'failed'
+      ])
+    )
+
     this.debug.success('subscribe', `Subscribed to ${this.subscriptions.length} real-time event groups`)
+  }
+
+  // Coarse migration phases → a human label + a rough progress percent for the
+  // background-tasks bar. The backend streams the PHASE (not a byte percent), so this
+  // is a monotonic "feels like progress" mapping, not a precise fraction.
+  static MIGRATION_PHASES = {
+    starting: { detail: 'Preparing migration…', progress: 6 },
+    copying: { detail: 'Copying disk to the target node…', progress: 45 },
+    committing: { detail: 'Finalizing ownership…', progress: 82 },
+    reclaiming: { detail: 'Reclaiming source disk…', progress: 94 },
+  }
+
+  // Best-effort VM display name from the vms slice (may be empty if that page's data
+  // isn't loaded — the task still shows with a sensible fallback).
+  resolveVmName(vmId) {
+    try {
+      const items = this.store.getState()?.vms?.items || []
+      return items.find((v) => v && v.id === vmId)?.name || 'Desktop'
+    } catch {
+      return 'Desktop'
+    }
+  }
+
+  // Translate a 'migrations' lifecycle event into a generic backgroundTasks entry.
+  // eventData = { data: { vmId, phase, targetNodeId, error, ... }, status?, error? }
+  handleMigrationEvent(action, eventData) {
+    const data = eventData?.data
+    if (!data || !data.vmId) return
+    const id = `migration:${data.vmId}`
+    const title = `Moving ${this.resolveVmName(data.vmId)}`
+    const now = Date.now()
+
+    if (action === 'started' || action === 'progress') {
+      const phase = data.phase || (action === 'started' ? 'starting' : 'copying')
+      const meta = RealTimeReduxService.MIGRATION_PHASES[phase] || RealTimeReduxService.MIGRATION_PHASES.copying
+      this.store.dispatch(taskUpserted({
+        id, kind: 'migration', title, status: 'running', phase, detail: meta.detail, progress: meta.progress, updatedAt: now,
+      }))
+    } else if (action === 'completed') {
+      this.store.dispatch(taskFinished({
+        id, kind: 'migration', title, status: 'success', phase: 'done', detail: 'Move complete', progress: 100, updatedAt: now,
+      }))
+    } else if (action === 'failed') {
+      this.store.dispatch(taskFinished({
+        id, kind: 'migration', title, status: 'error', phase: 'failed', detail: 'Migration failed', error: data.error || eventData?.error || 'The desktop could not be moved.', updatedAt: now,
+      }))
+    }
   }
 
   // Handle live resource metrics events (resource 'metrics', action 'update').

@@ -31,6 +31,7 @@ import { useHelp } from '@/hooks/useHelp';
 import { HelpSheet } from '@/components/layout/HelpSheet';
 import { useHeaderActions } from '@/contexts/HeaderActionContext';
 import { NotificationBell } from '@/components/recommendations/NotificationBell';
+import { BackgroundTasksMenu } from '@/components/layout/BackgroundTasksMenu';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { selectUser } from '@/state/slices/auth';
 import { isOperator } from '@/lib/roles';
@@ -194,6 +195,10 @@ function GlobalHeaderInner({ onMenuClick }) {
 
   const right = (
     <ResponsiveStack direction="row" gap={2} align="center">
+      {/* Live background-task tracker (migrations, …). Self-hides when idle; sits to
+          the LEFT of the notification bell. */}
+      <BackgroundTasksMenu />
+
       {operator ? <NotificationBell /> : null}
 
       {helpConfig ? (

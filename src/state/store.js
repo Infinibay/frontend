@@ -3,6 +3,7 @@ import { persistStore, persistReducer, createMigrate, FLUSH, REHYDRATE, PAUSE, P
 import storage from 'redux-persist/lib/storage'
 import appSettingsReducer from './slices/appSettings'
 import authReducer from './slices/auth'
+import backgroundTasksReducer from './slices/backgroundTasks'
 import departments from './slices/departments'
 import featureFlagsReducer from './slices/featureFlags'
 import firewallReducer from './slices/firewall'
@@ -73,6 +74,7 @@ export const store = configureStore({
     appSettings: persistedAppSettings,
     applications: persistedApplicationReducer,
     auth: persistedAuth,
+    backgroundTasks: backgroundTasksReducer,
     departments: persistedDepartments,
     featureFlags: persistedFeatureFlags,
     firewall: firewallReducer,

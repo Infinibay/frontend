@@ -1,6 +1,6 @@
 {
   "name": "infinibay",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack -H ::",
