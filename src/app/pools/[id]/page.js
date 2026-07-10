@@ -450,7 +450,10 @@ function DesktopsTab({ machines, loading, error, onRetry, onRefresh }) {
       width: 40,
       cell: ({ row: r }) => {
         const isRunning = r.status === 'running';
-        const isBusy = busyId === r.id || r.status === 'starting' || r.status === 'rebuilding';
+        // 'moving' = mid cross-node migration: the backend refuses every power action
+        // (isPowerActionLocked), so disable the actions menu instead of offering a
+        // "Power on"/"Open console" that would always fail.
+        const isBusy = busyId === r.id || r.status === 'starting' || r.status === 'rebuilding' || r.status === 'moving';
         return (
           // Stop the click from bubbling to the row (onRowClick → openConsole),
           // which would navigate away before the menu could open.
@@ -667,6 +670,9 @@ function desktopDotStatus(status) {
     case 'paused':
     case 'suspended':
       return 'degraded';
+    case 'moving':
+      // Cross-node migration in flight — a busy/transitional state, not "offline".
+      return 'provisioning';
     case 'error':
       return 'warning';
     default:

@@ -61,6 +61,9 @@ const vmStatusToHarbor = (status, setupComplete) => {
     case "starting":
     case "provisioning":
       return "provisioning";
+    case "moving":
+      // Cross-node migration in flight — locked, not "Stopped".
+      return "moving";
     case "off":
     case "powered_off":
     case "error":

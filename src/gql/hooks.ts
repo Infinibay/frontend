@@ -2563,6 +2563,7 @@ export type ProcessControlResult = {
 
 export type Query = {
   __typename?: 'Query';
+  activeMigrations: Array<Machine>;
   /** Return active (non-terminal) resolutions for a machine */
   activeResolutionsForMachine: Array<RecommendationResolutionType>;
   /** Get all ISOs (available and unavailable) */
@@ -5084,6 +5085,11 @@ export type MyPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MyPermissionsQuery = { __typename?: 'Query', myPermissions: { __typename?: 'EffectivePermissionsType', allowedResources: Array<string>, grants: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> } };
+
+export type ActiveMigrationsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ActiveMigrationsQuery = { __typename?: 'Query', activeMigrations: Array<{ __typename?: 'Machine', id: string, name: string, status: string }> };
 
 export type BackupsQueryVariables = Exact<{
   vmId: Scalars['String']['input'];
@@ -12308,6 +12314,53 @@ export type MyPermissionsSuspenseQueryHookResult = ReturnType<typeof useMyPermis
 export type MyPermissionsQueryResult = ApolloReactCommon.QueryResult<MyPermissionsQuery, MyPermissionsQueryVariables>;
 export function refetchMyPermissionsQuery(variables?: MyPermissionsQueryVariables) {
       return { query: MyPermissionsDocument, variables: variables }
+    }
+export const ActiveMigrationsDocument = gql`
+    query ActiveMigrations {
+  activeMigrations {
+    id
+    name
+    status
+  }
+}
+    `;
+
+/**
+ * __useActiveMigrationsQuery__
+ *
+ * To run a query within a React component, call `useActiveMigrationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActiveMigrationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActiveMigrationsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useActiveMigrationsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ActiveMigrationsQuery, ActiveMigrationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ActiveMigrationsQuery, ActiveMigrationsQueryVariables>(ActiveMigrationsDocument, options);
+      }
+export function useActiveMigrationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ActiveMigrationsQuery, ActiveMigrationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ActiveMigrationsQuery, ActiveMigrationsQueryVariables>(ActiveMigrationsDocument, options);
+        }
+// @ts-ignore
+export function useActiveMigrationsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ActiveMigrationsQuery, ActiveMigrationsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ActiveMigrationsQuery, ActiveMigrationsQueryVariables>;
+export function useActiveMigrationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ActiveMigrationsQuery, ActiveMigrationsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ActiveMigrationsQuery | undefined, ActiveMigrationsQueryVariables>;
+export function useActiveMigrationsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ActiveMigrationsQuery, ActiveMigrationsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<ActiveMigrationsQuery, ActiveMigrationsQueryVariables>(ActiveMigrationsDocument, options);
+        }
+export type ActiveMigrationsQueryHookResult = ReturnType<typeof useActiveMigrationsQuery>;
+export type ActiveMigrationsLazyQueryHookResult = ReturnType<typeof useActiveMigrationsLazyQuery>;
+export type ActiveMigrationsSuspenseQueryHookResult = ReturnType<typeof useActiveMigrationsSuspenseQuery>;
+export type ActiveMigrationsQueryResult = ApolloReactCommon.QueryResult<ActiveMigrationsQuery, ActiveMigrationsQueryVariables>;
+export function refetchActiveMigrationsQuery(variables?: ActiveMigrationsQueryVariables) {
+      return { query: ActiveMigrationsDocument, variables: variables }
     }
 export const BackupsDocument = gql`
     query backups($vmId: String!) {

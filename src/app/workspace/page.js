@@ -58,6 +58,8 @@ function statusMeta(status) {
   if (s === 'running' || s === 'active') return { dot: 'online', label: 'Running' };
   if (s === 'paused' || s === 'suspended') return { dot: 'degraded', label: 'Paused' };
   if (s === 'starting' || s === 'provisioning') return { dot: 'provisioning', label: 'Starting' };
+  // Cross-node migration in flight — a busy/transitional state, not "Stopped".
+  if (s === 'moving') return { dot: 'provisioning', label: 'Moving…' };
   return { dot: 'offline', label: 'Stopped' };
 }
 

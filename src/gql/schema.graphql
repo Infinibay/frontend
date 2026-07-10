@@ -1911,6 +1911,7 @@ type ProcessControlResult {
 }
 
 type Query {
+  activeMigrations: [Machine!]!
   """Return active (non-terminal) resolutions for a machine"""
   activeResolutionsForMachine(machineId: ID!): [RecommendationResolutionType!]!
 

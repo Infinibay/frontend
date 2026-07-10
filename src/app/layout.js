@@ -73,10 +73,10 @@ function AppContent({ children, isAuthenticated, authChecked }) {
       router.replace('/');
     }
   }, [setupStatusData, pathname, router]);
-  // Memoise on the user identity fields so AppSidebar's React.memo actually holds.
-  // (React Compiler is NOT enabled in this project, so without useMemo this literal
-  // is a fresh object every layout render — which defeats the memo and re-renders
-  // the sidebar on every unrelated layout state change.)
+  // Memoise on the user object so AppSidebar's React.memo actually holds: without this the
+  // literal would be a fresh object every layout render, defeating the memo and re-rendering
+  // the sidebar on every unrelated layout state change. `user` (from Redux) only changes
+  // identity when the account/profile changes, so this recomputes exactly when it should.
   const sidebarUser = React.useMemo(
     () =>
       user?.firstName
@@ -88,7 +88,7 @@ function AppContent({ children, isAuthenticated, authChecked }) {
             avatar: user.avatar,
           }
         : null,
-    [user?.firstName, user?.lastName, user?.email, user?.role, user?.avatar],
+    [user],
   );
   React.useEffect(() => {
     debug.info('layout', 'AppContent rendered:', {
@@ -115,7 +115,7 @@ function AppContent({ children, isAuthenticated, authChecked }) {
     );
     debug.warn('routing', 'Redirecting user away from denied route', { pathname, fallback });
     router.replace(fallback);
-  }, [allowedResources, isAuthenticated, pathname, router, user]);
+  }, [allowedResources, isAuthenticated, pathname, router, user, setupOpen]);
 
   // Auth gate: send unauthenticated users to sign-in. This is the SINGLE
   // redirect for unauthenticated access and covers EVERY route (e.g. /identity,

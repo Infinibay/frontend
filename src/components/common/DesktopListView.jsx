@@ -37,6 +37,9 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
   const stop = (e) => e.stopPropagation();
   const isPending = !!pending?.[vm?.id];
   const isLocked = !!vm?.goldenImageBuildId;
+  // Cross-node migration in flight (Machine.status='moving'): the disk is being copied
+  // to another node and the backend refuses power-on until it finishes (isPowerActionLocked).
+  const isMoving = status === 'moving';
 
   // Frozen for a golden-image build: the desktop is being sealed. Show a lock instead
   // of power controls so no one power-cycles it mid-capture (the backend refuses it too).
@@ -44,6 +47,15 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
     return (
       <span onClick={stop} title="Building a golden image — the desktop is frozen">
         <Lock size={14} className="text-warning" />
+      </span>);
+
+  }
+
+  // Locked while moving to another node: no power controls until the move resolves.
+  if (isMoving) {
+    return (
+      <span onClick={stop} title="Moving to another node — locked until it finishes">
+        <Lock size={14} className="text-info" />
       </span>);
 
   }
@@ -154,9 +166,12 @@ function VmMenuItems({
   const isPaused = status === 'paused' || status === 'suspended';
   const isStopped = !isRunning && !isPaused;
   const isPending = !!pending?.[vm?.id];
-  // Frozen for a golden-image build: every mutating action is disabled (the backend
-  // refuses them too). "Open" stays enabled so the desktop is still viewable.
-  const isLocked = !!vm?.goldenImageBuildId;
+  // Frozen for a golden-image build OR mid cross-node migration ('moving'): every mutating
+  // action is disabled (the backend refuses them too — isPowerActionLocked). "Open" stays
+  // enabled so the desktop is still viewable.
+  const goldenBuilding = !!vm?.goldenImageBuildId;
+  const isMoving = status === 'moving';
+  const isLocked = goldenBuilding || isMoving;
   const run = (fn) => () => {
     onAfter?.();
     fn?.(vm);
@@ -166,7 +181,7 @@ function VmMenuItems({
     <>
       <MenuLabel>{vm?.name}</MenuLabel>
       {isLocked ?
-      <MenuLabel>Building a golden image — frozen</MenuLabel> :
+      <MenuLabel>{goldenBuilding ? 'Building a golden image — frozen' : 'Moving to another node — locked'}</MenuLabel> :
       null}
       <MenuSeparator />
       <MenuItem icon={<Play size={14} />} disabled={isPending || isRunning || isLocked} onClick={run(onPlay)}>
@@ -578,13 +593,17 @@ function GridWithContextMenu({
       <FluidGrid minItemWidth={280} gap={12}>
         {hosts.map((h) => {
           const raw = h._raw;
+          // HostCard's status vocab is online|degraded|offline|provisioning — it has no
+          // 'moving'. Surface a moving desktop as a "busy" card (degraded) + a Moving… tag,
+          // mirroring the golden-image treatment, instead of leaking the unknown token.
+          const isMoving = (raw?.status || '').toLowerCase() === 'moving';
           return (
             <div key={h.id}>
               <HostCard
                 name={h.name}
                 subtitle={h.subtitle}
-                status={raw?.goldenImageBuildId ? 'degraded' : h.status}
-                tags={raw?.goldenImageBuildId ? ['Building image', ...(h.tags || [])] : h.tags}
+                status={raw?.goldenImageBuildId || isMoving ? 'degraded' : h.status}
+                tags={raw?.goldenImageBuildId ? ['Building image', ...(h.tags || [])] : isMoving ? ['Moving…', ...(h.tags || [])] : h.tags}
                 leadingIcon={h.osIcon}
                 actions={
                 <InlinePowerButtons

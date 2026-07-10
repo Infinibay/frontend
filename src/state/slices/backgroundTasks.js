@@ -49,6 +49,17 @@ const slice = createSlice({
       }
       evictFinished(state);
     },
+    // Seed a task from a query on load (page reload / login) — create-only. Unlike
+    // taskUpserted it NEVER touches an existing entry, so re-hydrating in-flight work
+    // after an F5 can't clobber a fresher live progress/terminal state that a socket
+    // event may have already produced (e.g. seed arrives at 0% after a 63% event).
+    taskSeeded(state, action) {
+      const t = action.payload;
+      if (!t || !t.id || state.byId[t.id]) return;
+      state.byId[t.id] = { startedAt: t.updatedAt, progress: 0, ...t };
+      state.order.unshift(t.id);
+      evictFinished(state);
+    },
     // Terminal transition (success / error). Records even if we never saw a start.
     taskFinished(state, action) {
       const t = action.payload;
@@ -79,7 +90,7 @@ const slice = createSlice({
   },
 });
 
-export const { taskUpserted, taskFinished, taskDismissed, clearFinishedTasks } = slice.actions;
+export const { taskUpserted, taskSeeded, taskFinished, taskDismissed, clearFinishedTasks } = slice.actions;
 
 // Tasks in display order: running first, then most-recently-updated.
 export const selectBackgroundTasks = (state) => {

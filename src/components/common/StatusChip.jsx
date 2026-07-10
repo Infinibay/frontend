@@ -22,6 +22,9 @@ const STATUS_THEME = {
   offline:      { label: 'Stopped',      bg: 'bg-fg-muted/10', fg: 'text-fg-muted', dot: 'bg-fg-muted' },
   error:        { label: 'Error',        bg: 'bg-danger/10',  fg: 'text-danger',  dot: 'bg-danger' },
   unknown:      { label: 'Unknown',      bg: 'bg-fg-muted/10', fg: 'text-fg-muted', dot: 'bg-fg-muted' },
+  // Cross-node migration in flight (Machine.status='moving'). Info "busy" tone; the
+  // desktop is locked out of power/console until the move finishes or fails.
+  moving:       { label: 'Moving…',      bg: 'bg-info/10',    fg: 'text-info',    dot: 'bg-info' },
   // Frozen while a golden image is being built/captured from this desktop
   // (Machine.goldenImageBuildId set). Amber "busy" tone; the desktop is not usable
   // and every power/console/capture action is disabled until it clears.
@@ -30,7 +33,7 @@ const STATUS_THEME = {
 
 export function StatusChip({ status, label, pulse }) {
   const s = STATUS_THEME[status] || STATUS_THEME.unknown;
-  const shouldPulse = pulse ?? (status === 'online' || status === 'provisioning' || status === 'locked');
+  const shouldPulse = pulse ?? (status === 'online' || status === 'provisioning' || status === 'locked' || status === 'moving');
   return (
     <span
       className={[

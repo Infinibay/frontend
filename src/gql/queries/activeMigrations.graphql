@@ -1,0 +1,7 @@
+query ActiveMigrations {
+  activeMigrations {
+    id
+    name
+    status
+  }
+}

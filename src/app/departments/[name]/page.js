@@ -75,6 +75,9 @@ const vmStatusToHarbor = (status, setupComplete) => {
     case 'updating_hardware':
     case 'powering_off_update':
       return 'maintenance';
+    case 'moving':
+      // Cross-node migration in flight — locked, not "Stopped".
+      return 'moving';
     default:
       return 'offline';
   }
@@ -226,7 +229,7 @@ const DepartmentPage = () => {
     ).length;
     const stopped = machines.filter(
       (m) =>
-        !['running', 'paused', 'suspended', 'starting', 'provisioning'].includes(
+        !['running', 'paused', 'suspended', 'starting', 'provisioning', 'moving'].includes(
           (m.status || '').toLowerCase(),
         ),
     ).length;

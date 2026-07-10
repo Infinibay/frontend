@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Badge,
@@ -50,26 +50,6 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 import { toast } from 'sonner';
 import { getSocketService } from '@/services/socketService';
-
-// Human labels for the coarse migration phases the backend streams over Socket.IO
-// ('migrations' resource) while the background worker copies the disk.
-const MIGRATION_PHASE_LABEL = {
-  starting: 'Starting…',
-  copying: 'Copying disk to the target node…',
-  committing: 'Finalizing ownership…',
-  reclaiming: 'Cleaning up the source…',
-};
-
-// Compact binary byte size for the migration toast (mirrors the header dropdown).
-function fmtMigrationBytes(n) {
-  if (!Number.isFinite(n) || n < 0) return '0 B';
-  if (n < 1024) return `${n} B`;
-  const units = ['KB', 'MB', 'GB', 'TB'];
-  let v = n / 1024;
-  let i = 0;
-  while (v >= 1024 && i < units.length - 1) { v /= 1024; i += 1; }
-  return `${v < 10 ? v.toFixed(1) : Math.round(v)} ${units[i]}`;
-}
 
 import LoadingState from './components/LoadingState';
 import ErrorState from './components/ErrorState';
@@ -136,6 +116,7 @@ function statusLabel(status, isInstalling) {
     case 'maintenance': return 'Updating';
     case 'offline': return 'Off';
     case 'locked': return 'Building image';
+    case 'moving': return 'Moving…';
     default: return 'Unknown';
   }
 }
@@ -148,6 +129,7 @@ function statusTone(status) {
     case 'maintenance': return 'info';
     case 'offline': return 'neutral';
     case 'locked': return 'warning';
+    case 'moving': return 'info';
     default: return 'neutral';
   }
 }
@@ -162,10 +144,6 @@ const VMDetailPage = () => {
   // Non-null while a background migration is running (holds the current coarse phase).
   // Driven by the mutation's `accepted` ack + live 'migrations' Socket.IO events.
   const [migrationPhase, setMigrationPhase] = useState(null);
-  // Refs so the socket handler (subscribed once, before the loading/error guards) can
-  // read the latest nodes/vm name without re-subscribing on every data change.
-  const nodesRef = useRef([]);
-  const vmNameRef = useRef('');
 
   debug.log('VM Detail Page mounted', { departmentName, vmId });
 
@@ -218,14 +196,15 @@ const VMDetailPage = () => {
 
   // Live migration lifecycle from the backend MigrationEventManager. The mutation only
   // ACKs (accepted) and returns; the disk copy runs on a background worker that emits
-  // started → progress(phase) → completed|failed. We drive a single sonner toast (keyed
-  // by vmId so progress replaces in place) and refresh the VM + nodes on the terminal
-  // event. Subscribed here — before the loading/error guards — so it's an unconditional
-  // hook; nodes/vm name are read from refs to avoid re-subscribing on every data change.
+  // started → progress(phase) → completed|failed. Progress + terminal status are reported
+  // app-wide in the header's background-tasks dropdown (RealTimeReduxService →
+  // backgroundTasks) — the single place migrations surface — so this page no longer raises
+  // its own bottom-right toast, which duplicated that dropdown. We still track the coarse
+  // phase here to drive the in-page placement UI, and refresh the VM + node inventory on the
+  // terminal event. Subscribed before the loading/error guards so it stays an unconditional hook.
   useEffect(() => {
     if (!vmId) return undefined;
     const socketService = getSocketService();
-    const toastId = `migrate-${vmId}`;
     const unsub = socketService.subscribeToAllResourceEvents(
       'migrations',
       (action, event) => {
@@ -234,34 +213,9 @@ const VMDetailPage = () => {
         if (action === 'started') {
           setMigrationPhase((prev) => prev || 'starting');
         } else if (action === 'progress') {
-          const phase = data.phase || 'copying';
-          setMigrationPhase(phase);
-          // Prefer the real byte progress the backend streams during 'copying'.
-          const total = Number(data.total);
-          const transferred = Number(data.transferred);
-          const description = phase === 'copying' && Number.isFinite(total) && total > 0 && Number.isFinite(transferred)
-            ? `Copying disk… ${fmtMigrationBytes(transferred)} / ${fmtMigrationBytes(total)}`
-            : (MIGRATION_PHASE_LABEL[phase] || 'Migrating…');
-          toast.loading(`Moving ${vmNameRef.current || 'desktop'}…`, {
-            id: toastId,
-            description,
-          });
-        } else if (action === 'completed') {
+          setMigrationPhase(data.phase || 'copying');
+        } else if (action === 'completed' || action === 'failed') {
           setMigrationPhase(null);
-          const target = nodesRef.current.find((n) => n.id === data.targetNodeId);
-          toast.success('Desktop reassigned', {
-            id: toastId,
-            description: target?.name
-              ? `${vmNameRef.current || 'The desktop'} is now on ${target.name}.`
-              : `${vmNameRef.current || 'The desktop'} was moved to the selected node.`,
-          });
-          Promise.all([reloadVM(), refetchNodes()]).catch(() => {});
-        } else if (action === 'failed') {
-          setMigrationPhase(null);
-          toast.error('Migration failed', {
-            id: toastId,
-            description: data.error || 'The desktop could not be moved to the selected node.',
-          });
           Promise.all([reloadVM(), refetchNodes()]).catch(() => {});
         }
       },
@@ -444,7 +398,12 @@ const VMDetailPage = () => {
   // check the marker directly. Folded into isBusy so every power button disables, and
   // into canConnect so the console is refused (the backend refuses it too).
   const isLocked = !!vm?.goldenImageBuildId;
-  const isBusy = status === 'provisioning' || status === 'maintenance' || isLocked;
+  // Cross-node migration in flight (Machine.status='moving', a backend status-as-lock).
+  // Like isLocked it's a transient "hands off" state: folded into isBusy so every power
+  // button disables (the backend refuses power-on while moving — isPowerActionLocked),
+  // and surfaced as a "Moving…" badge instead of the default "Off".
+  const isMoving = rawStatus === 'moving';
+  const isBusy = status === 'provisioning' || status === 'maintenance' || isLocked || isMoving;
   const os = vm?.os;
   // Surface a recorded failure reason whenever the VM is NOT actively running.
   // Keys off raw status + lastError, NOT the mapped harbor status: raw 'error'
@@ -461,9 +420,6 @@ const VMDetailPage = () => {
   // on setupComplete.
   const canConnect = (isRunning || isInstalling) && graphicUrl?.startsWith('spice://') && !isLocked;
   const nodes = nodeData?.nodes || [];
-  // Keep the refs the migration socket handler reads in sync with the latest render.
-  nodesRef.current = nodes;
-  vmNameRef.current = vm?.name || '';
   const totalNodes = nodeData?.nodeInventorySummary?.totalNodes ?? nodes.length;
   const isMultiNode = totalNodes > 1;
   const currentNode = nodes.find((node) => node.id === vm.nodeId);
@@ -477,8 +433,6 @@ const VMDetailPage = () => {
 
   const handleMigrate = async (targetNodeId) => {
     if (!targetNodeId) return;
-
-    const target = nodes.find((node) => node.id === targetNodeId);
 
     try {
       const result = await migrateMachineToNode({
@@ -498,13 +452,8 @@ const VMDetailPage = () => {
 
       setPlacementOpen(false);
       setMigrationPhase('starting');
-      toast.loading(
-        target?.name ? `Moving ${vm.name} to ${target.name}…` : `Moving ${vm.name}…`,
-        {
-          id: `migrate-${vmId}`,
-          description: 'This can take a few minutes for large disks — you can keep working.',
-        },
-      );
+      // No toast here: the move now surfaces in the header's background-tasks dropdown
+      // (fed by the 'migrations' Socket.IO stream). A toast would duplicate it bottom-right.
     } catch (err) {
       toast.error('Migration failed', {
         description: err?.message || 'The desktop could not be moved to the selected node.',
@@ -528,9 +477,9 @@ const VMDetailPage = () => {
                 <ResponsiveStack direction="col" gap={2}>
                   <ResponsiveStack direction="row" gap={3} align="center" wrap>
                     <h1 className="text-xl font-semibold leading-tight m-0">{vm.name}</h1>
-                    <Badge tone={statusTone(isLocked ? 'locked' : status)} pulse={isRunning || isLocked}>
-                      <StatusDot status={isLocked ? 'degraded' : status} label={null} />
-                      {statusLabel(isLocked ? 'locked' : status, isInstalling)}
+                    <Badge tone={statusTone(isLocked ? 'locked' : isMoving ? 'moving' : status)} pulse={isRunning || isLocked || isMoving}>
+                      <StatusDot status={isLocked ? 'degraded' : isMoving ? 'provisioning' : status} label={null} />
+                      {statusLabel(isLocked ? 'locked' : isMoving ? 'moving' : status, isInstalling)}
                     </Badge>
                     {vm.template?.name ? (
                       <Badge tone="purple">{vm.template.name}</Badge>

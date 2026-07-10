@@ -2560,6 +2560,7 @@ export type ProcessControlResult = {
 
 export type Query = {
   __typename?: 'Query';
+  activeMigrations: Array<Machine>;
   /** Return active (non-terminal) resolutions for a machine */
   activeResolutionsForMachine: Array<RecommendationResolutionType>;
   /** Get all ISOs (available and unavailable) */

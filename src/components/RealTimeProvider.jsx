@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useSelector } from 'react-redux'
 import { createRealTimeReduxService } from '@/services/realTimeReduxService'
 import { getSocketService } from '@/services/socketService'
+import MigrationRehydrator from '@/components/MigrationRehydrator'
 import { store } from '@/state/store'
 import { createDebugger } from '@/utils/debug'
 
@@ -270,6 +271,11 @@ export function RealTimeProvider({ children }) {
 
   return (
     <RealTimeContext.Provider value={contextValue}>
+      {/* Re-seeds the header background-tasks dropdown with any cross-node migration already
+          in flight (survives F5) and reconciles stale "Moving…" rows on reconnect. Rendered
+          here so it sits inside ApolloProvider + Redux (which wrap this provider) and can read
+          the live connection state. Renders nothing. */}
+      <MigrationRehydrator isConnected={connectionStatus === 'connected'} />
       {children}
 
     </RealTimeContext.Provider>
