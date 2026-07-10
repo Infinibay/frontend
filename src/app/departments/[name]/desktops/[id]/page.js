@@ -1,12 +1,17 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Badge,
   Button,
   Card,
   Container,
+  Dialog,
+  DialogBody,
+  DialogButtons,
+  DialogDescription,
+  DialogTitle,
   IconButton,
   IconTile,
   Menu,
@@ -22,6 +27,7 @@ import {
 import dynamic from 'next/dynamic';
 import { createDebugger } from '@/utils/debug';
 import {
+  AlertCircle,
   Cpu,
   Database,
   FileCode,
@@ -38,6 +44,7 @@ import {
   Server,
   Shield,
   Terminal,
+  Trash2,
   Zap,
 } from 'lucide-react';
 import { useVMDetail } from './hooks/useVMDetail';
@@ -49,6 +56,8 @@ import { useOpenConsole } from '@/hooks/useOpenConsole';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { useRealtimeRefetch } from '@/hooks/useRealtimeRefetch';
 import { toast } from 'sonner';
+import { useDispatch } from 'react-redux';
+import { deleteVm } from '@/state/slices/vms';
 import { getSocketService } from '@/services/socketService';
 
 import LoadingState from './components/LoadingState';
@@ -144,6 +153,10 @@ const VMDetailPage = () => {
   // Non-null while a background migration is running (holds the current coarse phase).
   // Driven by the mutation's `accepted` ack + live 'migrations' Socket.IO events.
   const [migrationPhase, setMigrationPhase] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
+  const dispatch = useDispatch();
 
   debug.log('VM Detail Page mounted', { departmentName, vmId });
 
@@ -461,6 +474,25 @@ const VMDetailPage = () => {
     }
   };
 
+  // Delete the desktop. Mirrors the list view's flow (deleteVm thunk + confirm
+  // dialog) — the detail page previously had no delete affordance at all, so a VM
+  // reachable only from its detail view (e.g. one moved onto a compute node) could
+  // not be removed from the UI. On success the row is gone, so we leave for the
+  // department's desktop list; on failure we keep the dialog open with the toast.
+  const handleDeleteDesktop = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await dispatch(deleteVm({ id: vmId })).unwrap();
+      toast.success('Desktop deleted');
+      router.push(`/departments/${encodeURIComponent(departmentName)}/desktops`);
+    } catch (err) {
+      const msg = typeof err === 'string' ? err : err?.message;
+      toast.error(msg || 'Failed to delete the desktop');
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <>
       <Container size="xl" padded>
@@ -565,39 +597,46 @@ const VMDetailPage = () => {
                     Start
                   </Button>
                 )}
-                {isRunning || canShowPlacement ? (
-                  <Menu
-                    align="end"
-                    trigger={
-                      <IconButton
-                        variant="ghost"
-                        size="sm"
-                        icon={<MoreVertical size={16} />}
-                        label="More actions"
-                      />
-                    }
+                <Menu
+                  align="end"
+                  trigger={
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<MoreVertical size={16} />}
+                      label="More actions"
+                    />
+                  }
+                >
+                  {isRunning ? (
+                    <MenuItem
+                      icon={<Zap size={14} />}
+                      danger
+                      disabled={powerActionLoading}
+                      onClick={() => handlePowerAction('reset')}
+                    >
+                      Force reset
+                    </MenuItem>
+                  ) : null}
+                  {isRunning && canShowPlacement ? <MenuSeparator /> : null}
+                  {canShowPlacement ? (
+                    <MenuItem
+                      icon={<MoveRight size={14} />}
+                      onClick={() => setPlacementOpen(true)}
+                    >
+                      Move to another node…
+                    </MenuItem>
+                  ) : null}
+                  {isRunning || canShowPlacement ? <MenuSeparator /> : null}
+                  <MenuItem
+                    icon={<Trash2 size={14} />}
+                    danger
+                    disabled={isLocked || isMoving}
+                    onClick={() => setDeleteOpen(true)}
                   >
-                    {isRunning ? (
-                      <MenuItem
-                        icon={<Zap size={14} />}
-                        danger
-                        disabled={powerActionLoading}
-                        onClick={() => handlePowerAction('reset')}
-                      >
-                        Force reset
-                      </MenuItem>
-                    ) : null}
-                    {isRunning && canShowPlacement ? <MenuSeparator /> : null}
-                    {canShowPlacement ? (
-                      <MenuItem
-                        icon={<MoveRight size={14} />}
-                        onClick={() => setPlacementOpen(true)}
-                      >
-                        Move to another node…
-                      </MenuItem>
-                    ) : null}
-                  </Menu>
-                ) : null}
+                    Delete desktop
+                  </MenuItem>
+                </Menu>
               </ResponsiveStack>
             </ResponsiveStack>
           </Card>
@@ -691,6 +730,40 @@ const VMDetailPage = () => {
           stopping={powerActionLoading}
         />
       ) : null}
+
+      <Dialog
+        open={deleteOpen}
+        onClose={() => { if (!isDeleting) setDeleteOpen(false); }}
+        size="sm"
+      >
+        <DialogTitle>
+          <ResponsiveStack direction="row" gap={2} align="center">
+            <AlertCircle size={16} />
+            Delete desktop
+          </ResponsiveStack>
+        </DialogTitle>
+        <DialogDescription>
+          {vm?.name
+            ? `This permanently removes ${vm.name} and all its data.`
+            : 'This action cannot be undone.'}
+        </DialogDescription>
+        <DialogBody>
+          <p>All snapshots, volumes and attached configuration will be lost.</p>
+        </DialogBody>
+        <DialogButtons align="end">
+          <Button variant="secondary" onClick={() => setDeleteOpen(false)} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteDesktop}
+            loading={isDeleting}
+            disabled={isDeleting}
+          >
+            Delete
+          </Button>
+        </DialogButtons>
+      </Dialog>
     </>
   );
 };
