@@ -24,7 +24,8 @@ import {
   ExternalLink,
   Trash2,
   MoreHorizontal,
-  Camera } from
+  Camera,
+  Lock } from
 'lucide-react';
 import { focusFirst, focusNextMenuItem } from '@infinibay/harbor/a11y';
 import { StatusChip } from '@/components/common/StatusChip';
@@ -35,6 +36,17 @@ function InlinePowerButtons({ vm, pending, onPlay, onPause, onStop }) {
   const isPaused = status === 'paused' || status === 'suspended';
   const stop = (e) => e.stopPropagation();
   const isPending = !!pending?.[vm?.id];
+  const isLocked = !!vm?.goldenImageBuildId;
+
+  // Frozen for a golden-image build: the desktop is being sealed. Show a lock instead
+  // of power controls so no one power-cycles it mid-capture (the backend refuses it too).
+  if (isLocked) {
+    return (
+      <span onClick={stop} title="Building a golden image — the desktop is frozen">
+        <Lock size={14} className="text-warning" />
+      </span>);
+
+  }
 
   if (isPending) {
     return (
@@ -142,6 +154,9 @@ function VmMenuItems({
   const isPaused = status === 'paused' || status === 'suspended';
   const isStopped = !isRunning && !isPaused;
   const isPending = !!pending?.[vm?.id];
+  // Frozen for a golden-image build: every mutating action is disabled (the backend
+  // refuses them too). "Open" stays enabled so the desktop is still viewable.
+  const isLocked = !!vm?.goldenImageBuildId;
   const run = (fn) => () => {
     onAfter?.();
     fn?.(vm);
@@ -150,14 +165,17 @@ function VmMenuItems({
   return (
     <>
       <MenuLabel>{vm?.name}</MenuLabel>
+      {isLocked ?
+      <MenuLabel>Building a golden image — frozen</MenuLabel> :
+      null}
       <MenuSeparator />
-      <MenuItem icon={<Play size={14} />} disabled={isPending || isRunning} onClick={run(onPlay)}>
+      <MenuItem icon={<Play size={14} />} disabled={isPending || isRunning || isLocked} onClick={run(onPlay)}>
         Start
       </MenuItem>
-      <MenuItem icon={<Pause size={14} />} disabled={isPending || !isRunning} onClick={run(onPause)}>
+      <MenuItem icon={<Pause size={14} />} disabled={isPending || !isRunning || isLocked} onClick={run(onPause)}>
         Pause
       </MenuItem>
-      <MenuItem icon={<Square size={14} />} disabled={isPending || isStopped} onClick={run(onStop)}>
+      <MenuItem icon={<Square size={14} />} disabled={isPending || isStopped || isLocked} onClick={run(onStop)}>
         Stop
       </MenuItem>
       <MenuSeparator />
@@ -167,7 +185,7 @@ function VmMenuItems({
       {onCapture ?
       <>
           <MenuSeparator />
-          <MenuItem icon={<Camera size={14} />} onClick={run(onCapture)}>
+          <MenuItem icon={<Camera size={14} />} disabled={isLocked} onClick={run(onCapture)}>
             Capture as Golden Image
           </MenuItem>
         </> :
@@ -175,7 +193,7 @@ function VmMenuItems({
       {onDelete ?
       <>
           <MenuSeparator />
-          <MenuItem icon={<Trash2 size={14} />} danger onClick={run(onDelete)}>
+          <MenuItem icon={<Trash2 size={14} />} danger disabled={isLocked} onClick={run(onDelete)}>
             Delete
           </MenuItem>
         </> :
@@ -217,8 +235,10 @@ export function DesktopListView({
     {
       id: 'status',
       header: 'Status',
-      width: 110,
-      cell: ({ row }) => <StatusChip status={row.status} />
+      width: 130,
+      cell: ({ row }) =>
+      <StatusChip status={row._raw?.goldenImageBuildId ? 'locked' : row.status} />
+
     },
     {
       id: 'name',
@@ -563,8 +583,8 @@ function GridWithContextMenu({
               <HostCard
                 name={h.name}
                 subtitle={h.subtitle}
-                status={h.status}
-                tags={h.tags}
+                status={raw?.goldenImageBuildId ? 'degraded' : h.status}
+                tags={raw?.goldenImageBuildId ? ['Building image', ...(h.tags || [])] : h.tags}
                 leadingIcon={h.osIcon}
                 actions={
                 <InlinePowerButtons

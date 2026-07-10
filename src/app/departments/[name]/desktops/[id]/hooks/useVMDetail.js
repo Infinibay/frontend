@@ -17,6 +17,7 @@ const vmDetailedInfo = gql`
       nodeId
       userId
       templateId
+      goldenImageBuildId
       createdAt
       configuration
       cpuCores

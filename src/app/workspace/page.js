@@ -62,11 +62,15 @@ function statusMeta(status) {
 }
 
 function DesktopTile({ desktop, busy }) {
-  const meta = statusMeta(desktop.status);
+  // Frozen while a golden image is being built from this desktop — not connectable
+  // (the backend refuses the console too). Overrides the run-state so it never reads
+  // as a normal "Running" tile the user can connect to.
+  const isLocked = !!desktop?.goldenImageBuildId;
+  const meta = isLocked ? { dot: 'degraded', label: 'Building image' } : statusMeta(desktop.status);
   const graphic = typeof desktop?.configuration?.graphic === 'string'
     ? desktop.configuration.graphic
     : null;
-  const canConnect = meta.dot === 'online' && graphic?.startsWith('spice://');
+  const canConnect = meta.dot === 'online' && graphic?.startsWith('spice://') && !isLocked;
   const openConsole = useOpenConsole();
   const [connecting, setConnecting] = useState(false);
 

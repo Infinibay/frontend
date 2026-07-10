@@ -96,6 +96,7 @@ query machine($id: String!) {
     userId
     templateId
     poolId
+    goldenImageBuildId
     createdAt
     localIP
     publicIP
@@ -140,6 +141,7 @@ query machines($orderBy: MachineOrderBy, $pagination: PaginationInputType) {
     userId
     templateId
     poolId
+    goldenImageBuildId
     createdAt
     localIP
     publicIP

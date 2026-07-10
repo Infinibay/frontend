@@ -1137,6 +1137,8 @@ export type Machine = {
   department?: Maybe<DepartmentType>;
   departmentId?: Maybe<Scalars['String']['output']>;
   diskSizeGB?: Maybe<Scalars['Int']['output']>;
+  /** Non-null while a golden image is being built from this desktop; the desktop is frozen (no console/power/actions) until it clears. */
+  goldenImageBuildId?: Maybe<Scalars['ID']['output']>;
   gpuPciAddress?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   internalName: Scalars['String']['output'];

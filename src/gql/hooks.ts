@@ -1140,6 +1140,8 @@ export type Machine = {
   department: Maybe<DepartmentType>;
   departmentId: Maybe<Scalars['String']['output']>;
   diskSizeGB: Maybe<Scalars['Int']['output']>;
+  /** Non-null while a golden image is being built from this desktop; the desktop is frozen (no console/power/actions) until it clears. */
+  goldenImageBuildId: Maybe<Scalars['ID']['output']>;
   gpuPciAddress: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   internalName: Scalars['String']['output'];
@@ -4842,7 +4844,7 @@ export type MachineQueryVariables = Exact<{
 }>;
 
 
-export type MachineQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, poolId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } | null };
+export type MachineQuery = { __typename?: 'Query', machine: { __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, poolId: string | null, goldenImageBuildId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null } | null };
 
 export type MachinesQueryVariables = Exact<{
   orderBy: InputMaybe<MachineOrderBy>;
@@ -4850,7 +4852,7 @@ export type MachinesQueryVariables = Exact<{
 }>;
 
 
-export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, poolId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null }> };
+export type MachinesQuery = { __typename?: 'Query', machines: Array<{ __typename?: 'Machine', id: string, name: string, configuration: { [key: string]: any } | null, status: string, setupComplete: boolean, nodeId: string | null, userId: string | null, templateId: string | null, poolId: string | null, goldenImageBuildId: string | null, createdAt: string | null, localIP: string | null, publicIP: string | null, template: { __typename?: 'MachineTemplateType', id: string, name: string | null, description: string | null, cores: number, ram: number, storage: number, createdAt: string, categoryId: string | null } | null, department: { __typename?: 'DepartmentType', id: string, name: string, createdAt: string, internetSpeed: number | null, ipSubnet: string | null, totalMachines: number | null } | null, user: { __typename?: 'UserType', id: string, firstName: string, lastName: string, role: string, email: string, avatar: string | null, createdAt: string } | null }> };
 
 export type GraphicConnectionQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -9900,6 +9902,7 @@ export const MachineDocument = gql`
     userId
     templateId
     poolId
+    goldenImageBuildId
     createdAt
     localIP
     publicIP
@@ -9984,6 +9987,7 @@ export const MachinesDocument = gql`
     userId
     templateId
     poolId
+    goldenImageBuildId
     createdAt
     localIP
     publicIP

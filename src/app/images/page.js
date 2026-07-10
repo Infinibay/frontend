@@ -659,8 +659,10 @@ function NewGoldenImageDialog({ onClose, onCreated, prefillMachineId }) {
 
   // VMs eligible to be captured as a Golden Image must have completed install
   // (setupComplete=true) and not be in error state. Their power state can be
-  // anything except error — capture handles snapshotting/stopping itself.
-  const eligibleVms = vms.filter((v) => v.setupComplete && v.status !== 'error');
+  // anything except error — capture handles snapshotting/stopping itself. A desktop
+  // already frozen for an in-progress build (goldenImageBuildId set) is excluded so
+  // you can't launch a second capture on top of a running one.
+  const eligibleVms = vms.filter((v) => v.setupComplete && v.status !== 'error' && !v.goldenImageBuildId);
 
   const handleSubmit = useCallback(async () => {
     if (!name.trim()) {

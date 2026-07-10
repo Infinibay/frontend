@@ -135,6 +135,7 @@ function statusLabel(status, isInstalling) {
     case 'provisioning': return isInstalling ? 'Installing…' : 'Starting';
     case 'maintenance': return 'Updating';
     case 'offline': return 'Off';
+    case 'locked': return 'Building image';
     default: return 'Unknown';
   }
 }
@@ -146,6 +147,7 @@ function statusTone(status) {
     case 'provisioning': return 'info';
     case 'maintenance': return 'info';
     case 'offline': return 'neutral';
+    case 'locked': return 'warning';
     default: return 'neutral';
   }
 }
@@ -437,7 +439,12 @@ const VMDetailPage = () => {
   const status = toHarborStatus(vm.status, setupComplete);
   const isInstalling = vm.status === 'running' && !setupComplete;
   const isRunning = status === 'online';
-  const isBusy = status === 'provisioning' || status === 'maintenance';
+  // Frozen while a golden image is being built from this desktop. Orthogonal to the
+  // QEMU status (the capture power-cycles the VM, so `status` can read 'running'), so
+  // check the marker directly. Folded into isBusy so every power button disables, and
+  // into canConnect so the console is refused (the backend refuses it too).
+  const isLocked = !!vm?.goldenImageBuildId;
+  const isBusy = status === 'provisioning' || status === 'maintenance' || isLocked;
   const os = vm?.os;
   // Surface a recorded failure reason whenever the VM is NOT actively running.
   // Keys off raw status + lastError, NOT the mapped harbor status: raw 'error'
@@ -452,7 +459,7 @@ const VMDetailPage = () => {
   // INSTALL phase (status 'provisioning' / setupComplete=false), where being able
   // to watch the installer is exactly what you want. Gate on a live display, not
   // on setupComplete.
-  const canConnect = (isRunning || isInstalling) && graphicUrl?.startsWith('spice://');
+  const canConnect = (isRunning || isInstalling) && graphicUrl?.startsWith('spice://') && !isLocked;
   const nodes = nodeData?.nodes || [];
   // Keep the refs the migration socket handler reads in sync with the latest render.
   nodesRef.current = nodes;
@@ -521,9 +528,9 @@ const VMDetailPage = () => {
                 <ResponsiveStack direction="col" gap={2}>
                   <ResponsiveStack direction="row" gap={3} align="center" wrap>
                     <h1 className="text-xl font-semibold leading-tight m-0">{vm.name}</h1>
-                    <Badge tone={statusTone(status)} pulse={isRunning}>
-                      <StatusDot status={status} label={null} />
-                      {statusLabel(status, isInstalling)}
+                    <Badge tone={statusTone(isLocked ? 'locked' : status)} pulse={isRunning || isLocked}>
+                      <StatusDot status={isLocked ? 'degraded' : status} label={null} />
+                      {statusLabel(isLocked ? 'locked' : status, isInstalling)}
                     </Badge>
                     {vm.template?.name ? (
                       <Badge tone="purple">{vm.template.name}</Badge>

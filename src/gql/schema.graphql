@@ -1099,6 +1099,11 @@ type Machine {
   department: DepartmentType
   departmentId: String
   diskSizeGB: Int
+
+  """
+  Non-null while a golden image is being built from this desktop; the desktop is frozen (no console/power/actions) until it clears.
+  """
+  goldenImageBuildId: ID
   gpuPciAddress: String
   id: ID!
   internalName: String!

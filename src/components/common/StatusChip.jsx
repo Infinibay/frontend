@@ -22,11 +22,15 @@ const STATUS_THEME = {
   offline:      { label: 'Stopped',      bg: 'bg-fg-muted/10', fg: 'text-fg-muted', dot: 'bg-fg-muted' },
   error:        { label: 'Error',        bg: 'bg-danger/10',  fg: 'text-danger',  dot: 'bg-danger' },
   unknown:      { label: 'Unknown',      bg: 'bg-fg-muted/10', fg: 'text-fg-muted', dot: 'bg-fg-muted' },
+  // Frozen while a golden image is being built/captured from this desktop
+  // (Machine.goldenImageBuildId set). Amber "busy" tone; the desktop is not usable
+  // and every power/console/capture action is disabled until it clears.
+  locked:       { label: 'Building image', bg: 'bg-warning/10', fg: 'text-warning', dot: 'bg-warning' },
 };
 
 export function StatusChip({ status, label, pulse }) {
   const s = STATUS_THEME[status] || STATUS_THEME.unknown;
-  const shouldPulse = pulse ?? (status === 'online' || status === 'provisioning');
+  const shouldPulse = pulse ?? (status === 'online' || status === 'provisioning' || status === 'locked');
   return (
     <span
       className={[
