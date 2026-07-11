@@ -622,6 +622,7 @@ const VMDetailPage = () => {
                   {canShowPlacement ? (
                     <MenuItem
                       icon={<MoveRight size={14} />}
+                      disabled={isMoving || isLocked}
                       onClick={() => setPlacementOpen(true)}
                     >
                       Move to another node…
