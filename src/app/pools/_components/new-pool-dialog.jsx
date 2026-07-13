@@ -32,7 +32,8 @@ export function NewPoolDialog({ onClose, onCreated }) {
   const [goldenImages, setGoldenImages] = useState([]);
   const [goldenImagesLoading, setGoldenImagesLoading] = useState(true);
   const [goldenImagesError, setGoldenImagesError] = useState(false);
-  const [type, setType] = useState('non-persistent');
+  // PoolType enum wire value (uppercase key — see pool-helpers POOL_TYPE).
+  const [type, setType] = useState('NON_PERSISTENT');
   const [sizeMin, setSizeMin] = useState('0');
   const [sizeMax, setSizeMax] = useState('10');
   const [idleTimeoutMinutes, setIdleTimeoutMinutes] = useState('');
@@ -203,12 +204,12 @@ export function NewPoolDialog({ onClose, onCreated }) {
               value={type}
               onChange={setType}
               items={[
-              { value: 'non-persistent', label: 'Non-persistent' },
-              { value: 'persistent', label: 'Persistent' }]
+              { value: 'NON_PERSISTENT', label: 'Non-persistent' },
+              { value: 'PERSISTENT', label: 'Persistent' }]
               } />
 
             <span className="text-xs text-fg-subtle">
-              {type === 'persistent' ?
+              {type === 'PERSISTENT' ?
               'Each user keeps their own desktop and state across logoffs.' :
               'Any idle desktop is handed out and reset to the golden image on logoff.'}
             </span>

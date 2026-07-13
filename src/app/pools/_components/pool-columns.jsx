@@ -15,7 +15,7 @@ import {
 'lucide-react';
 
 import { DRAIN_POOL, UNDRAIN_POOL } from './pools-gql';
-import { healthDot, healthLabel, typeLabel } from './pool-helpers';
+import { healthDot, healthLabel, typeLabel, isPersistentPool } from './pool-helpers';
 
 // ---------------------------------------------------------------------------
 // Single source of truth for a pool row's actions. Both the kebab Menu (below)
@@ -99,7 +99,7 @@ export function createPoolColumns({
     id: 'type',
     header: 'Type',
     cell: ({ row }) =>
-    <Badge tone={row.type === 'persistent' ? 'info' : 'neutral'}>
+    <Badge tone={isPersistentPool(row.type) ? 'info' : 'neutral'}>
           {typeLabel(row.type)}
         </Badge>
 

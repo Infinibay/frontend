@@ -158,7 +158,7 @@ export default function PoolsListPage() {
     () =>
     pools.filter((p) => {
       if (deptFilter !== 'all' && p.departmentId !== deptFilter) return false;
-      if (typeFilter !== 'all' && p.type !== typeFilter) return false;
+      if (typeFilter !== 'all' && String(p.type).toUpperCase() !== typeFilter) return false;
       return true;
     }),
     [pools, deptFilter, typeFilter]
@@ -268,8 +268,8 @@ export default function PoolsListPage() {
                 onChange={setTypeFilter}
                 options={[
                 { value: 'all', label: 'All types' },
-                { value: 'persistent', label: 'Persistent' },
-                { value: 'non-persistent', label: 'Non-persistent' }]
+                { value: 'PERSISTENT', label: 'Persistent' },
+                { value: 'NON_PERSISTENT', label: 'Non-persistent' }]
                 } />
 
                 </div>

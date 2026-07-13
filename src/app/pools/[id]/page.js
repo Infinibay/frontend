@@ -54,7 +54,7 @@ import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import { fetchVms, playVm, pauseVm, stopVm } from '@/state/slices/vms';
 import { fetchTemplates } from '@/state/slices/templates';
 import { createDebugger } from '@/utils/debug';
-import { IDLE_STATUSES, typeLabel } from '../_components/pool-helpers';
+import { IDLE_STATUSES, typeLabel, isPersistentPool } from '../_components/pool-helpers';
 import { SCALE_POOL, DRAIN_POOL, UNDRAIN_POOL, POOL_FIELDS } from '../_components/pools-gql';
 
 const debug = createDebugger('frontend:pages:pool-detail');
@@ -269,7 +269,7 @@ export default function PoolDetailPage({ params }) {
                 size={8}
                 label={null} />
 
-                <Badge tone={pool.type === 'persistent' ? 'info' : 'neutral'}>{typeLabel(pool.type)}</Badge>
+                <Badge tone={isPersistentPool(pool.type) ? 'info' : 'neutral'}>{typeLabel(pool.type)}</Badge>
                 {pool.draining ? <Badge tone="warning">draining</Badge> : null}
                 <IconButton size="sm" variant="ghost" label="Refresh" icon={<RefreshCcw size={14} />} onClick={refresh} disabled={loading} />
               </ResponsiveStack>
@@ -352,7 +352,7 @@ function OverviewTab({ pool, deptName, templateName, goldenImageName, poolMachin
             value={goldenImageName ?? (pool.goldenImageId ? `${pool.goldenImageId.slice(0, 8)}…` : 'inherited from blueprint')}
             mono={!goldenImageName} />
           <KV label="Idle timeout" value={pool.idleTimeoutMinutes ? `${pool.idleTimeoutMinutes} min` : 'never'} />
-          <KV label="Reset on logoff" value={pool.type === 'persistent' ? 'n/a (persistent)' : pool.resetOnLogoff ? 'yes' : 'no'} />
+          <KV label="Reset on logoff" value={isPersistentPool(pool.type) ? 'n/a (persistent)' : pool.resetOnLogoff ? 'yes' : 'no'} />
         </section>
 
         <section>
@@ -568,7 +568,7 @@ function DesktopsTab({ machines, loading, error, onRetry, onRefresh }) {
 }
 
 function SettingsTab({ pool, busy, onSaved }) {
-  const isPersistent = pool.type === 'persistent';
+  const isPersistent = isPersistentPool(pool.type);
   const [name, setName] = useState(pool.name);
   const [sizeMin, setSizeMin] = useState(String(pool.sizeMin));
   const [sizeMax, setSizeMax] = useState(String(pool.sizeMax));

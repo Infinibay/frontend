@@ -22,6 +22,7 @@ import { fetchVms } from '@/state/slices/vms';
 import useEnsureData, { LOADING_STRATEGIES } from '@/hooks/useEnsureData';
 import { selectUser } from '@/state/slices/auth';
 import { useOpenConsole } from '@/hooks/useOpenConsole';
+import { isPersistentPool } from '@/app/pools/_components/pool-helpers';
 import { toast } from 'sonner';
 
 const POOLS_QUERY = gql`
@@ -142,7 +143,7 @@ function PoolTile({ pool, onConnect, connecting, busy }) {
           <span>{pool.name}</span>
         </ResponsiveStack>
       }
-      description={pool.type === 'persistent' ? 'Persistent pool' : 'Non-persistent pool'}
+      description={isPersistentPool(pool.type) ? 'Persistent pool' : 'Non-persistent pool'}
       footer={
         <ResponsiveStack direction="row" gap={2} justify="between" align="center">
           {pool.draining ? (
