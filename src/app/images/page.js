@@ -14,9 +14,11 @@ import {
   EmptyState,
   ErrorState,
   IconButton,
+  IconTile,
   Menu,
   MenuItem,
   ResponsiveStack,
+  SegmentedControl,
   Dialog,
   DialogTitle,
   DialogDescription,
@@ -29,6 +31,8 @@ import {
   ToggleGroup,
   Progress,
   Skeleton,
+  Timestamp,
+  FormattedBytes,
 } from '@infinibay/harbor';
 import {
   Plus,
@@ -37,6 +41,10 @@ import {
   CircleSlash,
   Trash2,
   RefreshCcw,
+  Monitor,
+  Terminal,
+  HardDrive,
+  Layers,
 } from 'lucide-react';
 
 import client from '@/apollo-client';
@@ -130,27 +138,36 @@ const RETRY_BUILD = gql`
     retryBuildGoldenImage(id: $id) { success error image { id status updatedAt } }
   }
 `;
-function timeAgo(value) {
-  if (!value) return '—';
-  const ms = Date.now() - new Date(value).getTime();
-  const mins = Math.round(ms / 60000);
-  if (mins < 2) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return `${Math.round(days / 30)}mo ago`;
+
+// ---------------------------------------------------------------------------
+// Presentation helpers
+// ---------------------------------------------------------------------------
+
+const titleCase = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+// `GoldenImageStatus` / `GoldenImageOsType` are type-graphql enums, so the API
+// serialises them as UPPERCASE keys ('FAILED', 'FEDORA', 'WINDOWS_11') even
+// though the DB stores lowercase values. Everything below compares against
+// lowercase, so normalise status at the data boundary once, up front.
+const normStatus = (s) => String(s ?? '').toLowerCase();
+
+const OS_LABELS = {
+  'windows-11': 'Windows 11',
+  windows_11: 'Windows 11',
+  'windows-10': 'Windows 10',
+  windows_10: 'Windows 10',
+  ubuntu: 'Ubuntu',
+  fedora: 'Fedora',
+};
+
+function osLabel(osType) {
+  if (!osType) return 'Unknown OS';
+  const k = String(osType).toLowerCase();
+  return OS_LABELS[k] || titleCase(k.replace(/[-_]/g, ' '));
 }
 
-function formatSize(bytes) {
-  const n = Number(bytes || 0);
-  if (!n) return '—';
-  const gb = n / 1024 ** 3;
-  if (gb >= 1) return `${gb.toFixed(1)} GB`;
-  return `${(n / 1024 ** 2).toFixed(0)} MB`;
-}
-
+// Badge tone per lifecycle status. `Badge` tones are the SEMANTIC set
+// (success/warning/danger/info/purple/neutral) — not the Progress color set.
 const STATUS_TONE = {
   building: 'info',
   draft: 'warning',
@@ -172,6 +189,51 @@ const STEP_LABELS = {
   starting_for_seal: 'Starting for seal',
   preparing: 'Preparing',
 };
+
+// Filterable lifecycle states, in the order the header filter presents them.
+// `all` is always shown; the rest only appear when at least one image is in
+// that state, so the control never advertises an empty bucket.
+const FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'building', label: 'Building' },
+  { value: 'published', label: 'Published' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'deprecated', label: 'Deprecated' },
+];
+
+// OS family → leading IconTile glyph + tone. We tone-code by kernel family
+// (blue for Windows, green for Linux) rather than by distro; the exact distro
+// name is spelled out in the header text beside it.
+function osVisual(osType) {
+  const t = (osType || '').toLowerCase();
+  if (t.includes('win')) return { icon: <Monitor size={18} />, tone: 'sky' };
+  if (/linux|ubuntu|debian|fedora|rhel|centos|rocky|alma|mint|suse|arch/.test(t)) {
+    return { icon: <Terminal size={18} />, tone: 'green' };
+  }
+  return { icon: <HardDrive size={18} />, tone: 'neutral' };
+}
+
+// A single at-a-glance chip summarising where the whole family stands. Building
+// wins (something is happening now), then a published head, then failure, then
+// deprecated/draft — the same precedence an operator scans for.
+function familyChip(versions) {
+  if (versions.some((v) => v.status === 'building')) {
+    return { tone: 'info', label: 'Building', pulse: true };
+  }
+  const published = versions.filter((v) => v.status === 'published');
+  if (published.length) {
+    const head = published.reduce((a, b) => (a.version > b.version ? a : b));
+    return { tone: 'success', label: `v${head.version} published` };
+  }
+  if (versions.some((v) => v.status === 'failed')) {
+    return { tone: 'danger', label: 'Build failed' };
+  }
+  if (versions.length && versions.every((v) => v.status === 'deprecated')) {
+    return { tone: 'neutral', label: 'Deprecated' };
+  }
+  return { tone: 'warning', label: 'Draft' };
+}
 
 /**
  * Group images into families. A family is the root (no parentImageId) plus
@@ -209,6 +271,7 @@ export default function GoldenImagesPage() {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [prefillMachineId, setPrefillMachineId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -241,7 +304,10 @@ export default function GoldenImagesPage() {
         query: GOLDEN_IMAGES_QUERY,
         fetchPolicy: 'network-only',
       });
-      const next = data?.goldenImages ?? [];
+      const next = (data?.goldenImages ?? []).map((img) => ({
+        ...img,
+        status: normStatus(img.status),
+      }));
       // Prune stale progress entries for images that are no longer building
       // so a finished build doesn't leave a dangling progress bar behind.
       const building = new Set(
@@ -291,15 +357,19 @@ export default function GoldenImagesPage() {
       unsubUpdate = socketService.subscribeToResource('golden_images', 'update', (event) => {
         const d = event?.data;
         if (!d?.id) return;
+        // Match the fetch path: the wire status may be an uppercase enum key,
+        // so normalise before comparing / merging.
+        const patch = { ...d };
+        if (patch.status != null) patch.status = normStatus(patch.status);
         // A build that has moved past 'building' no longer needs its transient
         // progress entry; drop it so the row stops rendering a progress bar.
-        if (d.status && d.status !== 'building') delete progressRef.current[d.id];
+        if (patch.status && patch.status !== 'building') delete progressRef.current[d.id];
         let known = false;
         setImages((prev) => {
           known = prev.some((img) => img.id === d.id);
           if (!known) return prev;
           return prev.map((img) =>
-            img.id === d.id ? { ...img, ...d, updatedAt: d.updatedAt ?? img.updatedAt } : img
+            img.id === d.id ? { ...img, ...patch, updatedAt: patch.updatedAt ?? img.updatedAt } : img
           );
         });
         // The event references an image we don't have yet (created elsewhere,
@@ -316,7 +386,64 @@ export default function GoldenImagesPage() {
     };
   }, [fetchImages]);
 
-  const families = useMemo(() => groupIntoFamilies(images), [images]);
+  // Per-status tallies feed both the filter labels and the header count line.
+  const statusCounts = useMemo(() => {
+    const c = { all: images.length, building: 0, published: 0, draft: 0, failed: 0, deprecated: 0 };
+    for (const img of images) {
+      if (c[img.status] !== undefined) c[img.status] += 1;
+    }
+    return c;
+  }, [images]);
+
+  // The active bucket can empty out from under us (e.g. the last build finishes
+  // while "Building" is selected). Fall back to "All" so the control never
+  // points at a segment that no longer exists.
+  useEffect(() => {
+    if (statusFilter !== 'all' && !statusCounts[statusFilter]) {
+      setStatusFilter('all');
+    }
+  }, [statusFilter, statusCounts]);
+
+  const allFamilies = useMemo(() => groupIntoFamilies(images), [images]);
+
+  const visibleFamilies = useMemo(() => {
+    if (statusFilter === 'all') return allFamilies;
+    return groupIntoFamilies(images.filter((img) => img.status === statusFilter));
+  }, [images, statusFilter, allFamilies]);
+
+  const filterItems = useMemo(
+    () =>
+      FILTERS.filter((f) => f.value === 'all' || statusCounts[f.value] > 0).map((f) => ({
+        value: f.value,
+        label: (
+          <span className="inline-flex items-center gap-1.5">
+            {f.label}
+            <span className="tabular-nums text-fg-subtle">
+              {f.value === 'all' ? images.length : statusCounts[f.value]}
+            </span>
+          </span>
+        ),
+      })),
+    [statusCounts, images.length]
+  );
+
+  const totalBytes = useMemo(
+    () => images.reduce((sum, img) => sum + Number(img.sizeBytes || 0), 0),
+    [images]
+  );
+
+  const countNode = (
+    <>
+      {images.length} image{images.length !== 1 ? 's' : ''} · {allFamilies.length}{' '}
+      famil{allFamilies.length !== 1 ? 'ies' : 'y'}
+      {statusCounts.published > 0 ? ` · ${statusCounts.published} published` : ''}
+      {totalBytes > 0 ? (
+        <>
+          {' '}· <FormattedBytes value={totalBytes} binary decimals={0} /> on disk
+        </>
+      ) : null}
+    </>
+  );
 
   // resultKey is the mutation's top-level field. The publish/deprecate/retry
   // mutations return a { success, error } envelope (HTTP 200 even on failure),
@@ -371,7 +498,7 @@ export default function GoldenImagesPage() {
       <ResponsiveStack direction="col" gap={4}>
         <PageHeader
           title="Golden Images"
-          count={`${images.length} image${images.length !== 1 ? 's' : ''}`}
+          count={countNode}
           secondary={
             <IconButton
               size="sm"
@@ -392,25 +519,37 @@ export default function GoldenImagesPage() {
               New Golden Image
             </Button>
           }
+          filters={
+            images.length > 0 && filterItems.length > 1 ? (
+              <SegmentedControl
+                size="sm"
+                value={statusFilter}
+                onChange={setStatusFilter}
+                items={filterItems}
+              />
+            ) : null
+          }
         />
 
         {loading && images.length === 0 ? (
-          <div className="flex flex-col gap-4" aria-busy="true" aria-label="Loading golden images">
+          <div className="flex flex-col gap-6" aria-busy="true" aria-label="Loading golden images">
             {[0, 1].map((f) => (
-              <section key={f} className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 pb-2 border-b border-[color:var(--harbor-border-subtle)]">
-                  <Skeleton height={20} width={180} />
-                  <Skeleton height={14} width={120} />
+              <section key={f} className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton height={40} width={40} />
+                  <div className="flex flex-col gap-1.5">
+                    <Skeleton height={16} width={200} />
+                    <Skeleton height={12} width={140} />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="ml-5 flex flex-col gap-2 border-l border-border-subtle pl-4">
                   {[0, 1].map((r) => (
-                    <div key={r} className="flex items-center gap-3 py-2 px-2">
+                    <div key={r} className="flex items-center gap-3 py-1">
                       <Skeleton height={16} width={32} />
-                      <Skeleton height={20} width={72} />
+                      <Skeleton height={20} width={80} />
                       <div className="flex-1">
                         <Skeleton height={14} />
                       </div>
-                      <Skeleton height={14} width={60} />
                       <Skeleton height={14} width={64} />
                     </div>
                   ))}
@@ -426,11 +565,23 @@ export default function GoldenImagesPage() {
           />
         ) : images.length === 0 ? (
           <EmptyState
+            icon={<Layers size={20} />}
             title="No golden images yet"
-            description="Seal a base disk to bootstrap thin-clone desktops."
+            description="Seal a base disk into a reusable image to bootstrap thin-clone desktops."
             actions={
               <Button variant="primary" icon={<Plus size={14} />} onClick={() => setDialogOpen(true)}>
                 New Golden Image
+              </Button>
+            }
+          />
+        ) : visibleFamilies.length === 0 ? (
+          <EmptyState
+            icon={<Layers size={20} />}
+            title={`No ${statusFilter} images`}
+            description="Nothing matches this filter right now."
+            actions={
+              <Button variant="secondary" onClick={() => setStatusFilter('all')}>
+                Show all images
               </Button>
             }
           />
@@ -440,44 +591,57 @@ export default function GoldenImagesPage() {
             buildItems={(img) => buildRowItems(img, { onAction, onRequestDelete: setDeleteTarget })}
             labelFor={(img) => `${img.name} · v${img.version}`}
           >
-            <div className="flex flex-col gap-4">
-            {families.map(({ root, versions }) => (
-              <section key={root.id} className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3 pb-2 border-b border-[color:var(--harbor-border-subtle)]">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-base font-semibold m-0">{root.name}</h2>
-                    <span className="text-fg-muted text-xs">
-                      · {root.osType}
-                      {root.osVersion ? ` ${root.osVersion}` : ''} · {versions.length}{' '}
-                      version{versions.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </div>
+            <div className="flex flex-col gap-6">
+              {visibleFamilies.map(({ root, versions }) => {
+                const os = osVisual(root.osType);
+                const chip = familyChip(versions);
+                const published = versions.filter((v) => v.status === 'published');
+                const current = published.length
+                  ? published.reduce((a, b) => (a.version > b.version ? a : b))
+                  : null;
+                return (
+                  <section key={root.id} className="flex flex-col gap-3">
+                    <header className="flex items-center gap-3">
+                      <IconTile icon={os.icon} tone={os.tone} size="md" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-base font-semibold m-0 text-fg truncate">{root.name}</h2>
+                          <Badge tone={chip.tone} pulse={chip.pulse}>{chip.label}</Badge>
+                        </div>
+                        <p className="text-xs text-fg-muted m-0 mt-0.5">
+                          {osLabel(root.osType)}
+                          {root.osVersion ? ` ${root.osVersion}` : ''} · {versions.length}{' '}
+                          version{versions.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </header>
 
-                <div className="flex flex-col divide-y divide-[color:var(--harbor-border-subtle)]">
-                  {versions
-                    .slice()
-                    .reverse()
-                    .map((v) => (
-                      <GoldenImageRow
-                        key={v.id}
-                        image={v}
-                        progress={progressRef.current[v.id]}
-                        onPublish={() =>
-                          onAction(PUBLISH, v.id, `Published ${v.name} v${v.version}`, 'publishGoldenImage')
-                        }
-                        onDeprecate={() =>
-                          onAction(DEPRECATE, v.id, `Deprecated ${v.name} v${v.version}`, 'deprecateGoldenImage')
-                        }
-                        onRetry={() =>
-                          onAction(RETRY_BUILD, v.id, `Retrying build for ${v.name} v${v.version}`, 'retryBuildGoldenImage')
-                        }
-                        onDelete={() => setDeleteTarget(v)}
-                      />
-                    ))}
-                </div>
-              </section>
-            ))}
+                    <div className="ml-5 flex flex-col gap-1 border-l border-border-subtle pl-4">
+                      {versions
+                        .slice()
+                        .reverse()
+                        .map((v) => (
+                          <GoldenImageRow
+                            key={v.id}
+                            image={v}
+                            progress={progressRef.current[v.id]}
+                            isCurrent={!!current && v.id === current.id}
+                            onPublish={() =>
+                              onAction(PUBLISH, v.id, `Published ${v.name} v${v.version}`, 'publishGoldenImage')
+                            }
+                            onDeprecate={() =>
+                              onAction(DEPRECATE, v.id, `Deprecated ${v.name} v${v.version}`, 'deprecateGoldenImage')
+                            }
+                            onRetry={() =>
+                              onAction(RETRY_BUILD, v.id, `Retrying build for ${v.name} v${v.version}`, 'retryBuildGoldenImage')
+                            }
+                            onDelete={() => setDeleteTarget(v)}
+                          />
+                        ))}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           </RowContextMenu>
         )}
@@ -557,7 +721,7 @@ function buildRowItems(image, { onAction, onRequestDelete }) {
   return items;
 }
 
-function GoldenImageRow({ image, progress, onPublish, onDeprecate, onRetry, onDelete }) {
+function GoldenImageRow({ image, progress, isCurrent, onPublish, onDeprecate, onRetry, onDelete }) {
   const tone = STATUS_TONE[image.status] || 'neutral';
   const isBuilding = image.status === 'building';
   // `progress` is only present once a live 'progress' socket event has arrived.
@@ -567,63 +731,80 @@ function GoldenImageRow({ image, progress, onPublish, onDeprecate, onRetry, onDe
   const pct = progress?.progressPercent ?? 0;
   const step = progress?.step ?? '';
   const stepLabel = STEP_LABELS[step] || step;
+  const bytes = Number(image.sizeBytes || 0);
 
   return (
-    <div role="row" data-row-id={image.id} className="flex items-center gap-3 py-2 px-2">
-      <span className="font-mono text-sm w-12 shrink-0">v{image.version}</span>
-      <Badge tone={tone}>
-        {image.status}
-      </Badge>
-      {isBuilding && (
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex-1 min-w-[80px] max-w-[160px]">
-            <Progress
-              value={pct}
-              tone="purple"
-              indeterminate={!hasProgress}
-              showValue={false}
-            />
-          </div>
-          <span className="text-xs text-fg-muted whitespace-nowrap">
-            {hasProgress ? `${stepLabel ? `${stepLabel} · ` : ''}${pct}%` : 'Building…'}
-          </span>
+    <div
+      role="row"
+      data-row-id={image.id}
+      className="group flex gap-3 rounded-md px-2 py-2 hover:bg-white/[0.03] transition-colors"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-mono text-sm text-fg">v{image.version}</span>
+          <Badge tone={tone} pulse={isBuilding}>{titleCase(image.status)}</Badge>
+          {isCurrent && !isBuilding && <Badge tone="purple">Current</Badge>}
         </div>
-      )}
-      {!isBuilding && (
-        <span className="text-sm text-fg-muted flex-1 truncate" title={image.notes || ''}>
-          {image.notes || <em className="text-fg-subtle">no notes</em>}
+
+        {isBuilding ? (
+          <div className="mt-2 flex items-center gap-2">
+            <div className="flex-1 min-w-[120px] max-w-[280px]">
+              <Progress
+                value={pct}
+                tone="sky"
+                indeterminate={!hasProgress}
+                showValue={false}
+              />
+            </div>
+            <span className="text-xs text-fg-muted whitespace-nowrap">
+              {hasProgress ? `${stepLabel ? `${stepLabel} · ` : ''}${pct}%` : 'Building…'}
+            </span>
+          </div>
+        ) : image.notes ? (
+          <p className="mt-1 text-sm text-fg-muted truncate m-0" title={image.notes}>
+            {image.notes}
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-fg-subtle italic m-0">No notes</p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-4 shrink-0 self-start pt-0.5">
+        <span className="font-mono text-xs text-fg-subtle tabular-nums w-16 text-right">
+          {bytes > 0 ? <FormattedBytes value={bytes} binary decimals={1} /> : '—'}
         </span>
-      )}
-      <span className="font-mono text-xs text-fg-subtle">{formatSize(image.sizeBytes)}</span>
-      <span className="text-xs text-fg-muted w-20 text-right">{timeAgo(image.createdAt)}</span>
-      <Menu
-        trigger={
-          <IconButton size="sm" variant="ghost" label="Actions" icon={<MoreHorizontal size={14} />} />
-        }
-      >
-        {image.status === 'draft' && (
-          <MenuItem icon={<CheckCircle2 size={14} />} onClick={onPublish}>
-            Publish
-          </MenuItem>
-        )}
-        {image.status === 'published' && (
-          <MenuItem icon={<CircleSlash size={14} />} onClick={onDeprecate}>
-            Deprecate
-          </MenuItem>
-        )}
-        {image.status === 'failed' && (
-          <MenuItem icon={<RefreshCcw size={14} />} onClick={onRetry}>
-            Retry build
-          </MenuItem>
-        )}
-        <MenuItem
-          icon={<Trash2 size={14} />}
-          danger
-          onClick={onDelete}
+        <span className="text-xs text-fg-muted w-20 text-right">
+          <Timestamp value={image.createdAt} refreshMs={0} />
+        </span>
+        <Menu
+          trigger={
+            <IconButton size="sm" variant="ghost" label="Actions" icon={<MoreHorizontal size={14} />} />
+          }
         >
-          Delete
-        </MenuItem>
-      </Menu>
+          {image.status === 'draft' && (
+            <MenuItem icon={<CheckCircle2 size={14} />} onClick={onPublish}>
+              Publish
+            </MenuItem>
+          )}
+          {image.status === 'published' && (
+            <MenuItem icon={<CircleSlash size={14} />} onClick={onDeprecate}>
+              Deprecate
+            </MenuItem>
+          )}
+          {image.status === 'failed' && (
+            <MenuItem icon={<RefreshCcw size={14} />} onClick={onRetry}>
+              Retry build
+            </MenuItem>
+          )}
+          <MenuItem
+            icon={<Trash2 size={14} />}
+            danger
+            onClick={onDelete}
+          >
+            Delete
+          </MenuItem>
+        </Menu>
+      </div>
     </div>
   );
 }
