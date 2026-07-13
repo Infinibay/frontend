@@ -236,6 +236,20 @@ export class RealTimeReduxService {
       ])
     )
 
+    // Subscribe to golden-image build/capture lifecycle (resource 'golden_images')
+    // APP-WIDE so the header's background-tasks dropdown tracks a build from any page
+    // (a build is a long, multi-stage server job). The backend emits update(building)
+    // at start → progress{progressPercent, step} per stage → update(draft|failed) at
+    // the end (GoldenImageService via GoldenImageEventManager). See
+    // handleGoldenImageEvent for the stage→label + percent mapping.
+    this.subscriptions.push(
+      this.socketService.subscribeToAllResourceEvents('golden_images', (action, data) => {
+        this.handleGoldenImageEvent(action, data)
+      }, [
+        'progress', 'update'
+      ])
+    )
+
     this.debug.success('subscribe', `Subscribed to ${this.subscriptions.length} real-time event groups`)
   }
 
@@ -312,6 +326,98 @@ export class RealTimeReduxService {
         id, kind: 'migration', title, status: 'error', phase: 'failed', detail: 'Migration failed', error: data.error || eventData?.error || 'The desktop could not be moved.', updatedAt: now,
       }))
     }
+  }
+
+  // Golden-image build/capture stages → a short human label for the background-task
+  // detail line. The backend streams both the stage name AND a stage-based percent
+  // (progressPercent) with every 'progress' event, so the bar reflects WHICH STAGE the
+  // build is in — not elapsed time (there's no ETA). Steps come verbatim from
+  // GoldenImageService.emitProgress; unknown steps fall back to a prettified label.
+  static GOLDEN_IMAGE_STEPS = {
+    queued: 'Queued',
+    creating_temp_vm: 'Creating build VM',
+    spawning_vm: 'Provisioning build VM',
+    preparing: 'Preparing capture',
+    stopping_source: 'Stopping source desktop',
+    cloning_disk: 'Snapshotting source disk',
+    starting_for_seal: 'Booting to seal',
+    waiting_for_agent: 'Installing OS & waiting for agent',
+    sealing: 'Sealing image',
+    waiting_for_shutdown: 'Finalizing (shutting down)',
+    promoting_disk: 'Promoting sealed disk',
+    restoring_source: 'Restoring source disk',
+    draft: 'Image ready',
+    failed: 'Build failed',
+  }
+
+  static goldenImageStepLabel(step) {
+    if (!step) return 'Building…'
+    return RealTimeReduxService.GOLDEN_IMAGE_STEPS[step]
+      || step.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
+  }
+
+  // Translate a 'golden_images' lifecycle event into a generic backgroundTasks entry so
+  // a build/capture shows in the header from any page. Two event kinds bound and drive
+  // the task:
+  //   - 'update'  carries the full image (name + status). update(building) opens the
+  //     task with the real title; update(draft) finishes it (success); update(failed)
+  //     finishes it (error). Publish/deprecate updates land on status published|
+  //     deprecated (never 'draft') so they are ignored — they are not builds.
+  //   - 'progress' carries { id, progressPercent, step } between those, refining the
+  //     stage label + percent. Never resurrects a finished task (delivery order across
+  //     the two async emits isn't guaranteed).
+  handleGoldenImageEvent(action, eventData) {
+    const d = eventData?.data
+    if (!d || !d.id) return
+    const id = `golden_image:${d.id}`
+    const now = Date.now()
+
+    if (action === 'progress') {
+      const existing = this.store.getState()?.backgroundTasks?.byId?.[id]
+      // A stray progress after the terminal update shouldn't reopen a finished row.
+      if (existing && existing.status !== 'running') return
+      const pct = Number(d.progressPercent)
+      this.store.dispatch(taskUpserted({
+        id,
+        kind: 'golden_image',
+        // Keep the real name once update(building) has set it; fall back until then.
+        title: existing?.title || 'Building golden image',
+        status: 'running',
+        phase: d.step || 'building',
+        detail: RealTimeReduxService.goldenImageStepLabel(d.step),
+        progress: Number.isFinite(pct) ? Math.max(0, Math.min(100, pct)) : (existing?.progress ?? 0),
+        updatedAt: now,
+      }))
+      return
+    }
+
+    // action === 'update' — bounded by the image's authoritative status.
+    const status = String(d.status ?? '').toLowerCase()
+    const title = `Building ${d.name || 'golden image'}`
+
+    if (status === 'building') {
+      this.store.dispatch(taskUpserted({
+        id, kind: 'golden_image', title, status: 'running', phase: 'building',
+        detail: 'Starting build…', updatedAt: now,
+      }))
+    } else if (status === 'draft') {
+      // A build always ends at 'draft' (publish/deprecate never land here), so this is
+      // unconditionally the success terminal — no need to have seen the start.
+      this.store.dispatch(taskFinished({
+        id, kind: 'golden_image', title, status: 'success', phase: 'draft',
+        detail: 'Image ready', progress: 100, updatedAt: now,
+      }))
+    } else if (status === 'failed') {
+      const reason = typeof d.notes === 'string'
+        ? d.notes.replace(/^\[build failed\]\s*/i, '').trim()
+        : ''
+      this.store.dispatch(taskFinished({
+        id, kind: 'golden_image', title, status: 'error', phase: 'failed',
+        detail: 'Build failed', error: reason || 'The golden image could not be built.',
+        updatedAt: now,
+      }))
+    }
+    // status published | deprecated | other → ignore (not a build lifecycle).
   }
 
   // Handle live resource metrics events (resource 'metrics', action 'update').

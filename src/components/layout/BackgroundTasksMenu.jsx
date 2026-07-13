@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowRightLeft,
+  Layers,
   X,
 } from 'lucide-react';
 import { IconButton, Progress } from '@infinibay/harbor';
@@ -30,6 +31,7 @@ import {
 
 const KIND_ICON = {
   migration: ArrowRightLeft,
+  golden_image: Layers,
 };
 
 function timeAgo(ts) {
