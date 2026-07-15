@@ -41,6 +41,37 @@ export function humanizeVerb(verb) {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
+// How many of a resource's verbs the current role effectively holds (any
+// source — direct, via manage, via *). Drives the navigator's "granted/total"
+// meter so an admin can see a role's reach at a glance without expanding it.
+export function grantedCount(resource, effectiveGrants) {
+  const verbs = resource?.verbs || [];
+  let granted = 0;
+  for (const v of verbs) {
+    if (effectiveGrants?.get(`${resource.key}:${v}`)) granted += 1;
+  }
+  return { granted, total: verbs.length };
+}
+
+// Does a resource match the search box? Matches its label, key, or any verb
+// (human or raw) so "restore", "snap", or "vm" all surface the right rows.
+export function resourceMatches(resource, query) {
+  const needle = (query || '').trim().toLowerCase();
+  if (!needle) return true;
+  if (resource.label.toLowerCase().includes(needle)) return true;
+  if (resource.key.toLowerCase().includes(needle)) return true;
+  return (resource.verbs || []).some(
+    (v) => humanizeVerb(v).toLowerCase().includes(needle) || v.toLowerCase().includes(needle)
+  );
+}
+
+// Does a single verb match the search box? Used to narrow the detail pane.
+export function verbMatches(verb, query) {
+  const needle = (query || '').trim().toLowerCase();
+  if (!needle) return true;
+  return humanizeVerb(verb).toLowerCase().includes(needle) || verb.toLowerCase().includes(needle);
+}
+
 // Top-level sections, split into tabs so the page isn't one endless scroll.
 export const POLICY_TABS = [
   { id: 'roles', label: 'Roles & permissions', icon: ShieldCheck },

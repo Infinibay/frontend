@@ -195,12 +195,14 @@ export default function PoliciesListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoleId]);
 
+  // Returns true on success so the edit Drawer closes only when the save landed
+  // (a failed save keeps the drawer open with the user's input intact).
   const handleSaveRole = async () => {
-    if (!selectedRole || roleEditLocked) return;
+    if (!selectedRole || roleEditLocked) return false;
     const name = editName.trim();
     if (!name) {
       toast.error('Give the role a name');
-      return;
+      return false;
     }
     try {
       await updateRole({
@@ -208,17 +210,21 @@ export default function PoliciesListPage() {
       });
       toast.success('Role updated');
       await refetchRoles();
+      return true;
     } catch (err) {
       toast.error(err?.message || 'Could not update role');
+      return false;
     }
   };
 
+  // Returns true on success so the create Drawer closes only when the role was
+  // created (mirrors handleSaveRole).
   const handleCreateRole = async () => {
-    if (!canCreateRole) return;
+    if (!canCreateRole) return false;
     const name = newRoleName.trim();
     if (!name) {
       toast.error('Give the role a name');
-      return;
+      return false;
     }
     try {
       const { data } = await createRole({
@@ -234,8 +240,10 @@ export default function PoliciesListPage() {
       const created = data?.createRole;
       const id = created?.id || fresh?.roles?.find((r) => r.name === name)?.id;
       if (id) setSelectedRoleId(id);
+      return true;
     } catch (err) {
       toast.error(err?.message || 'Could not create role');
+      return false;
     }
   };
 
