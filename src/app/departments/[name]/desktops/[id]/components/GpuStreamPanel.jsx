@@ -11,7 +11,7 @@ const viewerOs = () => {
   return navigator.userAgent.toLowerCase().includes('win') ? 'windows' : 'linux';
 };
 
-const backendHost = () => process.env.NEXT_PUBLIC_BACKEND_HOST || '';
+const backendHost = () => process.env.NEXT_PUBLIC_BACKEND_HOST || 'http://localhost:4000';
 
 /**
  * GPU VMs render over infiniPixel (a native viewer connecting to a ws:// relay),

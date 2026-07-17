@@ -3,7 +3,7 @@
 import { Cpu, Download } from "lucide-react";
 import { Alert, Button, Card, ResponsiveStack } from "@infinibay/harbor";
 
-const backendHost = () => process.env.NEXT_PUBLIC_BACKEND_HOST || "";
+const backendHost = () => process.env.NEXT_PUBLIC_BACKEND_HOST || "http://localhost:4000";
 
 const PLATFORMS = [
   { os: "linux", label: "Linux (x86_64)" },
