@@ -881,6 +881,12 @@ export enum GoldenImageStatus {
   Published = 'PUBLISHED'
 }
 
+export type GpuConsoleStreamType = {
+  __typename?: 'GpuConsoleStreamType';
+  pixelPort: Scalars['Int']['output'];
+  url: Scalars['String']['output'];
+};
+
 /** Allow or deny effect for a per-user permission override */
 export enum GrantEffect {
   Allow = 'ALLOW',
@@ -2671,6 +2677,7 @@ export type Query = {
   globalPendingRecommendations: Array<GlobalRecommendationType>;
   goldenImage: Maybe<GoldenImage>;
   goldenImages: Array<GoldenImage>;
+  gpuConsoleStream: Maybe<GpuConsoleStreamType>;
   graphicConnection: Maybe<GraphicConfigurationType>;
   healthCheckQueueStats: QueueStatsType;
   healthQueueStatistics: QueueStatistics;
@@ -2899,6 +2906,11 @@ export type QueryGlobalPendingRecommendationsArgs = {
 
 export type QueryGoldenImageArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryGpuConsoleStreamArgs = {
+  machineId: Scalars['ID']['input'];
 };
 
 
@@ -4877,6 +4889,13 @@ export type DeleteSnapshotMutationVariables = Exact<{
 
 
 export type DeleteSnapshotMutation = { __typename?: 'Mutation', deleteSnapshot: { __typename?: 'SuccessType', success: boolean, message: string } };
+
+export type GpuConsoleStreamQueryVariables = Exact<{
+  machineId: Scalars['ID']['input'];
+}>;
+
+
+export type GpuConsoleStreamQuery = { __typename?: 'Query', gpuConsoleStream: { __typename?: 'GpuConsoleStreamType', url: string, pixelPort: number } | null };
 
 export type DepartmentGpuPolicyQueryVariables = Exact<{
   departmentId: Scalars['ID']['input'];
@@ -9774,6 +9793,53 @@ export function useDeleteSnapshotMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type DeleteSnapshotMutationHookResult = ReturnType<typeof useDeleteSnapshotMutation>;
 export type DeleteSnapshotMutationResult = ApolloReactCommon.MutationResult<DeleteSnapshotMutation>;
+export const GpuConsoleStreamDocument = gql`
+    query gpuConsoleStream($machineId: ID!) {
+  gpuConsoleStream(machineId: $machineId) {
+    url
+    pixelPort
+  }
+}
+    `;
+
+/**
+ * __useGpuConsoleStreamQuery__
+ *
+ * To run a query within a React component, call `useGpuConsoleStreamQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGpuConsoleStreamQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGpuConsoleStreamQuery({
+ *   variables: {
+ *      machineId: // value for 'machineId'
+ *   },
+ * });
+ */
+export function useGpuConsoleStreamQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GpuConsoleStreamQuery, GpuConsoleStreamQueryVariables> & ({ variables: GpuConsoleStreamQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GpuConsoleStreamQuery, GpuConsoleStreamQueryVariables>(GpuConsoleStreamDocument, options);
+      }
+export function useGpuConsoleStreamLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GpuConsoleStreamQuery, GpuConsoleStreamQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GpuConsoleStreamQuery, GpuConsoleStreamQueryVariables>(GpuConsoleStreamDocument, options);
+        }
+// @ts-ignore
+export function useGpuConsoleStreamSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GpuConsoleStreamQuery, GpuConsoleStreamQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GpuConsoleStreamQuery, GpuConsoleStreamQueryVariables>;
+export function useGpuConsoleStreamSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GpuConsoleStreamQuery, GpuConsoleStreamQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GpuConsoleStreamQuery | undefined, GpuConsoleStreamQueryVariables>;
+export function useGpuConsoleStreamSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GpuConsoleStreamQuery, GpuConsoleStreamQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GpuConsoleStreamQuery, GpuConsoleStreamQueryVariables>(GpuConsoleStreamDocument, options);
+        }
+export type GpuConsoleStreamQueryHookResult = ReturnType<typeof useGpuConsoleStreamQuery>;
+export type GpuConsoleStreamLazyQueryHookResult = ReturnType<typeof useGpuConsoleStreamLazyQuery>;
+export type GpuConsoleStreamSuspenseQueryHookResult = ReturnType<typeof useGpuConsoleStreamSuspenseQuery>;
+export type GpuConsoleStreamQueryResult = ApolloReactCommon.QueryResult<GpuConsoleStreamQuery, GpuConsoleStreamQueryVariables>;
+export function refetchGpuConsoleStreamQuery(variables: GpuConsoleStreamQueryVariables) {
+      return { query: GpuConsoleStreamDocument, variables: variables }
+    }
 export const DepartmentGpuPolicyDocument = gql`
     query departmentGpuPolicy($departmentId: ID!) {
   departmentGpuPolicy(departmentId: $departmentId) {

@@ -9,6 +9,7 @@ import {
   Disc,
   FileCode,
   FlaskConical,
+  MonitorPlay,
 } from "lucide-react";
 import { Page, Tabs, TabList, Tab, TabPanel } from "@infinibay/harbor";
 
@@ -19,10 +20,11 @@ import PackagesSection from "@/components/settings/PackagesSection";
 import AppearanceTab from "@/components/settings/AppearanceTab";
 import IsosTab from "@/components/settings/IsosTab";
 import PreviewFeaturesTab from "@/components/settings/PreviewFeaturesTab";
+import GpuViewerSection from "@/components/settings/GpuViewerSection";
 
 // ─── Page root ────────────────────────────────────────────────────
 
-const VALID_TABS = ["appearance", "isos", "scripts", "packages", "preview"];
+const VALID_TABS = ["appearance", "isos", "scripts", "packages", "preview", "downloads"];
 const DEFAULT_TAB = "appearance";
 
 export default function SettingsPage() {
@@ -139,6 +141,9 @@ export default function SettingsPage() {
           <Tab value="preview" icon={<FlaskConical size={16} />}>
             Preview features
           </Tab>
+          <Tab value="downloads" icon={<MonitorPlay size={16} />}>
+            Downloads
+          </Tab>
         </TabList>
 
         <TabPanel value="appearance">
@@ -155,6 +160,9 @@ export default function SettingsPage() {
         </TabPanel>
         <TabPanel value="preview">
           <PreviewFeaturesTab />
+        </TabPanel>
+        <TabPanel value="downloads">
+          <GpuViewerSection />
         </TabPanel>
       </Tabs>
     </Page>

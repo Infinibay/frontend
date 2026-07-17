@@ -70,6 +70,9 @@ const VMOverviewTab = dynamic(() => import('./components/VMOverviewTab'), {
   ssr: false,
   loading: () => <TabLoading label="Loading overview…" />,
 });
+const GpuStreamPanel = dynamic(() => import('./components/GpuStreamPanel'), {
+  ssr: false,
+});
 const VMRecommendationsTab = dynamic(
   () => import('./components/VMRecommendationsTab'),
   { ssr: false, loading: () => <TabLoading label="Loading recommendations…" /> },
@@ -672,6 +675,9 @@ const VMDetailPage = () => {
 
             <TabPanel value="overview">
               <VMOverviewTab vmId={vmId} vm={vm} hostNodeName={hostNodeName} />
+              <div className="mt-4">
+                <GpuStreamPanel vmId={vmId} />
+              </div>
             </TabPanel>
             <TabPanel value="recommendations">
               <VMRecommendationsTab

@@ -1,3 +1,10 @@
+query gpuConsoleStream($machineId: ID!) {
+  gpuConsoleStream(machineId: $machineId) {
+    url
+    pixelPort
+  }
+}
+
 query departmentGpuPolicy($departmentId: ID!) {
   departmentGpuPolicy(departmentId: $departmentId) {
     departmentId

@@ -499,6 +499,11 @@ type DepartmentGpuPolicyType {
   vramReserveMB: Int!
 }
 
+type GpuConsoleStreamType {
+  pixelPort: Int!
+  url: String!
+}
+
 type DepartmentMemberType {
   departmentId: String!
   id: ID!
@@ -1948,6 +1953,7 @@ type ProcessControlResult {
 type Query {
   activeMigrations: [Machine!]!
   departmentGpuPolicy(departmentId: ID!): DepartmentGpuPolicyType
+  gpuConsoleStream(machineId: ID!): GpuConsoleStreamType
   """Return active (non-terminal) resolutions for a machine"""
   activeResolutionsForMachine(machineId: ID!): [RecommendationResolutionType!]!
 

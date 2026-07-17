@@ -878,6 +878,12 @@ export enum GoldenImageStatus {
   Published = 'PUBLISHED'
 }
 
+export type GpuConsoleStreamType = {
+  __typename?: 'GpuConsoleStreamType';
+  pixelPort: Scalars['Int']['output'];
+  url: Scalars['String']['output'];
+};
+
 /** Allow or deny effect for a per-user permission override */
 export enum GrantEffect {
   Allow = 'ALLOW',
@@ -2668,6 +2674,7 @@ export type Query = {
   globalPendingRecommendations: Array<GlobalRecommendationType>;
   goldenImage?: Maybe<GoldenImage>;
   goldenImages: Array<GoldenImage>;
+  gpuConsoleStream?: Maybe<GpuConsoleStreamType>;
   graphicConnection?: Maybe<GraphicConfigurationType>;
   healthCheckQueueStats: QueueStatsType;
   healthQueueStatistics: QueueStatistics;
@@ -2896,6 +2903,11 @@ export type QueryGlobalPendingRecommendationsArgs = {
 
 export type QueryGoldenImageArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryGpuConsoleStreamArgs = {
+  machineId: Scalars['ID']['input'];
 };
 
 
