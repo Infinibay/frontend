@@ -1,3 +1,16 @@
+query departmentGpuPolicy($departmentId: ID!) {
+  departmentGpuPolicy(departmentId: $departmentId) {
+    departmentId
+    gpuEnabled
+    vramReserveMB
+    vramCapMB
+    priorityTier
+    maxConcurrentGpuVMs
+    gpuTimeWeight
+    submissionRateTokens
+  }
+}
+
 query currentUser {
   currentUser {
     id

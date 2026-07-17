@@ -1,3 +1,16 @@
+mutation updateDepartmentGpuPolicy($input: UpdateDepartmentGpuPolicyInput!) {
+  updateDepartmentGpuPolicy(input: $input) {
+    departmentId
+    gpuEnabled
+    vramReserveMB
+    vramCapMB
+    priorityTier
+    maxConcurrentGpuVMs
+    gpuTimeWeight
+    submissionRateTokens
+  }
+}
+
 mutation createUser($input: CreateUserInputType!) {
   createUser(input: $input) {
     id

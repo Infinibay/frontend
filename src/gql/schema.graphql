@@ -488,6 +488,17 @@ input DeleteSnapshotInput {
   snapshotName: String!
 }
 
+type DepartmentGpuPolicyType {
+  departmentId: ID!
+  gpuEnabled: Boolean!
+  gpuTimeWeight: Int!
+  maxConcurrentGpuVMs: Int!
+  priorityTier: Int!
+  submissionRateTokens: Int!
+  vramCapMB: Int!
+  vramReserveMB: Int!
+}
+
 type DepartmentMemberType {
   departmentId: String!
   id: ID!
@@ -1379,6 +1390,7 @@ enum MaintenanceTrigger {
 
 type Mutation {
   assignScriptToDepartment(departmentId: ID!, scriptId: ID!): Boolean!
+  updateDepartmentGpuPolicy(input: UpdateDepartmentGpuPolicyInput!): DepartmentGpuPolicyType!
   assignUserRole(input: AssignUserRoleInput!): Boolean!
 
   """Calculate ISO checksum"""
@@ -1935,6 +1947,7 @@ type ProcessControlResult {
 
 type Query {
   activeMigrations: [Machine!]!
+  departmentGpuPolicy(departmentId: ID!): DepartmentGpuPolicyType
   """Return active (non-terminal) resolutions for a machine"""
   activeResolutionsForMachine(machineId: ID!): [RecommendationResolutionType!]!
 
@@ -2685,6 +2698,17 @@ input UpdateDepartmentFirewallPolicyInput {
   firewallCustomRules: JSON
   firewallDefaultConfig: String! = "allow_outbound"
   firewallPolicy: FirewallPolicy! = BLOCK_ALL
+}
+
+input UpdateDepartmentGpuPolicyInput {
+  departmentId: ID! = ""
+  gpuEnabled: Boolean
+  gpuTimeWeight: Int
+  maxConcurrentGpuVMs: Int
+  priorityTier: Int
+  submissionRateTokens: Int
+  vramCapMB: Int
+  vramReserveMB: Int
 }
 
 input UpdateDepartmentNameInput {

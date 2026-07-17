@@ -513,6 +513,18 @@ export type DeleteSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
+export type DepartmentGpuPolicyType = {
+  __typename?: 'DepartmentGpuPolicyType';
+  departmentId: Scalars['ID']['output'];
+  gpuEnabled: Scalars['Boolean']['output'];
+  gpuTimeWeight: Scalars['Int']['output'];
+  maxConcurrentGpuVMs: Scalars['Int']['output'];
+  priorityTier: Scalars['Int']['output'];
+  submissionRateTokens: Scalars['Int']['output'];
+  vramCapMB: Scalars['Int']['output'];
+  vramReserveMB: Scalars['Int']['output'];
+};
+
 export type DepartmentMemberType = {
   __typename?: 'DepartmentMemberType';
   departmentId: Scalars['String']['output'];
@@ -1556,6 +1568,7 @@ export type Mutation = {
   /** Update a backup schedule */
   updateBackupSchedule: BackupSchedule;
   updateDepartmentFirewallPolicy: DepartmentType;
+  updateDepartmentGpuPolicy: DepartmentGpuPolicyType;
   updateDepartmentName: DepartmentType;
   updateDepartmentNetwork: DepartmentType;
   updateFirewallRule: FirewallRuleType;
@@ -2159,6 +2172,11 @@ export type MutationUpdateDepartmentFirewallPolicyArgs = {
 };
 
 
+export type MutationUpdateDepartmentGpuPolicyArgs = {
+  input: UpdateDepartmentGpuPolicyInput;
+};
+
+
 export type MutationUpdateDepartmentNameArgs = {
   input: UpdateDepartmentNameInput;
 };
@@ -2622,6 +2640,7 @@ export type Query = {
   currentSnapshot?: Maybe<Snapshot>;
   currentUser?: Maybe<UserType>;
   department?: Maybe<DepartmentType>;
+  departmentGpuPolicy?: Maybe<DepartmentGpuPolicyType>;
   departmentMembers: Array<DepartmentMemberType>;
   departmentNetworkDiagnostics: DepartmentNetworkDiagnosticsType;
   departmentScripts: Array<ScriptType>;
@@ -2799,6 +2818,11 @@ export type QueryCurrentSnapshotArgs = {
 
 export type QueryDepartmentArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryDepartmentGpuPolicyArgs = {
+  departmentId: Scalars['ID']['input'];
 };
 
 
@@ -3640,6 +3664,17 @@ export type UpdateDepartmentFirewallPolicyInput = {
   firewallCustomRules?: InputMaybe<Scalars['JSON']['input']>;
   firewallDefaultConfig?: Scalars['String']['input'];
   firewallPolicy?: FirewallPolicy;
+};
+
+export type UpdateDepartmentGpuPolicyInput = {
+  departmentId?: Scalars['ID']['input'];
+  gpuEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  gpuTimeWeight?: InputMaybe<Scalars['Int']['input']>;
+  maxConcurrentGpuVMs?: InputMaybe<Scalars['Int']['input']>;
+  priorityTier?: InputMaybe<Scalars['Int']['input']>;
+  submissionRateTokens?: InputMaybe<Scalars['Int']['input']>;
+  vramCapMB?: InputMaybe<Scalars['Int']['input']>;
+  vramReserveMB?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UpdateDepartmentNameInput = {

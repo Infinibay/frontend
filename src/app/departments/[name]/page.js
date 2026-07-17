@@ -8,6 +8,7 @@ import {
   AlertCircle,
   ArrowLeft,
   Building2,
+  Cpu,
   FileCode,
   LayoutDashboard,
   Monitor,
@@ -60,6 +61,10 @@ const DepartmentNetworkTab = dynamic(
     loading: () => <LoadingOverlay label="Loading network diagnostics…" />,
   },
 );
+const DepartmentGpuTab = dynamic(() => import('./components/DepartmentGpuTab.jsx'), {
+  ssr: false,
+  loading: () => <LoadingOverlay label="Loading GPU policy…" />,
+});
 
 const vmStatusToHarbor = (status, setupComplete) => {
   switch ((status || '').toLowerCase()) {
@@ -168,6 +173,13 @@ const DepartmentPage = () => {
           icon: <Network size={14} />,
           content:
             'Bridge / DHCP / NAT diagnostics for the subnet this department lives on.',
+        },
+        {
+          id: 'gpu',
+          title: 'GPU',
+          icon: <Cpu size={14} />,
+          content:
+            'Give this department’s VMs a virtual GPU (infinigpu) and set the VRAM / scheduling quotas the host broker admits against.',
         },
       ],
       quickTips: [
@@ -361,6 +373,9 @@ const DepartmentPage = () => {
             <Tab value="network" icon={<Network size={14} />}>
               Network
             </Tab>
+            <Tab value="gpu" icon={<Cpu size={14} />}>
+              GPU
+            </Tab>
           </TabList>
 
           <TabPanel value="overview">
@@ -508,6 +523,10 @@ const DepartmentPage = () => {
 
           <TabPanel value="network">
             <DepartmentNetworkTab departmentId={department?.id} />
+          </TabPanel>
+
+          <TabPanel value="gpu">
+            <DepartmentGpuTab departmentId={department?.id} />
           </TabPanel>
         </Tabs>
       </Page>

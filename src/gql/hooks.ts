@@ -516,6 +516,18 @@ export type DeleteSnapshotInput = {
   snapshotName: Scalars['String']['input'];
 };
 
+export type DepartmentGpuPolicyType = {
+  __typename?: 'DepartmentGpuPolicyType';
+  departmentId: Scalars['ID']['output'];
+  gpuEnabled: Scalars['Boolean']['output'];
+  gpuTimeWeight: Scalars['Int']['output'];
+  maxConcurrentGpuVMs: Scalars['Int']['output'];
+  priorityTier: Scalars['Int']['output'];
+  submissionRateTokens: Scalars['Int']['output'];
+  vramCapMB: Scalars['Int']['output'];
+  vramReserveMB: Scalars['Int']['output'];
+};
+
 export type DepartmentMemberType = {
   __typename?: 'DepartmentMemberType';
   departmentId: Scalars['String']['output'];
@@ -1559,6 +1571,7 @@ export type Mutation = {
   /** Update a backup schedule */
   updateBackupSchedule: BackupSchedule;
   updateDepartmentFirewallPolicy: DepartmentType;
+  updateDepartmentGpuPolicy: DepartmentGpuPolicyType;
   updateDepartmentName: DepartmentType;
   updateDepartmentNetwork: DepartmentType;
   updateFirewallRule: FirewallRuleType;
@@ -2162,6 +2175,11 @@ export type MutationUpdateDepartmentFirewallPolicyArgs = {
 };
 
 
+export type MutationUpdateDepartmentGpuPolicyArgs = {
+  input: UpdateDepartmentGpuPolicyInput;
+};
+
+
 export type MutationUpdateDepartmentNameArgs = {
   input: UpdateDepartmentNameInput;
 };
@@ -2625,6 +2643,7 @@ export type Query = {
   currentSnapshot: Maybe<Snapshot>;
   currentUser: Maybe<UserType>;
   department: Maybe<DepartmentType>;
+  departmentGpuPolicy: Maybe<DepartmentGpuPolicyType>;
   departmentMembers: Array<DepartmentMemberType>;
   departmentNetworkDiagnostics: DepartmentNetworkDiagnosticsType;
   departmentScripts: Array<ScriptType>;
@@ -2802,6 +2821,11 @@ export type QueryCurrentSnapshotArgs = {
 
 export type QueryDepartmentArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryDepartmentGpuPolicyArgs = {
+  departmentId: Scalars['ID']['input'];
 };
 
 
@@ -3645,6 +3669,17 @@ export type UpdateDepartmentFirewallPolicyInput = {
   firewallPolicy: FirewallPolicy;
 };
 
+export type UpdateDepartmentGpuPolicyInput = {
+  departmentId: Scalars['ID']['input'];
+  gpuEnabled: InputMaybe<Scalars['Boolean']['input']>;
+  gpuTimeWeight: InputMaybe<Scalars['Int']['input']>;
+  maxConcurrentGpuVMs: InputMaybe<Scalars['Int']['input']>;
+  priorityTier: InputMaybe<Scalars['Int']['input']>;
+  submissionRateTokens: InputMaybe<Scalars['Int']['input']>;
+  vramCapMB: InputMaybe<Scalars['Int']['input']>;
+  vramReserveMB: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type UpdateDepartmentNameInput = {
   id: Scalars['ID']['input'];
   name: Scalars['String']['input'];
@@ -4000,6 +4035,13 @@ export type WindowsUpdateItem = {
   sizeInMB: Scalars['Float']['output'];
   title: Scalars['String']['output'];
 };
+
+export type UpdateDepartmentGpuPolicyMutationVariables = Exact<{
+  input: UpdateDepartmentGpuPolicyInput;
+}>;
+
+
+export type UpdateDepartmentGpuPolicyMutation = { __typename?: 'Mutation', updateDepartmentGpuPolicy: { __typename?: 'DepartmentGpuPolicyType', departmentId: string, gpuEnabled: boolean, vramReserveMB: number, vramCapMB: number, priorityTier: number, maxConcurrentGpuVMs: number, gpuTimeWeight: number, submissionRateTokens: number } };
 
 export type CreateUserMutationVariables = Exact<{
   input: CreateUserInputType;
@@ -4836,6 +4878,13 @@ export type DeleteSnapshotMutationVariables = Exact<{
 
 export type DeleteSnapshotMutation = { __typename?: 'Mutation', deleteSnapshot: { __typename?: 'SuccessType', success: boolean, message: string } };
 
+export type DepartmentGpuPolicyQueryVariables = Exact<{
+  departmentId: Scalars['ID']['input'];
+}>;
+
+
+export type DepartmentGpuPolicyQuery = { __typename?: 'Query', departmentGpuPolicy: { __typename?: 'DepartmentGpuPolicyType', departmentId: string, gpuEnabled: boolean, vramReserveMB: number, vramCapMB: number, priorityTier: number, maxConcurrentGpuVMs: number, gpuTimeWeight: number, submissionRateTokens: number } | null };
+
 export type CurrentUserQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -5242,6 +5291,44 @@ export const RecommendationResolutionFieldsFragmentDoc = gql`
   updatedAt
 }
     `;
+export const UpdateDepartmentGpuPolicyDocument = gql`
+    mutation updateDepartmentGpuPolicy($input: UpdateDepartmentGpuPolicyInput!) {
+  updateDepartmentGpuPolicy(input: $input) {
+    departmentId
+    gpuEnabled
+    vramReserveMB
+    vramCapMB
+    priorityTier
+    maxConcurrentGpuVMs
+    gpuTimeWeight
+    submissionRateTokens
+  }
+}
+    `;
+
+/**
+ * __useUpdateDepartmentGpuPolicyMutation__
+ *
+ * To run a mutation, you first call `useUpdateDepartmentGpuPolicyMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateDepartmentGpuPolicyMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateDepartmentGpuPolicyMutation, { data, loading, error }] = useUpdateDepartmentGpuPolicyMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateDepartmentGpuPolicyMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateDepartmentGpuPolicyMutation, UpdateDepartmentGpuPolicyMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateDepartmentGpuPolicyMutation, UpdateDepartmentGpuPolicyMutationVariables>(UpdateDepartmentGpuPolicyDocument, options);
+      }
+export type UpdateDepartmentGpuPolicyMutationHookResult = ReturnType<typeof useUpdateDepartmentGpuPolicyMutation>;
+export type UpdateDepartmentGpuPolicyMutationResult = ApolloReactCommon.MutationResult<UpdateDepartmentGpuPolicyMutation>;
 export const CreateUserDocument = gql`
     mutation createUser($input: CreateUserInputType!) {
   createUser(input: $input) {
@@ -9687,6 +9774,59 @@ export function useDeleteSnapshotMutation(baseOptions?: ApolloReactHooks.Mutatio
       }
 export type DeleteSnapshotMutationHookResult = ReturnType<typeof useDeleteSnapshotMutation>;
 export type DeleteSnapshotMutationResult = ApolloReactCommon.MutationResult<DeleteSnapshotMutation>;
+export const DepartmentGpuPolicyDocument = gql`
+    query departmentGpuPolicy($departmentId: ID!) {
+  departmentGpuPolicy(departmentId: $departmentId) {
+    departmentId
+    gpuEnabled
+    vramReserveMB
+    vramCapMB
+    priorityTier
+    maxConcurrentGpuVMs
+    gpuTimeWeight
+    submissionRateTokens
+  }
+}
+    `;
+
+/**
+ * __useDepartmentGpuPolicyQuery__
+ *
+ * To run a query within a React component, call `useDepartmentGpuPolicyQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDepartmentGpuPolicyQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDepartmentGpuPolicyQuery({
+ *   variables: {
+ *      departmentId: // value for 'departmentId'
+ *   },
+ * });
+ */
+export function useDepartmentGpuPolicyQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DepartmentGpuPolicyQuery, DepartmentGpuPolicyQueryVariables> & ({ variables: DepartmentGpuPolicyQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DepartmentGpuPolicyQuery, DepartmentGpuPolicyQueryVariables>(DepartmentGpuPolicyDocument, options);
+      }
+export function useDepartmentGpuPolicyLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DepartmentGpuPolicyQuery, DepartmentGpuPolicyQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DepartmentGpuPolicyQuery, DepartmentGpuPolicyQueryVariables>(DepartmentGpuPolicyDocument, options);
+        }
+// @ts-ignore
+export function useDepartmentGpuPolicySuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<DepartmentGpuPolicyQuery, DepartmentGpuPolicyQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<DepartmentGpuPolicyQuery, DepartmentGpuPolicyQueryVariables>;
+export function useDepartmentGpuPolicySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentGpuPolicyQuery, DepartmentGpuPolicyQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<DepartmentGpuPolicyQuery | undefined, DepartmentGpuPolicyQueryVariables>;
+export function useDepartmentGpuPolicySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<DepartmentGpuPolicyQuery, DepartmentGpuPolicyQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<DepartmentGpuPolicyQuery, DepartmentGpuPolicyQueryVariables>(DepartmentGpuPolicyDocument, options);
+        }
+export type DepartmentGpuPolicyQueryHookResult = ReturnType<typeof useDepartmentGpuPolicyQuery>;
+export type DepartmentGpuPolicyLazyQueryHookResult = ReturnType<typeof useDepartmentGpuPolicyLazyQuery>;
+export type DepartmentGpuPolicySuspenseQueryHookResult = ReturnType<typeof useDepartmentGpuPolicySuspenseQuery>;
+export type DepartmentGpuPolicyQueryResult = ApolloReactCommon.QueryResult<DepartmentGpuPolicyQuery, DepartmentGpuPolicyQueryVariables>;
+export function refetchDepartmentGpuPolicyQuery(variables: DepartmentGpuPolicyQueryVariables) {
+      return { query: DepartmentGpuPolicyDocument, variables: variables }
+    }
 export const CurrentUserDocument = gql`
     query currentUser {
   currentUser {
