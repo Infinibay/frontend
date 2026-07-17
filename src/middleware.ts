@@ -71,13 +71,19 @@ export function isPublicRoute(pathname: string): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Never gate Next.js internals or static files. (The matcher below already
-  // excludes most, but this is a cheap belt-and-braces guard for edge cases
-  // like trailing-slash variants.)
+  // Never gate Next.js internals, the API proxy, or static files. `public/`
+  // assets (e.g. /images/logo.png) are served at the SITE ROOT — not under
+  // /_next/static — so they must be excluded here too. The trailing-extension
+  // test catches them: without it the <Image> optimizer's internal, cookie-less
+  // fetch of a source asset is 307'd to /auth/sign-in and returns a 400 ("not a
+  // valid image"), breaking the logo on the login page for everyone. The matcher
+  // below already excludes these; this is belt-and-braces for edge cases like
+  // trailing-slash variants.
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
-    pathname === '/favicon.ico'
+    pathname === '/favicon.ico' ||
+    /\.[^/]+$/.test(pathname)
   ) {
     return NextResponse.next();
   }
@@ -112,8 +118,12 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run on everything EXCEPT Next internals, the API proxy, and static assets
-  // (images live under /_next/static or the remotePatterns config). Keeping the
-  // matcher tight avoids paying middleware cost on asset requests.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'],
+  // Run on everything EXCEPT Next internals, the API proxy, and static files.
+  // The final `.*\..*` clause excludes any path with a file extension — this
+  // covers `public/` assets (e.g. /images/logo.png, served at the site root, NOT
+  // under /_next/static) as well as robots.txt/manifests. Real page routes have
+  // no dot, so nothing protected is excluded. Without this, the <Image>
+  // optimizer's internal fetch of a source asset gets 307'd to sign-in → 400.
+  // Keeping the matcher tight also avoids paying middleware cost on asset requests.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api|.*\\..*).*)'],
 };

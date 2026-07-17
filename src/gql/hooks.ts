@@ -307,6 +307,21 @@ export enum ConflictType {
   PriorityConflict = 'PRIORITY_CONFLICT'
 }
 
+/** A live SPICE/VNC console relay session on the master relay. */
+export type ConsoleSession = {
+  __typename?: 'ConsoleSession';
+  /** Live client channel sockets (one viewer opens several). */
+  channels: Scalars['Int']['output'];
+  /** True when at least one client channel is connected (console in use). */
+  connected: Scalars['Boolean']['output'];
+  /** ISO timestamp when the relay hard-expires regardless of activity. */
+  expiresAt: Scalars['String']['output'];
+  /** Client-facing port the master relay listens on. */
+  listenPort: Scalars['Int']['output'];
+  /** The VM whose console this relay forwards to. */
+  vmId: Scalars['String']['output'];
+};
+
 export type CreateApplicationInputType = {
   description: InputMaybe<Scalars['String']['input']>;
   installCommand: Scalars['JSONObject']['input'];
@@ -1462,6 +1477,8 @@ export type Mutation = {
   drainPool: PoolResult;
   /** Enable a plugin package */
   enablePackage: Maybe<PackageType>;
+  /** Force-close a VM's console relay session, disconnecting any live SPICE/VNC clients. Idempotent — succeeds even if no session is open. */
+  endConsoleSession: SuccessType;
   executeCommand: CommandExecutionResponseType;
   executeImmediateMaintenance: MaintenanceExecutionResponse;
   executeMaintenanceTask: MaintenanceExecutionResponse;
@@ -1825,6 +1842,11 @@ export type MutationDrainPoolArgs = {
 
 export type MutationEnablePackageArgs = {
   name: Scalars['String']['input'];
+};
+
+
+export type MutationEndConsoleSessionArgs = {
+  vmId: Scalars['String']['input'];
 };
 
 
@@ -2597,6 +2619,8 @@ export type Query = {
   checkWindowsDefender: WindowsDefenderStatus;
   /** Check Windows Updates status for a VM */
   checkWindowsUpdates: WindowsUpdateInfo;
+  /** Live SPICE/VNC console relay sessions across the fleet (the master relay). A session exists while a console is being viewed through Infinibay. */
+  consoleSessions: Array<ConsoleSession>;
   /** Get the current snapshot of a virtual machine */
   currentSnapshot: Maybe<Snapshot>;
   currentUser: Maybe<UserType>;
@@ -4488,6 +4512,13 @@ export type ClearUserPermissionOverrideMutationVariables = Exact<{
 
 export type ClearUserPermissionOverrideMutation = { __typename?: 'Mutation', clearUserPermissionOverride: boolean };
 
+export type EndConsoleSessionMutationVariables = Exact<{
+  vmId: Scalars['String']['input'];
+}>;
+
+
+export type EndConsoleSessionMutation = { __typename?: 'Mutation', endConsoleSession: { __typename?: 'SuccessType', success: boolean, message: string } };
+
 export type CreateBackupMutationVariables = Exact<{
   input: CreateBackupInput;
 }>;
@@ -5085,6 +5116,16 @@ export type MyPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MyPermissionsQuery = { __typename?: 'Query', myPermissions: { __typename?: 'EffectivePermissionsType', allowedResources: Array<string>, grants: Array<{ __typename?: 'PermissionGrantType', permission: string, scope: PermissionScope }> } };
+
+export type SessionsConnectionStatsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SessionsConnectionStatsQuery = { __typename?: 'Query', socketConnectionStats: { __typename?: 'SocketConnectionStats', totalConnections: number | null, activeConnections: number | null, connections: Array<{ __typename?: 'VmConnectionInfo', vmId: string, isConnected: boolean, reconnectAttempts: number, lastMessageTime: string, keepAlive: { __typename?: 'KeepAliveMetrics', averageRtt: number, successRate: string, consecutiveFailures: number, sentCount: number, receivedCount: number, failureCount: number, lastReceived: string | null } | null }> | null } | null };
+
+export type ConsoleSessionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ConsoleSessionsQuery = { __typename?: 'Query', consoleSessions: Array<{ __typename?: 'ConsoleSession', vmId: string, listenPort: number, channels: number, connected: boolean, expiresAt: string }> };
 
 export type ActiveMigrationsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -7976,6 +8017,38 @@ export function useClearUserPermissionOverrideMutation(baseOptions?: ApolloReact
       }
 export type ClearUserPermissionOverrideMutationHookResult = ReturnType<typeof useClearUserPermissionOverrideMutation>;
 export type ClearUserPermissionOverrideMutationResult = ApolloReactCommon.MutationResult<ClearUserPermissionOverrideMutation>;
+export const EndConsoleSessionDocument = gql`
+    mutation EndConsoleSession($vmId: String!) {
+  endConsoleSession(vmId: $vmId) {
+    success
+    message
+  }
+}
+    `;
+
+/**
+ * __useEndConsoleSessionMutation__
+ *
+ * To run a mutation, you first call `useEndConsoleSessionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEndConsoleSessionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [endConsoleSessionMutation, { data, loading, error }] = useEndConsoleSessionMutation({
+ *   variables: {
+ *      vmId: // value for 'vmId'
+ *   },
+ * });
+ */
+export function useEndConsoleSessionMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EndConsoleSessionMutation, EndConsoleSessionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<EndConsoleSessionMutation, EndConsoleSessionMutationVariables>(EndConsoleSessionDocument, options);
+      }
+export type EndConsoleSessionMutationHookResult = ReturnType<typeof useEndConsoleSessionMutation>;
+export type EndConsoleSessionMutationResult = ApolloReactCommon.MutationResult<EndConsoleSessionMutation>;
 export const CreateBackupDocument = gql`
     mutation createBackup($input: CreateBackupInput!) {
   createBackup(input: $input) {
@@ -12314,6 +12387,116 @@ export type MyPermissionsSuspenseQueryHookResult = ReturnType<typeof useMyPermis
 export type MyPermissionsQueryResult = ApolloReactCommon.QueryResult<MyPermissionsQuery, MyPermissionsQueryVariables>;
 export function refetchMyPermissionsQuery(variables?: MyPermissionsQueryVariables) {
       return { query: MyPermissionsDocument, variables: variables }
+    }
+export const SessionsConnectionStatsDocument = gql`
+    query SessionsConnectionStats {
+  socketConnectionStats {
+    totalConnections
+    activeConnections
+    connections {
+      vmId
+      isConnected
+      reconnectAttempts
+      lastMessageTime
+      keepAlive {
+        averageRtt
+        successRate
+        consecutiveFailures
+        sentCount
+        receivedCount
+        failureCount
+        lastReceived
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useSessionsConnectionStatsQuery__
+ *
+ * To run a query within a React component, call `useSessionsConnectionStatsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSessionsConnectionStatsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSessionsConnectionStatsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useSessionsConnectionStatsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SessionsConnectionStatsQuery, SessionsConnectionStatsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SessionsConnectionStatsQuery, SessionsConnectionStatsQueryVariables>(SessionsConnectionStatsDocument, options);
+      }
+export function useSessionsConnectionStatsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SessionsConnectionStatsQuery, SessionsConnectionStatsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SessionsConnectionStatsQuery, SessionsConnectionStatsQueryVariables>(SessionsConnectionStatsDocument, options);
+        }
+// @ts-ignore
+export function useSessionsConnectionStatsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<SessionsConnectionStatsQuery, SessionsConnectionStatsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<SessionsConnectionStatsQuery, SessionsConnectionStatsQueryVariables>;
+export function useSessionsConnectionStatsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<SessionsConnectionStatsQuery, SessionsConnectionStatsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<SessionsConnectionStatsQuery | undefined, SessionsConnectionStatsQueryVariables>;
+export function useSessionsConnectionStatsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<SessionsConnectionStatsQuery, SessionsConnectionStatsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<SessionsConnectionStatsQuery, SessionsConnectionStatsQueryVariables>(SessionsConnectionStatsDocument, options);
+        }
+export type SessionsConnectionStatsQueryHookResult = ReturnType<typeof useSessionsConnectionStatsQuery>;
+export type SessionsConnectionStatsLazyQueryHookResult = ReturnType<typeof useSessionsConnectionStatsLazyQuery>;
+export type SessionsConnectionStatsSuspenseQueryHookResult = ReturnType<typeof useSessionsConnectionStatsSuspenseQuery>;
+export type SessionsConnectionStatsQueryResult = ApolloReactCommon.QueryResult<SessionsConnectionStatsQuery, SessionsConnectionStatsQueryVariables>;
+export function refetchSessionsConnectionStatsQuery(variables?: SessionsConnectionStatsQueryVariables) {
+      return { query: SessionsConnectionStatsDocument, variables: variables }
+    }
+export const ConsoleSessionsDocument = gql`
+    query ConsoleSessions {
+  consoleSessions {
+    vmId
+    listenPort
+    channels
+    connected
+    expiresAt
+  }
+}
+    `;
+
+/**
+ * __useConsoleSessionsQuery__
+ *
+ * To run a query within a React component, call `useConsoleSessionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useConsoleSessionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useConsoleSessionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useConsoleSessionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ConsoleSessionsQuery, ConsoleSessionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ConsoleSessionsQuery, ConsoleSessionsQueryVariables>(ConsoleSessionsDocument, options);
+      }
+export function useConsoleSessionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ConsoleSessionsQuery, ConsoleSessionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ConsoleSessionsQuery, ConsoleSessionsQueryVariables>(ConsoleSessionsDocument, options);
+        }
+// @ts-ignore
+export function useConsoleSessionsSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<ConsoleSessionsQuery, ConsoleSessionsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ConsoleSessionsQuery, ConsoleSessionsQueryVariables>;
+export function useConsoleSessionsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ConsoleSessionsQuery, ConsoleSessionsQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<ConsoleSessionsQuery | undefined, ConsoleSessionsQueryVariables>;
+export function useConsoleSessionsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ConsoleSessionsQuery, ConsoleSessionsQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<ConsoleSessionsQuery, ConsoleSessionsQueryVariables>(ConsoleSessionsDocument, options);
+        }
+export type ConsoleSessionsQueryHookResult = ReturnType<typeof useConsoleSessionsQuery>;
+export type ConsoleSessionsLazyQueryHookResult = ReturnType<typeof useConsoleSessionsLazyQuery>;
+export type ConsoleSessionsSuspenseQueryHookResult = ReturnType<typeof useConsoleSessionsSuspenseQuery>;
+export type ConsoleSessionsQueryResult = ApolloReactCommon.QueryResult<ConsoleSessionsQuery, ConsoleSessionsQueryVariables>;
+export function refetchConsoleSessionsQuery(variables?: ConsoleSessionsQueryVariables) {
+      return { query: ConsoleSessionsDocument, variables: variables }
     }
 export const ActiveMigrationsDocument = gql`
     query ActiveMigrations {

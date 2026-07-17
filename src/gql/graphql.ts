@@ -304,6 +304,21 @@ export enum ConflictType {
   PriorityConflict = 'PRIORITY_CONFLICT'
 }
 
+/** A live SPICE/VNC console relay session on the master relay. */
+export type ConsoleSession = {
+  __typename?: 'ConsoleSession';
+  /** Live client channel sockets (one viewer opens several). */
+  channels: Scalars['Int']['output'];
+  /** True when at least one client channel is connected (console in use). */
+  connected: Scalars['Boolean']['output'];
+  /** ISO timestamp when the relay hard-expires regardless of activity. */
+  expiresAt: Scalars['String']['output'];
+  /** Client-facing port the master relay listens on. */
+  listenPort: Scalars['Int']['output'];
+  /** The VM whose console this relay forwards to. */
+  vmId: Scalars['String']['output'];
+};
+
 export type CreateApplicationInputType = {
   description?: InputMaybe<Scalars['String']['input']>;
   installCommand: Scalars['JSONObject']['input'];
@@ -1459,6 +1474,8 @@ export type Mutation = {
   drainPool: PoolResult;
   /** Enable a plugin package */
   enablePackage?: Maybe<PackageType>;
+  /** Force-close a VM's console relay session, disconnecting any live SPICE/VNC clients. Idempotent — succeeds even if no session is open. */
+  endConsoleSession: SuccessType;
   executeCommand: CommandExecutionResponseType;
   executeImmediateMaintenance: MaintenanceExecutionResponse;
   executeMaintenanceTask: MaintenanceExecutionResponse;
@@ -1822,6 +1839,11 @@ export type MutationDrainPoolArgs = {
 
 export type MutationEnablePackageArgs = {
   name: Scalars['String']['input'];
+};
+
+
+export type MutationEndConsoleSessionArgs = {
+  vmId: Scalars['String']['input'];
 };
 
 
@@ -2594,6 +2616,8 @@ export type Query = {
   checkWindowsDefender: WindowsDefenderStatus;
   /** Check Windows Updates status for a VM */
   checkWindowsUpdates: WindowsUpdateInfo;
+  /** Live SPICE/VNC console relay sessions across the fleet (the master relay). A session exists while a console is being viewed through Infinibay. */
+  consoleSessions: Array<ConsoleSession>;
   /** Get the current snapshot of a virtual machine */
   currentSnapshot?: Maybe<Snapshot>;
   currentUser?: Maybe<UserType>;

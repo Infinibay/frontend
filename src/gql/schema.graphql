@@ -232,6 +232,24 @@ input CaptureGoldenImageFromMachineInput {
   sanitizeUserData: Boolean = true
 }
 
+"""A live SPICE/VNC console relay session on the master relay."""
+type ConsoleSession {
+  """Live client channel sockets (one viewer opens several)."""
+  channels: Int!
+
+  """True when at least one client channel is connected (console in use)."""
+  connected: Boolean!
+
+  """ISO timestamp when the relay hard-expires regardless of activity."""
+  expiresAt: String!
+
+  """Client-facing port the master relay listens on."""
+  listenPort: Int!
+
+  """The VM whose console this relay forwards to."""
+  vmId: String!
+}
+
 type CleanupResultType {
   filterNames: [String!]!
   filtersRemoved: Int!
@@ -1443,6 +1461,11 @@ type Mutation {
 
   """Enable a plugin package"""
   enablePackage(name: String!): PackageType
+
+  """
+  Force-close a VM's console relay session, disconnecting any live SPICE/VNC clients. Idempotent — succeeds even if no session is open.
+  """
+  endConsoleSession(vmId: String!): SuccessType!
   executeCommand(command: String!, id: String!): CommandExecutionResponseType!
   executeImmediateMaintenance(input: ExecuteMaintenanceInput!): MaintenanceExecutionResponse!
   executeMaintenanceTask(taskId: ID!): MaintenanceExecutionResponse!
@@ -1961,6 +1984,11 @@ type Query {
 
   """Check Windows Updates status for a VM"""
   checkWindowsUpdates(vmId: ID!): WindowsUpdateInfo!
+
+  """
+  Live SPICE/VNC console relay sessions across the fleet (the master relay). A session exists while a console is being viewed through Infinibay.
+  """
+  consoleSessions: [ConsoleSession!]!
 
   """Get the current snapshot of a virtual machine"""
   currentSnapshot(machineId: String!): Snapshot

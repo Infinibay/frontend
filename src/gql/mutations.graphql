@@ -1144,3 +1144,10 @@ mutation SetUserPermissionOverride($input: SetUserPermissionOverrideInput!) {
 mutation ClearUserPermissionOverride($userId: String!, $permission: String!) {
   clearUserPermissionOverride(userId: $userId, permission: $permission)
 }
+
+mutation EndConsoleSession($vmId: String!) {
+  endConsoleSession(vmId: $vmId) {
+    success
+    message
+  }
+}

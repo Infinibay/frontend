@@ -1095,3 +1095,35 @@ query MyPermissions {
     }
   }
 }
+
+query SessionsConnectionStats {
+  socketConnectionStats {
+    totalConnections
+    activeConnections
+    connections {
+      vmId
+      isConnected
+      reconnectAttempts
+      lastMessageTime
+      keepAlive {
+        averageRtt
+        successRate
+        consecutiveFailures
+        sentCount
+        receivedCount
+        failureCount
+        lastReceived
+      }
+    }
+  }
+}
+
+query ConsoleSessions {
+  consoleSessions {
+    vmId
+    listenPort
+    channels
+    connected
+    expiresAt
+  }
+}
